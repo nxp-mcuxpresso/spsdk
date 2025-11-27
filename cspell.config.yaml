@@ -1,6 +1,7 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 ---
 $schema: https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json
 version: "0.2"
@@ -22,3 +23,14 @@ ignorePaths:
   - "*egg-info/**"
   - "tests/utils/data/file_special.txt"
   - "spsdk/__version__.py"
+  - "docs/examples"
+  - "docs/_prebuild"
+  - "docs/_static"
+  - "docs/make.bat"
+  - "docs/Makefile"
+  - "docs/html_schemas"
+  - "*.srec"
+  - "*.s19"
+  - "*.mex"
+  - "*.hex"
+

@@ -1,7 +1,6 @@
 MBoot Module API
 ================
-
-Module implementing communication with the MCU Bootloader.
+.. automodule:: spsdk.mboot
 
 .. toctree::
    :maxdepth: 1

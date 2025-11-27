@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Hardware Security Engine related commands."""
+"""SPSDK NXP EdgeLock Enclave Hardware Security Engine command-line interface.
+
+This module provides CLI commands for interacting with HSE (Hardware Security Engine)
+functionality through NXP EdgeLock Enclave, including key management, firmware updates,
+image signing and verification, and attribute retrieval operations.
+"""
 
 from typing import Optional
 

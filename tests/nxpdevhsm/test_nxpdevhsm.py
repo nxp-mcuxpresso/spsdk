@@ -5,8 +5,16 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Test some testable functionality of nxpdevhsm application."""
+"""Test module for SPSDK nxpdevhsm application functionality.
+
+This module contains comprehensive unit tests for the nxpdevhsm application,
+which provides secure provisioning capabilities for NXP development HSM devices.
+Tests cover command generation, template handling, device factory operations,
+and SBX device integration.
+"""
+
 import os
+from typing import Any
 
 import pytest
 
@@ -25,7 +33,18 @@ from spsdk.utils.misc import load_binary, use_working_directory
 from tests.cli_runner import CliRunner
 
 
-def test_nxpdevhsm_run_generate(cli_runner: CliRunner, data_dir, tmpdir):
+def test_nxpdevhsm_run_generate(cli_runner: CliRunner, data_dir: str, tmpdir: Any) -> None:
+    """Test nxpdevhsm CLI generate command with invalid COM port.
+
+    This test verifies that the nxpdevhsm generate command properly handles
+    the case when an invalid or non-existent COM port is specified. It expects
+    the command to fail with a specific error message indicating no devices
+    were found for the given UART interface parameters.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param data_dir: Directory containing test data files.
+    :param tmpdir: Temporary directory for test output files.
+    """
     with use_working_directory(data_dir):
         cmd = (
             "generate -p COMx "
@@ -48,12 +67,24 @@ def test_nxpdevhsm_run_generate(cli_runner: CliRunner, data_dir, tmpdir):
         ("cfg_sb3_keyblob.yaml", 2, 3),
     ],
 )
-def test_load_commands(data_dir, config, n_cmds, nf_cmds):
-    """Test loading commands from SB3.1 config file."""
+def test_load_commands(data_dir: str, config: str, n_cmds: int, nf_cmds: int) -> None:
+    """Test loading commands from SB3.1 config file.
+
+    This test verifies that commands can be properly loaded from a configuration file,
+    added to a SecureBinary31Commands object, and processed correctly. It checks that
+    the expected number of commands are loaded and that the final processed data
+    contains the expected binary content.
+
+    :param data_dir: Directory path containing test data files.
+    :param config: Path to the SB3.1 configuration file to load.
+    :param n_cmds: Expected number of additional commands to be loaded.
+    :param nf_cmds: Expected total number of commands after adding all commands.
+    """
 
     with use_working_directory(data_dir):
-        devhsm = DevHsmSB31.load_from_config(Config.create_from_file(config), mboot=1)
+        devhsm = DevHsmSB31.load_from_config(Config.create_from_file(config), mboot=1)  # type: ignore
         cmds = devhsm.additional_commands
+        assert cmds is not None
         assert len(cmds) == n_cmds
 
         sb3_data = SecureBinary31Commands(
@@ -86,15 +117,30 @@ def test_load_commands(data_dir, config, n_cmds, nf_cmds):
         ("mcxa366", DevHsmSBc),
     ],
 )
-def test_devhsm_factory(family, expected_cls):
-    """Test nxpdevhsm factory method."""
+def test_devhsm_factory(family: str, expected_cls: Any) -> None:
+    """Test nxpdevhsm factory method.
+
+    Verifies that the get_devhsm_class factory function returns the correct
+    DevHSM class for a given family revision.
+
+    :param family: The family name to test with the factory method.
+    :param expected_cls: The expected DevHSM class that should be returned by the factory.
+    """
     devhsm_cls = get_devhsm_class(FamilyRevision(family))
     assert devhsm_cls == expected_cls
 
 
-def test_sbx_devhsm(data_dir):
+def test_sbx_devhsm(data_dir: str) -> None:
+    """Test SBx DevHSM functionality with configuration file.
+
+    This test verifies that the DevHsmSBx class can properly load from a YAML
+    configuration file and validates the resulting secure binary properties
+    including commands, image type, signing status, and block size.
+
+    :param data_dir: Directory path containing test data and configuration files
+    """
     with use_working_directory(data_dir):
-        devhsm = DevHsmSBx.load_from_config(Config.create_from_file("cfg_sbx_load.yaml"), mboot=1)
+        devhsm = DevHsmSBx.load_from_config(Config.create_from_file("cfg_sbx_load.yaml"), mboot=1)  # type: ignore
 
     assert "ERASE: Address=0x00000000, Length=4096, Memory ID=0\n" in str(devhsm.sbx.sb_commands)
     assert devhsm.sbx.image_type == SecureBinaryXType.OEM_PROVISIONING
@@ -116,16 +162,33 @@ def test_sbx_devhsm(data_dir):
         ("mcxa365"),
     ],
 )
-def test_nxpdevhsm_get_template(cli_runner: CliRunner, tmpdir, family):
-    """Test NXPDEVHSM CLI - Generation IF user config."""
+def test_nxpdevhsm_get_template(cli_runner: CliRunner, tmpdir: Any, family: str) -> None:
+    """Test NXPDEVHSM CLI get-template command functionality.
+
+    Verifies that the get-template command generates a valid configuration file
+    for the specified device family and saves it to the expected output location.
+
+    :param cli_runner: Click CLI test runner for invoking commands
+    :param tmpdir: Temporary directory fixture for test file operations
+    :param family: Device family name to generate template for
+    :raises AssertionError: If the generated configuration file does not exist
+    """
     cmd = ["get-template", "-f", family, "--output", f"{tmpdir}/devhsm.yml"]
     cli_runner.invoke(nxpdevhsm.main, cmd)
     assert os.path.isfile(f"{tmpdir}/devhsm.yml")
 
 
-def test_devhsm_commands_are_optional(tmpdir, data_dir):
-    """Test nxpdevhsm factory method."""
+def test_devhsm_commands_are_optional(tmpdir: Any, data_dir: str) -> None:
+    """Test that DevHSM commands are optional in configuration.
+
+    Verifies that the DevHsmSB31 factory method correctly handles configurations
+    without additional commands, ensuring the additional_commands attribute is empty
+    when no commands are specified in the configuration file.
+
+    :param tmpdir: Temporary directory for test files (unused in this test).
+    :param data_dir: Path to the directory containing test data files.
+    """
     config_file = "cfg_sb3_no_cmds.yaml"
     configuration = Config.create_from_file(os.path.join(data_dir, config_file))
 
-    assert not DevHsmSB31.load_from_config(configuration, mboot=1).additional_commands
+    assert not DevHsmSB31.load_from_config(configuration, mboot=1).additional_commands  # type: ignore

@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module handling the operations on fuses."""
+"""SPSDK fuse operations and management utilities.
+
+This module provides comprehensive functionality for reading, writing, and managing
+fuses across NXP MCU devices. It includes abstract base classes for fuse operations,
+concrete implementations for different tools (blhost, nxpele), and utilities for
+fuse scripting and configuration management.
+"""
 
 import functools
 import logging
@@ -35,58 +41,110 @@ logger = logging.getLogger(__name__)
 
 
 class SPSDKFuseOperationFailure(SPSDKError):
-    """SPSDK Fuse operation failure."""
+    """SPSDK Fuse operation failure exception.
+
+    Exception raised when fuse-related operations fail during device provisioning
+    or configuration processes. This includes failures in fuse reading, writing,
+    verification, or other fuse management operations.
+    """
 
 
 class SPSDKFuseConfigurationError(SPSDKError):
-    """SPSDK Fuse configuration failure."""
+    """SPSDK Fuse configuration error exception.
+
+    This exception is raised when fuse configuration operations fail due to
+    invalid parameters, unsupported configurations, or other fuse-related errors.
+    """
 
 
 class FuseOperator:
-    """Fuse operator abstract class."""
+    """Fuse operator abstract base class for device fuse management operations.
+
+    This abstract class defines the interface for reading, writing, and managing fuses
+    across different NXP MCU devices. Concrete implementations provide device-specific
+    fuse operation capabilities including script generation and command formatting.
+
+    :cvar NAME: Operator name identifier for registration and lookup.
+    """
 
     NAME: Optional[str] = None
 
     def __str__(self) -> str:
+        """Return string representation of the object.
+
+        This method delegates to __repr__() to provide a string representation
+        of the fuse object.
+
+        :return: String representation of the object.
+        """
         return self.__repr__()
 
     def __repr__(self) -> str:
+        """Return string representation of the Fuse Operator.
+
+        :return: String containing the operator name with 'Fuse Operator' prefix.
+        """
         return f"Fuse Operator {self.NAME}"
 
     @abstractmethod
     def read_fuse(self, index: int, length: int) -> int:
-        """Read a single fuse value.
+        """Read a single fuse value from the device.
 
-        :param index: Index of a fuse
-        :param length: Length of fuse in bits
-        :return: Fuse value
+        :param index: Index of the fuse to read.
+        :param length: Length of the fuse in bits.
+        :return: The fuse value as an integer.
         """
 
     @abstractmethod
     def write_fuse(self, index: int, value: int, length: int, lock: bool = False) -> None:
         """Write a single fuse.
 
-        :param index: Index of a fuse
-        :param value: Fuse value to be written
-        :param length: Length of fuse in bits
-        :param lock: Lock fuse after write
+        The method writes a value to the specified fuse index with given bit length
+        and optionally locks the fuse to prevent further modifications.
+
+        :param index: Index of the fuse to write.
+        :param value: Fuse value to be written.
+        :param length: Length of fuse in bits.
+        :param lock: Lock fuse after write to prevent further modifications.
         """
 
     @classmethod
     @abstractmethod
     def get_fuse_script(cls, family: FamilyRevision, fuses: list[FuseRegister]) -> str:
-        """Get fuse script."""
+        """Get fuse script for specified family and fuse registers.
+
+        Generates a script containing fuse programming commands based on the provided
+        family revision and list of fuse registers.
+
+        :param family: Target MCU family and revision information.
+        :param fuses: List of fuse registers to include in the script.
+        :return: Generated fuse programming script as string.
+        """
 
     @classmethod
     @abstractmethod
     def get_fuse_write_cmd(
         cls, index: int, value: int, lock: bool = False, verify: bool = False
     ) -> str:
-        """Get write command for a single fuse."""
+        """Get write command for a single fuse.
+
+        :param index: Index of the fuse to write.
+        :param value: Value to write to the fuse.
+        :param lock: Whether to lock the fuse after writing, defaults to False.
+        :param verify: Whether to verify the fuse value after writing, defaults to False.
+        :return: Command string for writing the specified fuse.
+        """
 
     @classmethod
     def get_operator_type(cls, name: str) -> Type["FuseOperator"]:
-        """Get operator type by its name."""
+        """Get operator type by its name.
+
+        Searches through all FuseOperator subclasses to find the one matching the specified name.
+
+        :param name: Name of the fuse operator to find.
+        :raises SPSDKKeyError: When no fuse operator with the specified name exists.
+        :return: The FuseOperator subclass type matching the given name.
+        """
         for subclass in FuseOperator.__subclasses__():
             if subclass.NAME == name:
                 return subclass
@@ -94,10 +152,29 @@ class FuseOperator:
 
 
 def mboot_operation_decorator(func: Callable) -> Callable:
-    """Decorator to handle a method with mcuboot operation."""
+    """Decorator to handle MCUboot operations with automatic connection management.
+
+    This decorator ensures that the MCUboot interface is properly opened before executing
+    the decorated method and closed afterwards, regardless of whether the operation
+    succeeds or fails.
+
+    :param func: Function to be decorated that performs MCUboot operations.
+    :return: Wrapped function with automatic connection management.
+    """
 
     @functools.wraps(func)
     def wrapper(self: "BlhostFuseOperator", *args: Any, **kwargs: Any) -> Any:
+        """Wrapper function to ensure mboot connection is properly managed.
+
+        This decorator-like wrapper ensures that the mboot connection is opened before
+        executing the wrapped function and properly closed afterwards, regardless of
+        whether the function succeeds or raises an exception.
+
+        :param self: The BlhostFuseOperator or BlhostFuseOperatorLegacy instance.
+        :param args: Variable length argument list to pass to the wrapped function.
+        :param kwargs: Arbitrary keyword arguments to pass to the wrapped function.
+        :return: The return value of the wrapped function.
+        """
         assert isinstance(self, (BlhostFuseOperator, BlhostFuseOperatorLegacy))
         if not self.mboot.is_opened:
             self.mboot.open()
@@ -110,21 +187,38 @@ def mboot_operation_decorator(func: Callable) -> Callable:
 
 
 class BlhostFuseOperator(FuseOperator):
-    """Blhost fuse operator."""
+    """SPSDK Blhost fuse operator for MCU fuse operations.
+
+    This class provides fuse read/write operations using the Blhost protocol
+    through McuBoot interface. It handles individual fuse programming,
+    reading, and script generation for batch operations.
+
+    :cvar NAME: Operator identifier for blhost protocol.
+    """
 
     NAME = "blhost"
 
     def __init__(self, mboot: McuBoot):
-        """Blhost fuse operator initialization."""
+        """Initialize the Blhost fuse operator.
+
+        Creates a new instance of the fuse operator that uses the provided McuBoot
+        interface for communication with the target device.
+
+        :param mboot: McuBoot interface instance for device communication.
+        """
         self.mboot = mboot
 
     @mboot_operation_decorator
     def read_fuse(self, index: int, length: int) -> int:
-        """Read a single fuse value.
+        """Read a single fuse value from the device.
 
-        :param index: Index of a fuse
-        :param length: Length of fuse in bits
-        :return: Fuse value
+        This method reads the value of a fuse at the specified index using the mboot interface.
+        The length parameter specifies the expected bit length of the fuse data.
+
+        :param index: Index of the fuse to read
+        :param length: Length of fuse data in bits
+        :raises SPSDKFuseOperationFailure: When the fuse reading operation fails
+        :return: The value read from the specified fuse
         """
         ret = self.mboot.efuse_read_once(index)
         if ret is None:
@@ -133,12 +227,16 @@ class BlhostFuseOperator(FuseOperator):
 
     @mboot_operation_decorator
     def write_fuse(self, index: int, value: int, length: int, lock: bool = False) -> None:
-        """Write a single fuse.
+        """Write a single fuse to the device.
 
-        :param index: Index of a fuse
-        :param value: Fuse value to be written
-        :param length: Length of fuse in bits
-        :param lock: Lock fuse after write
+        The method programs a fuse at the specified index with the given value and
+        optionally locks it to prevent further modifications.
+
+        :param index: Index of the fuse to be written.
+        :param value: Fuse value to be programmed.
+        :param length: Length of fuse in bits.
+        :param lock: Lock fuse after write to prevent further modifications.
+        :raises SPSDKFuseOperationFailure: Writing of fuse failed.
         """
         if lock:
             index = index | (1 << 24)
@@ -148,7 +246,16 @@ class BlhostFuseOperator(FuseOperator):
 
     @classmethod
     def get_fuse_script(cls, family: FamilyRevision, fuses: list[FuseRegister]) -> str:
-        """Get fuses script."""
+        """Generate BLHOST fuses programming script for given family and fuses.
+
+        Creates a complete script with header information including SPSDK version and chip family,
+        followed by individual fuse programming commands with descriptive comments.
+
+        :param family: Target chip family and revision information.
+        :param fuses: List of fuse registers to be programmed.
+        :raises SPSDKAttributeError: When OTP index is not defined for a fuse register.
+        :return: Complete BLHOST script as formatted string with programming commands.
+        """
         ret = (
             "# BLHOST fuses programming script\n"
             f"# Generated by SPSDK {spsdk_version}\n"
@@ -167,7 +274,17 @@ class BlhostFuseOperator(FuseOperator):
     def get_fuse_write_cmd(
         cls, index: int, value: int, lock: bool = False, verify: bool = False
     ) -> str:
-        """Get fuse write command."""
+        """Get fuse write command for programming eFuses.
+
+        Generates a command string for programming eFuse values with optional verification
+        and locking capabilities.
+
+        :param index: eFuse index to program.
+        :param value: Value to write to the eFuse.
+        :param lock: Lock the eFuse after programming, defaults to False.
+        :param verify: Verify the programmed value, defaults to False.
+        :return: Formatted eFuse programming command string.
+        """
         ret = f"efuse-program-once {index} {f'0x{value:X}'}"
         ret = f"{ret} {'--verify' if verify else '--no-verify'}"
         if lock:
@@ -176,21 +293,35 @@ class BlhostFuseOperator(FuseOperator):
 
 
 class BlhostFuseOperatorLegacy(FuseOperator):
-    """Legacy Blhost fuse operator that utilizes different command."""
+    """Legacy Blhost fuse operator for backward compatibility.
+
+    This class provides fuse operations using legacy Blhost commands that differ
+    from the standard implementation. It maintains compatibility with older
+    systems while providing the same fuse read/write interface.
+
+    :cvar NAME: Operator identifier for legacy Blhost operations.
+    """
 
     NAME = "blhost_legacy"
 
     def __init__(self, mboot: McuBoot):
-        """Blhost fuse operator initialization."""
+        """Initialize the Blhost fuse operator.
+
+        :param mboot: McuBoot instance for communication with the target device.
+        """
         self.mboot = mboot
 
     @mboot_operation_decorator
     def read_fuse(self, index: int, length: int) -> int:
-        """Read a single fuse value.
+        """Read a single fuse value from the device.
 
-        :param index: Index of a fuse
+        This method reads a fuse at the specified index with the given bit length
+        and returns the fuse value as an integer.
+
+        :param index: Index of the fuse to read
         :param length: Length of fuse in bits
-        :return: Fuse value
+        :return: Fuse value as integer
+        :raises SPSDKFuseOperationFailure: When reading of fuse fails
         """
         ret = self.mboot.fuse_read(index, length // 8)
         if ret is None:
@@ -201,10 +332,14 @@ class BlhostFuseOperatorLegacy(FuseOperator):
     def write_fuse(self, index: int, value: int, length: int, lock: bool = False) -> None:
         """Write a single fuse.
 
-        :param index: Index of a fuse
-        :param value: Fuse value to be written
-        :param length: Length of fuse in bits
-        :param lock: Lock fuse after write
+        This method programs a fuse at the specified index with the given value by setting
+        the appropriate voltage, programming the fuse, and resetting the voltage.
+
+        :param index: Index of the fuse to be written.
+        :param value: Fuse value to be programmed.
+        :param length: Length of fuse in bits (currently not used in implementation).
+        :param lock: Lock fuse after write (currently not implemented).
+        :raises SPSDKFuseOperationFailure: When the fuse programming operation fails.
         """
         ret = self.mboot.set_property(22, 1)  # Set voltage for fuse programming
         # convert value to bytes
@@ -216,7 +351,16 @@ class BlhostFuseOperatorLegacy(FuseOperator):
 
     @classmethod
     def get_fuse_script(cls, family: FamilyRevision, fuses: list[FuseRegister]) -> str:
-        """Get fuses script."""
+        """Generate BLHOST fuses programming script for given family and fuses.
+
+        Creates a complete BLHOST script that includes voltage setting, fuse programming
+        commands, and proper reset sequence for safe fuse programming operations.
+
+        :param family: Target MCU family and revision information.
+        :param fuses: List of fuse registers to be programmed with their values.
+        :raises SPSDKAttributeError: When OTP index is not defined for a fuse register.
+        :return: Complete BLHOST script as string with programming commands.
+        """
         ret = (
             "# BLHOST fuses programming script\n"
             f"# Generated by SPSDK {spsdk_version}\n"
@@ -242,29 +386,55 @@ class BlhostFuseOperatorLegacy(FuseOperator):
     def get_fuse_write_cmd(
         cls, index: int, value: int, lock: bool = False, verify: bool = False
     ) -> str:
-        """Get fuse write command."""
+        """Get fuse write command.
+
+        Generates a command string for programming a fuse with the specified index and value.
+
+        :param index: Fuse index to program.
+        :param value: Value to write to the fuse.
+        :param lock: Whether to lock the fuse after programming (currently not used in command).
+        :param verify: Whether to verify the fuse after programming (currently not used in command).
+        :return: Command string for fuse programming.
+        """
         ret = f"fuse-program {index} {{{f'0x{value:X}'}}}"
         return ret
 
 
 class NxpeleFuseOperator(FuseOperator):
-    """NXP ele fuse operator."""
+    """NXP EdgeLock Enclave (ELE) fuse operator.
+
+    This class provides fuse operations for NXP EdgeLock Enclave devices, enabling
+    reading and writing of fuse values through ELE message communication. It handles
+    the low-level ELE protocol for secure fuse management operations.
+
+    :cvar NAME: Operator identifier for NXP ELE fuse operations.
+    """
 
     NAME = "nxpele"
 
     def __init__(self, ele_handler: Any):
-        """Nxp ele fuse operator initialization."""
+        """Initialize NXP ELE fuse operator.
+
+        Creates a new instance of the ELE fuse operator with the provided ELE message handler
+        for secure fuse operations.
+
+        :param ele_handler: ELE message handler instance for communication with ELE.
+        :raises AssertionError: If ele_handler is not an instance of EleMessageHandler.
+        """
         from spsdk.ele.ele_comm import EleMessageHandler
 
         assert isinstance(ele_handler, EleMessageHandler)
         self.ele_handler = ele_handler
 
     def read_fuse(self, index: int, length: int) -> int:
-        """Read a single fuse value.
+        """Read a single fuse value from the device.
 
-        :param index: Index of a fuse
-        :param length: Length of fuse in bits
-        :return: Fuse value
+        This method uses ELE (EdgeLock Enclave) messaging to read a common fuse value
+        from the specified index position.
+
+        :param index: Index of the fuse to read
+        :param length: Length of fuse in bits (currently not used in implementation)
+        :return: The fuse value as an integer
         """
         from spsdk.ele import ele_message
 
@@ -276,10 +446,14 @@ class NxpeleFuseOperator(FuseOperator):
     def write_fuse(self, index: int, value: int, length: int, lock: bool = False) -> None:
         """Write a single fuse.
 
-        :param index: Index of a fuse
-        :param value: Fuse value to be written
-        :param length: Length of fuse in bits
-        :param lock: Lock fuse after write
+        This method writes a value to a specific fuse register using the ELE (EdgeLock Enclave)
+        messaging system. The fuse can optionally be locked after writing to prevent further
+        modifications.
+
+        :param index: Index of the fuse register to write to.
+        :param value: Fuse value to be written to the register.
+        :param length: Length of fuse in bits (currently unused, fixed at 32 bits).
+        :param lock: Lock fuse after write to prevent further modifications.
         """
         from spsdk.ele import ele_message
 
@@ -294,7 +468,16 @@ class NxpeleFuseOperator(FuseOperator):
 
     @classmethod
     def get_fuse_script(cls, family: FamilyRevision, fuses: list[FuseRegister]) -> str:
-        """Get fuse write command."""
+        """Generate fuse programming script for specified family and fuse registers.
+
+        Creates a complete NXPELE fuses programming script with header information
+        and individual fuse write commands for each provided fuse register.
+
+        :param family: Target chip family and revision information.
+        :param fuses: List of fuse registers to include in the programming script.
+        :raises SPSDKAttributeError: When OTP index is not defined for any fuse register.
+        :return: Complete fuse programming script as formatted string.
+        """
         ret = (
             "# NXPELE fuses programming script\n"
             f"# Generated by SPSDK {spsdk_version}\n"
@@ -315,7 +498,14 @@ class NxpeleFuseOperator(FuseOperator):
     ) -> str:
         """Get write command for a single fuse.
 
-        Verify parameter is not applicable for nxpele command.
+        Generates a command string for writing a value to a specific fuse index with optional
+        locking. The verify parameter is not applicable for nxpele command.
+
+        :param index: Index of the fuse to write to.
+        :param value: Value to write to the fuse.
+        :param lock: Whether to lock the fuse after writing, defaults to False.
+        :param verify: Verification flag (not applicable for nxpele command), defaults to False.
+        :return: Command string for writing the fuse.
         """
         ret = f"write-fuse --index {index} --data {f'0x{value:X}'}"
         if lock:
@@ -324,7 +514,15 @@ class NxpeleFuseOperator(FuseOperator):
 
 
 class Fuses(FeatureBaseClassComm):
-    """Handle operations over fuses."""
+    """SPSDK Fuses Manager.
+
+    This class provides a comprehensive interface for managing and manipulating
+    fuse operations across NXP MCU families. It handles fuse register initialization,
+    configuration loading, and communication with physical fuse hardware through
+    configurable operators.
+
+    :cvar FEATURE: Database feature identifier for fuses functionality.
+    """
 
     FEATURE = DatabaseManager.FUSES
 
@@ -333,7 +531,16 @@ class Fuses(FeatureBaseClassComm):
         family: FamilyRevision,
         fuse_operator: Optional[FuseOperator] = None,
     ):
-        """Fuses class to control fuses operations."""
+        """Initialize Fuses class to control fuse operations.
+
+        The Fuses class provides functionality to manage and manipulate fuse registers
+        for NXP MCU devices, including reading, writing, and configuring fuse values.
+
+        :param family: Target MCU family and revision information for fuse operations.
+        :param fuse_operator: Optional operator for performing actual fuse operations,
+            defaults to None.
+        :raises SPSDKError: When the specified family has no fuses definition available.
+        """
         self.family = family
         self.db = get_db(family)
         if DatabaseManager.FUSES not in self.db.features:
@@ -344,28 +551,56 @@ class Fuses(FeatureBaseClassComm):
         self.fuse_context: list[FuseRegister] = []
 
     def __repr__(self) -> str:
-        """Class representation string."""
+        """Get string representation of the Fuses class.
+
+        :return: String representation containing the family name.
+        """
         return f"Fuses class for {self.family}."
 
     def __str__(self) -> str:
-        """Information about fuses class."""
+        """Get string representation of the fuses class.
+
+        The method provides a detailed string representation that includes both the
+        basic object information and the string representation of the fuse registers.
+
+        :return: String representation containing object info and fuse registers details.
+        """
         ret = self.__repr__()
         ret += "\n" + str(self.fuse_regs)
         return ret
 
     def __iter__(self) -> Iterator[FuseRegister]:
+        """Make the fuse registers iterable.
+
+        Allows iteration over all fuse registers in the collection using standard
+        Python iteration protocols.
+
+        :return: Iterator over FuseRegister objects.
+        """
         return iter(self.fuse_regs)
 
     @property
     def fuse_operator(self) -> FuseOperator:
-        """Fuse operator property."""
+        """Get fuse operator instance.
+
+        Property to access the fuse operator for performing fuse operations on the device.
+
+        :raises SPSDKError: Fuse operator is not defined.
+        :return: The fuse operator instance.
+        """
         if self._operator is None:
             raise SPSDKError("Fuse operator is not defined.")
         return self._operator
 
     @fuse_operator.setter
     def fuse_operator(self, value: FuseOperator) -> None:
-        """Fuse operator property setter."""
+        """Set the fuse operator for this fuse.
+
+        Validates that the provided operator is of the correct type before assignment.
+
+        :param value: The fuse operator to set.
+        :raises SPSDKTypeError: If the operator type doesn't match the expected fuse operator type.
+        """
         if not isinstance(value, self.fuse_operator_type):
             raise SPSDKTypeError(
                 f"Invalid fuse operator type: {type(value).__name__}. expected: {self.fuse_operator_type.__name__}"
@@ -375,23 +610,47 @@ class Fuses(FeatureBaseClassComm):
 
     @property
     def fuse_operator_type(self) -> Type[FuseOperator]:
-        """Operator type based on family."""
+        """Get fuse operator type for the current family.
+
+        Returns the appropriate FuseOperator class type that corresponds to the
+        device family configured for this instance.
+
+        :return: FuseOperator class type for the configured family.
+        """
         return self.get_fuse_operator_type(self.family)
 
     @classmethod
     def get_fuse_operator_type(cls, family: FamilyRevision) -> Type[FuseOperator]:
-        """Get operator type based on family."""
+        """Get operator type based on family.
+
+        Retrieves the appropriate FuseOperator type for the specified MCU family
+        by querying the database configuration.
+
+        :param family: MCU family and revision specification.
+        :return: FuseOperator class type for the specified family.
+        :raises SPSDKError: If family is not supported or database query fails.
+        """
         return FuseOperator.get_operator_type(get_db(family).get_str(DatabaseManager.FUSES, "tool"))
 
     @classmethod
     def get_init_regs(cls, family: FamilyRevision) -> FuseRegisters:
-        """Get initialized fuse registers."""
+        """Get initialized fuse registers.
+
+        Creates and returns a new FuseRegisters instance for the specified family revision.
+
+        :param family: The family revision to initialize the fuse registers for.
+        :return: Initialized fuse registers instance for the given family.
+        """
         return FuseRegisters(family=family)
 
     def load_config(self, config: dict[str, Any]) -> None:
-        """Loads the fuses configuration from dictionary.
+        """Load the fuses configuration from dictionary.
 
-        :param config: The configuration of fuses.
+        The method validates the configuration against schema, loads register values,
+        and sets up the fuse context with the configured registers.
+
+        :param config: Dictionary containing fuses configuration with registers section.
+        :raises SPSDKError: Invalid configuration format or validation failure.
         """
         sch_full = self.get_validation_schemas(self.family)
         check_config(config, sch_full)
@@ -406,14 +665,26 @@ class Fuses(FeatureBaseClassComm):
     def load_from_config(cls, config: Config) -> Self:
         """Create fuses object from given configuration.
 
-        :param config: The configuration of fuses.
+        This class method instantiates a new fuses object using the provided configuration
+        data, including family revision information and fuse-specific settings.
+
+        :param config: The configuration object containing fuses settings and family revision data.
+        :return: New fuses object configured according to the provided configuration.
         """
         fuses = cls(FamilyRevision.load_from_config(config))
         fuses.load_config(config)
         return fuses
 
     def read_all(self) -> None:
-        """Read all fuses from connected device."""
+        """Read all fuses from connected device.
+
+        Attempts to read every fuse register from the connected device and updates the fuse context
+        with successfully read registers. Failed reads are logged as warnings but do not stop the
+        operation.
+
+        :raises SPSDKFuseOperationFailure: When individual fuse read operations fail (logged as
+            warnings, does not interrupt the overall operation).
+        """
         ctx = []
         for reg in self.fuse_regs:
             try:
@@ -426,8 +697,17 @@ class Fuses(FeatureBaseClassComm):
     def read_single(self, name: str, check_locks: bool = True) -> int:
         """Read single fuse from device.
 
-        :param name: Fuse name or uid.
-        :param check_locks: Check value of lock fuse before reading
+        Reads the value of a specified fuse register from the device, with optional
+        lock checking to ensure the fuse is readable before attempting the operation.
+
+        :param name: Fuse name or uid to read from device.
+        :param check_locks: Check value of lock fuse before reading to prevent
+            locked fuse access.
+        :raises SPSDKFuseOperationFailure: When fuse is not readable or read
+            operation is locked.
+        :raises SPSDKFuseConfigurationError: When OTP index is not defined for
+            the fuse.
+        :return: Value read from the fuse register.
         """
         reg = self.fuse_regs.find_reg(name, include_group_regs=True)
         if not reg.access.is_readable:
@@ -461,7 +741,11 @@ class Fuses(FeatureBaseClassComm):
     def write_multiple(self, names: list[str]) -> None:
         """Write multiple fuses to the device.
 
-        :param names: List of fuse names or uids.
+        This method iterates through the provided list of fuse names or UIDs,
+        finds the corresponding registers, and writes each one individually to the device.
+
+        :param names: List of fuse names or UIDs to be written to the device.
+        :raises SPSDKError: If any fuse name/UID is not found or write operation fails.
         """
         for name in names:
             reg = self.fuse_regs.find_reg(name, include_group_regs=True)
@@ -470,11 +754,31 @@ class Fuses(FeatureBaseClassComm):
     def write_single(self, name: str, lock: bool = False) -> None:
         """Write single fuse to the device.
 
-        :param name: Fuse name or uid.
-        :param lock: Set lock after write.
+        The method handles both individual fuses and group registers. It performs
+        lock checks, validates write permissions, and manages individual write lock
+        behavior according to fuse configuration.
+
+        :param name: Fuse name or uid to write.
+        :param lock: Set lock after write operation.
+        :raises SPSDKError: OTP index for fuse is not set.
+        :raises SPSDKFuseOperationFailure: Fuse is not writable, write-locked, or has
+                                           non-reset value with write lock.
         """
 
         def write_single_reg(reg: FuseRegister, lock: bool = False) -> None:
+            """Write a single fuse register to the device.
+
+            This method writes the value of a fuse register to the OTP memory with comprehensive
+            validation including access rights, lock status checks, and individual write lock
+            handling. The method automatically manages lock states and validates write permissions
+            before performing the operation.
+
+            :param reg: The fuse register to write to the device.
+            :param lock: Whether to lock the fuse after writing, defaults to False.
+            :raises SPSDKError: If the OTP index for the fuse is not set.
+            :raises SPSDKFuseOperationFailure: If the fuse is not writable, write-locked by another
+                fuse, or has non-reset value with write-lock restrictions.
+            """
             if reg.otp_index is None:
                 raise SPSDKError(f"OTP index for fuse {reg.name} is not set.")
             if not reg.access.is_writable:
@@ -524,10 +828,14 @@ class Fuses(FeatureBaseClassComm):
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Create the validation schema.
+        """Create the validation schema for fuses configuration.
 
-        :param family: Family description.
-        :return: List of validation schemas.
+        The method builds validation schemas by combining basic family schemas with
+        fuse-specific configuration schemas. It updates the family properties and
+        integrates register validation schemas from initialization registers.
+
+        :param family: Family description containing MCU family and revision information.
+        :return: List of validation schemas for fuses configuration.
         """
         sch_family: list[dict] = cls.get_validation_schemas_basic()
         update_validation_schema_family(
@@ -541,9 +849,13 @@ class Fuses(FeatureBaseClassComm):
         return sch_family + [sch_cfg["fuses"]]
 
     def create_fuse_script(self) -> str:
-        """The function creates the blhost/nxpele script to burn fuses.
+        """Generate fuse programming script for blhost or nxpele tools.
 
-        :return: Content of blhost/nxpele script file.
+        This method processes all fuse registers in the context, handling both simple registers
+        and group registers with sub-registers. For group registers, it processes sub-registers
+        in the appropriate order based on the reverse_subregs_order flag.
+
+        :return: Content of the fuse programming script file as a string.
         """
         fuse_regs = []
         for reg in self.fuse_context:
@@ -555,10 +867,14 @@ class Fuses(FeatureBaseClassComm):
         return self.fuse_operator_type.get_fuse_script(family=self.family, fuses=fuse_regs)
 
     def get_config(self, data_path: str = "./", diff: bool = False) -> Config:
-        """The function creates the configuration.
+        """Create fuse configuration object.
+
+        Generates a configuration object containing family information, revision details,
+        and register settings that can be used for fuse programming or analysis.
 
         :param data_path: Path to store the data files of configuration.
         :param diff: If set, only changed registers will be placed in configuration.
+        :return: Configuration object with family, revision and register data.
         """
         ret = Config()
         ret["family"] = self.family.name
@@ -569,7 +885,12 @@ class Fuses(FeatureBaseClassComm):
 
 
 class FuseScript:
-    """Class for generating scripts for writing fuses."""
+    """SPSDK Fuse Script Generator.
+
+    This class generates programming scripts for writing fuses to NXP MCU devices.
+    It manages fuse configuration data, validates settings against device databases,
+    and produces executable scripts compatible with various programming tools like blhost.
+    """
 
     def __init__(
         self,
@@ -578,7 +899,17 @@ class FuseScript:
         index: Optional[int] = None,
         fuses_key: str = "fuses",
     ):
-        """Initialize FuseScript object."""
+        """Initialize FuseScript object.
+
+        Creates a new FuseScript instance for managing fuse operations on a specific device family
+        and feature configuration.
+
+        :param family: Device family and revision information.
+        :param feature: Feature name to configure fuses for.
+        :param index: Optional index to append to fuses key for multiple configurations.
+        :param fuses_key: Base key name for fuses configuration in database.
+        :raises SPSDKError: When the specified family has no fuses definition.
+        """
         self.feature = feature
         self.family = family
 
@@ -609,7 +940,13 @@ class FuseScript:
         self.name = self.fuses_db.get("_name", "Fuse Script")
 
     def generate_file_header(self) -> str:
-        """Generate file header."""
+        """Generate file header for fuses programming script.
+
+        Creates a formatted header containing operator name, fuse name, SPSDK version,
+        and target family information for use in generated programming scripts.
+
+        :return: Formatted header string with script metadata.
+        """
         return (
             f"# {self.operator.NAME} {self.name} fuses programming script\n"
             f"# Generated by SPSDK {spsdk_version}\n"
@@ -618,7 +955,17 @@ class FuseScript:
 
     @staticmethod
     def get_object_value(value: str, attributes_object: object) -> Any:
-        """Return object value if attributes object has attribute with the value name."""
+        """Get object value from attributes object by attribute name.
+
+        Retrieves the value of an attribute from the given object. The method handles
+        attribute names that start with double underscores by removing the prefix
+        before attempting to access the attribute.
+
+        :param value: Name of the attribute to retrieve, may start with "__" prefix.
+        :param attributes_object: Object from which to retrieve the attribute value.
+        :raises SPSDKValueError: When the object does not contain the specified attribute.
+        :return: Value of the requested attribute from the object.
+        """
         if value.startswith("__"):
             value = value[2:]
             if hasattr(attributes_object, value):
@@ -630,14 +977,14 @@ class FuseScript:
 
         This method generates a script for writing fuses based on the provided attributes object.
         The script includes the file header and the commands for setting the fuse values.
-
-
         Special attributes:
         - __str_value: Value with double underscore represents attribute of the object.
 
         :param attributes_object: An object containing the attributes used to set the fuse values.
-        :param info_only: If True, only the information about the fuses is generated.
-        :return: The generated script for writing fuses.
+        :param info_only: If True, only the information about the fuses is generated, defaults
+            to False.
+        :raises SPSDKError: OTP index is not defined for register.
+        :return: The generated script for writing fuses or info string if info_only is True.
         """
         script = self.generate_file_header() + "\n"
         info = ""
@@ -710,7 +1057,14 @@ class FuseScript:
     ) -> str:
         """Write script to file.
 
-        :return: The path to the generated script file.
+        Generates a script using the provided attributes object and writes it to a file
+        with the operator name appended to the filename.
+
+        :param filename: Base name for the output script file (without extension).
+        :param output_dir: Directory where the script file will be written.
+        :param attributes_object: Object containing attributes used for script generation.
+        :param overwrite: Whether to overwrite existing file if it exists.
+        :return: The absolute path to the generated script file.
         """
         script_content = self.generate_script(attributes_object)
         output = get_abs_path(f"{filename}_{self.operator.NAME}.bcf", output_dir)

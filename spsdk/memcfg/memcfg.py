@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module provides support for Memory configuration (known as a flash configuration option words)."""
+"""SPSDK Memory configuration management utilities.
+
+This module provides functionality for handling memory configuration options,
+including flash configuration option words and memory interface management
+across NXP MCU portfolio.
+"""
 
 
 import logging
@@ -27,19 +32,20 @@ logger = logging.getLogger(__name__)
 
 
 class SPSDKUnsupportedInterface(SPSDKError):
-    """SPSDK Unsupported memory interface."""
+    """SPSDK exception for unsupported memory interface operations.
+
+    This exception is raised when attempting to use a memory interface that is not
+    supported by the current SPSDK configuration or hardware target.
+    """
 
 
 @dataclass
 class MemoryInterface:
-    """Memory interface dataclass.
+    """Memory interface representation for SPSDK memory configuration.
 
-    This class represents a memory interface with its associated option words.
-
-    Attributes:
-        name (str): The name of the memory interface.
-        option_words (list): A list of option words for the interface. Defaults to an empty list.
-        tested (bool): Indicates whether the interface has been tested. Defaults to False.
+    This class represents a memory interface with its associated option words and testing status.
+    It provides functionality to manage and format memory interface configuration data used
+    in SPSDK memory configuration operations.
     """
 
     name: str
@@ -49,12 +55,10 @@ class MemoryInterface:
     def get_option_words_string(self) -> str:
         """Get option words in string format.
 
-        This method converts the option words to a formatted string representation.
+        The method converts the option words to a formatted string representation
+        with each option word displayed in hexadecimal format.
 
-        :return: A string containing the option words in hexadecimal format.
-
-        If option_words = [0x12345678, 0x9ABCDEF0], the output will be:
-        "Opt0: 0x12345678, Opt1: 0x9ABCDEF0"
+        :return: String containing option words in format "Opt0: 0xXXXXXXXX, Opt1: 0xXXXXXXXX".
         """
         option_words_str = f"Opt0: 0x{self.option_words[0]:08X}"
         for ow_i, ow in enumerate(self.option_words[1:]):
@@ -64,7 +68,11 @@ class MemoryInterface:
 
 @dataclass
 class Memory:
-    """Memory dataclass."""
+    """Memory configuration representation for SPSDK operations.
+
+    This class represents a memory device with its properties and supported interfaces,
+    providing methods to query and access available communication interfaces.
+    """
 
     name: str
     type: str  # Memory type [nor, nand, sd]
@@ -74,9 +82,9 @@ class Memory:
     def get_interface(self, interface: str) -> MemoryInterface:
         """Get interface by its name.
 
-        :param interface: Interface name
+        :param interface: Interface name to search for.
         :raises SPSDKValueError: Interface is not presented in memory.
-        :return: Memory interface
+        :return: Memory interface object.
         """
         for x in self.interfaces:
             if x.name == interface:
@@ -86,7 +94,8 @@ class Memory:
     def has_interface(self, interface: str) -> bool:
         """Check if memory has mentioned interface.
 
-        :param interface: Interface name.
+        :param interface: Interface name to check for existence.
+        :return: True if interface exists, False otherwise.
         """
         for x in self.interfaces:
             if x.name == interface:
@@ -95,7 +104,16 @@ class Memory:
 
 
 class MemoryConfig(FeatureBaseClass):
-    """General memory configuration class."""
+    """SPSDK Memory Configuration Manager.
+
+    This class manages memory configuration for NXP MCU peripherals, providing
+    functionality to configure memory interfaces, validate settings, and generate
+    configuration data for various memory types across the supported MCU families.
+
+    :cvar FEATURE: Database feature identifier for memory configuration.
+    :cvar PERIPHERALS: List of supported peripheral names across all families.
+    :cvar SUPPORTS_FCB_CREATION: List of region numbers that support FCB creation.
+    """
 
     FEATURE = DatabaseManager.MEMCFG
     # Supported peripherals and their region numbers
@@ -112,9 +130,15 @@ class MemoryConfig(FeatureBaseClass):
     ) -> None:
         """Initialize memory configuration class.
 
-        :param family: Chip family
-        :param peripheral: Peripheral name
-        :param interface: Memory interface
+        Initialize the memory configuration for a specific chip family and peripheral,
+        setting up registers and validating the memory interface.
+
+        :param family: Chip family and revision information.
+        :param peripheral: Name of the peripheral to configure.
+        :param interface: Memory interface to use. If None, uses the first supported interface.
+        :raises SPSDKValueError: When the peripheral is not supported by the chip family.
+        :raises SPSDKUnsupportedInterface: When the interface is not supported for the given
+            family and peripheral combination.
         """
         self.family = family
         self.db = get_db(family)
@@ -134,11 +158,20 @@ class MemoryConfig(FeatureBaseClass):
             )
 
     def __repr__(self) -> str:
-        """Representation string."""
+        """Get string representation of the memory configuration object.
+
+        :return: String containing family and peripheral information.
+        """
         return f"Memory configuration for {self.family}, {self.peripheral}"
 
     def __str__(self) -> str:
-        """Representation string."""
+        """Get string representation of the memory configuration.
+
+        Provides a detailed string representation including the interface type and option words
+        used in the memory configuration.
+
+        :return: String representation with interface and option words information.
+        """
         return (
             self.__repr__()
             + f"\n Used interface is {self.interface} and option words are {self.option_words}"
@@ -146,7 +179,13 @@ class MemoryConfig(FeatureBaseClass):
 
     @property
     def option_words(self) -> list[int]:
-        """Get option words."""
+        """Get option words from memory configuration registers.
+
+        Retrieves the values of option words by iterating through the available
+        registers up to the specified count limit.
+
+        :return: List of option word values as integers.
+        """
         ret: list[int] = []
         count_to_export = self.option_words_count
         for i, reg in enumerate(self.regs.get_registers()):
@@ -157,7 +196,18 @@ class MemoryConfig(FeatureBaseClass):
 
     @property
     def option_words_count(self) -> int:
-        """Get current count of option words."""
+        """Get current count of option words.
+
+        Determines the number of option words based on the peripheral's configuration rule.
+        The count is calculated using different strategies depending on the rule type:
+        - "All": Returns total number of registers
+        - "OptionSize": Returns 1 plus the OptionSize bitfield value
+        - "AcTimingMode": Returns all registers if UserDefined, otherwise 1
+
+        :raises SPSDKValueError: When an unsupported rule is encountered for determining
+            option word count.
+        :return: Number of option words for the current peripheral configuration.
+        """
         rule = self.db.get_str(
             DatabaseManager.MEMCFG, ["peripherals", self.peripheral, "ow_counts_rule"]
         )
@@ -179,6 +229,9 @@ class MemoryConfig(FeatureBaseClass):
     def _get_validation_schemas(self) -> list[dict[str, Any]]:
         """Get validation schema for the object.
 
+        The method retrieves validation schemas based on the object's family, peripheral,
+        and interface properties by delegating to the static get_validation_schemas method.
+
         :return: List of validation schema dictionaries.
         """
         return self.get_validation_schemas(self.family, self.peripheral, self.interface)
@@ -192,10 +245,14 @@ class MemoryConfig(FeatureBaseClass):
     ) -> list[dict[str, Any]]:
         """Create the validation schema for one peripheral.
 
-        :param family: The MCU family name.
-        :param peripheral: Peripheral name
-        :param interface: Memory interface
-        :return: List of validation schemas.
+        The method builds validation schemas by combining family, base configuration, and settings
+        schemas. It updates the schemas with supported peripherals and interfaces for the given
+        family and configures the settings schema using StrictRegisters.
+
+        :param family: The MCU family revision identifier.
+        :param peripheral: Name of the peripheral to create validation schema for.
+        :param interface: Memory interface type, optional parameter.
+        :return: List containing family, base, and settings validation schemas.
         """
         sch_cfg = get_schema_file(DatabaseManager.MEMCFG)
         sch_family = get_schema_file("general")["family"]
@@ -231,9 +288,12 @@ class MemoryConfig(FeatureBaseClass):
     ) -> str:
         """Get feature configuration template.
 
-        :param family: The MCU family name.
-        :param peripheral: Peripheral name
-        :param interface: Memory interface
+        Generates a configuration template for the specified MCU family and peripheral,
+        which can be used as a starting point for memory configuration.
+
+        :param family: The MCU family name and revision information.
+        :param peripheral: Name of the peripheral to generate template for.
+        :param interface: Memory interface type, if applicable.
         :return: Template file string representation.
         """
         schemas = cls.get_validation_schemas(family, peripheral=peripheral, interface=interface)
@@ -249,11 +309,14 @@ class MemoryConfig(FeatureBaseClass):
     ) -> Self:
         """Parse the option words to configuration.
 
-        :param data: Option words in bytes
-        :param family: Chip family
-        :param peripheral: Peripheral name
-        :param interface: Memory interface
-        :return: Dictionary with parsed configuration.
+        Creates a new instance of the class and parses the provided option words data
+        into the internal registers structure.
+
+        :param data: Option words in bytes to be parsed.
+        :param family: Chip family revision information.
+        :param peripheral: Name of the peripheral device.
+        :param interface: Memory interface specification, defaults to None.
+        :return: New instance with parsed configuration data.
         """
         ret = cls(family=family, peripheral=peripheral, interface=interface)
         ret.regs.parse(data)
@@ -263,8 +326,11 @@ class MemoryConfig(FeatureBaseClass):
     def option_words_to_bytes(option_words: list[int]) -> bytes:
         """Convert option words to bytes.
 
-        :param option_words: Option words list
-        :return: Bytes with option words
+        The method converts a list of integer option words into a byte sequence
+        using little-endian byte order, with each option word represented as 4 bytes.
+
+        :param option_words: List of integer option words to convert.
+        :return: Byte sequence containing the converted option words.
         """
         ow_bytes = bytes()
         for ow in option_words:
@@ -272,14 +338,21 @@ class MemoryConfig(FeatureBaseClass):
         return ow_bytes
 
     def export(self) -> bytes:
-        """Export option words to bytes."""
+        """Export option words to bytes.
+
+        :return: Binary representation of the option words.
+        """
         return self.regs.export()
 
     def get_config(self, data_path: str = "./") -> Config:
-        """Create configuration of the AHAB Image.
+        """Create memory configuration object.
+
+        The method generates a configuration dictionary containing family information,
+        peripheral settings, interface details, and register configurations up to the
+        maximum option words count.
 
         :param data_path: Path to store the data files of configuration.
-        :return: Configuration dictionary.c
+        :return: Configuration object with memory settings.
         """
         ret = Config()
         ret["family"] = self.family.name
@@ -299,12 +372,22 @@ class MemoryConfig(FeatureBaseClass):
 
     @property
     def supported_interfaces(self) -> list[str]:
-        """List of supported interfaces."""
+        """Get list of supported interfaces for the current family and peripheral.
+
+        :return: List of interface names supported by the current memory configuration.
+        """
         return self.get_supported_interfaces(self.family, self.peripheral)
 
     @staticmethod
     def get_supported_peripherals(family: FamilyRevision) -> list[str]:
-        """Get list of supported peripherals by the family."""
+        """Get list of supported peripherals by the family.
+
+        The method retrieves all peripherals that have at least one instance configured
+        for the specified family from the memory configuration database.
+
+        :param family: Family revision to get supported peripherals for.
+        :return: List of peripheral names that are supported by the family.
+        """
         ret = []
         for peripheral, settings in (
             get_db(family).get_dict(DatabaseManager.MEMCFG, "peripherals").items()
@@ -315,7 +398,15 @@ class MemoryConfig(FeatureBaseClass):
 
     @staticmethod
     def get_supported_interfaces(family: FamilyRevision, peripheral: str) -> list[str]:
-        """Get list of supported interfaces by the peripheral for the family."""
+        """Get list of supported interfaces by the peripheral for the family.
+
+        Retrieves the available communication interfaces that can be used with a specific
+        peripheral on the given MCU family.
+
+        :param family: MCU family and revision specification.
+        :param peripheral: Name of the peripheral to query interfaces for.
+        :return: List of supported interface names for the specified peripheral.
+        """
         peripherals = get_db(family).get_dict(DatabaseManager.MEMCFG, "peripherals")
         peripheral_data: dict[str, list[str]] = peripherals.get(peripheral, {})
 
@@ -323,7 +414,15 @@ class MemoryConfig(FeatureBaseClass):
 
     @staticmethod
     def get_peripheral_instances(family: FamilyRevision, peripheral: str) -> list[int]:
-        """Get peripheral instances."""
+        """Get peripheral instances for a specific family and peripheral type.
+
+        Retrieves the list of available instances for a given peripheral from the memory
+        configuration database.
+
+        :param family: Target MCU family and revision information.
+        :param peripheral: Name of the peripheral to get instances for.
+        :return: List of peripheral instance numbers available for the specified family and peripheral.
+        """
         return get_db(family).get_list(
             DatabaseManager.MEMCFG,
             ["peripherals", peripheral, "instances"],
@@ -332,9 +431,13 @@ class MemoryConfig(FeatureBaseClass):
 
     @staticmethod
     def get_validation_schemas_basic() -> list[dict[str, Any]]:
-        """Create the validation schema for MemCfg class bases.
+        """Get validation schemas for MemCfg class basic configuration.
 
-        :return: List of validation schemas.
+        The method retrieves and combines validation schemas for family configuration
+        and base memory configuration settings. It updates the family schema with
+        currently supported families from MemoryConfig.
+
+        :return: List containing family and base configuration validation schemas.
         """
         sch_cfg = get_schema_file(DatabaseManager.MEMCFG)
         sch_family = get_schema_file("general")["family"]
@@ -345,10 +448,13 @@ class MemoryConfig(FeatureBaseClass):
 
     @staticmethod
     def option_words_to_string(option_words: list[int]) -> str:
-        """Get option words in string format.
+        """Convert option words list to formatted hexadecimal string representation.
 
-        :param option_words: List of option words.
-        :return: Option words in string
+        The method takes a list of integer option words and formats them as a comma-separated
+        string of hexadecimal values with 0x prefix and 8-digit zero-padding.
+
+        :param option_words: List of integer option words to be converted to string format.
+        :return: Comma-separated string of hexadecimal option words (e.g., "0x12345678, 0xABCDEF00").
         """
         option_words_str = f"0x{option_words[0]:08X}"
         for ow in option_words[1:]:
@@ -357,10 +463,14 @@ class MemoryConfig(FeatureBaseClass):
 
     @classmethod
     def get_validation_schemas_from_cfg(cls, config: Config) -> list[dict[str, Any]]:
-        """Get validation schema based on configuration.
+        """Get validation schemas based on configuration.
 
-        :param config: Valid configuration
-        :return: Validation schemas
+        This method validates the provided configuration against basic schemas and creates
+        a memory configuration instance to retrieve the appropriate validation schemas.
+
+        :param config: Valid configuration object containing family and peripheral settings
+        :return: List of validation schema dictionaries for the memory configuration
+        :raises SPSDKError: If configuration validation fails
         """
         config.check(cls.get_validation_schemas_basic())
         memcfg = cls(
@@ -372,8 +482,12 @@ class MemoryConfig(FeatureBaseClass):
     def load_from_config(cls, config: Config) -> Self:
         """Load memory configuration object from configuration.
 
-        :param config: Configuration dictionary.
-        :return: Initialized memory configuration object.
+        The method creates a new memory configuration instance by extracting family,
+        peripheral, and interface information from the provided configuration, then
+        loads register settings into the configuration object.
+
+        :param config: Configuration dictionary containing memory setup parameters.
+        :return: Initialized memory configuration object with loaded settings.
         """
         family = FamilyRevision.load_from_config(config)
         peripheral = config.get_str("peripheral")
@@ -388,14 +502,16 @@ class MemoryConfig(FeatureBaseClass):
         fcb_output_name: Optional[str] = None,
         secure_addresses: bool = False,
     ) -> str:
-        """Create BLHOST script that configure memory.
+        """Create BLHOST script that configures memory.
 
-        Optionally the script can force create of FCB on chip and read back it
+        Optionally the script can force creation of FCB on chip and read it back.
 
-        :param instance: Optional peripheral instance
-        :param fcb_output_name: The name of generated FCB block file, defaults to False
-        :param secure_addresses: When defined the script will use secure addresses instead of normal.
-        :return: BLHOST batch file that configure the external memory
+        :param instance: Optional peripheral instance number for runtime switching
+        :param fcb_output_name: Name of the generated FCB block file for readback
+        :param secure_addresses: Use secure addresses instead of normal addresses
+        :raises SPSDKValueError: Invalid instance or unsupported runtime instance switch
+        :raises SPSDKValueError: Missing memory block description for FCB generation
+        :return: BLHOST batch script content that configures the external memory
         """
         comm_address = self.db.get_int(DatabaseManager.COMM_BUFFER, "address")
         mem_region = self.db.get_int(
@@ -482,7 +598,12 @@ class MemoryConfig(FeatureBaseClass):
 
     @staticmethod
     def get_peripheral_cnt(family: FamilyRevision, peripheral: str) -> int:
-        """Get count of peripheral instances."""
+        """Get count of peripheral instances for specified family and peripheral type.
+
+        :param family: Target MCU family and revision information.
+        :param peripheral: Name of the peripheral type to count instances for.
+        :return: Number of available instances for the specified peripheral.
+        """
         return len(
             get_db(family).get_list(
                 DatabaseManager.MEMCFG,
@@ -495,8 +616,11 @@ class MemoryConfig(FeatureBaseClass):
     def _find_family_for_peripheral(peripheral: str) -> Optional[FamilyRevision]:
         """Find a family that supports the given peripheral.
 
-        :param peripheral: The peripheral to find a family for
-        :return: A family that supports the peripheral, or None if not found
+        This method searches through all supported families to find one that includes
+        the specified peripheral in its supported peripherals list.
+
+        :param peripheral: The peripheral name to search for.
+        :return: A family that supports the peripheral, or None if not found.
         """
         for supported_family in MemoryConfig.get_supported_families():
             if peripheral in MemoryConfig.get_supported_peripherals(supported_family):
@@ -510,8 +634,12 @@ class MemoryConfig(FeatureBaseClass):
     def _get_memories_for_peripheral_without_family(peripheral: str) -> list[Memory]:
         """Get memories for a peripheral when no family is available.
 
-        :param peripheral: The peripheral to get memories for
-        :return: List of memories for the peripheral
+        This method serves as a fallback when family information is not provided. It attempts to
+        determine the appropriate memory configuration from the default database based on the
+        peripheral type, or returns all known memories if no specific configuration is found.
+
+        :param peripheral: The peripheral name to get memory configuration for.
+        :return: List of Memory objects compatible with the specified peripheral.
         """
         logger.warning(
             f"No family found that supports peripheral {peripheral}, returning all memories"
@@ -528,9 +656,12 @@ class MemoryConfig(FeatureBaseClass):
     def _get_peripherals_for_family(family: FamilyRevision, peripheral: Optional[str]) -> list[str]:
         """Get list of peripherals for a family.
 
-        :param family: The family to get peripherals for
-        :param peripheral: Optional specific peripheral to filter for
-        :return: List of peripherals
+        The method returns either a filtered list containing only the specified peripheral
+        or all available peripherals for the given family that have a non-zero count.
+
+        :param family: The family revision to get peripherals for.
+        :param peripheral: Optional specific peripheral name to filter for.
+        :return: List of peripheral names available for the family.
         """
         if peripheral:
             return [peripheral]
@@ -540,9 +671,14 @@ class MemoryConfig(FeatureBaseClass):
     def _get_memory_types_and_interfaces(peripherals: list[str], p_db: dict) -> dict[str, set]:
         """Get memory types and interfaces for the given peripherals.
 
-        :param peripherals: List of peripherals
-        :param p_db: Peripherals database
-        :return: Dictionary mapping memory types to sets of interfaces
+        This method processes a list of peripherals and extracts their memory types and
+        corresponding interfaces from the peripherals database. It aggregates interfaces
+        for each memory type, combining them when multiple peripherals share the same
+        memory type.
+
+        :param peripherals: List of peripheral names to process.
+        :param p_db: Peripherals database containing memory type and interface information.
+        :return: Dictionary mapping memory types to sets of their available interfaces.
         """
         wanted_mem_types: dict[str, set] = {}
         for p in peripherals:
@@ -562,13 +698,17 @@ class MemoryConfig(FeatureBaseClass):
     def _validate_memory_interfaces(
         memory: Memory, validation_family: FamilyRevision, peripheral: str, memory_type: str
     ) -> list[MemoryInterface]:
-        """Validate memory interfaces against a family.
+        """Validate memory interfaces against a family revision.
 
-        :param memory: The memory to validate
-        :param validation_family: The family to validate against
-        :param peripheral: The peripheral to use for validation
-        :param memory_type: The memory type
-        :return: List of validated interfaces
+        The method validates each interface in the memory by attempting to parse its option words
+        using the specified family, peripheral, and interface configuration. Only interfaces that
+        pass validation are included in the returned list.
+
+        :param memory: The memory object containing interfaces to validate.
+        :param validation_family: The family revision to validate against.
+        :param peripheral: The peripheral name to use for validation.
+        :param memory_type: The memory type identifier.
+        :return: List of validated memory interfaces that passed validation.
         """
         validated_interfaces = []
         for interface in memory.interfaces:
@@ -598,11 +738,14 @@ class MemoryConfig(FeatureBaseClass):
     ) -> list[Memory]:
         """Get all known supported memory configurations.
 
-        :param family: The optional chip family
-        :param peripheral: Restrict results just for this one peripheral if defined
-        :param validate_option_words: If True, validate that option words can be parsed
-        :raises SPSDKValueError: In case the family does not support external memories
-        :returns: List of memories
+        This method retrieves memory configurations based on the specified family and peripheral.
+        It can optionally validate that option words for the memories can be properly parsed.
+
+        :param family: The optional chip family to filter memories for.
+        :param peripheral: Restrict results just for this one peripheral if defined.
+        :param validate_option_words: If True, validate that option words can be parsed.
+        :raises SPSDKValueError: In case the family does not support external memories.
+        :return: List of supported memory configurations.
         """
         # Early return for simple case
         if not family and not peripheral:
@@ -676,9 +819,12 @@ class MemoryConfig(FeatureBaseClass):
     ) -> list[Memory]:
         """Get all known supported memory configurations.
 
-        :param mem_type: Restrict results just for this one memory type if defined
-        :param interfaces: Restrict results just for mentioned memory interfaces if defined
-        :returns: List of memories
+        Loads memory configuration data from the database and filters based on specified
+        memory type and interfaces.
+
+        :param mem_type: Restrict results just for this one memory type if defined.
+        :param interfaces: Restrict results just for mentioned memory interfaces if defined.
+        :return: List of Memory objects containing supported memory configurations.
         """
         chips_db: dict[str, dict[str, Any]] = DatabaseManager().db.load_db_cfg_file(
             get_common_data_file_path(os.path.join("memcfg", "memcfg_data.yaml"))
@@ -719,8 +865,12 @@ class MemoryConfig(FeatureBaseClass):
     def get_known_chip_memory(chip_name: str) -> Memory:
         """Get Memory for one chip from database.
 
-        :param chip_name: Chip name to look for
-        :returns: The Memory class for known chip.
+        Retrieves the Memory object for a specific chip by searching through the known
+        memory configurations in the database.
+
+        :param chip_name: Name of the chip to search for in the memory database.
+        :raises SPSDKValueError: If the specified chip name is not found in database.
+        :return: Memory object containing configuration for the specified chip.
         """
         for memory in MemoryConfig.get_known_memories():
             if memory.name == chip_name:

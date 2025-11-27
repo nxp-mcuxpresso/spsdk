@@ -5,7 +5,15 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""SPSDK NXPELE application."""
+"""SPSDK NXPELE application for EdgeLock Enclave operations.
+
+This module provides a command-line interface for interacting with NXP EdgeLock
+Enclave (ELE) security subsystem. It offers comprehensive functionality for device
+management, security operations, key management, and firmware authentication.
+The application supports operations like device ping, firmware status checking,
+key derivation, container authentication, fuse operations, keyblob generation,
+and secure session management.
+"""
 
 import logging
 import shlex
@@ -375,7 +383,7 @@ def ele_get_info(ele_handler: EleMessageHandler) -> None:
     type=INT(),
     help="Address of EdgeLock Enclave firmware container in target memory.",
 )
-@optgroup.option(  # type: ignore[arg-type]
+@optgroup.option(
     "-b",
     "--binary",
     type=click.Path(exists=True, file_okay=True, dir_okay=False, resolve_path=True),

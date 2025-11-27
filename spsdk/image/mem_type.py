@@ -5,12 +5,22 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""NXP image memory type enum."""
+"""SPSDK memory type enumeration for image processing.
+
+This module defines memory type constants used across SPSDK image processing
+functionality to specify different memory regions and storage types.
+"""
+
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 class MemoryType(SpsdkEnum):
-    """Bootable Image Memory Types."""
+    """Enumeration of supported memory types for bootable images.
+
+    This class defines the various memory types that can be used as boot sources
+    for NXP MCU devices, including different flash memories, RAM types, storage
+    devices, and recovery modes supported by SPSDK.
+    """
 
     FLEXSPI_RAM = (0, "flexspi_ram", "FlexSPI RAM")
     SEMC_SDRAM = (1, "semc_sdram", "SEMC SDRAM")

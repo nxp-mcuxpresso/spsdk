@@ -4,7 +4,12 @@
 # Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""The shadow registers control DAT support file."""
+"""SPSDK shadow registers management for Debug Authentication Tool (DAT).
+
+This module provides functionality for controlling and managing shadow registers
+that enable debug access through the Debug Authentication Tool. It includes
+register manipulation, debug enablement, and verification capabilities.
+"""
 
 import logging
 from typing import Any, Optional
@@ -16,7 +21,7 @@ from spsdk.dat.debug_mailbox import DebugMailbox
 from spsdk.dat.dm_commands import StartDebugSession
 from spsdk.debuggers.debug_probe import DebugProbe, SPSDKDebugProbeError
 from spsdk.debuggers.utils import test_ahb_access
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKVerificationError
 from spsdk.fuses.fuse_registers import FuseRegister, FuseRegisters
 from spsdk.utils.abstract_features import FeatureBaseClassComm
 from spsdk.utils.config import Config
@@ -28,12 +33,16 @@ from spsdk.utils.registers import SPSDKRegsErrorRegisterNotFound
 logger = logging.getLogger(__name__)
 
 
-class SPSDKVerificationError(SPSDKError):
-    """The error during write verification - exception for use with SPSDK."""
-
-
 class ShadowRegisters(FeatureBaseClassComm):
-    """SPSDK support to control the shadow registers."""
+    """SPSDK Shadow Registers Manager.
+
+    This class provides control and management of shadow registers for NXP MCU devices.
+    Shadow registers are temporary storage locations that mirror fuse values and can be
+    modified without permanently altering the actual fuses, enabling safe testing and
+    configuration validation.
+
+    :cvar FEATURE: Database feature identifier for shadow registers operations.
+    """
 
     FEATURE = DatabaseManager.SHADOW_REGS
 
@@ -42,7 +51,14 @@ class ShadowRegisters(FeatureBaseClassComm):
         family: FamilyRevision,
         debug_probe: Optional[DebugProbe] = None,
     ) -> None:
-        """Initialization of Shadow register class."""
+        """Initialize Shadow register class.
+
+        Creates a new instance of the Shadow register class with the specified family
+        and optional debug probe for fuse and shadow register operations.
+
+        :param family: Target MCU family and revision information.
+        :param debug_probe: Optional debug probe interface for hardware communication.
+        """
         self.probe = debug_probe
         self.family = family
         self.db = get_db(family)
@@ -66,11 +82,22 @@ class ShadowRegisters(FeatureBaseClassComm):
         self._loaded_registers: list[FuseRegister] = []
 
     def __repr__(self) -> str:
-        """Shadow register class representation."""
+        """Get string representation of shadow registers.
+
+        Returns a formatted string showing the family name for which these shadow registers are configured.
+
+        :return: String representation in format "Shadow Registers for {family}".
+        """
         return f"Shadow Registers for {self.family}"
 
     def __str__(self) -> str:
-        """Shadow register class string description."""
+        """Get string representation of shadow register class.
+
+        Returns a detailed string representation that includes both the object
+        representation and the registers information.
+
+        :return: String representation of the shadow register class.
+        """
         ret = self.__repr__()
         ret += "\n" + str(self.registers)
         return ret
@@ -79,9 +106,11 @@ class ShadowRegisters(FeatureBaseClassComm):
     def _get_init_registers(family: FamilyRevision) -> FuseRegisters:
         """Initialize the shadow registers from whole fuse list.
 
-        :param family: Family of device to be loaded
-        :param revision: Chip revision, defaults to "latest"
-        :return: Register class with loaded just fuses that supports shadow registers
+        Creates a FuseRegisters object containing only registers that support shadow registers,
+        with computed fields and antipole registers properly configured and hidden.
+
+        :param family: Family of device to be loaded.
+        :return: Register class with loaded just fuses that supports shadow registers.
         """
         db = get_db(family)
         computed_fields: dict[str, dict[str, str]] = db.get_dict(
@@ -116,14 +145,17 @@ class ShadowRegisters(FeatureBaseClassComm):
         return regs
 
     def _write_shadow_reg(self, addr: int, data: int, verify_mask: int = 0) -> None:
-        """The function write a shadow register.
+        """Write shadow register data to MCU.
 
-        The function writes shadow register into MCU and verify the write if requested.
+        Writes shadow register data into MCU and optionally verifies the write operation
+        by reading back the value and comparing it against the written data using the
+        provided verify mask.
 
-        param addr: Shadow register address.
-        param data: Shadow register data to write.
-        param verify_mask: Verify bit mask for read back and compare, if 0 verify is disable
-        raises SPSDKVerificationError
+        :param addr: Shadow register address to write to.
+        :param data: Shadow register data value to write.
+        :param verify_mask: Bit mask for read-back verification, if 0 verification is disabled.
+        :raises SPSDKDebugProbeError: When debug probe is not defined.
+        :raises SPSDKVerificationError: When verification fails after write operation.
         """
         if not self.probe:
             raise SPSDKDebugProbeError(
@@ -144,14 +176,21 @@ class ShadowRegisters(FeatureBaseClassComm):
                 )
 
     def reload_registers(self) -> None:
-        """Reload all the values in managed registers."""
+        """Reload all the values in managed registers.
+
+        This method iterates through all registers in the managed collection and
+        refreshes their values by calling get_register for each one.
+        """
         for reg in self.registers._registers:
             self.get_register(reg.name)
 
     def set_all_registers(self, verify: bool = True) -> None:
         """Update all shadow registers in target using their local values.
 
-        :param verify: Verity write operation.
+        This method iterates through all registers and writes their current local values
+        to the target device using the set_register method.
+
+        :param verify: Verify write operation after setting each register.
         """
         for reg in self.registers._registers:
             self.set_register(reg.name, reg.get_value(raw=True), verify)
@@ -159,23 +198,42 @@ class ShadowRegisters(FeatureBaseClassComm):
     def set_loaded_registers(self, verify: bool = True) -> None:
         """Update shadow registers in target using their local values.
 
-        :param verify: Verity write operation.
+        This method iterates through all loaded registers and writes their current local values
+        to the target device using the set_register method.
+
+        :param verify: Verify write operation after setting each register.
+        :raises SPSDKError: If register write operation fails.
         """
         for reg in self._loaded_registers:
             self.set_register(reg.name, reg.get_value(raw=True), verify)
 
     def set_register(self, reg_name: str, data: Any, verify: bool = True, raw: bool = True) -> None:
-        """The function sets the value of the specified register.
+        """Set the value of the specified shadow register.
 
-        :param reg_name: The register name.
+        Writes data to a shadow register on the target device through the debug probe.
+        Supports both individual registers and group registers with sub-registers.
+
+        :param reg_name: The register name to write to.
         :param data: The new data to be stored to shadow register.
-        :param verify: Verity write operation.
-        :param raw: Do not use any modification hooks.
+        :param verify: Verify write operation after completion.
+        :param raw: Do not use any modification hooks during value setting.
         :raises SPSDKDebugProbeError: The debug probe is not specified.
-        :raises SPSDKError: General error with write of Shadow register.
+        :raises SPSDKError: General error with write of shadow register or register not found.
+        :raises SPSDKVerificationError: Verification of written data failed.
         """
 
         def write_reg(reg: FuseRegister) -> None:
+            """Write fuse register to device shadow register.
+
+            Writes the register value to the corresponding shadow register address on the device
+            through the debug probe. Performs verification if enabled and handles register width
+            validation.
+
+            :param reg: Fuse register to write to device shadow register.
+            :raises SPSDKDebugProbeError: Debug probe is not defined.
+            :raises SPSDKError: Register width exceeds 32 bits or shadow register address not defined.
+            :raises SPSDKVerificationError: Verification of written data failed.
+            """
             if not self.probe:
                 raise SPSDKDebugProbeError(
                     "Shadow registers: Cannot use the communication function without defined debug probe."
@@ -224,14 +282,27 @@ class ShadowRegisters(FeatureBaseClassComm):
             raise SPSDKError(f"The set shadow register failed({str(exc)}).") from exc
 
     def get_register(self, reg_name: str) -> bytes:
-        """The function returns value of the requested register.
+        """Get shadow register value from device.
 
-        param reg: The register name.
-        return: The value of requested register in bytes
-        raises SPSDKDebugProbeError: The debug probe is not specified.
+        Reads the shadow register value from the connected device using the debug probe.
+        For group registers, reads all sub-registers and combines their values.
+
+        :param reg_name: The register name to read.
+        :raises SPSDKError: Register not found, invalid configuration, or read operation failed.
+        :raises SPSDKDebugProbeError: Debug probe is not specified or communication failed.
+        :return: The value of requested register in bytes.
         """
 
         def read_reg(reg: FuseRegister) -> None:
+            """Read shadow register value from device and update the register.
+
+            This method reads the current value from the device's shadow register
+            and updates the provided FuseRegister object with the read value.
+
+            :param reg: Fuse register to read shadow value for.
+            :raises SPSDKError: Shadow register address not set or invalid register width.
+            :raises SPSDKDebugProbeError: Debug probe not available for communication.
+            """
             if not reg.shadow_register_addr:
                 raise SPSDKError(f"Shadow register value is not set for register {reg.name}")
             if not self.probe:
@@ -258,14 +329,27 @@ class ShadowRegisters(FeatureBaseClassComm):
             raise SPSDKError(f"The get shadow register failed({str(exc)}).") from exc
 
     def create_fuse_blhost_script(self, reg_list: list[str]) -> str:
-        """The function creates the BLHOST script to burn fuses.
+        """Create BLHOST script to burn fuses.
 
-        :param reg_list: The list of register to be burned.
-        :raises SPSDKError: Exception in case of not existing register.
-        :return: Content of BLHOST script file.
+        The method generates a script file that can be used with BLHOST tool to program
+        fuses on the target device. It processes the register list, handles antipole
+        registers, and creates appropriate efuse-program-once commands for each register.
+
+        :param reg_list: List of register names to be burned to fuses.
+        :raises SPSDKError: Register not found for the target device family.
+        :return: Content of BLHOST script file as string.
         """
 
         def add_reg(reg: FuseRegister) -> str:
+            """Generate fuse programming command for a register.
+
+            Creates an efuse-program-once command string that can be used to burn
+            the specified fuse register to OTP memory.
+
+            :param reg: Fuse register to generate programming command for.
+            :raises SPSDKError: If the OTP index is not a valid integer.
+            :return: Command string for programming the fuse register.
+            """
             otp_index = reg.otp_index
             if not isinstance(otp_index, int):
                 raise SPSDKError(f"{otp_index} of {reg} is not a number")
@@ -306,11 +390,15 @@ class ShadowRegisters(FeatureBaseClassComm):
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Create the validation schema.
+        """Create the validation schema for shadow registers.
 
-        :param family: Family description.
-        :raises SPSDKError: Family is not supported.
-        :return: List of validation schemas.
+        The method builds validation schemas by combining family-specific schema with
+        shadow registers schema, updating the registers properties based on the
+        provided family configuration.
+
+        :param family: Family description containing chip family and revision information.
+        :raises SPSDKError: Family is not supported or schema generation fails.
+        :return: List of validation schemas containing family and shadow registers schemas.
         """
         sch_cfg = get_schema_file(DatabaseManager.SHADOW_REGS)
         sch_family: dict[str, Any] = get_schema_file("general")["family"]
@@ -328,10 +416,15 @@ class ShadowRegisters(FeatureBaseClassComm):
 
     @classmethod
     def load_from_config(cls, config: Config, debug_probe: Optional[DebugProbe] = None) -> Self:
-        """The function loads the configuration.
+        """Load shadow registers configuration from config object.
 
-        :param config: The configuration of shadow registers.
-        :param debug_probe: Optional debug probe to create whole working class.
+        Creates a new shadow registers instance with the specified family and debug probe,
+        then loads register values from the configuration. Automatically computes missing
+        bitfields for registers with computed fields and handles antipole register pairs.
+
+        :param config: Configuration object containing shadow registers settings.
+        :param debug_probe: Optional debug probe interface for hardware communication.
+        :return: Configured shadow registers instance with loaded register values.
         """
         family = FamilyRevision.load_from_config(config)
         sr = cls(family=family, debug_probe=debug_probe)
@@ -373,10 +466,14 @@ class ShadowRegisters(FeatureBaseClassComm):
         return sr
 
     def get_config(self, data_path: str = "./", diff: bool = False) -> Config:
-        """The function creates the configuration.
+        """Create configuration for shadow registers.
+
+        The method generates a configuration object containing family information and register data.
+        Optionally filters to include only modified registers when diff mode is enabled.
 
         :param data_path: Path to store the data files of configuration.
         :param diff: If set, only changed registers will be placed in configuration.
+        :return: Configuration object with family and register information.
         """
         ret = Config({"family": self.family.name, "revision": self.family.revision})
         ret["registers"] = self.registers.get_config(diff=diff)
@@ -386,18 +483,24 @@ class ShadowRegisters(FeatureBaseClassComm):
 
     @staticmethod
     def antipolize_register(src: FuseRegister, dst: FuseRegister) -> None:
-        """Antipolize given registers.
+        """Antipolize given registers by applying bitwise XOR with 0xFFFFFFFF.
 
-        :param src: Input register.
-        :param dst: The antipole destination register.
+        This method takes the value from the source register and applies bitwise NOT operation
+        (XOR with 0xFFFFFFFF) to create an antipole value, which is then set to the destination
+        register.
+
+        :param src: Input register to read the value from.
+        :param dst: The antipole destination register where the inverted value will be stored.
         """
         dst.set_value(src.get_value(True) ^ 0xFFFFFFFF, raw=True)
 
     def flush_func_handler(self) -> None:
-        """A function to determine and execute the flush-func handler.
+        """Execute the flush function handler for shadow registers.
 
-        :param self: Input Value.
-        :raises SPSDKError: Raises when the computing routine is not found.
+        Determines the flush function name from the database configuration and executes
+        the corresponding method if it exists on the current instance.
+
+        :raises SPSDKError: When the specified flush function method doesn't exist.
         """
         flush_func = self.db.get_str(DatabaseManager.SHADOW_REGS, "flush_func", "")
         if flush_func:
@@ -408,11 +511,14 @@ class ShadowRegisters(FeatureBaseClassComm):
                 raise SPSDKError(f"The '{flush_func}' function doesn't exists.")
 
     def compute_register(self, reg: FuseRegister, method: str) -> None:
-        """Recalculate register value.
+        """Recalculate register value using specified computation method.
+
+        The method dynamically calls the specified computation function to update the register's value.
+        The computation method must exist as an attribute of the current object.
 
         :param reg: Register to be recalculated.
-        :param method: Method name to be use to recompute the register value.
-        :raises SPSDKError: Raises when the computing routine is not found.
+        :param method: Method name to be used to recompute the register value.
+        :raises SPSDKError: When the specified computing routine is not found.
         """
         if hasattr(self, method):
             method_ref = getattr(self, method)
@@ -423,12 +529,15 @@ class ShadowRegisters(FeatureBaseClassComm):
     # CRC8 - ITU
     @staticmethod
     def crc_update(data: bytes, crc: int = 0, is_final: bool = True) -> int:
-        """The function compute the CRC8 ITU method from given bytes.
+        """Compute CRC8 ITU checksum from given bytes.
 
-        :param data: Input data to compute CRC.
-        :param crc: The seed for CRC.
-        :param is_final: The flag the the function should return final result.
-        :return: The CRC result.
+        The function implements CRC8 ITU algorithm with polynomial 0x07 and final XOR value 0x55.
+        Supports incremental CRC calculation for large data processing.
+
+        :param data: Input data bytes to compute CRC checksum.
+        :param crc: Initial CRC seed value for incremental calculation.
+        :param is_final: Flag indicating whether to apply final XOR transformation.
+        :return: Computed CRC8 checksum value.
         """
         k = 0
         data_len = len(data)
@@ -450,10 +559,13 @@ class ShadowRegisters(FeatureBaseClassComm):
 
     @staticmethod
     def comalg_dcfg_cc_socu_crc8(val: int) -> int:
-        """Function that creates the crc for DCFG_CC_SOCU.
+        """Compute CRC8 for DCFG_CC_SOCU register value.
 
-        :param val: Input DCFG_CC_SOCU Value.
-        :return: Returns the value of DCFG_CC_SOCU with computed CRC8 field.
+        This function extracts the upper 24 bits of the input value, computes a CRC8
+        checksum over those bytes, and replaces the lower 8 bits with the computed CRC.
+
+        :param val: Input DCFG_CC_SOCU register value (32-bit integer).
+        :return: DCFG_CC_SOCU value with CRC8 field in the lower 8 bits.
         """
         in_val = bytearray(3)
         for i in range(3):
@@ -463,10 +575,13 @@ class ShadowRegisters(FeatureBaseClassComm):
         return val
 
     def comalg_dcfg_cc_socu_test_en(self, val: int) -> int:
-        """Function fill up the DCFG_CC_SOCU DEV_TEST_EN set to True to satisfy MCU needs.
+        """Configure DCFG_CC_SOCU register with appropriate test mode setting.
 
-        :param val: Input DCFG_CC_SOCU Value.
-        :return: Returns the value of DCFG_CC_SOCU with optionally enabled test mode.
+        The method modifies the DEV_TEST_EN bit in DCFG_CC_SOCU register based on the current
+        fuse mode to satisfy MCU operational requirements.
+
+        :param val: Input DCFG_CC_SOCU register value to be modified.
+        :return: Modified DCFG_CC_SOCU value with test mode bit configured appropriately.
         """
         if self.fuse_mode:
             return val & ~0x80000000
@@ -474,9 +589,12 @@ class ShadowRegisters(FeatureBaseClassComm):
         return val | 0x80000000
 
     def rw61x_update_scratch_reg(self) -> None:
-        """Function updates scratch register for RW61x, This enables the shadow register functionality.
+        """Update scratch register for RW61x to enable shadow register functionality.
 
-        :param self: Input Value.
+        This method writes a specific value to the scratch register address to activate
+        the shadow register functionality on RW61x devices.
+
+        :raises AssertionError: If the probe is not a DebugProbe instance.
         """
         assert isinstance(self.probe, DebugProbe)
         logger.debug("Flush shadow registers data")
@@ -486,12 +604,16 @@ class ShadowRegisters(FeatureBaseClassComm):
 
 
 def enable_debug(probe: DebugProbe, family: FamilyRevision) -> bool:
-    """Function that enables debug access ports on devices with debug mailbox.
+    """Enable debug access ports on devices with debug mailbox.
 
-    :param probe: Initialized debug probe.
-    :param family: Chip family name.
-    :return: True if debug port is enabled, False otherwise
-    :raises SPSDKError: Unlock method failed.
+    The method checks if AHB access is available and if not, attempts to unlock
+    the device using debug mailbox system. It handles probe reconnection and
+    validates the unlock operation.
+
+    :param probe: Initialized debug probe for device communication.
+    :param family: Chip family and revision information.
+    :return: True if debug port is enabled, False otherwise.
+    :raises SPSDKError: Invalid input parameters or unlock method failed.
     """
     debug_enabled = False
     try:

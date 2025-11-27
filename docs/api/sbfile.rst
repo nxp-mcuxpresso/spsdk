@@ -1,7 +1,6 @@
 SBFile Module API
 =================
-
-Module implementing SBFile.
+.. automodule:: spsdk.sbfile
 
 SBFile Version 1
 --------------------
@@ -129,7 +128,7 @@ SBFile Version X - DEVHSM
 
 SBFile Version C
 -----------------
-.. automodule:: spsdk.sbfile.sbc   
+.. automodule:: spsdk.sbfile.sbc
    :no-index:
    :members:
    :undoc-members:

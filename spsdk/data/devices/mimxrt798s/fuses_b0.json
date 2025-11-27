@@ -1,5 +1,5 @@
 {
-  "cpu": "mimxrt798s",
+  "cpu": "MIMXRT798S_b0",
   "shadow_reg_base_addr_int": "0x40018000",
   "groups": [
     {
@@ -406,7 +406,52 @@
               ]
             },
             {
-              "width": 3
+              "width": 3,
+              "id": "fuse2-bits-12-14",
+              "name": "CUST_MK_SK_LOCK",
+              "description": "CUST_MK_SK Lock bits",
+              "values": [
+                {
+                  "name": "Unlocked",
+                  "value": 0,
+                  "description": "Unlocked (fuses can be read, sensed, burned or over-ridden in the corresponding OTP shadow register)"
+                },
+                {
+                  "name": "WP",
+                  "value": 1,
+                  "description": "WP (Write Protect, the controlled field can not be burned)"
+                },
+                {
+                  "name": "OP",
+                  "value": 2,
+                  "description": "OP (Over-ride Protect, the controlled field shadow registers can not be over-written)"
+                },
+                {
+                  "name": "OP+WP",
+                  "value": 3,
+                  "description": "OP + WP (Over-ride + Write Protect, the controlled field can not be overridden nor burned)"
+                },
+                {
+                  "name": "RP",
+                  "value": 4,
+                  "description": "RP (Read Protect, the controlled field  can be sensed only, but can't be read from shadow registers)"
+                },
+                {
+                  "name": "RP+WP",
+                  "value": 5,
+                  "description": "RP+WP (Read + Write Protect, the controlled field can be sensed, overridden, but can't be read nor burned)"
+                },
+                {
+                  "name": "RP+OP",
+                  "value": 6,
+                  "description": "RP+OP (Read + Over-ride Protect, the controlled field can be sensed, burned, but can't be read nor over-written)"
+                },
+                {
+                  "name": "All Locks",
+                  "value": 7,
+                  "description": "All Locks (The controlled field can't be read, sensed, burned or overridden in corresponding OTP shadow register)"
+                }
+              ]
             },
             {
               "width": 1
@@ -1311,10 +1356,9 @@
         },
         {
           "id": "Reserved135",
-          "name": "Reserved",
+          "name": "Reserved 0x87",
           "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
           "index_int": "0x0087",
-          "shadow_reg_offset_int": "0x021C",
           "is_reserved": true,
           "reg_width": 16
         },
@@ -1756,6 +1800,290 @@
               "id": "fuse99-bits-0-31",
               "name": "ROTKH",
               "description": "Root of trust keys table hash"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "CUST_MK_SK",
+        "description": "Customer Master Key Symmetric Key"
+      },
+      "registers": [
+        {
+          "id": "fuse100",
+          "name": "CUST_MK_SK0",
+          "description": "Customer MK_SK",
+          "index_int": "0x0064",
+          "shadow_reg_offset_int": "0x0190",
+          "access": "RO",
+          "individual_write_lock": "implicit",
+          "lock": {
+            "register_id": "fuse2",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          },
+          "bitfields": [
+            {
+              "width": 32,
+              "id": "fuse100-bits-0-31",
+              "name": "CUST_MK_SK_BLOB",
+              "description": "Customer MK_SK"
+            }
+          ]
+        },
+        {
+          "id": "fuse101",
+          "name": "CUST_MK_SK1",
+          "description": "Customer MK_SK",
+          "index_int": "0x0065",
+          "shadow_reg_offset_int": "0x0194",
+          "access": "RO",
+          "individual_write_lock": "implicit",
+          "lock": {
+            "register_id": "fuse2",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          },
+          "bitfields": [
+            {
+              "width": 32,
+              "id": "fuse101-bits-0-31",
+              "name": "CUST_MK_SK_BLOB",
+              "description": "Customer MK_SK"
+            }
+          ]
+        },
+        {
+          "id": "fuse102",
+          "name": "CUST_MK_SK2",
+          "description": "Customer MK_SK",
+          "index_int": "0x0066",
+          "shadow_reg_offset_int": "0x0198",
+          "access": "RO",
+          "individual_write_lock": "implicit",
+          "lock": {
+            "register_id": "fuse2",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          },
+          "bitfields": [
+            {
+              "width": 32,
+              "id": "fuse102-bits-0-31",
+              "name": "CUST_MK_SK_BLOB",
+              "description": "Customer MK_SK"
+            }
+          ]
+        },
+        {
+          "id": "fuse103",
+          "name": "CUST_MK_SK3",
+          "description": "Customer MK_SK",
+          "index_int": "0x0067",
+          "shadow_reg_offset_int": "0x019C",
+          "access": "RO",
+          "individual_write_lock": "implicit",
+          "lock": {
+            "register_id": "fuse2",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          },
+          "bitfields": [
+            {
+              "width": 32,
+              "id": "fuse103-bits-0-31",
+              "name": "CUST_MK_SK_BLOB",
+              "description": "Customer MK_SK"
+            }
+          ]
+        },
+        {
+          "id": "fuse104",
+          "name": "CUST_MK_SK4",
+          "description": "Customer MK_SK",
+          "index_int": "0x0068",
+          "shadow_reg_offset_int": "0x01A0",
+          "access": "RO",
+          "individual_write_lock": "implicit",
+          "lock": {
+            "register_id": "fuse2",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          },
+          "bitfields": [
+            {
+              "width": 32,
+              "id": "fuse104-bits-0-31",
+              "name": "CUST_MK_SK_BLOB",
+              "description": "Customer MK_SK"
+            }
+          ]
+        },
+        {
+          "id": "fuse105",
+          "name": "CUST_MK_SK5",
+          "description": "Customer MK_SK",
+          "index_int": "0x0069",
+          "shadow_reg_offset_int": "0x01A4",
+          "access": "RO",
+          "individual_write_lock": "implicit",
+          "lock": {
+            "register_id": "fuse2",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          },
+          "bitfields": [
+            {
+              "width": 32,
+              "id": "fuse105-bits-0-31",
+              "name": "CUST_MK_SK_BLOB",
+              "description": "Customer MK_SK"
+            }
+          ]
+        },
+        {
+          "id": "fuse106",
+          "name": "CUST_MK_SK6",
+          "description": "Customer MK_SK",
+          "index_int": "0x006A",
+          "shadow_reg_offset_int": "0x01A8",
+          "access": "RO",
+          "individual_write_lock": "implicit",
+          "lock": {
+            "register_id": "fuse2",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          },
+          "bitfields": [
+            {
+              "width": 32,
+              "id": "fuse106-bits-0-31",
+              "name": "CUST_MK_SK_BLOB",
+              "description": "Customer MK_SK"
+            }
+          ]
+        },
+        {
+          "id": "fuse107",
+          "name": "CUST_MK_SK7",
+          "description": "Customer MK_SK",
+          "index_int": "0x006B",
+          "shadow_reg_offset_int": "0x01AC",
+          "access": "RO",
+          "individual_write_lock": "implicit",
+          "lock": {
+            "register_id": "fuse2",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          },
+          "bitfields": [
+            {
+              "width": 32,
+              "id": "fuse107-bits-0-31",
+              "name": "CUST_MK_SK_BLOB",
+              "description": "Customer MK_SK"
+            }
+          ]
+        },
+        {
+          "id": "fuse108",
+          "name": "CUST_MK_SK8",
+          "description": "Customer MK_SK",
+          "index_int": "0x006C",
+          "shadow_reg_offset_int": "0x01B0",
+          "access": "RO",
+          "individual_write_lock": "implicit",
+          "lock": {
+            "register_id": "fuse2",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          },
+          "bitfields": [
+            {
+              "width": 32,
+              "id": "fuse108-bits-0-31",
+              "name": "CUST_MK_SK_BLOB",
+              "description": "Customer MK_SK"
+            }
+          ]
+        },
+        {
+          "id": "fuse109",
+          "name": "CUST_MK_SK9",
+          "description": "Customer MK_SK",
+          "index_int": "0x006D",
+          "shadow_reg_offset_int": "0x01B4",
+          "access": "RO",
+          "individual_write_lock": "implicit",
+          "lock": {
+            "register_id": "fuse2",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          },
+          "bitfields": [
+            {
+              "width": 32,
+              "id": "fuse109-bits-0-31",
+              "name": "CUST_MK_SK_BLOB",
+              "description": "Customer MK_SK"
+            }
+          ]
+        },
+        {
+          "id": "fuse110",
+          "name": "CUST_MK_SK10",
+          "description": "Customer MK_SK",
+          "index_int": "0x006E",
+          "shadow_reg_offset_int": "0x01B8",
+          "access": "RO",
+          "individual_write_lock": "implicit",
+          "lock": {
+            "register_id": "fuse2",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          },
+          "bitfields": [
+            {
+              "width": 32,
+              "id": "fuse110-bits-0-31",
+              "name": "CUST_MK_SK_BLOB",
+              "description": "Customer MK_SK"
+            }
+          ]
+        },
+        {
+          "id": "fuse111",
+          "name": "CUST_MK_SK11",
+          "description": "Customer MK_SK",
+          "index_int": "0x006F",
+          "shadow_reg_offset_int": "0x01BC",
+          "access": "RO",
+          "individual_write_lock": "implicit",
+          "lock": {
+            "register_id": "fuse2",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          },
+          "bitfields": [
+            {
+              "width": 32,
+              "id": "fuse111-bits-0-31",
+              "name": "CUST_MK_SK_BLOB",
+              "description": "Customer MK_SK"
             }
           ]
         }
@@ -3370,7 +3698,7 @@
               "width": 5,
               "id": "fuse141-bits-27-31",
               "name": "OSC_SETTLING_TIME",
-              "description": "Specifies the settling time of OSC\n0d - 390 μs (default)\nnd - n × 100 μs × 1.3"
+              "description": "Specifies the settling time of OSC\n0d - 390 \u03bcs (default)\nnd - n \u00d7 100 \u03bcs \u00d7 1.3"
             }
           ]
         },
@@ -3477,7 +3805,7 @@
               "width": 7,
               "id": "fuse160-bits-25-31",
               "name": "USBPLL_LOCK_TIME",
-              "description": "Specifies the lock time of USB PLL\n0d - 30 µs (default)\nnd - n × 10 µs"
+              "description": "Specifies the lock time of USB PLL\n0d - 30 \u00b5s (default)\nnd - n \u00d7 10 \u00b5s"
             }
           ]
         },
@@ -4144,7 +4472,7 @@
               "description": "Together with XSPI_FLASH_DUMMY_CYCLES_UPPER, the 6-bit field configures Quad SPI or Octal SPI dummy cycles for read command",
               "values": [
                 {
-                  "name": "000000",
+                  "name": "0000",
                   "value": 0,
                   "description": "Dummy cycles probed automatically"
                 },
@@ -4475,7 +4803,7 @@
               "width": 7,
               "id": "fuse153-bits-17-23",
               "name": "XSPI_FLASH_IMAGE_SIZE",
-              "description": "Size of the second image\n0d - Same size as the image offset (XSPI_IMAGE_OFFSET)\n1d - 128 KB\n2d - 256 KB\nmd - m × 128 KB (m = 3-7)\n8d - 1 MB\nnd - (n-7) × 1 MB (n = 8-71)"
+              "description": "Size of the second image\n0d - Same size as the image offset (XSPI_IMAGE_OFFSET)\n1d - 128 KB\n2d - 256 KB\nmd - m \u00d7 128 KB (m = 3-7)\n8d - 1 MB\nnd - (n-7) \u00d7 1 MB (n = 8-71)"
             },
             {
               "width": 3,
@@ -5393,7 +5721,7 @@
         {
           "id": "fuse482",
           "name": "SENSE_PVT_SP3",
-          "description": "Sense domain PVT setpoint 3 CPU1/HiFi1 – Freq/Volt\n250 MHz PVTS delay values, HiFi1[15:8], CPU1[7:0]",
+          "description": "Sense domain PVT setpoint 3 CPU1/HiFi1 \u2013 Freq/Volt\n250 MHz PVTS delay values, HiFi1[15:8], CPU1[7:0]",
           "index_int": "0x01E2",
           "shadow_reg_offset_int": "0x0788",
           "lock": {
@@ -5407,7 +5735,7 @@
         {
           "id": "fuse483",
           "name": "COM_PVT_SP3",
-          "description": "Compute domain PVT setpoint 3 CPU0/HiFi4 – Freq/Volt\n325 MHz PVTS delay values, HiFi4[15:8], CPU0[7:0]",
+          "description": "Compute domain PVT setpoint 3 CPU0/HiFi4 \u2013 Freq/Volt\n325 MHz PVTS delay values, HiFi4[15:8], CPU0[7:0]",
           "index_int": "0x01E3",
           "shadow_reg_offset_int": "0x078C",
           "lock": {
@@ -5421,7 +5749,7 @@
         {
           "id": "fuse484",
           "name": "SENSE_PVT_SP2",
-          "description": "Sense domain PVT setpoint 2 CPU1/HiFi1 – Freq/Volt\n160 MHz PVTS delay values, HiFi1[15:8], CPU1[7:0]",
+          "description": "Sense domain PVT setpoint 2 CPU1/HiFi1 \u2013 Freq/Volt\n160 MHz PVTS delay values, HiFi1[15:8], CPU1[7:0]",
           "index_int": "0x01E4",
           "shadow_reg_offset_int": "0x0790",
           "lock": {
@@ -5435,7 +5763,7 @@
         {
           "id": "fuse485",
           "name": "COM_PVT_SP2",
-          "description": "Compute domain PVT setpoint 2 CPU0/HiFi4 – Freq/Volt\n192 MHz PVTS delay values, HiFi4[15:8], CPU0[7:0]",
+          "description": "Compute domain PVT setpoint 2 CPU0/HiFi4 \u2013 Freq/Volt\n192 MHz PVTS delay values, HiFi4[15:8], CPU0[7:0]",
           "index_int": "0x01E5",
           "shadow_reg_offset_int": "0x0794",
           "lock": {
@@ -5449,7 +5777,7 @@
         {
           "id": "fuse486",
           "name": "SENSE_PVT_SP1",
-          "description": "Sense domain PVT setpoint 1 CPU1/HiFi1 – Freq/Volt\n100 MHz PVTS delay values, HiFi1[15:8], CPU1[7:0]",
+          "description": "Sense domain PVT setpoint 1 CPU1/HiFi1 \u2013 Freq/Volt\n100 MHz PVTS delay values, HiFi1[15:8], CPU1[7:0]",
           "index_int": "0x01E6",
           "shadow_reg_offset_int": "0x0798",
           "lock": {
@@ -5463,7 +5791,7 @@
         {
           "id": "fuse487",
           "name": "COM_PVT_SP1",
-          "description": "Compute domain PVT setpoint 1 CPU0/HiFi4 – Freq/Volt\n110 MHz PVTS delay values, HiFi4[15:8], CPU0[7:0]",
+          "description": "Compute domain PVT setpoint 1 CPU0/HiFi4 \u2013 Freq/Volt\n110 MHz PVTS delay values, HiFi4[15:8], CPU0[7:0]",
           "index_int": "0x01E7",
           "shadow_reg_offset_int": "0x079C",
           "lock": {

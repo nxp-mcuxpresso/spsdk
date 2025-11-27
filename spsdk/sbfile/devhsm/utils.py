@@ -4,7 +4,11 @@
 # Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Utils for DevHSM."""
+"""SPSDK DevHSM utility functions for secure boot file processing.
+
+This module provides utility functions for working with DevHSM (Development Hardware
+Security Module) implementations across different secure boot file formats in SPSDK.
+"""
 
 import logging
 from typing import Type, Union
@@ -23,11 +27,14 @@ logger = logging.getLogger(__name__)
 def get_devhsm_class(
     family: FamilyRevision,
 ) -> Type[Union["DevHsmSB4", "DevHsmSB31", "DevHsmSBx", "DevHsmSBc"]]:
-    """Get name of DevHsm class based on family.
+    """Get DevHSM class based on chip family.
 
-    :param family: name of the family
-    :raises SPSDKError: If the class is not found
-    :return: name of the class that supports given family
+    The method retrieves the appropriate DevHSM class implementation by checking the database
+    for supported sub-features of the given family and returning the corresponding class type.
+
+    :param family: Chip family revision to get DevHSM class for.
+    :raises SPSDKError: If DevHSM is not supported for the specified family.
+    :return: DevHSM class type that supports the given family.
     """
     devhsm_sub_features = get_db(family).get_list(DatabaseManager.DEVHSM, "sub_features")
     if "DevHsmSB4" in devhsm_sub_features:

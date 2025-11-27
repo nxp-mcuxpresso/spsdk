@@ -5,7 +5,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""File including constants."""
+"""SPSDK SB3.1 file format constants and enumerations.
+
+This module defines constants and enumeration classes used in the SB3.1 secure boot
+file format, including command tags and device HSM types.
+"""
 
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -15,7 +19,13 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 class EnumCmdTag(SpsdkEnum):
-    """Contains commands tags."""
+    """SB3.1 command tag enumeration.
+
+    This enumeration defines all supported command tags used in SB3.1 secure boot files.
+    Each command tag represents a specific operation that can be executed during the
+    secure boot process, such as memory operations, cryptographic functions, and
+    system control commands.
+    """
 
     NONE = (0x00, "NONE")
     ERASE = (0x01, "erase")
@@ -37,7 +47,11 @@ class EnumCmdTag(SpsdkEnum):
 
 
 class EnumDevHSMType(SpsdkEnum):
-    """Contains Types of DevHSM provisioning specification."""
+    """DevHSM provisioning type enumeration.
+
+    This enumeration defines the available types of DevHSM (Development Hardware Security Module)
+    provisioning specifications used in SB3.1 secure boot files.
+    """
 
     INTERNAL = (1, "INTERNAL_DEVHSM_PROVISIONING")
     EXTERNAL = (2, "EXTERNAL_DEVHSM_PROVISIONING")

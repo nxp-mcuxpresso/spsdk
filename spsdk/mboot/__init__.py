@@ -6,7 +6,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module implementing communication with the MCU Bootloader."""
+"""SPSDK MCU Bootloader communication module.
+
+This module provides unified interface and communication protocols for interacting
+with NXP MCU bootloaders across different transport layers including UART, CAN,
+I2C, SPI, and SDIO interfaces.
+"""
 
 from typing import Union
 

@@ -5,10 +5,17 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Test Bootable Image part of nxpimage app."""
+"""Test suite for SPSDK nxpimage bootable image functionality.
+
+This module contains comprehensive tests for the bootable image (bimg) component
+of the nxpimage application, covering CLI operations, image parsing, merging,
+verification, and memory type detection functionality.
+"""
+
 import filecmp
 import logging
 import os
+from typing import Any, Optional, Union
 
 import pytest
 
@@ -20,9 +27,9 @@ from spsdk.image.bootable_image.bimg import BootableImage
 from spsdk.image.bootable_image.segments import BootableImageSegment
 from spsdk.image.mem_type import MemoryType
 from spsdk.utils.config import Config
-from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.verifier import Verifier, VerifierResult
+from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
+from spsdk.utils.verifier import Verifier, VerifierRecord, VerifierResult
 from tests.cli_runner import CliRunner
 
 FULL_LIST_TO_TEST = [
@@ -119,8 +126,29 @@ FULL_LIST_TO_TEST = [
     ],
 )
 def test_nxpimage_bimg_merge(
-    cli_runner: CliRunner, tmpdir, data_dir, mem_type, family, configuration, config_file
-):
+    cli_runner: CliRunner,
+    tmpdir: Any,
+    data_dir: str,
+    mem_type: str,
+    family: str,
+    configuration: Optional[str],
+    config_file: str,
+) -> None:
+    """Test bootable image merge functionality using CLI.
+
+    This test verifies that the nxpimage CLI can successfully export a bootable image
+    using a configuration file and that the output matches the expected merged image.
+    The test handles different memory types, chip families, and optional configurations.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for test output files.
+    :param data_dir: Base directory containing test data files.
+    :param mem_type: Memory type for the bootable image (e.g., 'flexspi_nor').
+    :param family: Target chip family name.
+    :param configuration: Optional configuration subdirectory name.
+    :param config_file: Name of the configuration file to use.
+    :raises AssertionError: If output file is not created or doesn't match expected content.
+    """
     with use_working_directory(data_dir):
         config_dir = os.path.join(data_dir, "bootable_image", family, mem_type)
         if configuration:
@@ -139,8 +167,29 @@ def test_nxpimage_bimg_merge(
 
 @pytest.mark.parametrize("family,mem_type,configuration,blocks", FULL_LIST_TO_TEST)
 def test_nxpimage_bimg_parse_cli(
-    cli_runner: CliRunner, tmpdir, data_dir, family, mem_type, configuration, blocks
-):
+    cli_runner: CliRunner,
+    tmpdir: Any,
+    data_dir: str,
+    family: str,
+    mem_type: str,
+    configuration: Optional[str],
+    blocks: list[str],
+) -> None:
+    """Test CLI parsing functionality for bootable image commands.
+
+    This test verifies that the nxpimage bootable-image parse command correctly
+    processes input binary files and generates the expected configuration and
+    segment files. It compares the generated configuration against a reference
+    and validates that extracted segments match the original files.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for test output files.
+    :param data_dir: Base directory containing test data files.
+    :param family: Target MCU family name for bootable image processing.
+    :param mem_type: Memory type specification for the bootable image.
+    :param configuration: Optional configuration variant name.
+    :param blocks: List of block names to validate in the parsed output.
+    """
     with use_working_directory(data_dir):
         config_dir = os.path.join(data_dir, "bootable_image", family, mem_type)
         if configuration:
@@ -196,7 +245,25 @@ def test_nxpimage_bimg_parse_cli(
         ("mcxn947", [("flexspi_nor", "full")]),
     ],
 )
-def test_nxpimage_bimg_template_cli(cli_runner: CliRunner, tmpdir, data_dir, family, configs):
+def test_nxpimage_bimg_template_cli(
+    cli_runner: CliRunner,
+    tmpdir: Any,
+    data_dir: str,
+    family: str,
+    configs: list[Union[str, tuple[str, str]]],
+) -> None:
+    """Test CLI command for generating bootable image templates.
+
+    This test verifies that the nxpimage CLI can successfully generate bootable image
+    configuration templates for a given family and memory types. It checks that the
+    generated templates exist and have the same structure as reference configurations.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for output files.
+    :param data_dir: Base directory containing test data files.
+    :param family: Target MCU family name for template generation.
+    :param configs: List of memory type configurations, either as strings or tuples of (mem_type, config_dir).
+    """
     cmd = f"bootable-image get-templates -f {family} --output {tmpdir}"
     cli_runner.invoke(nxpimage.main, cmd.split())
     for config in configs:
@@ -227,17 +294,33 @@ def test_nxpimage_bimg_template_cli(cli_runner: CliRunner, tmpdir, data_dir, fam
         ("mcxn947", "mcxn947/flexspi_nor/full/merged_image.bin", "flexspi_nor"),
     ],
 )
-def test_nxpimage_bimg_parse_autodetect_mem_type(data_dir, family, input_path, expected_mem_type):
+def test_nxpimage_bimg_parse_autodetect_mem_type(
+    data_dir: str, family: str, input_path: str, expected_mem_type: Optional[str]
+) -> None:
+    """Test bootable image parsing with automatic memory type detection.
+
+    This test verifies that the BootableImage.parse method can correctly auto-detect
+    the memory type from a binary file for a given family. When a valid memory type
+    is expected, it checks that parsing succeeds and returns the correct memory type
+    with zero init offset. When no valid memory type is expected, it verifies that
+    parsing raises an SPSDKError.
+
+    :param data_dir: Base directory containing test data files
+    :param family: Target MCU family name for parsing
+    :param input_path: Relative path to the bootable image binary file within data_dir
+    :param expected_mem_type: Expected memory type to be detected, or None if parsing should fail
+    :raises SPSDKError: When expected_mem_type is None and parsing fails as expected
+    """
     input_binary_path = os.path.join(data_dir, "bootable_image", input_path)
     input_binary = load_binary(input_binary_path)
-    family = FamilyRevision(family)
+    family_rev = FamilyRevision(family)
     if expected_mem_type:
-        bimg = BootableImage.parse(input_binary, family)
+        bimg = BootableImage.parse(input_binary, family_rev)
         assert bimg.init_offset == 0
         assert bimg.mem_type == expected_mem_type
     else:
         with pytest.raises(SPSDKError):
-            BootableImage.parse(input_binary, family)
+            BootableImage.parse(input_binary, family_rev)
 
 
 @pytest.mark.parametrize(
@@ -252,8 +335,26 @@ def test_nxpimage_bimg_parse_autodetect_mem_type(data_dir, family, input_path, e
     ],
 )
 def test_nxpimage_bimg_parse_autodetect_mem_type_cli(
-    cli_runner: CliRunner, tmpdir, data_dir, family, input_path, expected_mem_type
-):
+    cli_runner: CliRunner,
+    tmpdir: str,
+    data_dir: str,
+    family: str,
+    input_path: str,
+    expected_mem_type: str,
+) -> None:
+    """Test CLI auto-detection of memory type during bootable image parsing.
+
+    This test verifies that the nxpimage CLI can automatically detect the correct
+    memory type when parsing a bootable image and generates the appropriate
+    configuration file with the expected memory type in its filename.
+
+    :param cli_runner: CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory path for output files.
+    :param data_dir: Directory containing test data files.
+    :param family: Target MCU family name.
+    :param input_path: Relative path to input bootable image file.
+    :param expected_mem_type: Expected memory type to be auto-detected.
+    """
     input_binary_path = os.path.join(data_dir, "bootable_image", input_path)
 
     with use_working_directory(data_dir):
@@ -283,8 +384,29 @@ def test_nxpimage_bimg_parse_autodetect_mem_type_cli(
     ],
 )
 def test_nxpimage_bimg_parse_incomplete_cli(
-    cli_runner: CliRunner, tmpdir, data_dir, family, mem_type, configuration, blocks
-):
+    cli_runner: CliRunner,
+    tmpdir: str,
+    data_dir: str,
+    family: str,
+    mem_type: str,
+    configuration: str,
+    blocks: list[str],
+) -> None:
+    """Test nxpimage bootable image parse command with incomplete CLI parameters.
+
+    This test verifies that the bootable image parse command can successfully parse
+    a binary file and generate the correct configuration and segment files, even
+    when using minimal CLI parameters. It compares the generated output against
+    reference files to ensure correctness.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory path for output files.
+    :param data_dir: Base directory containing test data files.
+    :param family: Target MCU family name for bootable image.
+    :param mem_type: Memory type specification for the bootable image.
+    :param configuration: Configuration variant name for the test case.
+    :param blocks: List of block names to verify in the parsed output.
+    """
     with use_working_directory(data_dir):
         config_dir = os.path.join(data_dir, "bootable_image", family, mem_type, configuration)
         input_binary = os.path.join(config_dir, "merged_image.bin")
@@ -317,7 +439,17 @@ def test_nxpimage_bimg_parse_incomplete_cli(
             )
 
 
-def test_find_the_exact_layout_match_first(caplog, data_dir):
+def test_find_the_exact_layout_match_first(caplog: Any, data_dir: str) -> None:
+    """Test that exact layout match is found first when multiple memory types are possible.
+
+    This test verifies that when parsing a bootable image that could match multiple
+    memory types, the system correctly selects the most appropriate one (internal memory)
+    and logs a warning about the multiple possibilities.
+
+    :param caplog: Pytest fixture for capturing log messages during test execution.
+    :param data_dir: Path to the test data directory containing bootable image files.
+    :raises AssertionError: If the parsed image doesn't have expected memory type or warning message.
+    """
     caplog.set_level(logging.WARNING)
     bimg_bin = os.path.join(data_dir, "bootable_image", "lpc55s36", "internal", "merged_image.bin")
     bimg = BootableImage.parse(load_binary(bimg_bin), FamilyRevision("lpc55s36"))
@@ -332,7 +464,15 @@ def test_find_the_exact_layout_match_first(caplog, data_dir):
     )
 
 
-def test_get_segment(data_dir):
+def test_get_segment(data_dir: str) -> None:
+    """Test bootable image segment retrieval functionality.
+
+    This test verifies that the BootableImage.get_segment() method correctly
+    identifies and returns segments at their expected offsets within a bootable
+    image binary file. It tests FCB, IMAGE_VERSION, and MBI segments.
+
+    :param data_dir: Directory path containing test data files including the bootable image binary.
+    """
     bimg_bin = os.path.join(
         data_dir, "bootable_image", "mimxrt595s", "flexspi_nor", "xip_plain", "merged_image.bin"
     )
@@ -346,7 +486,16 @@ def test_get_segment(data_dir):
         assert bimg.get_segment(segment).full_image_offset == segments[segment]
 
 
-def test_image_info(data_dir):
+def test_image_info(data_dir: str) -> None:
+    """Test bootable image information extraction functionality.
+
+    This test verifies that the BootableImage.parse() method correctly extracts
+    and provides image information for a MIMXRT595S bootable image, including
+    validation of image metadata, offsets, patterns, and sub-image structure.
+
+    :param data_dir: Path to the test data directory containing bootable image files.
+    :raises AssertionError: If any of the image information validation checks fail.
+    """
     family = "mimxrt595s"
     bimg_bin = os.path.join(
         data_dir, "bootable_image", family, "flexspi_nor", "xip_plain", "merged_image.bin"
@@ -356,6 +505,7 @@ def test_image_info(data_dir):
     assert f"Bootable Image for {family}" in info.name
     assert f"Bootable Image for {family}" in info.image_name
     assert info.offset == 0
+    assert info.pattern
     assert info.pattern.pattern == bimg.image_pattern
     sub_images = {"fcb": 1024, "image_version": 1536, "mbi": 4096}
     assert len(info.sub_images) == len(sub_images)
@@ -372,8 +522,26 @@ def test_image_info(data_dir):
     ],
 )
 def test_nxpimage_bimg_parse_image_adjustment(
-    data_dir, family, mem_type, configuration, init_offset, segments_count
-):
+    data_dir: str,
+    family: str,
+    mem_type: str,
+    configuration: str,
+    init_offset: int,
+    segments_count: int,
+) -> None:
+    """Test parsing of bootable image with segment adjustment validation.
+
+    This test verifies that a bootable image can be correctly parsed from a binary file
+    and validates that the parsed image has the expected initialization offset and
+    number of segments.
+
+    :param data_dir: Base directory path containing test data files.
+    :param family: Target MCU family name for the bootable image.
+    :param mem_type: Memory type label (e.g., 'flexspi_nor', 'semc_nand').
+    :param configuration: Configuration variant name for the test case.
+    :param init_offset: Expected initialization offset value in the parsed image.
+    :param segments_count: Expected number of segments in the parsed bootable image.
+    """
     input_binary_path = os.path.join(
         data_dir, "bootable_image", family, mem_type, configuration, "merged_image.bin"
     )
@@ -385,14 +553,20 @@ def test_nxpimage_bimg_parse_image_adjustment(
     assert len(bimg.segments) == segments_count
 
 
-def test_nxpimage_bimg_default_init_offset():
+def test_nxpimage_bimg_default_init_offset() -> None:
+    """Test that default initialization offset is zero for all supported configurations.
+
+    Verifies that BootableImage instances created with default parameters have an
+    initialization offset of 0 for all combinations of supported families and
+    memory types.
+    """
     for family in BootableImage.get_supported_families():
         for mem_type in BootableImage.get_supported_memory_types(family):
-            BootableImage(family=family, mem_type=mem_type).init_offset == 0
+            assert BootableImage(family=family, mem_type=mem_type).init_offset == 0
 
 
 @pytest.mark.parametrize(
-    "family,mem_type,init_offset,actual_offset",
+    "family_str,mem_type,init_offset,actual_offset",
     [
         ("mcxn9xx", "flexspi_nor", 0x0, 0x0),
         ("mcxn9xx", "flexspi_nor", 0x3FF, 0x400),
@@ -406,8 +580,26 @@ def test_nxpimage_bimg_default_init_offset():
         ("mcxn9xx", "flexspi_nor", BootableImageSegment.UNKNOWN, None),
     ],
 )
-def test_nxpimage_bimg_init_offset_setter(family, mem_type, init_offset, actual_offset):
-    family = FamilyRevision(family)
+def test_nxpimage_bimg_init_offset_setter(
+    family_str: str,
+    mem_type: str,
+    init_offset: Union[int, BootableImageSegment],
+    actual_offset: Optional[int],
+) -> None:
+    """Test BootableImage initialization and init_offset setter functionality.
+
+    This test verifies that the BootableImage class correctly handles init_offset
+    parameter during initialization and through the setter property. It tests both
+    valid scenarios where the offset is accepted and invalid scenarios where
+    SPSDKError should be raised.
+
+    :param family_str: String representation of the target family.
+    :param mem_type: Memory type label for the bootable image.
+    :param init_offset: Initial offset value, either as integer or BootableImageSegment.
+    :param actual_offset: Expected offset value after setting, None if error expected.
+    :raises SPSDKError: When init_offset is invalid for the given family/memory type combination.
+    """
+    family = FamilyRevision(family_str)
     memory_type = MemoryType.from_label(mem_type)
     if actual_offset is not None:
         bimg = BootableImage(family=family, mem_type=memory_type, init_offset=init_offset)
@@ -425,7 +617,15 @@ def test_nxpimage_bimg_init_offset_setter(family, mem_type, init_offset, actual_
                 bimg.init_offset = init_offset
 
 
-def test_nxpimage_bimg_segments_index_is_updated(data_dir):
+def test_nxpimage_bimg_segments_index_is_updated(data_dir: str) -> None:
+    """Test that bootable image segment indices are correctly updated when init_offset changes.
+
+    This test verifies that when the init_offset of a bootable image is modified,
+    the segment indices are properly recalculated and segments that fall below
+    the new init_offset are automatically removed from the segments list.
+
+    :param data_dir: Path to the test data directory containing bootable image configuration files.
+    """
     config_dir = os.path.join(data_dir, "bootable_image", "mcxn947", "flexspi_nor", "starting_fcb")
     bimg = BootableImage.load_from_config(
         Config.create_from_file(os.path.join(config_dir, "config.yaml"))
@@ -476,7 +676,21 @@ def test_nxpimage_bimg_segments_index_is_updated(data_dir):
         ("mcxn947", "flexspi_nor", "starting_mbi"),
     ],
 )
-def test_nxpimage_bimg_parse_export(data_dir, family, mem_type, configuration):
+def test_nxpimage_bimg_parse_export(
+    data_dir: str, family: str, mem_type: str, configuration: str
+) -> None:
+    """Test parsing and exporting of bootable image binary data.
+
+    This test verifies that a bootable image can be parsed from binary data
+    and then exported back to binary format with the same length as the
+    original input data.
+
+    :param data_dir: Base directory path containing test data files
+    :param family: Target MCU family identifier
+    :param mem_type: Memory type label for the bootable image
+    :param configuration: Configuration variant name for the test case
+    :raises AssertionError: When exported binary length differs from input
+    """
     input_binary_path = os.path.join(
         data_dir, "bootable_image", family, mem_type, configuration, "merged_image.bin"
     )
@@ -487,7 +701,16 @@ def test_nxpimage_bimg_parse_export(data_dir, family, mem_type, configuration):
     assert len(bimg.export()) == len(input_binary)
 
 
-def test_bimg_get_supported_memory_types_all():
+def test_bimg_get_supported_memory_types_all() -> None:
+    """Test that get_supported_memory_types returns all valid memory types.
+
+    Verifies that the BootableImage.get_supported_memory_types() method returns
+    a list containing only valid MemoryType enum values and that all returned
+    values are unique (no duplicates).
+
+    :raises AssertionError: If any returned memory type is not a valid MemoryType
+        enum value or if duplicate values are found in the list.
+    """
     mem_types = BootableImage.get_supported_memory_types()
     for mem_type in mem_types:
         assert mem_type in MemoryType
@@ -509,15 +732,43 @@ def test_bimg_get_supported_memory_types_all():
         ),
     ],
 )
-def test_bimg_get_supported_memory_types_family(family, mem_types):
+def test_bimg_get_supported_memory_types_family(family: str, mem_types: list[MemoryType]) -> None:
+    """Test that BootableImage returns correct supported memory types for a given family.
+
+    Verifies that the get_supported_memory_types method of BootableImage class
+    returns the expected list of memory types for the specified chip family.
+
+    :param family: Name of the chip family to test.
+    :param mem_types: Expected list of supported memory types for the family.
+    """
     ret_mem_types = BootableImage.get_supported_memory_types(FamilyRevision(family))
     assert ret_mem_types == mem_types
 
 
 @pytest.mark.parametrize("family,mem_type,configuration,blocks", FULL_LIST_TO_TEST)
 def test_nxpimage_bimg_verify(
-    cli_runner: CliRunner, tmpdir, data_dir, family, mem_type, configuration, blocks
-):
+    cli_runner: CliRunner,
+    tmpdir: str,
+    data_dir: str,
+    family: str,
+    mem_type: str,
+    configuration: Optional[str],
+    blocks: list[str],
+) -> None:
+    """Test nxpimage bootable-image verify command functionality.
+
+    This test verifies that the bootable-image verify command works correctly
+    for different family and memory type combinations. It tests both successful
+    verification and expected failure cases (e.g., flexspi_nor with serial_downloader).
+
+    :param cli_runner: CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory path for test files.
+    :param data_dir: Directory containing test data files.
+    :param family: Target MCU family name.
+    :param mem_type: Memory type for bootable image.
+    :param configuration: Optional configuration variant.
+    :param blocks: List of block identifiers for the test.
+    """
     with use_working_directory(data_dir):
         config_dir = os.path.join(data_dir, "bootable_image", family, mem_type)
         if configuration:
@@ -537,8 +788,28 @@ def test_nxpimage_bimg_verify(
     ],
 )
 def test_nxpimage_bimg_merge_post_export(
-    cli_runner: CliRunner, tmpdir, data_dir, mem_type, family, configuration, config_file
-):
+    cli_runner: CliRunner,
+    tmpdir: str,
+    data_dir: str,
+    mem_type: str,
+    family: str,
+    configuration: Optional[str],
+    config_file: str,
+) -> None:
+    """Test bootable image export with post-export merge functionality.
+
+    This test verifies that the nxpimage CLI can successfully export a bootable image
+    with post-export processing enabled, and that the post-export output directory
+    is created with the expected number of files.
+
+    :param cli_runner: CLI test runner for invoking nxpimage commands.
+    :param tmpdir: Temporary directory path for test output files.
+    :param data_dir: Base directory containing test data files.
+    :param mem_type: Memory type for the bootable image configuration.
+    :param family: Target MCU family for the bootable image.
+    :param configuration: Optional configuration variant for the test.
+    :param config_file: Configuration file name to use for the export.
+    """
     with use_working_directory(data_dir):
         config_dir = os.path.join(data_dir, "bootable_image", family, mem_type)
         if configuration:
@@ -563,11 +834,24 @@ def test_nxpimage_bimg_merge_post_export(
         assert len(os.listdir(os.path.join(tmpdir, "output"))) == 4
 
 
-def test_nxpimage_bimg_merge_custom_offset(cli_runner: CliRunner, tmpdir, data_dir):
+def test_nxpimage_bimg_merge_custom_offset(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str
+) -> None:
+    """Test bootable image merge functionality with custom offset configuration.
+
+    This test verifies that the nxpimage CLI can successfully export a bootable image
+    using a custom offset configuration file, and that the resulting binary contains
+    valid AHAB images at the expected offsets.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory path for output files.
+    :param data_dir: Test data directory containing configuration files.
+    :raises AssertionError: If output file is not created or AHAB images cannot be parsed.
+    """
     with use_working_directory(data_dir):
         config_dir = os.path.join(data_dir, "bootable_image", "mimx9352", "serial_downloader")
         config_file_path = os.path.join(config_dir, "config_custom_offset.yaml")
-        out_file = os.path.join(tmpdir, f"bimg_mimx9352_merged.bin")
+        out_file = os.path.join(tmpdir, "bimg_mimx9352_merged.bin")
         cmd = [
             "bootable-image",
             "export",
@@ -595,7 +879,19 @@ def test_nxpimage_bimg_merge_custom_offset(cli_runner: CliRunner, tmpdir, data_d
         assert ahab_2
 
 
-def test_nxpimage_bimg_parse_custom_offset(cli_runner: CliRunner, tmpdir, data_dir):
+def test_nxpimage_bimg_parse_custom_offset(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str
+) -> None:
+    """Test parsing bootable image with custom offset configuration.
+
+    This test verifies that the nxpimage CLI can correctly parse a bootable image
+    binary file that contains a secondary image container set with a custom offset,
+    and that the parsed configuration maintains the correct offset value.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory path for output files.
+    :param data_dir: Base directory containing test data files.
+    """
     with use_working_directory(data_dir):
         config_dir = os.path.join(data_dir, "bootable_image", "mimx9352", "serial_downloader")
         input_binary = os.path.join(config_dir, "merged_image_custom_offset.bin")
@@ -612,7 +908,7 @@ def test_nxpimage_bimg_parse_custom_offset(cli_runner: CliRunner, tmpdir, data_d
             str(tmpdir),
         ]
         cli_runner.invoke(nxpimage.main, cmd)
-        bimg_config = os.path.join(tmpdir, f"bootable_image_mimx9352_serial_downloader.yaml")
+        bimg_config = os.path.join(tmpdir, "bootable_image_mimx9352_serial_downloader.yaml")
         assert os.path.isfile(bimg_config)
         config = load_configuration(bimg_config)
         assert config.get("secondary_image_container_set")
@@ -620,31 +916,42 @@ def test_nxpimage_bimg_parse_custom_offset(cli_runner: CliRunner, tmpdir, data_d
         assert config["secondary_image_container_set"]["offset"] == 40960
 
 
-def test_verifier_add_record_range_hex_string():
-    """Test add_record_range with hex string values."""
+def test_verifier_add_record_range_hex_string() -> None:
+    """Test the Verifier.add_record_range method with hexadecimal string values.
+
+    Validates that the method correctly handles various hexadecimal string formats
+    including lowercase and uppercase prefixes, range validation with min/max values,
+    and proper error handling for invalid hexadecimal strings.
+
+    :raises SPSDKError: When invalid hexadecimal strings are provided.
+    """
     verifier = Verifier("Test Verifier")
 
     # Test valid hex string
     verifier.add_record_range("Valid hex", "0x1000")
     assert len(verifier.records) == 1
+    assert isinstance(verifier.records[0], VerifierRecord)
     assert verifier.records[0].result == VerifierResult.SUCCEEDED
     assert verifier.records[0].value == "0x1000"
 
     # Test valid hex string uppercase
     verifier.add_record_range("Valid hex uppercase", "0X2000")
     assert len(verifier.records) == 2
+    assert isinstance(verifier.records[1], VerifierRecord)
     assert verifier.records[1].result == VerifierResult.SUCCEEDED
     assert verifier.records[1].value == "0X2000"
 
     # Test hex string out of range (too high)
     verifier.add_record_range("Hex too high", "0xFFFFFFFF", max_val=1000)
     assert len(verifier.records) == 3
+    assert isinstance(verifier.records[2], VerifierRecord)
     assert verifier.records[2].result == VerifierResult.ERROR
     assert "Higher than allowed" in str(verifier.records[2].value)
 
     # Test hex string out of range (too low)
     verifier.add_record_range("Hex too low", "0x10", min_val=100)
     assert len(verifier.records) == 4
+    assert isinstance(verifier.records[3], VerifierRecord)
     assert verifier.records[3].result == VerifierResult.ERROR
     assert "Lower than allowed" in str(verifier.records[3].value)
 
@@ -657,8 +964,15 @@ def test_verifier_add_record_range_hex_string():
         verifier.add_record_range("Non-hex string", "not_hex")
 
 
-def test_verifier_add_record_range_hex_integration():
-    """Test add_record_range hex functionality in context similar to bootable image."""
+def test_verifier_add_record_range_hex_integration() -> None:
+    """Test add_record_range hex functionality in context similar to bootable image.
+
+    This integration test verifies that the Verifier can properly handle hexadecimal
+    offset values when adding record ranges, simulating real bootable image scenarios
+    where segment offsets are commonly expressed in hexadecimal format.
+
+    :raises AssertionError: If any of the verification assertions fail during testing.
+    """
     verifier = Verifier("Bootable Image Test")
 
     # Simulate segment offset verification with hex
@@ -668,13 +982,22 @@ def test_verifier_add_record_range_hex_integration():
     verifier.add_record_range("Offset in image", hex_offset)
 
     assert len(verifier.records) == 1
+    assert isinstance(verifier.records[0], VerifierRecord)
     assert verifier.records[0].result == VerifierResult.SUCCEEDED
     assert verifier.records[0].value == hex_offset
     assert verifier.records[0].name == "Offset in image"
 
 
-def test_verifier_add_record_range_hex_negative_scenarios():
-    """Test add_record_range with various negative hex string scenarios."""
+def test_verifier_add_record_range_hex_negative_scenarios() -> None:
+    """Test add_record_range method with various invalid hex string scenarios.
+
+    This test verifies that the Verifier.add_record_range method properly handles
+    and rejects malformed hex strings, including empty strings, invalid characters,
+    special characters, negative values, and decimal points. It also tests that
+    extremely long hex values are handled gracefully by creating an ERROR record.
+
+    :raises SPSDKError: When invalid hex string formats are provided to add_record_range.
+    """
     verifier = Verifier("Negative Test Verifier")
 
     # Test empty hex string - should raise SPSDKError
@@ -700,6 +1023,7 @@ def test_verifier_add_record_range_hex_negative_scenarios():
     # Test very long hex string (exceeds 32-bit range, should be ERROR)
     verifier.add_record_range("Very long hex", "0x" + "F" * 20)
     assert len(verifier.records) == 1
+    assert isinstance(verifier.records[0], VerifierRecord)
     assert verifier.records[0].result == VerifierResult.ERROR
     assert "Higher than allowed" in str(verifier.records[0].value)
 
@@ -712,13 +1036,21 @@ def test_verifier_add_record_range_hex_negative_scenarios():
         verifier.add_record_range("Hex with decimal", "0x10.5")
 
 
-def test_verifier_add_record_range_edge_cases():
-    """Test edge cases for hex string handling."""
+def test_verifier_add_record_range_edge_cases() -> None:
+    """Test edge cases for hex string handling in Verifier.add_record_range method.
+
+    This test validates the behavior of the Verifier's add_record_range method when
+    handling various edge cases including None values, empty strings, whitespace-only
+    strings, case sensitivity in hex prefixes, and boundary value conditions.
+
+    :raises SPSDKError: When empty string or whitespace-only string is provided as hex value.
+    """
     verifier = Verifier("Edge Case Verifier")
 
     # Test None value (should work as before)
     verifier.add_record_range("None value", None)
     assert len(verifier.records) == 1
+    assert isinstance(verifier.records[0], VerifierRecord)
     assert verifier.records[0].result == VerifierResult.ERROR
     assert verifier.records[0].value == "Doesn't exists"
 
@@ -732,47 +1064,70 @@ def test_verifier_add_record_range_edge_cases():
 
     # Test case sensitivity issues (should work)
     verifier.add_record_range("Mixed case prefix", "0X1a2B")
+    assert isinstance(verifier.records[1], VerifierRecord)
     assert len(verifier.records) == 2
     assert verifier.records[1].result == VerifierResult.SUCCEEDED
 
     # Test hex string that converts to zero
     verifier.add_record_range("Zero hex", "0x0", min_val=1)
     assert len(verifier.records) == 3
+    assert isinstance(verifier.records[2], VerifierRecord)
     assert verifier.records[2].result == VerifierResult.ERROR
     assert "Lower than allowed" in str(verifier.records[2].value)
 
 
-def test_verifier_add_record_range_boundary_conditions():
-    """Test boundary conditions with hex strings."""
+def test_verifier_add_record_range_boundary_conditions() -> None:
+    """Test boundary conditions for Verifier.add_record_range method with hexadecimal string values.
+
+    This test validates that the Verifier correctly handles edge cases including:
+    - Maximum 32-bit values (0xFFFFFFFF)
+    - Values exceeding 32-bit limits (0x100000000)
+    - Minimum boundary values (0x0)
+    - Values below specified minimum thresholds
+    The test ensures proper error detection and success validation for boundary conditions
+    in hexadecimal string parsing and range validation within the SPSDK verification system.
+    """
     verifier = Verifier("Boundary Test Verifier")
 
     # Test maximum 32-bit value as hex
     max_32bit = "0xFFFFFFFF"
     verifier.add_record_range("Max 32-bit", max_32bit)
     assert len(verifier.records) == 1
+    assert isinstance(verifier.records[0], VerifierRecord)
     assert verifier.records[0].result == VerifierResult.SUCCEEDED
 
     # Test value just over 32-bit limit
     over_32bit = "0x100000000"  # 2^32
     verifier.add_record_range("Over 32-bit", over_32bit)
     assert len(verifier.records) == 2
+    assert isinstance(verifier.records[1], VerifierRecord)
     assert verifier.records[1].result == VerifierResult.ERROR
     assert "Higher than allowed" in str(verifier.records[1].value)
 
     # Test minimum boundary
     verifier.add_record_range("At min boundary", "0x0", min_val=0)
     assert len(verifier.records) == 3
+    assert isinstance(verifier.records[2], VerifierRecord)
     assert verifier.records[2].result == VerifierResult.SUCCEEDED
 
     # Test just below minimum
     verifier.add_record_range("Below min", "0x9", min_val=10)
     assert len(verifier.records) == 4
+    assert isinstance(verifier.records[3], VerifierRecord)
     assert verifier.records[3].result == VerifierResult.ERROR
     assert "Lower than allowed" in str(verifier.records[3].value)
 
 
-def test_verifier_add_record_range_malformed_input():
-    """Test various malformed input scenarios."""
+def test_verifier_add_record_range_malformed_input() -> None:
+    """Test various malformed input scenarios for Verifier.add_record_range method.
+
+    This test validates that the add_record_range method properly handles and rejects
+    various forms of malformed hexadecimal input strings by raising SPSDKError exceptions.
+    The test covers scenarios including multiple prefixes, trailing/leading characters,
+    unicode characters, and newline characters in hex strings.
+
+    :raises SPSDKError: Expected exception for all malformed input test cases.
+    """
     verifier = Verifier("Malformed Input Verifier")
 
     # Test multiple 0x prefixes - should raise SPSDKError

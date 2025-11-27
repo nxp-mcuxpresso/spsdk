@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Script setting up models for EL2GO mock-up."""
+"""SPSDK EL2GO mock-up service models setup utility.
+
+This module provides functionality for setting up and configuring models
+required for EL2GO (EdgeLock 2GO) mock-up service in SPSDK context.
+"""
 
 import os
 import secrets
@@ -22,10 +26,15 @@ from spsdk.utils.misc import write_file
 
 
 def generate_root(root_path: str) -> PrivateKeyEcc:
-    """Generate root key for EL2GO.
+    """Generate root key and certificate for WPC CA.
 
-    :param root_path: Root path
-    :return: Private ECC key
+    Generates a SECP256R1 private key, creates a self-signed root certificate
+    with CA capabilities, and saves all related files including the private key,
+    public key, certificate, and certificate hash to the specified directory.
+
+    :param root_path: Directory path where the generated WPC root files will be saved.
+    :raises SPSDKError: If file operations fail or certificate generation fails.
+    :return: Generated private ECC key used for the root certificate.
     """
     prk = PrivateKeyEcc.generate_key(EccCurve.SECP256R1)
     prk.save(os.path.join(root_path, "wpc_root_prk.pem"))
@@ -48,13 +57,18 @@ def generate_root(root_path: str) -> PrivateKeyEcc:
 def generate_qi_id(
     model_path: str, subject: str, policy: int, root_key: PrivateKeyEcc, extra_text: str
 ) -> None:
-    """Generate QI ID.
+    """Generate QI ID certificate and configuration files for WPC authentication.
 
-    :param model_path: Filename of model
-    :param subject: TODO
-    :param policy: TODO
-    :param root_key: TODO
-    :param extra_text: TODO
+    Creates a manufacturer private/public key pair, generates a certificate signed by the root key,
+    and saves all necessary files including a YAML configuration for the QI authentication model.
+    The generated files include manufacturer private/public keys, certificate, and configuration YAML.
+
+    :param model_path: Directory path where the generated files will be saved.
+    :param subject: Common name for the certificate subject.
+    :param policy: WPC QI authentication policy value to be embedded in certificate extensions.
+    :param root_key: Root private key used to sign the generated manufacturer certificate.
+    :param extra_text: Additional text to be stored in the configuration file.
+    :raises SPSDKError: If file operations fail or certificate generation fails.
     """
     prk = PrivateKeyEcc.generate_key(EccCurve.SECP256R1)
     prk.save(os.path.join(model_path, "manufacturer_prk.pem"))
@@ -84,7 +98,15 @@ def generate_qi_id(
 
 
 def main() -> None:
-    """Setting up models for EL2GO mock-up."""
+    """Set up interactive service models for EL2GO mock-up.
+
+    This function provides an interactive command-line interface to create
+    service models for EL2GO mock-up testing. It guides users through creating
+    a root directory structure and generating multiple Qi ID models with
+    associated certificates and authentication policies.
+
+    :raises SystemExit: When user chooses not to overwrite existing service model folder.
+    """
     root_dir = inquirer.filepath(
         message="Path to root folder for service model",
         only_directories=True,

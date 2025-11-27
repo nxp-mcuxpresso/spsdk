@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Console script for WPC operations."""
+"""SPSDK NXP Wireless Power Consortium (WPC) operations tool.
+
+This module provides a command-line interface for managing WPC certificates
+and operations on NXP MCUs, including certificate insertion, retrieval,
+and WPC ID management.
+"""
 
 
 import logging

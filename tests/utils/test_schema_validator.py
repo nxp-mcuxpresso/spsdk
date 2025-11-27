@@ -5,10 +5,17 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""SPSDK Schema Validator test suite.
+
+This module contains comprehensive tests for the SPSDK schema validation functionality,
+ensuring proper configuration validation, error handling, and schema compliance across
+the SPSDK framework.
+"""
+
 import logging
-from unittest import mock
-import warnings
 import os
+from typing import Any, Optional
+from unittest import mock
 
 import pytest
 import yaml
@@ -114,35 +121,35 @@ _TEST_CONFIG = {
 
 # expected commented output for the tested configuration
 _EXP_CONFIG_RESULT = (
-    "# =================================================  Super Main Title  =================================================\n"
+    "# =================================================  Super Main Title  =================================================\n"  # pylint: disable=line-too-long
     "\n"
-    "# ======================================================================================================================\n"
-    "#                                                    == main_title ==                                                   \n"
-    "#                                                    main_description                                                   \n"
-    "# ======================================================================================================================\n"
-    "# -------------------------------------------===== n1_title [Optional] =====--------------------------------------------\n"
+    "# ======================================================================================================================\n"  # pylint: disable=line-too-long
+    "#                                                    == main_title ==                                                   \n"  # pylint: disable=line-too-long
+    "#                                                    main_description                                                   \n"  # pylint: disable=line-too-long
+    "# ======================================================================================================================\n"  # pylint: disable=line-too-long
+    "# -------------------------------------------===== n1_title [Optional] =====--------------------------------------------\n"  # pylint: disable=line-too-long
     "# Description: n1_description\n"
     "n1: false\n"
-    "# -------------------------------------------===== n2_title [Required] =====--------------------------------------------\n"
+    "# -------------------------------------------===== n2_title [Required] =====--------------------------------------------\n"  # pylint: disable=line-too-long
     "# Description: n2_description\n"
     "n2: 'test value #2'\n"
-    "# ------------------------------------===== n5_title [Conditionally required] =====-------------------------------------\n"
+    "# ------------------------------------===== n5_title [Conditionally required] =====-------------------------------------\n"  # pylint: disable=line-too-long
     "# Description: n5_description. N5 has really long description to test wrapping text.\n"
     "# Possible options: <test value, test value2, test value3, test value4>\n"
     "n5: test value\n"
-    "# -------------------------------------------===== arr_title [Required] =====-------------------------------------------\n"
+    "# -------------------------------------------===== arr_title [Required] =====-------------------------------------------\n"  # pylint: disable=line-too-long
     "# Description: arr description\n"
     "arr:\n"
     "  -\n"
-    "    # ----------------------------------------===== itm1_title [Required] =====-----------------------------------------\n"
+    "    # ----------------------------------------===== itm1_title [Required] =====-----------------------------------------\n"  # pylint: disable=line-too-long
     "    # Description: itm1 description\n"
     "    itm1: 1\n"
     "  -\n"
-    "    # ----------------------------------------===== itm1_title [Required] =====-----------------------------------------\n"
+    "    # ----------------------------------------===== itm1_title [Required] =====-----------------------------------------\n"  # pylint: disable=line-too-long
     "    # Description: itm1 description\n"
     "    itm1: 2\n"
     "  -\n"
-    "    # ----------------------------------------===== itm2_title [Required] =====-----------------------------------------\n"
+    "    # ----------------------------------------===== itm2_title [Required] =====-----------------------------------------\n"  # pylint: disable=line-too-long
     "    # Description: itm2 description\n"
     "    itm2: '0x3'\n"
 )
@@ -168,8 +175,17 @@ _EXP_CONFIG_RESULT = (
         ({"d1": "testdir_invalid"}, False),
     ],
 )
-def test_schema_validator(tmpdir, test_vector, result) -> None:
-    """Basic test of scheme validator."""
+def test_schema_validator(tmpdir: Any, test_vector: dict[str, Any], result: bool) -> None:
+    """Test schema validator functionality with various input configurations.
+
+    This test creates a temporary file system structure and validates different
+    test vectors against a predefined JSON schema to ensure the schema validator
+    works correctly for various data types and formats.
+
+    :param tmpdir: Temporary directory fixture for creating test files and directories.
+    :param test_vector: Dictionary containing test data to validate against the schema.
+    :param result: Expected validation result - True if validation should pass, False if it should fail.
+    """
     schema = {
         "type": "object",
         "properties": {
@@ -202,8 +218,16 @@ def test_schema_validator(tmpdir, test_vector, result) -> None:
         ({"n2": "Hello"}, False),
     ],
 )
-def test_schema_validator_required(test_vector, result) -> None:
-    """Basic test of scheme validator."""
+def test_schema_validator_required(test_vector: dict[str, Any], result: bool) -> None:
+    """Test schema validator with required field validation.
+
+    This test validates the schema validator's behavior when dealing with required fields.
+    It checks both valid configurations that should pass validation and invalid ones
+    that should raise exceptions.
+
+    :param test_vector: Dictionary containing test data to validate against the schema
+    :param result: Expected validation result - True if validation should pass, False if it should fail
+    """
     schema = {
         "type": "object",
         "properties": {
@@ -221,7 +245,13 @@ def test_schema_validator_required(test_vector, result) -> None:
 
 
 def test_schema_invalid_validator() -> None:
-    """Basic test of scheme validator."""
+    """Test schema validator with invalid schema type.
+
+    Verifies that the schema validator properly raises SPSDKError when
+    provided with a schema containing an invalid type specification.
+
+    :raises SPSDKError: When schema contains invalid type definition.
+    """
     schema = {
         "type": "object",
         "properties": {
@@ -232,8 +262,18 @@ def test_schema_invalid_validator() -> None:
         check_config({}, [schema])
 
 
-def _is_yaml_comment(yaml_data: str, comment: str, key: str = None) -> bool:
-    """Check if this text is in comment."""
+def _is_yaml_comment(yaml_data: str, comment: str, key: Optional[str] = None) -> bool:
+    """Check if specified text exists in YAML comments.
+
+    Searches through YAML data line by line to determine if the given comment text
+    appears within actual comment sections (after # symbols). Optionally verifies
+    that a specific key exists after finding the comment.
+
+    :param yaml_data: YAML content as string to search through.
+    :param comment: Comment text to search for within YAML comments.
+    :param key: Optional key name that must be found after the comment is located.
+    :return: True if comment is found (and key if specified), False otherwise.
+    """
     str_lines = yaml_data.splitlines()
 
     for i, line in enumerate(str_lines):
@@ -251,7 +291,14 @@ def _is_yaml_comment(yaml_data: str, comment: str, key: str = None) -> bool:
 
 
 def test_config_template() -> None:
-    """Test export of commented configuration template"""
+    """Test export of commented configuration template.
+
+    Validates that CommentedConfig properly generates a YAML template with appropriate
+    comments for configuration schema elements including descriptions, requirement levels,
+    and proper handling of conditional fields.
+
+    :raises AssertionError: If any of the expected YAML comments or structure validation fails.
+    """
     my_yml_template = CommentedConfig("Super Main Title", [_TEST_CONFIG_SCHEMA]).get_template()
 
     assert _is_yaml_comment(my_yml_template, "main_description")
@@ -271,7 +318,14 @@ def test_config_template() -> None:
 
 
 def test_config() -> None:
-    """Test export of custom commented configuration"""
+    """Test export of custom commented configuration.
+
+    Validates that CommentedConfig correctly generates a YAML configuration
+    string with proper comments and formatting when given a test schema and
+    configuration data.
+
+    :raises AssertionError: When the generated configuration doesn't match expected result.
+    """
     c_cfg = CommentedConfig("Super Main Title", [_TEST_CONFIG_SCHEMA])
     yml_cfg_str = c_cfg.get_config(_TEST_CONFIG)
 
@@ -279,6 +333,14 @@ def test_config() -> None:
 
 
 def test_validate_oneof() -> None:
+    """Test validation of oneOf schema constraint.
+
+    Validates that an array with items conforming to oneOf schema constraint
+    is properly validated. The test uses a schema with two possible object
+    types and verifies that valid data matching either type passes validation.
+
+    :raises SPSDKError: If schema validation fails.
+    """
     schema = {
         "type": "array",
         "items": {
@@ -299,11 +361,17 @@ def test_validate_oneof() -> None:
 
     test_vector = [{"object1": "Hello"}, {"object2": 123}]
 
-    check_config(test_vector, [schema])
+    check_config(test_vector, [schema])  # type: ignore
 
 
 def test_load_schema_file() -> None:
-    """Test class ValidationSchemas"""
+    """Test loading of schema files from ValidationSchemas.
+
+    Verifies that get_schema_file returns a valid dictionary for existing
+    schema names and raises SPSDKError for invalid schema names.
+
+    :raises SPSDKError: When invalid schema name is provided.
+    """
 
     assert isinstance(get_schema_file(DatabaseManager.TZ), dict)
 
@@ -455,12 +523,19 @@ def test_load_schema_file() -> None:
         ),
     ],
 )
-def test_unknown_properties_warning(caplog, schema, config, expected_warnings) -> None:
+def test_unknown_properties_warning(
+    caplog: Any, schema: dict, config: dict, expected_warnings: list[str]
+) -> None:
     """Test that warnings are generated for unknown properties in configuration.
 
-    :param schema: JSON schema to test against
-    :param config: Configuration to check
-    :param expected_warnings: Strings that should appear in warnings
+    Validates that the schema validator properly generates warnings when unknown
+    properties are found in the configuration and that warnings are suppressed
+    when unknown property checking is disabled.
+
+    :param caplog: Pytest fixture for capturing log messages.
+    :param schema: JSON schema dictionary to validate against.
+    :param config: Configuration dictionary to validate.
+    :param expected_warnings: List of property names that should generate warnings.
     """
     caplog.set_level(logging.WARNING)
     caplog.clear()
@@ -492,7 +567,15 @@ def test_unknown_properties_warning(caplog, schema, config, expected_warnings) -
 
 
 @mock.patch("spsdk.utils.schema_validator.SPSDK_SCHEMA_STRICT", True)
-def test_check_unknown_properties_strict_mode():
+def test_check_unknown_properties_strict_mode() -> None:
+    """Test schema validation with strict mode for unknown properties.
+
+    Verifies that the check_config function raises SPSDKError when unknown
+    properties are present in the configuration and strict mode is enabled
+    (check_unknown_props=True).
+
+    :raises SPSDKError: When unknown properties are found in configuration.
+    """
     schema = {"type": "object", "properties": {"known": {"type": "string"}}}
     config = {"known": "value", "unknown": "should trigger warning"}
     with pytest.raises(SPSDKError) as exc:
@@ -510,8 +593,17 @@ def test_check_unknown_properties_strict_mode():
         ("file_with_hex_value.txt", True),
     ],
 )
-def test_file_or_hex_value_format(data_dir, test_input, should_pass):
-    """Test the 'file-or-hex-value' format validation with different inputs."""
+def test_file_or_hex_value_format(data_dir: str, test_input: str, should_pass: bool) -> None:
+    """Test the 'file-or-hex-value' format validation with different inputs.
+
+    Validates that the schema validator correctly handles the 'file-or-hex-value' format
+    by testing various input scenarios that should either pass or fail validation.
+
+    :param data_dir: Directory path to search for test data files.
+    :param test_input: Input string to validate against file-or-hex-value format.
+    :param should_pass: Flag indicating whether validation should succeed or fail.
+    :raises SPSDKError: When validation fails and should_pass is False.
+    """
     # Define a simple schema with file-or-hex-value format
     schema = {
         "type": "object",

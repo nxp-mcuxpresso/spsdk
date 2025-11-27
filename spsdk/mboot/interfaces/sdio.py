@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Sdio Mboot interface implementation."""
+"""SPSDK SDIO interface implementation for MBoot protocol communication.
+
+This module provides SDIO (Secure Digital Input Output) interface functionality
+for communicating with NXP MCUs using the MBoot protocol through SDIO connections.
+"""
+
 import logging
 import struct
 from sys import platform
@@ -27,7 +32,15 @@ SDIO_DEVICES = {
 
 
 class MbootSdioInterface(MbootSerialProtocol):
-    """Sdio interface."""
+    """SPSDK SDIO interface for MBoot protocol communication.
+
+    This class provides SDIO (Secure Digital Input Output) communication interface
+    for MBoot protocol operations, enabling secure provisioning and device
+    communication over SDIO connections.
+
+    :cvar identifier: Interface type identifier string.
+    :cvar sdio_devices: Dictionary mapping of supported SDIO device configurations.
+    """
 
     identifier = "sdio"
     device: SdioDevice
@@ -36,7 +49,8 @@ class MbootSdioInterface(MbootSerialProtocol):
     def __init__(self, device: SdioDevice) -> None:
         """Initialize the MbootSdioInterface object.
 
-        :param device: The device instance
+        :param device: The SDIO device instance to be used for communication.
+        :raises SPSDKError: When SDIO interface is used on unsupported Windows platform.
         """
         if platform == "win32":
             logger.warning("Sdio interface is not supported on windows platform.")
@@ -44,9 +58,12 @@ class MbootSdioInterface(MbootSerialProtocol):
 
     @property
     def name(self) -> str:
-        """Get the name of the device.
+        """Get the name of the SDIO device.
 
-        :return: Name of the device.
+        Searches through the known SDIO devices dictionary to find a matching device
+        based on vendor ID and product ID, returning the corresponding device name.
+
+        :return: Name of the device if found in known devices, otherwise "Unknown".
         """
         assert isinstance(self.device, SdioDevice)
         for name, value in self.sdio_devices.items():
@@ -62,25 +79,33 @@ class MbootSdioInterface(MbootSerialProtocol):
     ) -> list[Self]:
         """Scan connected SDIO devices.
 
-        :param device_path: device path string
-        :param timeout: Interface timeout
-        :return: matched SDIO device
+        :param device_path: Device path string to scan for SDIO devices.
+        :param timeout: Interface timeout in seconds, defaults to None for no timeout.
+        :return: List of matched SDIO device instances.
         """
         devices = SdioDevice.scan(device_path=device_path, timeout=timeout)
         return [cls(device) for device in devices]
 
     def open(self) -> None:
-        """Open the interface."""
+        """Open the SDIO interface.
+
+        Establishes connection to the SDIO device and prepares it for communication.
+
+        :raises SPSDKError: If the SDIO device cannot be opened or is not available.
+        """
         self.device.open()
 
     def read(self, length: Optional[int] = None) -> Union[CmdResponse, bytes]:
-        """Read data on the IN endpoint associated to the HID interface.
+        """Read data from SDIO interface.
 
-        :return: Return CmdResponse object.
-        :raises McuBootConnectionError: Raises an error if device is not opened for reading
-        :raises McuBootConnectionError: Raises if device is not available
-        :raises McuBootDataAbortError: Raises if reading fails
-        :raises TimeoutError: When timeout occurs
+        Reads data frame from the SDIO device, validates CRC, and returns either
+        a parsed command response or raw data based on frame type.
+
+        :param length: Optional length parameter (currently unused).
+        :raises McuBootConnectionError: Device not opened/available or invalid CRC received.
+        :raises McuBootDataAbortError: Reading fails or received empty frame.
+        :raises TimeoutError: Timeout occurs during read operation.
+        :return: CmdResponse object for command frames or raw bytes for data frames.
         """
         raw_data = self._read(1024)
         if not raw_data:
@@ -102,13 +127,16 @@ class MbootSdioInterface(MbootSerialProtocol):
         return data
 
     def _read_frame_header(self, expected_frame_type: Optional[FPType] = None) -> tuple[int, int]:
-        """Read frame header and frame type. Return them as tuple of integers.
+        """Read frame header and frame type from SDIO interface.
 
-        :param expected_frame_type: Check if the frame_type is exactly as expected
-        :return: Tuple of integers representing frame header and frame type
-        :raises McuBootDataAbortError: Target sens Data Abort frame
-        :raises McuBootConnectionError: Unexpected frame header or frame type (if specified)
-        :raises McuBootConnectionError: When received invalid ACK
+        The method reads 2 bytes from the SDIO interface and parses them to extract
+        the frame header and frame type information.
+
+        :param expected_frame_type: Expected frame type to validate against received data.
+        :return: Tuple of integers representing frame header and frame type.
+        :raises McuBootDataAbortError: Target sends Data Abort frame.
+        :raises McuBootConnectionError: Unexpected frame header or frame type.
+        :raises McuBootConnectionError: When received invalid ACK.
         """
         data = self._read(2)
         return self._parse_frame_header(data, FPType.ACK)
@@ -116,13 +144,17 @@ class MbootSdioInterface(MbootSerialProtocol):
     def _parse_frame_header(
         self, frame: bytes, expected_frame_type: Optional[FPType] = None
     ) -> tuple[int, int]:
-        """Read frame header and frame type. Return them as tuple of integers.
+        """Parse frame header and extract frame type from SDIO frame.
 
-        :param expected_frame_type: Check if the frame_type is exactly as expected
-        :return: Tuple of integers representing frame header and frame type
-        :raises McuBootDataAbortError: Target sens Data Abort frame
-        :raises McuBootConnectionError: Unexpected frame header or frame type (if specified)
-        :raises McuBootConnectionError: When received invalid ACK
+        The method validates the frame header against expected start byte and optionally
+        checks if the frame type matches the expected type. Handles abort frames and
+        connection errors appropriately.
+
+        :param frame: Raw frame data bytes to parse.
+        :param expected_frame_type: Expected frame type for validation, optional.
+        :return: Tuple of frame header and frame type as integers.
+        :raises McuBootDataAbortError: Target sends Data Abort frame.
+        :raises McuBootConnectionError: Invalid frame header or unexpected frame type.
         """
         header, frame_type = struct.unpack_from("<BB", frame, 0)
         if header != self.FRAME_START_BYTE:

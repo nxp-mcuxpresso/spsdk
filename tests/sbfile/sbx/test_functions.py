@@ -4,7 +4,13 @@
 # Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Test of commands."""
+"""SPSDK SBX (Secure Binary X) functionality tests.
+
+This module contains unit tests for the SecureBinaryX format functionality,
+including testing of SBX image creation, command handling, and header management.
+The tests cover SBX image types, command structures, HSM blob handling,
+and integration with different MCU family revisions.
+"""
 
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.sbfile.sbx.images import (
@@ -18,7 +24,15 @@ from spsdk.sbfile.sbx.images import (
 from spsdk.utils.family import FamilyRevision
 
 
-def test_sbx():
+def test_sbx() -> None:
+    """Test SBX file creation and validation functionality.
+
+    This test verifies the complete workflow of creating a Secure Binary X (SBX) file
+    including TP-HSM blob creation, header configuration, commands setup, and validation
+    of exported binary data formats for OEM provisioning image type.
+
+    :raises AssertionError: If any of the exported binary data or string representations don't match expected values.
+    """
     family = FamilyRevision("mc56f81868")
     tphshm_header = TpHsmBlobHeader()
     tphsm_blob = TpHsmBlob(

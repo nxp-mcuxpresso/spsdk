@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module for offline RTF calculation."""
+"""SPSDK DICE RTF (Runtime Firmware) calculation utilities.
+
+This module provides functionality for calculating RTF values used in DICE
+(Device Identifier Composition Engine) attestation flows. RTF calculation
+is essential for secure boot and device identity verification processes.
+"""
 
 from typing import Optional
 
@@ -15,7 +20,17 @@ from spsdk.utils.family import FamilyRevision
 
 
 def calculate_rtf(family: FamilyRevision, mbi_data: bytes) -> Optional[bytes]:
-    """Calculate RTF for given MBI."""
+    """Calculate RTF (Root of Trust Fingerprint) for given Master Boot Image.
+
+    The method extracts cryptographic components from the MBI certificate block
+    and computes the RTF hash using SHA256 algorithm. Only supports image types 4 and 8.
+
+    :param family: Target MCU family and revision information.
+    :param mbi_data: Raw Master Boot Image data bytes.
+    :raises NotImplementedError: When MBI contains ISK certificate (not yet supported).
+    :raises AssertionError: When certificate block is not version 2.1.
+    :return: 32-byte RTF hash or None if image type is not supported.
+    """
     image_type = MasterBootImage.get_image_type(family=family, data=mbi_data)
     if image_type not in [4, 8]:
         return None

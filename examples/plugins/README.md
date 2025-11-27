@@ -15,6 +15,10 @@ Affected functionality is the following:
 
 J-Link and PE Micro over PyOCD is kept in the base SPSDK installation.
 
+## SPSDK 3.0 changes
+
+Standalone Python module plugin has been deprecated in favor of Python package.
+
 ## Supported plugin types
 
 The table bellow shows the list of support plugin types with associated package entrypoints, cookiecutter templates and base class they are derived from.
@@ -31,15 +35,13 @@ The table bellow shows the list of support plugin types with associated package 
 
 ## Plugin implementation
 
-There are basically two ways how a plugin can be implemented.
+Plugins in SPSDK must be implemented as Python packages installed in the environment. 
 
-- A Python package installed in the environment (preferred)
-- A single Python module with the plugin implementation in it
+**Note:** Single Python module plugins were deprecated in SPSDK 3.0 and are no longer supported.
 
-The actual implementation depends on actual plugin type. 
-In general every plugin must be derived from the plugin base class and implement it's methods.
+The actual implementation depends on the specific plugin type. 
+In general, every plugin must be derived from the appropriate plugin base class and implement its methods.
 
-### Plugin as a Python package
 All the plugins installed in the Python environment will be discovered automatically.
 The only requirement for package is to add specific entrypoint metadata into the package.
 

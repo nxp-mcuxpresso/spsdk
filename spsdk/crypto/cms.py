@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""ASN1Crypto implementation for CMS signature container."""
+"""SPSDK CMS (Cryptographic Message Syntax) signature utilities.
+
+This module provides functionality for creating and handling CMS signature containers
+using ASN1Crypto implementation. It supports data signing operations with X.509
+certificates and various hash algorithms for secure message authentication.
+"""
 
 
 # Used security modules
@@ -29,15 +34,20 @@ def cms_sign(
 ) -> bytes:
     """Sign provided data and return CMS signature.
 
-    :param zulu: current UTC time+date
-    :param data: to be signed
-    :param certificate: Certificate with issuer information
-    :param signing_key: Signing key, is mutually exclusive with signature_provider parameter
-    :param signature_provider: Signature provider, is mutually exclusive with signing_key parameter
-    :return: CMS signature (binary)
-    :raises SPSDKError: If certificate is not present
-    :raises SPSDKError: If private key is not present
-    :raises SPSDKError: If incorrect time-zone"
+    Creates a CMS (Cryptographic Message Syntax) signature for the provided data using either
+    a private key or signature provider along with the certificate information.
+
+    :param zulu: Current UTC time and date for signature timestamp.
+    :param data: Binary data to be signed.
+    :param certificate: Certificate containing issuer information for signature.
+    :param signing_key: Private key for signing, mutually exclusive with signature_provider.
+    :param signature_provider: External signature provider, mutually exclusive with signing_key.
+    :return: CMS signature in binary format.
+    :raises SPSDKValueError: If certificate is not present.
+    :raises SPSDKValueError: If neither private key nor signature provider is present.
+    :raises SPSDKValueError: If both private key and signature provider are specified.
+    :raises SPSDKTypeError: If unsupported private key type is provided.
+    :raises SPSDKError: If incorrect time-zone is specified.
     """
     # Lazy imports are used here to save some time during SPSDK startup
     from asn1crypto import cms, util, x509
@@ -137,11 +147,20 @@ def sign_data(
     signing_key: Optional[PrivateKey],
     signature_provider: Optional[SignatureProvider],
 ) -> bytes:
-    """Sign the data.
+    """Sign the data using either a private key or signature provider.
 
-    :param data_to_sign: Data to be signed
-    :param signing_key: Signing key, is mutually exclusive with signature_provider parameter
-    :param signature_provider: Signature provider, is mutually exclusive with signing_key parameter
+    The method supports both direct signing with a private key and signing through
+    a signature provider. For ECC keys, the signature is automatically converted
+    to DER format when needed.
+
+    :param data_to_sign: Data to be signed as bytes.
+    :param signing_key: Private key for signing, mutually exclusive with
+        signature_provider parameter.
+    :param signature_provider: External signature provider, mutually exclusive
+        with signing_key parameter.
+    :raises SPSDKValueError: When both signing_key and signature_provider are
+        provided, or when neither is provided.
+    :return: Digital signature as bytes in appropriate format.
     """
     if signing_key and signature_provider:
         raise SPSDKValueError("Only one of private key and signature provider must be specified")

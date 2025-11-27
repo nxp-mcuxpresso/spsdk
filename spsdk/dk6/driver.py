@@ -5,7 +5,14 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""DK6 Drivers backend interface."""
+"""DK6 driver backend interface for device communication.
+
+This module provides the core driver infrastructure for DK6 devices, including
+backend abstraction, device information handling, and communication interfaces.
+It supports multiple backend types and provides utilities for device discovery
+and connection management.
+"""
+
 import logging
 import time
 from enum import Enum
@@ -31,15 +38,20 @@ FTDI_ISP_SEQUENCE = [
 def generate_pyftdi_url(serial_number: str, address: int = 1) -> str:
     """Generates URL for PyFTDI from serial number.
 
-    :param serial_number: serial number from USBDeviceDescriptor
-    :param address: interface number
-    :return: url for PyFTDI
+    :param serial_number: Serial number from USBDeviceDescriptor.
+    :param address: Interface number, defaults to 1.
+    :return: URL string for PyFTDI connection.
     """
     return f"ftdi://::{serial_number}/{address}"
 
 
 class Backend(Enum):
-    """Backend selection."""
+    """Backend enumeration for DK6 driver communication interfaces.
+
+    This enumeration defines the available backend drivers that can be used
+    for communication with DK6 devices, including FTDI-based drivers and
+    serial communication options.
+    """
 
     PYFTDI = 1
     PYLIBFTDI = 2
@@ -48,9 +60,12 @@ class Backend(Enum):
 
 
 class DeviceInfo:
-    """Device info class.
+    """Device information container for DK6 connected devices.
 
-    Contains information about the connected device
+    This class encapsulates essential information about a connected device including
+    USB identifiers, serial number, description, address, and backend interface.
+    It provides a structured way to store and access device metadata for DK6
+    operations and device management.
     """
 
     def __init__(
@@ -63,15 +78,18 @@ class DeviceInfo:
         address: int,
         backend: Backend,
     ):
-        """Device info constructor.
+        """Initialize device information object.
 
-        :param device_id: Device ID
-        :param vid: USB VID
-        :param pid: USB PID
-        :param sn: Serial number
-        :param description: description
-        :param address: device address
-        :param backend: backend
+        Creates a new device information instance with USB connection details,
+        serial number, and backend configuration for SPSDK communication.
+
+        :param device_id: Unique identifier for the device, either string or integer format.
+        :param vid: USB Vendor ID for device identification.
+        :param pid: USB Product ID for device identification.
+        :param sn: Serial number string for unique device identification.
+        :param description: Human-readable description of the device.
+        :param address: Physical or logical address of the device.
+        :param backend: Communication backend instance for device operations.
         """
         self.device_id = device_id
         self.vid = vid
@@ -82,6 +100,13 @@ class DeviceInfo:
         self.backend = backend
 
     def __str__(self) -> str:
+        """Get string representation of the device information.
+
+        Provides a formatted string containing all device identification and connection details
+        including device ID, VID, PID, serial number, description, address, and backend type.
+
+        :return: Formatted string with complete device information.
+        """
         return (
             f"DEVICE ID: {self.device_id}, VID: {hex(self.vid) if self.vid else 'N/A'}, "
             f"PID: {hex(self.pid) if self.pid else 'N/A'}, Serial number: {self.sn}, "
@@ -107,15 +132,22 @@ else:
 
 # pylint: disable=import-error
 class DriverInterface:
-    """Interface to FTDI backends.
+    """FTDI driver interface for DK6 communication.
 
-    Supported backends are: pyftdi, pylibftdi and ftdi2xx
+    This class provides a unified interface to multiple FTDI backend libraries
+    (pyftdi, pylibftdi, and ftd2xx) enabling communication with DK6 devices
+    through different driver implementations.
     """
 
     def __init__(self, backend: Backend) -> None:
         """Initialize driver interface and serial interface based on backend.
 
-        :param backend: supported backend name
+        Sets up the appropriate FTDI driver backend (PYFTDI, PYLIBFTDI, or FTD2xx) for DK6
+        communication. Initializes driver and device objects based on the selected backend.
+
+        :param backend: Backend type to use for FTDI communication.
+        :raises SPSDKError: When required backend package is not installed or underlying
+            library is missing.
         """
         self.backend = backend
         self.initialized = False
@@ -164,7 +196,16 @@ class DriverInterface:
                 ) from e
 
     def go_to_isp(self, device_id: str) -> None:
-        """Send a sequence that goes to ISP mode using FTDI bitbang device."""
+        """Send a sequence that goes to ISP mode using FTDI bitbang device.
+
+        The method sends a predefined sequence of bitbang commands to put the target device into
+        In-System Programming (ISP) mode. It supports both PyFTDI and FTD2xx backends for FTDI
+        device communication.
+
+        :param device_id: Device identifier for the FTDI device to use for ISP sequence.
+        :raises AssertionError: If driver is not properly initialized for PyFTDI backend.
+        :raises ImportError: If required FTDI library is not available.
+        """
         logger.info("Sending bitbang sequence to ISP mode")
         if self.backend == Backend.PYFTDI:
             from pyftdi import ftdi
@@ -194,9 +235,13 @@ class DriverInterface:
             logger.error("Selected backend does not have method for ISP sequence")
 
     def list_devices(self) -> list[DeviceInfo]:
-        """Returns a list of devices that are connected for selected backend.
+        """List connected DK6 devices for the selected backend.
 
-        :return: List of devices
+        Enumerates and returns information about all DK6 devices that are currently connected
+        and accessible through the configured backend (PYFTDI, FTD2xx, or PYSERIAL).
+
+        :return: List of DeviceInfo objects containing device details such as ID, VID, PID,
+                 serial number, description, and address for each connected device.
         """
         devices_info = []
         logger.info("Enumerating DK6 devices")
@@ -257,10 +302,13 @@ class DriverInterface:
     def init_serial(self, device_id: str, baudrate: int = 115200, timeout: int = 5000) -> None:
         """Initialize serial device.
 
-        :param device_id: device ID
-        :param baudrate: UART baudrate, defaults to 115200
-        :param timeout: read and write timeout, defaults to 5000 ms
-        :raises SPSDKError: if invalid device_id is provided
+        Configures and establishes connection to a serial device using the specified backend.
+        The method supports multiple backends including PYFTDI, PYLIBFTDI, FTD2xx, and PYSERIAL.
+
+        :param device_id: Device identifier (format depends on backend type)
+        :param baudrate: UART baudrate for communication, defaults to 115200
+        :param timeout: Read and write timeout in milliseconds, defaults to 5000 ms
+        :raises SPSDKError: If invalid device_id is provided or device initialization fails
         """
         logger.info(
             f"Initializing serial device for dev: {device_id}, baudrate: {baudrate} and timeout: {timeout}"
@@ -313,19 +361,25 @@ class DriverInterface:
             self.initialized = True
 
     def get_serial(self) -> SerialDevice:
-        """Return serial device.
+        """Get serial device.
 
-        :raises SPSDKError: if serial device is not initialized
-        :return: Serial device based on backend
+        Retrieves the initialized serial device instance used for communication.
+
+        :raises SPSDKError: If serial device is not initialized.
+        :return: Serial device based on backend.
         """
         if not self.initialized or not self.dev:
             raise SPSDKError("Serial device is not initialized")
         return self.dev
 
     def set_baud_rate(self, baudrate: int) -> None:
-        """Set baud rate.
+        """Set baud rate for the UART communication.
 
-        :param baudrate: UART baudrate
+        The method configures the baud rate for different backend implementations including
+        PYFTDI, PYLIBFTDI, FTD2xx, and PYSERIAL. If the device is not initialized, the
+        operation is skipped with an error log.
+
+        :param baudrate: UART baud rate value to be set.
         """
         logger.info(f"Setting baudrate to {baudrate}")
         if not self.initialized:

@@ -23,7 +23,7 @@ revisions:
     features:
       pfr:
         romcfg:
-          reg_spec: ifr_romcfg_a1.json
+          reg_spec: ifr_romcfg_a2.1.json
         cmactable:
           reg_spec: ifr_cmactable_a1.json
 

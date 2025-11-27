@@ -5,10 +5,16 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Script for creation of image with all SPSDK apps"""
+"""SPSDK documentation image generation utilities.
+
+This module provides functionality for automatically generating visual documentation
+images for SPSDK applications and APIs. It creates composite images showing the
+structure and relationships of SPSDK components for Sphinx documentation.
+"""
+
 import math
 import os
-from typing import List, Optional, Tuple
+from typing import Any, Optional
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -25,11 +31,17 @@ SHOW_IMG = False
 
 
 class ImgTable:
-    """Class for generating table like images for the purpose of documentation"""
+    """SPSDK Documentation Table Image Generator.
+
+    This class creates table-like images for documentation purposes, rendering
+    structured data in a visual table format with customizable styling and layout.
+    The generator supports configurable dimensions, colors, fonts, and automatic
+    row calculation for optimal table presentation.
+    """
 
     def __init__(
         self,
-        table_list: List[str],
+        table_list: list[str],
         header_text: str,
         x_count: int = 3,
         y_count: Optional[int] = None,
@@ -39,27 +51,30 @@ class ImgTable:
         table_font_size: int = 30,
         header_font_size: int = 45,
         header_width: int = 100,
-        bg_color: Tuple[int, int, int] = (67, 126, 180),
+        bg_color: tuple[int, int, int] = (67, 126, 180),
         fill_color: str = "white",
         outline_color: str = "black",
         font: str = "Helvetica",
     ) -> None:
-        """Constructor for the ImgTable
+        """Initialize ImgTable with table data and rendering configuration.
 
-        :param table_list: list of string that will be printed
-        :param header_text: text of header on the left side
-        :param x_count: count of columns in the table, defaults to 2
-        :param y_count: count of rows in the table, defaults to 4
-        :param rect_width: width of the rectangle with text, defaults to 600
-        :param rect_height: height of the rectangle with text, defaults to 200
-        :param offset: space between rectangles, defaults to 20
-        :param table_font_size: font size of for the text in table, defaults to 60
-        :param header_font_size: header font size, defaults to 90
-        :param header_width: width of the header, defaults to 200
-        :param bg_color: background color, defaults to (67, 126, 180)
-        :param fill_color: fill/text color, defaults to "white"
-        :param outline_color: outline color, defaults to "black"
-        :param font: font, path to font file or name, defaults to "Helvetica"
+        Creates a table image generator with specified layout, styling, and content parameters.
+        Automatically calculates row count if not provided and validates table capacity.
+
+        :param table_list: List of strings to be displayed in table cells.
+        :param header_text: Header text displayed on the left side of the table.
+        :param x_count: Number of columns in the table.
+        :param y_count: Number of rows in the table. If None, calculated automatically.
+        :param rect_width: Width of each table cell rectangle in pixels.
+        :param rect_height: Height of each table cell rectangle in pixels.
+        :param offset: Spacing between table cell rectangles in pixels.
+        :param table_font_size: Font size for text within table cells.
+        :param header_font_size: Font size for header text.
+        :param header_width: Width of the header section in pixels.
+        :param bg_color: Background color as RGB tuple.
+        :param fill_color: Fill color for table cells and text.
+        :param outline_color: Border color for table cell rectangles.
+        :param font: Font name or path to font file for text rendering.
         """
         self.table_list = table_list
         self.header_text = header_text
@@ -90,12 +105,14 @@ class ImgTable:
 
         self._draw_img()
 
-    def _get_img(self) -> Tuple[Image.Image, ImageDraw.Draw]:
-        """Returns Image and Draw for table.
+    def _get_img(self) -> tuple[Image.Image, ImageDraw.ImageDraw]:
+        """Create Image and ImageDraw objects for table generation.
 
-        :return: tuple of Image and Draw
+        Creates a new RGB image with dimensions calculated based on table parameters
+        and returns both the image object and its associated drawing context.
+
+        :return: tuple containing the PIL Image object and ImageDraw object for rendering the table.
         """
-
         img = Image.new(
             "RGB",
             (
@@ -109,10 +126,14 @@ class ImgTable:
 
         return img, draw
 
-    def _get_header_img(self) -> Tuple[Image.Image, ImageDraw.Draw]:
-        """Returns header Image and Draw.
+    def _get_header_img(self) -> tuple[Image.Image, ImageDraw.ImageDraw]:
+        """Create header image and drawing context for application visualization.
 
-        :return: tuple of Image and Draw
+        This method initializes a new RGB image with calculated dimensions based on
+        the rectangle count and header width, along with its corresponding drawing
+        context for rendering header elements.
+
+        :return: tuple containing the header Image object and its ImageDraw context.
         """
         img_header = Image.new(
             "RGB", (self.y_count * self.rect_height + self.offset, self.header_width), self.bg_color
@@ -121,8 +142,16 @@ class ImgTable:
 
         return img_header, draw_header
 
-    def _create_table(self):
-        """Draws rectangle as table"""
+    def _create_table(self) -> None:
+        """Create a visual table by drawing rectangles with command text.
+
+        The method iterates through the sorted table list and draws rectangular cells
+        in a grid layout. Each cell contains centered text representing a command name.
+        The table is drawn with specified colors, fonts, and positioning based on
+        the configured grid dimensions and styling properties.
+
+        :raises IndexError: When the grid position exceeds available commands in the table list.
+        """
         sorted_list = sorted(self.table_list)
         for i in range(self.y_count):
             for j in range(self.x_count):
@@ -156,8 +185,16 @@ class ImgTable:
                     font=self.table_text_font,
                 )
 
-    def _create_header(self):
-        """Draws header."""
+    def _create_header(self) -> None:
+        """Create and draw the header section of the image.
+
+        This method draws a rectangular header with background fill and outline, then centers
+        the header text within the rectangle. The header dimensions are calculated based on
+        the grid layout and offset values.
+
+        :raises AttributeError: If required drawing objects or fonts are not initialized.
+        :raises ValueError: If calculated dimensions result in invalid rectangle coordinates.
+        """
         header_h = self.y_count * self.rect_height + self.offset
 
         x1 = y1 = self.offset
@@ -180,30 +217,50 @@ class ImgTable:
             fill=self.bg_color,
         )
 
-    def _draw_img(self):
-        """Draws the whole image with table and header"""
+    def _draw_img(self) -> None:
+        """Draw the complete image by combining table and header components.
+
+        This method orchestrates the image creation process by first generating
+        the data table and header components, then rotating the header 90 degrees
+        and compositing it with the main image.
+
+        :raises AttributeError: If header_img or img attributes are not properly initialized.
+        :raises PIL.UnidentifiedImageError: If image operations fail due to corrupted image data.
+        """
         self._create_table()
         self._create_header()
 
         rotated_img_apps_header = self.header_img.rotate(90, expand=1)
         Image.Image.paste(self.img, rotated_img_apps_header, (0, 0))
 
-    def show(self):
-        """Shows image in separate window"""
+    def show(self) -> None:
+        """Show image in separate window.
+
+        Displays the image using the default system image viewer in a new window.
+        This method provides a convenient way to visually inspect the generated image.
+
+        :raises SPSDKError: If the image cannot be displayed or no default viewer is available.
+        """
         self.img.show()
 
-    def save(self, path: str):
-        """Save image to provided path
+    def save(self, path: str) -> None:
+        """Save image to provided path.
 
-        :param path: path where the image will be saved
+        :param path: Absolute or relative file path where the image will be saved.
+        :raises OSError: If the file cannot be written to the specified path.
+        :raises ValueError: If the path is invalid or the image format is not supported.
         """
         self.img.save(path)
 
 
-def get_spsdk_apps() -> List[str]:
-    """Gets list of all SPSDK apps.
+def get_spsdk_apps() -> list[str]:
+    """Get list of all SPSDK applications.
 
-    :return: list of all SPSDK apps
+    Retrieves all available SPSDK command-line applications by accessing the main
+    commands registry and filtering out utility commands and general commands
+    that are not application-specific.
+
+    :return: List of SPSDK application names.
     """
     commands = spsdk_main.commands
     commands.pop("utils")  # remove utils group commands
@@ -213,12 +270,15 @@ def get_spsdk_apps() -> List[str]:
 
 
 def concat_img(im1: Image.Image, im2: Image.Image, im3: Image.Image) -> Image.Image:
-    """Concatenate images vertically
+    """Concatenate three images vertically into a single image.
 
-    :param im1: image 1
-    :param im2: image 2
-    :param im3: image 3
-    :return: Concatenated image
+    The method creates a new RGB image with combined height and pastes the input images
+    one below another in the order: im1 (top), im2 (middle), im3 (bottom).
+
+    :param im1: First image to be placed at the top.
+    :param im2: Second image to be placed in the middle.
+    :param im3: Third image to be placed at the bottom.
+    :return: New concatenated image with combined height of all input images.
     """
     dst = Image.new("RGB", (im1.width, im1.height + im2.height + im3.height))
     dst.paste(im1, (0, 0))
@@ -227,8 +287,16 @@ def concat_img(im1: Image.Image, im2: Image.Image, im3: Image.Image) -> Image.Im
     return dst
 
 
-def main():
-    """Main function."""
+def main() -> None:
+    """Generate documentation images for SPSDK architecture components.
+
+    This function creates visual documentation by generating images that represent
+    the SPSDK architecture including APIs, applications, and tools. The images
+    are created as tables and combined into an architecture overview diagram.
+
+    :raises OSError: When unable to create output directory or save images.
+    :raises SPSDKError: When SPSDK apps discovery fails.
+    """
     print("Generating pictures for documentation")
     # gets list of SPSDK apps
     apps_list = get_spsdk_apps()
@@ -239,12 +307,21 @@ def main():
         "Crypto",
         "Master Boot Image",
         "Secure Binary File",
-        "AHAB + ELE",
+        "EdgeLock Enclave",
+        "Image",
         "Debug Authentication",
         "Mboot Protocol",
         "SDP(S) Protocol",
         "Debuggers",
         "DK6",
+        "DICE",
+        "EdgeLock 2GO",
+        "Fuses",
+        "SHE",
+        "LPC programming",
+        "WPC",
+        "UBoot",
+        "Memory Configuration",
     ]
 
     tools_list = ["MCUXpresso SEC tool", "Mass production tools", "3rd party tools"]
@@ -279,7 +356,14 @@ def main():
     print("Generation done")
 
 
-def setup(app):
+def setup(app: Any) -> None:
+    """Setup Sphinx extension for generating application images.
+
+    Initializes the generate_apps_img extension by calling the main function
+    to generate application images for documentation.
+
+    :param app: Sphinx application instance.
+    """
     main()
 
 

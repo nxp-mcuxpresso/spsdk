@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""CLI application for image deployment based on libUUU (universal update utility)."""
+"""SPSDK CLI application for image deployment using libUUU (universal update utility).
+
+This module provides a command-line interface for deploying images to NXP MPU devices
+using the Universal Update Utility (UUU) library. It supports USB device detection,
+family identification, and secure image flashing operations.
+"""
+
 import logging
 import os
 import sys
@@ -67,7 +73,13 @@ def usb_device_callback(
 
 
 class UUUOperation:
-    """Context manager for UUU operations that prints success on completion."""
+    """UUU operation context manager for SPSDK applications.
+
+    This class provides a context manager interface for executing UUU (Universal
+    Update Utility) operations with automatic success reporting and error handling.
+    It wraps SPSDKUUU instances to provide consistent operation flow and user feedback
+    through console output.
+    """
 
     def __init__(self, uuu: SPSDKUUU):
         """Initialize with UUU instance.
@@ -182,8 +194,8 @@ def detect_family_from_usb(vid: int, pid: int) -> Optional[str]:
     "-pp",
     "--poll-period",
     type=INT(),
-    default="100",
-    help="Polling period in milliseconds (default: 100)",
+    default="200",
+    help="Polling period in milliseconds (default: 200)",
 )
 @usbpath_option()
 @usbserial_option()

@@ -9,7 +9,7 @@
       "registers": [
         {
           "id": "field000",
-          "name": "HEADER",
+          "name": "Header",
           "description": "CFPA Header",
           "offset_int": "0",
           "default_value_int": "0x96350000",
@@ -73,7 +73,7 @@
             {
               "width": 24,
               "id": "field004-bits0-23",
-              "name": "CFPA_PAGE_VERSION",
+              "name": "CFPA_page_version",
               "description": "CFPA page version. Boot ROM uses this field to determine the active CFPA page by comparing the values in this field for the two CFPA pages. The page with higher version number is picked as active page if it passes the CMAC authentication. This field is updated by ROM whenever CFPA page is updated. Write '0xFF_FFFF' to auto increment current CFPA page version value (by ROM)"
             },
             {
@@ -165,14 +165,14 @@
         },
         {
           "id": "field008",
-          "name": "SECURE_FW_VERSION",
+          "name": "Secure_FW_Version",
           "description": "Secure Firmware version. This monotonic counter field tracks the firmware version of secure partition. ROM uses this field to enforce anti-rollback checking during secure boot and secure update (SB3 header). For image authentication pass during secure boot the FW version in image manifest must be equal or greater than this value. During secure update and recovery boot the version number in SB3 header Must be equal or greater than the value in this field. Apart from SB3 header check, user can enforce anti-rollback check during SB3 processing by using 'kSB3_COMMAND_fwVersionCheck' SB command with 'kNBOOT_CNT_secure' counter ID parameter, in SB3 file.",
           "offset_int": "0x0008",
           "default_value_int": "0"
         },
         {
           "id": "field00C",
-          "name": "NS_FW_VERSION",
+          "name": "NS_FW_Version",
           "description": "Non-Secure Firmware version. This monotonic counter field can be used to track the firmware version of non-secure partition. An anti-rollback check can be enforced during update by using this field and 'kSB3_COMMAND_fwVersionCheck' SB command with 'kNBOOT_CNT_nonsecure' counter ID parameter, in SB3 file.",
           "offset_int": "0x000C",
           "default_value_int": "0"
@@ -195,7 +195,7 @@
             {
               "width": 2,
               "id": "field014-bits0-1",
-              "name": "ROTK0_EN",
+              "name": "RoTK0_EN",
               "description": "Root of Trust Key 0 Enable. Determines if ROTK0 can be used during secure boot",
               "values": [
                 {
@@ -223,7 +223,7 @@
             {
               "width": 2,
               "id": "field014-bits2-3",
-              "name": "ROTK1_EN",
+              "name": "RoTK1_EN",
               "description": "Root of Trust Key 1 Enable. Determines if ROTK1 can be used during secure boot",
               "values": [
                 {
@@ -251,7 +251,7 @@
             {
               "width": 2,
               "id": "field014-bits4-5",
-              "name": "ROTK2_EN",
+              "name": "RoTK2_EN",
               "description": "Root of Trust Key 2 Enable. Determines if ROTK2 can be used during secure boot",
               "values": [
                 {
@@ -279,7 +279,7 @@
             {
               "width": 2,
               "id": "field014-bits6-7",
-              "name": "ROTK3_EN",
+              "name": "RoTK3_EN",
               "description": "Root of Trust Key 3 Enable. Determines if ROTK3 can be used during secure boot",
               "values": [
                 {
@@ -325,7 +325,7 @@
             {
               "width": 24,
               "id": "field018-bits0-23",
-              "name": "IMAGE_KEY_REVOCATION_ID",
+              "name": "Image_key_revocation_ID",
               "description": "Image signing key revocation counter. This monotonically increasing unary encode counter (e.g., 0x0, 0x1, 0x3, 0x7, 0xF...) field is used by boot ROM to enforce image signing key (ISK) certificate revocation policy. Boot ROM accepts an ISK certificate as valid only if the \"constraint\" field in ISK certificate is the same or greater than the ISK revocation counter. The 32-bit ISK revocation counter is formed using 8 bits of IMAGE_KEY_REVOKE[7:0] field in OTP as MSB bits and lower 24 bits from this field. ISK certificate validation is done as part of boot, FW update (SB3) and recovery (SB3) image authentication"
             },
             {
@@ -350,13 +350,16 @@
             {
               "width": 16,
               "id": "field020-bits0-15",
-              "name": "DEBUG_CERTIFICATE_REVOCATION_COUNTER",
+              "name": "Debug_certificate_revocation_counter",
+              "deprecated_names": [
+                "FIELD"
+              ],
               "description": "Debug certificate revocation counter. This monotonic counter field is used for revoking debug certificates. As part of debug authentication, CC_VU field in debug certificate/credential is checked against DCFG_VENDOR_USAGE value. The 32-bit DCFG_VENDOR_USAGE is formed using upper 16 bit of CMPA.VENDOR_USAGE and lower 16 bits of this field"
             },
             {
               "width": 16,
               "id": "field020-bits16-31",
-              "name": "INVERSE_VALUE",
+              "name": "Inverse_value",
               "description": "Inverse Value of [15:0]",
               "calculated": "INVERSE"
             }
@@ -585,7 +588,7 @@
             {
               "width": 16,
               "id": "field024-bits16-31",
-              "name": "INVERSE_VALUE",
+              "name": "Inverse_value",
               "description": "Inverse Value of [15:0]",
               "calculated": "INVERSE"
             }
@@ -799,7 +802,7 @@
             {
               "width": 16,
               "id": "field028-bits16-31",
-              "name": "INVERSE_VALUE",
+              "name": "Inverse_value",
               "description": "Inverse Value of [15:0]",
               "calculated": "INVERSE"
             }
@@ -4033,8 +4036,10 @@
           "name": "FLASH_ACL_56_63",
           "description": "Access control for flash sector .Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection.  After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only.  - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5.  - 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_)  - If current sector ACL value is 0, 4, or 5 then any new value is permitted.",
           "offset_int": "0x00DC",
+          "deprecated_names": [
+            "FLASH_ACL_55_63"
+          ],
           "default_value_int": "0x44444444",
-          "deprecated_names": ["FLASH_ACL_55_63"],
           "bitfields": [
             {
               "width": 3,
@@ -4528,7 +4533,7 @@
       "registers": [
         {
           "id": "field100",
-          "name": "DICE_CERTIFICATE0",
+          "name": "DICE_Certificate0",
           "description": "DICE Certificate register",
           "offset_int": "0x0100",
           "access": "RO",
@@ -4538,31 +4543,43 @@
               "width": 8,
               "id": "field100-bits0-7",
               "name": "X_COORD_PUB_KEY_QX_31",
+              "deprecated_names": [
+                "X coordinate of public key Qx[31]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field100-bits8-15",
               "name": "X_COORD_PUB_KEY_QX_30",
+              "deprecated_names": [
+                "X coordinate of public key Qx[30]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field100-bits16-23",
               "name": "X_COORD_PUB_KEY_QX_29",
+              "deprecated_names": [
+                "X coordinate of public key Qx[29]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field100-bits24-31",
               "name": "X_COORD_PUB_KEY_QX_28",
+              "deprecated_names": [
+                "X coordinate of public key Qx[28]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             }
           ]
         },
         {
           "id": "field104",
-          "name": "DICE_CERTIFICATE1",
+          "name": "DICE_Certificate1",
           "description": "DICE Certificate register",
           "offset_int": "0x0104",
           "access": "RO",
@@ -4572,31 +4589,43 @@
               "width": 8,
               "id": "field104-bits0-7",
               "name": "X_COORD_PUB_KEY_QX_27",
+              "deprecated_names": [
+                "X coordinate of public key Qx[27]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field104-bits8-15",
               "name": "X_COORD_PUB_KEY_QX_26",
+              "deprecated_names": [
+                "X coordinate of public key Qx[26]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field104-bits16-23",
               "name": "X_COORD_PUB_KEY_QX_25",
+              "deprecated_names": [
+                "X coordinate of public key Qx[25]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field104-bits24-31",
               "name": "X_COORD_PUB_KEY_QX_24",
+              "deprecated_names": [
+                "X coordinate of public key Qx[24]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             }
           ]
         },
         {
           "id": "field108",
-          "name": "DICE_CERTIFICATE2",
+          "name": "DICE_Certificate2",
           "description": "DICE Certificate register",
           "offset_int": "0x0108",
           "access": "RO",
@@ -4606,31 +4635,43 @@
               "width": 8,
               "id": "field108-bits0-7",
               "name": "X_COORD_PUB_KEY_QX_23",
+              "deprecated_names": [
+                "X coordinate of public key Qx[23]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field108-bits8-15",
               "name": "X_COORD_PUB_KEY_QX_22",
+              "deprecated_names": [
+                "X coordinate of public key Qx[22]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field108-bits16-23",
               "name": "X_COORD_PUB_KEY_QX_21",
+              "deprecated_names": [
+                "X coordinate of public key Qx[21]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field108-bits24-31",
               "name": "X_COORD_PUB_KEY_QX_20",
+              "deprecated_names": [
+                "X coordinate of public key Qx[20]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             }
           ]
         },
         {
           "id": "field10C",
-          "name": "DICE_CERTIFICATE3",
+          "name": "DICE_Certificate3",
           "description": "DICE Certificate register",
           "offset_int": "0x010C",
           "access": "RO",
@@ -4640,31 +4681,43 @@
               "width": 8,
               "id": "field10C-bits0-7",
               "name": "X_COORD_PUB_KEY_QX_19",
+              "deprecated_names": [
+                "X coordinate of public key Qx[19]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field10C-bits8-15",
               "name": "X_COORD_PUB_KEY_QX_18",
+              "deprecated_names": [
+                "X coordinate of public key Qx[18]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field10C-bits16-23",
               "name": "X_COORD_PUB_KEY_QX_17",
+              "deprecated_names": [
+                "X coordinate of public key Qx[17]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field10C-bits24-31",
               "name": "X_COORD_PUB_KEY_QX_16",
+              "deprecated_names": [
+                "X coordinate of public key Qx[16]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             }
           ]
         },
         {
           "id": "field110",
-          "name": "DICE_CERTIFICATE4",
+          "name": "DICE_Certificate4",
           "description": "DICE Certificate register",
           "offset_int": "0x0110",
           "access": "RO",
@@ -4674,31 +4727,43 @@
               "width": 8,
               "id": "field110-bits0-7",
               "name": "X_COORD_PUB_KEY_QX_15",
+              "deprecated_names": [
+                "X coordinate of public key Qx[15]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field110-bits8-15",
               "name": "X_COORD_PUB_KEY_QX_14",
+              "deprecated_names": [
+                "X coordinate of public key Qx[14]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field110-bits16-23",
               "name": "X_COORD_PUB_KEY_QX_13",
+              "deprecated_names": [
+                "X coordinate of public key Qx[13]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field110-bits24-31",
               "name": "X_COORD_PUB_KEY_QX_12",
+              "deprecated_names": [
+                "X coordinate of public key Qx[12]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             }
           ]
         },
         {
           "id": "field114",
-          "name": "DICE_CERTIFICATE5",
+          "name": "DICE_Certificate5",
           "description": "DICE Certificate register",
           "offset_int": "0x0114",
           "access": "RO",
@@ -4708,31 +4773,43 @@
               "width": 8,
               "id": "field114-bits0-7",
               "name": "X_COORD_PUB_KEY_QX_11",
+              "deprecated_names": [
+                "X coordinate of public key Qx[11]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field114-bits8-15",
               "name": "X_COORD_PUB_KEY_QX_10",
+              "deprecated_names": [
+                "X coordinate of public key Qx[10]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field114-bits16-23",
               "name": "X_COORD_PUB_KEY_QX_9",
+              "deprecated_names": [
+                "X coordinate of public key Qx[9]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field114-bits24-31",
               "name": "X_COORD_PUB_KEY_QX_8",
+              "deprecated_names": [
+                "X coordinate of public key Qx[8]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             }
           ]
         },
         {
           "id": "field118",
-          "name": "DICE_CERTIFICATE6",
+          "name": "DICE_Certificate6",
           "description": "DICE Certificate register",
           "offset_int": "0x0118",
           "access": "RO",
@@ -4742,31 +4819,43 @@
               "width": 8,
               "id": "field118-bits0-7",
               "name": "X_COORD_PUB_KEY_QX_7",
+              "deprecated_names": [
+                "X coordinate of public key Qx[7]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field118-bits8-15",
               "name": "X_COORD_PUB_KEY_QX_6",
+              "deprecated_names": [
+                "X coordinate of public key Qx[6]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field118-bits16-23",
               "name": "X_COORD_PUB_KEY_QX_5",
+              "deprecated_names": [
+                "X coordinate of public key Qx[5]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field118-bits24-31",
               "name": "X_COORD_PUB_KEY_QX_4",
+              "deprecated_names": [
+                "X coordinate of public key Qx[4]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             }
           ]
         },
         {
           "id": "field11C",
-          "name": "DICE_CERTIFICATE7",
+          "name": "DICE_Certificate7",
           "description": "DICE Certificate register",
           "offset_int": "0x011C",
           "access": "RO",
@@ -4776,31 +4865,43 @@
               "width": 8,
               "id": "field11C-bits0-7",
               "name": "X_COORD_PUB_KEY_QX_3",
+              "deprecated_names": [
+                "X coordinate of public key Qx[3]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field11C-bits8-15",
               "name": "X_COORD_PUB_KEY_QX_2",
+              "deprecated_names": [
+                "X coordinate of public key Qx[2]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field11C-bits16-23",
               "name": "X_COORD_PUB_KEY_QX_1",
+              "deprecated_names": [
+                "X coordinate of public key Qx[1]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field11C-bits24-31",
               "name": "X_COORD_PUB_KEY_QX_0",
+              "deprecated_names": [
+                "X coordinate of public key Qx[0]"
+              ],
               "description": "X coordinate of ECDSA P-256 public key"
             }
           ]
         },
         {
           "id": "field120",
-          "name": "DICE_CERTIFICATE8",
+          "name": "DICE_Certificate8",
           "description": "DICE Certificate register",
           "offset_int": "0x0120",
           "access": "RO",
@@ -4810,31 +4911,43 @@
               "width": 8,
               "id": "field120-bits0-7",
               "name": "Y_COORD_PUB_KEY_QY_31",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[31]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field120-bits8-15",
               "name": "Y_COORD_PUB_KEY_QY_30",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[30]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field120-bits16-23",
               "name": "Y_COORD_PUB_KEY_QY_29",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[29]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field120-bits24-31",
               "name": "Y_COORD_PUB_KEY_QY_28",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[28]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             }
           ]
         },
         {
           "id": "field124",
-          "name": "DICE_CERTIFICATE9",
+          "name": "DICE_Certificate9",
           "description": "DICE Certificate register",
           "offset_int": "0x0124",
           "access": "RO",
@@ -4844,31 +4957,43 @@
               "width": 8,
               "id": "field124-bits0-7",
               "name": "Y_COORD_PUB_KEY_QY_27",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[27]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field124-bits8-15",
               "name": "Y_COORD_PUB_KEY_QY_26",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[26]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field124-bits16-23",
               "name": "Y_COORD_PUB_KEY_QY_25",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[25]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field124-bits24-31",
               "name": "Y_COORD_PUB_KEY_QY_24",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[24]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             }
           ]
         },
         {
           "id": "field128",
-          "name": "DICE_CERTIFICATE10",
+          "name": "DICE_Certificate10",
           "description": "DICE Certificate register",
           "offset_int": "0x0128",
           "access": "RO",
@@ -4878,31 +5003,43 @@
               "width": 8,
               "id": "field128-bits0-7",
               "name": "Y_COORD_PUB_KEY_QY_23",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[23]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field128-bits8-15",
               "name": "Y_COORD_PUB_KEY_QY_22",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[22]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field128-bits16-23",
               "name": "Y_COORD_PUB_KEY_QY_21",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[21]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field128-bits24-31",
               "name": "Y_COORD_PUB_KEY_QY_20",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[20]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             }
           ]
         },
         {
           "id": "field12C",
-          "name": "DICE_CERTIFICATE11",
+          "name": "DICE_Certificate11",
           "description": "DICE Certificate register",
           "offset_int": "0x012C",
           "access": "RO",
@@ -4912,31 +5049,43 @@
               "width": 8,
               "id": "field12C-bits0-7",
               "name": "Y_COORD_PUB_KEY_QY_19",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[19]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field12C-bits8-15",
               "name": "Y_COORD_PUB_KEY_QY_18",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[18]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field12C-bits16-23",
               "name": "Y_COORD_PUB_KEY_QY_17",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[17]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field12C-bits24-31",
               "name": "Y_COORD_PUB_KEY_QY_16",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[16]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             }
           ]
         },
         {
           "id": "field130",
-          "name": "DICE_CERTIFICATE12",
+          "name": "DICE_Certificate12",
           "description": "DICE Certificate register",
           "offset_int": "0x0130",
           "access": "RO",
@@ -4946,31 +5095,43 @@
               "width": 8,
               "id": "field130-bits0-7",
               "name": "Y_COORD_PUB_KEY_QY_15",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[15]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field130-bits8-15",
               "name": "Y_COORD_PUB_KEY_QY_14",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[14]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field130-bits16-23",
               "name": "Y_COORD_PUB_KEY_QY_13",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[13]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field130-bits24-31",
               "name": "Y_COORD_PUB_KEY_QY_12",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[12]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             }
           ]
         },
         {
           "id": "field134",
-          "name": "DICE_CERTIFICATE13",
+          "name": "DICE_Certificate13",
           "description": "DICE Certificate register",
           "offset_int": "0x0134",
           "access": "RO",
@@ -4980,31 +5141,43 @@
               "width": 8,
               "id": "field134-bits0-7",
               "name": "Y_COORD_PUB_KEY_QY_11",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[11]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field134-bits8-15",
               "name": "Y_COORD_PUB_KEY_QY_10",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[10]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field134-bits16-23",
               "name": "Y_COORD_PUB_KEY_QY_9",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[9]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field134-bits24-31",
               "name": "Y_COORD_PUB_KEY_QY_8",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[8]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             }
           ]
         },
         {
           "id": "field138",
-          "name": "DICE_CERTIFICATE14",
+          "name": "DICE_Certificate14",
           "description": "DICE Certificate register",
           "offset_int": "0x0138",
           "access": "RO",
@@ -5014,31 +5187,43 @@
               "width": 8,
               "id": "field138-bits0-7",
               "name": "Y_COORD_PUB_KEY_QY_7",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[7]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field138-bits8-15",
               "name": "Y_COORD_PUB_KEY_QY_6",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[6]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field138-bits16-23",
               "name": "Y_COORD_PUB_KEY_QY_5",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[5]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field138-bits24-31",
               "name": "Y_COORD_PUB_KEY_QY_4",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[4]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             }
           ]
         },
         {
           "id": "field13C",
-          "name": "DICE_CERTIFICATE15",
+          "name": "DICE_Certificate15",
           "description": "DICE Certificate register",
           "offset_int": "0x013C",
           "access": "RO",
@@ -5048,31 +5233,43 @@
               "width": 8,
               "id": "field13C-bits0-7",
               "name": "Y_COORD_PUB_KEY_QY_3",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[3]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field13C-bits8-15",
               "name": "Y_COORD_PUB_KEY_QY_2",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[2]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field13C-bits16-23",
               "name": "Y_COORD_PUB_KEY_QY_1",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[1]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             },
             {
               "width": 8,
               "id": "field13C-bits24-31",
               "name": "Y_COORD_PUB_KEY_QY_0",
+              "deprecated_names": [
+                "Y coordinate of public key Qy[0]"
+              ],
               "description": "Y coordinate of ECDSA P-256 public key"
             }
           ]
         },
         {
           "id": "field140",
-          "name": "DICE_CERTIFICATE16",
+          "name": "DICE_Certificate16",
           "description": "DICE Certificate register",
           "offset_int": "0x0140",
           "access": "RO",
@@ -5082,31 +5279,43 @@
               "width": 8,
               "id": "field140-bits0-7",
               "name": "ECDSA_SIG_R_31",
+              "deprecated_names": [
+                "ECDSA_SIG_R[31]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field140-bits8-15",
               "name": "ECDSA_SIG_R_30",
+              "deprecated_names": [
+                "ECDSA_SIG_R[30]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field140-bits16-23",
               "name": "ECDSA_SIG_R_29",
+              "deprecated_names": [
+                "ECDSA_SIG_R[29]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field140-bits24-31",
               "name": "ECDSA_SIG_R_28",
+              "deprecated_names": [
+                "ECDSA_SIG_R[28]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             }
           ]
         },
         {
           "id": "field144",
-          "name": "DICE_CERTIFICATE17",
+          "name": "DICE_Certificate17",
           "description": "DICE Certificate register",
           "offset_int": "0x0144",
           "access": "RO",
@@ -5116,31 +5325,43 @@
               "width": 8,
               "id": "field144-bits0-7",
               "name": "ECDSA_SIG_R_27",
+              "deprecated_names": [
+                "ECDSA_SIG_R[27]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field144-bits8-15",
               "name": "ECDSA_SIG_R_26",
+              "deprecated_names": [
+                "ECDSA_SIG_R[26]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field144-bits16-23",
               "name": "ECDSA_SIG_R_25",
+              "deprecated_names": [
+                "ECDSA_SIG_R[25]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field144-bits24-31",
               "name": "ECDSA_SIG_R_24",
+              "deprecated_names": [
+                "ECDSA_SIG_R[24]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             }
           ]
         },
         {
           "id": "field148",
-          "name": "DICE_CERTIFICATE18",
+          "name": "DICE_Certificate18",
           "description": "DICE Certificate register",
           "offset_int": "0x0148",
           "access": "RO",
@@ -5150,31 +5371,43 @@
               "width": 8,
               "id": "field148-bits0-7",
               "name": "ECDSA_SIG_R_23",
+              "deprecated_names": [
+                "ECDSA_SIG_R[23]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field148-bits8-15",
               "name": "ECDSA_SIG_R_22",
+              "deprecated_names": [
+                "ECDSA_SIG_R[22]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field148-bits16-23",
               "name": "ECDSA_SIG_R_21",
+              "deprecated_names": [
+                "ECDSA_SIG_R[21]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field148-bits24-31",
               "name": "ECDSA_SIG_R_20",
+              "deprecated_names": [
+                "ECDSA_SIG_R[20]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             }
           ]
         },
         {
           "id": "field14C",
-          "name": "DICE_CERTIFICATE19",
+          "name": "DICE_Certificate19",
           "description": "DICE Certificate register",
           "offset_int": "0x014C",
           "access": "RO",
@@ -5184,31 +5417,43 @@
               "width": 8,
               "id": "field14C-bits0-7",
               "name": "ECDSA_SIG_R_19",
+              "deprecated_names": [
+                "ECDSA_SIG_R[19]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field14C-bits8-15",
               "name": "ECDSA_SIG_R_18",
+              "deprecated_names": [
+                "ECDSA_SIG_R[18]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field14C-bits16-23",
               "name": "ECDSA_SIG_R_17",
+              "deprecated_names": [
+                "ECDSA_SIG_R[17]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field14C-bits24-31",
               "name": "ECDSA_SIG_R_16",
+              "deprecated_names": [
+                "ECDSA_SIG_R[16]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             }
           ]
         },
         {
           "id": "field150",
-          "name": "DICE_CERTIFICATE20",
+          "name": "DICE_Certificate20",
           "description": "DICE Certificate register",
           "offset_int": "0x0150",
           "access": "RO",
@@ -5218,31 +5463,43 @@
               "width": 8,
               "id": "field150-bits0-7",
               "name": "ECDSA_SIG_R_15",
+              "deprecated_names": [
+                "ECDSA_SIG_R[15]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field150-bits8-15",
               "name": "ECDSA_SIG_R_14",
+              "deprecated_names": [
+                "ECDSA_SIG_R[14]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field150-bits16-23",
               "name": "ECDSA_SIG_R_13",
+              "deprecated_names": [
+                "ECDSA_SIG_R[13]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field150-bits24-31",
               "name": "ECDSA_SIG_R_12",
+              "deprecated_names": [
+                "ECDSA_SIG_R[12]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             }
           ]
         },
         {
           "id": "field154",
-          "name": "DICE_CERTIFICATE21",
+          "name": "DICE_Certificate21",
           "description": "DICE Certificate register",
           "offset_int": "0x0154",
           "access": "RO",
@@ -5252,31 +5509,43 @@
               "width": 8,
               "id": "field154-bits0-7",
               "name": "ECDSA_SIG_R_11",
+              "deprecated_names": [
+                "ECDSA_SIG_R[11]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field154-bits8-15",
               "name": "ECDSA_SIG_R_10",
+              "deprecated_names": [
+                "ECDSA_SIG_R[10]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field154-bits16-23",
               "name": "ECDSA_SIG_R_9",
+              "deprecated_names": [
+                "ECDSA_SIG_R[9]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field154-bits24-31",
               "name": "ECDSA_SIG_R_8",
+              "deprecated_names": [
+                "ECDSA_SIG_R[8]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             }
           ]
         },
         {
           "id": "field158",
-          "name": "DICE_CERTIFICATE22",
+          "name": "DICE_Certificate22",
           "description": "DICE Certificate register",
           "offset_int": "0x0158",
           "access": "RO",
@@ -5286,31 +5555,43 @@
               "width": 8,
               "id": "field158-bits0-7",
               "name": "ECDSA_SIG_R_7",
+              "deprecated_names": [
+                "ECDSA_SIG_R[7]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field158-bits8-15",
               "name": "ECDSA_SIG_R_6",
+              "deprecated_names": [
+                "ECDSA_SIG_R[6]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field158-bits16-23",
               "name": "ECDSA_SIG_R_5",
+              "deprecated_names": [
+                "ECDSA_SIG_R[5]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field158-bits24-31",
               "name": "ECDSA_SIG_R_4",
+              "deprecated_names": [
+                "ECDSA_SIG_R[4]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             }
           ]
         },
         {
           "id": "field15C",
-          "name": "DICE_CERTIFICATE23",
+          "name": "DICE_Certificate23",
           "description": "DICE Certificate register",
           "offset_int": "0x015C",
           "access": "RO",
@@ -5320,31 +5601,43 @@
               "width": 8,
               "id": "field15C-bits0-7",
               "name": "ECDSA_SIG_R_3",
+              "deprecated_names": [
+                "ECDSA_SIG_R[3]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field15C-bits8-15",
               "name": "ECDSA_SIG_R_2",
+              "deprecated_names": [
+                "ECDSA_SIG_R[2]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field15C-bits16-23",
               "name": "ECDSA_SIG_R_1",
+              "deprecated_names": [
+                "ECDSA_SIG_R[1]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field15C-bits24-31",
               "name": "ECDSA_SIG_R_0",
+              "deprecated_names": [
+                "ECDSA_SIG_R[0]"
+              ],
               "description": "R component of ECDSA P-256 signature"
             }
           ]
         },
         {
           "id": "field160",
-          "name": "DICE_CERTIFICATE24",
+          "name": "DICE_Certificate24",
           "description": "DICE Certificate register",
           "offset_int": "0x0160",
           "access": "RO",
@@ -5354,31 +5647,43 @@
               "width": 8,
               "id": "field160-bits0-7",
               "name": "ECDSA_SIG_S_31",
+              "deprecated_names": [
+                "ECDSA_SIG_S[31]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field160-bits8-15",
               "name": "ECDSA_SIG_S_30",
+              "deprecated_names": [
+                "ECDSA_SIG_S[30]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field160-bits16-23",
               "name": "ECDSA_SIG_S_29",
+              "deprecated_names": [
+                "ECDSA_SIG_S[29]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field160-bits24-31",
               "name": "ECDSA_SIG_S_28",
+              "deprecated_names": [
+                "ECDSA_SIG_S[28]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             }
           ]
         },
         {
           "id": "field164",
-          "name": "DICE_CERTIFICATE25",
+          "name": "DICE_Certificate25",
           "description": "DICE Certificate register",
           "offset_int": "0x0164",
           "access": "RO",
@@ -5388,31 +5693,43 @@
               "width": 8,
               "id": "field164-bits0-7",
               "name": "ECDSA_SIG_S_27",
+              "deprecated_names": [
+                "ECDSA_SIG_S[27]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field164-bits8-15",
               "name": "ECDSA_SIG_S_26",
+              "deprecated_names": [
+                "ECDSA_SIG_S[26]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field164-bits16-23",
               "name": "ECDSA_SIG_S_25",
+              "deprecated_names": [
+                "ECDSA_SIG_S[25]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field164-bits24-31",
               "name": "ECDSA_SIG_S_24",
+              "deprecated_names": [
+                "ECDSA_SIG_S[24]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             }
           ]
         },
         {
           "id": "field168",
-          "name": "DICE_CERTIFICATE26",
+          "name": "DICE_Certificate26",
           "description": "DICE Certificate register",
           "offset_int": "0x0168",
           "access": "RO",
@@ -5422,31 +5739,43 @@
               "width": 8,
               "id": "field168-bits0-7",
               "name": "ECDSA_SIG_S_23",
+              "deprecated_names": [
+                "ECDSA_SIG_S[23]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field168-bits8-15",
               "name": "ECDSA_SIG_S_22",
+              "deprecated_names": [
+                "ECDSA_SIG_S[22]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field168-bits16-23",
               "name": "ECDSA_SIG_S_21",
+              "deprecated_names": [
+                "ECDSA_SIG_S[21]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field168-bits24-31",
               "name": "ECDSA_SIG_S_20",
+              "deprecated_names": [
+                "ECDSA_SIG_S[20]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             }
           ]
         },
         {
           "id": "field16C",
-          "name": "DICE_CERTIFICATE27",
+          "name": "DICE_Certificate27",
           "description": "DICE Certificate register",
           "offset_int": "0x016C",
           "access": "RO",
@@ -5456,31 +5785,43 @@
               "width": 8,
               "id": "field16C-bits0-7",
               "name": "ECDSA_SIG_S_19",
+              "deprecated_names": [
+                "ECDSA_SIG_S[19]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field16C-bits8-15",
               "name": "ECDSA_SIG_S_18",
+              "deprecated_names": [
+                "ECDSA_SIG_S[18]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field16C-bits16-23",
               "name": "ECDSA_SIG_S_17",
+              "deprecated_names": [
+                "ECDSA_SIG_S[17]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field16C-bits24-31",
               "name": "ECDSA_SIG_S_16",
+              "deprecated_names": [
+                "ECDSA_SIG_S[16]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             }
           ]
         },
         {
           "id": "field170",
-          "name": "DICE_CERTIFICATE28",
+          "name": "DICE_Certificate28",
           "description": "DICE Certificate register",
           "offset_int": "0x0170",
           "access": "RO",
@@ -5490,31 +5831,43 @@
               "width": 8,
               "id": "field170-bits0-7",
               "name": "ECDSA_SIG_S_15",
+              "deprecated_names": [
+                "ECDSA_SIG_S[15]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field170-bits8-15",
               "name": "ECDSA_SIG_S_14",
+              "deprecated_names": [
+                "ECDSA_SIG_S[14]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field170-bits16-23",
               "name": "ECDSA_SIG_S_13",
+              "deprecated_names": [
+                "ECDSA_SIG_S[13]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field170-bits24-31",
               "name": "ECDSA_SIG_S_12",
+              "deprecated_names": [
+                "ECDSA_SIG_S[12]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             }
           ]
         },
         {
           "id": "field174",
-          "name": "DICE_CERTIFICATE29",
+          "name": "DICE_Certificate29",
           "description": "DICE Certificate register",
           "offset_int": "0x0174",
           "access": "RO",
@@ -5524,31 +5877,43 @@
               "width": 8,
               "id": "field174-bits0-7",
               "name": "ECDSA_SIG_S_11",
+              "deprecated_names": [
+                "ECDSA_SIG_S[11]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field174-bits8-15",
               "name": "ECDSA_SIG_S_10",
+              "deprecated_names": [
+                "ECDSA_SIG_S[10]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field174-bits16-23",
               "name": "ECDSA_SIG_S_9",
+              "deprecated_names": [
+                "ECDSA_SIG_S[9]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field174-bits24-31",
               "name": "ECDSA_SIG_S_8",
+              "deprecated_names": [
+                "ECDSA_SIG_S[8]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             }
           ]
         },
         {
           "id": "field178",
-          "name": "DICE_CERTIFICATE30",
+          "name": "DICE_Certificate30",
           "description": "DICE Certificate register",
           "offset_int": "0x0178",
           "access": "RO",
@@ -5558,31 +5923,43 @@
               "width": 8,
               "id": "field178-bits0-7",
               "name": "ECDSA_SIG_S_7",
+              "deprecated_names": [
+                "ECDSA_SIG_S[7]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field178-bits8-15",
               "name": "ECDSA_SIG_S_6",
+              "deprecated_names": [
+                "ECDSA_SIG_S[6]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field178-bits16-23",
               "name": "ECDSA_SIG_S_5",
+              "deprecated_names": [
+                "ECDSA_SIG_S[5]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field178-bits24-31",
               "name": "ECDSA_SIG_S_4",
+              "deprecated_names": [
+                "ECDSA_SIG_S[4]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             }
           ]
         },
         {
           "id": "field17C",
-          "name": "DICE_CERTIFICATE31",
+          "name": "DICE_Certificate31",
           "description": "DICE Certificate register",
           "offset_int": "0x017C",
           "access": "RO",
@@ -5592,24 +5969,36 @@
               "width": 8,
               "id": "field17C-bits0-7",
               "name": "ECDSA_SIG_S_3",
+              "deprecated_names": [
+                "ECDSA_SIG_S[3]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field17C-bits8-15",
               "name": "ECDSA_SIG_S_2",
+              "deprecated_names": [
+                "ECDSA_SIG_S[2]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field17C-bits16-23",
               "name": "ECDSA_SIG_S_1",
+              "deprecated_names": [
+                "ECDSA_SIG_S[1]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             },
             {
               "width": 8,
               "id": "field17C-bits24-31",
               "name": "ECDSA_SIG_S_0",
+              "deprecated_names": [
+                "ECDSA_SIG_S[0]"
+              ],
               "description": "S component of ECDSA P-256 signature"
             }
           ]

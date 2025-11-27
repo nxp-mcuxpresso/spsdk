@@ -4,7 +4,12 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Nxpimage Masterboot Image group."""
+"""SPSDK Master Boot Image (MBI) command-line interface.
+
+This module provides CLI commands for creating, parsing, and managing Master Boot Images
+used in NXP MCU secure boot process. It includes functionality for exporting MBI files,
+parsing existing images, and generating configuration templates.
+"""
 
 import datetime
 import logging

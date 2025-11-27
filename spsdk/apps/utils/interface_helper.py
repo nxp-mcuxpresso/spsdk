@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Helper module used for processing interface input parameters for SDP/Mboot interfaces."""
+
+"""SPSDK interface configuration helper for communication protocols.
+
+This module provides configuration classes and utilities for setting up
+various communication interfaces used by SDP and Mboot protocols, including
+USB, UART, SPI, I2C, CAN, and SDIO interfaces.
+"""
 
 from abc import abstractmethod
 from typing import Any, Optional
@@ -16,7 +22,15 @@ from spsdk.exceptions import SPSDKKeyError, SPSDKValueError
 
 
 class InterfaceConfig:
-    """Interface input parameters."""
+    """SPSDK Interface Configuration Manager.
+
+    This abstract base class defines the interface for managing communication
+    parameters and configuration for different interface types used in SPSDK
+    operations. It provides a unified way to handle interface-specific settings,
+    timeouts, and scanning parameters across various communication protocols.
+
+    :cvar IDENTIFIER: String identifier for the specific interface type.
+    """
 
     IDENTIFIER: str = "Unknown"
 
@@ -46,7 +60,13 @@ class InterfaceConfig:
 
 
 class UsbInterfaceConfig(InterfaceConfig):
-    """USB Interface input parameters."""
+    """USB Interface configuration handler for SPSDK applications.
+
+    This class manages USB interface parameters and provides functionality to load
+    configuration from CLI parameters and prepare arguments for USB device scanning.
+
+    :cvar IDENTIFIER: Interface type identifier for USB connections.
+    """
 
     IDENTIFIER = "usb"
 
@@ -66,7 +86,14 @@ class UsbInterfaceConfig(InterfaceConfig):
 
 
 class UartInterfaceConfig(InterfaceConfig):
-    """Uart Interface input parameters."""
+    """UART interface configuration for SPSDK communication.
+
+    This class handles configuration parameters for UART-based communication interfaces,
+    including port settings, baudrate configuration, and timeout management for SPSDK
+    operations.
+
+    :cvar IDENTIFIER: Interface type identifier for UART connections.
+    """
 
     IDENTIFIER = "uart"
 
@@ -89,7 +116,14 @@ class UartInterfaceConfig(InterfaceConfig):
 
 
 class BuspalSpiInterfaceConfig(InterfaceConfig):
-    """Buspal SPI Interface input parameters."""
+    """Buspal SPI Interface configuration manager.
+
+    This class handles configuration parameters for Buspal SPI communication
+    interfaces, including parameter validation, loading from CLI arguments,
+    and preparation of scan arguments for SPI device discovery.
+
+    :cvar IDENTIFIER: Interface type identifier for Buspal SPI.
+    """
 
     IDENTIFIER = "buspal_spi"
 
@@ -124,7 +158,14 @@ class BuspalSpiInterfaceConfig(InterfaceConfig):
 
 
 class BuspalI2cInterfaceConfig(InterfaceConfig):
-    """Buspal I2c Interface input parameters."""
+    """Buspal I2C interface configuration manager.
+
+    This class handles configuration parameters for Buspal I2C communication
+    interfaces, including parameter validation, loading from CLI arguments,
+    and preparation of scan arguments for device discovery operations.
+
+    :cvar IDENTIFIER: Interface type identifier for Buspal I2C connections.
+    """
 
     IDENTIFIER = "buspal_i2c"
 
@@ -159,7 +200,14 @@ class BuspalI2cInterfaceConfig(InterfaceConfig):
 
 
 class UsbsioSpiInterfaceConfig(InterfaceConfig):
-    """Usbsio SPI Interface input parameters."""
+    """USBSIO SPI interface configuration manager.
+
+    This class handles configuration parameters for USBSIO SPI communication
+    interfaces, providing methods to load configuration from CLI parameters
+    and prepare scan arguments for device discovery operations.
+
+    :cvar IDENTIFIER: Interface type identifier for USBSIO SPI.
+    """
 
     IDENTIFIER = "usbsio_spi"
 
@@ -179,7 +227,14 @@ class UsbsioSpiInterfaceConfig(InterfaceConfig):
 
 
 class UsbsioI2cInterfaceConfig(InterfaceConfig):
-    """Usbsio I2C Interface input parameters."""
+    """USBSIO I2C interface configuration manager.
+
+    This class handles configuration parameters for USBSIO I2C communication
+    interfaces, providing methods to load configuration from CLI parameters
+    and prepare arguments for device scanning operations.
+
+    :cvar IDENTIFIER: Interface type identifier for USBSIO I2C connections.
+    """
 
     IDENTIFIER = "usbsio_i2c"
 
@@ -199,7 +254,14 @@ class UsbsioI2cInterfaceConfig(InterfaceConfig):
 
 
 class UsbSdioInterfaceConfig(InterfaceConfig):
-    """Sdio Interface input parameters."""
+    """USB SDIO Interface Configuration Manager.
+
+    This class manages configuration parameters for USB SDIO interface connections,
+    handling parameter loading from CLI inputs and providing scan arguments for
+    device discovery operations.
+
+    :cvar IDENTIFIER: Interface type identifier for SDIO connections.
+    """
 
     IDENTIFIER = "sdio"
 
@@ -219,7 +281,14 @@ class UsbSdioInterfaceConfig(InterfaceConfig):
 
 
 class CanInterfaceConfig(InterfaceConfig):
-    """Can Interface input parameters."""
+    """CAN interface configuration handler for SPSDK communication.
+
+    This class manages CAN (Controller Area Network) interface parameters and
+    provides methods to parse and validate CAN connection settings including
+    interface type, channel, bitrate, and message IDs.
+
+    :cvar IDENTIFIER: Interface type identifier for CAN connections.
+    """
 
     IDENTIFIER = "can"
 
@@ -250,7 +319,14 @@ class CanInterfaceConfig(InterfaceConfig):
 
 
 class PluginInterfaceConfig(InterfaceConfig):
-    """Plugin Interface input parameters."""
+    """Plugin interface configuration for SPSDK communication adapters.
+
+    This class manages configuration parameters for plugin-based communication
+    interfaces, handling parameter parsing, validation, and interface setup
+    for dynamic plugin loading in SPSDK applications.
+
+    :cvar IDENTIFIER: Default plugin interface identifier.
+    """
 
     IDENTIFIER = "plugin"
 

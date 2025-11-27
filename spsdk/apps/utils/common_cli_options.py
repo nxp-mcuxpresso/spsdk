@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""CLI helper for Click."""
+"""SPSDK common CLI options and utilities for Click-based command-line interfaces.
+
+This module provides reusable Click options, custom Click classes, and helper functions
+for building consistent command-line interfaces across SPSDK applications. It includes
+interface options for various communication protocols, family selection utilities,
+and standardized formatting for SPSDK CLI tools.
+"""
 
 import functools
 import logging
@@ -23,7 +29,7 @@ from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.interface_helper import load_interface_config
 from spsdk.apps.utils.utils import INT, SPSDKAppError, make_table_from_items
 from spsdk.el2go.interface import EL2GOInterfaceHandler
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.mboot.interfaces.uart import MbootUARTInterface
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.sdp.interfaces.uart import SdpUARTInterface
@@ -39,9 +45,13 @@ logger = logging.getLogger(__name__)
 
 
 class FamilyChoice(click.Choice):
-    """The SPSDK modification of Click Choice type.
+    """SPSDK Click Choice parameter type for device family selection.
 
-    It supports solid checking, but modified help prints.
+    This class extends Click's Choice type to provide enhanced family selection
+    functionality with customized help text formatting and predecessor device
+    support for SPSDK command-line interfaces.
+
+    :cvar MAX_FAMILIES_TO_PRINT: Maximum number of families to display in help text before truncation.
     """
 
     name = "choice"
@@ -577,7 +587,16 @@ def spsdk_config_option(
 
             if klass:
                 schemas = klass.get_validation_schemas_from_cfg(cfg)
-                cfg.check(schemas, check_unknown_props=True)
+                # Pre-validation hook allows transforming config before validation
+                # (e.g., converting register names to uppercase to match schema)
+                if hasattr(klass, "PRE_VALIDATION_CFG_HOOK"):
+                    hook: Callable = getattr(klass, "PRE_VALIDATION_CFG_HOOK")
+                    cfg_to_check = hook(cfg)
+                    if not isinstance(cfg_to_check, Config):
+                        raise SPSDKValueError("PRE_VALIDATION_CFG_HOOK must return a Config object")
+                else:
+                    cfg_to_check = cfg
+                cfg_to_check.check(schemas, check_unknown_props=True)
 
             kwargs["config"] = cfg
             return func(*args, **kwargs)
@@ -988,7 +1007,13 @@ def spsdk_el2go_interface(
 
 
 class GetFamiliesCommand(click.Command):
-    """Shows the full families information for commands in this group."""
+    """SPSDK CLI command for displaying family information.
+
+    This Click command provides functionality to show comprehensive information about
+    supported NXP MCU families for CLI commands and groups. It manages family parameter
+    collection from multiple commands and presents organized family support data with
+    device grouping and revision details.
+    """
 
     def __init__(self) -> None:
         """Constructor of get families command."""
@@ -1079,7 +1104,13 @@ class GetFamiliesCommand(click.Command):
 
 
 class SpsdkClickCommand(click.Command):
-    """SPSDK Click command, overrides click.Command standard class."""
+    """SPSDK Click command with enhanced help formatting.
+
+    This class extends Click's standard Command class to provide hierarchical
+    command context in help output. It displays the full command hierarchy
+    and parent group information for subcommands, creating a more comprehensive
+    help experience while maintaining standard formatting for root commands.
+    """
 
     def __init__(self, **attrs: Any) -> None:
         """SPSDK Click command descriptor."""
@@ -1180,7 +1211,13 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 class SpsdkClickGroup(click.Group):
-    """SPSDK Click group, overrides click.Group standard class."""
+    """SPSDK Click command group with enhanced family option support.
+
+    This class extends click.Group to provide SPSDK-specific functionality including
+    automatic help display when no arguments are provided and intelligent handling
+    of family parameters across commands. It automatically detects and manages
+    family options, creating a unified family command interface.
+    """
 
     def __init__(self, **attrs: Any) -> None:
         """SPSDK Click group descriptor."""
@@ -1225,11 +1262,11 @@ class SpsdkClickGroup(click.Group):
 
 
 class CommandsTreeGroup(SpsdkClickGroup):
-    """Custom help formatter, overrides SPSDK click group standard formatter.
+    """SPSDK Click group with tree-style command help formatting.
 
-    Provides command section in help as command tree
-
-    :param click: click.Group
+    This class extends SpsdkClickGroup to provide enhanced help display by showing
+    commands in a hierarchical tree structure instead of a flat list, improving
+    readability for complex command hierarchies.
     """
 
     def format_commands(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:

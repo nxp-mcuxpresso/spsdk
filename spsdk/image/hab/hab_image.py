@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""This module contains HAB container related code."""
+"""SPSDK HAB (High Assurance Boot) image container management.
+
+This module provides functionality for creating, manipulating, and managing
+HAB image containers used in NXP's secure boot process. It includes support
+for boot device configuration and HAB image operations.
+"""
 
 import logging
 from typing import Any, Optional
@@ -37,7 +42,12 @@ logger = logging.getLogger(__name__)
 
 
 class BootDevice(SpsdkEnum):
-    """Boot device enum."""
+    """HAB boot device enumeration.
+
+    Enumeration of supported boot devices for High Assurance Boot (HAB) image
+    configuration, defining the storage medium from which the bootloader loads
+    the application image.
+    """
 
     FLEXSPI_NOR = (0, "flexspi_nor")
     FLEXSPI_NAND = (1, "flexspi_nand")
@@ -48,7 +58,14 @@ class BootDevice(SpsdkEnum):
 
 
 class HabImage(FeatureBaseClass):
-    """Hab image."""
+    """HAB (High Assurance Boot) image representation for NXP MCUs.
+
+    This class manages HAB-enabled bootable images including IVT (Image Vector Table)
+    configuration, segments management, and security features like authentication
+    and encryption for secure boot operations.
+
+    :cvar FEATURE: Database feature identifier for HAB functionality.
+    """
 
     FEATURE = DatabaseManager.HAB
 
@@ -62,13 +79,18 @@ class HabImage(FeatureBaseClass):
         ivt_offset: Optional[int] = None,
         image_pattern: str = "zeros",
     ) -> None:
-        """HAB image initialization.
+        """Initialize HAB (High Assurance Boot) image.
 
-        :param flags: Flags
-        :param ivt_offset: IVT offset value which is actually the HAB image offset
-        :param start_address: Start address of bootable image
-        :param segments: Segments list
-        :param image_pattern: Image pattern used to fill empty spaces
+        Creates a new HAB image instance with specified configuration parameters including
+        family revision, boot flags, memory addresses, and image segments.
+
+        :param family: Target MCU family and revision information.
+        :param flags: Boot flags controlling image behavior.
+        :param start_address: Start address of bootable image in memory.
+        :param segments: List of HAB segments to include in the image.
+        :param boot_device: Optional boot device specification.
+        :param ivt_offset: Optional IVT offset value which is actually the HAB image offset.
+        :param image_pattern: Image pattern used to fill empty spaces, defaults to "zeros".
         """
         self.db = get_db(family)
         self._ivt_offset = ivt_offset
@@ -80,6 +102,14 @@ class HabImage(FeatureBaseClass):
         self.image_pattern = image_pattern
 
     def __str__(self) -> str:
+        """Get string representation of HAB image.
+
+        Provides a formatted string containing key information about the HAB image
+        including family, authentication status, encryption status, IVT offset,
+        and start address.
+
+        :return: Formatted string representation of the HAB image.
+        """
         return (
             "HAB Image:\n"
             f"  Family:             {self.family}\n"
@@ -90,10 +120,21 @@ class HabImage(FeatureBaseClass):
         )
 
     def __repr__(self) -> str:
+        """Get string representation of HAB Image object.
+
+        :return: String representation containing the target family name.
+        """
         return f"HAB Image for {self.family}"
 
     def verify(self) -> Verifier:
-        """Verify HAB image data."""
+        """Verify HAB image data and return verification results.
+
+        This method performs comprehensive verification of the High Assurance Boot (HAB) image,
+        including validation of flags, IVT offset, and all image segments. It checks for
+        custom IVT offsets and validates flag values against expected ranges.
+
+        :return: Verifier object containing detailed verification results and any warnings or errors.
+        """
         ret = Verifier("High Assurance Boot")
         ret.add_record_bit_range("Flags", self.flags, 32)
 
@@ -110,7 +151,15 @@ class HabImage(FeatureBaseClass):
 
     @property
     def ivt_offset(self) -> int:
-        """IVT offset property."""
+        """Get the IVT (Image Vector Table) offset for the HAB image.
+
+        The method retrieves the IVT offset from either a cached value or from the database
+        based on the boot device configuration. The IVT offset is required for proper HAB
+        image formatting and boot sequence.
+
+        :raises SPSDKError: When IVT offset cannot be determined (no cached value and no boot device).
+        :return: The IVT offset value in bytes.
+        """
         if self._ivt_offset is not None:
             return self._ivt_offset
         if self.boot_device:
@@ -121,14 +170,23 @@ class HabImage(FeatureBaseClass):
         raise SPSDKError("IVT offset could not be found.")
 
     def get_supported_boot_devices(self) -> list[BootDevice]:
-        """Get supported boot devices(target memories)."""
+        """Get supported boot devices for this HAB image.
+
+        This method retrieves the list of boot devices (target memories) that are
+        supported for the current family configuration.
+
+        :return: List of supported boot devices for the current family.
+        """
         return self.get_boot_devices(self.family)
 
     def get_config(self, data_path: str = "./") -> Config:
-        """Create configuration of the Feature.
+        """Create configuration of the HAB image feature.
+
+        The method generates a configuration object containing options like flags, family information,
+        revision, and optional file paths for XMCD and DCD segments based on the current state.
 
         :param data_path: Path to store the data files of configuration.
-        :return: Configuration dictionary.
+        :return: Configuration object with HAB image settings.
         """
         config = Config()
         config["options"] = {
@@ -145,10 +203,14 @@ class HabImage(FeatureBaseClass):
 
     @classmethod
     def get_validation_schemas_from_cfg(cls, config: Config) -> list[dict[str, Any]]:
-        """Get validation schema based on configuration.
+        """Get validation schemas based on configuration.
 
-        :param config: Valid configuration
-        :return: Validation schemas
+        This method extracts options from the configuration, validates them against basic schemas,
+        loads the family revision information, and returns the appropriate validation schemas
+        for the specified family.
+
+        :param config: Valid configuration object containing options and family information.
+        :return: List of validation schema dictionaries for the specified family.
         """
         options = config.get_config("options")
         options.check(cls.get_validation_schemas_basic())
@@ -156,9 +218,13 @@ class HabImage(FeatureBaseClass):
         return cls.get_validation_schemas(family)
 
     def get_segment(self, segment: HabSegmentEnum) -> Optional[HabSegmentBase]:
-        """Get image's segment.
+        """Get image's segment by segment type.
 
-        :param segment: Segment enum
+        Searches through all segments in the image to find the one matching
+        the specified segment identifier.
+
+        :param segment: Segment enum specifying which segment type to retrieve.
+        :return: The matching segment if found, None otherwise.
         """
         for seg in self.segments:
             if seg.SEGMENT_IDENTIFIER == segment:
@@ -167,17 +233,33 @@ class HabImage(FeatureBaseClass):
 
     @property
     def is_encrypted(self) -> bool:
-        """Returns true if image is encrypted, false otherwise."""
+        """Check if the HAB image is encrypted.
+
+        :return: True if image is encrypted, False otherwise.
+        """
         return bool(((self.flags << 1) & 0xF) >> 3)
 
     @property
     def is_authenticated(self) -> bool:
-        """Returns true if image is authenticated, false otherwise."""
+        """Check if the image is authenticated.
+
+        The method examines the authentication flag in the image flags field by
+        extracting bits 3-0 and checking bit 3 specifically.
+
+        :return: True if image is authenticated, False otherwise.
+        """
         return bool((self.flags & 0xF) >> 3)
 
     @property
     def ivt_segment(self) -> HabSegmentIvt:
-        """IVT segment object."""
+        """Get IVT segment object from the HAB image.
+
+        Retrieves the Image Vector Table (IVT) segment from the current HAB image segments.
+        The IVT segment contains essential boot information and must be present in valid HAB images.
+
+        :raises SPSDKSegmentNotPresent: When the IVT segment is not found in the image.
+        :return: The IVT segment object containing boot vector information.
+        """
         seg = self.get_segment(HabSegmentEnum.IVT)
         if not seg:
             raise SPSDKSegmentNotPresent(f"Segment {HabSegmentEnum.IVT.label} is missing")
@@ -186,7 +268,13 @@ class HabImage(FeatureBaseClass):
 
     @property
     def bdt_segment(self) -> HabSegmentBDT:
-        """BDT segment object."""
+        """Get BDT segment object from the HAB image.
+
+        Retrieves the Boot Data Table (BDT) segment from the current HAB image segments.
+
+        :raises SPSDKSegmentNotPresent: When BDT segment is not present in the image.
+        :return: BDT segment object containing boot data table information.
+        """
         seg = self.get_segment(HabSegmentEnum.BDT)
         if not seg:
             raise SPSDKSegmentNotPresent(f"Segment {HabSegmentEnum.BDT.label} is missing")
@@ -195,19 +283,35 @@ class HabImage(FeatureBaseClass):
 
     @property
     def dcd_segment(self) -> Optional[HabSegmentDcd]:
-        """DCD segment object if exists, None otherwise."""
+        """Get DCD segment object if it exists.
+
+        :return: DCD segment object if exists, None otherwise.
+        """
         seg = self.get_segment(HabSegmentEnum.DCD)
         return seg  # type: ignore
 
     @property
     def xmcd_segment(self) -> Optional[HabSegmentXMCD]:
-        """XMCD segment object if exists, None otherwise."""
+        """Get XMCD segment object from the HAB image.
+
+        Retrieves the XMCD (External Memory Configuration Data) segment if it exists
+        in the current HAB image.
+
+        :return: XMCD segment object if present, None otherwise.
+        """
         seg = self.get_segment(HabSegmentEnum.XMCD)
         return seg  # type: ignore
 
     @property
     def app_segment(self) -> HabSegmentApp:
-        """APP segment object."""
+        """Get APP segment object from the HAB image.
+
+        Retrieves the application segment from the HAB image segments collection.
+        The APP segment contains the main application code and data.
+
+        :raises SPSDKSegmentNotPresent: When APP segment is not present in the image.
+        :return: The application segment object.
+        """
         seg = self.get_segment(HabSegmentEnum.APP)
         if not seg:
             raise SPSDKSegmentNotPresent(f"Segment {HabSegmentEnum.APP.label} is missing")
@@ -216,15 +320,22 @@ class HabImage(FeatureBaseClass):
 
     @property
     def csf_segment(self) -> Optional[HabSegmentCSF]:
-        """CSF segment object if exists, None otherwise."""
+        """Get CSF segment object if it exists.
+
+        :return: CSF segment object if exists, None otherwise.
+        """
         seg = self.get_segment(HabSegmentEnum.CSF)
         return seg  # type: ignore
 
     @classmethod
     def load_from_config(cls, config: Config) -> Self:
-        """Load the HAB image object from parsed bd_data configuration.
+        """Load the HAB image object from parsed configuration.
 
-        :param config: Image configuration
+        Creates a HAB image by loading all available segments and configuring the image with the
+        specified options including family, flags, IVT offset, and start address.
+
+        :param config: Image configuration containing segments and options data.
+        :return: Configured HAB image object with loaded segments.
         """
         segments = []
         for segment_cls in HabSegmentBase.__subclasses__():
@@ -248,9 +359,26 @@ class HabImage(FeatureBaseClass):
         return hab
 
     def _get_signed_blocks(self) -> list[ImageBlock]:
+        """Get list of signed blocks for HAB image authentication.
+
+        Creates ImageBlock objects representing memory regions that need to be signed
+        for HAB (High Assurance Boot) authentication. The method groups related segments
+        (IVT/BDT, DCD, XMCD) into blocks and includes the application segment if the
+        image is not encrypted.
+
+        :return: List of ImageBlock objects representing signed memory regions.
+        """
         blocks = []
 
         def add_block(offset: int, block_size: int) -> None:
+            """Add image block to the blocks list.
+
+            Creates a new ImageBlock with calculated base address and start position
+            relative to the IVT offset, then appends it to the blocks collection.
+
+            :param offset: Offset from IVT position where the block starts.
+            :param block_size: Size of the block in bytes.
+            """
             blocks.append(
                 ImageBlock(
                     base_address=self.start_address + self.ivt_offset + offset,
@@ -282,6 +410,13 @@ class HabImage(FeatureBaseClass):
         return blocks
 
     def _get_encrypted_blocks(self) -> list[ImageBlock]:
+        """Get list of encrypted blocks for HAB image.
+
+        Creates image blocks that represent the encrypted portions of the HAB image,
+        specifically the application segment that needs to be encrypted.
+
+        :return: List of ImageBlock objects representing encrypted segments.
+        """
         blocks = []
         blocks.append(
             ImageBlock(
@@ -293,7 +428,15 @@ class HabImage(FeatureBaseClass):
         return blocks
 
     def update_csf(self) -> None:
-        """Update the CSF segment including signing and encryption."""
+        """Update the CSF segment including signing and encryption.
+
+        This method handles the complete CSF (Command Sequence File) segment update process,
+        including encryption of application data when encryption is enabled and signature
+        updates when authentication is enabled. It modifies the BDT segment length for
+        encrypted images and processes the image data accordingly.
+
+        :raises SPSDKError: When CSF segment is missing but encryption is enabled.
+        """
         if self.is_encrypted:
             if not self.csf_segment:
                 raise SPSDKError("CSF segment is missing")
@@ -315,7 +458,11 @@ class HabImage(FeatureBaseClass):
     def image_info(self, padding: bool = False) -> BinaryImage:
         """Create Binary image of HAB image.
 
-        :return: BinaryImage object of HAB image.
+        The method creates a BinaryImage object containing all segments of the HAB image
+        with proper offsets and binary data.
+
+        :param padding: If True, adds IVT offset to segment offsets for proper alignment.
+        :return: BinaryImage object containing the complete HAB image structure.
         """
         bin_image = BinaryImage(
             name="HAB image",
@@ -339,8 +486,13 @@ class HabImage(FeatureBaseClass):
     def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
         """Parse existing binary into HAB image object.
 
-        :param data: Binary to be parsed
-        :param family: Chip family name
+        The method analyzes binary data to extract HAB segments and constructs a HAB image
+        object with proper IVT offset, start address, and segment configuration.
+
+        :param data: Binary data to be parsed into HAB image segments.
+        :param family: Target chip family revision for parsing context.
+        :return: HAB image object constructed from parsed binary data.
+        :raises AssertionError: When required IVT or BDT segments are not found.
         """
         segments: list[HabSegmentBase] = []
         for seg_class in HabSegmentBase.__subclasses__():
@@ -367,6 +519,16 @@ class HabImage(FeatureBaseClass):
 
     @staticmethod
     def _get_flags(segments: list[HabSegmentBase]) -> int:
+        """Get flags value based on CSF segment presence and decrypt command.
+
+        The method examines the provided segments to find a CSF (Command Sequence File) segment
+        and determines the appropriate flags value based on whether a decrypt data command
+        is present.
+
+        :param segments: List of HAB segments to analyze for CSF presence and decrypt commands.
+        :return: Flags value - 0xC if decrypt command exists, 0x8 if CSF exists without decrypt,
+                 or 0x0 if no CSF segment is found.
+        """
         csf = next((seg for seg in segments if seg.SEGMENT_IDENTIFIER == HabSegmentEnum.CSF), None)
         if csf is None:
             return 0x0
@@ -375,15 +537,27 @@ class HabImage(FeatureBaseClass):
         return 0xC if decrypt else 0x8
 
     def export_padding(self) -> bytes:
-        """Get into binary including initial padding."""
+        """Export image as binary data with initial padding included.
+
+        :return: Binary representation of the image including padding.
+        """
         return self.image_info(padding=True).export()
 
     def export(self) -> bytes:
-        """Export into binary."""
+        """Export the HAB image into binary format.
+
+        :return: Binary representation of the HAB image.
+        """
         return self.image_info(padding=False).export()
 
     def __len__(self) -> int:
-        """Get length of HAB image."""
+        """Get length of HAB image.
+
+        Calculates the total length by finding the segment with the highest offset
+        and adding its size to determine the overall image length.
+
+        :return: Total length of the HAB image in bytes.
+        """
         last_offset = 0
         last_len = 0
         for seg in self.segments:
@@ -394,9 +568,14 @@ class HabImage(FeatureBaseClass):
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Create the list of validation schemas.
+        """Create the list of validation schemas for HAB image configuration.
 
-        :return: List of validation schemas.
+        The method generates validation schemas based on the specified family revision,
+        including HAB options, input configurations, and sections. It dynamically updates
+        the schema with supported families and available boot devices for the given family.
+
+        :param family: Family revision to generate schemas for.
+        :return: List of validation schema dictionaries for HAB image configuration.
         """
         hab_schema = get_schema_file(DatabaseManager.HAB)
 
@@ -416,9 +595,13 @@ class HabImage(FeatureBaseClass):
 
     @classmethod
     def get_config_template(cls, family: FamilyRevision) -> str:
-        """Generate configuration template.
+        """Generate HAB configuration template.
 
-        :return: Dictionary of individual templates (key is name of template, value is template itself).
+        Creates a configuration template for Hardware Abstraction Boot (HAB) image
+        based on the specified family revision and validation schemas.
+
+        :param family: Target MCU family and revision for template generation.
+        :return: Configuration template as a string with proper formatting and comments.
         """
         return CommentedConfig(
             "HAB Configuration template.", cls.get_validation_schemas(family)
@@ -428,8 +611,13 @@ class HabImage(FeatureBaseClass):
     def transform_configuration(cls, config: dict[Any, Any]) -> dict[Any, Any]:
         """Transform configuration from BD parser to flat YAML structure.
 
-        :param config: Parsed configuration from BD parser
-        :return: Transformed configuration
+        Converts section IDs to human-readable names and flattens the options structure
+        for easier YAML representation. Maps numeric section identifiers to their
+        corresponding command names and extracts options into a simplified format.
+
+        :param config: Parsed configuration dictionary from BD parser containing sections
+                       and source file information
+        :return: Transformed configuration with named sections and flattened structure
         """
         section_id_to_name = {
             20: "Header",
@@ -467,8 +655,13 @@ class HabImage(FeatureBaseClass):
     def transform_bd_configuration(cls, config: Config) -> Config:
         """Transform configuration from flat structure to BD structure.
 
-        :param config: Parsed configuration from BD parser
-        :return: Transformed configuration
+        Converts a flat configuration structure from the BD parser into a structured
+        format with sections containing IDs, options, and commands. Maps section names
+        to their corresponding numeric identifiers and restructures the data for
+        further processing.
+
+        :param config: Parsed configuration from BD parser containing sections and input image file.
+        :return: Transformed configuration with structured sections and sources.
         """
         section_name_to_id = {
             "Header": 20,
@@ -509,8 +702,12 @@ class HabImage(FeatureBaseClass):
     def get_boot_devices(family: FamilyRevision) -> list[BootDevice]:
         """Get all supported boot devices for given family.
 
-        :param family: Target family name.
-        :return: List of supported boot devices.
+        The method retrieves boot device information from the database for the specified
+        family and returns a list of BootDevice objects created from the available
+        memory types.
+
+        :param family: Target family revision to get boot devices for.
+        :return: List of supported boot devices for the specified family.
         """
         db = get_db(family)
         return [
@@ -519,7 +716,14 @@ class HabImage(FeatureBaseClass):
         ]
 
     def post_export(self, output_path: str) -> list[str]:
-        """Perform post export steps."""
+        """Perform post export steps for all segments in the HAB image.
+
+        This method iterates through all segments in the image and executes their
+        post-export operations, collecting any generated files from each segment.
+
+        :param output_path: Directory path where post-export files should be generated.
+        :return: List of file paths that were generated during post-export operations.
+        """
         generated_files: list[str] = []
         for segment in self.segments:
             generated_files.extend(segment.post_export(output_path))

@@ -5,15 +5,17 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Test AHAB fuse script generation functionality.
+"""SPSDK AHAB fuse script generation tests.
 
-This module tests the generation of fuse programming scripts for both BLHOST and NXPELE tools
-across all AHAB-supported processor families. It verifies that correct SRK hash commands are
-generated with proper values and formats.
+This module contains unit tests for validating the generation of fuse programming
+scripts for AHAB (Advanced High Assurance Boot) enabled processors. It tests
+both BLHOST and NXPELE tool script generation across all AHAB-supported families
+and validates SRK hash fuse index functionality.
 """
 
 import os
 import re
+
 import pytest
 
 from spsdk.apps import nxpimage
@@ -78,16 +80,16 @@ def test_nxpimage_ahab_fuse_generation(
     Verifies that correct fuse programming scripts are generated for both BLHOST and NXPELE tools
     with proper SRK hash values when exporting AHAB containers. The test validates the format of
     generated scripts, command syntax, and confirms that SRK hash values are properly calculated
-    and not zero.
+    and not zero. For PQC configurations, validates both srk0 and srk1 hash generation.
 
-    :param cli_runner: CLI runner instance for executing nxpimage commands
-    :param tmpdir: Temporary directory for test output files
-    :param data_dir: Directory containing test data files
-    :param family: Target processor family for which to generate fuses
-    :param revision: Silicon revision of the target processor
-    :param base_config_file: Base configuration file appropriate for the given family
-    :param expected_tool: Expected fuse programming tool (blhost or nxpele)
-    :param core: Target processor core (e.g., cortex-m33, cortex-a55)
+    :param cli_runner: CLI runner instance for executing nxpimage commands.
+    :param tmpdir: Temporary directory for test output files.
+    :param data_dir: Directory containing test data files.
+    :param family: Target processor family for which to generate fuses.
+    :param revision: Silicon revision of the target processor.
+    :param base_config_file: Base configuration file appropriate for the given family.
+    :param expected_tool: Expected fuse programming tool (blhost or nxpele).
+    :param core: Target processor core (e.g., cortex-m33, cortex-a55).
     """
     with use_working_directory(data_dir):
         config_file = f"{data_dir}/ahab/fuses_scripts/{base_config_file}"
@@ -244,6 +246,7 @@ def test_nxpimage_ahab_fuse_indexes(
     :param base_config_file: Base configuration file appropriate for the given family
     :param expected_tool: Expected fuse programming tool (blhost or nxpele)
     :param core: Target processor core (e.g., cortex-m33, cortex-a55)
+    :raises AssertionError: When export fails, files are missing, or fuse commands don't match expected values
     """
     with use_working_directory(data_dir):
         config_file = f"{data_dir}/ahab/fuses_scripts/{base_config_file}"

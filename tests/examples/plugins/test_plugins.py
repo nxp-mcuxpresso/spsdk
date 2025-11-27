@@ -4,7 +4,16 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+"""SPSDK plugin template testing utilities.
+
+This module provides test functionality for validating SPSDK plugin templates
+and cookiecutter-based code generation. It ensures that plugin templates
+can be properly instantiated and function correctly.
+"""
+
 import os
+from typing import Any
+
 import pytest
 from cookiecutter.main import cookiecutter
 
@@ -17,7 +26,17 @@ TEMPLATES = [
 
 
 @pytest.mark.parametrize("template", TEMPLATES)
-def test_cookiecutter_templates(pytestconfig, tmpdir, template: str):
+def test_cookiecutter_templates(pytestconfig: Any, tmpdir: str, template: str) -> None:
+    """Test cookiecutter template generation and validation.
+
+    This test function validates that cookiecutter templates can be successfully
+    generated and contain the expected project structure files.
+
+    :param pytestconfig: Pytest configuration object containing test session information.
+    :param tmpdir: Temporary directory fixture for test file operations.
+    :param template: Name of the template directory to test.
+    :raises AssertionError: If the generated project directory or pyproject.toml file doesn't exist.
+    """
     template_path = pytestconfig.rootpath.joinpath("examples", "plugins", "templates", template)
     project_dir = cookiecutter(
         str(template_path),

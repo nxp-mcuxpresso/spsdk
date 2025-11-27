@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""DK6 UART communication interface."""
+"""SPSDK DK6 UART communication interface.
+
+This module provides low-level UART communication functionality for DK6 devices,
+including packet transmission, CRC calculation, and response parsing utilities.
+"""
+
 import logging
 import struct
 from typing import Any, Optional, Union
@@ -22,8 +27,10 @@ logger = logging.getLogger(__name__)
 def calc_crc(data: bytes) -> int:
     """Calculate CRC from the data.
 
-    :param data: data to calculate CRC from
-    :return: calculated CRC
+    The method uses CRC32 algorithm to compute the checksum value for the provided data.
+
+    :param data: Data bytes to calculate CRC from.
+    :return: Calculated CRC32 checksum as integer value.
     """
     crc_obj = from_crc_algorithm(CrcAlg.CRC32)
     return crc_obj.calculate(data)
@@ -32,16 +39,24 @@ def calc_crc(data: bytes) -> int:
 def to_int(data: bytes, little_endian: bool = False) -> int:
     """Convert bytes into single integer.
 
-    :param data: bytes to convert
-    :param little_endian: indicate byte ordering in data, defaults to True
-    :return: integer
+    :param data: Bytes to convert into integer.
+    :param little_endian: Indicate byte ordering in data, defaults to False for big endian.
+    :return: Converted integer value.
     """
     byte_order = Endianness.LITTLE if little_endian else Endianness.BIG
     return int.from_bytes(data, byteorder=byte_order.value)
 
 
 class Uart:
-    """UART interface for DK6 devices."""
+    """UART communication interface for DK6 devices.
+
+    This class provides a high-level interface for UART communication with DK6 devices,
+    handling frame-based protocol operations including reading, writing, and managing
+    connection state through an underlying serial device.
+
+    :cvar FRAME_START_BYTE: Start byte marker for frame protocol.
+    :cvar HEADER_SIZE: Total size of the frame header in bytes.
+    """
 
     FRAME_START_BYTE = 0x00
 
@@ -54,7 +69,10 @@ class Uart:
 
     @property
     def is_opened(self) -> bool:
-        """Return True if device is open, False otherwise."""
+        """Check device connection status.
+
+        :return: True if device is open and connected, False otherwise.
+        """
         return self.device.is_opened
 
     def __init__(
@@ -63,8 +81,8 @@ class Uart:
     ) -> None:
         """Initialize the UART interface.
 
-        :param port: name of the serial port, defaults to None
-        :raises McuBootConnectionError: when the port could not be opened
+        :param device: Serial device instance for communication.
+        :raises McuBootConnectionError: When the device could not be opened.
         """
         self.device = device
         # self.device.baudrate = baudrate
@@ -92,9 +110,12 @@ class Uart:
     def read(self) -> Any:
         """Read data from device.
 
-        :return: CmdResponse
-        :raises SPSDKError: Did not receive correct frame start byte
-        :raises SPSDKError: When received invalid CRC
+        Reads and parses a complete frame from the device, including validation
+        of frame structure and CRC checksum.
+
+        :return: Parsed command response object.
+        :raises SPSDKError: Did not receive correct frame start byte.
+        :raises SPSDKError: When received invalid CRC.
         """
         flag = to_int(self._read_default(self.FLAG_SIZE))
         if flag != self.FRAME_START_BYTE:
@@ -118,11 +139,14 @@ class Uart:
         return parse_cmd_response(data, frame_type)
 
     def write(self, frame_type: CommandTag, packet: Union[CmdPacket, bytes, None]) -> None:
-        """Write data to the device; data might be in form of 'CmdPacket' or bytes.
+        """Write data to the device.
 
-        :param frame_type: CommandTag
-        :param packet: Packet to send
-        :raises AttributeError: frame type is incorrect
+        Data might be in form of 'CmdPacket' or bytes. The method automatically converts
+        CmdPacket objects to bytes before sending.
+
+        :param frame_type: Command tag specifying the type of frame to create.
+        :param packet: Packet data to send, can be CmdPacket object, bytes, or None.
+        :raises AttributeError: Frame type is incorrect.
         """
         if isinstance(packet, CmdPacket):
             packet = packet.export()
@@ -133,22 +157,24 @@ class Uart:
         self._send_frame(frame)
 
     def _read_default(self, length: int) -> bytes:
-        """Read 'length' amount of bytes from device, this function can be overridden in child class.
+        """Read specified number of bytes from device.
 
-        :param length: Number of bytes to read
-        :type length: int
-        :raises SPSDKError: When read fails
-        :return: Data read from the device
+        This function provides default read implementation that can be overridden in child classes
+        to customize reading behavior for specific device types.
+
+        :param length: Number of bytes to read from the device.
+        :raises SPSDKError: When read operation fails.
+        :return: Data read from the device.
         """
         return self._read(length)
 
     def _read(self, length: int) -> bytes:
-        """Read 'length' amount for bytes from device.
+        """Read specified number of bytes from device.
 
-        :param length: Number of bytes to read
-        :return: Data read from the device
-        :raises TimeoutError: Time-out
-        :raises SPSDKError: When reading data from device fails
+        :param length: Number of bytes to read from the device.
+        :raises TimeoutError: When no data is received from device (timeout).
+        :raises SPSDKError: When reading data from device fails.
+        :return: Data read from the device.
         """
         try:
             data = self.device.read(length)
@@ -162,8 +188,11 @@ class Uart:
     def _write(self, data: bytes) -> None:
         """Send data to device.
 
-        :param data: Data to send
-        :raises SPSDKError: When sending the data fails
+        This method writes the provided byte data to the connected device and logs
+        the transmission for debugging purposes.
+
+        :param data: Byte data to be sent to the device.
+        :raises SPSDKError: When sending the data fails due to communication issues.
         """
         logger.debug(f"->WRITE: [{' '.join(f'{b:02x}' for b in data)}]")
         try:
@@ -175,17 +204,20 @@ class Uart:
         """Send a frame to UART.
 
         :param frame: Data to send
-        :param wait_for_ack: Wait for ACK frame from device, defaults to True
+        :raises SPSDKError: If frame transmission fails
         """
         self._write(frame)
 
     @staticmethod
     def create_frame(data: Optional[bytes], frame_type: Union[int, CommandTag]) -> bytes:
-        """Encapsulate data into frame.
+        """Encapsulate data into frame for UART communication.
 
-        :param data: payload data
-        :param frame_type: frame type
-        :return: frame
+        Creates a properly formatted frame with start byte, length, frame type,
+        payload data, and CRC checksum for secure transmission.
+
+        :param data: Payload data to be encapsulated, None for frames without payload.
+        :param frame_type: Frame type identifier as integer or CommandTag enum.
+        :return: Complete frame as bytes ready for transmission.
         """
         frame_type = frame_type if isinstance(frame_type, int) else frame_type.tag
         crc = Uart.calc_frame_crc(data, frame_type)
@@ -214,9 +246,12 @@ class Uart:
     def calc_frame_crc(data: Optional[bytes], frame_type: Union[int, CommandTag]) -> int:
         """Calculate the CRC of a frame.
 
-        :param data: frame data
-        :param frame_type: frame type
-        :return: calculated CRC
+        The method constructs frame data with header information and calculates CRC checksum
+        for UART communication protocol.
+
+        :param data: Frame payload data, None for frames without payload.
+        :param frame_type: Frame type identifier as integer or CommandTag enum.
+        :return: Calculated CRC checksum as integer value.
         """
         frame_type = frame_type if isinstance(frame_type, int) else frame_type.tag
         if data:

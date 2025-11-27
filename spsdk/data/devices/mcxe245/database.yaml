@@ -12,7 +12,7 @@ info:
   use_in_doc: True
   purpose: MCX Series
   spsdk_predecessor_name: mcxe24x
-  web: https://www.nxp.com/products/MCX-E24X
+  web: https://www.nxp.com/products/MCX-E24
   memory_map:
     internal-flash_ns:
       start_int: "0x0"

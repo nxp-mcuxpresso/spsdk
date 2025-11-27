@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""NXP USB Device Scanner API."""
+"""SPSDK NXP device discovery and scanning utilities.
+
+This module provides functionality for discovering and scanning various NXP devices
+across different communication interfaces including USB, UART, SDIO, and LibUSBSIO.
+It offers device enumeration, filtering, and identification capabilities for NXP
+MCU development and provisioning workflows.
+"""
 
 import array
 import logging
@@ -54,9 +60,12 @@ logger = logging.getLogger(__name__)
 
 
 def search_nxp_sdio_devices() -> list[SDIODeviceDescription]:
-    """Searches all NXP SDIO devices based on their device path.
+    """Search for all available NXP SDIO devices.
 
-    :return: list of SDIODeviceDescription corresponding to NXP devices
+    Scans predefined device paths to discover NXP SDIO devices and creates device descriptions
+    for each found device containing vendor ID, product ID, and device path information.
+
+    :return: List of SDIODeviceDescription objects representing discovered NXP SDIO devices.
     """
     nxp_sdio_devices = []
 
@@ -77,10 +86,13 @@ def search_nxp_sdio_devices() -> list[SDIODeviceDescription]:
 
 
 def search_nxp_usb_devices(extend_vid_list: Optional[list] = None) -> list[USBDeviceDescription]:
-    """Searches all NXP USB devices based on their Vendor ID.
+    """Search all NXP USB devices based on their Vendor ID.
 
-    :extend_vid_list: list of VIDs, to extend the default NXP VID list (int)
-    :return: list of USBDeviceDescription corresponding to NXP devices
+    The method enumerates all USB devices and filters them by NXP vendor IDs to identify
+    NXP devices connected to the system.
+
+    :param extend_vid_list: Additional vendor IDs to extend the default NXP VID list.
+    :return: List of USBDeviceDescription objects corresponding to found NXP devices.
     """
     libusbsio_logger = logging.getLogger("libusbsio")
     sio = usbsio(loglevel=libusbsio_logger.getEffectiveLevel())
@@ -121,9 +133,12 @@ def search_nxp_usb_devices(extend_vid_list: Optional[list] = None) -> list[USBDe
 
 
 def search_uuu_usb_devices() -> list[UUUDeviceDescription]:
-    """Searches all UUU compatible USB devices.
+    """Search for all UUU compatible USB devices.
 
-    :return: list of USBDeviceDescription corresponding to UUU devices
+    The method uses SPSDK UUU library to enumerate and identify all connected USB devices
+    that are compatible with the UUU (Universal Update Utility) protocol.
+
+    :return: List of UUUDeviceDescription objects representing found UUU devices.
     """
     uuu = SPSDKUUU()
     devices = []
@@ -131,17 +146,20 @@ def search_uuu_usb_devices() -> list[UUUDeviceDescription]:
     def usb_device_callback(
         path: bytes, chip: bytes, pro: bytes, vid: int, pid: int, bcd: int, serial_no: bytes, p: Any
     ) -> int:
-        """Callback function for uuu_for_each_devices.
+        """Callback function for USB device enumeration via uuu_for_each_devices.
 
-        :param path: The path to the USB device.
-        :param chip: The chip of the USB device.
-        :param pro: The product of the USB device.
-        :param vid: The vendor ID of the USB device.
-        :param pid: The product ID of the USB device.
-        :param bcd: BDC.
-        :param serial_no: The serial number of the USB device.
-        :param p: A pointer to additional data.
-        :return: 0 on success.
+        Creates UUUDeviceDescription objects from USB device information and appends them
+        to the devices list for further processing.
+
+        :param path: USB device path as bytes string.
+        :param chip: Chip identifier as bytes string.
+        :param pro: Product name as bytes string.
+        :param vid: USB vendor ID.
+        :param pid: USB product ID.
+        :param bcd: Binary-coded decimal device version.
+        :param serial_no: Device serial number as bytes string.
+        :param p: Additional data pointer (unused).
+        :return: Always returns 0 to indicate successful processing.
         """
         description = UUUDeviceDescription(
             path.decode("utf-8"),
@@ -163,11 +181,12 @@ def search_uuu_usb_devices() -> list[UUUDeviceDescription]:
 def is_real_tty_device(device: str) -> bool:
     """Check if a /dev/ttyS* device is a real serial device using ioctl.
 
-    Check only for Linux.
-    Check is based on ioctl TIOCGSERIAL. If the device is not a real serial device,
-    the ioctl will return PORT_UNKNOWN (0).
+    Linux-only function that uses TIOCGSERIAL ioctl to determine if a device is a real serial
+    port. Non-real serial devices return PORT_UNKNOWN (0) from the ioctl call. Non-ttyS devices
+    are considered real by default.
 
-    :param device: The device path.
+    :param device: The device path to check.
+    :raises SPSDKUnsupportedOperation: When called on non-Linux systems.
     :return: True if the device is a real serial device, False otherwise.
     """
     if platform.system() != "Linux":
@@ -192,10 +211,15 @@ def is_real_tty_device(device: str) -> bool:
 
 
 def filter_uart_devices(ports: list[ListPortInfo], real_devices: bool) -> list[ListPortInfo]:
-    """Filter UART devices.
+    """Filter UART devices based on platform-specific criteria.
 
-    :ports: ListPortInfo from pyserial
-    :real_devices: Scan for real devices using ioctl TIOCGSERIAL.
+    The method filters serial ports to identify actual UART devices. On macOS, it filters
+    for USB serial devices. On Linux with real_devices enabled, it uses ioctl to verify
+    real TTY devices.
+
+    :param ports: List of serial port information objects from pyserial.
+    :param real_devices: Enable scanning for real devices using ioctl TIOCGSERIAL on Linux.
+    :return: Filtered list of UART device port information.
     """
     # on macOS, we need to filter out ports that are not serial ports
     if platform.system() == "Darwin":
@@ -219,14 +243,18 @@ def search_nxp_uart_devices(
     timeout: int = 50,
     real_devices: bool = False,
 ) -> list[UartDeviceDescription]:
-    """Returns a list of all NXP devices connected via UART.
+    """Search for NXP UART devices connected to the system.
 
-    :scan: whether to scan for mboot and SDP devices
-    :all_devices: whether to return all devices or only NXP devices
-    :scan_uboot: whether to scan for U-Boot console devices
-    :timeout: timeout for UART scan in ms
-    :real_devices: Check if the device is real using ioctl TIOCGSERIAL.
-    :retval: list of UartDeviceDescription devices from devicedescription module
+    This method scans available UART ports and identifies NXP devices by attempting to
+    communicate using mboot, SDP, and U-Boot protocols. It can filter devices based on
+    vendor ID and perform real device validation.
+
+    :param scan: Whether to scan for mboot and SDP devices, defaults to True.
+    :param all_devices: Whether to return all devices or only NXP devices, defaults to True.
+    :param scan_uboot: Whether to scan for U-Boot console devices, defaults to True.
+    :param timeout: Timeout for UART scan in milliseconds, defaults to 50.
+    :param real_devices: Check if the device is real using ioctl TIOCGSERIAL, defaults to False.
+    :return: List of UartDeviceDescription objects representing discovered devices.
     """
     retval = []
 
@@ -299,7 +327,7 @@ Arguments: {e.args}"
 # not clear, how do we identify different devices with SDP protocol, as
 # in the company, there are so many different MCU's from NXP and Freescale
 # with different MCU identification options, if any...
-# def parse_sim_sdid(sim_sdid: int) -> Dict:
+# def parse_sim_sdid(sim_sdid: int) -> dict:
 #     """Converts the content of SIM_SDID register into string.
 
 #     :sim_sdid: the value of SIM_SDID register
@@ -314,10 +342,14 @@ Arguments: {e.args}"
 
 
 def search_libusbsio_devices() -> list[SIODeviceDescription]:
-    """Returns a list of all LIBUSBSIO devices.
+    """Search for all available LIBUSBSIO devices in the system.
 
-    :retval: list of UartDeviceDescription devices from devicedescription module
-    :raises SPSDKError: In any case of LIBUSBSIO problems.
+    Scans the system for LIBUSBSIO devices and creates device descriptions for each found device.
+    The method initializes the LIBUSBSIO library and iterates through all available ports to
+    gather device information.
+
+    :return: List of SIODeviceDescription objects representing found LIBUSBSIO devices.
+    :raises SPSDKError: When LIBUSBSIO library fails or device information cannot be retrieved.
     """
     retval = []
     try:

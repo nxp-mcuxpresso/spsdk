@@ -13,7 +13,7 @@
 family: mimx9596
 # -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
 # Description: Revision of silicon
-revision: a1
+revision: latest
 # ----------------------------------===== Target memory [Conditionally required] =====----------------------------------
 # Description: Target memory for AHAB container
 # Possible options: <serial_downloader, standard, nand_2k, nand_4k>
@@ -24,7 +24,7 @@ output: ../outputs/primary_signed_ahab.bin
 # ---------------------------------------===== Container version [Optional] =====---------------------------------------
 # Description: Force container version, if not specified the default version is used. This configuration option is valid
 # only for chips that supports both AHAB container versions. Possible options <2, 1>
-container_version: 1
+container_version: 2
 # ------------------------------===== List of containers present in AHAB [Required] =====-------------------------------
 # Description: The order of containers in the list defines the order in AHAB.
 containers:
@@ -34,7 +34,7 @@ containers:
     binary_container:
       # -----------------------------===== The AHAB container binary file [Required] =====------------------------------
       # Description: The binary file that contains AHAB "my_binary_container.bin
-      path: ./mx95a0-ahab-container.img
+      path: ./mx95b0-ahab-container.img
 
   - # --------------------------------------===== AHAB Container [Required] =====---------------------------------------
     # Description: Configurable Container format to add to AHAB image. This allow to configure all aspects of the AHAB
@@ -64,14 +64,17 @@ containers:
       #  - default: Apply default fuse policy.
       #  - check_all_signatures: Force verification of all present signatures.
       # Possible options: <default, check_all_signatures>
-      check_all_signatures: default
+      check_all_signatures: check_all_signatures
       # ----------------------------------------===== Fast boot [Optional] =====----------------------------------------
       # Description: This option enables fast boot mode.
-      #  - enabled: Fast boot enabled.
-      #  - slice_hash: Slice and hash mode.
-      #  - on_fly: On the fly hash.
-      # Possible options: <enabled, slice_hash, on_fly>
-      fast_boot: enabled
+      #  - disabled: Fast boot disabled.
+      #  - hash_and_copy: ELE will do the hash and copy (when disabled, BootROM will do the copy).
+      #  - external_accelerator: Use external accelerator for authentication (e.g. V2X on i.MX95B0, i.MX943 and
+      # i.MX952).
+      #  - hash_and_copy_with_external_accelerator:ELE will do hash and copy, and use external accelerator for
+      # authentication.
+      # Possible options: <disabled, hash_and_copy, external_accelerator, hash_and_copy_with_external_accelerator>
+      fast_boot: disabled
       # --------------------------------------===== Fuse version [Optional] =====---------------------------------------
       # Description: The value must be equal or greater than the version stored in fuses to allow loading this
       # container.
@@ -84,6 +87,11 @@ containers:
       # Description: Private key used for sign the container header. Header can be signed by SRK. The referenced SRK
       # must not have been revoked.
       signer: ../../../_data/keys/ecc384/srk0_ecc384.pem
+      # ------------------===== AHAB container signer for second signature (PQC only) [Optional] =====------------------
+      # Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
+      # private key used for second sign (PQC only) of the container header. Header can be signed by SRK. The referenced
+      # SRK must not have been revoked.
+      signer_#2: ../../../_data/keys/mldsa65/srk0_mldsa65.pem
 
       # ================================================================================================================
       #                     == Configuration of AHAB Container images (array of multiple images) ==
@@ -158,7 +166,7 @@ containers:
           # hash_type:                     SHA384
           # -----------------------------------------===== SPL [Required] =====-----------------------------------------
           # Description: SPL firmware
-        - spl: ./u-boot-spl_mx95_19x19.bin
+        - spl: ./u-boot-spl.bin
 
           # V2X dummy image container definition
           # Image array default settings. Can be override by defines that are hidden in template:
@@ -178,7 +186,12 @@ containers:
       srk_table:
         # ----------------------------------------===== CA Flag [Optional] =====----------------------------------------
         # Description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys
-        flag_ca: true
+        flag_ca: false
+        # -----------------------------------===== Hash Algorithm [Optional] =====------------------------------------
+        # Description: Hash algorithm used for SRK records. If not specified, default algorithm based on key type will
+        # be used.
+        # Possible options: <default, sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, sm3>
+        hash_algorithm: default
         # ------------------------------===== Super Root Key (SRK) table [Required] =====-------------------------------
         # Description: Table containing the used SRK records. All SRKs must be of the same type. Supported signing
         # algorithms are: RSA-PSS, ECDSA, Dilithium or SM2. Supported hash algorithms: sha256, sha384, sha512, sha3_256,
@@ -190,3 +203,29 @@ containers:
           - ../../../_data/keys/ecc384/srk1_ecc384.pub
           - ../../../_data/keys/ecc384/srk2_ecc384.pub
           - ../../../_data/keys/ecc384/srk3_ecc384.pub
+
+        # ==============================================================================================================
+        #               == Configuration of AHAB SRK table in case that the double signing (ECC + PQC) ==
+        # ==============================================================================================================
+        # -----------------------------------===== Second SRK Table [Optional] =====------------------------------------
+        srk_table_#2:
+          # ---------------------------------------===== CA Flag [Optional] =====---------------------------------------
+          # Description: CA Flag is used by AHAB to indicate if the SRK is allowed to sign other keys. In AHAB CA Flag
+          # only affects the final SRKH (Super Root Key Hash) value burned into chip fuses. It is not used in the AHAB
+          # signing process itself. This option exists only for compatibility with systems where fuses are already
+          # programmed. In most cases, this should remain false.
+          flag_ca: false
+          # -----------------------------------===== Hash Algorithm [Optional] =====------------------------------------
+          # Description: Hash algorithm used for SRK records. If not specified, default algorithm based on key type will
+          # be used.
+          # Possible options: <default, sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, sm3>
+          hash_algorithm: default
+          # -----------------------------===== Super Root Key (SRK) table [Required] =====------------------------------
+          # Description: Table containing the used SRK Dilithium records. All SRKs must be of the same type. Supported
+          # signing algorithms are: Dilithium level 3. Supported hash algorithms: sha3_256, sha3_384, sha3_512.
+          # Certificate may be of Certificate Authority.
+          srk_array:
+            - ../../../_data/keys/mldsa65/srk0_mldsa65.pub
+            - ../../../_data/keys/mldsa65/srk1_mldsa65.pub
+            - ../../../_data/keys/mldsa65/srk2_mldsa65.pub
+            - ../../../_data/keys/mldsa65/srk3_mldsa65.pub

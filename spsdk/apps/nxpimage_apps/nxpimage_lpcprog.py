@@ -4,7 +4,12 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Nxpimage Lpcprog group."""
+"""SPSDK LPC programming utilities for nxpimage application.
+
+This module provides command-line interface for LPC microcontroller programming
+operations including CRP (Code Read Protection) level updates and making images
+bootable for LPC devices.
+"""
 
 import click
 

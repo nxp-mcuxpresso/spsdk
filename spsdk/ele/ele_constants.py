@@ -5,13 +5,24 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""EdgeLock Enclave Message constants."""
+"""EdgeLock Enclave constants and enumerations.
+
+This module provides constant definitions and enumeration classes for EdgeLock Enclave (ELE)
+operations, including message IDs, response codes, lifecycle states, and configuration options
+used throughout the SPSDK ELE functionality.
+"""
 
 from spsdk.utils.spsdk_enum import SpsdkEnum, SpsdkSoftEnum
 
 
 class MessageIDs(SpsdkSoftEnum):
-    """ELE Messages ID."""
+    """ELE Message Identifiers enumeration.
+
+    This enumeration defines all supported EdgeLock Enclave (ELE) message identifiers
+    used for communication with the ELE firmware. Each message ID represents a specific
+    command or request that can be sent to the ELE subsystem for various operations
+    including authentication, key management, lifecycle updates, and system control.
+    """
 
     PING_REQ = (0x01, "PING_REQ", "Ping request.")
     ELE_FW_AUTH_REQ = (0x02, "ELE_FW_AUTH_REQ", "ELE firmware authenticate request.")
@@ -57,7 +68,11 @@ class MessageIDs(SpsdkSoftEnum):
 
 
 class SocId(SpsdkSoftEnum):
-    """SOC Identification."""
+    """SOC Identification enumeration for NXP microcontrollers.
+
+    This enumeration provides standardized identifiers for supported System-on-Chip (SOC)
+    devices in the SPSDK library, mapping numeric IDs to device names and marketing names.
+    """
 
     MX8ULP = (0x084D, "MX8ULP", "i.MX8ULP")
     RT1180 = (0x1180, "RT1180", "i.MXRT1180")
@@ -68,7 +83,13 @@ class SocId(SpsdkSoftEnum):
 
 
 class LifeCycle(SpsdkSoftEnum):
-    """ELE life cycles."""
+    """ELE device lifecycle state enumeration.
+
+    This enumeration defines the various lifecycle states that an ELE (EdgeLock Enclave)
+    device can be in, from initial blank state through provisioning, deployment, and
+    end-of-life states. Each lifecycle state represents a specific security and
+    operational mode of the device.
+    """
 
     LC_BLANK = (0x002, "BLANK", "Blank device")
     LC_FAB = (0x004, "FAB", "Fab mode")
@@ -83,28 +104,45 @@ class LifeCycle(SpsdkSoftEnum):
 
 
 class LifeCycleToSwitch(SpsdkSoftEnum):
-    """ELE life cycles to switch request."""
+    """ELE life cycle enumeration for switching operations.
+
+    This enumeration defines the available life cycle states that can be used
+    in ELE (EdgeLock Enclave) life cycle switching requests, providing
+    standardized constants for OEM closed and locked states.
+    """
 
     OEM_CLOSED = (0x08, "OEM_CLOSED", "OEM Closed")
     OEM_LOCKED = (0x80, "OEM_LOCKED", "OEM Locked")
 
 
 class MessageUnitId(SpsdkSoftEnum):
-    """Message Unit ID."""
+    """Message Unit ID enumeration for ELE communication.
+
+    This enumeration defines the available message unit identifiers used
+    for communication with the EdgeLock Enclave (ELE) subsystem.
+    """
 
     RTD_MU = (0x01, "RTD_MU", "Real Time Device message unit")
     APD_MU = (0x02, "APD_MU", "Application Processor message unit")
 
 
 class ResponseStatus(SpsdkEnum):
-    """ELE Message Response status."""
+    """ELE Message Response status enumeration.
+
+    This enumeration defines the possible response status codes returned by ELE
+    (EdgeLock Enclave) message operations, indicating success or failure of requests.
+    """
 
     ELE_SUCCESS_IND = (0xD6, "Success", "The request was successful")
     ELE_FAILURE_IND = (0x29, "Failure", "The request failed")
 
 
 class ResponseIndication(SpsdkSoftEnum):
-    """ELE Message Response indication."""
+    """ELE Message Response indication enumeration.
+
+    This enumeration defines response indication codes returned by the EdgeLock Enclave (ELE)
+    to indicate various failure conditions and error states during message processing.
+    """
 
     ELE_ROM_PING_FAILURE_IND = (0x0A, "ELE_ROM_PING_FAILURE_IND", "ROM ping failure")
     ELE_FW_PING_FAILURE_IND = (0x1A, "ELE_FW_PING_FAILURE_IND", "Firmware ping failure")
@@ -285,14 +323,23 @@ class ResponseIndication(SpsdkSoftEnum):
 
 
 class EleFwStatus(SpsdkSoftEnum):
-    """ELE Firmware status."""
+    """ELE Firmware status enumeration.
+
+    This enumeration defines the possible states of the ELE (EdgeLock Enclave) firmware,
+    indicating whether the firmware is properly authenticated and operational or not in place.
+    """
 
     ELE_FW_STATUS_NOT_IN_PLACE = (0, "ELE_FW_STATUS_NOT_IN_PLACE", "Not in place")
     ELE_FW_STATUS_IN_PLACE = (1, "ELE_FW_STATUS_IN_PLACE", "Authenticated and operational")
 
 
 class EleInfo2Commit(SpsdkSoftEnum):
-    """ELE Information type to be committed."""
+    """ELE Information type to be committed.
+
+    Enumeration of information types that can be committed to the EdgeLock Enclave (ELE).
+    This class defines the available commitment options for both NXP and OEM containers,
+    including SRK revocation and firmware fuse version settings.
+    """
 
     NXP_SRK_REVOCATION = (0x1 << 0, "NXP_SRK_REVOCATION", "SRK revocation of the NXP container")
     NXP_FW_FUSE = (0x1 << 1, "NXP_FW_FUSE", "FW fuse version of the NXP container")
@@ -301,7 +348,11 @@ class EleInfo2Commit(SpsdkSoftEnum):
 
 
 class KeyBlobEncryptionAlgorithm(SpsdkSoftEnum):
-    """ELE KeyBlob encryption algorithms."""
+    """ELE KeyBlob encryption algorithm enumeration.
+
+    This enumeration defines the supported encryption algorithms for KeyBlob operations
+    in the EdgeLock Enclave (ELE), including AES and SM4 cipher modes.
+    """
 
     AES_CBC = (0x03, "AES_CBC", "KeyBlob encryption algorithm AES CBC")
     AES_CTR = (0x04, "AES_CTR", "KeyBlob encryption algorithm AES CTR")
@@ -310,7 +361,11 @@ class KeyBlobEncryptionAlgorithm(SpsdkSoftEnum):
 
 
 class KeyBlobEncryptionIeeCtrModes(SpsdkSoftEnum):
-    """IEE Keyblob mode attributes."""
+    """IEE CTR mode enumeration for keyblob encryption.
+
+    This enumeration defines the available AES CTR (Counter) modes for IEE (Inline Encryption Engine)
+    keyblob encryption, including address binding options and keystream-only mode.
+    """
 
     AesCTRWAddress = (0x02, "CTR_WITH_ADDRESS", " AES CTR w address binding mode")
     AesCTRWOAddress = (0x03, "CTR_WITHOUT_ADDRESS", " AES CTR w/o address binding mode")
@@ -318,7 +373,12 @@ class KeyBlobEncryptionIeeCtrModes(SpsdkSoftEnum):
 
 
 class EleTrngState(SpsdkSoftEnum):
-    """ELE TRNG state."""
+    """ELE TRNG (True Random Number Generator) state enumeration.
+
+    This enumeration defines the possible states of the EdgeLock Enclave True Random
+    Number Generator, providing status information for TRNG operations including
+    initialization, entropy generation, and error conditions.
+    """
 
     ELE_TRNG_NOT_READY = (
         0x0,
@@ -336,7 +396,11 @@ class EleTrngState(SpsdkSoftEnum):
 
 
 class EleCsalState(SpsdkSoftEnum):
-    """ELE CSAL state."""
+    """ELE CSAL state enumeration.
+
+    Enumeration defining the possible states of EdgeLock secure enclave random context
+    initialization (CSAL - Cryptographic Services Abstraction Layer).
+    """
 
     ELE_CSAL_NOT_READY = (
         0x0,
@@ -366,7 +430,12 @@ class EleCsalState(SpsdkSoftEnum):
 
 
 class EleImemState(SpsdkSoftEnum):
-    """ELE IMEM state."""
+    """ELE IMEM state enumeration.
+
+    This enumeration defines the possible states of the ELE (EdgeLock Enclave) IMEM
+    (Instruction Memory) indicating whether the memory is fully loaded or has been
+    lost during power transitions.
+    """
 
     ELE_IMEM_LOADED = (
         0xCA,
@@ -382,7 +451,12 @@ class EleImemState(SpsdkSoftEnum):
 
 
 class HseMessageIDs(SpsdkSoftEnum):
-    """HSE Service Message IDs."""
+    """HSE Service Message IDs enumeration.
+
+    This enumeration defines message identifiers for HSE (Hardware Security Engine) services
+    including system management, key operations, cryptographic services, and firmware operations.
+    Each entry contains the numeric ID, symbolic name, and description of the HSE service.
+    """
 
     SET_ATTR = (0x00000001, "HSE_SRV_ID_SET_ATTR", "Set attribute service")
     GET_ATTR = (0x00A50002, "HSE_SRV_ID_GET_ATTR", "Get attribute service")
@@ -469,7 +543,12 @@ class HseMessageIDs(SpsdkSoftEnum):
 
 
 class HseResponseStatus(SpsdkEnum):
-    """HSE service response codes."""
+    """HSE service response status codes enumeration.
+
+    This enumeration defines all possible response status codes returned by HSE (Hardware Security Engine)
+    services, including success responses, verification failures, parameter errors, operation restrictions,
+    and access failures. Each status code contains the numeric value, symbolic name, and description.
+    """
 
     # Success response
     OK = (0x55A5AA33, "HSE_SRV_RSP_OK", "HSE service successfully executed with no error.")

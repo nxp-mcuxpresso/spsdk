@@ -2884,10 +2884,10 @@
             },
             {
               "width": 1,
-              "access": "WO",
               "id": "fuse182-bit-6",
               "name": "OTFAD2_KEY_SCRAMBLE_CRC_EN",
               "description": "OTFAD2 key scramble CRC enable, write-only",
+              "access": "WO",
               "values": [
                 {
                   "name": "0",
@@ -2903,10 +2903,10 @@
             },
             {
               "width": 1,
-              "access": "WO",
               "id": "fuse182-bit-7",
               "name": "OTFAD2_KEY_SCRAMBLE_EN",
               "description": "OTFAD2 key scramble enable, write-only",
+              "access": "WO",
               "values": [
                 {
                   "name": "0",
@@ -2922,17 +2922,17 @@
             },
             {
               "width": 8,
-              "access": "WO",
               "id": "fuse182-bits-8-15",
               "name": "OTFAD2_KEY_SCRAMBLE_ALIGN",
-              "description": "OTFAD2 key scramble align, write-only"
+              "description": "OTFAD2 key scramble align, write-only",
+              "access": "WO"
             },
             {
               "width": 1,
-              "access": "WO",
               "id": "fuse182-bit-16",
               "name": "OTFAD2_RESTRICT_OTFAD_IPS",
               "description": "OTFAD2 restrictOTFAD IPS, write-only",
+              "access": "WO",
               "values": [
                 {
                   "name": "0",
@@ -3095,10 +3095,10 @@
             },
             {
               "width": 1,
-              "access": "WO",
               "id": "fuse188-bit-6",
               "name": "OTFAD1_KEY_SCRAMBLE_CRC_EN",
               "description": "OTFAD1 key scramble CRC enable, write-only",
+              "access": "WO",
               "values": [
                 {
                   "name": "0",
@@ -3114,10 +3114,10 @@
             },
             {
               "width": 1,
-              "access": "WO",
               "id": "fuse188-bit-7",
               "name": "OTFAD1_KEY_SCRAMBLE_EN",
               "description": "OTFAD1 key scramble enable, write-only",
+              "access": "WO",
               "values": [
                 {
                   "name": "0",
@@ -3133,17 +3133,17 @@
             },
             {
               "width": 8,
-              "access": "WO",
               "id": "fuse188-bits-8-15",
               "name": "OTFAD1_KEY_SCRAMBLE_ALIGN",
-              "description": "OTFAD1 key scramble align, write-only"
+              "description": "OTFAD1 key scramble align, write-only",
+              "access": "WO"
             },
             {
               "width": 1,
-              "access": "WO",
               "id": "fuse188-bit-16",
               "name": "OTFAD1_RESTRICT_OTFAD_IPS",
               "description": "OTFAD1RESTRICT OTFAD IPS, write-only",
+              "access": "WO",
               "values": [
                 {
                   "name": "0",

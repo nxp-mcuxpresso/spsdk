@@ -4,7 +4,12 @@
 # Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Various utilities used throughout the DICE module."""
+"""SPSDK DICE utilities for device identity and certificate operations.
+
+This module provides utility functions and classes for DICE (Device Identifier
+Composition Engine) operations, including ECC key management, X.509 certificate
+handling, device support queries, and hardware attestation functionality.
+"""
 
 import logging
 import secrets
@@ -39,12 +44,22 @@ logger = logging.getLogger(__name__)
 
 
 def get_supported_devices() -> list[FamilyRevision]:
-    """List devices supported by DICE."""
+    """Get list of devices supported by DICE.
+
+    :return: List of family revisions that support DICE functionality.
+    """
     return get_families(DatabaseManager.DICE)
 
 
 def reconstruct_ecc_key(puk_data: Union[str, bytes]) -> ec.EllipticCurvePublicKey:
-    """Convert raw X,Y ECC coordinates into a key."""
+    """Reconstruct ECC public key from raw X,Y coordinates.
+
+    Converts raw byte data containing X and Y coordinates of an elliptic curve point
+    into a proper ECC public key object using the SECP256R1 curve.
+
+    :param puk_data: Raw X,Y coordinates as hex string or bytes (64 bytes total).
+    :return: ECC public key object reconstructed from the coordinates.
+    """
     if isinstance(puk_data, str):
         puk_bytes = bytes.fromhex(puk_data)
     else:
@@ -56,10 +71,10 @@ def reconstruct_ecc_key(puk_data: Union[str, bytes]) -> ec.EllipticCurvePublicKe
 
 
 def serialize_ecc_key(key: ec.EllipticCurvePublicKey) -> str:
-    """Serialize public key into PEM-formatted string.
+    """Serialize ECC public key into PEM-formatted string.
 
-    :param key: ECC public key to serialize
-    :return: PEM-encoded public key as string
+    :param key: ECC public key to serialize.
+    :return: PEM-encoded public key as string.
     """
     return key.public_bytes(
         encoding=serialization.Encoding.PEM,
@@ -71,7 +86,13 @@ HADDifferences = list[Union[tuple[RegsBitField, RegsBitField], tuple[Register, R
 
 
 class HADDiff:
-    """Helper class to parse differences in HAD values."""
+    """HAD (Hardware Attestation Data) difference analyzer for DICE operations.
+
+    This class provides functionality to compare HAD data values and identify
+    differences between expected and actual hardware configurations. It supports
+    both full comparison and critical-only analysis based on family-specific
+    register definitions.
+    """
 
     def __init__(self, family: FamilyRevision) -> None:
         """Initialize the HADDiff instance.
@@ -89,9 +110,12 @@ class HADDiff:
     ) -> HADDifferences:
         """Compare provided HAD data and return registers/bitfields containing different values.
 
-        :param expected: Expected HAD data
-        :param actual: Actual HAD data
-        :param critical_only: Return only set of differences of critical HAD register
+        The method accepts HAD data in string (hex) or bytes format and compares them to identify
+        differences. When critical_only is enabled, only differences in critical registers are returned.
+
+        :param expected: Expected HAD data as hex string or bytes
+        :param actual: Actual HAD data as hex string or bytes
+        :param critical_only: Return only differences of critical HAD registers, defaults to False
         :raises SPSDKDICEError: Invalid data length
         :return: List of registers/bitfields with mismatching values
         """
@@ -126,16 +150,34 @@ class HADDiff:
         return critical_differences
 
     def _setup_regs(self, data: bytes) -> Registers:
+        """Setup registers for DICE operations.
+
+        Parse binary data into a Registers object configured for the specific MCU family
+        and DICE feature set.
+
+        :param data: Binary data to be parsed into registers.
+        :return: Configured Registers object with parsed DICE data.
+        """
         registers = Registers(family=self.family, feature="dice")
         registers.parse(binary=data)
         return registers
 
 
 class ProveGenuinity:
-    """Helper class for Prov of Genuinity operations."""
+    """SPSDK Proof of Genuinity operations manager.
+
+    This class provides functionality for device authenticity verification through cryptographic
+    proof of genuinity operations. It supports ECDSA and Hybrid modes for generating and
+    verifying genuinity responses, certificate creation, and validation operations.
+    """
 
     class Mode(SpsdkEnum):
-        """Predefined modes for genuinity proof."""
+        """Enumeration of predefined modes for genuinity proof operations.
+
+        This class defines the available modes that can be used when performing
+        genuinity proof operations in DICE (Device Identifier Composition Engine)
+        functionality, including ECDSA and Hybrid modes.
+        """
 
         ECDSA = (0, "ECDSA")
         HYBRID = (1, "Hybrid")
@@ -149,11 +191,15 @@ class ProveGenuinity:
     ) -> bytes:
         """Generate a response for genuinity proof.
 
-        :param family: Device family revision
-        :param interface: McuBoot interface for communication
-        :param challenge: Optional challenge bytes for response generation
-        :param mode: Mode of genuinity proof (ECDSA or Hybrid)
-        :return: Response bytes for genuinity verification
+        This method communicates with the device to perform genuinity verification by sending
+        a challenge and receiving a cryptographic response that proves device authenticity.
+
+        :param family: Device family revision for database configuration lookup
+        :param interface: McuBoot interface for communication with the target device
+        :param challenge: Optional 16-byte challenge for response generation, random if None
+        :param mode: Mode of genuinity proof operation (ECDSA or Hybrid)
+        :raises SPSDKError: Invalid challenge length, communication failure, or operation error
+        :return: Response bytes containing the genuinity proof data
         """
         database = get_db(family)
         buffer_address = database.get_int(DatabaseManager.DICE, "buffer_address")
@@ -194,7 +240,18 @@ class ProveGenuinity:
         strict: bool = False,
         print_fn: Callable[[str], None] = print,
     ) -> bool:
-        """Verify Prove-Genuinity response."""
+        """Verify Prove-Genuinity response from device.
+
+        Validates the authenticity of a device response by verifying signatures using product keys
+        and DevID keys, optionally checking challenge match and enforcing strict payload validation.
+
+        :param response: Raw response data from device to verify.
+        :param keys: List of product public keys for certificate validation.
+        :param challenge: Optional challenge bytes to verify against response challenge.
+        :param strict: Enable strict validation of all required payload entries.
+        :param print_fn: Function to use for printing status messages.
+        :return: True if all validations pass, False otherwise.
+        """
         strict_result = True
         logger.debug("Loading product key(s)")
         prod_keys = [PublicKey.parse(key) for key in keys]
@@ -271,7 +328,18 @@ class ProveGenuinity:
         length: int,
         print_fn: Callable[[str], None],
     ) -> bool:
-        """Helper method to validate container entries."""
+        """Helper method to validate container entries.
+
+        Validates that a container entry exists and has the expected payload length.
+        Prints validation results and error messages using the provided print function.
+
+        :param container: The TPDataContainer to validate entries from.
+        :param payload_type: Type of payload entry to retrieve and validate.
+        :param name: Human-readable name of the entry for error messages.
+        :param length: Expected length of the entry payload in bytes.
+        :param print_fn: Function to use for printing validation results and errors.
+        :return: True if entry validation passes, False if length mismatch occurs.
+        """
         result = True
         entry = container.get_entry(payload_type)
         print_fn("------------")
@@ -292,7 +360,21 @@ class ProveGenuinity:
         strict: bool = False,
         print_fn: Callable[[str], None] = print,
     ) -> tuple[bool, list[PublicKey]]:
-        """Verify Certificate Signing Request (CSR) data."""
+        """Verify Certificate Signing Request (CSR) data.
+
+        This method validates a DICE CSR by verifying signatures at multiple levels:
+        authentication certificate, prove genuinity container, and CSR container itself.
+        Optionally extracts DICE alias keys and performs strict validation checks.
+
+        :param csr_data: Raw CSR data bytes to be verified.
+        :param prod_keys: List of production public keys for certificate validation.
+        :param dice_ca_keys: List of DICE CA public keys for CSR validation.
+        :param challenge: Optional challenge bytes to verify against CSR challenge.
+        :param extract_alias_keys: Whether to extract DICE alias keys from CSR.
+        :param strict: Whether to perform strict validation of required entries.
+        :param print_fn: Function to use for printing status messages.
+        :return: Tuple of verification result (bool) and list of extracted alias keys.
+        """
         strict_result = True
         logger.debug("Loading product key(s)")
         prod_keys_parsed = [PublicKey.parse(key) for key in prod_keys]
@@ -392,7 +474,21 @@ class ProveGenuinity:
         ca_name: Optional[str] = None,
         use_full_der_for_serial: bool = False,
     ) -> bytes:
-        """Create IDevID certificate(s) from PG response data."""
+        """Create IDevID certificate from PG response data.
+
+        This method parses the response data to extract device public keys and creates
+        X.509 certificates signed by the provided CA private key. It supports both
+        ECC and ML-DSA key types and ensures type compatibility between device and CA keys.
+
+        :param response: Raw response data containing device authentication information.
+        :param ca_prk: CA private key in bytes format for signing the certificate.
+        :param subject_common_name: Optional common name for certificate subject.
+        :param ca_puk: Optional CA public key in bytes format.
+        :param ca_name: Optional CA name for certificate issuer.
+        :param use_full_der_for_serial: Whether to use full DER encoding for serial number.
+        :raises SPSDKError: When no type match found between device keys and CA key.
+        :return: Encoded certificate data in bytes format.
+        """
         out_container = TPDataContainer.parse(data=response)
         cert_data = out_container.get_entry(PayloadType.NXP_DIE_ID_AUTH_CERT).payload
         cert_container = TPDataContainer.parse(data=cert_data)
@@ -467,7 +563,18 @@ class ProveGenuinity:
 def get_x509_name(
     name: str, public_key: PublicKey, use_full_der_for_serial: bool = False
 ) -> tuple[x509.Name, bytes]:
-    """Helper method to create x509 Name with consistent attributes."""
+    """Create X.509 Name object with consistent attributes and key hash.
+
+    The method generates an X.509 Name with common name and serial number attributes.
+    The serial number is derived from the public key hash. Additionally returns
+    a truncated key hash for certificate identification purposes.
+
+    :param name: Common name to be used in the X.509 Name object.
+    :param public_key: Public key used for generating the serial number hash.
+    :param use_full_der_for_serial: Whether to use full DER encoding for serial
+        generation, defaults to False.
+    :return: Tuple containing the X.509 Name object and 20-byte key hash.
+    """
     if use_full_der_for_serial:
         key_data = public_key.export(SPSDKEncoding.DER)
     else:

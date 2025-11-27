@@ -5,6 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""SPSDK SB file cryptographic operations test suite.
+
+This module contains comprehensive tests for cryptographic functionality
+used in Secure Binary (SB) file operations, including hashing, HMAC,
+AES encryption/decryption, key wrapping, and digital signatures.
+"""
+
 import os
 from binascii import unhexlify
 
@@ -19,21 +26,44 @@ from spsdk.exceptions import SPSDKError
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
-def test_random_bytes():
+def test_random_bytes() -> None:
+    """Test random bytes generation functionality.
+
+    Verifies that the random_bytes function generates proper random byte sequences
+    by checking the return type, length, and randomness properties.
+
+    :raises AssertionError: If random bytes generation fails validation checks.
+    """
     random = random_bytes(16)
     assert isinstance(random, bytes)
     assert len(random) == 16
     assert random != random_bytes(16)
 
 
-def test_hash():
+def test_hash() -> None:
+    """Test SHA256 hash calculation functionality.
+
+    Verifies that the get_hash function correctly computes SHA256 hash
+    by comparing the calculated hash of a known plain text input against
+    the expected hash value.
+
+    :raises AssertionError: If calculated hash doesn't match expected value.
+    """
     plain_text = b"testestestestestestestestestestestestestestestestestestestest"
     text_sha256 = unhexlify("41116FE4EFB90A050AABB83419E19BF2196A0E76AB8E3034C8D674042EE23621")
     calc_sha256 = get_hash(plain_text, EnumHashAlgorithm.SHA256)
     assert calc_sha256 == text_sha256
 
 
-def test_hmac():
+def test_hmac() -> None:
+    """Test HMAC SHA256 calculation against known test vector.
+
+    This test verifies that the HMAC implementation correctly computes SHA256-based
+    HMAC by comparing the calculated result with a pre-computed expected value
+    using a known key and plaintext combination.
+
+    :raises AssertionError: If calculated HMAC does not match expected test vector.
+    """
     key = b"12345678"
     plain_text = b"testestestestestestestestestestestestestestestestestestestest"
     text_hmac_sha256 = unhexlify("d785d886a750c999aa86802697dd4a9934facac72614cbfa66bbf657b74eb1d5")
@@ -41,15 +71,38 @@ def test_hmac():
     assert calc_hmac_sha256 == text_hmac_sha256
 
 
-def test_hmac_invalid():
+def test_hmac_invalid() -> None:
+    """Test HMAC function with invalid hash algorithm.
+
+    This test verifies that the HMAC function properly raises an SPSDKError
+    when provided with an unsupported hash algorithm enum value.
+
+    :raises SPSDKError: When an invalid/unsupported hash algorithm is provided.
+    """
+
     class TestEnumHashAlgorithm(SpsdkEnum):
+        """Test enumeration for hash algorithms used in SBFile crypto operations.
+
+        This enumeration defines hash algorithm constants for testing cryptographic
+        functionality within the SBFile module, providing standardized identifiers
+        for hash algorithm validation and processing.
+        """
+
         SHA256b = (0, "SHA256b", "SHA256b")
 
     with pytest.raises(SPSDKError):
-        hmac(key=b"1", data=b"t", algorithm=TestEnumHashAlgorithm.SHA256b)
+        hmac(key=b"1", data=b"t", algorithm=TestEnumHashAlgorithm.SHA256b)  # type: ignore[arg-type]
 
 
-def test_aes_key_wrap():
+def test_aes_key_wrap() -> None:
+    """Test AES key wrap functionality.
+
+    Verifies that the AES key wrap algorithm correctly wraps a plain key using
+    a key encryption key (KEK) and produces the expected wrapped key result.
+    Uses predefined test vectors to validate the implementation.
+
+    :raises AssertionError: If the calculated wrapped key doesn't match expected result.
+    """
     kek = unhexlify("000102030405060708090A0B0C0D0E0F")
     plain_key = unhexlify("00112233445566778899AABBCCDDEEFF")
     wrapped_key = unhexlify("1FA68B0A8112B447AEF34BD8FB5A7B829D3E862371D2CFE5")
@@ -57,7 +110,13 @@ def test_aes_key_wrap():
     assert calc_wrapped_key == wrapped_key
 
 
-def test_aes_key_unwrap():
+def test_aes_key_unwrap() -> None:
+    """Test AES key unwrapping functionality.
+
+    Verifies that the aes_key_unwrap function correctly unwraps a wrapped AES key
+    using a known key encryption key (KEK) and validates the result against
+    the expected plain key value.
+    """
     kek = unhexlify("000102030405060708090A0B0C0D0E0F")
     plain_key = unhexlify("00112233445566778899AABBCCDDEEFF")
     wrapped_key = unhexlify("1FA68B0A8112B447AEF34BD8FB5A7B829D3E862371D2CFE5")
@@ -65,7 +124,16 @@ def test_aes_key_unwrap():
     assert calc_plain_key == plain_key
 
 
-def test_aes_ctr_encrypt():
+def test_aes_ctr_encrypt() -> None:
+    """Test AES CTR encryption functionality.
+
+    Verifies that the AES CTR encryption function produces the expected
+    cipher text when given a known key, plaintext, and nonce. This test
+    uses predefined test vectors to ensure the encryption implementation
+    is working correctly.
+
+    :raises AssertionError: If the calculated cipher text doesn't match expected result.
+    """
     key = b"1234567812345678"
     nonce = b"\x00" * 16
     plain_text = b"\x0a" * 16
@@ -74,7 +142,14 @@ def test_aes_ctr_encrypt():
     assert calc_cipher_text == cipher_text
 
 
-def test_aes_ctr_decrypt():
+def test_aes_ctr_decrypt() -> None:
+    """Test AES CTR decryption functionality.
+
+    Verifies that the aes_ctr_decrypt function correctly decrypts cipher text
+    using AES in Counter (CTR) mode with a given key and nonce. The test uses
+    predefined test vectors to ensure the decryption produces the expected
+    plain text output.
+    """
     key = b"1234567812345678"
     nonce = b"\x00" * 16
     plain_text = b"\x0a" * 16
@@ -83,7 +158,15 @@ def test_aes_ctr_decrypt():
     assert calc_plain_text == plain_text
 
 
-def test_rsa_sign(data_dir):
+def test_rsa_sign(data_dir: str) -> None:
+    """Test RSA signature generation and verification.
+
+    This test verifies that the RSA private key can generate a correct signature
+    for a given data payload. It loads an RSA 2048-bit private key from a PEM file,
+    signs test data, and validates the signature matches the expected result.
+
+    :param data_dir: Directory path containing test data files including the RSA private key.
+    """
     private_key = PrivateKeyRsa.load(os.path.join(data_dir, "selfsign_privatekey_rsa2048.pem"))
 
     signature = (
@@ -103,7 +186,15 @@ def test_rsa_sign(data_dir):
     assert calc_signature == signature
 
 
-def test_rsa_verify(data_dir):
+def test_rsa_verify(data_dir: str) -> None:
+    """Test RSA signature verification functionality.
+
+    This test verifies that RSA signature verification works correctly by loading
+    a private key, using a predefined signature, and testing verification against
+    known test data.
+
+    :param data_dir: Directory path containing test data files including the RSA private key file.
+    """
     private_key = PrivateKeyRsa.load(os.path.join(data_dir, "selfsign_privatekey_rsa2048.pem"))
 
     signature = (
@@ -120,7 +211,16 @@ def test_rsa_verify(data_dir):
     assert private_key.get_public_key().verify_signature(signature, data)
 
 
-def test_ecc_sign_verify(data_dir):
+def test_ecc_sign_verify(data_dir: str) -> None:
+    """Test ECC signature generation and verification functionality.
+
+    This test verifies that ECC private keys can generate valid signatures and that
+    corresponding public keys can verify those signatures. It also confirms that
+    OpenSSL's randomized signature generation produces different signatures for
+    the same data while maintaining verification validity.
+
+    :param data_dir: Directory path containing test cryptographic key files.
+    """
     private_key = PrivateKeyEcc.load(os.path.join(data_dir, "ecc_secp256r1_priv_key.pem"))
     public_key = PublicKeyEcc.load(os.path.join(data_dir, "ecc_secp256r1_pub_key.pem"))
     data = b"THIS IS MESSAGE TO BE SIGNED"
@@ -132,10 +232,18 @@ def test_ecc_sign_verify(data_dir):
     is_valid = public_key.verify_signature(signature=calc_signature, data=data)
     is_valid2 = public_key.verify_signature(signature=calc_signature2, data=data)
     # randomized signatures are still valid
-    assert is_valid == is_valid2 == True
+    assert is_valid and is_valid2
 
 
-def test_ecc_sign_verify_incorrect(data_dir):
+def test_ecc_sign_verify_incorrect(data_dir: str) -> None:
+    """Test ECC signature verification with malformed signatures.
+
+    This test verifies that the ECC signature verification correctly rejects
+    invalid signatures by testing two scenarios: truncated signature and
+    oversized signature.
+
+    :param data_dir: Directory path containing test cryptographic key files.
+    """
     private_key = PrivateKeyEcc.load(os.path.join(data_dir, "ecc_secp256r1_priv_key.pem"))
     public_key = PublicKeyEcc.load(os.path.join(data_dir, "ecc_secp256r1_pub_key.pem"))
 
@@ -145,7 +253,7 @@ def test_ecc_sign_verify_incorrect(data_dir):
     # malform the signature
     bad_signature = calc_signature[:-2] + bytes(2)
     is_valid = public_key.verify_signature(signature=bad_signature, data=data)
-    assert is_valid == False
+    assert not is_valid
 
     # make signature bigger than expected
     bad_signature = calc_signature + bytes(2)

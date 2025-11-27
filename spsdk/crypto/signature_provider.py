@@ -5,12 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""SignatureProvider is an Interface for all potential signature providers.
+"""SPSDK signature provider interface and implementations.
 
-Each concrete signature provider needs to implement:
-- sign(data: bytes) -> bytes
-- signature_length -> int
-- into() -> str
+This module provides a unified interface for various signature providers used in SPSDK,
+including file-based, interactive, and HTTP proxy signature providers. It enables
+flexible signature generation across different deployment scenarios from development
+to production environments.
 """
 
 import abc
@@ -43,7 +43,18 @@ logger = logging.getLogger(__name__)
 
 
 class SignatureProvider(ServiceProvider):
-    """Abstract class (Interface) for all signature providers."""
+    """Abstract base class for cryptographic signature providers in SPSDK.
+
+    This class defines the interface for all signature providers that handle cryptographic
+    signing operations across NXP MCU portfolio. Signature providers abstract the underlying
+    signing mechanisms (hardware tokens, files, remote services) and provide unified API
+    for generating digital signatures.
+
+    :cvar identifier: Unique identifier for the signature provider type.
+    :cvar reserved_keys: Configuration keys reserved by the base class.
+    :cvar legacy_identifier_name: Legacy name for backward compatibility.
+    :cvar plugin_identifier: Plugin system identifier for dynamic loading.
+    """
 
     # Subclasses override the following signature provider type
     identifier = "INVALID"
@@ -53,23 +64,39 @@ class SignatureProvider(ServiceProvider):
 
     @abc.abstractmethod
     def sign(self, data: bytes) -> bytes:
-        """Return signature for data."""
+        """Sign data using the configured signature provider.
+
+        :param data: Data to be signed.
+        :return: Digital signature of the input data.
+        """
 
     @property
     @abc.abstractmethod
     def signature_length(self) -> int:
-        """Return length of the signature."""
+        """Get the length of the signature in bytes.
+
+        :return: Length of the signature in bytes.
+        """
 
     def verify_public_key(self, public_key: PublicKey) -> bool:
-        """Verify if given public key matches private key."""
+        """Verify if given public key matches private key.
+
+        :param public_key: Public key to verify against the private key.
+        :raises SPSDKUnsupportedOperation: Verify method is not supported.
+        """
         raise SPSDKUnsupportedOperation("Verify method is not supported.")
 
     def try_to_verify_public_key(self, public_key: Union[PublicKey, bytes]) -> None:
         """Verify public key by signature provider if verify method is implemented.
 
-        :param public_key: Public key to be verified. If used as bytes, it can be in PEM/DER/NXP format
-        :raises SPSDKUnsupportedOperation: The verify_public_key method si not implemented
-        :raises SPSDKError: The verification of key-pair integrity failed
+        The method attempts to verify that the provided public key corresponds to the private key
+        held by the signature provider. If the public key is provided as bytes, it will be parsed
+        automatically. The verification is optional and depends on provider implementation.
+
+        :param public_key: Public key to be verified. If used as bytes, it can be in PEM/DER/NXP
+            format
+        :raises SPSDKUnsupportedOperation: The verify_public_key method is not implemented
+        :raises SPSDKKeysNotMatchingError: The verification of key-pair integrity failed
         """
         try:
             if isinstance(public_key, bytes):
@@ -84,11 +111,15 @@ class SignatureProvider(ServiceProvider):
             logger.warning("Signature provider could not verify the integrity of private key pair.")
 
     def get_signature(self, data: bytes, encoding: Optional[SPSDKEncoding] = None) -> bytes:
-        """Get signature. In case of ECC signature, the NXP format(r+s) is used.
+        """Get signature with optional encoding format.
+
+        In case of ECC signature, the NXP format (r+s) is used by default. The method
+        automatically detects ECC signatures and applies the specified encoding format.
+        Non-ECC signatures are returned as-is.
 
         :param data: Data to be signed.
-        :param encoding: Encoding type of output signature.
-        :return: Signature of the data
+        :param encoding: Encoding type of output signature, defaults to NXP format for ECC.
+        :return: Signature of the data in the specified encoding format.
         """
         signature = self.sign(data)
         try:
@@ -104,7 +135,15 @@ class SignatureProvider(ServiceProvider):
 
 
 class PlainFileSP(SignatureProvider):
-    """PlainFileSP is a SignatureProvider implementation that uses plain local files."""
+    """File-based signature provider for local cryptographic operations.
+
+    This signature provider implementation loads private keys from local files
+    and performs cryptographic signing operations. It supports encrypted private
+    keys with password protection and automatic hash algorithm selection based
+    on key type and size.
+
+    :cvar identifier: Provider identifier used for configuration and registration.
+    """
 
     identifier = "file"
 
@@ -118,11 +157,12 @@ class PlainFileSP(SignatureProvider):
     ) -> None:
         """Initialize the plain file signature provider.
 
-        :param file_path: Path to private file
-        :param password: Password in case of encrypted private file, defaults to None
-        :param hash_alg: Hash for the signature, defaults to None
-        :param search_paths: List of paths where to search for the file, defaults to None
-        :raises SPSDKError: Invalid Private Key
+        :param file_path: Path to private key file.
+        :param password: Password for encrypted private key file, defaults to None.
+        :param hash_alg: Hash algorithm for the signature, defaults to None.
+        :param search_paths: List of paths where to search for the file, defaults to None.
+        :param kwargs: Additional keyword arguments for signing operation.
+        :raises SPSDKError: Invalid private key or file not found.
         """
         password = load_secret(password, search_paths) if password else None
         self.sign_kwargs = kwargs
@@ -132,17 +172,38 @@ class PlainFileSP(SignatureProvider):
 
     @property
     def hash_alg(self) -> Optional[EnumHashAlgorithm]:
-        """Hash algorithm property."""
+        """Get hash algorithm used by the signature provider.
+
+        :return: Hash algorithm enumeration value, None if not set.
+        """
         return self._hash_alg
 
     @hash_alg.setter
     def hash_alg(self, hash_alg: Optional[EnumHashAlgorithm]) -> None:
-        """Hash algorithm property setter."""
+        """Set hash algorithm for signature operations.
+
+        Updates the internal hash algorithm and configures the signing parameters
+        accordingly. If hash algorithm is provided, it will be set in the sign_kwargs
+        dictionary for use in signature operations.
+
+        :param hash_alg: Hash algorithm to use for signing operations, or None to clear.
+        """
         self._hash_alg = hash_alg
         if hash_alg:
             self.sign_kwargs["algorithm"] = hash_alg
 
     def _get_hash_algorithm(self, hash_alg: Optional[EnumHashAlgorithm] = None) -> HashAlgorithm:
+        """Get appropriate hash algorithm for the private key type.
+
+        Determines the hash algorithm based on the provided parameter or automatically
+        selects one based on the private key type and size. For RSA keys, SHA256 is used.
+        For ECC keys, the algorithm is chosen based on key size (SHA256 for â¤256 bits,
+        SHA384 for 256-384 bits, SHA512 for >384 bits). For SM2 keys, SM3 is used.
+
+        :param hash_alg: Specific hash algorithm to use, if None auto-detection is applied.
+        :raises SPSDKError: Unsupported private key type.
+        :return: Hash algorithm instance for the given or detected algorithm.
+        """
         if hash_alg:
             hash_alg_name = hash_alg
         else:
@@ -171,28 +232,50 @@ class PlainFileSP(SignatureProvider):
 
     @property
     def signature_length(self) -> int:
-        """Return length of the signature."""
+        """Get signature length in bytes.
+
+        :return: Length of the signature in bytes.
+        """
         return self.private_key.signature_size
 
     def verify_public_key(self, public_key: PublicKey) -> bool:
-        """Verify if given public key matches private key."""
+        """Verify if given public key matches private key.
+
+        :param public_key: Public key to verify against the private key.
+        :return: True if public key matches private key, False otherwise.
+        """
         return self.private_key.verify_public_key(public_key)
 
     def info(self) -> str:
-        """Return basic into about the signature provider."""
+        """Return basic information about the signature provider.
+
+        The method extends the parent class info with additional details about
+        the key file path used by this signature provider.
+
+        :return: Formatted string containing signature provider information including key path.
+        """
         msg = super().info()
         msg += f"\nKey path: {self.file_path}\n"
         return msg
 
     def sign(self, data: bytes) -> bytes:
-        """Return the signature for data."""
+        """Sign data using the private key.
+
+        :param data: Data to be signed.
+        :return: Digital signature of the input data.
+        """
         return self.private_key.sign(data, **self.sign_kwargs)
 
 
 class InteractivePlainFileSP(PlainFileSP):
-    """SignatureProvider implementation that uses plain local file in an "interactive" mode.
+    """Interactive signature provider for encrypted private key files.
 
-    If the private key is encrypted, the user will be prompted for password
+    This signature provider extends PlainFileSP to handle encrypted private keys
+    by automatically prompting the user for a password when the key requires
+    decryption. It provides a seamless interactive experience for signature
+    operations with password-protected keys.
+
+    :cvar identifier: Provider identifier for registration and lookup.
     """
 
     identifier = "interactive_file"
@@ -206,10 +289,14 @@ class InteractivePlainFileSP(PlainFileSP):
     ) -> None:
         """Initialize the interactive plain file signature provider.
 
-        :param file_path: Path to private file
-        :param hash_alg: Hash for the signature, defaults to sha256
-        :param search_paths: List of paths where to search for the file, defaults to None
-        :raises SPSDKError: Invalid Private Key
+        This provider automatically prompts for password if the private key file
+        requires one and no password was provided in the initial attempt.
+
+        :param file_path: Path to private key file.
+        :param hash_alg: Hash algorithm for the signature, defaults to sha256.
+        :param search_paths: List of paths where to search for the file, defaults to None.
+        :param kwargs: Additional keyword arguments including optional password.
+        :raises SPSDKError: Invalid private key or initialization failure.
         """
         try:
             super().__init__(
@@ -231,7 +318,17 @@ class InteractivePlainFileSP(PlainFileSP):
 
 
 class HttpProxySP(HTTPClientBase, SignatureProvider):
-    """Signature Provider implementation that delegates all operations to a proxy server."""
+    """HTTP Proxy Signature Provider for remote cryptographic operations.
+
+    This class implements a signature provider that delegates cryptographic signing
+    operations to a remote proxy server via HTTP REST API. It supports optional
+    data pre-hashing before transmission and provides a secure way to perform
+    signing operations without direct access to private keys.
+
+    :cvar identifier: Provider type identifier for configuration.
+    :cvar reserved_keys: Configuration keys reserved by the framework.
+    :cvar api_version: Supported API version for proxy communication.
+    """
 
     identifier = "proxy"
     reserved_keys = ["type", "search_paths", "data"]
@@ -253,6 +350,7 @@ class HttpProxySP(HTTPClientBase, SignatureProvider):
         :param url_prefix: REST API prefix, defaults to "api"
         :param timeout: REST API timeout in seconds, defaults to 60
         :param prehash: Name of the hashing algorithm to pre-hash data before sending to signing service
+        :param kwargs: Additional keyword arguments passed to parent class
         """
         super().__init__(
             host=host,
@@ -266,7 +364,15 @@ class HttpProxySP(HTTPClientBase, SignatureProvider):
         self.prehash = prehash
 
     def sign(self, data: bytes) -> bytes:
-        """Return signature for data."""
+        """Sign data using the signature provider.
+
+        The method optionally pre-hashes the input data if prehash algorithm is configured,
+        then sends a signing request to the remote signature service.
+
+        :param data: Data to be signed.
+        :return: Digital signature of the input data.
+        :raises SPSDKError: If the signing request fails or response is invalid.
+        """
         if self.prehash:
             data = get_hash(data=data, algorithm=EnumHashAlgorithm.from_label(self.prehash))
         response = self._handle_request(
@@ -282,13 +388,28 @@ class HttpProxySP(HTTPClientBase, SignatureProvider):
 
     @property
     def signature_length(self) -> int:
-        """Return length of the signature."""
+        """Get signature length from remote signature provider.
+
+        Retrieves the length of signatures that will be produced by the remote
+        signature provider service.
+
+        :raises SPSDKError: Communication with signature provider failed.
+        :raises SPSDKValueError: Invalid response from signature provider.
+        :return: Length of the signature in bytes.
+        """
         response = self._handle_request(method=self.Method.GET, url="/signature_length")
         response_data = self._check_response(response=response, names_types=[("data", int)])
         return int(response_data["data"])
 
     def verify_public_key(self, public_key: PublicKey) -> bool:
-        """Verify if given public key matches private key."""
+        """Verify if given public key matches private key.
+
+        This method sends a request to verify that the provided public key corresponds
+        to the private key held by the signature provider.
+
+        :param public_key: The public key to verify against the private key.
+        :return: True if the public key matches the private key, False otherwise.
+        """
         response = self._handle_request(
             method=self.Method.GET,
             url="/verify_public_key",
@@ -302,20 +423,19 @@ class HttpProxySP(HTTPClientBase, SignatureProvider):
 
 
 def get_signature_provider(config: Config, key: str = "signer", **kwargs: Any) -> SignatureProvider:
-    """Get the signature provider instance from configuration.
+    """Get signature provider instance from configuration.
 
-    This function creates a signature provider based on provided configuration.
-    If the key parameter refers to a configuration string, it will use that
-    to create the signature provider. If it refers to a file path, it will
-    create an InteractivePlainFileSP with that file.
+    Creates a signature provider based on provided configuration. If the key parameter
+    refers to a configuration string, it will use that to create the signature provider.
+    If it refers to a file path, it will create an InteractivePlainFileSP with that file.
 
     :param config: Configuration object that contains signature provider settings.
-    :param key: Config key under which the signature provider configuration is stored.
-                Defaults to "signer".
+    :param key: Config key under which the signature provider configuration is stored,
+                defaults to "signer".
     :param kwargs: Additional parameters that will be passed to the signature provider.
-    :return: Instantiated Signature Provider.
     :raises SPSDKValueError: If signature provider configuration is missing.
     :raises SPSDKError: If signature provider could not be created from the configuration.
+    :return: Instantiated signature provider.
     """
     if key not in config:
         raise SPSDKValueError(f"Signature provider configuration '{key}' is missing")
@@ -342,8 +462,12 @@ def get_signature_provider(config: Config, key: str = "signer", **kwargs: Any) -
 def get_signature_provider_from_config_str(config_str: str, **kwargs: Any) -> SignatureProvider:
     """Create a signature provider from a configuration string.
 
+    The method creates a Config object from the provided string, sets the current working
+    directory as search path, and returns the corresponding signature provider.
+
     :param config_str: Configuration string for signature provider
-    :param kwargs: Additional parameters that will be passed to the signature provider.
+    :param kwargs: Additional parameters that will be passed to the signature provider
+    :return: Configured signature provider instance
     """
     config = Config({"signer": config_str})
     config.search_paths.append(os.getcwd())
@@ -351,7 +475,14 @@ def get_signature_provider_from_config_str(config_str: str, **kwargs: Any) -> Si
 
 
 def try_to_verify_public_key(signature_provider: SignatureProvider, public_key_data: bytes) -> None:
-    """Verify public key by signature provider if verify method is implemented."""
+    """Verify public key by signature provider if verify method is implemented.
+
+    This function is deprecated and will be removed in future versions.
+    Use SignatureProvider.try_to_verify_public_key method instead.
+
+    :param signature_provider: The signature provider instance to use for verification.
+    :param public_key_data: Public key data in bytes format to be verified.
+    """
     logger.warning(
         "Function `try_to_verify_public_key` is deprecated and will be removed. "
         "Please use `SignatureProvider.try_to_verify_public_key` instead."

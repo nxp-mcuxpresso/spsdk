@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""SPSDK plugins manager."""
+"""SPSDK plugins manager for dynamic module loading and management.
+
+This module provides functionality for discovering, loading, and managing
+plugins within the SPSDK framework. It supports dynamic plugin discovery
+from specified directories and handles plugin lifecycle management.
+"""
 
 import logging
 import os
@@ -25,7 +30,12 @@ logger = logging.getLogger(__name__)
 
 
 class PluginType(SpsdkEnum):
-    """Contains commands tags."""
+    """SPSDK Plugin Type Enumeration.
+
+    This enumeration defines the available plugin types supported by SPSDK, including
+    signature providers, device interfaces, debug probes, and other extensible components.
+    Each plugin type contains an identifier, entry point name, and human-readable description.
+    """
 
     SIGNATURE_PROVIDER = (0, "spsdk.sp", "Signature provider")
     DEVICE_INTERFACE = (1, "spsdk.device.interface", "Device interface")
@@ -36,18 +46,32 @@ class PluginType(SpsdkEnum):
 
 
 class PluginsManager(metaclass=SingletonMeta):
-    """Plugin manager."""
+    """SPSDK Plugin Manager for dynamic module loading and registration.
+
+    This singleton class manages the loading, registration, and retrieval of plugins
+    from various sources including setuptools entry points, Python source files,
+    and module names. It provides a centralized system for extending SPSDK
+    functionality through dynamically loaded modules.
+    """
 
     def __init__(self) -> None:
-        """Plugin manager constructor."""
+        """Initialize the plugin manager.
+
+        Creates an empty dictionary to store loaded plugins where keys are plugin
+        names and values are the corresponding module objects.
+        """
         self.plugins: dict[str, ModuleType] = {}
 
     def load_from_entrypoints(self, group_name: Optional[str] = None) -> int:
         """Load modules from given setuptools group.
 
-        :param group_name: Entry point group to load plugins
+        The method loads plugins from setuptools entry points for the specified group name.
+        If no group name is provided, it loads from all available plugin type groups.
+        Failed module imports are logged as warnings and skipped.
 
-        :return: The number of loaded plugins.
+        :param group_name: Entry point group to load plugins from. If None, loads from all groups.
+        :raises SPSDKTypeError: When group_name is not a string type.
+        :return: The number of successfully loaded plugins.
         """
         if group_name is not None and not isinstance(group_name, str):
             raise SPSDKTypeError("Group name must be of string type.")
@@ -77,6 +101,9 @@ class PluginsManager(metaclass=SingletonMeta):
     def load_from_source_file(self, source_file: str, module_name: Optional[str] = None) -> None:
         """Import Python source file directly.
 
+        The method loads a Python source file as a module and registers it with the plugin system.
+        It creates a module specification from the file location and imports it dynamically.
+
         :param source_file: Path to python source file: absolute or relative to cwd
         :param module_name: Name for the new module, default is basename of the source file
         :raises SPSDKError: If importing of source file failed
@@ -92,10 +119,13 @@ class PluginsManager(metaclass=SingletonMeta):
         self.register(module)
 
     def load_from_module_name(self, module_name: str) -> None:
-        """Import Python module directly.
+        """Import Python module directly by name and register it.
 
-        :param module_name: Module name to be imported
-        :raises SPSDKError: If importing of source file failed
+        The method uses importlib to find and import a Python module by its name,
+        then registers it with the plugin system.
+
+        :param module_name: Name of the Python module to be imported and registered.
+        :raises SPSDKError: If the module cannot be found or importing fails.
         """
         spec = find_spec(name=module_name)
         if not spec:
@@ -108,8 +138,12 @@ class PluginsManager(metaclass=SingletonMeta):
     def _import_module_spec(self, spec: ModuleSpec) -> ModuleType:
         """Import module from module specification.
 
-        :param spec: Module specification
-        :return: Imported module type
+        Loads a module from the provided module specification and registers it in the
+        system modules registry for future use.
+
+        :param spec: Module specification containing loader and module metadata.
+        :raises SPSDKError: Failed to load or execute the module specification.
+        :return: Successfully imported and executed module.
         """
         module = module_from_spec(spec)
         try:
@@ -123,8 +157,8 @@ class PluginsManager(metaclass=SingletonMeta):
     def register(self, plugin: ModuleType) -> bool:
         """Register a plugin with the given name.
 
-        :param plugin: Plugin as a module
-        :return: True if plugin was successfully registered, False if plugin is already registered
+        :param plugin: Plugin as a module to be registered.
+        :return: True if plugin was successfully registered, False if plugin is already registered.
         """
         plugin_name = self.get_plugin_name(plugin)
         if plugin_name in self.plugins:
@@ -135,17 +169,21 @@ class PluginsManager(metaclass=SingletonMeta):
         return True
 
     def get_plugin(self, name: str) -> Optional[ModuleType]:
-        """Return a plugin for the given name.
+        """Get plugin by name from registered plugins.
 
-        :param name: Plugin name
-        :return: Plugin or None if plugin with name is not registered
+        :param name: Name of the plugin to retrieve.
+        :return: Plugin module if found, None if plugin with given name is not registered.
         """
         return self.plugins.get(name)
 
     def get_plugin_name(self, plugin: ModuleType) -> str:
         """Get canonical name of plugin.
 
+        The method extracts the module name from the plugin object and validates
+        that the name can be determined.
+
         :param plugin: Plugin as a module
+        :raises SPSDKError: Plugin name could not be determined.
         :return: String with plugin name
         """
         name = getattr(plugin, "__name__", None)

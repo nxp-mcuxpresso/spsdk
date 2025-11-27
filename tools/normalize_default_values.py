@@ -3,20 +3,13 @@
 ## Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Default Value Normalizer for SPSDK JSON Files.
+"""SPSDK JSON configuration file default value normalizer.
 
-This script processes JSON files in the repository to normalize default_value_int fields:
-1. If default_value_int exists in both register and bitfields:
-   - Compares them and reports inconsistencies
-   - If consistent, removes default_value_int from bitfields
-2. If default_value_int exists only in bitfields:
-   - Creates register-level default_value_int
-   - Removes default_value_int from bitfields
-3. If default_value_int exists only in register:
-   - Leaves it as is
-
-Usage:
-    python normalize_default_values.py [root_directory]
+This module provides utilities for normalizing default_value_int fields across
+SPSDK JSON configuration files to ensure consistency between register-level
+and bitfield-level default values. The normalizer processes JSON files to
+compare and validate default values, consolidate them at the register level,
+remove redundant bitfield-level defaults, and report inconsistencies.
 """
 
 import glob
@@ -29,7 +22,14 @@ from spsdk.utils.misc import value_to_int
 
 
 class DefaultValueNormalizer:
-    """Normalizer for default_value_int fields in JSON files."""
+    """JSON configuration normalizer for SPSDK register definitions.
+
+    This class processes JSON files containing register and bitfield definitions,
+    normalizing default_value_int fields to ensure consistency across SPSDK
+    configuration files. It handles fuses files and other JSON configurations,
+    performing validation and standardization of default values, register widths,
+    and bitfield offsets.
+    """
 
     def __init__(self, root_dir: str = ".") -> None:
         """Initialize the normalizer with the root directory to search.
@@ -43,8 +43,12 @@ class DefaultValueNormalizer:
     def find_json_files(self) -> tuple[list[str], list[str]]:
         """Find all JSON files in the repository.
 
-        :return:
-            tuple: (fuses_files, other_files) - Lists of paths to JSON files
+        Searches through the repository directory structure to locate JSON files,
+        categorizing them into fuses configuration files and other JSON files.
+        Excludes files in .git directories and JSON schema files.
+
+        :return: Tuple containing two lists - first list contains paths to fuses*.json files,
+                 second list contains paths to other JSON files (excluding schema files).
         """
         fuses_files: list[str] = []
         other_files: list[str] = []
@@ -74,10 +78,16 @@ class DefaultValueNormalizer:
     ) -> tuple[bool, bool]:
         """Process a register to normalize default_value_int fields.
 
-        :param register: Register data
-        :param file_path: Path to the JSON file
-        :param register_name: Name of the register
-        :return: Tuple containing (continue_processing, was_modified)
+        This method performs a two-step normalization process: first it normalizes
+        default values by combining bitfield defaults and other operations, then it
+        sanitizes any remaining reset_value_int fields in the register data.
+
+        :param register: Register data dictionary containing field definitions and values.
+        :param file_path: Path to the JSON file being processed.
+        :param register_name: Name of the register being processed.
+        :return: Tuple containing (continue_processing, was_modified) where continue_processing
+                 indicates if processing should continue and was_modified indicates if any
+                 changes were made to the register data.
         """
         # First, normalize the default values (combine bitfield defaults, etc.)
         continue_processing, was_modified = self._normalize_default_values(
@@ -99,10 +109,15 @@ class DefaultValueNormalizer:
     ) -> tuple[bool, bool]:
         """Normalize default_value_int fields by combining bitfield defaults.
 
-        :param register: Register data
-        :param file_path: Path to the JSON file
-        :param register_name: Name of the register
-        :return: Tuple containing (continue_processing, was_modified)
+        This method processes register data to ensure consistency between register-level
+        and bitfield-level default values. It handles cases where defaults exist in
+        both locations or only in bitfields, and delegates to appropriate handler methods.
+
+        :param register: Dictionary containing register configuration data including bitfields.
+        :param file_path: Absolute or relative path to the JSON configuration file being processed.
+        :param register_name: Name identifier of the register being normalized.
+        :return: Tuple where first boolean indicates whether to continue processing and
+            second boolean indicates if modifications were made.
         """
         was_modified = False
 
@@ -142,12 +157,16 @@ class DefaultValueNormalizer:
     ) -> tuple[bool, bool]:
         """Handle case where default_value_int exists in both register and bitfields.
 
-        :param register: Register data
-        :param register_default: The register's default value
-        :param bitfield_defaults: Dictionary of bitfield default values
-        :param file_path: Path to the JSON file
-        :param register_name: Name of the register
-        :return: Tuple containing (continue_processing, was_modified)
+        Validates consistency between register and bitfield default values, extracts missing
+        bitfield defaults from register default, and removes redundant bitfield defaults
+        to avoid duplication.
+
+        :param register: Register data dictionary containing bitfields and metadata.
+        :param register_default: The register's default value (int or convertible to int).
+        :param bitfield_defaults: Dictionary mapping bitfield names to their default values.
+        :param file_path: Path to the JSON file being processed.
+        :param register_name: Name of the register being validated.
+        :return: Tuple of (continue_processing flag, modification status flag).
         """
         was_modified = False
         register_default = value_to_int(register_default)
@@ -208,10 +227,15 @@ class DefaultValueNormalizer:
     ) -> tuple[bool, bool]:
         """Handle case where default_value_int exists only in bitfields.
 
-        :param register: Register data
-        :param file_path: Path to the JSON file
-        :param register_name: Name of the register
-        :return: Tuple containing (continue_processing, was_modified)
+        This method calculates a combined default value from all bitfields within a register
+        and moves it to the register level, then removes the individual default values
+        from the bitfields to normalize the data structure.
+
+        :param register: Register data dictionary containing bitfields and metadata.
+        :param file_path: Path to the JSON file being processed.
+        :param register_name: Name of the register being processed.
+        :return: Tuple containing (continue_processing, was_modified) where continue_processing
+                 is always True and was_modified indicates if any changes were made.
         """
         was_modified = False
 
@@ -250,10 +274,16 @@ class DefaultValueNormalizer:
     ) -> tuple[bool, bool]:
         """Sanitize any remaining reset_value_int fields in the register.
 
-        :param register: Register data
-        :param file_path: Path to the JSON file
-        :param register_name: Name of the register
-        :return: Tuple containing (continue_processing, was_modified)
+        This method handles the conversion and validation of reset_value_int fields by either
+        removing redundant values that match default_value_int or converting reset_value_int
+        to default_value_int when no default exists. Reports errors for conflicting values.
+
+        :param register: Register data dictionary containing field definitions.
+        :param file_path: Path to the JSON file being processed.
+        :param register_name: Name of the register being sanitized.
+        :return: Tuple containing (continue_processing, was_modified) where continue_processing
+                 indicates if processing should continue and was_modified indicates if the
+                 register data was changed.
         """
         was_modified = False
 
@@ -293,12 +323,16 @@ class DefaultValueNormalizer:
     def mark_reserved_registers(
         self, register: dict[str, Any], file_path: str, register_name: str
     ) -> tuple[bool, bool]:
-        """Mark registers with 'reserved' in their name by adding 'is_reserved': True if not already present.
+        """Mark registers with 'reserved' in their name by adding 'is_reserved': True.
 
-        :param register: Register data
-        :param file_path: Path to the JSON file
-        :param register_name: Name of the register
-        :return: Tuple containing (continue_processing, was_modified)
+        The method identifies registers containing 'reserved' in their name (case insensitive)
+        and ensures they have the 'is_reserved' field set to True. If the field doesn't exist,
+        it's added. If it exists but has a different value, it's updated to True.
+
+        :param register: Dictionary containing register configuration data.
+        :param file_path: Path to the JSON file being processed.
+        :param register_name: Name of the register being processed.
+        :return: Tuple of (continue_processing flag, modification status flag).
         """
         was_modified = False
 
@@ -322,10 +356,16 @@ class DefaultValueNormalizer:
     ) -> tuple[bool, bool]:
         """Process a register to normalize width fields, converting strings to integers.
 
-        :param register: Register data
-        :param file_path: Path to the JSON file
-        :param register_name: Name of the register
-        :return: Tuple containing (continue_processing, was_modified)
+        This method processes register data to ensure all width-related fields (reg_width and
+        bitfield widths) are stored as integers rather than strings. It handles both the main
+        register width and individual bitfield widths within the register.
+
+        :param register: Dictionary containing register configuration data to be processed.
+        :param file_path: Path to the JSON file being processed, used for error reporting.
+        :param register_name: Name of the register being processed, used for logging and error messages.
+        :raises ValueError: When string width values cannot be converted to integers.
+        :return: Tuple containing (continue_processing, was_modified) where continue_processing
+                 indicates if processing should continue and was_modified indicates if any changes were made.
         """
         was_modified = False
 
@@ -367,10 +407,16 @@ class DefaultValueNormalizer:
     ) -> tuple[bool, bool]:
         """Process a register to remove bitfield offsets after validating they're correct.
 
-        :param register: Register data
-        :param file_path: Path to the JSON file
-        :param register_name: Name of the register
-        :return: Tuple containing (continue_processing, was_modified)
+        This method validates that existing bitfield offsets match the expected values
+        based on bitfield widths, then removes all offset entries if validation passes.
+        If validation fails, the register requires manual correction.
+
+        :param register: Register data dictionary containing bitfields configuration
+        :param file_path: Path to the JSON file being processed
+        :param register_name: Name of the register being processed
+        :return: Tuple containing (continue_processing, was_modified) where continue_processing
+                 indicates if processing should continue and was_modified indicates if the
+                 register data was changed
         """
         was_modified = False
 
@@ -416,12 +462,19 @@ class DefaultValueNormalizer:
     def process_register_bitfield_values(
         self, register: dict[str, Any], file_path: str, register_name: str
     ) -> tuple[bool, bool]:
-        """Process a register to normalize value fields in bitfield values, removing string quotations.
+        """Process register bitfield values to normalize string-formatted numeric values.
 
-        :param register: Register data
-        :param file_path: Path to the JSON file
-        :param register_name: Name of the register
-        :return: Tuple containing (continue_processing, was_modified)
+        Converts string-formatted values in bitfield entries to their appropriate
+        integer representation while preserving the original format (hexadecimal
+        or decimal). This normalization removes unnecessary string quotations
+        from numeric values in register bitfield definitions.
+
+        :param register: Register data dictionary containing bitfield definitions.
+        :param file_path: Path to the JSON file being processed for error reporting.
+        :param register_name: Name of the register being processed for error reporting.
+        :return: Tuple of (continue_processing, was_modified) where continue_processing
+                 indicates if processing should continue and was_modified indicates
+                 if any modifications were made to the register data.
         """
         was_modified = False
 
@@ -465,12 +518,17 @@ class DefaultValueNormalizer:
     def process_unnamed_bitfields(
         self, register: dict[str, Any], file_path: str, register_name: str
     ) -> tuple[bool, bool]:
-        """Process a register to normalize unnamed bitfields and reserved bitfields, keeping only the width key.
+        """Process a register to normalize unnamed bitfields and reserved bitfields.
 
-        :param register: Register data
-        :param file_path: Path to the JSON file
-        :param register_name: Name of the register
-        :return: Tuple containing (continue_processing, was_modified)
+        This method processes bitfields within a register, keeping only the 'width' key for
+        unnamed bitfields or bitfields with names containing "reserved" (case insensitive).
+        All other keys are removed from such bitfields to normalize the data structure.
+        Prints warnings to console when bitfields lack required 'width' key.
+
+        :param register: Register data dictionary containing bitfields to process.
+        :param file_path: Path to the JSON file being processed for warning messages.
+        :param register_name: Name of the register being processed for logging purposes.
+        :return: Tuple containing (continue_processing flag, modification status flag).
         """
         was_modified = False
 
@@ -527,10 +585,14 @@ class DefaultValueNormalizer:
     ) -> tuple[bool, bool]:
         """Remove 'no_yaml_comments' key from registers and bitfields.
 
-        :param register: Register data
-        :param file_path: Path to the JSON file
-        :param register_name: Name of the register
-        :return: Tuple containing (continue_processing, was_modified)
+        This method processes a register dictionary and removes the 'no_yaml_comments'
+        key from both the register level and any bitfields within the register. It
+        provides console output indicating what was removed.
+
+        :param register: Register data dictionary to process.
+        :param file_path: Path to the JSON file being processed.
+        :param register_name: Name of the register being processed.
+        :return: Tuple containing (continue_processing flag, modification status flag).
         """
         was_modified = False
 
@@ -559,10 +621,15 @@ class DefaultValueNormalizer:
     ) -> tuple[bool, bool]:
         """Remove 'config_processor' key from registers and bitfields.
 
-        :param register: Register data
-        :param file_path: Path to the JSON file
-        :param register_name: Name of the register
-        :return: Tuple containing (continue_processing, was_modified)
+        This method processes a register dictionary and removes any 'config_processor'
+        keys found at both the register level and within individual bitfields. It provides
+        console output indicating what was removed and tracks whether any modifications
+        were made.
+
+        :param register: Register data dictionary containing register configuration.
+        :param file_path: Path to the JSON file being processed.
+        :param register_name: Name of the register being processed.
+        :return: Tuple containing (continue_processing flag, modification status flag).
         """
         was_modified = False
 
@@ -589,12 +656,17 @@ class DefaultValueNormalizer:
     def remove_double_space(
         self, register: dict[str, Any], file_path: str, register_name: str
     ) -> tuple[bool, bool]:
-        """Remove 'config_processor' key from registers and bitfields.
+        """Remove double spaces from register and bitfield names.
 
-        :param register: Register data
-        :param file_path: Path to the JSON file
-        :param register_name: Name of the register
-        :return: Tuple containing (continue_processing, was_modified)
+        The method processes register data to find and replace any double spaces with single spaces
+        in the 'name' fields of both registers and their associated bitfields. Prints information
+        about modifications made during processing.
+
+        :param register: Register data dictionary containing register information and bitfields.
+        :param file_path: Path to the JSON file being processed.
+        :param register_name: Name of the register being processed.
+        :return: Tuple containing (continue_processing, was_modified) where continue_processing
+                 is always True and was_modified indicates if any changes were made.
         """
         was_modified = False
         double_space = "  "
@@ -620,10 +692,17 @@ class DefaultValueNormalizer:
         return True, was_modified
 
     def process_json_file(self, file_path: str) -> bool:
-        """Process a JSON file to normalize default_value_int fields.
+        """Process a JSON file to normalize default values and apply transformations.
 
-        :param file_path: Path to the JSON file
-        :return: True if processing was successful, False if an error was found
+        The method processes JSON files containing register definitions with groups structure,
+        applying multiple normalization methods including default value processing, reserved
+        register marking, width processing, bitfield offset handling, and cleanup operations.
+        Modified files are automatically saved with proper formatting.
+
+        :param file_path: Path to the JSON file to be processed.
+        :raises json.JSONDecodeError: Invalid JSON format in the file.
+        :raises Exception: Unexpected error during file processing or I/O operations.
+        :return: True if processing was successful, False if an error was found.
         """
         try:
             with open(file_path, "r", encoding="utf-8") as f:
@@ -680,7 +759,11 @@ class DefaultValueNormalizer:
     def process_all_files(self) -> bool:
         """Process all JSON files to normalize default_value_int fields.
 
-        :return: True if all files were processed successfully, False otherwise
+        This method discovers all JSON files in the configured directory, categorizes them
+        into fuses files and other files, then processes each file to normalize their
+        default_value_int fields according to SPSDK standards.
+
+        :return: True if all files were processed successfully, False otherwise.
         """
         fuses_files, other_files = self.find_json_files()
 
@@ -697,7 +780,14 @@ class DefaultValueNormalizer:
 
 
 def main() -> None:
-    """Main function to run the normalizer directly."""
+    """Main function to run the default value normalizer directly.
+
+    Processes all files in the specified directory (or current directory if not provided)
+    to normalize default values in configuration schemas. The function handles command-line
+    arguments, executes the normalization process, and provides user feedback.
+
+    :raises SystemExit: Always called with exit code 0 on success, 1 on failure.
+    """
     root_dir = "." if len(sys.argv) <= 1 else sys.argv[1]
     normalizer = DefaultValueNormalizer(root_dir)
 

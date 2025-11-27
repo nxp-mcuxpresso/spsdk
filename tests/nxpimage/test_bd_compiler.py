@@ -1,9 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
+"""SPSDK Boot Descriptor (BD) compiler test suite.
+
+This module contains comprehensive tests for the BD file compiler functionality,
+which is used to parse and compile boot data files for secure boot operations.
+The tests cover BD file parsing, lexical analysis, statement parsing, expression
+evaluation, keystore operations, section handling, and error conditions.
+"""
+
+from typing import Any, Optional
 
 import pytest
 
@@ -13,7 +23,16 @@ from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb2.sb_21_helper import SB21Helper
 
 
-def test_parser():
+def test_parser() -> None:
+    """Test BD file parser functionality with comprehensive configuration.
+
+    Tests the BDParser's ability to parse a complete BD (Boot Data) configuration file
+    containing options, sources, keyblobs, constants, and sections with various commands
+    including encryption, key wrapping, loading, and memory operations. Validates that
+    the parsed result matches the expected structured dictionary format.
+
+    :raises SPSDKError: When BD file parsing fails due to syntax or validation errors.
+    """
     """"""
     bd_file = r"""
 # This BD configuration file serves as a minimal working example
@@ -243,7 +262,7 @@ def test_parser():
     except SPSDKError:
         exception_thrown = True
 
-    assert exception_thrown == False
+    assert not exception_thrown
 
 
 keyblobs = [
@@ -273,26 +292,40 @@ keyblobs = [
 ]
 
 
-encrypt = {"encrypt": {}}
+encrypt: dict[str, dict[str, Any]] = {"encrypt": {}}
 
 
-def test_keyblob_validation():
+def test_keyblob_validation() -> None:
+    """Test keyblob validation functionality in SB21Helper.
+
+    Validates that the SB21Helper._validate_keyblob method correctly handles
+    valid keyblob indices and properly raises SPSDKError for invalid indices.
+    Tests both successful validation cases and error handling.
+
+    :raises SPSDKError: When keyblob validation fails with invalid index.
+    """
     sb_helper = SB21Helper()
     kb = sb_helper._validate_keyblob(keyblobs, 0)
 
-    assert kb != None
+    assert kb is not None
 
     kb = sb_helper._validate_keyblob(keyblobs, 3)
 
     try:
         kb = sb_helper._validate_keyblob(keyblobs, 2)
         assert False
-    except:
+    except SPSDKError:
         assert True
 
 
-def test_parser_return_none():
-    """Test verifies, that on error an exception is raised."""
+def test_parser_return_none() -> None:
+    """Test that BDParser raises SPSDKError when parsing invalid input.
+
+    Verifies that the BDParser.parse() method properly raises an SPSDKError
+    exception when given nonsensical input text that cannot be parsed.
+
+    :raises SPSDKError: Expected exception when parsing fails due to invalid input.
+    """
     text = r"""nonsense"""
 
     parser = bd_parser.BDParser()
@@ -304,10 +337,15 @@ def test_parser_return_none():
     except SPSDKError:
         exception_thrown = True
 
-    assert exception_thrown == True
+    assert exception_thrown
 
 
-def test_variable_str():
+def test_variable_str() -> None:
+    """Test string representation of Variable object.
+
+    Verifies that the Variable object's __str__ method returns the expected
+    string format with comma-separated values for name, option, and value.
+    """
     var = bd_lexer.Variable("my_file", "option", "c:\\path\\to\\file.txt")
 
     expected_str = "my_file, option, c:\\path\\to\\file.txt"
@@ -344,9 +382,16 @@ def test_variable_str():
         ),
     ],
 )
-def test_source_def_attr_list(input_text, throws_exception):
-    """Test, that parser stops parsing when attribute lists in sources block
-    are used, as these are not supported for now."""
+def test_source_def_attr_list(input_text: str, throws_exception: bool) -> None:
+    """Test that parser stops parsing when attribute lists in sources block are used.
+
+    Attribute lists in sources block are not supported for now, so the parser
+    should throw an exception when encountering them.
+
+    :param input_text: Input text to be parsed by the BD parser.
+    :param throws_exception: Flag indicating whether an exception should be thrown during parsing.
+    :raises SPSDKError: When parser encounters unsupported attribute lists in sources block.
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -378,9 +423,17 @@ def test_source_def_attr_list(input_text, throws_exception):
         ),
     ],
 )
-def test_extern(input_text, throws_exception, extern):
-    """Test, that parser stops when extern() function is used and tries to
-    reference a non-existing entry."""
+def test_extern(input_text: str, throws_exception: bool, extern: Optional[list[str]]) -> None:
+    """Test that BD parser handles extern() function calls correctly.
+
+    Validates that the parser properly stops execution when extern() function
+    references non-existing entries and throws appropriate exceptions.
+
+    :param input_text: BD script text content to parse.
+    :param throws_exception: Expected exception behavior flag.
+    :param extern: Optional list of external entry names to reference.
+    :raises SPSDKError: When parser encounters invalid extern references.
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -416,7 +469,15 @@ def test_extern(input_text, throws_exception, extern):
         ),
     ],
 )
-def test_section_option_list(input_text, throws_exception):
+def test_section_option_list(input_text: str, throws_exception: bool) -> None:
+    """Test section option list parsing functionality.
+
+    This test verifies that the BD parser correctly handles section option lists
+    and throws exceptions when expected based on the input configuration.
+
+    :param input_text: The BD file content text to be parsed by the parser.
+    :param throws_exception: Flag indicating whether an exception is expected to be thrown during parsing.
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -442,7 +503,17 @@ def test_section_option_list(input_text, throws_exception):
         )
     ],
 )
-def test_section_content1(input_text, throws_exception):
+def test_section_content1(input_text: str, throws_exception: bool) -> None:
+    """Test BD parser section content parsing with exception handling.
+
+    This test method validates the BD parser's ability to parse input text and
+    verifies whether exceptions are thrown as expected. It checks both successful
+    parsing scenarios and error conditions.
+
+    :param input_text: The input text to be parsed by the BD parser.
+    :param throws_exception: Flag indicating whether an exception is expected to be thrown during parsing.
+    :raises AssertionError: When the actual exception behavior doesn't match the expected behavior.
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -472,7 +543,16 @@ def test_section_content1(input_text, throws_exception):
         )
     ],
 )
-def test_from_statement(input_text, throws_exception):
+def test_from_statement(input_text: str, throws_exception: bool) -> None:
+    """Test parsing of from statement with exception handling.
+
+    This test function verifies that the BDParser correctly handles from statements
+    by parsing the input text and checking whether an exception is thrown as expected.
+
+    :param input_text: The text containing from statement to be parsed by BDParser.
+    :param throws_exception: Flag indicating whether an exception is expected to be thrown.
+    :raises AssertionError: When the actual exception behavior doesn't match the expected behavior.
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -522,7 +602,16 @@ def test_from_statement(input_text, throws_exception):
         ),
     ],
 )
-def test_if_stmt(input_text, throws_exception):
+def test_if_stmt(input_text: str, throws_exception: bool) -> None:
+    """Test if statement parsing with expected exception behavior.
+
+    This test function verifies that the BD parser correctly handles if statements
+    by parsing the input text and checking whether an exception is thrown as expected.
+
+    :param input_text: The BD script text containing if statement to be parsed.
+    :param throws_exception: Expected exception behavior - True if exception should be thrown, False otherwise.
+    :raises AssertionError: When the actual exception behavior doesn't match the expected behavior.
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -650,7 +739,16 @@ def test_if_stmt(input_text, throws_exception):
         ),
     ],
 )
-def test_load_data(input_text, throws_exception):
+def test_load_data(input_text: str, throws_exception: bool) -> None:
+    """Test BD parser data loading functionality.
+
+    This test function validates the BD parser's ability to parse input text
+    and verifies that exceptions are thrown when expected. It checks both
+    successful parsing scenarios and error conditions.
+
+    :param input_text: The input text to be parsed by the BD parser.
+    :param throws_exception: Flag indicating whether an exception is expected to be thrown during parsing.
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -706,7 +804,17 @@ def test_load_data(input_text, throws_exception):
         ),
     ],
 )
-def test_keystore_from_to_nv(input_text, throws_exception):
+def test_keystore_from_to_nv(input_text: str, throws_exception: bool) -> None:
+    """Test keystore from/to non-volatile memory operations.
+
+    This test verifies the BD parser's ability to handle keystore operations
+    with non-volatile memory, checking both successful parsing and expected
+    exception scenarios.
+
+    :param input_text: The BD script text to be parsed by the BD parser.
+    :param throws_exception: Flag indicating whether the parsing should throw an exception.
+    :raises SPSDKError: When parsing fails and throws_exception is True.
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -731,7 +839,15 @@ def test_keystore_from_to_nv(input_text, throws_exception):
         )
     ],
 )
-def test_erase_all(input_text, throws_exception):
+def test_erase_all(input_text: str, throws_exception: bool) -> None:
+    """Test erase all command parsing functionality.
+
+    This test verifies that the BD parser correctly handles erase all commands,
+    checking both successful parsing scenarios and cases that should throw exceptions.
+
+    :param input_text: The BD script text content to be parsed by the parser.
+    :param throws_exception: Flag indicating whether parsing should raise an exception.
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -795,7 +911,16 @@ def test_erase_all(input_text, throws_exception):
         ),
     ],
 )
-def test_call_stmt(input_text, throws_exception):
+def test_call_stmt(input_text: str, throws_exception: bool) -> None:
+    """Test BD parser call statement parsing functionality.
+
+    This test function validates that the BD parser correctly handles call statements
+    by parsing input text and verifying whether exceptions are thrown as expected.
+
+    :param input_text: The BD script text containing call statement to be parsed
+    :param throws_exception: Expected boolean indicating if parsing should raise an exception
+    :raises AssertionError: When the actual exception behavior doesn't match expected behavior
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -821,7 +946,17 @@ def test_call_stmt(input_text, throws_exception):
         )
     ],
 )
-def test_jump_sp_stmt(input_text, throws_exception):
+def test_jump_sp_stmt(input_text: str, throws_exception: bool) -> None:
+    """Test jump stack pointer statement parsing functionality.
+
+    This test verifies that the BD parser correctly handles jump stack pointer
+    statements, validating both successful parsing scenarios and expected
+    exception cases.
+
+    :param input_text: The BD script text containing jump SP statement to parse.
+    :param throws_exception: Flag indicating whether parsing should raise an exception.
+    :raises SPSDKError: When parsing fails and throws_exception is True.
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -847,7 +982,16 @@ def test_jump_sp_stmt(input_text, throws_exception):
         )
     ],
 )
-def test_reset_stmt(input_text, throws_exception):
+def test_reset_stmt(input_text: str, throws_exception: bool) -> None:
+    """Test parsing of reset statement with exception handling.
+
+    This test function validates the BDParser's ability to parse reset statements
+    and verifies whether the parsing operation throws an exception as expected.
+
+    :param input_text: The input text containing reset statement to be parsed
+    :param throws_exception: Flag indicating whether an exception is expected during parsing
+    :raises AssertionError: When the actual exception behavior doesn't match the expected behavior
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -921,7 +1065,17 @@ def test_reset_stmt(input_text, throws_exception):
         ),
     ],
 )
-def test_from_stmt(input_text, throws_exception):
+def test_from_stmt(input_text: str, throws_exception: bool) -> None:
+    """Test parsing of BD (Boot Data) statements with exception handling.
+
+    This test function verifies that the BD parser correctly processes input text
+    and throws exceptions when expected. It validates both successful parsing
+    scenarios and error conditions.
+
+    :param input_text: The BD statement text to be parsed by the parser.
+    :param throws_exception: Flag indicating whether an exception is expected during parsing.
+    :raises AssertionError: When the actual exception behavior doesn't match the expected behavior.
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -947,7 +1101,17 @@ def test_from_stmt(input_text, throws_exception):
         )
     ],
 )
-def test_mode_stmt(input_text, throws_exception):
+def test_mode_stmt(input_text: str, throws_exception: bool) -> None:
+    """Test parsing of mode statement with exception handling.
+
+    This test function verifies that the BD parser correctly handles mode statements
+    and throws exceptions when expected. It parses the input text and compares
+    whether an exception was thrown against the expected behavior.
+
+    :param input_text: The BD script text containing mode statement to parse.
+    :param throws_exception: Expected exception behavior - True if exception should be thrown, False otherwise.
+    :raises AssertionError: When the actual exception behavior doesn't match expected behavior.
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -989,7 +1153,18 @@ def test_mode_stmt(input_text, throws_exception):
         ),
     ],
 )
-def test_message_type(input_text, throws_exception):
+def test_message_type(input_text: str, throws_exception: bool) -> None:
+    """Test BD parser message type handling with exception validation.
+
+    This test function validates that the BD parser correctly handles different
+    input text formats and throws exceptions when expected. It parses the input
+    text and verifies whether an SPSDKError exception is thrown matches the
+    expected behavior.
+
+    :param input_text: Input text to be parsed by the BD parser.
+    :param throws_exception: Expected exception behavior - True if an exception should be thrown, False otherwise.
+    :raises AssertionError: When the actual exception behavior doesn't match the expected behavior.
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -1085,7 +1260,16 @@ def test_message_type(input_text, throws_exception):
         ),
     ],
 )
-def test_bool_expr(input_text, throws_exception):
+def test_bool_expr(input_text: str, throws_exception: bool) -> None:
+    """Test boolean expression parsing in BD parser.
+
+    This test function validates that the BD parser correctly handles boolean expressions,
+    either parsing them successfully or throwing expected exceptions based on the input.
+
+    :param input_text: The boolean expression text to be parsed by the BD parser.
+    :param throws_exception: Flag indicating whether the parsing should throw an exception.
+    :raises AssertionError: When the actual exception behavior doesn't match expected behavior.
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -1186,7 +1370,17 @@ def test_bool_expr(input_text, throws_exception):
         ),
     ],
 )
-def test_expr(input_text, throws_exception):
+def test_expr(input_text: str, throws_exception: bool) -> None:
+    """Test expression parsing with expected exception behavior.
+
+    This test function validates that the BDParser correctly parses input text
+    and throws exceptions when expected. It verifies both successful parsing
+    scenarios and error conditions.
+
+    :param input_text: The input text to be parsed by BDParser.
+    :param throws_exception: Flag indicating whether an SPSDKError exception is expected.
+    :raises AssertionError: When the actual exception behavior doesn't match the expected behavior.
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -1223,7 +1417,16 @@ def test_expr(input_text, throws_exception):
         ),
     ],
 )
-def test_sizeof(input_text, throws_exception):
+def test_sizeof(input_text: str, throws_exception: bool) -> None:
+    """Test sizeof operator parsing functionality.
+
+    This test verifies that the BD parser correctly handles sizeof operator
+    expressions and validates whether exceptions are thrown as expected.
+
+    :param input_text: BD script text containing sizeof operator to parse
+    :param throws_exception: Expected exception behavior - True if parsing should raise SPSDKError
+    :raises AssertionError: When actual exception behavior doesn't match expected behavior
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -1248,7 +1451,15 @@ def test_sizeof(input_text, throws_exception):
         )
     ],
 )
-def test_unary_expr(input_text, throws_exception):
+def test_unary_expr(input_text: str, throws_exception: bool) -> None:
+    """Test unary expression parsing functionality.
+
+    This test function validates the BDParser's ability to parse unary expressions
+    and verifies whether exceptions are thrown as expected based on the input.
+
+    :param input_text: The text input to be parsed by the BDParser
+    :param throws_exception: Flag indicating whether an exception is expected to be thrown
+    """
     parser = bd_parser.BDParser()
 
     try:
@@ -1261,7 +1472,16 @@ def test_unary_expr(input_text, throws_exception):
     assert exception_thrown == throws_exception
 
 
-def test_csf_sections():
+def test_csf_sections() -> None:
+    """Test CSF sections parsing in BD file compiler.
+
+    Validates that the BD parser correctly processes CSF (Command Sequence File) sections
+    with various security-related configurations including header settings, engine
+    configuration, and unlock features. The test verifies proper parsing of options,
+    constants, and multiple section types with their respective parameters.
+
+    :raises SPSDKError: When BD file parsing fails due to invalid syntax or configuration.
+    """
     """"""
     bd_file = r"""
     options {
@@ -1362,7 +1582,7 @@ def test_csf_sections():
         assert expected_result == result
     except SPSDKError:
         exception_thrown = True
-    assert exception_thrown == False
+    assert not exception_thrown
 
 
 # TODO document from_stmt - change syntax to SOURCE_NAME

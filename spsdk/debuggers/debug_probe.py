@@ -4,7 +4,12 @@
 # Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Module for DebugMailbox Debug probes support."""
+"""SPSDK debug probe interface and management utilities.
+
+This module provides abstract base classes and concrete implementations for debug probe
+communication, supporting various debug interfaces across NXP MCU portfolio. It includes
+probe discovery, connection management, and CoreSight debug operations.
+"""
 
 import functools
 import logging
@@ -27,27 +32,62 @@ DISABLE_AP_SELECT_CACHING = False
 
 
 class SPSDKDebugProbeError(SPSDKError):
-    """The general issue with debug probe exception for use with SPSDK."""
+    """SPSDK Debug Probe exception for debug probe related errors.
+
+    This exception is raised when debug probe operations fail or encounter
+    errors during communication, initialization, or other debug probe specific
+    operations within the SPSDK framework.
+    """
 
 
 class SPSDKProbeNotFoundError(SPSDKDebugProbeError):
-    """The Probe not found exception for use with SPSDK."""
+    """SPSDK debug probe not found exception.
+
+    Exception raised when a requested debug probe cannot be found or is not available
+    for connection during SPSDK debugging operations.
+    """
 
 
 class SPSDKMultipleProbesError(SPSDKDebugProbeError):
-    """Multiple probes found exception for use with SPSDK."""
+    """SPSDK exception for multiple debug probes found error.
+
+    This exception is raised when multiple debug probes are detected during
+    probe discovery or selection operations, requiring explicit probe
+    specification to resolve the ambiguity.
+    """
 
 
 class SPSDKDebugProbeTransferError(SPSDKDebugProbeError):
-    """The communication error exception for use with SPSDK."""
+    """SPSDK Debug Probe Transfer Error Exception.
+
+    Exception raised when communication transfer operations fail during debug probe interactions.
+    This error indicates issues with data transmission between the host and target device
+    through the debug probe interface.
+    """
 
 
 class SPSDKDebugProbeNotOpenError(SPSDKDebugProbeError):
-    """The debug probe is not opened exception for use with SPSDK."""
+    """Exception raised when attempting to use a debug probe that is not opened.
+
+    This exception is thrown when operations are performed on a debug probe
+    instance that has not been properly opened or has been closed.
+    """
 
 
 class DebugProbe(ABC):
-    """Abstraction class to define SPSDK debug probes interface."""
+    """Abstract base class for SPSDK debug probe interfaces.
+
+    This class defines the common interface and constants for all debug probes
+    supported by SPSDK, providing standardized access to target devices through
+    various debug probe hardware implementations.
+
+    :cvar NAME: Debug probe implementation name identifier.
+    :cvar APBANKSEL: Access Port bank selection mask for debug mailbox detection.
+    :cvar DP_IDR_REG: Debug Port Identification Register address.
+    :cvar DP_CTRL_STAT_REG: Debug Port Control/Status Register address.
+    :cvar DHCSR_REG: Debug Halting Control and Status Register address.
+    :cvar DHCSR_DEBUGKEY: Debug key value for DHCSR register access.
+    """
 
     NAME = "Abstract"
 
@@ -82,10 +122,13 @@ class DebugProbe(ABC):
     AFTER_RESET_TIME = 0.05
 
     def __init__(self, hardware_id: str, options: Optional[dict] = None) -> None:
-        """This is general initialization function for SPSDK library to support various DEBUG PROBES.
+        """Initialize debug probe with hardware ID and configuration options.
 
-        :param hardware_id: Open probe with selected hardware ID
-        :param options: The options dictionary
+        This is general initialization function for SPSDK library to support various DEBUG PROBES.
+        Sets up the probe connection parameters, family configuration, and memory access point index.
+
+        :param hardware_id: Hardware identifier to open specific debug probe
+        :param options: Configuration dictionary containing family, revision and other probe settings
         """
         self.hardware_id = hardware_id
         self.options = options or {}
@@ -101,19 +144,21 @@ class DebugProbe(ABC):
     def get_connected_probes(
         cls, hardware_id: Optional[str] = None, options: Optional[dict] = None
     ) -> "DebugProbes":
-        """Functions returns the list of all connected probes in system.
+        """Get connected debug probes in the system.
 
-        There is option to look for just for one debug probe defined by its hardware ID.
+        Retrieves a list of all connected debug probes, with an option to filter by hardware ID.
 
-        :param hardware_id: None to list all probes, otherwise the the only probe with
-            matching hardware id is listed.
-        :param options: The options dictionary
-        :return: List of ProbeDescription
+        :param hardware_id: Hardware ID to filter for specific probe, None to list all probes.
+        :param options: Additional options for probe discovery.
+        :return: Collection of connected debug probes.
         """
 
     @classmethod
     def get_options_help(cls) -> dict[str, str]:
         """Get full list of options of debug probe.
+
+        The method returns a dictionary containing all available configuration options
+        for the debug probe with their corresponding help descriptions.
 
         :return: Dictionary with individual options. Key is parameter name and value the help text.
         """
@@ -126,12 +171,15 @@ class DebugProbe(ABC):
 
     @staticmethod
     def get_coresight_ap_address(access_port: int, address: int) -> int:
-        """Return computed address of coresight access port register.
+        """Compute the coresight access port register address.
 
-        :param access_port: Index of access port 0-255.
-        :param address: Register address.
-        :return: Coresight address.
-        :raises SPSDKError: In case of invalid value.
+        The method combines the access port index with the register address using
+        bit shifting to create the final coresight address for debug operations.
+
+        :param access_port: Index of access port (0-255).
+        :param address: Register address offset.
+        :return: Computed coresight address.
+        :raises SPSDKValueError: If access port index exceeds 255.
         """
         if access_port > 255:
             raise SPSDKValueError("Invalid value of access port")
@@ -140,18 +188,24 @@ class DebugProbe(ABC):
 
     @abstractmethod
     def open(self) -> None:
-        """Debug probe open.
+        """Open debug probe connection.
 
-        General opening function for SPSDK library to support various DEBUG PROBES.
-        The function is used to opening the debug probe
+        Establishes connection to the debug probe hardware, initializing communication
+        interface and preparing the probe for debugging operations.
+
+        :raises SPSDKError: When debug probe connection fails or probe is not available.
         """
 
     @abstractmethod
     def connect(self) -> None:
-        """Debug probe connect.
+        """Connect to the debug probe.
 
-        General connecting function for SPSDK library to support various DEBUG PROBES.
-        The function is used to initialize the connection to target
+        Initializes the connection to the target device through the debug probe.
+        This is a general connecting function that supports various debug probe types
+        across the SPSDK library.
+
+        :raises SPSDKError: If the connection to the debug probe fails.
+        :raises SPSDKTimeoutError: If the connection attempt times out.
         """
 
     @abstractmethod
@@ -159,36 +213,41 @@ class DebugProbe(ABC):
         """Debug probe connect in safe manner.
 
         General connecting function for SPSDK library to support various DEBUG PROBES.
-        The function is used to initialize the connection to target
+        The function is used to initialize the connection to target and establishes
+        communication with the debug probe hardware.
+
+        :raises SPSDKError: When connection to debug probe fails.
+        :raises SPSDKTimeoutError: When connection timeout occurs.
         """
 
     @abstractmethod
     def close(self) -> None:
-        """Debug probe close.
+        """Close the debug probe connection.
 
-        This is general closing function for SPSDK library to support various DEBUG PROBES.
+        This method provides a unified interface for closing debug probe connections
+        across different debug probe implementations in the SPSDK library.
         """
 
     @abstractmethod
     def mem_reg_read(self, addr: int = 0) -> int:
         """Read 32-bit register in memory space of MCU.
 
-        This is read 32-bit register in memory space of MCU function for SPSDK library
-        to support various DEBUG PROBES.
+        This method reads a 32-bit register from the memory space of the target MCU through
+        the debug probe interface.
 
-        :param addr: The register address
-        :return: The read value of addressed register (4 bytes)
+        :param addr: The register address to read from.
+        :return: The read value of addressed register (4 bytes).
         """
 
     @abstractmethod
     def mem_reg_write(self, addr: int = 0, data: int = 0) -> None:
         """Write 32-bit register in memory space of MCU.
 
-        This is write 32-bit register in memory space of MCU function for SPSDK library
-        to support various DEBUG PROBES.
+        This method writes a 32-bit value to a specified register address in the MCU's memory
+        space through the debug probe interface.
 
-        :param addr: the register address
-        :param data: the data to be written into register
+        :param addr: The register address to write to.
+        :param data: The 32-bit data value to be written into the register.
         """
 
     @abstractmethod
@@ -222,9 +281,10 @@ class DebugProbe(ABC):
 
         It reads coresight register function for SPSDK library to support various DEBUG PROBES.
 
-        :param access_port: if True, the Access Port (AP) register will be read(default), otherwise the Debug Port
-        :param addr: the register address
-        :return: The read value of addressed register (4 bytes)
+        :param access_port: if True, the Access Port (AP) register will be read (default),
+            otherwise the Debug Port (DP) register will be read.
+        :param addr: the register address.
+        :return: The read value of addressed register (4 bytes).
         """
 
     @abstractmethod
@@ -233,9 +293,10 @@ class DebugProbe(ABC):
 
         It writes coresight register function for SPSDK library to support various DEBUG PROBES.
 
-        :param access_port: if True, the Access Port (AP) register will be write(default), otherwise the Debug Port
-        :param addr: the register address
-        :param data: the data to be written into register
+        :param access_port: if True, the Access Port (AP) register will be written (default),
+            otherwise the Debug Port register will be written.
+        :param addr: the register address.
+        :param data: the data to be written into register.
         """
 
     @abstractmethod
@@ -244,37 +305,46 @@ class DebugProbe(ABC):
     ) -> int:
         """Safe coresight register read with error handling and recovery.
 
-        :param access_port: if True, the Access Port (AP) register will be read(default), otherwise the Debug Port
-        :param addr: the register address
-        :param max_retries: Maximum number of retry attempts
-        :return: The read value of addressed register (4 bytes)
-        :raises SPSDKDebugProbeTransferError: If all retry attempts fail
+        Performs a safe read operation on CoreSight registers with automatic retry
+        mechanism in case of transfer failures.
+
+        :param access_port: If True, reads Access Port (AP) register, otherwise reads
+            Debug Port (DP) register.
+        :param addr: Register address to read from.
+        :param max_retries: Maximum number of retry attempts on failure.
+        :return: Read value of the addressed register (4 bytes).
+        :raises SPSDKDebugProbeTransferError: If all retry attempts fail.
         """
 
     @abstractmethod
     def coresight_reg_write_safe(
         self, access_port: bool = True, addr: int = 0, data: int = 0, max_retries: int = 3
     ) -> None:
-        """Internal coresight register write with error handling and recovery.
+        """Write CoreSight register with error handling and recovery.
 
-        :param access_port: if True, the Access Port (AP) register will be written(default), otherwise the Debug Port
-        :param addr: the register address
-        :param data: the data to be written into register
-        :param max_retries: Maximum number of retry attempts
-        :raises SPSDKDebugProbeTransferError: If all retry attempts fail
+        Internal method that performs CoreSight register write operations with automatic
+        retry mechanism and error recovery capabilities.
+
+        :param access_port: If True, writes to Access Port (AP) register, otherwise to Debug Port (DP).
+        :param addr: Register address to write to.
+        :param data: Data value to write into the register.
+        :param max_retries: Maximum number of retry attempts on failure.
+        :raises SPSDKDebugProbeTransferError: If all retry attempts fail.
         """
 
     @abstractmethod
     def assert_reset_line(self, assert_reset: bool = False) -> None:
         """Control reset line at a target.
 
-        :param assert_reset: If True, the reset line is asserted(pulled down), if False the reset line is not affected.
+        :param assert_reset: If True, the reset line is asserted (pulled down), if False the reset line
+            is not affected.
         """
 
     def reset(self) -> None:
-        """Reset a target.
+        """Reset the target device.
 
-        It resets a target.
+        Performs a hardware reset by asserting the reset line, waiting for the reset duration,
+        then deasserting the reset line and waiting for the post-reset stabilization period.
         """
         self.assert_reset_line(True)
         sleep(self.RESET_TIME)
@@ -283,23 +353,69 @@ class DebugProbe(ABC):
 
     @abstractmethod
     def read_dp_idr(self) -> int:
-        """Read Debug port identification register."""
+        """Read Debug port identification register.
+
+        :return: Debug port identification register value.
+        """
 
     @abstractmethod
     def debug_halt(self) -> None:
-        """Halt the CPU execution."""
+        """Halt the CPU execution.
+
+        This method stops the target CPU from executing instructions, putting it into
+        a halted state for debugging purposes.
+
+        :raises SPSDKError: If the halt operation fails or the debug probe is not connected.
+        """
 
     @abstractmethod
     def debug_resume(self) -> None:
-        """Resume the CPU execution."""
+        """Resume the CPU execution.
+
+        This method continues the execution of the target CPU from its current state,
+        typically used after the CPU has been halted or paused during debugging operations.
+
+        :raises SPSDKError: If the debug probe communication fails or the target is not connected.
+        """
 
     @abstractmethod
     def debug_step(self) -> None:
-        """Step the CPU execution."""
+        """Step the CPU execution by one instruction.
+
+        This method advances the CPU execution by a single instruction step,
+        allowing for detailed debugging and program flow analysis.
+
+        :raises SPSDKError: When the debug step operation fails.
+        :raises SPSDKConnectionError: When the debug probe connection is lost.
+        """
 
 
 class DebugProbeCoreSightOnly(DebugProbe):
-    """Abstraction class to define SPSDK debug probes interface."""
+    """SPSDK Debug Probe with CoreSight-only interface support.
+
+    This class provides a specialized debug probe implementation that focuses exclusively on
+    CoreSight debug architecture operations. It extends the base DebugProbe class with
+    ARM CoreSight-specific register definitions and memory access patterns for debugging
+    ARM Cortex-based MCUs.
+
+    :cvar NAME: Debug probe identifier name.
+    :cvar CSW_SIZE_8BIT: Control/Status Word 8-bit transfer size configuration.
+    :cvar CSW_SIZE_16BIT: Control/Status Word 16-bit transfer size configuration.
+    :cvar CSW_SIZE_32BIT: Control/Status Word 32-bit transfer size configuration.
+    :cvar CSW_ADDRINC_OFF: Control/Status Word no address increment mode.
+    :cvar CSW_ADDRINC_SINGLE: Control/Status Word single address increment mode.
+    :cvar CSW_ADDRINC_PACKED: Control/Status Word packed address increment mode.
+    :cvar CSW_DEVICEEN: Control/Status Word device enable flag.
+    :cvar CSW_TRINPROG: Control/Status Word transfer in progress flag.
+    :cvar CSW_HPROT: Control/Status Word HPROT signal configuration.
+    :cvar CSW_MASTER_DEBUG: Control/Status Word master debug enable flag.
+    :cvar CSW_DBGSWENABLE: Control/Status Word debug software enable flag.
+    :cvar CSW_FULL_DEBUG: Combined CSW configuration for full debug capabilities.
+    :cvar CSW_REG: CoreSight Control/Status Word register address.
+    :cvar TAR_REG: CoreSight Transfer Address register address.
+    :cvar DRW_REG: CoreSight Data Read/Write register address.
+    :cvar DP_CTRL_STAT_ERROR_MASK: Combined error mask for Debug Port status flags.
+    """
 
     NAME = "local_help"
 
@@ -351,10 +467,12 @@ class DebugProbeCoreSightOnly(DebugProbe):
     )  # 0xB2
 
     def __init__(self, hardware_id: str, options: Optional[dict[str, str]] = None) -> None:
-        """This is general initialization function for SPSDK library to support various DEBUG PROBES.
+        """Initialize debug probe with hardware ID and options.
 
-        :param hardware_id: Open probe with selected hardware ID
-        :param options: The options dictionary
+        General initialization function for SPSDK library to support various debug probes.
+
+        :param hardware_id: Hardware ID of the debug probe to open
+        :param options: Optional dictionary with probe-specific configuration options
         """
         super().__init__(hardware_id, options)
         self.last_accessed_ap = -1
@@ -366,7 +484,10 @@ class DebugProbeCoreSightOnly(DebugProbe):
         """Debug probe connect in safe manner.
 
         General connecting function for SPSDK library to support various DEBUG PROBES.
-        The function is used to initialize the connection to target
+        The function is used to initialize the connection to target and attempts recovery
+        if the initial connection fails.
+
+        :raises Exception: Re-raises the original connection exception if recovery fails.
         """
         try:
             self.connect()
@@ -379,12 +500,16 @@ class DebugProbeCoreSightOnly(DebugProbe):
     def coresight_reg_write_safe(
         self, access_port: bool = True, addr: int = 0, data: int = 0, max_retries: int = 3
     ) -> None:
-        """Internal coresight register write with error handling and recovery.
+        """Write CoreSight register with automatic retry and error recovery.
 
-        :param access_port: if True, the Access Port (AP) register will be written(default), otherwise the Debug Port
-        :param addr: the register address
-        :param data: the data to be written into register
-        :param max_retries: Maximum number of retry attempts
+        Performs a CoreSight register write operation with built-in error handling and automatic
+        recovery attempts. If the initial write fails, the method attempts to recover the debug
+        connection and retry the operation up to the specified maximum number of attempts.
+
+        :param access_port: If True, writes to Access Port register, otherwise Debug Port register
+        :param addr: Register address to write to
+        :param data: Data value to write into the register
+        :param max_retries: Maximum number of retry attempts before giving up
         :raises SPSDKDebugProbeTransferError: If all retry attempts fail
         """
         last_exception = None
@@ -432,11 +557,15 @@ class DebugProbeCoreSightOnly(DebugProbe):
     ) -> int:
         """Safe coresight register read with error handling and recovery.
 
-        :param access_port: if True, the Access Port (AP) register will be read(default), otherwise the Debug Port
-        :param addr: the register address
-        :param max_retries: Maximum number of retry attempts
-        :return: The read value of addressed register (4 bytes)
-        :raises SPSDKDebugProbeTransferError: If all retry attempts fail
+        This method attempts to read a CoreSight register with automatic retry and recovery
+        mechanisms. If a read fails, it will attempt to recover the debug connection and
+        retry the operation up to the specified maximum number of attempts.
+
+        :param access_port: If True, reads Access Port (AP) register, otherwise Debug Port (DP).
+        :param addr: The register address to read from.
+        :param max_retries: Maximum number of retry attempts before giving up.
+        :return: The read value of addressed register (4 bytes).
+        :raises SPSDKDebugProbeTransferError: If all retry attempts fail.
         """
         last_exception = None
 
@@ -482,15 +611,33 @@ class DebugProbeCoreSightOnly(DebugProbe):
     @no_type_check
     # pylint: disable=no-self-argument,missing-type-doc
     def get_mem_ap(func):
-        """Decorator function that secure the getting right MEM AP ix for first use.
+        """Decorator that ensures correct Memory Access Port index is found before first use.
 
-        :param func: Decorated function.
+        This decorator automatically discovers and configures the appropriate Memory Access Port (MEM AP)
+        by testing possible AP indices and validating memory access functionality. It performs CoreSight
+        AP identification, enters debug state, tests memory access, and restores the original state.
+
+        :param func: The function to be decorated that requires MEM AP access.
+        :return: Decorated function wrapper.
+        :raises SPSDKDebugProbeError: When no valid memory access port is found.
         """
         POSSIBLE_MEM_AP_IX = [0, 1, 3]
         DEFAULT_TEST_MEM_AP_ADDRESS = 0x2000_0000
 
         @functools.wraps(func)
         def wrapper(self: "DebugProbeCoreSightOnly", *args, **kwargs):
+            """Wrapper function to ensure memory access port (MEM AP) is discovered before execution.
+
+            This decorator automatically discovers and configures the memory access port by iterating
+            through possible AP indices, validating each one by checking the IDR register for class 8
+            (MEM AP), entering debug state, and performing a test memory read operation.
+
+            :param self: DebugProbeCoreSightOnly instance
+            :param args: Positional arguments passed to the wrapped function
+            :param kwargs: Keyword arguments passed to the wrapped function
+            :raises SPSDKDebugProbeError: When memory access port cannot be found
+            :return: Result of the wrapped function execution
+            """
             status = False
             test_address = value_to_int(
                 self.options.get("test_address", DEFAULT_TEST_MEM_AP_ADDRESS)
@@ -556,13 +703,13 @@ class DebugProbeCoreSightOnly(DebugProbe):
     def _mem_reg_read(self, mem_ap_ix: int, addr: int = 0) -> int:
         """Read 32-bit register in memory space of MCU.
 
-        This is read 32-bit register in memory space of MCU function for SPSDK library
-        to support various DEBUG PROBES.
+        This function reads a 32-bit register in memory space of MCU for SPSDK library
+        to support various debug probes.
 
-        :param mem_ap_ix: The index of memory access port
-        :param addr: The register address
-        :return: The read value of addressed register (4 bytes)
-        :raises SPSDKDebugProbeTransferError: Error occur during memory transfer.
+        :param mem_ap_ix: The index of memory access port.
+        :param addr: The register address.
+        :return: The read value of addressed register (4 bytes).
+        :raises SPSDKDebugProbeTransferError: Error occurs during memory transfer.
         """
         try:
             self.coresight_reg_write_safe(
@@ -586,24 +733,24 @@ class DebugProbeCoreSightOnly(DebugProbe):
     def mem_reg_read(self, addr: int = 0) -> int:
         """Read 32-bit register in memory space of MCU.
 
-        This is read 32-bit register in memory space of MCU function for SPSDK library
-        to support various DEBUG PROBES.
+        This method reads a 32-bit register from the memory space of the connected MCU
+        using the configured debug probe interface.
 
-        :param addr: The register address
-        :return: The read value of addressed register (4 bytes)
+        :param addr: The register address to read from.
+        :return: The read value of addressed register (4 bytes).
         """
         return self._mem_reg_read(mem_ap_ix=self.mem_ap_ix, addr=addr)
 
     def _mem_reg_write(self, mem_ap_ix: int, addr: int = 0, data: int = 0) -> None:
         """Write 32-bit register in memory space of MCU.
 
-        This is write 32-bit register in memory space of MCU function for SPSDK library
-        to support various DEBUG PROBES.
+        This function writes a 32-bit register in the memory space of the MCU through the
+        CoreSight debug interface using the specified memory access port.
 
-        :param mem_ap_ix: The index of memory access port
-        :param addr: the register address
-        :param data: the data to be written into register
-        :raises SPSDKDebugProbeTransferError: Error occur during memory transfer.
+        :param mem_ap_ix: The index of memory access port.
+        :param addr: The register address to write to.
+        :param data: The 32-bit data to be written into the register.
+        :raises SPSDKDebugProbeTransferError: Error occurs during memory transfer.
         """
         try:
             self.coresight_reg_write_safe(
@@ -629,11 +776,11 @@ class DebugProbeCoreSightOnly(DebugProbe):
     def mem_reg_write(self, addr: int = 0, data: int = 0) -> None:
         """Write 32-bit register in memory space of MCU.
 
-        This is write 32-bit register in memory space of MCU function for SPSDK library
-        to support various DEBUG PROBES.
+        This method writes a 32-bit value to a specified register address in the MCU's memory
+        space using the configured memory access port.
 
-        :param addr: the register address
-        :param data: the data to be written into register
+        :param addr: The register address to write to.
+        :param data: The 32-bit data value to be written into the register.
         """
         return self._mem_reg_write(mem_ap_ix=self.mem_ap_ix, addr=addr, data=data)
 
@@ -642,10 +789,11 @@ class DebugProbeCoreSightOnly(DebugProbe):
         """Read a block of memory from the MCU, handling non-aligned addresses and sizes.
 
         This method implements a chunked reading approach to overcome the 1KB auto-increment
-        limitation of the ARM Cortex Debug Access Port (DAP).
+        limitation of the ARM Cortex Debug Access Port (DAP). The method handles memory alignment
+        automatically and reads data in 1KB chunks to ensure reliable operation.
 
-        :param addr: The starting address to read from.
-        :param size: The number of bytes to read.
+        :param addr: The starting memory address to read from.
+        :param size: The number of bytes to read from memory.
         :return: The read data as a bytes object.
         """
         result = bytearray()
@@ -689,7 +837,6 @@ class DebugProbeCoreSightOnly(DebugProbe):
         1. Handles initial unaligned bytes using 8-bit writes.
         2. Performs bulk 32-bit aligned writes for the main data block.
         3. Handles any remaining bytes using 8-bit writes.
-
         This approach ensures efficient writing for aligned data while correctly
         handling unaligned start and end addresses.
 
@@ -758,7 +905,14 @@ class DebugProbeCoreSightOnly(DebugProbe):
             data_index += bytes_to_write
 
     def clear_sticky_errors(self) -> None:
-        """Clear sticky errors of Debug port interface."""
+        """Clear sticky errors of Debug port interface.
+
+        This method reads the debug port control/status register to check for sticky errors
+        and clears them if found. For JTAG interface, it performs an additional write operation.
+        The method handles communication failures gracefully by attempting recovery.
+
+        :raises SPSDKDebugProbeTransferError: When debug probe communication cannot be reestablished.
+        """
         if self.options.get("use_jtag") is not None:
             # Currently clear_sticky_errors has been defined only for SWD (uncleared for JTAG-DP)
             self.coresight_reg_write(access_port=False, addr=4, data=0x50000F20)
@@ -795,15 +949,18 @@ class DebugProbeCoreSightOnly(DebugProbe):
     def _reinit_target(self) -> None:
         """Re-initialize the Probe connection.
 
-        This is obsolete method kept here just for backward
-        compatibility reasons in debug probe plugins.
+        This is an obsolete method kept here just for backward compatibility reasons
+        in debug probe plugins.
         """
 
     def _target_power_control(self, sys_power: bool = False, debug_power: bool = False) -> None:
-        """Power control of the target.
+        """Control power state of the target device.
 
-        :param sys_power: Control the target system power state.
-        :param debug_power: Control the target debug power state.
+        This method manages both system and debug power states of the target device
+        through CoreSight debug port control/status register operations.
+
+        :param sys_power: Enable or disable target system power state.
+        :param debug_power: Enable or disable target debug power state.
         :raises SPSDKTimeoutError: Timeout on power enable operation.
         """
         logger.debug(
@@ -832,13 +989,24 @@ class DebugProbeCoreSightOnly(DebugProbe):
         self.last_accessed_ap = -1
 
     def power_up_target(self) -> None:
-        """Power up the target for the Probe connection."""
+        """Power up the target for the Probe connection.
+
+        This method enables both system and debug power to establish a proper
+        connection with the target device through the debug probe.
+
+        :raises SPSDKError: If power control operation fails.
+        """
         logger.debug("Power up the debug connection")
         # Enable the whole power of target :-)
         self._target_power_control(sys_power=True, debug_power=True)
 
     def power_down_target(self) -> None:
-        """Power down the target for the Probe connection."""
+        """Power down the target for the Probe connection.
+
+        This method performs a two-step power down sequence: first disabling system power
+        while maintaining debug power, then disabling debug power completely to ensure
+        proper target shutdown.
+        """
         logger.debug("Power down the debug connection")
         # First of all power down system power
         self._target_power_control(sys_power=False, debug_power=True)
@@ -846,9 +1014,13 @@ class DebugProbeCoreSightOnly(DebugProbe):
         self._target_power_control(sys_power=False, debug_power=False)
 
     def select_ap(self, addr: int) -> None:
-        """Helper function to select the access port in DP.
+        """Select the access port in Debug Port (DP).
 
-        :param addr: Requested AP access address.
+        This method configures the Debug Port to access a specific Access Port by writing
+        to the SELECT register. It includes caching optimization to avoid redundant writes
+        when the same AP is already selected.
+
+        :param addr: Requested AP access address containing AP selection and bank information.
         """
         if self.last_accessed_ap != addr & self.APSEL_APBANKSEL or DISABLE_AP_SELECT_CACHING:
             addr = addr & self.APSEL_APBANKSEL
@@ -860,11 +1032,18 @@ class DebugProbeCoreSightOnly(DebugProbe):
             )
 
     def read_dp_idr(self) -> int:
-        """Read Debug port identification register."""
+        """Read Debug port identification register.
+
+        :return: Debug port identification register value.
+        """
         return self.coresight_reg_read_safe(access_port=False, addr=self.DP_IDR_REG)
 
     def recover_debug_connection(self) -> bool:
-        """Progressive recovery strategy following ARM CoreSight best practices.
+        """Recover debug connection using progressive recovery strategy.
+
+        Implements ARM CoreSight best practices by attempting multiple recovery levels
+        in sequence: soft recovery, power cycle recovery, probe reconnect recovery,
+        and hard reset recovery. Each level is progressively more invasive.
 
         :return: True if recovery successful, False otherwise.
         """
@@ -889,7 +1068,15 @@ class DebugProbeCoreSightOnly(DebugProbe):
         return False
 
     def _level1_soft_recovery(self) -> bool:
-        """Clear sticky errors and verify basic DP access."""
+        """Clear sticky errors and verify basic DP access.
+
+        Performs level 1 soft recovery by clearing all sticky error flags in the Debug Port,
+        waiting for errors to clear, and verifying that the DP is responsive. This is a
+        gentle recovery method that doesn't reset the target system.
+
+        :return: True if recovery was successful and DP is accessible without errors,
+                 False otherwise.
+        """
         try:
             # Step 1: Read current DP CTRL/STAT
             ctrl_stat = self.coresight_reg_read(access_port=False, addr=self.DP_CTRL_STAT_REG)
@@ -917,7 +1104,14 @@ class DebugProbeCoreSightOnly(DebugProbe):
             return False
 
     def _level2_power_cycle_recovery(self) -> bool:
-        """Power cycle debug and system domains."""
+        """Perform level 2 power cycle recovery for debug and system domains.
+
+        This recovery method performs a complete power cycle sequence of both debug and system
+        power domains to recover from communication errors. It includes proper sequencing,
+        error clearing, and verification of successful power restoration.
+
+        :return: True if power cycle recovery was successful and no errors remain, False otherwise.
+        """
         try:
             # Step 1: Power down in correct sequence
             self._target_power_control(sys_power=False, debug_power=True)
@@ -954,7 +1148,14 @@ class DebugProbeCoreSightOnly(DebugProbe):
             return False
 
     def _level3_probe_reconnect_recovery(self) -> bool:
-        """Reconnect the debug probe interface."""
+        """Perform level 3 probe reconnection recovery procedure.
+
+        This method attempts to recover a debug probe connection by performing a complete
+        reconnection sequence including closing the current connection, reopening the probe,
+        re-establishing target connection, and verifying basic functionality through DP IDR read.
+
+        :return: True if reconnection was successful and probe is functional, False otherwise.
+        """
         try:
             # Step 1: Close current connection
             self.close()
@@ -975,7 +1176,16 @@ class DebugProbeCoreSightOnly(DebugProbe):
             return False
 
     def _level4_hard_reset_recovery(self) -> bool:
-        """Perform hardware reset sequence."""
+        """Perform level 4 hardware reset recovery sequence.
+
+        This method performs a complete hardware reset of the target chip to recover from
+        severe debug connection issues. The reset sequence includes asserting the reset line,
+        clearing debug errors, releasing reset, and re-establishing the debug connection.
+        All target state including registers, RAM contents, and execution context will be lost.
+
+        :return: True if hardware reset recovery was successful and debug connection was
+                 re-established, False otherwise.
+        """
         # Check if recovery reset is enabled
         if not self.options.get("enable_recovery_reset", False):
             logger.debug("Hardware reset recovery disabled by user option")
@@ -1018,7 +1228,13 @@ class DebugProbeCoreSightOnly(DebugProbe):
 
     @get_mem_ap
     def debug_halt(self) -> None:
-        """Halt the CPU execution."""
+        """Halt the CPU execution.
+
+        This method stops the CPU by writing to the Debug Halting Control and Status Register
+        (DHCSR) with the appropriate debug key, halt, and debug enable flags.
+
+        :raises SPSDKError: If the memory register write operation fails.
+        """
         self._mem_reg_write(
             mem_ap_ix=self.mem_ap_ix,
             addr=self.DHCSR_REG,
@@ -1027,7 +1243,13 @@ class DebugProbeCoreSightOnly(DebugProbe):
 
     @get_mem_ap
     def debug_resume(self) -> None:
-        """Resume the CPU execution."""
+        """Resume the CPU execution.
+
+        This method clears the debug halt bit in the Debug Halting Control and Status Register
+        (DHCSR) to allow the CPU to continue execution from its current state.
+
+        :raises SPSDKError: If the memory register write operation fails.
+        """
         self._mem_reg_write(
             mem_ap_ix=self.mem_ap_ix,
             addr=self.DHCSR_REG,
@@ -1036,7 +1258,14 @@ class DebugProbeCoreSightOnly(DebugProbe):
 
     @get_mem_ap
     def debug_step(self) -> None:
-        """Step the CPU execution."""
+        """Step the CPU execution by one instruction.
+
+        This method performs a single-step operation on the target CPU by writing
+        to the Debug Halting Control and Status Register (DHCSR) with appropriate
+        control bits to enable debug mode and execute one instruction.
+
+        :raises SPSDKError: If the memory register write operation fails.
+        """
         self._mem_reg_write(
             mem_ap_ix=self.mem_ap_ix,
             addr=self.DHCSR_REG,
@@ -1044,7 +1273,14 @@ class DebugProbeCoreSightOnly(DebugProbe):
         )
 
     def __del__(self) -> None:
-        """General Debug Probe 'END' event handler."""
+        """Clean up resources when the debug probe object is destroyed.
+
+        This destructor method ensures proper cleanup by attempting to close the debug probe
+        connection when the object is being garbage collected. It safely handles cases where
+        the close method is not implemented by catching NotImplementedError.
+
+        :raises NotImplementedError: When the close method is not implemented (handled internally).
+        """
         try:
             self.close()
         except NotImplementedError:
@@ -1052,7 +1288,13 @@ class DebugProbeCoreSightOnly(DebugProbe):
 
 
 class ProbeDescription:
-    """NamedTuple for DAT record of debug probe description."""
+    """Debug probe description container.
+
+    This class encapsulates information about a debug probe including its interface,
+    hardware identification, description, and the probe class type. It provides
+    a standardized way to describe and instantiate debug probes within the SPSDK
+    framework.
+    """
 
     def __init__(
         self,
@@ -1061,12 +1303,12 @@ class ProbeDescription:
         description: str,
         probe: Type[DebugProbe],
     ) -> None:
-        """Initialization of Debug probe description class.
+        """Initialize Debug probe description class.
 
-        param interface: Probe Interface.
-        param hardware_id: Probe Hardware ID(Identification).
-        param description: Probe Text description.
-        param probe: Probe name of the class.
+        :param interface: Probe interface type.
+        :param hardware_id: Probe hardware ID for identification.
+        :param description: Text description of the probe.
+        :param probe: Debug probe class type.
         """
         self.interface = interface
         self.hardware_id = hardware_id
@@ -1074,26 +1316,51 @@ class ProbeDescription:
         self.probe = probe
 
     def get_probe(self, options: Optional[dict] = None) -> DebugProbe:
-        """Get instance of probe.
+        """Get instance of debug probe.
 
-        :param options: The dictionary with options
-        :return: Instance of described probe.
+        Creates and returns a new instance of the debug probe with the specified hardware ID
+        and optional configuration parameters.
+
+        :param options: Optional dictionary containing probe-specific configuration options.
+        :return: Instance of the debug probe ready for use.
         """
         return self.probe(hardware_id=self.hardware_id, options=options)
 
     def __str__(self) -> str:
-        """Provide string representation of debug probe."""
+        """Provide string representation of debug probe.
+
+        Creates a formatted string containing the debug probe's interface type,
+        description, and hardware serial number for easy identification and logging.
+
+        :return: Formatted string with probe interface, description, and serial number.
+        """
         return f"Debug probe: {self.interface}; {self.description}. S/N:{self.hardware_id}"
 
     def __repr__(self) -> str:
+        """Return string representation of the debug probe.
+
+        :return: String containing debug probe interface information.
+        """
         return f"Debug probe: {self.interface}"
 
 
 class DebugProbes(list[ProbeDescription]):
-    """Helper class for debug probe selection. This class accepts only ProbeDescription object."""
+    """Debug probe collection for hardware selection and display.
+
+    This class extends a list to specifically manage ProbeDescription objects,
+    providing formatted output capabilities for debug probe selection interfaces.
+    The class ensures type safety by accepting only ProbeDescription instances
+    and offers colored table representation for user-friendly probe listing.
+    """
 
     def __str__(self) -> str:
-        """Prints the List of Probes to nice colored table."""
+        """Return string representation of debug probes list.
+
+        Creates a formatted table with colored output showing all available debug probes
+        with their interface, hardware ID, and description.
+
+        :return: Formatted table string with colored probe information.
+        """
         table = prettytable.PrettyTable(["#", "Interface", "Id", "Description"])
         table.align = "l"
         table.header = True

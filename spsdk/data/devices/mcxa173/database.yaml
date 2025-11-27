@@ -16,6 +16,6 @@ info:
       size_int: 0x2_0000
       external: false
     sram:
-      start_int: 0x200_00000
+      start_int: 0x2000_0000
       size_int: 0x8000
       external: false

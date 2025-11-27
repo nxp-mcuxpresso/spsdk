@@ -4,10 +4,17 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Configuration object used in SPSDK."""
+"""SPSDK configuration management utilities.
+
+This module provides a unified configuration framework for SPSDK applications,
+including configuration validation, preprocessing hooks, and type-safe configuration
+handling across the NXP MCU portfolio.
+"""
 
 import logging
 import os
+from abc import abstractmethod
+from copy import deepcopy
 from typing import Any, Optional, TypeVar, Union
 
 from typing_extensions import Self
@@ -29,12 +36,28 @@ _VT = TypeVar("_VT")
 
 
 class Config(dict):
-    """Class keeping configuration of SPSDK features."""
+    """SPSDK Configuration Manager.
+
+    This class extends Python's dictionary to provide enhanced configuration management
+    for SPSDK operations. It supports nested key addressing using path separators,
+    file-based configuration loading, and maintains context about configuration
+    source and search paths.
+
+    :cvar SEP: Path separator used for nested key addressing in configuration.
+    """
 
     SEP = "/"
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Config dictionary constructor."""
+        """Initialize configuration dictionary with default settings.
+
+        Sets up a new configuration dictionary instance with default values for
+        configuration directory (current working directory), empty configuration name,
+        and empty search paths list.
+
+        :param args: Variable length argument list passed to parent dictionary constructor.
+        :param kwargs: Arbitrary keyword arguments passed to parent dictionary constructor.
+        """
         super().__init__(*args, **kwargs)
         self.config_dir = os.getcwd()
         self.config_name = ""
@@ -42,10 +65,13 @@ class Config(dict):
 
     @classmethod
     def create_from_file(cls, file_path: str) -> Self:
-        """Create the configuration from the file.
+        """Create configuration object from file.
 
-        :param file_path: File path of the configuration
-        :return: Configuration object
+        Loads configuration data from the specified file path and initializes
+        a new configuration object with proper search paths and metadata.
+
+        :param file_path: Path to the configuration file to load.
+        :return: Configuration object with loaded data and set search paths.
         """
         cfg_abs_path = os.path.abspath(file_path).replace("\\", "/")
         cfg = cls(load_configuration(cfg_abs_path))
@@ -58,7 +84,15 @@ class Config(dict):
 
     @classmethod
     def get_path(cls, key: Union[str, int]) -> list:
-        """Get keypath in list."""
+        """Get keypath in list format.
+
+        Converts a key (string or integer) into a list of path components. String keys are split
+        by the separator and each component is converted to integer if possible, otherwise kept
+        as string.
+
+        :param key: Key to convert - either string path with separators or single integer.
+        :return: List of path components as integers or strings.
+        """
         ret: list[Union[int, str]] = []
 
         if isinstance(key, int):
@@ -71,11 +105,14 @@ class Config(dict):
         return ret
 
     def get(self, key: str, defaults: Optional[Any] = None) -> Any:
-        """Overriding the original dictionary to support nested addressing of items.
+        """Get configuration value with nested key support.
 
-        :param key: Key name  including support of key path with '/'.
-        :param defaults: Default value in case that item doesn't exists, defaults to None
-        :return: Value
+        Overrides the original dictionary get method to support nested addressing of items
+        using '/' as a path separator.
+
+        :param key: Key name including support of key path with '/'.
+        :param defaults: Default value in case that item doesn't exist, defaults to None.
+        :return: Configuration value or default if key not found.
         """
         try:
             return self.__getitem__(key)
@@ -83,8 +120,29 @@ class Config(dict):
             return defaults
 
     def __getitem__(self, key: str) -> Any:
+        """Get configuration value by key path.
+
+        Retrieves a value from the configuration using a dot-separated key path or a simple key.
+        The method supports nested access to dictionaries and lists within the configuration.
+
+        :param key: Configuration key or dot-separated path to nested value
+        :raises SPSDKError: Invalid key path or unsupported data type in path
+        :raises SPSDKKeyError: Key doesn't exist in configuration
+        :return: Configuration value at the specified key path
+        """
 
         def gets(source: Any, key_path: list) -> Any:
+            """Get value from nested data structure using key path.
+
+            Retrieves a value from a nested dictionary or list structure by following
+            a sequence of keys. Supports both dictionary keys and list indices.
+
+            :param source: The data structure to search in (dict or list).
+            :param key_path: List of keys/indices defining the path to the desired value.
+            :raises SPSDKError: Invalid key type for list access or unsupported source type.
+            :raises SPSDKKeyError: Key doesn't exist in the data structure.
+            :return: The value found at the specified key path.
+            """
             key = key_path.pop(0)
             if isinstance(source, list):
                 if not isinstance(key, int):
@@ -109,8 +167,28 @@ class Config(dict):
             return gets(self, [key])
 
     def __setitem__(self, key: str, value: Any) -> None:
+        """Set configuration value using dot-notation key path.
+
+        This method allows setting nested configuration values using a dot-separated key path.
+        It automatically creates intermediate dictionaries or lists as needed based on the
+        key types in the path.
+
+        :param key: Dot-separated key path (e.g., 'section.subsection.item').
+        :param value: Value to set at the specified key path.
+        :raises SPSDKError: Invalid configuration key path.
+        """
 
         def sets(dest: Any, key_path: list, value: Any) -> None:
+            """Set value in nested data structure using key path.
+
+            Recursively traverses and modifies a nested data structure (dict/list) by following
+            a key path. Creates intermediate containers as needed during traversal.
+
+            :param dest: Target data structure to modify (dict or list).
+            :param key_path: List of keys defining the path to the target location.
+            :param value: Value to set at the target location.
+            :raises SPSDKError: Invalid key type in configuration key path.
+            """
             key = key_path.pop(0)
 
             if isinstance(key, int):
@@ -135,8 +213,12 @@ class Config(dict):
     def get_input_file_name(self, key: str) -> str:
         """Get the absolute input file name.
 
+        The method resolves the relative file path from configuration using the configured search paths
+        to find the actual file location.
+
         :param key: Key path to config with input file name.
-        :return The absolute path to input file.
+        :raises SPSDKError: Cannot find input file for the specified key.
+        :return: The absolute path to input file.
         """
         try:
             return find_file(self[key], search_paths=self.search_paths)
@@ -146,8 +228,11 @@ class Config(dict):
     def get_output_file_name(self, key: str) -> str:
         """Get the absolute output file name.
 
-        :param key: Key path to config with input file name.
-        :return The absolute path to input file.
+        Resolves relative paths by joining them with the configuration directory path and converts
+        the result to use forward slashes for consistency across platforms.
+
+        :param key: Key path to config with output file name.
+        :return: The absolute path to output file with forward slashes.
         """
         path = self[key]
         if os.path.isabs(path):
@@ -158,13 +243,22 @@ class Config(dict):
         """Get the absolute output directory.
 
         :param key: Key path to config with output directory.
-        :return The absolute path to output directory.
+        :return: The absolute path to output directory.
         """
         output_file_name = self.get_output_file_name(key)
         return os.path.dirname(output_file_name)
 
     def load_sub_config(self, key: str) -> "Config":
-        """Get sub configuration."""
+        """Load sub-configuration from a file path specified by the given key.
+
+        The method resolves the file path using the current configuration's search paths,
+        loads the configuration from that file, and extends the new configuration's
+        search paths with the current ones.
+
+        :param key: Configuration key containing the file path to load.
+        :raises SPSDKError: When the file specified by the key cannot be found.
+        :return: New Config instance loaded from the specified file.
+        """
         try:
             path = find_file(self[key], search_paths=self.search_paths)
         except SPSDKError as exc:
@@ -178,9 +272,13 @@ class Config(dict):
     ) -> list["Config"]:
         """Get list of sub configurations.
 
+        The method retrieves a list of sub-configuration objects from the specified key.
+        If the key doesn't exist and no default is provided, raises an exception.
+
         :param key: Key name of the list of sub configuration.
-        :param default: Default value if configuration doesn't contains it.
-        :return: List of sub configuration
+        :param default: Default value if configuration doesn't contain the key.
+        :raises SPSDKError: When the key is not found and no default value is provided.
+        :return: List of sub configuration objects.
         """
         if key not in self:
             if default is not None:
@@ -193,11 +291,15 @@ class Config(dict):
         return ret
 
     def get_config(self, key: str, default: Optional["Config"] = None) -> "Config":
-        """Get the key value as Config.
+        """Get the key value as Config object.
+
+        Retrieves a configuration value by key and converts it to a Config instance.
+        The returned Config object inherits search paths and config directory from the parent.
 
         :param key: Key name of the sub configuration.
-        :param default: Default value if configuration doesn't contains it.
-        :return: Sub configuration
+        :param default: Default value if configuration doesn't contain the key.
+        :raises SPSDKKeyError: The key is not found in configuration and no default provided.
+        :return: Sub configuration as Config object.
         """
         cfg = self.get(key, default)
         if cfg is None:
@@ -211,9 +313,13 @@ class Config(dict):
     def get_dict(self, key: str, default: Optional[dict] = None) -> dict:
         """Get the key value as dictionary.
 
+        Retrieves a configuration value for the specified key and ensures it is a dictionary type.
+        If the value exists but is not a dictionary, an exception is raised.
+
         :param key: Key name of the sub configuration.
-        :param default: Default value if configuration doesn't contains it.
-        :return: Sub configuration
+        :param default: Default value if configuration doesn't contain the key.
+        :raises SPSDKError: If the retrieved value is not a dictionary type.
+        :return: Sub configuration as dictionary.
         """
         ret = self.get(key, default)
         if not isinstance(ret, dict):
@@ -221,11 +327,12 @@ class Config(dict):
         return ret
 
     def get_list(self, key: str, default: Optional[list] = None) -> list:
-        """Get the key value as dictionary.
+        """Get the key value as list.
 
-        :param key: Key name of the sub configuration.
-        :param default: Default value if configuration doesn't contains it.
-        :return: Sub configuration
+        :param key: Key name of the configuration entry.
+        :param default: Default value if configuration doesn't contain the key.
+        :raises SPSDKError: If the value at the specified key is not a list.
+        :return: Configuration value as list.
         """
         ret = self.get(key, default)
         if not isinstance(ret, list):
@@ -236,8 +343,9 @@ class Config(dict):
         """Get the key value as integer.
 
         :param key: Key name of the sub configuration.
-        :param default: Default value if configuration doesn't contains it.
-        :return: Integer loaded from configuration
+        :param default: Default value if configuration doesn't contain it.
+        :raises SPSDKError: The value is not integer at specified key.
+        :return: Integer loaded from configuration.
         """
         ret = self.get(key, default)
         if ret is None:
@@ -247,9 +355,13 @@ class Config(dict):
     def get_bytes(self, key: str, default: Optional[bytes] = None) -> bytes:
         """Get the key value as bytes.
 
+        The method retrieves a configuration value by key and converts it to bytes format.
+        If the key is not found and no default is provided, an exception is raised.
+
         :param key: Key name of the sub configuration.
-        :param default: Default value if configuration doesn't contains it.
-        :return: Bytes array loaded from configuration
+        :param default: Default value if configuration doesn't contain the key.
+        :raises SPSDKError: When the value cannot be converted to bytes or key is missing without default.
+        :return: Bytes array loaded from configuration.
         """
         ret = self.get(key, default)
         if ret is None:
@@ -259,9 +371,13 @@ class Config(dict):
     def get_str(self, key: str, default: Optional[str] = None) -> str:
         """Get the key value as string.
 
-        :param key: Key name of the sub configuration.
-        :param default: Default value if configuration doesn't contains it.
-        :return: Sub configuration
+        Retrieves the configuration value for the specified key and ensures it's a string type.
+        If the value exists but is not a string, an exception is raised.
+
+        :param key: Key name of the configuration entry.
+        :param default: Default value to return if the key doesn't exist in configuration.
+        :raises SPSDKError: If the retrieved value is not a string type.
+        :return: Configuration value as string.
         """
         ret = self.get(key, default)
         if not isinstance(ret, str):
@@ -271,9 +387,13 @@ class Config(dict):
     def get_bool(self, key: str, default: Optional[bool] = None) -> bool:
         """Get the key value as boolean.
 
-        :param key: Key name of the sub configuration.
-        :param default: Default value if configuration doesn't contains it.
-        :return: Sub configuration
+        Retrieves a configuration value for the specified key and ensures it is a boolean type.
+        If the key is not found, returns the provided default value.
+
+        :param key: Key name of the configuration entry.
+        :param default: Default value if configuration doesn't contain the key.
+        :raises SPSDKError: If the retrieved value is not a boolean type.
+        :return: Boolean value from configuration.
         """
         ret = self.get(key, default)
         if not isinstance(ret, bool):
@@ -283,7 +403,11 @@ class Config(dict):
     def get_family(self) -> FamilyRevision:
         """Get the device family and revision from configuration.
 
-        :return: FamilyRevision object representing device details
+        This method retrieves the family name and revision from the configuration data,
+        defaulting to "latest" revision if not specified.
+
+        :raises SPSDKValueError: If family is not specified in configuration.
+        :return: FamilyRevision object representing device details.
         """
         family = self.get_str("family")
         revision = self.get_str("revision", default="latest")
@@ -296,18 +420,19 @@ class Config(dict):
         default: Optional[bytes] = None,
         name: Optional[str] = "key",
     ) -> bytes:
-        """Get the HEX string from the configuration by key.
+        """Load symmetric key from configuration.
 
-        Note: The value could be:
-            - File path to key file with hex value
-            - File path to key file with binary value
-            - Hexadecimal value.
+        The method loads a symmetric key from configuration that can be provided as:
+        - File path to key file with hexadecimal value
+        - File path to key file with binary value
+        - Direct hexadecimal string value
 
-        :param key: Key name of the key.
-        :param expected_size: Expected size of key in bytes.
-        :param default: Default value if configuration doesn't contains it.
-        :param name: Name for the key/data to load
-        :return: Key in bytes.
+        :param key: Configuration key name to retrieve the symmetric key.
+        :param expected_size: Expected size of the key in bytes.
+        :param default: Default value to use if the configuration key doesn't exist.
+        :param name: Descriptive name for the key/data being loaded.
+        :raises SPSDKError: If the configuration key doesn't exist and no default is provided.
+        :return: Symmetric key as bytes.
         """
         ret = self.get(key, default)
         if ret is None:
@@ -319,18 +444,19 @@ class Config(dict):
     def load_secret(self, key: str, default: Optional[str] = None) -> str:
         """Load secret text from the configuration value.
 
-        There are several options how the secret is loaded from the input string
+        There are several options how the secret is loaded from the input string:
         1. If the value is an existing path, first line of file is read and returned
         2. If the value has format '$ENV_VAR', the value of environment variable ENV_VAR is returned
         3. If the value has format '$ENV_VAR' and the value contains a valid path to a file,
-        the first line of a file is returned
+           the first line of a file is returned
         4. If the value does not match any options above, the input value itself is returned
+        Note, that the value with an initial component of ~ or ~user is replaced by that user's
+        home directory.
 
-        Note, that the value with an initial component of ~ or ~user is replaced by that user's home directory.
-
-        :param key: Key name of the key.
-        :param default: Default value if configuration doesn't contains it.
-        :return: The actual secret value
+        :param key: Key name of the configuration key.
+        :param default: Default value if configuration doesn't contain the key.
+        :raises SPSDKError: If the key doesn't exist and no default is provided.
+        :return: The actual secret value.
         """
         ret = self.get(key, default)
         if ret is None:
@@ -340,9 +466,65 @@ class Config(dict):
     def check(self, schemas: list[dict[str, Any]], check_unknown_props: bool = False) -> None:
         """Check configuration against validation schemas.
 
+        The method validates the current configuration object against provided schemas
+        and optionally checks for unknown properties that might indicate configuration
+        errors.
+
         :param schemas: List of validation schemas used in SPSDK.
-        :param check_unknown_props: If True, check for unknown properties in config and print warnings
+        :param check_unknown_props: If True, check for unknown properties in config
+            and print warnings.
         """
         check_config(
             self, schemas, search_paths=self.search_paths, check_unknown_props=check_unknown_props
         )
+
+
+class PreValidationHook:
+    """SPSDK pre-validation hook for register configuration processing.
+
+    This abstract base class provides a framework for preprocessing register configurations
+    before validation. It normalizes register and bitfield names to ensure consistent
+    case-insensitive processing across different configuration formats.
+    """
+
+    def __init__(self, register_keys: Optional[list[str]] = None):
+        """Initialize the hook with specific register keys to process.
+
+        :param register_keys: List of keys in the config that contain register configurations.
+                             If None, processes the entire config.
+        """
+        self.register_keys = register_keys or []
+
+    def __call__(self, cfg: Config) -> Config:
+        """Pre-validation hook for register configuration.
+
+        This function converts all register names and bitfield names to uppercase
+        to ensure case-insensitive matching during validation.
+
+        :param cfg: Original configuration dictionary.
+        :return: Modified configuration with uppercase register and bitfield keys.
+        """
+        # Create a deep copy of the original config
+        result = deepcopy(cfg)
+
+        if not self.register_keys:
+            # Process the entire config
+            self.process_registers(result)
+        else:
+            # Process only specified keys
+            for key in self.register_keys:
+                if key in result:
+                    if isinstance(result[key], dict):
+                        self.process_registers(result[key])
+
+        return result
+
+    @abstractmethod
+    def process_registers(self, config: Config) -> None:
+        """Process registers from the provided configuration.
+
+        This method processes register configurations and applies them to the current
+        instance state.
+
+        :param config: Configuration object containing register settings to process.
+        """

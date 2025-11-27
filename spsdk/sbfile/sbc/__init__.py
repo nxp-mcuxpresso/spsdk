@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""SBc module of sbfile."""
+"""SPSDK Secure Binary Container (SBc) module.
+
+This module provides the SBc implementation for SPSDK sbfile package,
+offering secure boot container functionality with command parsing and
+execution capabilities.
+"""
 
 from spsdk.sbfile.sb31.commands import (
     CmdErase,

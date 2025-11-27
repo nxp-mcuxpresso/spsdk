@@ -17,8 +17,9 @@ info:
       external: false
     sram:
       start_int: 0x200_00000
-      size_int: 0x10000
+      size_int: 0x1_0000
       external: false
 features:
   pfr:
-      address: 0x0003_F000
+    cmpa:
+      address: 0x3_E000

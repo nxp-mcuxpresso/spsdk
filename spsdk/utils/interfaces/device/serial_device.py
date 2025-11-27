@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Low level serial device."""
+"""SPSDK serial device interface implementation.
+
+This module provides SerialDevice class for communication with devices
+over serial/UART interfaces, including device discovery and connection
+management functionality.
+"""
+
 import logging
 from typing import Optional
 
@@ -21,7 +27,15 @@ logger = logging.getLogger(__name__)
 
 
 class SerialDevice(DeviceBase):
-    """Serial device class."""
+    """SPSDK Serial Device Interface.
+
+    This class provides a unified interface for serial communication with NXP MCU devices
+    over UART connections. It handles serial port configuration, connection management,
+    and data transfer operations with proper timeout and error handling.
+
+    :cvar DEFAULT_BAUDRATE: Default serial communication speed (115200 bps).
+    :cvar DEFAULT_TIMEOUT: Default read/write timeout in milliseconds (5000 ms).
+    """
 
     DEFAULT_BAUDRATE = 115200
     DEFAULT_TIMEOUT = 5000
@@ -35,8 +49,8 @@ class SerialDevice(DeviceBase):
         """Initialize the UART interface.
 
         :param port: Name of the serial port, defaults to None
-        :param baudrate: Speed of the UART interface, defaults to 115200
         :param timeout: Read/write timeout in milliseconds, defaults to 1000
+        :param baudrate: Speed of the UART interface, defaults to 115200
         :raises SPSDKConnectionError: When there is no port available
         :raises SPSDKPermissionError: When the permission is denied
         """
@@ -57,19 +71,28 @@ class SerialDevice(DeviceBase):
 
     @property
     def timeout(self) -> int:
-        """Timeout property."""
+        """Get timeout value for serial device communication.
+
+        :return: Timeout value in seconds for serial operations.
+        """
         return self._timeout
 
     @timeout.setter
     def timeout(self, value: int) -> None:
-        """Timeout property setter."""
+        """Set timeout value for serial device communication.
+
+        Configures both read and write timeout values for the underlying serial device.
+        The timeout value is converted from milliseconds to seconds for the device.
+
+        :param value: Timeout value in milliseconds.
+        """
         self._timeout = value
         self._device.timeout = value / 1000
         self._device.write_timeout = value / 1000
 
     @property
     def is_opened(self) -> bool:
-        """Indicates whether device is open.
+        """Check if the serial device is currently open.
 
         :return: True if device is open, False otherwise.
         """
@@ -93,7 +116,10 @@ class SerialDevice(DeviceBase):
     def close(self) -> None:
         """Close the UART interface.
 
-        :raises SPSDKConnectionError: when closing device fails
+        The method safely closes the serial device connection by first clearing
+        input and output buffers, then closing the device handle.
+
+        :raises SPSDKConnectionError: When closing device fails.
         """
         if self.is_opened:
             try:
@@ -104,13 +130,17 @@ class SerialDevice(DeviceBase):
                 raise SPSDKConnectionError(str(e)) from e
 
     def read(self, length: int, timeout: Optional[int] = None) -> bytes:
-        """Read 'length' amount for bytes from device.
+        """Read data from the serial device.
 
-        :param length: Number of bytes to read
-        :param timeout: Read timeout
-        :return: Data read from the device
-        :raises SPSDKTimeoutError: Time-out
-        :raises SPSDKConnectionError: When reading data from device fails
+        Reads the specified number of bytes from the connected serial device.
+        The method will raise an exception if the device is not opened or if
+        no data is available to read.
+
+        :param length: Number of bytes to read from the device.
+        :param timeout: Read timeout in seconds, if None uses default timeout.
+        :return: Data read from the device.
+        :raises SPSDKConnectionError: When device is not opened or reading fails.
+        :raises SPSDKTimeoutError: When no data is available to read (timeout).
         """
         if not self.is_opened:
             raise SPSDKConnectionError("Device is not opened for reading")
@@ -126,10 +156,13 @@ class SerialDevice(DeviceBase):
     def write(self, data: bytes, timeout: Optional[int] = None) -> None:
         """Send data to device.
 
-        :param data: Data to send
-        :param timeout: Write timeout
-        :raises SPSDKTimeoutError: when sending of data times-out
-        :raises SPSDKConnectionError: when send data to device fails
+        The method clears input/output buffers before sending data and flushes the output
+        to ensure reliable transmission.
+
+        :param data: Data bytes to send to the device.
+        :param timeout: Write timeout in seconds (currently not used in implementation).
+        :raises SPSDKTimeoutError: When sending of data times out.
+        :raises SPSDKConnectionError: When device is not opened or send operation fails.
         """
         if not self.is_opened:
             raise SPSDKConnectionError("Device is not opened for writing")
@@ -147,10 +180,10 @@ class SerialDevice(DeviceBase):
             raise SPSDKConnectionError(str(e)) from e
 
     def __str__(self) -> str:
-        """Return information about the UART interface.
+        """Return string representation of the UART interface.
 
-        :return: information about the UART interface
-        :raises SPSDKConnectionError: when information can not be collected from device
+        :return: Port name of the UART interface.
+        :raises SPSDKConnectionError: When information cannot be collected from device.
         """
         try:
             return self._device.port
@@ -164,16 +197,16 @@ class SerialDevice(DeviceBase):
         baudrate: Optional[int] = None,
         timeout: Optional[int] = None,
     ) -> list[Self]:
-        """Scan connected serial ports.
+        """Scan connected serial ports for responding devices.
 
         Returns list of serial ports with devices that respond to PING command.
-        If 'port' is specified, only that serial port is checked
+        If 'port' is specified, only that serial port is checked.
         If no devices are found, return an empty list.
 
-        :param port: name of preferred serial port, defaults to None
-        :param baudrate: speed of the UART interface, defaults to 56700
-        :param timeout: timeout in milliseconds, defaults to 5000
-        :return: list of interfaces responding to the PING command
+        :param port: Name of preferred serial port, defaults to None.
+        :param baudrate: Speed of the UART interface, defaults to 56700.
+        :param timeout: Timeout in milliseconds, defaults to 5000.
+        :return: List of interfaces responding to the PING command.
         """
         baudrate = baudrate or cls.DEFAULT_BAUDRATE
         timeout = timeout or 5000
@@ -190,12 +223,15 @@ class SerialDevice(DeviceBase):
 
     @classmethod
     def _check_port(cls, port: str, baudrate: int, timeout: int) -> Optional[Self]:
-        """Check if device on comport 'port' responds to PING command.
+        """Check if device on serial port responds to connection attempt.
 
-        :param port: name of port to check
-        :param baudrate: speed of the UART interface, defaults to 56700
-        :param timeout: timeout in milliseconds
-        :return: None if device doesn't respond to PING, instance of Interface if it does
+        The method tries to establish connection with a device on the specified serial port
+        by opening and immediately closing the connection to verify accessibility.
+
+        :param port: Name of the serial port to check.
+        :param baudrate: Speed of the UART interface in bits per second.
+        :param timeout: Connection timeout in milliseconds.
+        :return: Device instance if connection successful, None if connection fails or port inaccessible.
         """
         try:
             logger.debug(f"Checking port: {port}, baudrate: {baudrate}, timeout: {timeout}")

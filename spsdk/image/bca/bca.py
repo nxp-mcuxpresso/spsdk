@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""This module contains BCA (Bootloader Configuration Area) related code."""
+"""SPSDK Bootloader Configuration Area (BCA) implementation.
+
+This module provides functionality for handling BCA structures used in NXP MCU
+bootloader configuration. The BCA contains essential configuration data that
+controls bootloader behavior and system initialization parameters.
+"""
 
 import logging
 from typing import Any, Optional
@@ -18,22 +23,35 @@ from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, update_validation_schema_family
 from spsdk.utils.misc import Endianness
-from spsdk.utils.registers import Registers
+from spsdk.utils.registers import Registers, RegistersPreValidationHook
 
 logger = logging.getLogger(__name__)
 
 
 class BCA(SegmentBase):
-    """BCA (Bootloader Configuration Area)."""
+    """BCA (Bootloader Configuration Area) segment handler.
+
+    This class manages the Bootloader Configuration Area which contains configuration
+    data used by the bootloader during the boot process. It provides functionality
+    for parsing, validating, and generating BCA segments with proper register handling.
+
+    :cvar FEATURE: Database feature identifier for BCA operations.
+    :cvar TAG: Expected binary tag identifier for BCA segments.
+    :cvar SIZE: Fixed size of BCA segment in bytes.
+    """
 
     FEATURE = DatabaseManager.BCA
+    PRE_VALIDATION_CFG_HOOK = RegistersPreValidationHook(register_keys=["bca"])
     TAG = b"kcfg"
     SIZE = 64
 
     def __init__(self, family: FamilyRevision) -> None:
-        """BCA Constructor.
+        """Initialize BCA (Boot Configuration Area) instance.
 
-        :param family: Chip family.
+        Creates a new BCA object for the specified chip family and initializes
+        the internal registers with little-endian byte order.
+
+        :param family: Target chip family and revision information.
         :raises SPSDKValueError: Unsupported family.
         """
         super().__init__(family)
@@ -45,17 +63,22 @@ class BCA(SegmentBase):
 
     @property
     def registers(self) -> Registers:
-        """Registers of segment."""
+        """Get registers of the BCA segment.
+
+        :return: Registers object containing the BCA segment configuration.
+        """
         return self._registers
 
     @classmethod
     def parse(cls, binary: bytes, offset: int = 0, family: Optional[FamilyRevision] = None) -> Self:
         """Parse binary block into BCA object.
 
-        :param binary: binary image.
+        :param binary: Binary image data to parse.
         :param offset: Offset of BCA in binary image.
-        :param family: Chip family.
-        :raises SPSDKError: If given binary block contains wrong BCA tag
+        :param family: Chip family specification.
+        :raises SPSDKValueError: If family attribute is not specified.
+        :raises SPSDKError: If given binary block contains wrong BCA tag.
+        :return: Parsed BCA object instance.
         """
         if not family:
             raise SPSDKValueError("Family attribute must be specified.")
@@ -71,7 +94,11 @@ class BCA(SegmentBase):
     def get_config(self, data_path: str = "./") -> Config:
         """Create current configuration YAML.
 
-        :return: Configuration of BCA Block.
+        The method generates a configuration dictionary containing the BCA (Boot Configuration Area)
+        block settings including family name, revision, and register configuration.
+
+        :param data_path: Relative path for data files (currently unused).
+        :return: Configuration of BCA Block containing family, revision and register settings.
         """
         config: Config = Config({})
         config["family"] = self.family.name
@@ -81,11 +108,15 @@ class BCA(SegmentBase):
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Create the validation schema.
+        """Get validation schemas for BCA configuration.
 
-        :param family: Family description.
+        Creates validation schemas for Boot Configuration Area (BCA) based on the specified
+        family and revision. The method generates both family-specific and BCA-specific
+        validation schemas that can be used to validate configuration data.
+
+        :param family: Family and revision specification for target MCU.
         :raises SPSDKError: Family or revision is not supported.
-        :return: List of validation schemas.
+        :return: List containing family validation schema and BCA validation schema.
         """
         bca_obj = BCA(family)
         sch_cfg = get_schema_file(DatabaseManager.BCA)
@@ -101,17 +132,31 @@ class BCA(SegmentBase):
 
     @classmethod
     def load_from_config(cls, config: Config) -> Self:
-        """Creates an instance of BCA from configuration.
+        """Create BCA instance from configuration data.
 
-        :param config: BCA configuration.
-        :return: BCA object.
+        Loads Boot Configuration Area settings from the provided configuration
+        and initializes a new BCA object with the specified family revision.
+
+        :param config: Configuration object containing BCA settings and family revision data.
+        :return: Configured BCA instance with loaded register values.
         """
         bca = cls(FamilyRevision.load_from_config(config))
         bca.registers.load_from_config(config.get("bca", {}))
         return bca
 
     def __repr__(self) -> str:
+        """Return string representation of BCA Segment.
+
+        :return: String representation of the BCA segment.
+        """
         return "BCA Segment"
 
     def __str__(self) -> str:
+        """Get string representation of BCA segment.
+
+        Provides a formatted string containing the BCA segment information including
+        the family name.
+
+        :return: Formatted string representation of the BCA segment.
+        """
         return "BCA Segment:\n" f" Family:           {self.family}\n"

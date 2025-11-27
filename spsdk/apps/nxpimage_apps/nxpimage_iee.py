@@ -4,7 +4,12 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Nxpimage IEE group."""
+"""SPSDK NXP Image IEE (Inline Encryption Engine) command-line interface.
+
+This module provides CLI commands for managing IEE configurations and operations
+within the SPSDK nxpimage application, including export functionality and
+template generation for Inline Encryption Engine features.
+"""
 
 import logging
 

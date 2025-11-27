@@ -24,7 +24,7 @@
                     "default_value_int": "0x56020000"
                 },
                 {
-                    "id": "field008",
+                    "id": "Reserved008",
                     "offset_int": "0x8",
                     "reg_width": 32,
                     "name": "reserved0",
@@ -237,7 +237,7 @@
                     ]
                 },
                 {
-                    "id": "field02C",
+                    "id": "Reserved02C",
                     "offset_int": "0x2c",
                     "reg_width": 32,
                     "name": "reserved1",
@@ -270,7 +270,7 @@
                     "default_value_int": "0x0"
                 },
                 {
-                    "id": "field03C",
+                    "id": "Reserved03C",
                     "offset_int": "0x3c",
                     "reg_width": 32,
                     "name": "reserved2",
@@ -319,7 +319,7 @@
                     "default_value_int": "0x0"
                 },
                 {
-                    "id": "field048",
+                    "id": "Reserved048",
                     "offset_int": "0x48",
                     "reg_width": 32,
                     "name": "reserved3_0",
@@ -328,7 +328,7 @@
                     "is_reserved": true
                 },
                 {
-                    "id": "field04C",
+                    "id": "Reserved04C",
                     "offset_int": "0x4c",
                     "reg_width": 32,
                     "name": "reserved3_1",
@@ -25381,7 +25381,7 @@
                     ]
                 },
                 {
-                    "id": "field1B0",
+                    "id": "Reserved1B0",
                     "offset_int": "0x1b0",
                     "reg_width": 32,
                     "name": "reserved4_0",
@@ -25390,7 +25390,7 @@
                     "is_reserved": true
                 },
                 {
-                    "id": "field1B4",
+                    "id": "Reserved1B4",
                     "offset_int": "0x1b4",
                     "reg_width": 32,
                     "name": "reserved4_1",
@@ -25399,7 +25399,7 @@
                     "is_reserved": true
                 },
                 {
-                    "id": "field1B8",
+                    "id": "Reserved1B8",
                     "offset_int": "0x1b8",
                     "reg_width": 32,
                     "name": "reserved4_2",
@@ -25408,7 +25408,7 @@
                     "is_reserved": true
                 },
                 {
-                    "id": "field1BC",
+                    "id": "Reserved1BC",
                     "offset_int": "0x1bc",
                     "reg_width": 32,
                     "name": "reserved4_3",
@@ -25457,7 +25457,7 @@
                     "default_value_int": "0x0"
                 },
                 {
-                    "id": "field1CB",
+                    "id": "Reserved1CB",
                     "offset_int": "0x1cb",
                     "reg_width": 8,
                     "name": "reserved0_0",

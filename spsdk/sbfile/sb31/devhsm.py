@@ -5,7 +5,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module is used to generate initialization SB file."""
+"""SPSDK SB3.1 development HSM utilities.
+
+This module provides functionality for generating initialization SB files
+using development HSM capabilities for secure boot file creation.
+"""
 
 import copy
 import logging
@@ -33,7 +37,15 @@ logger = logging.getLogger(__name__)
 
 
 class DevHsmSB31(DevHsm):
-    """Class to handle device HSM provisioning procedure for SB3.1."""
+    """SPSDK Device HSM provisioning manager for SB3.1 format.
+
+    This class manages the device Hardware Security Module (HSM) provisioning
+    procedure specifically for Secure Binary 3.1 format. It handles the creation
+    of provisioned SB3.1 files through device communication, key management,
+    and command execution workflows.
+
+    :cvar SUB_FEATURE: Identifier for the DevHSM SB3.1 sub-feature.
+    """
 
     SUB_FEATURE = "DevHsmSB31"
 
@@ -51,20 +63,23 @@ class DevHsmSB31(DevHsm):
         buffer_address: Optional[int] = None,
         info_print: Optional[Callable] = None,
     ) -> None:
-        """Initialization of device HSM class. Its design to create provisioned SB3 file.
+        """Initialize device HSM class for creating provisioned SB3 files.
 
-        :param mboot: mBoot communication interface.
-        :param family: chip family
-        :param oem_share_input: OEM share input data (if None a random input will be generated).
-        :param oem_enc_master_share_input: Used for setting the OEM share (recreating security session)
-        :param cust_mk_sk: Customer Master Key Symmetric Key.
-        :param commands: Optional user list of SB commands.
-        :param workspace: Optional folder to store middle results.
-        :param initial_reset: Reset device before DevHSM creation of SB3 file.
-        :param final_reset: Reset device after DevHSM creation of SB3 file.
-        :param buffer_address: Override the default buffer address.
-        :param info_print: Method for printing out info messages. Default: print
-        :raises SPSDKError: In case of any problem.
+        The DevHSM class provides functionality to create secure boot files using device-based
+        Hardware Security Module capabilities with proper key management and provisioning.
+
+        :param mboot: mBoot communication interface for device interaction.
+        :param family: Target chip family and revision information.
+        :param oem_share_input: OEM share input data, generates random 16 bytes if None.
+        :param oem_enc_master_share_input: OEM share for recreating security session.
+        :param cust_mk_sk: Customer Master Key Symmetric Key for encryption.
+        :param commands: Optional list of SB commands to include in the file.
+        :param workspace: Optional folder path to store intermediate results.
+        :param initial_reset: Whether to reset device before DevHSM SB3 file creation.
+        :param final_reset: Whether to reset device after DevHSM SB3 file creation.
+        :param buffer_address: Custom buffer address to override the default.
+        :param info_print: Callback function for printing info messages, defaults to print.
+        :raises SPSDKError: When initialization fails due to invalid parameters or device issues.
         """
         super().__init__(family, workspace)
         self.mboot = mboot
@@ -92,20 +107,31 @@ class DevHsmSB31(DevHsm):
         self.final_sb = bytes()
 
     def __repr__(self) -> str:
+        """Get string representation of SB 3.1 DevHSM object.
+
+        :return: String representation of the DevHSM instance.
+        """
         return "SB 3.1 DevHSM"
 
     def __str__(self) -> str:
+        """Return string representation of the DevHSM instance.
+
+        :return: String containing SB 3.1 DevHSM information with family name.
+        """
         return f"SB 3.1 DevHSM for {self.family}"
 
     @classmethod
     def get_validation_schemas(
         cls, family: FamilyRevision, include_test_configuration: bool = False
     ) -> list[dict[str, Any]]:
-        """Create the list of validation schemas.
+        """Create the list of validation schemas for SB3.1 configuration.
 
-        :param family: Family description.
+        The method combines common validation schemas with SB3.1-specific schemas and optionally
+        includes test configuration schemas for development purposes.
+
+        :param family: Family description containing chip family and revision information.
         :param include_test_configuration: Add also testing configuration schemas.
-        :return: List of validation schemas.
+        :return: List of validation schemas for SB3.1 configuration validation.
         """
         schemas: list[dict[str, Any]] = []
         common_schema = cls.get_validation_schemas_common(family=family)
@@ -121,7 +147,15 @@ class DevHsmSB31(DevHsm):
 
     @classmethod
     def get_validation_schemas_common(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Get validation with common DevHSM settings (without commands)."""
+        """Get validation schemas for common DevHSM settings.
+
+        Retrieves validation schemas for DevHSM configuration excluding command-specific schemas.
+        The method configures family-specific validation, sets buffer address from database,
+        and removes OEM encryption share settings from the common schema.
+
+        :param family: Target family and revision for schema validation.
+        :return: List containing family schema, common DevHSM schema, and customer master key schema.
+        """
         devhsm_sch_cfg = get_schema_file(DatabaseManager.DEVHSM)
         family_sch = get_schema_file("general")["family"]
         update_validation_schema_family(
@@ -136,10 +170,14 @@ class DevHsmSB31(DevHsm):
 
     @classmethod
     def get_config_template(cls, family: FamilyRevision) -> str:
-        """Get feature configuration template.
+        """Get DEVHSM configuration template for specified family.
 
-        :param family: Family for which the template should be generated.
-        :return: Template file string representation.
+        Generates a YAML configuration template for DEVHSM procedure Secure Binary v3.1.
+        The method attempts to use recommended flow and common validation schemas if available,
+        otherwise falls back to standard validation schemas.
+
+        :param family: Family revision for which the template should be generated.
+        :return: YAML configuration template as string.
         """
         try:
             recommended_flow = get_db(family).get_list(DatabaseManager.DEVHSM, "recommended_flow")
@@ -161,7 +199,16 @@ class DevHsmSB31(DevHsm):
 
     @classmethod
     def render_recommended_flow(cls, flow: list[dict]) -> str:
-        """Textual rendering of steps in recommended flow."""
+        """Render recommended flow steps as formatted text.
+
+        Converts a list of flow step dictionaries into a human-readable string format using
+        predefined templates from the DevHSM database schema.
+
+        :param flow: List of dictionaries where each dict contains a single step name as key
+                     and its parameters as value.
+        :raises SPSDKError: When template for a step is not found in the database.
+        :return: Formatted string representation of the flow steps with subtitle header.
+        """
         templates = get_schema_file(DatabaseManager.DEVHSM)
         result = "\n" + templates["subTitle"]
         # we meed a copy or else the .popitem will corrupt the database
@@ -175,7 +222,14 @@ class DevHsmSB31(DevHsm):
 
     @classmethod
     def render_available_commands(cls, family: FamilyRevision) -> str:
-        """Textual rendering of available commands."""
+        """Render textual representation of available DevHSM commands for specified family.
+
+        This method retrieves the validation schemas for DevHSM commands specific to the given
+        family revision and formats them as a commented YAML template for user reference.
+
+        :param family: The family revision to get available commands for.
+        :return: Formatted string containing available commands as commented YAML template.
+        """
         # sb3_sch_cfg = get_schema_file(DatabaseManager.SB31)
         sb31_schemas = SecureBinary31.get_devhsm_commands_validation_schemas(family)
         schemas: list[dict] = sb31_schemas[0]["properties"]["commands"]["items"]["oneOf"]
@@ -188,7 +242,16 @@ class DevHsmSB31(DevHsm):
         return "\n" + "\n".join(yaml_data)
 
     def create_sb(self) -> None:
-        """Do device hsm process to create SB_KEK provisioning SB file."""
+        """Create SB3.1 provisioning file using device HSM process.
+
+        This method orchestrates the complete device HSM workflow to generate a secure boot
+        file for SB_KEK provisioning. The process includes device reset, OEM master share
+        generation, firmware key generation, SB3 template creation, data encryption,
+        manifest preparation, and final file composition.
+
+        :raises SPSDKError: When OEM master share creation is enabled but required OEM_SHARE
+            or OEM_ENC_MASTER_SHARE parameters are not provided.
+        """
         # 1: Initial target reset to ensure OEM_MASTER_SHARE works properly (not tainted by previous run)
         if self.initial_reset:
             self.info_print(" 1: Resetting the target device")
@@ -350,20 +413,27 @@ class DevHsmSB31(DevHsm):
             self.info_print(" 9: Final target reset disabled")
 
     def export(self) -> bytes:
-        """Get the Final SB file.
+        """Export the final SB3.1 file as bytes.
 
-        :return: Final SB file in bytes.
+        This method returns the complete Secure Binary file that has been built and is ready
+        for deployment to the target device.
+
+        :return: Complete SB3.1 file content as bytes.
         """
         return self.final_sb
 
     def oem_generate_master_share(
         self, oem_share_input: Optional[bytes] = None
     ) -> tuple[bytes, bytes, bytes]:
-        """Generate on device Encrypted OEM master share outputs.
+        """Generate on device encrypted OEM master share outputs.
 
-        :param oem_share_input: OEM input (randomize seed)
-        :raises SPSDKError: In case of any vulnerability.
-        :return: Tuple with OEM generate master share outputs.
+        This method executes the OEM generate master share command on the device using the provided
+        or stored OEM share input. It writes the input to device memory, executes the command,
+        and reads back three outputs: encrypted OEM share, encrypted master share, and OEM certificate.
+
+        :param oem_share_input: OEM input randomization seed, uses stored value if not provided.
+        :raises SPSDKError: Memory write/read failure, command execution failure, or invalid results.
+        :return: Tuple containing encrypted OEM share, encrypted master share, and OEM certificate.
         """
         share_input = oem_share_input or self.oem_share_input
         if not share_input:
@@ -432,7 +502,17 @@ class DevHsmSB31(DevHsm):
     def oem_set_master_share(
         self, oem_seed: Optional[bytes] = None, enc_oem_share: Optional[bytes] = None
     ) -> bytes:
-        """Set OEM Master share on the device."""
+        """Set OEM Master share on the device.
+
+        Writes OEM seed input and encrypted OEM master share to device memory buffers,
+        then executes the trust provisioning command to set the OEM master share.
+
+        :param oem_seed: OEM seed data, uses instance default if not provided
+        :param enc_oem_share: Encrypted OEM master share data, uses instance default if not provided
+        :raises SPSDKError: When OEM share inputs are not defined, memory write fails, or
+                            trust provisioning command fails
+        :return: Truncated OEM master input data
+        """
         oem_seed_input = oem_seed or self.oem_share_input
         oem_master_input = enc_oem_share or self.oem_enc_master_share_input
         if not oem_seed_input or not oem_master_input:
@@ -466,10 +546,13 @@ class DevHsmSB31(DevHsm):
     ) -> tuple[bytes, bytes]:
         """Generate on device key pairs of provided type.
 
+        The method uses HSM (Hardware Security Module) to generate cryptographic key pairs
+        and stores them temporarily on the device for further use.
+
         :param key_type: Type of generated key pairs.
-        :param key_name: optional name for storing temporary files.
-        :raises SPSDKError: In case of any vulnerability.
-        :return: Tuple with Private and Public key.
+        :param key_name: Optional name for storing temporary files.
+        :raises SPSDKError: In case of HSM command failure or memory read issues.
+        :return: Tuple with private and public key as bytes.
         """
         hsm_gen_key_res = self.mboot.tp_hsm_gen_key(
             key_type.tag,
@@ -513,11 +596,16 @@ class DevHsmSB31(DevHsm):
         return prk, puk
 
     def wrap_key(self, cust_mk_sk: bytes) -> bytes:
-        """Wrap the CUST_MK_SK key.
+        """Wrap the Customer Master Key Symmetric Key using device HSM.
 
-        :param cust_mk_sk : Customer Master Key Symmetric Key
-        :raises SPSDKError: In case of any error.
-        :return: Wrapped CUST_MK_SK by RFC3396.
+        This method writes the CUST_MK_SK to device memory, uses the HSM store key
+        command to wrap it according to RFC3396 standard, and retrieves the wrapped
+        result. The wrapped key is also stored as a temporary file for debugging.
+
+        :param cust_mk_sk: Customer Master Key Symmetric Key to be wrapped
+        :raises SPSDKError: If memory write/read fails, HSM store key command fails,
+            or wrapped key size validation fails
+        :return: Wrapped CUST_MK_SK key according to RFC3396 standard
         """
         if not self.mboot.write_memory(self.devbuff_base, cust_mk_sk):
             raise SPSDKError(
@@ -556,11 +644,14 @@ class DevHsmSB31(DevHsm):
         return wrapped_cust_mk_sk
 
     def sign_data_blob(self, data_to_sign: bytes, key: bytes) -> bytes:
-        """Get HSM encryption sign for data blob.
+        """Sign data blob using HSM encryption.
+
+        This method writes the signing key and data to device memory, performs HSM
+        encryption signing operation, and retrieves the generated signature.
 
         :param data_to_sign: Input data to sign.
         :param key: FW signing key (MFWISK).
-        :raises SPSDKError: In case of any problem.
+        :raises SPSDKError: In case of any problem with memory operations or HSM signing.
         :return: Data blob signature (64 bytes).
         """
         if not self.mboot.write_memory(self.devbuff_base, key):
@@ -602,13 +693,17 @@ class DevHsmSB31(DevHsm):
     def encrypt_data_blocks(
         self, cust_fw_enc_key: bytes, sb3_header: bytes, data_cmd_blocks: list[bytes]
     ) -> list[bytes]:
-        """Encrypt all data blocks on device.
+        """Encrypt all data blocks using device HSM functionality.
 
-        :param cust_fw_enc_key: Firmware encryption key.
-        :param sb3_header: Un Encrypted SB3 file header.
-        :param data_cmd_blocks: List of un-encrypted SB3 file command blocks.
-        :raises SPSDKError: In case of any vulnerability.
-        :return: List of encrypted command blocks on device.
+        This method writes the firmware encryption key and SB3 header to device memory,
+        then encrypts each data command block using the device's HSM encryption capabilities.
+        The encryption process uses the NXP customer KEK internal secure key.
+
+        :param cust_fw_enc_key: Customer firmware encryption key used for block encryption.
+        :param sb3_header: Unencrypted SB3 file header required for encryption context.
+        :param data_cmd_blocks: List of unencrypted SB3 command blocks to be encrypted.
+        :raises SPSDKError: When device memory operations fail or HSM encryption fails.
+        :return: List of encrypted command blocks processed by device HSM.
         """
         if not self.mboot.write_memory(self.devbuff_base, cust_fw_enc_key):
             raise SPSDKError(
@@ -666,12 +761,17 @@ class DevHsmSB31(DevHsm):
     def load_from_config(
         cls, config: Config, mboot: Optional[McuBoot] = None, info_print: Optional[Callable] = None
     ) -> Self:
-        """Load the class from configuration.
+        """Load the DEVHSM SB3.1 class from configuration.
 
-        :param config: DEVHSM configuration file
-        :param mboot: mBoot object
-        :param info_print: Optional info print method
-        :return: DEVHSM SB3.1 class
+        This method creates a DEVHSM instance by parsing the provided configuration file and
+        extracting all necessary parameters including cryptographic keys, buffer addresses,
+        and SB3.1 commands.
+
+        :param config: DEVHSM configuration file containing all required settings
+        :param mboot: McuBoot interface object for device communication
+        :param info_print: Optional callback function for printing information messages
+        :raises SPSDKError: If mboot parameter is not provided
+        :return: Configured DEVHSM SB3.1 instance
         """
         if not mboot:
             raise SPSDKError("Mboot must be defined to load DEVHSM SB3.1 class.")
@@ -723,5 +823,9 @@ class DevHsmSB31(DevHsm):
         )
 
     def get_config(self, data_path: str = "./") -> Config:
-        """Create configuration of the Feature."""
+        """Create configuration of the Feature.
+
+        :param data_path: Path to directory containing configuration data files.
+        :raises SPSDKNotImplementedError: Method is not implemented.
+        """
         raise SPSDKNotImplementedError()

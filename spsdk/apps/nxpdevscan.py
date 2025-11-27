@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""NXP USB Device Scanner."""
+"""SPSDK NXP USB Device Scanner application.
+
+This module provides a command-line utility for scanning and detecting
+NXP USB devices connected to the system. It offers functionality to
+identify supported NXP microcontrollers and development boards.
+"""
 
 import sys
 from typing import IO, Sequence, Union

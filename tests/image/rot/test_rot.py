@@ -5,25 +5,39 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Tests for the Rot (Root of Trust) module."""
+"""SPSDK Root of Trust (RoT) module tests.
+
+This module contains comprehensive test cases for the SPSDK Root of Trust
+functionality, including certificate management, key handling, and RoT
+class instantiation across different MCU families.
+"""
 
 import os
+from typing import List
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.keys import PublicKey
 from spsdk.exceptions import SPSDKError
+from spsdk.image.cert_block.rot import Rot, RotBase, RotCertBlockv1, RotCertBlockv21
 from spsdk.utils.family import FamilyRevision
-from spsdk.image.cert_block.rot import (
-    Rot,
-    RotBase,
-    RotCertBlockv1,
-    RotCertBlockv21,
-)
 
 
-def load_keys(tests_root_dir, key_type: str, nr_keys: int = 4):
+def load_keys(tests_root_dir: str, key_type: str, nr_keys: int = 4) -> List[PublicKey]:
+    """Load cryptographic keys from test data directory.
+
+    Loads a specified number of public keys of a given type from the test data
+    directory structure. The keys are expected to be in PEM format with filenames
+    following the pattern 'srk{index}_{key_type}.pub'.
+
+    :param tests_root_dir: Root directory path for test files
+    :param key_type: Type of cryptographic keys to load (e.g., 'rsa', 'ecc')
+    :param nr_keys: Number of keys to load, defaults to 4
+    :raises SPSDKError: If key files cannot be found or loaded
+    :return: List of loaded public key objects
+    """
     keys_dir = os.path.join(tests_root_dir, "_data", "keys", key_type)
     keys = []
     for i in range(nr_keys):
@@ -32,7 +46,19 @@ def load_keys(tests_root_dir, key_type: str, nr_keys: int = 4):
     return keys
 
 
-def load_certs(tests_root_dir, cert_type: str, nr_certs: int = 4):
+def load_certs(tests_root_dir: str, cert_type: str, nr_certs: int = 4) -> List[Certificate]:
+    """Load certificates from test data directory.
+
+    Loads a specified number of self-signed certificates of a given type from the test data
+    directory structure. The certificates are expected to be in DER format with standardized
+    naming convention.
+
+    :param tests_root_dir: Root directory path for test files.
+    :param cert_type: Type of certificates to load (e.g., 'rsa', 'ecc').
+    :param nr_certs: Number of certificates to load, defaults to 4.
+    :raises SPSDKError: Certificate file loading fails.
+    :return: List of loaded Certificate objects.
+    """
     crts_dir = os.path.join(tests_root_dir, "_data", "certs", cert_type)
     certs = []
     for i in range(nr_certs):
@@ -43,34 +69,65 @@ def load_certs(tests_root_dir, cert_type: str, nr_certs: int = 4):
 
 # Fixtures for test data
 @pytest.fixture
-def rsa2048_keys(tests_root_dir):
-    """Create test keys for testing."""
+def rsa2048_keys(tests_root_dir: str) -> List[PublicKey]:
+    """Create test RSA 2048-bit keys for testing purposes.
+
+    Loads a set of RSA 2048-bit public keys from the test data directory
+    for use in cryptographic testing scenarios.
+
+    :param tests_root_dir: Root directory path containing test data files.
+    :return: List of RSA 2048-bit public keys loaded from test files.
+    """
     # Generate a test private key for testing
     return load_keys(tests_root_dir, "rsa2048", 4)
 
 
 @pytest.fixture
-def ecc256_keys(tests_root_dir):
-    """Create test keys for testing."""
+def ecc256_keys(tests_root_dir: str) -> List[PublicKey]:
+    """Create test ECC256 keys for testing purposes.
+
+    Loads a set of ECC256 public keys from the test data directory for use in
+    cryptographic testing scenarios.
+
+    :param tests_root_dir: Root directory path containing test data files.
+    :return: List of ECC256 public keys loaded from test files.
+    """
     # Generate a test private key for testing
     return load_keys(tests_root_dir, "ecc256", 4)
 
 
 @pytest.fixture
-def rsa2048_crts(tests_root_dir):
-    """Create test keys for testing."""
+def rsa2048_crts(tests_root_dir: str) -> List[Certificate]:
+    """Create test RSA 2048-bit certificates for testing purposes.
+
+    This function loads a set of 4 RSA 2048-bit certificates from the test data
+    directory to be used in cryptographic testing scenarios.
+
+    :param tests_root_dir: Root directory path containing test certificate files.
+    :return: List of Certificate objects loaded from the test data directory.
+    """
     # Generate a test private key for testing
     return load_certs(tests_root_dir, "rsa2048", 4)
 
 
 @pytest.fixture
-def mock_family():
-    """Create a mock family revision."""
+def mock_family() -> FamilyRevision:
+    """Create a mock family revision for testing purposes.
+
+    This function generates a FamilyRevision instance with predefined test values
+    that can be used in unit tests and mock scenarios.
+
+    :return: A FamilyRevision object with test family name "test_family" and version "1.0.0".
+    """
     return FamilyRevision("test_family", "1.0.0")
 
 
-def test_get_supported_families():
-    """Test get_supported_families method."""
+def test_get_supported_families() -> None:
+    """Test that get_supported_families method returns a list of FamilyRevision objects.
+
+    Verifies that the Rot.get_supported_families() method returns a proper list
+    where each element is an instance of FamilyRevision class.
+    """
     families = Rot.get_supported_families()
     assert isinstance(families, list)
     for family in families:
@@ -78,8 +135,16 @@ def test_get_supported_families():
 
 
 @patch("spsdk.image.cert_block.rot.get_db")
-def test_get_rot_class(mock_get_db, mock_family):
-    """Test get_rot_class method."""
+def test_get_rot_class(mock_get_db: MagicMock, mock_family: FamilyRevision) -> None:
+    """Test the get_rot_class method functionality.
+
+    Verifies that the get_rot_class method correctly returns the appropriate ROT class
+    based on the rot_type value retrieved from the database. Tests both cert_block_1
+    and cert_block_21 rot_types to ensure proper class mapping.
+
+    :param mock_get_db: Mock object for the database getter function
+    :param mock_family: Mock FamilyRevision object used for testing
+    """
     # Mock the database to return a specific rot_type
     mock_db = MagicMock()
     mock_db.get_str.return_value = "cert_block_1"
@@ -94,9 +159,15 @@ def test_get_rot_class(mock_get_db, mock_family):
     assert rot_class == RotCertBlockv21
 
 
-def test_get_rot_class_invalid():
-    """Test get_rot_class method with invalid type."""
-    with pytest.raises(SPSDKError, match="A ROT type invalid_type does not exist"):
+def test_get_rot_class_invalid() -> None:
+    """Test get_rot_class method with invalid type.
+
+    Verifies that SPSDKError is raised when attempting to get a ROT class
+    with an invalid type name that doesn't exist in the registry.
+
+    :raises SPSDKError: When the specified ROT type does not exist.
+    """
+    with pytest.raises(SPSDKError, match="A RoT type invalid_type does not exist"):
         RotBase.get_rot_class("invalid_type")
 
 
@@ -160,8 +231,20 @@ def test_get_rot_class_invalid():
         ),
     ],
 )
-def test_rot_cert_block_with_real_keys(rot_type, key_fixture, expected_hash, request):
-    """Test RoT with real keys."""
+def test_rot_cert_block_with_real_keys(
+    rot_type: str, key_fixture: str, expected_hash: str, request: pytest.FixtureRequest
+) -> None:
+    """Test RoT certificate block functionality with real cryptographic keys.
+
+    Validates that the RoT (Root of Trust) implementation correctly processes real keys
+    by verifying hash calculation and export operations produce expected results.
+
+    :param rot_type: Type identifier for the RoT implementation to test.
+    :param key_fixture: Name of the pytest fixture containing the cryptographic keys.
+    :param expected_hash: Expected hexadecimal hash value for validation.
+    :param request: Pytest fixture request object for dynamic fixture access.
+    :raises AssertionError: When hash calculation or export validation fails.
+    """
     keys = request.getfixturevalue(key_fixture)
     rot = RotBase.get_rot_class(rot_type)(keys)
     hash_result = rot.calculate_hash()

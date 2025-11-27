@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Console script for MBoot module aka BLHost."""
+"""SPSDK BLHost command-line interface for MCU bootloader communication.
+
+This module provides a comprehensive CLI tool for interacting with NXP MCU bootloaders,
+offering commands for memory operations, security provisioning, key management, and
+device lifecycle management across the NXP MCU portfolio.
+"""
 
 import logging
 import os

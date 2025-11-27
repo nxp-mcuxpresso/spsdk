@@ -6,7 +6,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-"""Master Boot Image."""
+"""SPSDK Master Boot Image classes and utilities.
+
+This module provides core classes for creating, managing, and manipulating
+Master Boot Images (MBI) including manifest handling, digest computation,
+CRC validation, and multiple image table management.
+"""
 
 import logging
 import struct
@@ -25,7 +30,16 @@ logger = logging.getLogger(__name__)
 
 
 class MasterBootImageManifest:
-    """MasterBootImage Manifest."""
+    """MasterBootImage Manifest container for NXP MCU secure boot.
+
+    This class represents the manifest section of a Master Boot Image (MBI) that contains
+    metadata and configuration for secure boot operations. It manages firmware version,
+    TrustZone settings, and provides serialization capabilities for boot image generation.
+
+    :cvar MAGIC: Magic bytes identifier for manifest validation.
+    :cvar FORMAT: Binary format string for manifest structure.
+    :cvar FORMAT_VERSION: Version identifier for manifest format compatibility.
+    """
 
     MAGIC = b"imgm"
     FORMAT = "<4s4L"
@@ -38,8 +52,8 @@ class MasterBootImageManifest:
     ) -> None:
         """Initialize MBI Manifest object.
 
-        :param firmware_version: firmware version
-        :param trust_zone: TrustZone instance, defaults to None
+        :param firmware_version: Firmware version number.
+        :param trust_zone: TrustZone instance for security configuration, defaults to None.
         """
         self.firmware_version = firmware_version
         self.trust_zone = trust_zone
@@ -47,15 +61,25 @@ class MasterBootImageManifest:
         self.total_length = self._calculate_length()
 
     def _calculate_length(self) -> int:
+        """Calculate the total length of the MBI structure in bytes.
+
+        The method computes the base structure size and adds the Trust Zone
+        configuration length if it's customized.
+
+        :return: Total length of the MBI structure in bytes.
+        """
         length = struct.calcsize(self.FORMAT)
         if self.trust_zone and self.trust_zone.is_customized:
             length += len(self.trust_zone)
         return length
 
     def export(self) -> bytes:
-        """Export MBI Manifest.
+        """Export MBI Manifest to binary format.
 
-        :return: Exported MBI Manifest with CRC
+        The method serializes the MBI manifest structure including firmware version,
+        total length, flags, and optional TrustZone configuration into binary data.
+
+        :return: Exported MBI Manifest as binary data with CRC.
         """
         data = struct.pack(
             self.FORMAT,
@@ -73,10 +97,14 @@ class MasterBootImageManifest:
     def parse(cls, family: FamilyRevision, data: bytes) -> Self:
         """Parse the binary to Master Boot Image Manifest.
 
-        :param family: Device family.
-        :param data: Binary Image with MBI Manifest.
-        :raises SPSDKParsingError: Invalid header is detected.
-        :return: MBI Manifest object
+        The method parses binary data containing MBI manifest information and creates
+        a Master Boot Image Manifest object with firmware version and optional TrustZone
+        configuration.
+
+        :param family: Device family revision information.
+        :param data: Binary data containing the MBI manifest to be parsed.
+        :raises SPSDKParsingError: Invalid header is detected during parsing.
+        :return: MBI Manifest object with parsed firmware version and trust zone data.
         """
         fw_version, _, extra_data = cls._parse_manifest(data)
         trust_zone = None
@@ -88,6 +116,17 @@ class MasterBootImageManifest:
     def _verify_manifest_data(
         cls, data: bytes, magic: bytes, version: int, total_length: int
     ) -> None:
+        """Verify MBI manifest data integrity and format compliance.
+
+        Validates the manifest data by checking magic marker, format version, and data length
+        to ensure the manifest conforms to expected MBI specifications.
+
+        :param data: Raw manifest data bytes to verify.
+        :param magic: Magic marker bytes from the manifest header.
+        :param version: Format version number from the manifest.
+        :param total_length: Expected total length of the manifest data.
+        :raises SPSDKParsingError: Invalid magic marker, version mismatch, or data length error.
+        """
         assert isinstance(magic, bytes)
         if magic != cls.MAGIC:
             raise SPSDKParsingError(
@@ -108,9 +147,12 @@ class MasterBootImageManifest:
     def _parse_manifest(cls, data: bytes) -> tuple[int, Optional[EnumHashAlgorithm], bytes]:
         """Parse manifest binary data.
 
-        :param data: Binary data with MBI Manifest.
-        :raises SPSDKParsingError: Invalid header is detected.
-        :return: Tuple with fw version and image extra data
+        The method extracts firmware version and extra data from MBI manifest binary format
+        by unpacking the header structure and validating the manifest data integrity.
+
+        :param data: Binary data containing the MBI Manifest structure.
+        :raises SPSDKParsingError: Invalid header is detected during parsing.
+        :return: Tuple containing firmware version, hash algorithm (always None), and extra data bytes.
         """
         (magic, version, fw_version, total_length, _) = struct.unpack(
             cls.FORMAT, data[: struct.calcsize(cls.FORMAT)]
@@ -122,7 +164,17 @@ class MasterBootImageManifest:
 
 
 class MasterBootImageManifestDigest(MasterBootImageManifest):
-    """MasterBootImage Manifest with information about hash algorithm."""
+    """MasterBootImage Manifest with digest hash algorithm support.
+
+    This class extends the basic MBI manifest to include cryptographic hash
+    algorithm information and digest validation capabilities. It manages
+    hash algorithm selection, flag calculation, and provides utilities
+    for hash size determination.
+
+    :cvar DIGEST_PRESENT_FLAG: Flag indicating digest presence in manifest.
+    :cvar HASH_TYPE_MASK: Mask for extracting hash type from flags.
+    :cvar SUPPORTED_ALGORITHMS: List of supported hash algorithms.
+    """
 
     DIGEST_PRESENT_FLAG = 0x8000_0000
     HASH_TYPE_MASK = 0x0F
@@ -140,9 +192,10 @@ class MasterBootImageManifestDigest(MasterBootImageManifest):
     ) -> None:
         """Initialize MBI Manifest object.
 
-        :param firmware_version: firmware version
-        :param digest_hash_algo: Digest hash algorithm, defaults to None
-        :param trust_zone: TrustZone instance, defaults to None
+        :param firmware_version: Firmware version number.
+        :param trust_zone: TrustZone instance for security configuration, defaults to None.
+        :param digest_hash_algo: Digest hash algorithm to use, defaults to None.
+        :raises SPSDKValueError: Unsupported digest hash algorithm provided.
         """
         super().__init__(firmware_version, trust_zone)
         if digest_hash_algo and digest_hash_algo not in self.SUPPORTED_ALGORITHMS:
@@ -152,6 +205,13 @@ class MasterBootImageManifestDigest(MasterBootImageManifest):
         self.total_length = self._calculate_length()
 
     def _calculate_flags(self) -> int:
+        """Calculate flags value based on digest hash algorithm.
+
+        The method determines the appropriate flags by combining the digest present flag
+        with the hash algorithm type identifier when a digest hash algorithm is configured.
+
+        :return: Calculated flags value, 0 if no digest hash algorithm is set.
+        """
         if not self.digest_hash_algo:
             return 0
         hash_algo_types = {
@@ -164,7 +224,11 @@ class MasterBootImageManifestDigest(MasterBootImageManifest):
 
     @staticmethod
     def get_hash_size(algorithm: EnumHashAlgorithm) -> int:
-        """Get hash size by used algorithm."""
+        """Get hash size by used algorithm.
+
+        :param algorithm: Hash algorithm to get size for.
+        :return: Hash size in bytes, or 0 if algorithm is not supported.
+        """
         return {
             EnumHashAlgorithm.SHA256: 32,
             EnumHashAlgorithm.SHA384: 48,
@@ -178,7 +242,7 @@ class MasterBootImageManifestDigest(MasterBootImageManifest):
         :param family: Device family.
         :param data: Binary Image with MBI Manifest.
         :raises SPSDKParsingError: Invalid header is detected.
-        :return: MBI Manifest object
+        :return: MBI Manifest object.
         """
         fw_version, hash_algo, extra_data = cls._parse_manifest(data)
         trust_zone = None
@@ -190,9 +254,12 @@ class MasterBootImageManifestDigest(MasterBootImageManifest):
     def _parse_manifest(cls, data: bytes) -> tuple[int, Optional[EnumHashAlgorithm], bytes]:
         """Parse manifest binary data.
 
+        The method extracts firmware version, hash algorithm type, and extra data
+        from the MBI manifest binary structure.
+
         :param data: Binary data with MBI Manifest.
         :raises SPSDKParsingError: Invalid header is detected.
-        :return: Tuple with fw version, hash type and image extra data
+        :return: Tuple with fw version, hash type and image extra data.
         """
         (magic, version, fw_version, total_length, flags) = struct.unpack(
             cls.FORMAT, data[: struct.calcsize(cls.FORMAT)]
@@ -212,7 +279,12 @@ class MasterBootImageManifestDigest(MasterBootImageManifest):
 
 
 class MasterBootImageManifestCrc(MasterBootImageManifest):
-    """MasterBootImage Manifest with CRC."""
+    """Master Boot Image Manifest with CRC validation.
+
+    This class extends the base MasterBootImageManifest to include CRC (Cyclic Redundancy Check)
+    functionality for data integrity verification. It manages manifest data with embedded CRC
+    values for secure boot operations in NXP MCU devices.
+    """
 
     def __init__(
         self,
@@ -221,17 +293,19 @@ class MasterBootImageManifestCrc(MasterBootImageManifest):
     ) -> None:
         """Initialize MBI Manifest object.
 
-        :param firmware_version: firmware version
-        :param digest_hash_algo: Digest hash algorithm, defaults to None
-        :param trust_zone: TrustZone instance, defaults to None
+        :param firmware_version: Firmware version number.
+        :param trust_zone: TrustZone instance for security configuration, defaults to None.
         """
         super().__init__(firmware_version, trust_zone)
         self.crc = 0
 
     def export(self) -> bytes:
-        """Export MBI Manifest.
+        """Export MBI Manifest to binary format.
 
-        :return: Exported binary data of MBI Manifest with CRC
+        The method exports the MBI manifest data by calling the parent class export method
+        and appending the CRC value as a 4-byte little-endian unsigned integer.
+
+        :return: Exported binary data of MBI Manifest with appended CRC checksum.
         """
         data = super().export()
         data += struct.pack("<L", self.crc)
@@ -241,10 +315,13 @@ class MasterBootImageManifestCrc(MasterBootImageManifest):
     def parse(cls, family: FamilyRevision, data: bytes) -> Self:
         """Parse the binary to Master Boot Image Manifest.
 
-        :param family: Device family.
-        :param data: Binary Image with MBI Manifest.
-        :raises SPSDKParsingError: Invalid header is detected.
-        :return: MBI Manifest object
+        The method parses binary data containing MBI manifest, extracts firmware version,
+        CRC, and optional TrustZone configuration to create a complete MBI manifest object.
+
+        :param family: Device family revision information.
+        :param data: Binary data containing the MBI manifest structure.
+        :raises SPSDKParsingError: Invalid header is detected or insufficient data for CRC.
+        :return: MBI Manifest object with parsed configuration.
         """
         fw_version, _, extra_data = cls._parse_manifest(data)
         if len(extra_data) < 4:
@@ -259,12 +336,22 @@ class MasterBootImageManifestCrc(MasterBootImageManifest):
         return mcx_manifest
 
     def _calculate_length(self) -> int:
+        """Calculate the total length of this MBI object including its specific data.
+
+        This method extends the parent class length calculation by adding 4 bytes
+        for this object's specific data fields.
+
+        :return: Total length in bytes including parent object length plus 4 additional bytes.
+        """
         return super()._calculate_length() + 4
 
     def compute_crc(self, image: bytes) -> None:
         """Compute and add CRC field.
 
-        :param image: Image data to be used to compute CRC
+        The method calculates CRC32 MPEG checksum for the provided image data and stores
+        the result in the crc attribute.
+
+        :param image: Image data to be used to compute CRC checksum.
         """
         crc_obj = from_crc_algorithm(CrcAlg.CRC32_MPEG)
         self.crc = crc_obj.calculate(image)
@@ -276,22 +363,30 @@ T_Manifest = TypeVar(
 
 
 class MultipleImageEntry:
-    """The class represents an entry in relocation table.
+    """Multiple Image Entry for relocation table operations.
 
-    It also contains a corresponding image (binary)
+    Represents an entry in a relocation table that contains binary image data
+    and associated metadata for memory relocation operations. Each entry manages
+    the source and destination addresses along with control flags for the
+    relocation process.
+
+    :cvar LTI_LOAD: Flag to copy load segment into target memory.
     """
 
     # flag to simply copy load segment into target memory
     LTI_LOAD = 1 << 0
 
     def __init__(self, img: bytes, dst_addr: int, flags: int = LTI_LOAD):
-        """Constructor.
+        """Initialize Multiple Image Entry (LTI) section with binary data and configuration.
 
-        :param img: binary image data
-        :param dst_addr: destination address
-        :param flags: see LTI constants
-        :raises SPSDKError: If invalid destination address
-        :raises SPSDKError: Other section types (INIT) are not supported
+        Creates a new LTI section that defines how binary image data should be loaded
+        to a specific destination address in memory during boot process.
+
+        :param img: Binary image data to be loaded.
+        :param dst_addr: Destination address where the image will be loaded (0x0 to 0xFFFFFFFF).
+        :param flags: Load flags, currently only LTI_LOAD is supported.
+        :raises SPSDKError: If destination address is out of valid range.
+        :raises SPSDKError: If unsupported flags are specified (only LTI_LOAD supported).
         """
         if dst_addr < 0 or dst_addr > 0xFFFFFFFF:
             raise SPSDKError("Invalid destination address")
@@ -304,44 +399,75 @@ class MultipleImageEntry:
 
     @property
     def image(self) -> bytes:
-        """Binary image data."""
+        """Get binary image data.
+
+        :return: The binary image data as bytes.
+        """
         return self._img
 
     @property
     def src_addr(self) -> int:
-        """Source address; this value is calculated automatically when building the image."""
+        """Get the source address of the MBI image.
+
+        This value is calculated automatically when building the image and represents
+        the memory location where the image data will be loaded.
+
+        :return: Source address as integer value.
+        """
         return self._src_addr
 
     @src_addr.setter
     def src_addr(self, value: int) -> None:
-        """Setter.
+        """Set the source address value.
 
-        :param value: to set
+        :param value: Source address to be set.
         """
         self._src_addr = value
 
     @property
     def dst_addr(self) -> int:
-        """Destination address."""
+        """Get destination address.
+
+        :return: Destination address value.
+        """
         return self._dst_addr
 
     @property
     def size(self) -> int:
-        """Size of the image (not aligned)."""
+        """Size of the image (not aligned).
+
+        :return: Size of the image in bytes without any alignment padding.
+        """
         return len(self.image)
 
     @property
     def flags(self) -> int:
-        """Flags, currently not used."""
+        """Get flags value.
+
+        Flags property that returns the current flags value, which is currently not used
+        in the implementation.
+
+        :return: The flags value as integer.
+        """
         return self._flags
 
     @property
     def is_load(self) -> bool:
-        """True if entry represents LOAD section."""
+        """Check if entry represents a LOAD section.
+
+        :return: True if the entry represents a LOAD section, False otherwise.
+        """
         return (self.flags & self.LTI_LOAD) != 0
 
     def export_entry(self) -> bytes:
-        """Export relocation table entry in binary form."""
+        """Export relocation table entry in binary form.
+
+        Converts the relocation table entry into a packed binary representation using
+        little-endian format. The binary data contains source address, destination address,
+        size, and flags in sequential order.
+
+        :return: Binary representation of the relocation table entry (16 bytes total).
+        """
         result = bytes()
         result += struct.pack("<I", self.src_addr)  # source address
         result += struct.pack("<I", self.dst_addr)  # dest address
@@ -351,7 +477,15 @@ class MultipleImageEntry:
 
     @staticmethod
     def parse(data: bytes) -> "MultipleImageEntry":
-        """Parse relocation table entry from binary form."""
+        """Parse multiple image entry from binary data.
+
+        Extracts image data, destination address, and flags from the binary representation
+        of a relocation table entry in the Multiple Image Boot format.
+
+        :param data: Binary data containing the relocation table entry and image data.
+        :raises SPSDKParsingError: When the image size exceeds the available data length.
+        :return: Parsed multiple image entry object with extracted image data and metadata.
+        """
         (src_addr, dst_addr, size, flags) = struct.unpack("<4I", data[: 4 * 4])
         if src_addr + size > len(data):
             raise SPSDKParsingError("The image doesn't fit into given data")
@@ -359,44 +493,64 @@ class MultipleImageEntry:
         return MultipleImageEntry(data[src_addr : src_addr + size], dst_addr, flags)
 
     def export_image(self) -> bytes:
-        """Binary image aligned to the 4-bytes boundary."""
+        """Export binary image data aligned to 4-byte boundary.
+
+        The method takes the current image data and ensures it's properly aligned to 4-byte boundaries,
+        which is typically required for proper memory alignment in embedded systems.
+
+        :return: Image data as bytes aligned to 4-byte boundary.
+        """
         return align_block(self.image, 4)
 
 
 class MultipleImageTable:
-    """The class allows to merge several images into single image and add relocation table.
+    """Multiple Image Table for merging and relocating multiple images.
 
-    It can be used for multicore images (one image for each core)
-    or trustzone images (merging secure and non-secure image)
+    This class manages the creation and export of a relocation table that allows
+    merging several images into a single image. It supports multicore applications
+    where each core has its own image, and TrustZone applications that combine
+    secure and non-secure images.
     """
 
     def __init__(self) -> None:
-        """Initialize the Multiple Image Table."""
+        """Initialize the Multiple Image Table.
+
+        Creates a new instance with an empty list of entries and sets the start address to 0.
+        """
         self._entries: list[MultipleImageEntry] = []
         self.start_address = 0
 
     @property
     def header_version(self) -> int:
-        """Format version of the structure for the header."""
+        """Get format version of the structure for the header.
+
+        :return: Format version number, always returns 0.
+        """
         return 0
 
     @property
     def entries(self) -> Sequence[MultipleImageEntry]:
-        """List of all entries."""
+        """Get list of all multiple image entries.
+
+        :return: Sequence of all multiple image entries in the container.
+        """
         return self._entries
 
     def add_entry(self, entry: MultipleImageEntry) -> None:
         """Add entry into relocation table.
 
-        :param entry: to add
+        :param entry: Multiple image entry to add to the relocation table.
         """
         self._entries.append(entry)
 
     def reloc_table(self, start_addr: int) -> bytes:
-        """Relocate table.
+        """Export relocation table in binary format.
 
-        :param start_addr: start address of the relocation table
-        :return: export relocation table in binary form
+        Generates a binary representation of the relocation table including all entries
+        and the table header with metadata.
+
+        :param start_addr: Start address of the relocation table in memory.
+        :return: Binary data containing the complete relocation table.
         """
         result = bytes()
         # export relocation entries table
@@ -410,12 +564,16 @@ class MultipleImageTable:
         return result
 
     def export(self, start_addr: int) -> bytes:
-        """Export.
+        """Export MBI entries with relocation table to binary format.
 
-        :param start_addr: start address where the images are exported;
-                        the value matches source address for the first image
-        :return: images with relocation table
-        :raises SPSDKError: If there is no entry for export
+        This method processes all loadable entries in the MBI, assigns source addresses
+        starting from the specified start address, and exports them as a continuous
+        binary blob followed by a relocation table.
+
+        :param start_addr: Start address where the images are exported; the value
+                          matches source address for the first image.
+        :return: Binary data containing all exported images followed by relocation table.
+        :raises SPSDKError: If there is no entry for export.
         """
         if not self._entries:
             raise SPSDKError("There must be at least one entry for export")
@@ -433,12 +591,14 @@ class MultipleImageTable:
 
     @staticmethod
     def parse(data: bytes) -> Optional["MultipleImageTable"]:
-        """Parse binary to get the Multiple application table.
+        """Parse binary data to get the Multiple Image Table.
 
-        :param data: Data bytes where the application is looked for
+        The method extracts the multiple application table from binary data by parsing
+        the header information and creating table entries for each detected application.
+
+        :param data: Binary data containing the multiple image table structure.
         :raises SPSDKParsingError: The application table parsing fails.
-
-        :return: Multiple application table if detected.
+        :return: Multiple Image Table instance if valid table detected, None otherwise.
         """
         (marker, header_version, n_entries, start_address) = struct.unpack(
             "<4I", data[-struct.calcsize("<4I") :]

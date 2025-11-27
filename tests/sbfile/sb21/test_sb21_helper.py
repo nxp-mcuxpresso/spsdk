@@ -5,13 +5,20 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Tests for SB21Helper class."""
+"""Test suite for SB21Helper class functionality.
 
-import pytest
+This module contains comprehensive unit tests for the SB21Helper class,
+which provides helper functions for creating and managing SB2.1 (Secure Binary 2.1)
+file commands in SPSDK. Tests verify proper command generation, error handling,
+and parameter validation for SB2.1 file creation workflows.
+"""
+
+from typing import Any, Dict, Optional, Union
 from unittest.mock import patch
 
+import pytest
+
 from spsdk.exceptions import SPSDKError
-from spsdk.sbfile.sb2.sb_21_helper import SB21Helper
 from spsdk.sbfile.sb2.commands import (
     CmdErase,
     CmdFill,
@@ -23,6 +30,7 @@ from spsdk.sbfile.sb2.commands import (
     CmdVersionCheck,
     VersionCheckType,
 )
+from spsdk.sbfile.sb2.sb_21_helper import SB21Helper
 from spsdk.utils.misc import value_to_int
 
 
@@ -36,10 +44,22 @@ from spsdk.utils.misc import value_to_int
         ("4096", "8192", None),
     ],
 )
-def test_jump_with_various_inputs(address, argument, spreg):
-    """Test that _jump method correctly handles various input formats."""
+def test_jump_with_various_inputs(
+    address: Union[int, str], argument: Union[int, str], spreg: Optional[Union[int, str]]
+) -> None:
+    """Test that _jump method correctly handles various input formats.
+
+    Validates that the SB21Helper._jump method properly processes different
+    input types (int, str) for address, argument, and optional spreg parameters,
+    and returns a correctly configured CmdJump object.
+
+    :param address: Jump target address as integer or string representation
+    :param argument: Jump argument value as integer or string representation
+    :param spreg: Optional stack pointer register value as integer or string representation
+    :raises AssertionError: If the _jump method doesn't produce expected CmdJump object or values
+    """
     helper = SB21Helper()
-    cmd_args = {"address": address, "argument": argument}
+    cmd_args: Dict[str, Any] = {"address": address, "argument": argument}
     if spreg:
         cmd_args["spreg"] = spreg
     result = helper._jump(cmd_args)
@@ -49,7 +69,7 @@ def test_jump_with_various_inputs(address, argument, spreg):
     if spreg:
         assert result.spreg == value_to_int(spreg)
     else:
-        assert result.spreg == None
+        assert result.spreg is None
 
 
 @pytest.mark.parametrize(
@@ -62,12 +82,23 @@ def test_jump_with_various_inputs(address, argument, spreg):
         (0x70000000, "0x8", 8),
     ],
 )
-def test_load_with_file_parametrized(address, load_opt, expected_mem_id):
-    """Test _load method with file parameter and various input formats."""
+def test_load_with_file_parametrized(
+    address: Union[int, str], load_opt: Optional[Union[int, str]], expected_mem_id: int
+) -> None:
+    """Test _load method with file parameter and various input formats.
+
+    This test verifies that the SB21Helper._load method correctly processes
+    command arguments containing a file parameter with different address and
+    load option formats, ensuring proper CmdLoad object creation.
+
+    :param address: Memory address for load operation, accepts int or string format
+    :param load_opt: Optional load options parameter, accepts int, string or None
+    :param expected_mem_id: Expected memory ID value for verification
+    """
     helper = SB21Helper()
 
     # Create cmd_args with file
-    cmd_args = {"address": address, "file": "myBinFile"}
+    cmd_args: Dict[str, Any] = {"address": address, "file": "myBinFile"}
 
     # Add load_opt if provided
     if load_opt is not None:
@@ -96,8 +127,18 @@ def test_load_with_file_parametrized(address, load_opt, expected_mem_id):
         ({"address": 0x1000, "values": "1,-1"}, "Invalid values for load command"),
     ],
 )
-def test_load_error_cases_parametrized(cmd_args, expected_error_msg):
-    """Test _load method error cases with various input formats."""
+def test_load_error_cases_parametrized(cmd_args: Dict[str, Any], expected_error_msg: str) -> None:
+    """Test _load method error cases with various input formats.
+
+    This test function validates that the SB21Helper._load method properly raises
+    SPSDKError exceptions with expected error messages when provided with invalid
+    command arguments.
+
+    :param cmd_args: Dictionary containing command arguments to test with invalid or problematic values
+    :param expected_error_msg: Expected error message that should be contained in the raised exception
+    :raises SPSDKError: When the helper._load method encounters invalid input (expected behavior)
+    :raises AssertionError: When the actual error message doesn't contain the expected error message
+    """
     helper = SB21Helper()
 
     # Test that the correct error is raised
@@ -119,10 +160,22 @@ def test_load_error_cases_parametrized(cmd_args, expected_error_msg):
         ("0b10000000000", "0b000100000010", 0x400, "01020102"),
     ],
 )
-def test_fill_memory_with_various_inputs(address, pattern, expected_address, expected_pattern):
-    """Test _fill_memory method with various input formats for address and pattern."""
+def test_fill_memory_with_various_inputs(
+    address: Union[int, str], pattern: Union[int, str], expected_address: int, expected_pattern: str
+) -> None:
+    """Test _fill_memory method with various input formats for address and pattern.
+
+    Validates that the SB21Helper._fill_memory method correctly processes different
+    input formats for address and pattern parameters and returns a properly
+    configured CmdFill object with expected values.
+
+    :param address: Memory address in integer or string format to be tested
+    :param pattern: Fill pattern in integer or string format to be tested
+    :param expected_address: Expected integer address value after processing
+    :param expected_pattern: Expected hexadecimal pattern string after processing
+    """
     helper = SB21Helper()
-    cmd_args = {"address": address, "pattern": pattern}
+    cmd_args: Dict[str, Any] = {"address": address, "pattern": pattern}
     result = helper._fill_memory(cmd_args)
     assert isinstance(result, CmdFill)
     assert result.address == expected_address
@@ -147,18 +200,32 @@ def test_fill_memory_with_various_inputs(address, pattern, expected_address, exp
     ],
 )
 def test_erase_cmd_handler_with_various_inputs(
-    address,
-    length,
-    flags,
-    mem_opt,
-    expected_address,
-    expected_length,
-    expected_flags,
-    expected_mem_id,
-):
-    """Test _erase_cmd_handler method with various input formats."""
+    address: Union[int, str],
+    length: Union[int, str],
+    flags: Union[int, str],
+    mem_opt: Optional[Union[int, str]],
+    expected_address: int,
+    expected_length: int,
+    expected_flags: int,
+    expected_mem_id: int,
+) -> None:
+    """Test _erase_cmd_handler method with various input formats.
+
+    Validates that the SB21Helper._erase_cmd_handler method correctly processes
+    different input parameter types (int, str) and optional parameters to create
+    a CmdErase object with expected values.
+
+    :param address: Memory address for erase operation (int or string format).
+    :param length: Length of memory to erase (int or string format).
+    :param flags: Erase operation flags (int or string format).
+    :param mem_opt: Optional memory identifier (int or string format).
+    :param expected_address: Expected address value in the resulting CmdErase object.
+    :param expected_length: Expected length value in the resulting CmdErase object.
+    :param expected_flags: Expected flags value in the resulting CmdErase object.
+    :param expected_mem_id: Expected memory ID value in the resulting CmdErase object.
+    """
     helper = SB21Helper()
-    cmd_args = {
+    cmd_args: Dict[str, Any] = {
         "address": address,
     }
     if length is not None:
@@ -192,11 +259,28 @@ def test_erase_cmd_handler_with_various_inputs(
     ],
 )
 def test_enable_with_various_inputs(
-    address, size, mem_opt, expected_address, expected_size, expected_mem_id
-):
-    """Test _enable method with various input formats."""
+    address: Union[int, str],
+    size: Union[int, str],
+    mem_opt: Optional[Union[int, str]],
+    expected_address: int,
+    expected_size: int,
+    expected_mem_id: int,
+) -> None:
+    """Test _enable method with various input formats.
+
+    Validates that the SB21Helper._enable method correctly processes different
+    input parameter formats (int/str) and produces the expected CmdMemEnable
+    command with proper address, size, and memory ID values.
+
+    :param address: Memory address as integer or string format
+    :param size: Memory size as integer or string format
+    :param mem_opt: Memory option as integer, string format, or None
+    :param expected_address: Expected resulting address value
+    :param expected_size: Expected resulting size value
+    :param expected_mem_id: Expected resulting memory ID value
+    """
     helper = SB21Helper()
-    cmd_args = {
+    cmd_args: Dict[str, Any] = {
         "address": address,
     }
     if size is not None:
@@ -220,10 +304,22 @@ def test_enable_with_various_inputs(
         ("0b1001", "0b1000000000000000100000000000", 9, 0x8000800),
     ],
 )
-def test_keystore_to_nv_with_various_inputs(mem_opt, address, expected_mem_id, expected_address):
-    """Test _keystore_to_nv method with various input formats."""
+def test_keystore_to_nv_with_various_inputs(
+    mem_opt: Union[int, str], address: Union[int, str], expected_mem_id: int, expected_address: int
+) -> None:
+    """Test _keystore_to_nv method with various input formats.
+
+    Validates that the SB21Helper._keystore_to_nv method correctly processes
+    different input formats for memory options and addresses, ensuring proper
+    conversion to CmdKeyStoreRestore command with expected values.
+
+    :param mem_opt: Memory option identifier, can be integer or string format.
+    :param address: Target address for keystore restoration, can be integer or string format.
+    :param expected_mem_id: Expected memory identifier after processing.
+    :param expected_address: Expected address value after processing.
+    """
     helper = SB21Helper()
-    cmd_args = {"mem_opt": mem_opt, "address": address}
+    cmd_args: Dict[str, Any] = {"mem_opt": mem_opt, "address": address}
     result = helper._keystore_to_nv(cmd_args)
     assert isinstance(result, CmdKeyStoreRestore)
     assert result.address == expected_address
@@ -238,10 +334,21 @@ def test_keystore_to_nv_with_various_inputs(mem_opt, address, expected_mem_id, e
         ("134219776", "9", 0x8000800),
     ],
 )
-def test_keystore_from_nv_with_various_inputs(address, mem_opt, expected_address):
-    """Test _keystore_from_nv method with various input formats."""
+def test_keystore_from_nv_with_various_inputs(
+    address: Union[int, str], mem_opt: Union[int, str], expected_address: int
+) -> None:
+    """Test _keystore_from_nv method with various input formats.
+
+    Validates that the SB21Helper._keystore_from_nv method correctly processes
+    different input formats for address and memory options, ensuring proper
+    conversion to CmdKeyStoreBackup object with expected address value.
+
+    :param address: Memory address in various formats (int or string).
+    :param mem_opt: Memory option specification in various formats (int or string).
+    :param expected_address: Expected final address value after processing.
+    """
     helper = SB21Helper()
-    cmd_args = {"address": address, "mem_opt": mem_opt}
+    cmd_args: Dict[str, Any] = {"address": address, "mem_opt": mem_opt}
     result = helper._keystore_from_nv(cmd_args)
     assert isinstance(result, CmdKeyStoreBackup)
     assert result.address == expected_address
@@ -260,13 +367,26 @@ def test_keystore_from_nv_with_various_inputs(address, mem_opt, expected_address
     ],
 )
 def test_version_check_with_various_inputs(
-    ver_type, fw_version, expected_ver_type, expected_fw_version
-):
-    """Test _version_check method with various input formats."""
+    ver_type: Union[int, str],
+    fw_version: Union[int, str],
+    expected_ver_type: VersionCheckType,
+    expected_fw_version: int,
+) -> None:
+    """Test _version_check method with various input formats.
+
+    Validates that the SB21Helper._version_check method correctly processes
+    different input types and formats for version checking parameters,
+    ensuring proper conversion to expected types and values.
+
+    :param ver_type: Version check type as integer or string format
+    :param fw_version: Firmware version as integer or string format
+    :param expected_ver_type: Expected VersionCheckType enum value after processing
+    :param expected_fw_version: Expected firmware version integer after processing
+    """
     helper = SB21Helper()
 
     # Create cmd_args with the test inputs
-    cmd_args = {"ver_type": ver_type, "fw_version": fw_version}
+    cmd_args: Dict[str, Any] = {"ver_type": ver_type, "fw_version": fw_version}
 
     # Call the method
     result = helper._version_check(cmd_args)

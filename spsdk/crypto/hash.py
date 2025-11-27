@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""OpenSSL implementation Hash algorithms."""
+"""SPSDK cryptographic hash algorithms implementation.
+
+This module provides a unified interface for various hash algorithms used across
+SPSDK, including SHA-1, SHA-224, SHA-256, SHA-384, and SHA-512. It offers
+enumeration of supported algorithms, hash computation utilities, and algorithm
+metadata retrieval functions.
+"""
 
 # Used security modules
 
@@ -19,7 +25,13 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 class EnumHashAlgorithm(SpsdkEnum):
-    """Hash algorithm enum."""
+    """Hash algorithm enumeration for cryptographic operations.
+
+    This enumeration defines supported hash algorithms used across SPSDK for
+    cryptographic operations including signing, verification, and data integrity
+    checks. Each algorithm is represented with its numeric identifier, string
+    representation, and display name.
+    """
 
     SHA1 = (0, "sha1", "SHA1")
     SHA256 = (1, "sha256", "SHA256")
@@ -36,11 +48,14 @@ class EnumHashAlgorithm(SpsdkEnum):
 
 
 def get_hash_algorithm(algorithm: EnumHashAlgorithm) -> hashes.HashAlgorithm:
-    """For specified name return hashes algorithm instance.
+    """Get hash algorithm instance for specified algorithm type.
 
-    :param algorithm: Algorithm type enum
-    :return: instance of algorithm class
-    :raises SPSDKError: If algorithm not found
+    The method handles special cases for SHAKE algorithms with predefined digest sizes
+    and uses dynamic class lookup for standard hash algorithms.
+
+    :param algorithm: Hash algorithm type enumeration value.
+    :raises SPSDKError: If the specified algorithm is not supported.
+    :return: Instance of the corresponding hash algorithm class.
     """
     cls_name = algorithm.label.upper()
     if cls_name in ["SHAKE_128_256", "SHAKE128"]:
@@ -55,17 +70,25 @@ def get_hash_algorithm(algorithm: EnumHashAlgorithm) -> hashes.HashAlgorithm:
 
 
 def get_hash_length(algorithm: EnumHashAlgorithm) -> int:
-    """For specified name return hash binary length.
+    """Get hash algorithm binary length.
 
-    :param algorithm: Algorithm type enum
-    :return: Hash length
-    :raises SPSDKError: If algorithm not found
+    Returns the digest size in bytes for the specified hash algorithm.
+
+    :param algorithm: Hash algorithm type enumeration.
+    :return: Length of hash digest in bytes.
+    :raises SPSDKError: If algorithm is not supported or found.
     """
     return get_hash_algorithm(algorithm).digest_size
 
 
 class Hash:
-    """SPSDK Hash Class."""
+    """SPSDK Hash computation wrapper.
+
+    This class provides a unified interface for cryptographic hash operations
+    across different hash algorithms. It wraps the underlying cryptographic
+    library to offer consistent hash computation functionality with support
+    for incremental data processing and various data types.
+    """
 
     def __init__(self, algorithm: EnumHashAlgorithm = EnumHashAlgorithm.SHA256) -> None:
         """Initialize hash object.
@@ -75,36 +98,42 @@ class Hash:
         self.hash_obj = hashes.Hash(get_hash_algorithm(algorithm))
 
     def update(self, data: bytes) -> None:
-        """Update the hash by new data.
+        """Update the hash object with new data.
 
-        :param data: Data to be hashed
+        :param data: Binary data to be added to the hash calculation.
         """
         self.hash_obj.update(data)
 
     def update_int(self, value: int) -> None:
         """Update the hash by new integer value as is.
 
-        :param value: Integer value to be hashed
+        The method converts the absolute value of the integer to bytes using big-endian
+        byte order and updates the hash with the resulting byte data.
+
+        :param value: Integer value to be hashed (absolute value will be used).
         """
         value = abs(value)
         data = value.to_bytes(length=ceil(value.bit_length() / 8), byteorder=Endianness.BIG.value)
         self.update(data)
 
     def finalize(self) -> bytes:
-        """Finalize the hash and return the hash value.
+        """Finalize the hash computation and return the digest.
 
-        :returns: Computed hash
+        This method completes the hash computation process and returns the final hash digest.
+        After calling this method, the hash object cannot be used for further updates.
+
+        :return: The computed hash digest as bytes.
         """
         return self.hash_obj.finalize()
 
 
 def get_hash(data: bytes, algorithm: EnumHashAlgorithm = EnumHashAlgorithm.SHA256) -> bytes:
-    """Return a HASH from input data with specified algorithm.
+    """Compute hash digest from input data using specified algorithm.
 
-    :param data: Input data in bytes
-    :param algorithm: Algorithm type enum
-    :return: Hash-ed bytes
-    :raises SPSDKError: If algorithm not found
+    :param data: Input data to be hashed.
+    :param algorithm: Hash algorithm to use for computation.
+    :raises SPSDKError: If the specified algorithm is not supported.
+    :return: Hash digest as bytes.
     """
     hash_obj = hashes.Hash(get_hash_algorithm(algorithm))
     hash_obj.update(data)

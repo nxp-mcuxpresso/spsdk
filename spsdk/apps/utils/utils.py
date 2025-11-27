@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module for general utilities used by applications."""
+"""SPSDK application utilities and helper functions.
+
+This module provides common utility functions and classes used across SPSDK
+applications for data formatting, error handling, file operations, and user
+interface components.
+"""
 
 import contextlib
 import logging
@@ -32,7 +37,14 @@ logger = logging.getLogger(__name__)
 
 
 class SPSDKAppError(SPSDKError):
-    """Non-fatal error for applications. Sets CLI application error code to 1."""
+    """SPSDK application error exception for CLI tools.
+
+    This exception class represents non-fatal errors that occur during SPSDK
+    application execution, providing structured error handling with custom
+    error codes for command-line interface tools.
+
+    :cvar fmt: Format string template for error message display.
+    """
 
     fmt = "{description}"
 
@@ -48,7 +60,14 @@ class SPSDKAppError(SPSDKError):
 
 
 class INT(click.ParamType):
-    """Type that allows integers in bin, hex, oct format including _ as a visual separator."""
+    """Click parameter type for parsing integers with flexible format support.
+
+    This class extends Click's ParamType to handle integer input in various formats
+    including binary (0b), hexadecimal (0x), octal (0o) with support for underscore
+    visual separators (e.g., 0xFF_FF, 1_000_000).
+
+    :cvar name: Parameter type name used by Click framework.
+    """
 
     name = "integer"
 

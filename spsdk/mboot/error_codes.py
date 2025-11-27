@@ -6,7 +6,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Status and error codes used by the MBoot protocol."""
+"""SPSDK MBoot protocol status and error codes.
+
+This module defines status codes and error handling utilities for the MBoot
+protocol communication, providing enumeration of possible response codes
+and string conversion functionality.
+"""
 
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -18,7 +23,13 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 # pylint: disable=line-too-long
 # fmt: off
 class StatusCode(SpsdkEnum):
-    """McuBoot status codes."""
+    """McuBoot status codes enumeration.
+    
+    This enumeration defines all possible status codes returned by McuBoot operations,
+    including general operation results and specific flash driver error conditions.
+    Each status code contains a numeric value, string identifier, and human-readable
+    description for comprehensive error reporting and debugging.
+    """
 
     SUCCESS                 = (0, "Success", "Success")
     FAIL                    = (1, "Fail", "Fail")
@@ -482,7 +493,14 @@ class StatusCode(SpsdkEnum):
 
 
 def stringify_status_code(status_code: int) -> str:
-    """Stringifies the MBoot status code."""
+    """Convert MBoot status code to human-readable string representation.
+
+    The method formats the status code as both decimal and hexadecimal values,
+    and appends the corresponding description if available in StatusCode enum.
+
+    :param status_code: The MBoot status code to convert.
+    :return: Formatted string containing status code and its description.
+    """
     return (
         f"{status_code} ({status_code:#x}) "
         f"{StatusCode.get_description(status_code) if status_code in StatusCode.tags() else f'Unknown error code ({status_code})'}."

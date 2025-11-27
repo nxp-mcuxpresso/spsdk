@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Low level usbsio device."""
+"""SPSDK USB-SIO device interface implementation.
+
+This module provides low-level interface classes for communicating with USB-SIO
+devices, supporting both SPI and I2C protocols. It includes configuration
+management and device abstraction for NXP USB-SIO hardware.
+"""
+
 import logging
 import re
 from dataclasses import dataclass
@@ -26,7 +32,13 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class UsbSioConfig:
-    """UsbSio configuration."""
+    """UsbSio configuration data container.
+
+    This class represents configuration parameters for USB-SIO device interfaces,
+    including USB connection settings, port numbers, and interface-specific
+    arguments. It provides parsing functionality to convert configuration strings
+    into structured configuration objects.
+    """
 
     usb_config: Optional[str]
     port_num: int
@@ -35,7 +47,16 @@ class UsbSioConfig:
 
     @classmethod
     def from_config_string(cls, config: str, interface: str) -> Self:
-        """Parse the configuration string to UsbSioConfig object."""
+        """Parse the configuration string to UsbSioConfig object.
+
+        Extracts USB configuration and interface-specific parameters from a configuration string.
+        The method parses the interface identifier, port number, and additional arguments.
+
+        :param config: Configuration string containing USB and interface settings.
+        :param interface: Interface type identifier to search for in the configuration.
+        :raises SPSDKValueError: Invalid configuration string format or missing interface.
+        :return: UsbSioConfig object with parsed configuration parameters.
+        """
         i = config.rfind(interface)
         if i < 0:
             raise SPSDKValueError(f"The configuration string must contain'{interface}'")
@@ -64,10 +85,30 @@ class UsbSioConfig:
 
     @staticmethod
     def _split_interface_config(interface_config: str) -> tuple[list, dict]:
-        """Convert the string configuration to the arguments and keyword arguments."""
+        """Parse string configuration into positional and keyword arguments.
+
+        Converts a comma-separated configuration string into separate lists of positional
+        arguments and keyword arguments. Arguments are automatically cast to integers
+        when possible, otherwise kept as strings. All positional arguments must come
+        before any keyword arguments.
+
+        :param interface_config: Comma-separated configuration string with format
+                                "arg1,arg2,key1=value1,key2=value2"
+        :raises SPSDKValueError: Invalid keyword argument format (not 'key=value').
+        :raises SPSDKError: Positional argument found after keyword arguments.
+        :return: Tuple containing list of positional arguments and dictionary of
+                 keyword arguments.
+        """
 
         def _cast_arg(arg: str) -> Union[str, int]:
-            """Cast the string argument to the type expected in object initialization."""
+            """Cast the string argument to the type expected in object initialization.
+
+            Attempts to convert a string argument to an integer using value_to_int().
+            If conversion fails, returns the original string unchanged.
+
+            :param arg: String argument to be cast to appropriate type.
+            :return: Integer value if conversion succeeds, otherwise original string.
+            """
             try:
                 return value_to_int(arg)
             except SPSDKError:
@@ -91,7 +132,15 @@ class UsbSioConfig:
 
 
 class UsbSioDevice(DeviceBase):
-    """USBSIO device class."""
+    """USBSIO device interface for NXP MCU communication.
+
+    This class provides a unified interface for communicating with NXP MCUs through
+    USBSIO devices, supporting both SPI and I2C protocols. It manages device
+    connections, GPIO configuration for interrupt handling, and provides methods
+    for opening, closing, and scanning USBSIO devices.
+
+    :cvar INTERFACE: Interface type identifier to be defined by child classes.
+    """
 
     INTERFACE = ""  # to be defined by the child class
 
@@ -103,12 +152,17 @@ class UsbSioDevice(DeviceBase):
         nirq_pin: Optional[int] = None,
         timeout: Optional[int] = None,
     ) -> None:
-        """Initialize the Interface object.
+        """Initialize the USBSIO device interface.
 
-        :param dev: device index to be used, default is set to 0
-        :param config: configuration string identifying spi or i2c SIO interface
-        :param timeout: read timeout in milliseconds, defaults to 5000
-        :raises SPSDKError: When LIBUSBSIO device is not opened.
+        Sets up the USBSIO device connection with specified parameters including device index,
+        port configuration, optional interrupt handling, and communication timeout.
+
+        :param dev: Device index to be used, defaults to 0.
+        :param port_num: Port number for the USBSIO interface.
+        :param nirq_port: Optional interrupt port number for NIRQ functionality.
+        :param nirq_pin: Optional interrupt pin number for NIRQ functionality.
+        :param timeout: Read timeout in milliseconds, defaults to 5000.
+        :raises SPSDKError: When LIBUSBSIO device cannot be opened or configured.
         """
         # device is the LIBUSBSIO.PORT instance (LIBUSBSIO.SPI or LIBUSBSIO.I2C class)
         self.port: Optional[Union[LIBUSBSIO.SPI, LIBUSBSIO.I2C]] = None
@@ -124,6 +178,15 @@ class UsbSioDevice(DeviceBase):
             self._config_nirq_pin()
 
     def _config_nirq_pin(self) -> None:
+        """Configure nIRQ pin for interrupt handling.
+
+        Sets up the nIRQ (Notification Interrupt) pin as an input GPIO pin and checks its
+        initial state. The pin is used to detect interrupt conditions from connected devices.
+        If the pin is detected as low during configuration, a warning is logged suggesting
+        to verify nIRQ enablement.
+
+        :raises SPSDKValueError: When nIRQ port or pin is not defined.
+        """
         if not (self.nirq_port and self.nirq_pin):
             raise SPSDKValueError("nIRQ port and pin must be defined.")
         self.sio.GPIO_ConfigIOPin(self.nirq_port, self.nirq_pin, 0x100)
@@ -135,33 +198,36 @@ class UsbSioDevice(DeviceBase):
             )
 
     def open(self) -> None:
-        """Open the interface."""
+        """Open the USB SIO interface for communication.
+
+        Initializes the USB SIO device by loading the required DLL library and
+        establishing connection to the specified device index. The method ensures
+        the interface is ready for data transfer operations.
+
+        :raises SPSDKConnectionError: When USB SIO device cannot be opened or DLL fails to load.
+        """
         if self.sio is None:
             self.sio = self._get_usbsio()
         if not self.sio.IsDllLoaded():
             self.sio.LoadDLL()
 
         if not self.sio.IsOpen():
-            detected_dev = self.sio.GetNumPorts()
-            if detected_dev <= 0:
-                raise SPSDKConnectionError(
-                    "Cannot open LIBUSBSIO device because there is no one connected in system."
-                )
-            if detected_dev <= self.dev_ix:
-                raise SPSDKConnectionError(
-                    f"Cannot open LIBUSBSIO device-{self.dev_ix}, because the index is out of connected devices."
-                )
-
             self.sio.Open(self.dev_ix)
 
     @property
     def timeout(self) -> int:
-        """Timeout property."""
+        """Get timeout value for the device communication.
+
+        :return: Timeout value in milliseconds.
+        """
         return self._timeout
 
     @timeout.setter
     def timeout(self, value: int) -> None:
-        """Timeout property setter."""
+        """Set timeout value for the device communication.
+
+        :param value: Timeout value in milliseconds.
+        """
         self._timeout = value
 
     @property
@@ -173,7 +239,11 @@ class UsbSioDevice(DeviceBase):
         return bool(self.port)
 
     def close(self) -> None:
-        """Close the interface."""
+        """Close the USB SIO interface.
+
+        Closes the current port connection and releases the SIO resources if no other
+        ports are open. Sets the port reference to None after closing.
+        """
         if self.port:
             self.port.Close()
             self.port = None
@@ -184,12 +254,16 @@ class UsbSioDevice(DeviceBase):
     def scan(cls, config: str, timeout: Optional[int] = None) -> list[Self]:
         """Scan connected USB-SIO bridge devices.
 
-        :param config: Configuration string identifying spi or i2c SIO interface
-                        and could filter out USB devices
+        The method discovers and initializes USB-SIO bridge devices that match the specified
+        configuration. It opens each available USB-SIO port, validates the requested interface
+        port number, and creates device instances for successful matches.
+
+        :param config: Configuration string identifying spi or i2c SIO interface and could
+                       filter out USB devices
         :param timeout: Read timeout in milliseconds, defaults to 5000
         :return: List of matching UsbSio devices
         :raises SPSDKError: When libusbsio library error or if no bridge device found
-        :raises SPSDKValueError: Invalid configuration detected.
+        :raises SPSDKValueError: Invalid configuration detected
         """
         if not cls.INTERFACE:
             raise SPSDKError("The 'INTERFACE' class attribute must be set in a subclass.")
@@ -227,14 +301,25 @@ class UsbSioDevice(DeviceBase):
         return devices
 
     def __str__(self) -> str:
-        """Return string containing information about the interface."""
+        """Return string representation of the USB SIO device interface.
+
+        Provides a formatted string containing the class name and interface type
+        for debugging and logging purposes.
+
+        :return: String representation of the interface.
+        """
         class_name = self.__class__.__name__
         return f"libusbsio interface ({class_name})"
 
     def wait_for_nirq_state(self, state: int) -> None:
-        """Wait until the nIRQ GPIO pin gets into desired state.
+        """Wait until the nIRQ GPIO pin reaches the desired state.
 
-        :param state: Expected state
+        This method polls the nIRQ GPIO pin until it matches the expected state or times out.
+        The nIRQ functionality must be enabled and properly configured before calling this method.
+
+        :param state: Expected GPIO pin state (0 for low, 1 for high).
+        :raises SPSDKValueError: Invalid state value or nIRQ port/pin not defined.
+        :raises SPSDKError: nIRQ functionality disabled or timeout occurred.
         """
         if state not in [0, 1]:
             raise SPSDKValueError("State must be either 0 or 1.")
@@ -253,17 +338,40 @@ class UsbSioDevice(DeviceBase):
 
     @property
     def is_nirq_enabled(self) -> bool:
-        """Is nIRQ functionality enabled."""
+        """Check if nIRQ functionality is enabled.
+
+        The method verifies that both nIRQ pin and port are properly configured
+        and available for use.
+
+        :return: True if nIRQ functionality is enabled, False otherwise.
+        """
         return self.nirq_pin is not None and self.nirq_port is not None
 
     @staticmethod
     def _process_interface_config(
         interface_config: str, timeout: Optional[int] = None
     ) -> tuple[list, dict]:
-        """Convert the string configuration to the arguments and keyword arguments."""
+        """Convert the string configuration to the arguments and keyword arguments.
+
+        Parses a comma-separated configuration string into positional and keyword arguments
+        for device interface initialization. Arguments must come before keyword arguments.
+
+        :param interface_config: Comma-separated configuration string with args and key=value pairs.
+        :param timeout: Optional timeout value to add to keyword arguments.
+        :raises SPSDKValueError: Invalid keyword argument format.
+        :raises SPSDKError: Arguments found after keyword arguments.
+        :return: Tuple containing list of positional arguments and dictionary of keyword arguments.
+        """
 
         def _cast_arg(arg: str) -> Union[str, int]:
-            """Cast the string argument to the type expected in object initialization."""
+            """Cast the string argument to the type expected in object initialization.
+
+            Attempts to convert a string argument to an integer using value_to_int().
+            If conversion fails, returns the original string unchanged.
+
+            :param arg: String argument to be cast to appropriate type.
+            :return: Integer value if conversion succeeds, otherwise original string.
+            """
             try:
                 return value_to_int(arg)
             except SPSDKError:
@@ -289,10 +397,13 @@ class UsbSioDevice(DeviceBase):
 
     @staticmethod
     def _get_usbsio() -> LIBUSBSIO:
-        """Wraps getting USBSIO library to raise SPSDK errors in case of problem.
+        """Get USBSIO library instance with SPSDK error handling.
 
-        :return: LIBUSBSIO object
-        :raises SPSDKError: When libusbsio library error or if no bridge device found
+        Wraps the libusbsio library initialization to provide consistent SPSDK error handling
+        and logging configuration.
+
+        :return: LIBUSBSIO object instance
+        :raises SPSDKError: When libusbsio library error occurs or if no bridge device found
         """
         try:
             # get the global singleton instance of LIBUSBSIO library
@@ -305,22 +416,28 @@ class UsbSioDevice(DeviceBase):
 
     @classmethod
     def get_usbsio_devices(cls, usb_config: Optional[str] = None) -> list[int]:
-        """Returns list of ports indexes of USBSIO devices.
+        """Get list of port indexes of USBSIO devices.
 
-        It could be filtered by standard SPSDK USB filters.
+        The method retrieves all available USBSIO device ports and optionally filters them
+        using standard SPSDK USB filters based on VID/PID, serial number, or device path.
 
-        :param usb_config: Could contain USB filter configuration, defaults to None
-        :return: List of port indexes of founded USBSIO device
+        :param usb_config: USB filter configuration string for device filtering, defaults to None
+        :raises SPSDKError: When libusbsio library error occurs or device information cannot be retrieved
+        :return: List of port indexes of found USBSIO devices
         """
 
         def _filter_usb(sio: LIBUSBSIO, ports: list[int], flt: str) -> list[int]:
-            """Filter the  LIBUSBSIO device.
+            """Filter LIBUSBSIO devices based on provided criteria.
 
-            :param sio: LIBUSBSIO instance.
-            :param ports: Input list of LIBUSBSIO available ports.
-            :param flt: Filter string (PATH, PID/VID, SERIAL_NUMBER)
-            :raises SPSDKError: When libusbsio library error or if no bridge device found
-            :return: List with selected device, empty list otherwise.
+            Filters the list of available LIBUSBSIO ports using the specified filter string which can
+            match against device path, PID/VID, or serial number.
+
+            :param sio: LIBUSBSIO instance used to retrieve device information.
+            :param ports: List of available LIBUSBSIO port numbers to filter.
+            :param flt: Filter string containing PATH, PID/VID, or SERIAL_NUMBER criteria.
+            :raises SPSDKError: When libusbsio library error occurs or device information cannot be
+                retrieved.
+            :return: List of port indexes matching the filter criteria, empty list if no matches.
             """
             usb_filter = USBDeviceFilter(flt.casefold())
             port_indexes = []
@@ -356,7 +473,14 @@ class UsbSioDevice(DeviceBase):
 
 
 class UsbSioSPIDevice(UsbSioDevice):
-    """USBSIO SPI interface."""
+    """USBSIO SPI Device Interface.
+
+    This class provides SPI communication capabilities through USB-SIO bridge devices
+    such as LPCLink2 or MCULink. It manages SPI protocol configuration including
+    clock settings, polarity, phase, and slave select control.
+
+    :cvar INTERFACE: Interface type identifier for SPI protocol.
+    """
 
     INTERFACE = "spi"
 
@@ -375,15 +499,19 @@ class UsbSioSPIDevice(UsbSioDevice):
     ) -> None:
         """Initialize the UsbSioSPI Interface object.
 
-        :param config: configuration string passed from command line
-        :param dev: device index to be used, default is set to 0
-        :param port: default SPI port to be used, typically 0 as only one port is supported by LPCLink2/MCULink
-        :param ssel_port: bridge GPIO port used to drive SPI SSEL signal
-        :param ssel_pin: bridge GPIO pin used to drive SPI SSEL signal
-        :param speed_khz: SPI clock speed in kHz
-        :param cpol: SPI clock polarity mode
-        :param cpha: SPI clock phase mode
-        :param timeout: read timeout in milliseconds, defaults to 5000
+        Configures SPI communication parameters including device selection, GPIO pins for chip select,
+        clock settings, and timing parameters for USB-SIO bridge communication.
+
+        :param dev: Device index to be used, defaults to 0
+        :param port_num: SPI port number, typically 0 for LPCLink2/MCULink
+        :param ssel_port: Bridge GPIO port used to drive SPI SSEL signal
+        :param ssel_pin: Bridge GPIO pin used to drive SPI SSEL signal, defaults to 15
+        :param speed_khz: SPI clock speed in kHz, defaults to 1000
+        :param cpol: SPI clock polarity mode, defaults to 1
+        :param cpha: SPI clock phase mode, defaults to 1
+        :param nirq_port: Optional GPIO port for interrupt signal
+        :param nirq_pin: Optional GPIO pin for interrupt signal
+        :param timeout: Read timeout in milliseconds, defaults to 5000
         :raises SPSDKError: When port configuration cannot be parsed
         """
         super().__init__(
@@ -396,7 +524,14 @@ class UsbSioSPIDevice(UsbSioDevice):
         self.spi_cpha = cpha
 
     def open(self) -> None:
-        """Open the interface."""
+        """Open the USBSIO SPI interface.
+
+        Initializes and opens the SPI port using the configured parameters including port number,
+        bus speed, clock polarity, and clock phase. The interface must be opened before any
+        SPI communication can occur.
+
+        :raises SPSDKError: When the USBSIO SPI interface cannot be opened.
+        """
         super().open()
 
         self.port: LIBUSBSIO.SPI = self.sio.SPI_Open(
@@ -409,13 +544,16 @@ class UsbSioSPIDevice(UsbSioDevice):
             raise SPSDKError("Cannot open lpcusbsio SPI interface.\n")
 
     def read(self, length: int, timeout: Optional[int] = None) -> bytes:
-        """Read 'length' amount for bytes from device.
+        """Read specified number of bytes from the SPI device.
 
-        :param length: Number of bytes to read
-        :param timeout: Read timeout
-        :return: Data read from the device
-        :raises SPSDKConnectionError: When reading data from device fails
-        :raises TimeoutError: When no data received
+        Performs a SPI transfer operation to read data from the connected device using the configured
+        select port and pin settings.
+
+        :param length: Number of bytes to read from the device.
+        :param timeout: Read timeout in milliseconds (currently not used in implementation).
+        :return: Data read from the device.
+        :raises SPSDKConnectionError: When reading data from device fails.
+        :raises SPSDKTimeoutError: When no data received or transfer result indicates failure.
         """
         try:
             (data, result) = self.port.Transfer(
@@ -432,12 +570,16 @@ class UsbSioSPIDevice(UsbSioDevice):
         return data
 
     def write(self, data: bytes, timeout: Optional[int] = None) -> None:
-        """Send data to device.
+        """Send data to device via USB-SIO interface.
 
-        :param data: Data to send
-        :param timeout: Write timeout
-        :raises SPSDKConnectionError: When sending the data fails
-        :raises SPSDKTimeoutError: When data could not be written
+        This method transfers data to the connected device using the SPI interface
+        through the USB-SIO bridge. The data is sent synchronously and any transfer
+        errors are converted to appropriate SPSDK exceptions.
+
+        :param data: Binary data to send to the device.
+        :param timeout: Write timeout in milliseconds (currently not used).
+        :raises SPSDKConnectionError: When the data transfer fails due to communication issues.
+        :raises SPSDKTimeoutError: When the transfer operation times out or returns error code.
         """
         logger.debug(f"[{' '.join(f'{b:02x}' for b in data)}]")
         try:
@@ -451,7 +593,14 @@ class UsbSioSPIDevice(UsbSioDevice):
 
 
 class UsbSioI2CDevice(UsbSioDevice):
-    """USBSIO I2C interface."""
+    """USBSIO I2C Device Interface.
+
+    This class provides I2C communication capabilities through USB-SIO devices
+    such as LPCLink2 or MCULink. It manages I2C transactions including device
+    addressing, clock speed configuration, and data transfer operations.
+
+    :cvar INTERFACE: Interface type identifier for I2C protocol.
+    """
 
     INTERFACE = "i2c"
 
@@ -467,13 +616,14 @@ class UsbSioI2CDevice(UsbSioDevice):
     ) -> None:
         """Initialize the UsbSioI2C Interface object.
 
-        :param config: configuration string passed from command line
-        :param dev: device index to be used, default is set to 0
-        :param port: default I2C port to be used, typically 0 as only one port is supported by LPCLink2/MCULink
-        :param address: I2C target device address
-        :param speed_khz: I2C clock speed in kHz
-        :param timeout: read timeout in milliseconds, defaults to 5000
-        :raises SPSDKError: When port configuration cannot be parsed
+        :param dev: Device index to be used, defaults to 0.
+        :param port_num: I2C port number to be used, typically 0 as only one port is supported by LPCLink2/MCULink.
+        :param address: I2C target device address, defaults to 0x10.
+        :param speed_khz: I2C clock speed in kHz, defaults to 100.
+        :param nirq_port: Optional NIRQ port number.
+        :param nirq_pin: Optional NIRQ pin number.
+        :param timeout: Read timeout in milliseconds, defaults to 5000.
+        :raises SPSDKError: When port configuration cannot be parsed.
         """
         super().__init__(
             dev=dev, port_num=port_num, nirq_port=nirq_port, nirq_pin=nirq_pin, timeout=timeout
@@ -482,7 +632,13 @@ class UsbSioI2CDevice(UsbSioDevice):
         self.i2c_speed_khz = speed_khz
 
     def open(self) -> None:
-        """Open the interface."""
+        """Open the USB-SIO I2C interface.
+
+        Initializes the I2C port using the configured speed and port number settings.
+        Calls the parent class open method and then opens the LIBUSBSIO I2C interface.
+
+        :raises SPSDKError: When the lpcusbsio I2C interface cannot be opened.
+        """
         super().open()
 
         self.port: LIBUSBSIO.I2C = self.sio.I2C_Open(
@@ -492,13 +648,17 @@ class UsbSioI2CDevice(UsbSioDevice):
             raise SPSDKError("Cannot open lpcusbsio I2C interface.\n")
 
     def read(self, length: int, timeout: Optional[int] = None) -> bytes:
-        """Read 'length' amount for bytes from device.
+        """Read data from the USB-SIO I2C device.
 
-        :param length: Number of bytes to read
-        :param timeout: Read timeout
-        :return: Data read from the device
-        :raises SPSDKConnectionError: When reading data from device fails
-        :raises SPSDKTimeoutError: When no data received
+        The method reads the specified number of bytes from the connected I2C device
+        through the USB-SIO interface. It handles communication errors and timeouts
+        appropriately.
+
+        :param length: Number of bytes to read from the device.
+        :param timeout: Read timeout in milliseconds (currently not used by underlying API).
+        :return: Data read from the device.
+        :raises SPSDKConnectionError: When reading data from device fails.
+        :raises SPSDKTimeoutError: When no data received or operation times out.
         """
         try:
             (data, result) = self.port.DeviceRead(devAddr=self.i2c_address, rxSize=length)
@@ -512,10 +672,10 @@ class UsbSioI2CDevice(UsbSioDevice):
     def write(self, data: bytes, timeout: Optional[int] = None) -> None:
         """Send data to device.
 
-        :param data: Data to send
-        :param timeout: Write timeout
-        :raises SPSDKConnectionError: When sending the data fails
-        :raises TimeoutError: When data NAKed or could not be written
+        :param data: Data to send to the device.
+        :param timeout: Write timeout in milliseconds.
+        :raises SPSDKConnectionError: When sending the data fails.
+        :raises SPSDKTimeoutError: When data NAKed or could not be written.
         """
         logger.debug(f"[{' '.join(f'{b:02x}' for b in data)}]")
         try:

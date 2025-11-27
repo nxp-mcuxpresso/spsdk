@@ -4,7 +4,12 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Module with helper functions for Miyaguchi-Preneel hash function implementation."""
+"""SPSDK Miyaguchi-Preneel hash function implementation.
+
+This module provides cryptographic utilities for implementing the Miyaguchi-Preneel
+one-way compression function, including data padding, compression operations, and
+byte manipulation functions required for secure hash computation.
+"""
 
 import functools
 import operator
@@ -19,14 +24,31 @@ DATA_BIT_ALIGNMENT = DATA_BYTE_ALIGNMENT * 8
 
 
 def xor_bytes(*data: bytes) -> bytes:
-    """Perform byte-by-byte XOR on bytes."""
+    """Perform byte-by-byte XOR operation on multiple bytes objects.
+
+    Takes variable number of bytes objects and performs XOR operation on corresponding
+    bytes at each position across all input objects.
+
+    :param data: Variable number of bytes objects to XOR together.
+    :raises SPSDKError: When input bytes objects have different lengths.
+    :return: Result of XOR operation as bytes object.
+    """
     if not all(len(d) == len(data[0]) for d in data):
         raise SPSDKError("All bytes object must be of the same length.")
     return bytes(functools.reduce(operator.xor, t) for t in zip(*data))
 
 
 def mp_padding(data: bytes) -> bytes:
-    """Calculate padding."""
+    """Calculate Miyaguchi-Preneel padding for input data.
+
+    The method implements the padding scheme according to the Miyaguchi-Preneel
+    specification, adding a '1' bit followed by zero bits and the original data
+    length to align the data properly.
+
+    :param data: Input data bytes to be padded.
+    :raises SPSDKError: When padding calculation fails due to alignment issues.
+    :return: Calculated padding bytes.
+    """
     l = len(data) * 8  # noqa: E741  # we want to use naming consistent with spec
     k = (88 - l - 1) % DATA_BIT_ALIGNMENT
     if (l + 1 + k) % DATA_BIT_ALIGNMENT != 88:
@@ -36,7 +58,15 @@ def mp_padding(data: bytes) -> bytes:
 
 
 def mp_compress(data: bytes) -> bytes:
-    """Compress data."""
+    """Compress data using Miyaguchi-Preneel compression function.
+
+    This function applies padding to the input data and processes it in chunks using
+    AES-ECB encryption combined with XOR operations to produce a compressed output.
+
+    :param data: Input data to be compressed.
+    :raises SPSDKError: If padded data length is not divisible by the required alignment.
+    :return: Compressed data as bytes.
+    """
     data += mp_padding(data=data)
     if len(data) % DATA_BYTE_ALIGNMENT != 0:
         raise SPSDKError(f"Data length must be divisible by {DATA_BYTE_ALIGNMENT}. Got {len(data)}")

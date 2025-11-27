@@ -5,28 +5,20 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Test AHAB part of nxpimage app.
+"""Test suite for AHAB functionality in nxpimage application.
 
-This module contains tests for the Application Hold-off Authentication Block (AHAB)
-functionality of the nxpimage application. Tests cover various AHAB operations including:
-
-- Container export and parsing
-- Image signing and encryption
-- Certificate operations (export, parse, verify)
-- Signed message handling
-- Re-signing containers
-- Keyblob updates
-- Template generation
-- Fuse generation
-
-The tests verify both CLI functionality and internal API behavior across
-different supported families and configurations.
+This module contains comprehensive tests for the Application Hold-off Authentication Block (AHAB)
+functionality within the nxpimage application. It validates AHAB container operations,
+cryptographic features, and CLI interface behavior across different NXP MCU families.
+The tests cover container export and parsing, image signing and encryption with various algorithms
+including SM2, certificate management, signed message handling, keyblob operations, template
+generation, and re-signing workflows for AHAB-related operations in the SPSDK ecosystem.
 """
 
 import filecmp
 import os
 import shutil
-from typing import Optional
+from typing import Optional, Tuple
 
 import pytest
 
@@ -34,9 +26,13 @@ from spsdk.apps import nxpimage
 from spsdk.crypto.dilithium import IS_DILITHIUM_SUPPORTED
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import IS_OSCCA_SUPPORTED
+from spsdk.image.ahab.ahab_blob import AhabBlob
 from spsdk.image.ahab.ahab_data import FlagsSrkSet
 from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.ahab.signed_msg import MessageCommands, SignedMessage
+from spsdk.image.bootable_image.bimg import BootableImage
+from spsdk.image.bootable_image.segments import SegmentAhab
+from spsdk.image.mem_type import MemoryType
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import (
@@ -67,10 +63,10 @@ def test_nxpimage_ahab_export(
     Tests the 'ahab export' command by processing a configuration file and comparing
     the generated binary with a reference binary to verify correct operation.
 
-    :param cli_runner: CLI runner instance for invoking nxpimage commands
-    :param tmpdir: Temporary directory path for test output
-    :param data_dir: Directory containing test data files
-    :param config_file: Name of the AHAB configuration file to test
+    :param cli_runner: CLI runner instance for invoking nxpimage commands.
+    :param tmpdir: Temporary directory path for test output.
+    :param data_dir: Directory containing test data files.
+    :param config_file: Name of the AHAB configuration file to test.
     """
     with use_working_directory(data_dir):
         config_file = f"{data_dir}/ahab/{config_file}"
@@ -128,6 +124,8 @@ def test_nxpimage_ahab_export_signed_encrypted(
     Executes the nxpimage CLI with 'ahab export' command to test generation of signed and
     encrypted image binaries. Verifies the output binary matches expected size and checks
     for proper generation of fuse files based on processor family and configuration.
+    For PQC configurations, validates both SRK0 and SRK1 hash files are generated.
+    For non-PQC configurations, ensures only SRK0 hash files exist.
 
     :param cli_runner: CLI runner instance for testing nxpimage commands
     :param tmpdir: Temporary directory for test output files
@@ -153,7 +151,15 @@ def test_nxpimage_ahab_export_signed_encrypted(
             return
 
         # Helper function to find files with either oem0 or oem1
-        def find_oem_file(base_pattern: str) -> str:
+        def find_oem_file(base_pattern: str) -> Optional[str]:
+            """Find OEM-specific file based on base pattern.
+
+            Searches for OEM-specific files by replacing the {oem} placeholder in the base pattern
+            with available OEM options (oem0, oem1) and checking if the resulting file exists.
+
+            :param base_pattern: File path pattern containing {oem} placeholder to be replaced.
+            :return: Absolute path to the first existing OEM file found, or None if no file exists.
+            """
             oem_options = ["oem0", "oem1"]
             for oem in oem_options:
                 file_path = os.path.join(output_dir, base_pattern.replace("{oem}", oem))
@@ -241,18 +247,16 @@ def test_nxpimage_ahab_cert_export(
 
     Verifies that the 'ahab certificate export' command correctly generates certificate
     binary files from YAML configuration files. Tests include various certificate types:
-
     - Standard ECC certificates with different key sizes (256, 384, 521 bits)
     - Post-quantum cryptography (PQC) certificates with Dilithium when supported
     - Combined classical/PQC hybrid certificates
-
     The test ensures that output binaries are created with the expected file size
     matching reference binaries, validating the certificate generation process.
 
-    :param cli_runner: CLI runner instance for executing nxpimage commands
-    :param tmpdir: Temporary directory for storing generated certificate files
-    :param data_dir: Directory containing test data and reference certificates
-    :param config_file: Name of the certificate configuration YAML file
+    :param cli_runner: CLI runner instance for executing nxpimage commands.
+    :param tmpdir: Temporary directory for storing generated certificate files.
+    :param data_dir: Directory containing test data and reference certificates.
+    :param config_file: Name of the certificate configuration YAML file.
     """
     with use_working_directory(data_dir):
         ref_binary = os.path.join(data_dir, "ahab", os.path.splitext(config_file)[0] + ".bin")
@@ -298,10 +302,10 @@ def test_nxpimage_ahab_cert_parse(
     information from binary certificate files. Tests with various certificate types
     including different key sizes and algorithms.
 
-    :param cli_runner: CLI runner instance for executing nxpimage commands
-    :param tmpdir: Temporary directory for storing parsed output files
-    :param data_dir: Directory containing test data files
-    :param config_file: Name of the certificate binary file to parse
+    :param cli_runner: CLI runner instance for executing nxpimage commands.
+    :param tmpdir: Temporary directory for storing parsed output files.
+    :param data_dir: Directory containing test data files.
+    :param config_file: Name of the certificate binary file to parse.
     """
     with use_working_directory(tmpdir):
         input_binary = os.path.join(data_dir, "ahab", config_file)
@@ -344,10 +348,10 @@ def test_nxpimage_ahab_cert_verify(
     Verifies that the 'ahab certificate verify' command correctly validates
     certificate binary files for different key types and configurations.
 
-    :param cli_runner: CLI runner instance for invoking nxpimage commands
-    :param tmpdir: Temporary directory for test outputs
-    :param data_dir: Directory containing test data files
-    :param config_file: Certificate binary file to verify
+    :param cli_runner: CLI runner instance for invoking nxpimage commands.
+    :param tmpdir: Temporary directory for test outputs.
+    :param data_dir: Directory containing test data files.
+    :param config_file: Certificate binary file to verify.
     """
     with use_working_directory(tmpdir):
         input_binary = os.path.join(data_dir, "ahab", config_file)
@@ -370,11 +374,12 @@ def test_nxpimage_ahab_export_signed_encrypted_sm2(
     """Test AHAB command export with signed and encrypted SM2 option.
 
     Tests the generation of an AHAB container with SM2 signing and encryption.
+    This is a wrapper test that delegates to the main signed/encrypted test function.
 
-    :param cli_runner: Runner for executing CLI commands in tests
-    :param tmpdir: Temporary directory path for test outputs
-    :param data_dir: Directory containing test data files
-    :param config_file: Path to the configuration file to use for the test
+    :param cli_runner: Runner for executing CLI commands in tests.
+    :param tmpdir: Temporary directory path for test outputs.
+    :param data_dir: Directory containing test data files.
+    :param config_file: Path to the configuration file to use for the test.
     """
     test_nxpimage_ahab_export_signed_encrypted(cli_runner, tmpdir, data_dir, config_file, None)
 
@@ -385,17 +390,20 @@ def test_nxpimage_ahab_parse_cli(cli_runner: CliRunner, tmpdir: str, data_dir: s
     Tests the 'ahab parse' command by parsing a binary container file and verifying that
     the extracted image components match the expected original binary files.
 
-    :param cli_runner: Runner for executing CLI commands in tests
-    :param tmpdir: Temporary directory path for storing parsed output files
-    :param data_dir: Directory containing test data files
+    :param cli_runner: Runner for executing CLI commands in tests.
+    :param tmpdir: Temporary directory path for storing parsed output files.
+    :param data_dir: Directory containing test data files.
     """
 
     def is_subpart(new_file: str, orig_file: str) -> bool:
         """Check if the content of one file is contained within another file.
 
-        :param new_file: Path to the file that should contain the original content
-        :param orig_file: Path to the original file whose content should be found in new_file
-        :return: True if orig_file's content is at the beginning of new_file, False otherwise
+        Verifies whether the original file's content appears at the beginning of the new file
+        by comparing binary data loaded from both files.
+
+        :param new_file: Path to the file that should contain the original content.
+        :param orig_file: Path to the original file whose content should be found in new_file.
+        :return: True if orig_file's content is at the beginning of new_file, False otherwise.
         """
         new = load_binary(new_file)
         orig = load_binary(orig_file)
@@ -457,10 +465,10 @@ def test_nxpimage_ahab_parse(data_dir: str, binary: str, family: str, target_mem
     for different processor families and target memory configurations. Tests the full
     parse-verify-export cycle to ensure data integrity is maintained.
 
-    :param data_dir: Directory containing test data files
-    :param binary: Name of the AHAB binary file to parse
-    :param family: Processor family for the AHAB binary
-    :param target_memory: Target memory configuration label
+    :param data_dir: Directory containing test data files.
+    :param binary: Name of the AHAB binary file to parse.
+    :param family: Processor family for the AHAB binary.
+    :param target_memory: Target memory configuration label.
     """
     with use_working_directory(data_dir):
         original_file = load_binary(f"{data_dir}/ahab/{binary}")
@@ -470,7 +478,7 @@ def test_nxpimage_ahab_parse(data_dir: str, binary: str, family: str, target_mem
         # if original_file != exported_ahab:
         #     write_file(exported_ahab, f"{data_dir}/ahab/{binary}.created", mode="wb")
         assert original_file == exported_ahab
-        assert ahab.chip_config.target_memory.label == target_memory
+        assert ahab.chip_config.target_memory.memory_type.label == target_memory
 
 
 @pytest.mark.parametrize(
@@ -497,13 +505,13 @@ def test_nxpimage_ahab_re_signs(
     Tests the ability to re-sign an existing AHAB image with a different key.
     Verifies that the operation succeeds only with valid key and container combinations.
 
-    :param cli_runner: CLI runner instance to invoke commands
-    :param tmpdir: Temporary directory for test outputs
-    :param data_dir: Directory with test data
-    :param config_file: AHAB configuration file name
-    :param new_key: Path to the new signing key
-    :param container_id: ID of the container to re-sign
-    :param succeeded: Whether the operation is expected to succeed
+    :param cli_runner: CLI runner instance to invoke commands.
+    :param tmpdir: Temporary directory for test outputs.
+    :param data_dir: Directory with test data.
+    :param config_file: AHAB configuration file name.
+    :param new_key: Path to the new signing key.
+    :param container_id: ID of the container to re-sign.
+    :param succeeded: Whether the operation is expected to succeed.
     """
     with use_working_directory(data_dir):
         config_file = f"{data_dir}/ahab/{config_file}"
@@ -543,11 +551,11 @@ def test_nxpimage_ahab_parse_cli2(
     Verifies that the AHAB parse CLI command correctly processes various binary types
     and generates a parsed configuration file.
 
-    :param cli_runner: CLI runner instance to invoke commands
-    :param data_dir: Directory with test data
-    :param binary: Binary file name to parse
-    :param family: Target family/platform for the binary
-    :param tmpdir: Temporary directory for test outputs
+    :param cli_runner: CLI runner instance to invoke commands.
+    :param data_dir: Directory with test data.
+    :param binary: Binary file name to parse.
+    :param family: Target family/platform for the binary.
+    :param tmpdir: Temporary directory for test outputs.
     """
     with use_working_directory(data_dir):
         cmd = f"ahab parse -f {family} -b ahab/{binary} -o {tmpdir}/parsed"
@@ -592,11 +600,11 @@ def test_nxpimage_ahab_verify(
     Verifies that the AHAB verify command correctly validates different binary images,
     confirming success or failure as expected for each test case.
 
-    :param cli_runner: CLI runner instance to invoke commands
-    :param data_dir: Directory with test data
-    :param binary: Binary file name to verify
-    :param family: Target family/platform for the binary
-    :param succeeded: Whether verification is expected to succeed
+    :param cli_runner: CLI runner instance to invoke commands.
+    :param data_dir: Directory containing test data files.
+    :param binary: Binary file name to verify.
+    :param family: Target family/platform for the binary.
+    :param succeeded: Whether verification is expected to succeed.
     """
     with use_working_directory(data_dir):
         cmd = f"ahab verify -f {family} -b ahab/{binary} -p"
@@ -620,10 +628,10 @@ def test_nxpimage_ahab_parse_sm2(
     Verifies that AHAB images signed with SM2 algorithm can be correctly parsed.
     This test is skipped if OSCCA support is not installed.
 
-    :param data_dir: Directory with test data
-    :param binary: Binary file name to parse
-    :param family: Target family/platform for the binary
-    :param target_memory: Target memory type
+    :param data_dir: Directory containing test data files.
+    :param binary: Name of the binary file to parse.
+    :param family: Target MCU family/platform for the binary.
+    :param target_memory: Target memory type for the image.
     """
     test_nxpimage_ahab_parse(data_dir, binary, family, target_memory)
 
@@ -643,10 +651,10 @@ def test_nxpimage_signed_message_export(
     Verifies that signed messages can be correctly exported from configuration files
     and validates the output binary size and content.
 
-    :param cli_runner: CLI runner instance to invoke commands
-    :param tmpdir: Temporary directory for test outputs
-    :param data_dir: Directory with test data
-    :param config_file: Configuration file name
+    :param cli_runner: CLI runner instance to invoke commands.
+    :param tmpdir: Temporary directory for test outputs.
+    :param data_dir: Directory with test data.
+    :param config_file: Configuration file name.
     """
     with use_working_directory(data_dir):
         config_file = f"{data_dir}/ahab/signed_msg/{config_file}"
@@ -671,15 +679,17 @@ def test_nxpimage_signed_message_export(
 def test_nxpimage_signed_message_key_exchange_hkdf(
     cli_runner: CliRunner, tmpdir: str, data_dir: str, config_file: str
 ) -> None:
-    """Test the export of signed messages.
+    """Test the export of signed messages with key exchange HKDF.
 
     Verifies that signed messages can be correctly exported from configuration files
-    and validates the output binary size and content.
+    using key exchange HKDF method and validates the output binary size and content.
+    The test ensures the generated binary matches the reference binary up to the
+    signature portion.
 
-    :param cli_runner: CLI runner instance to invoke commands
-    :param tmpdir: Temporary directory for test outputs
-    :param data_dir: Directory with test data
-    :param config_file: Configuration file name
+    :param cli_runner: CLI runner instance to invoke commands.
+    :param tmpdir: Temporary directory for test outputs.
+    :param data_dir: Directory with test data.
+    :param config_file: Configuration file name.
     """
     with use_working_directory(data_dir):
         config_file = f"{data_dir}/ahab/signed_msg/{config_file}"
@@ -705,9 +715,9 @@ def test_nxpimage_signed_message_parse_cli(
     Verifies that the signed-msg parse command correctly processes a signed message
     binary and generates a parsed configuration file.
 
-    :param cli_runner: CLI runner instance to invoke commands
-    :param tmpdir: Temporary directory for test outputs
-    :param data_dir: Directory with test data
+    :param cli_runner: CLI runner instance to invoke commands.
+    :param tmpdir: Temporary directory for test outputs.
+    :param data_dir: Directory with test data.
     """
     with use_working_directory(data_dir):
         cmd = f"signed-msg parse -f mimxrt1189 -b ahab/signed_msg/signed_msg_oem_field_return.bin -o {tmpdir}"
@@ -731,10 +741,10 @@ def test_nxpimage_signed_msg_template_cli(
     Verifies that the signed-msg get-template command generates a valid template
     for different families and message types.
 
-    :param cli_runner: CLI runner instance to invoke commands
-    :param tmpdir: Temporary directory for test outputs
-    :param family: Target family/platform for the template
-    :param message: Message type for the template (or None for default)
+    :param cli_runner: CLI runner instance to invoke commands.
+    :param tmpdir: Temporary directory for test outputs.
+    :param family: Target family/platform for the template.
+    :param message: Message type for the template (or None for default).
     """
     cmd = (
         f"signed-msg get-template -f {family.name} {f'-m {message}' if message else ''}"
@@ -748,9 +758,9 @@ def test_nxpimage_signed_message_parse(data_dir: str) -> None:
     """Test parsing of signed messages.
 
     Verifies that a signed message binary can be correctly parsed, validated, and
-    re-exported to match the original.
+    re-exported to match the original binary file.
 
-    :param data_dir: Directory with test data
+    :param data_dir: Directory containing test data files.
     """
     with use_working_directory(data_dir):
         original_file = load_binary(f"{data_dir}/ahab/signed_msg/signed_msg_oem_field_return.bin")
@@ -766,7 +776,7 @@ def test_nxpimage_signed_message_key_exchange(data_dir: str) -> None:
     Verifies that a key exchange signed message can be correctly loaded from config,
     fields updated, and then validated.
 
-    :param data_dir: Directory with test data
+    :param data_dir: Directory with test data files.
     """
     with use_working_directory(data_dir):
         config = Config.create_from_file(
@@ -836,6 +846,68 @@ def test_nxpimage_ahab_update_keyblob_bootable(
         assert new_bin != ref_bin
 
 
+@pytest.mark.parametrize(
+    "combination",
+    [
+        (0, 0, "success"),
+        (0, 1, "success"),
+        (0, 2, "success"),
+        (0, 3, "fail"),
+        (1, 0, "success"),
+        (1, 1, "success"),
+        (1, 2, "success"),
+        (1, 3, "fail"),
+        (2, 0, "fail"),
+    ],
+)
+def test_nxpimage_ahab_update_keyblob_bootable_multiple_containers_with_keyblob(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str, combination: Tuple[int, int, str]
+) -> None:
+    image, container, expected_result = combination
+    with use_working_directory(data_dir):
+        keyblob = "ahab/keyblobs/mimx9596_keyblob.bin"
+        ref_bin_path = "ahab/mimx9596_bootable_sd.bin"
+        tmp_bin_path = f"{tmpdir}/mimx9596_bootable_sd.bin"
+        shutil.copyfile(ref_bin_path, tmp_bin_path)
+
+        cmd = (
+            f"ahab update-keyblob -f mimx9596 -m sd -b {tmp_bin_path}"
+            f" --image-id {image} --container-id {container} -k {keyblob}"
+        )
+
+        expected_code = -1 if expected_result == "fail" else 0
+
+        ret = cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=expected_code)
+
+        if expected_result != "success":
+            assert ret.exit_code != 0
+            return
+
+        new_binary_data = load_binary(tmp_bin_path)
+        bimg = BootableImage.parse(new_binary_data, FamilyRevision("mimx9596"), MemoryType.SD)
+        bimg.verify().validate()
+
+        assert len(bimg.segments) == 2, "Expected two segments in the bootable image"
+        assert all([isinstance(segment, SegmentAhab) for segment in bimg.segments])
+
+        segment = bimg.segments[image]
+        assert isinstance(segment, SegmentAhab), "Segment should be an AHAB segment"
+
+        ahab = segment.ahab
+        assert ahab is not None
+
+        assert len(ahab.ahab_containers) == 3
+        signature_block = ahab.ahab_containers[container].signature_block
+        blob = signature_block.blob  # type: ignore
+
+        keyblob_binary_data = load_binary(keyblob)
+        new_blob = AhabBlob.parse(keyblob_binary_data)
+        assert new_blob.dek_keyblob == blob.dek_keyblob  # type: ignore
+        # This is just sanity check that we changed a correct keyblob
+        # That is why we enumerated keyblobs used in the images sequentially
+        assert blob.key_identifier == image * 3 + container  # type: ignore
+
+
 def test_nxpimage_ahab_update_keyblob_invalid(cli_runner: CliRunner, data_dir: str) -> None:
     """Test error handling in AHAB keyblob update functionality.
 
@@ -843,8 +915,8 @@ def test_nxpimage_ahab_update_keyblob_invalid(cli_runner: CliRunner, data_dir: s
     by attempting to update a non-existent container ID and checking that the command
     fails with the expected error code.
 
-    :param cli_runner: CLI runner instance for executing nxpimage commands
-    :param data_dir: Directory containing test data files
+    :param cli_runner: CLI runner instance for executing nxpimage commands.
+    :param data_dir: Directory containing test data files.
     """
     with use_working_directory(data_dir):
         cmd = (
@@ -870,9 +942,9 @@ def test_nxpimage_ahab_get_template(cli_runner: CliRunner, tmpdir: str, family: 
     configuration templates for different processor families. Ensures the template
     file is created at the specified location with the proper format.
 
-    :param cli_runner: CLI runner instance for executing nxpimage commands
-    :param tmpdir: Temporary directory for storing the generated template
-    :param family: Target processor family for which to generate the template
+    :param cli_runner: CLI runner instance for executing nxpimage commands.
+    :param tmpdir: Temporary directory for storing the generated template.
+    :param family: Target processor family for which to generate the template.
     """
     cmd = f"ahab get-template -f {family} -o {tmpdir}/tmp.yaml"
     cli_runner.invoke(nxpimage.main, cmd.split())
@@ -895,9 +967,9 @@ def test_nxpimage_ahab_sign_get_template(cli_runner: CliRunner, tmpdir: str, fam
     configuration templates for different processor families. Tests that the output
     template file is created with the expected format and content.
 
-    :param cli_runner: CLI runner instance for executing nxpimage commands
-    :param tmpdir: Temporary directory for storing the generated template
-    :param family: Target processor family for which to generate the template
+    :param cli_runner: CLI runner instance for executing nxpimage commands.
+    :param tmpdir: Temporary directory for storing the generated template.
+    :param family: Target processor family for which to generate the template.
     """
     cmd = f"ahab get-template -f {family} -o {tmpdir}/tmp.yaml --sign"
     cli_runner.invoke(nxpimage.main, cmd.split())
@@ -913,9 +985,9 @@ def test_nxpimage_ahab__invalid_encrypt_flag(
     encryption flags by checking that the export command fails with a non-zero exit
     code and that no output binary is generated.
 
-    :param cli_runner: CLI runner instance for executing nxpimage commands
-    :param tmpdir: Temporary directory for test output files
-    :param data_dir: Directory containing test data files
+    :param cli_runner: CLI runner instance for executing nxpimage commands.
+    :param tmpdir: Temporary directory for test output files.
+    :param data_dir: Directory containing test data files.
     """
     with use_working_directory(data_dir):
         config_file = f"{data_dir}/ahab/config_ctcm_invalid_encrypt_flag.yaml"
@@ -985,6 +1057,7 @@ def test_nxpimage_ahab_fuses(cli_runner: CliRunner, tmpdir: str, data_dir: str) 
             )
 
 
+# cSpell:disable
 @pytest.mark.parametrize(
     "config_file,family,input_binary,hash_algo,srk_hash0,srk_hash1",
     [
@@ -1055,6 +1128,7 @@ def test_nxpimage_ahab_fuses(cli_runner: CliRunner, tmpdir: str, data_dir: str) 
         ),
     ],
 )
+# cSpell:enable
 def test_nxpimage_ahab_sign(
     cli_runner: CliRunner,
     tmpdir: str,
@@ -1071,15 +1145,17 @@ def test_nxpimage_ahab_sign(
     Tests the 'ahab sign' command by signing a binary file with the provided configuration
     and verifying that the signed output is valid. For encrypted configurations, also tests
     the decryption process with a test DEK key. Additionally verifies that the SRK hash
-    (SRKH) is correctly computed.
+    (SRKH) is correctly computed and fuse script generation.
 
-    :param cli_runner: Runner for executing CLI commands in tests
-    :param tmpdir: Temporary directory for test output files
-    :param data_dir: Directory containing test data files
-    :param config_file: Name of the signing configuration file to use
-    :param input_binary: Name of the binary file to be signed
-    :param family: Target family for the AHAB image (e.g., mx93, mx95)
-    :param hash_algo: Hash algorithm, default or hash specified in config
+    :param cli_runner: Runner for executing CLI commands in tests.
+    :param tmpdir: Temporary directory for test output files.
+    :param data_dir: Directory containing test data files.
+    :param config_file: Name of the signing configuration file to use.
+    :param input_binary: Name of the binary file to be signed.
+    :param family: Target family for the AHAB image (e.g., mx93, mx95).
+    :param hash_algo: Hash algorithm, default or hash specified in config.
+    :param srk_hash0: Expected SRK hash for first SRK table.
+    :param srk_hash1: Expected SRK hash for second SRK table (PQC configurations).
     """
     with use_working_directory(data_dir):
         config_file_path = f"{data_dir}/ahab/{config_file}"
@@ -1112,7 +1188,15 @@ def test_nxpimage_ahab_sign(
         ahab = AHABImage.parse(signed_image, family_revision)
 
         # Helper function to find files with either oem0 or oem1
-        def find_oem_file(base_pattern: str) -> str:
+        def find_oem_file(base_pattern: str) -> Optional[str]:
+            """Find OEM-specific file based on base pattern.
+
+            Searches for OEM-specific files by replacing the {oem} placeholder in the base pattern
+            with available OEM options (oem0, oem1) and checking if the resulting file exists.
+
+            :param base_pattern: File path pattern containing {oem} placeholder to be replaced.
+            :return: Absolute path to the first existing OEM file found, or None if no file exists.
+            """
             oem_options = ["oem0", "oem1"]
             for oem in oem_options:
                 file_path = os.path.join(fuse_scripts_dir, base_pattern.replace("{oem}", oem))

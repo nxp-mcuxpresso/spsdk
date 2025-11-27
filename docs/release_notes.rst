@@ -16,6 +16,52 @@
 Release Notes
 =============
 
+-----------------------
+3.5.0 28-November-2025
+-----------------------
+
+**New features**
+
+* :ref:`el2go-host`:
+    - enhance SecureObject and TLVElement string representations and size handling
+
+* `nxpcrypto`_:
+    - add RoT binary parsing functionality with public key extraction
+
+* `nxpimage`_:
+    - add image descriptor flag support to AHAB Image Array Entry
+    - add support for configuration strings in SB3.1 and SB4.0 PCK validation
+
+* add case-insensitive config key matching for registers and bitfields
+* support i.MX95294
+
+**Bugfixes**
+
+* :ref:`el2go-host`:
+    - add PROV_ID element tag to secure objects
+    - fix i.MX93 El2go provisioning batch mode issue with more robust handling of loading bootloaders with temporary timeouts
+    - disable cleanup method on mcxn236
+
+* `nxpdice`_:
+    - add support for truncated RKTH length validation in DICE target
+
+* :ref:`nxpdevhsm`:
+    - explicitly enable execute command for RT700
+
+* `nxpimage`_:
+    - fix multiple warnings for update in AHAB container
+    - fix image size should not be aligned in AHAB with reworked offsets handling
+    - make update-keyblob work with different ahab container types
+    - fix the last ahab image size is aligned to 8 bytes but the image itself NOT
+    - fix handling YAML boolean auto-conversion for plainInput field in SB31/SB4
+    - correct RADIO_IP enum name to RADIO_LP in firmware version check command for SB31
+    - reduce the minimum alignment requirement for AHAB binary images when using serial downloader target memory from 512 bytes to 4 bytes
+    - improve HSE IVT address handling with optional fields
+
+* :ref:`nxpuuu`:
+    - fix -d flag timeout
+    - add printout of the error message string and change the computation of click progress bar
+
 -------------------------
 3.4.0 (24-October-2025)
 -------------------------
@@ -55,7 +101,7 @@ Release Notes
     - unify get-template output messages
 
 * :ref:`nxpele`:
-    - secure enclave key provision support 
+    - secure enclave key provision support
 
 * `nxpimage`_:
     - implement iae templates for kernel image and dtb
@@ -101,7 +147,7 @@ Available on `GitHub <https://github.com/nxp-mcuxpresso/rblhost>`_, `Crates <htt
 * :ref:`nxpdevhsm`:
     - add new format for sbfile for mcxa family devices with secure installer/extended bootloader
 
-* support mcxe24 
+* support mcxe24
 * support mcxn556s
 * add S19 to binary converter
 * update CLI apps to display subgroups as trees
@@ -131,7 +177,7 @@ Available on `GitHub <https://github.com/nxp-mcuxpresso/rblhost>`_, `Crates <htt
 **New features**
 
 * :ref:`el2go-host`:
-    - implement product based provissioning for RW61x
+    - implement product based provisioning for RW61x
     - improved exit code handling on error
 
 * `nxpdebugmbox`_:
@@ -240,7 +286,7 @@ Current version introduces breaking changes, which are described in details in `
     - simplify input data values
 * `pfr`_:
     - remove option --show-calc from parse/read commands
-    - remove option --calc-inverse from generte binary command
+    - remove option --calc-inverse from generate binary command
     - rename generate-binary command to export
     - rename parse-binary command to parse
     - require 'family' in BD file for SB2.1 and optionally 'revision' in the 'options' block
@@ -274,7 +320,7 @@ Current version introduces breaking changes, which are described in details in `
     - fix RT118x build IEE image failure
     - fix parsing of imx943 bootable image
     - fix issues with receiving sb31
-    - fix convertion binary from S19
+    - fix conversion binary from S19
     - fix parsing of FCB for RT7xx
     - remove unnecessary enableTrustZone parameter in MBI config files
     - fix overlapping detection and adjust-offsets functionality in binary-image merge
@@ -302,7 +348,7 @@ Current version introduces breaking changes, which are described in details in `
 * The definition of signing local key and signature provider definition in configuration will be implemented into one configuration record
 * All data in database will be unified under one style (utility/registers.py)
 * The configuration option on CLI will be extended by new -oc/--override-config to override any configuration in CLI
-* SmartCard Trust Provisioning has been discontinued. Associated aplications (tphost, tpconfig) will be removed.
+* SmartCard Trust Provisioning has been discontinued. Associated applications (tphost, tpconfig) will be removed.
 
 ------------------------
 2.6.0 (7-February-2025)
@@ -317,7 +363,7 @@ Current version introduces breaking changes, which are described in details in `
     - support set CRP in lpcprog
     - add optional parameter to repeat the command several times if fails
 * `nxpimage`_:
-    - support BCA and FCF configuration for mcxcxxx
+    - support BCA and FCF configuration for mcxc family devices
 * support mcxw23x
 * support i.MX943
 * implement Key Import signed message
@@ -356,7 +402,7 @@ Current version introduces breaking changes, which are described in details in `
 
 * `nxpimage`_:
     - fix encryption in OTFAD
-    - fix bootableimage creation with just one bootable image
+    - fix bootable image creation with just one bootable image
 * :ref:`nxpdevscan`:
     - fix filtering the correct serial port devices on macOS
 

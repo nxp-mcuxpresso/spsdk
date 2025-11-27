@@ -1,10 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
+"""SPSDK USB-SIO device configuration testing module.
+
+This module contains unit tests for USB-SIO device configuration parsing
+functionality, ensuring proper validation of configuration strings and
+error handling for invalid inputs.
+"""
+
+from typing import Any, Optional, Union
+
 import pytest
+
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.interfaces.device.usbsio_device import UsbSioConfig
 
@@ -74,13 +85,31 @@ from spsdk.utils.interfaces.device.usbsio_device import UsbSioConfig
     ],
 )
 def test_libusbsio_parse_valid_configuration_string(
-    interface, config, usb_cfg, port_num, args, kwargs
-):
-    config = UsbSioConfig.from_config_string(config, interface)
-    assert config.usb_config == usb_cfg
-    assert config.port_num == port_num
-    assert config.interface_args == args
-    assert config.interface_kwargs == kwargs
+    interface: str,
+    config: str,
+    usb_cfg: Optional[str],
+    port_num: int,
+    args: list[Union[int, str]],
+    kwargs: dict[str, Any],
+) -> None:
+    """Test parsing of valid USBSIO configuration strings.
+
+    Validates that UsbSioConfig.from_config_string correctly parses valid
+    configuration strings and produces expected configuration objects with
+    proper USB configuration, port number, interface arguments and keyword arguments.
+
+    :param interface: Interface type identifier for the USBSIO device.
+    :param config: Configuration string to be parsed.
+    :param usb_cfg: Expected USB configuration string after parsing.
+    :param port_num: Expected port number after parsing.
+    :param args: Expected list of interface arguments after parsing.
+    :param kwargs: Expected dictionary of interface keyword arguments after parsing.
+    """
+    usbsio_config = UsbSioConfig.from_config_string(config, interface)
+    assert usbsio_config.usb_config == usb_cfg
+    assert usbsio_config.port_num == port_num
+    assert usbsio_config.interface_args == args
+    assert usbsio_config.interface_kwargs == kwargs
 
 
 @pytest.mark.parametrize(
@@ -92,6 +121,15 @@ def test_libusbsio_parse_valid_configuration_string(
         ("i2c", "i2c=1,0,15,1000"),
     ],
 )
-def test_libusbsio_parse_invalid_configuration_string(interface, config):
+def test_libusbsio_parse_invalid_configuration_string(interface: str, config: str) -> None:
+    """Test that UsbSioConfig.from_config_string raises SPSDKError for invalid configuration strings.
+
+    This test verifies that the from_config_string method properly validates input
+    and raises appropriate exceptions when given malformed or invalid configuration data.
+
+    :param interface: The interface type to use for configuration parsing.
+    :param config: Invalid configuration string that should trigger an exception.
+    :raises SPSDKError: Expected exception when parsing invalid configuration.
+    """
     with pytest.raises(SPSDKError):
         UsbSioConfig.from_config_string(config, interface)

@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""API for communicating with the EL2GO server."""
+"""SPSDK EL2GO API utilities for server communication and data processing.
+
+This module provides essential utilities for communicating with EdgeLock 2GO (EL2GO)
+provisioning servers, including status management, data processing, and OTP client
+functionality. It defines status enums, domain configurations, and helper functions
+for secure provisioning workflows.
+"""
 
 import base64
 import json
@@ -31,7 +37,12 @@ logger = logging.getLogger(__name__)
 
 
 class GenStatus(list, Enum):  # type: ignore
-    """Provisioning generation status."""
+    """EL2GO provisioning generation status enumeration.
+
+    This enumeration defines the possible states during the secure object generation
+    and provisioning process in EL2GO service, providing both status codes and
+    human-readable descriptions for each state.
+    """
 
     GENERATION_TRIGGERED = ["GENERATION_TRIGGERED", "Creation of Secure Objects was started"]
     GENERATION_COMPLETED = ["GENERATION_COMPLETED", "Creation of Secure Objects is completed"]
@@ -48,7 +59,12 @@ class GenStatus(list, Enum):  # type: ignore
 
 
 class JobStatus(list, Enum):  # type: ignore
-    """Provisioning job status."""
+    """EL2GO provisioning job status enumeration.
+
+    This enumeration defines the possible status values for provisioning jobs
+    in the EL2GO service, providing both status codes and human-readable
+    descriptions for job state tracking.
+    """
 
     JOB_TRIGGERED = ["JOB_TRIGGERED", "Job creation started"]
     JOB_PROCESSING = ["JOB_PROCESSING", "Job is being processed"]
@@ -89,7 +105,11 @@ NO_DATA_STATES = [
 
 
 class ProvisioningMethod(str, Enum):
-    """Various types of TP methods."""
+    """Enumeration of available provisioning methods for EdgeLock 2GO.
+
+    This enum defines the supported provisioning methods that can be used
+    with EdgeLock 2GO services for device provisioning and configuration.
+    """
 
     DISPATCH_FW = "dispatch_fw"
     FW_USER_CONFIG = "fw_user_config"
@@ -97,8 +117,27 @@ class ProvisioningMethod(str, Enum):
     OEM_APP = "oem_app"
 
 
+class DispatchMethod(str, Enum):
+    """Trust Provisioning firmware dispatch method enumeration.
+
+    This enumeration defines the available methods for dispatching firmware
+    during the trust provisioning process, including write operations with
+    or without reset and secure boot configurations.
+    """
+
+    WRITE_RESET = "write_reset"
+    WRITE_ONLY = "write_only"
+    SB_RESET = "sb_reset"
+    SB_ONLY = "sb_only"
+    NONE = "none"
+
+
 class EL2GODomain(str, Enum):
-    """EL2GO Domain types."""
+    """EL2GO Domain enumeration for supported domain types.
+
+    This enumeration defines the available domain types that can be used
+    with EL2GO (EdgeLock 2GO) services for device provisioning and management.
+    """
 
     MATTER = "MATTER"
     RTP = "RTP"
@@ -108,7 +147,14 @@ EL2GO_DOMAINS = [EL2GODomain.MATTER.value, EL2GODomain.RTP.value]
 
 
 class EL2GOTPClient(EL2GOClient):
-    """EL2GO HTTP Client for TP operations."""
+    """EL2GO HTTP Client for Trust Provisioning operations.
+
+    This client provides specialized functionality for Trust Provisioning (TP) workflows
+    with EdgeLock 2GO service, including device provisioning, secure object generation,
+    and firmware management for NXP MCU devices.
+
+    :cvar DEFAULT_URL: Default EdgeLock 2GO API server URL.
+    """
 
     DEFAULT_URL = "https://api.edgelock2go.com"
 
@@ -126,14 +172,19 @@ class EL2GOTPClient(EL2GOClient):
     ) -> None:
         """Initialize EL2GO TP HTTP Client.
 
-        :param api_key: User EL2GO API key
-        :param nc12: Product (12NC) number
-        :param device_group_id: Device group to work with
-        :param family: Target chip family
+        Sets up the client with API credentials, device configuration, and provisioning
+        parameters for EdgeLock 2GO Trusted Provisioning operations.
+
+        :param api_key: User EL2GO API key for authentication
+        :param nc12: Product (12NC) number identifying the device type
+        :param device_group_id: Device group identifier to work with
+        :param family: Target chip family revision
         :param url: EL2GO Server API URL, defaults to "https://api.edgelock2go.com"
-        :param timeout: Timeout for each API call, defaults to 60
-        :param download_timeout: Timeout for downloading Secure Objects, defaults to 300
-        :param delay: Delay between API calls when downloading Secure Objects, defaults to 5
+        :param timeout: Timeout for each API call in seconds, defaults to 60
+        :param download_timeout: Timeout for downloading Secure Objects in seconds, defaults to 300
+        :param delay: Delay between API calls when downloading Secure Objects in seconds, defaults to 5
+        :param kwargs: Additional configuration parameters including prov_fw_path, bootloader paths,
+            and provisioning settings
         """
         self.nc12 = nc12
         self.device_group_id = device_group_id
@@ -145,13 +196,16 @@ class EL2GOTPClient(EL2GOClient):
         self.prov_method = ProvisioningMethod(
             self.db.get_str(DatabaseManager.EL2GO_TP, "prov_method")
         )
+        self.dispatch_method = DispatchMethod(
+            self.db.get_str(DatabaseManager.EL2GO_TP, "dispatch_method", default="none")
+        )
         self.hardware_family_type = self.db.get_str(DatabaseManager.EL2GO_TP, "el2go_name")
         self.fw_load_address = self.db.get_int(DatabaseManager.EL2GO_TP, "fw_load_address")
 
         self.prov_fw_path = kwargs.pop("prov_fw_path")
         self._prov_fw: Optional[bytes] = None
 
-        self.uboot_path = kwargs.pop("uboot_path", None)
+        self.bootloader_path = kwargs.pop("imx_bootloader_path", None)
         self.fatwrite_filename = kwargs.pop("fatwrite_filename", "secure_objects.bin")
         self.fatwrite_interface = kwargs.pop("fatwrite_interface", "mmc")
         self.fatwrite_device_partition = kwargs.pop("fatwrite_device_partition", "0:1")
@@ -172,12 +226,21 @@ class EL2GOTPClient(EL2GOClient):
 
     @property
     def loader(self) -> Optional[str]:
-        """Return path to optional loader app that is loaded before provisioning."""
-        return self.uboot_path
+        """Return path to optional loader app that is loaded before provisioning.
+
+        :return: Path to the loader application file, or None if no loader is configured.
+        """
+        return self.bootloader_path
 
     @property
     def prov_fw(self) -> Optional[bytes]:
-        """Provisioning firmware binary."""
+        """Get provisioning firmware binary data.
+
+        Loads the provisioning firmware binary from file path if not already cached.
+        Returns cached binary data on subsequent calls.
+
+        :return: Provisioning firmware binary data, or None if no firmware path is set.
+        """
         if self._prov_fw is None:
             if not self.prov_fw_path:
                 return None
@@ -185,9 +248,14 @@ class EL2GOTPClient(EL2GOClient):
         return self._prov_fw
 
     def response_handling(self, response: EL2GOApiResponse, url: str) -> None:
-        """Handle an error response.
+        """Handle an error response from EL2GO API.
 
-        :raises SPSDKHTTPClientError: In case of an erroneous response (response code >= 400)
+        The method checks the HTTP status code and raises an exception for client and server errors
+        (status codes >= 400) with detailed error information including correlation ID.
+
+        :param response: The API response object containing status code and response body.
+        :param url: The URL that was called when the response was received.
+        :raises SPSDKHTTPClientError: In case of an erroneous response (response code >= 400).
         """
         if response.status_code >= 400:
             raise SPSDKHTTPClientError(
@@ -203,7 +271,17 @@ class EL2GOTPClient(EL2GOClient):
     def assign_device_to_devicegroup(
         self, device_id: str, allow_reassignment: bool = False
     ) -> None:
-        """Assign a device to the configured group."""
+        """Assign a device to the configured device group.
+
+        This method attempts to assign a device to the preconfigured device group. If the device
+        is already assigned to a different group, it can optionally reassign the device by first
+        unassigning it from the current group and then assigning it to the target group.
+
+        :param device_id: Unique identifier of the device to assign.
+        :param allow_reassignment: Whether to allow reassignment if device is in different group.
+        :raises SPSDKError: If device is not found or assignment fails.
+        :raises SPSDKError: If device is in different group and reassignment is disabled.
+        """
         response, url = self._assign_device_to_group(device_id=device_id)
         if response.status_code == 422 and response.json_body["code"] == "ERR_SEDM_422_11":
             details: dict = json.loads(response.json_body["details"])
@@ -235,7 +313,16 @@ class EL2GOTPClient(EL2GOClient):
         self.response_handling(response, url)
 
     def get_generation_status(self, device_id: str) -> str:
-        """Get status of Secure Objects creation for given device."""
+        """Get status of Secure Objects creation for given device.
+
+        Retrieves the current provisioning state of secure objects for a specific device
+        by querying the EL2GO API. The method checks all provisioning entries and returns
+        the appropriate status based on the current state.
+
+        :param device_id: Unique identifier of the device to check status for.
+        :raises SPSDKError: When secure object generation has failed.
+        :return: Current provisioning state as a string (WAIT, OK, or specific state).
+        """
         url = f"/api/v1/rtp/devices/{device_id}/secure-object-provisionings"
         data = {
             "hardware-family-type": [self.hardware_family_type],
@@ -260,15 +347,38 @@ class EL2GOTPClient(EL2GOClient):
         return OK_STATES[0]
 
     def download_provisionings(self, device_id: str) -> dict:
-        """Download provisionings for given device."""
+        """Download provisionings for given device.
+
+        This method waits for provisionings to be ready and then downloads them
+        for the specified device.
+
+        :param device_id: Unique identifier of the device to download provisionings for.
+        :return: Dictionary containing the provisioning data for the device.
+        """
         self._wait_for_provisionings(device_id=device_id)
         return self._download_provisionings(device_id=device_id)
 
     def _make_device_id_list(self, device_id: Union[str, list[str]]) -> list[str]:
+        """Convert device ID to a list format.
+
+        Normalizes device ID input by converting a single string to a list containing
+        that string, or returning the list as-is if already a list.
+
+        :param device_id: Single device ID string or list of device ID strings.
+        :return: List of device ID strings.
+        """
         return [device_id] if isinstance(device_id, str) else device_id
 
     def _sanitize_domains(self, domains: list[str]) -> list[str]:
-        """Sanitize domain types."""
+        """Sanitize and validate domain types.
+
+        Converts domain strings to uppercase and validates them against the list of
+        supported EL2GO domains.
+
+        :param domains: List of domain type strings to sanitize and validate.
+        :raises SPSDKError: If domains is not a list or contains invalid domain types.
+        :return: List of sanitized (uppercase) domain strings.
+        """
         if not isinstance(domains, list):
             raise SPSDKError("Domains must be a list of strings")
         sanitized = [domain.upper() for domain in domains]
@@ -278,6 +388,16 @@ class EL2GOTPClient(EL2GOClient):
         return sanitized
 
     def _download_provisionings(self, device_id: Union[str, list[str]]) -> dict:
+        """Download provisioning data for specified devices from EL2GO service.
+
+        This method retrieves provisioning configurations and data for one or more devices
+        from the EL2GO remote trust provisioning service using the configured device group
+        and hardware family type.
+
+        :param device_id: Single device ID as string or list of device IDs to download
+                         provisioning data for.
+        :return: Dictionary containing the provisioning data response from EL2GO service.
+        """
         url = f"/api/v1/rtp/device-groups/{self.device_group_id}/devices/download-provisionings"
         data = {
             "productHardwareFamilyType": self.hardware_family_type,
@@ -291,6 +411,15 @@ class EL2GOTPClient(EL2GOClient):
         return response.json_body
 
     def _wait_for_provisionings(self, device_id: str) -> None:
+        """Wait for secure objects provisioning to complete.
+
+        Monitors the provisioning status of secure objects for a specific device until completion
+        or timeout. The method polls the generation status at regular intervals and handles
+        different status states appropriately.
+
+        :param device_id: Unique identifier of the device for which to wait for provisioning.
+        :raises SPSDKError: If provisioning fails or times out.
+        """
         time.sleep(2)
         timeout = Timeout(self.download_timeout)
         while not timeout.overflow():
@@ -310,16 +439,26 @@ class EL2GOTPClient(EL2GOClient):
         )
 
     def download_secure_objects(self, device_id: str) -> bytes:
-        """Download all secure objects for given device."""
+        """Download all secure objects for given device.
+
+        This method retrieves all provisioning data for the specified device and
+        serializes it into a binary format containing the secure objects.
+
+        :param device_id: Unique identifier of the device to download secure objects for.
+        :return: Serialized binary data containing all secure objects for the device.
+        """
         provisionings = self.download_provisionings(device_id=device_id)
         data = self.serialize_provisionings(provisionings=provisionings)
         return data
 
     def serialize_provisionings(self, provisionings: dict) -> bytes:
-        """Serialize Secure Objects from JSON object to bytes.
+        """Serialize provisioning data from dictionary to bytes.
 
-        :param provisionings: Dictionary containing provisioning information
-        :return: Serialized bytes of provisioning data
+        The method iterates through all device provisioning entries in the dictionary
+        and serializes each one individually using the internal serialization method.
+
+        :param provisionings: Dictionary containing provisioning information for devices
+        :return: Serialized bytes of all provisioning data concatenated together
         """
         data = bytes()
         for dev_prov in provisionings:
@@ -327,6 +466,15 @@ class EL2GOTPClient(EL2GOClient):
         return data
 
     def _serialize_single_provisioning(self, provisioning: dict) -> bytes:
+        """Serialize single provisioning data into binary format.
+
+        Processes RTP provisionings from the provisioning dictionary and converts
+        completed or ready APDU commands into binary data. Logs warnings for
+        provisionings that are in special states.
+
+        :param provisioning: Dictionary containing RTP provisioning data with states and APDU commands.
+        :return: Serialized binary data from all applicable APDU commands.
+        """
         data = bytes()
         for rtp_prov in provisioning["rtpProvisionings"]:
             if rtp_prov["state"] == GenStatus.GENERATION_COMPLETED.value[0]:
@@ -343,9 +491,24 @@ class EL2GOTPClient(EL2GOClient):
         return data
 
     def get_uuids(self) -> list[str]:
-        """Get UUIDs registered in Device Group."""
+        """Get UUIDs registered in Device Group.
+
+        Retrieves all device UUIDs from the specified device group by paginating through
+        the API responses until all devices are collected.
+
+        :raises SPSDKError: If the API request fails or response handling encounters an error.
+        :return: List of device UUIDs registered in the device group.
+        """
 
         def _extract_uuids(data: dict) -> list[str]:
+            """Extract device UUIDs from API response data.
+
+            This method parses the API response structure and extracts the unique identifiers
+            for all devices contained in the response content.
+
+            :param data: Dictionary containing API response with device information structure.
+            :return: List of device UUID strings extracted from the response data.
+            """
             devices = [device_info["device"]["id"] for device_info in data["content"]]
             return devices
 
@@ -365,7 +528,17 @@ class EL2GOTPClient(EL2GOClient):
     def _find_device_group_id(
         self, device_id: str, group_id: Optional[Union[str, int]] = None
     ) -> str:
-        """Find GROUP_ID in which the given device is assigned."""
+        """Find device group ID for a given device.
+
+        Searches for the group ID in which the specified device is assigned. If a group ID
+        is provided, it validates that the device exists in that group. Otherwise, it searches
+        through all available device groups in the product.
+
+        :param device_id: The ID of the device to search for.
+        :param group_id: Optional specific group ID to check. If not provided, searches all groups.
+        :return: The group ID where the device is found.
+        :raises SPSDKError: If the device is not found in any of the candidate groups.
+        """
         if group_id:
             candidates = [group_id]
         else:
@@ -392,7 +565,14 @@ class EL2GOTPClient(EL2GOClient):
     def _assign_device_to_group(
         self, device_id: Union[str, list[str]]
     ) -> tuple[EL2GOApiResponse, str]:
-        """Assign a device to the configured group."""
+        """Assign a device to the configured group.
+
+        This method assigns one or more devices to the device group that was configured
+        during the API client initialization.
+
+        :param device_id: Single device ID as string or list of device IDs to assign to the group.
+        :return: Tuple containing the API response object and the request URL used.
+        """
         url = f"/api/v1/products/{self.nc12}/device-groups/{self.device_group_id}/devices"
         data = {
             "deviceIds": self._make_device_id_list(device_id),
@@ -403,7 +583,17 @@ class EL2GOTPClient(EL2GOClient):
     def _unassign_device_from_group(
         self, device_id: Union[str, list[str]], group_id: Optional[str] = None, wait_time: int = 10
     ) -> tuple[EL2GOApiResponse, str]:
-        """Unassign a device from the device group."""
+        """Unassign a device from the device group.
+
+        This method removes one or more devices from a specified device group by making
+        a POST request to the EL2GO API. It includes an optional wait time to mitigate
+        potential race conditions in the EL2GO system.
+
+        :param device_id: Single device ID as string or list of device IDs to unassign.
+        :param group_id: Device group ID to unassign from. Uses default group if None.
+        :param wait_time: Time in seconds to wait after request to avoid race conditions.
+        :return: Tuple containing API response object and the request URL.
+        """
         url = f"/api/v1/products/{self.nc12}/device-groups/{group_id or self.device_group_id}/devices/unclaim"
         data = {
             "deviceIds": self._make_device_id_list(device_id),
@@ -416,14 +606,23 @@ class EL2GOTPClient(EL2GOClient):
         return response, url
 
     def get_test_connection_response(self) -> EL2GOApiResponse:
-        """Test connection to EL2GO."""
+        """Test connection to EL2GO service.
+
+        Performs a GET request to verify connectivity and authentication with the EL2GO service
+        by attempting to access the device group information.
+
+        :return: Response object containing the result of the connection test.
+        """
         url = f"/api/v1/products/{self.nc12}/device-groups/{self.device_group_id}"
         return self._handle_el2go_request(method=self.Method.GET, url=url)
 
     def test_connection(self) -> None:
         """Test connection to EL2GO service.
 
-        :raises SPSDKHTTPClientError: In case of an erroneous response (response code >= 400)
+        This method verifies connectivity to the EL2GO service by making a request to the
+        device group endpoint and handling the response appropriately.
+
+        :raises SPSDKHTTPClientError: In case of an erroneous response (response code >= 400).
         """
         url = f"/api/v1/products/{self.nc12}/device-groups/{self.device_group_id}"
         response = self.get_test_connection_response()
@@ -432,12 +631,16 @@ class EL2GOTPClient(EL2GOClient):
     def register_devices(
         self, uuids: list[str], remove_errors: bool = False
     ) -> tuple[Optional[str], Optional[int]]:
-        """Register job for UUIDs.
+        """Register devices for provisioning job.
 
-        :param uuids: List of UUIDs to submit into registration job
-        :param remove_errors: Attempt to remove erroneous UUIDs, defaults to False
+        Submits a list of device UUIDs to create a registration job. Optionally handles
+        erroneous UUIDs by removing them and retrying the registration process.
+
+        :param uuids: List of device UUIDs to submit into registration job
+        :param remove_errors: Attempt to remove erroneous UUIDs and retry, defaults to False
         :raises SPSDKHTTPClientError: In case of an erroneous response (response code >= 400)
-        :return: Tuple of Job ID and Job size. None indicates that no UUIDs were left after removing the erroneous ones
+        :return: Tuple of Job ID and Job size. None values indicate no UUIDs were left
+                 after removing erroneous ones
         """
         logger.info(f"Submitting job for {len(uuids)} devices")
         url = f"/api/v1/products/{self.nc12}/device-groups/{self.device_group_id}/register-devices"
@@ -483,7 +686,14 @@ class EL2GOTPClient(EL2GOClient):
         return response.json_body["jobId"], len(uuids)
 
     def get_job_details(self, job_id: str) -> Optional[dict]:
-        """Get job details."""
+        """Get job details from EL2GO service.
+
+        Retrieves detailed information about a specific job using its unique identifier.
+        If the job is not found, returns None instead of raising an exception.
+
+        :param job_id: Unique identifier of the job to retrieve details for.
+        :return: Dictionary containing job details if found, None if job doesn't exist.
+        """
         logger.info(f"Getting job details for {job_id}")
         url = f"/api/v2/rtp/jobs/{job_id}"
         response = self._handle_el2go_request(self.Method.GET, url=url)
@@ -494,8 +704,11 @@ class EL2GOTPClient(EL2GOClient):
     def create_secure_objects_batch(self, devices: int) -> Optional[str]:
         """Create secure objects batch for a given number of devices.
 
-        :param devices: Number of devices to create batch for
-        :return: Job ID if successful, None if no dynamic data available only static
+        The method requests a batch job for secure object provisioning. If no dynamic data
+        is available for the device group, it falls back to static provisioning only.
+
+        :param devices: Number of devices to create batch for.
+        :return: Job ID string if successful, None if only static data available.
         """
         logger.info(f"Creating secure objects batch for {devices} devices")
         url = "/api/v2/rtp/product-based-provisionings/request-batch-job"
@@ -512,8 +725,12 @@ class EL2GOTPClient(EL2GOClient):
     def download_secure_objects_batch(self, job_id: Optional[str] = None) -> dict:
         """Download secure objects batch for a given job or static secure objects.
 
-        :param job_id: Job ID to download batch for, if None static secure objects are downloaded
-        :return: JSON response body with secure objects data
+        The method downloads either job-specific secure objects batch or static secure objects
+        based on whether job_id is provided. For job-specific downloads, it waits for job
+        completion before downloading.
+
+        :param job_id: Job ID to download batch for, if None static secure objects are downloaded.
+        :return: JSON response body with secure objects data.
         """
         if not job_id:
             logger.info("Downloading static secure objects")
@@ -531,7 +748,15 @@ class EL2GOTPClient(EL2GOClient):
         return response.json_body
 
     def _wait_for_job(self, job_id: str) -> None:
-        """Wait for job completion with timeout."""
+        """Wait for job completion with timeout.
+
+        Monitors the job status by periodically checking its state until completion
+        or timeout. The method polls the job details every 5 seconds and handles
+        both successful and failed job states.
+
+        :param job_id: Unique identifier of the job to monitor.
+        :raises SPSDKError: Job not found, job failed, or timeout exceeded.
+        """
         start_time = time.time()
         while time.time() - start_time < self.download_timeout:
             job_details = self.get_job_details(job_id)
@@ -557,7 +782,16 @@ class EL2GOTPClient(EL2GOClient):
 
     @classmethod
     def calculate_jobs(cls, uuid_count: int, max_job_size: int = 500) -> list[int]:
-        """Calculate number of jobs and their sizes for given number if devices."""
+        """Calculate number of jobs and their sizes for given number of devices.
+
+        The method distributes a given number of UUIDs across multiple jobs, ensuring
+        that no job exceeds the maximum size limit. It evenly distributes the load
+        and handles remainder UUIDs by reducing the size of the first jobs.
+
+        :param uuid_count: Total number of UUIDs to be distributed across jobs.
+        :param max_job_size: Maximum number of UUIDs per job (default: 500).
+        :return: List of integers representing the size of each job.
+        """
         jobs = math.ceil(uuid_count / max_job_size)
         size = math.ceil(uuid_count / jobs)
         result = [size] * jobs
@@ -568,7 +802,16 @@ class EL2GOTPClient(EL2GOClient):
 
     @classmethod
     def split_uuids_to_jobs(cls, uuids: list[str], max_job_size: int) -> list[list[str]]:
-        """Split UUIDs into jobs with given max size."""
+        """Split UUIDs into jobs with given maximum size.
+
+        The method divides a list of UUIDs into smaller groups (jobs) where each job
+        contains at most the specified maximum number of UUIDs. This is useful for
+        batch processing operations that have size limitations.
+
+        :param uuids: List of UUID strings to be split into jobs.
+        :param max_job_size: Maximum number of UUIDs allowed per job.
+        :return: List of jobs, where each job is a list of UUID strings.
+        """
         job_sizes = cls.calculate_jobs(len(uuids), max_job_size)
         iterator = iter(uuids)
         jobs: list[list[str]] = []
@@ -580,7 +823,12 @@ class EL2GOTPClient(EL2GOClient):
     def create_user_config(self) -> tuple[bytes, int, int]:
         """Create EL2GO User Config blob.
 
-        :return: User config blob, address for user config, address for user data.
+        The method generates user configuration data based on the provisioning method.
+        For FW_USER_CONFIG method, it creates a 32-byte blob with magic number and addresses.
+        For other methods, it returns empty blob with appropriate addresses.
+
+        :raises SPSDKUnsupportedOperation: When provisioning method is not supported by the family.
+        :return: Tuple containing user config blob, address for user config, and address for user data.
         """
         if self.prov_method == ProvisioningMethod.FW_USER_CONFIG:
             fw_read_address = self.db.get_int(DatabaseManager.EL2GO_TP, "fw_read_address")
@@ -601,7 +849,13 @@ class EL2GOTPClient(EL2GOClient):
             return b"", fw_read_address, tp_data_address
 
         if self.prov_method == ProvisioningMethod.DISPATCH_FW:
-            return b"", 0, self.tp_data_address
+            fw_read_address = self.db.get_int(
+                DatabaseManager.EL2GO_TP, "fw_read_address", default=-1
+            )
+            if fw_read_address == -1:
+                fw_read_address = self.tp_data_address
+            tp_data_address = self.tp_data_address
+            return b"", fw_read_address, tp_data_address
 
         if self.prov_method == ProvisioningMethod.OEM_APP:
             return b"", 0, self.tp_data_address
@@ -612,27 +866,90 @@ class EL2GOTPClient(EL2GOClient):
 
     @property
     def use_data_split(self) -> bool:
-        """Device family uses TP FW with data split into user and standard blocks."""
+        """Check if device family uses TP FW with data split into user and standard blocks.
+
+        :return: True if provisioning method uses firmware with data split, False otherwise.
+        """
         return self.prov_method == ProvisioningMethod.FW_DATA_SPLIT
 
     @property
     def use_user_config(self) -> bool:
-        """Device family uses TP FW with user config block."""
+        """Check if device family uses TP FW with user config block.
+
+        This method determines whether the current device family's provisioning
+        method is configured to use firmware with a user configuration block.
+
+        :return: True if provisioning method uses FW with user config, False otherwise.
+        """
         return self.prov_method == ProvisioningMethod.FW_USER_CONFIG
 
     @property
     def use_dispatch_fw(self) -> bool:
-        """Device family uses TP FW with dispatch (trigger via blhost)."""
+        """Check if device family uses TP FW with dispatch method.
+
+        The method determines whether the provisioning method is set to dispatch firmware,
+        which is triggered via blhost command.
+
+        :return: True if provisioning method is DISPATCH_FW, False otherwise.
+        """
         return self.prov_method == ProvisioningMethod.DISPATCH_FW
 
     @property
     def use_oem_app(self) -> bool:
-        """Use OEM APP TP method."""
+        """Check if the provisioning method is set to OEM APP.
+
+        This method determines whether the current provisioning configuration
+        is using the OEM Application Trust Provisioning method.
+
+        :return: True if provisioning method is OEM_APP, False otherwise.
+        """
         return self.prov_method == ProvisioningMethod.OEM_APP
+
+    @property
+    def use_dispatch_reset(self) -> bool:
+        """Check if device family uses TP FW with required reset.
+
+        This method determines whether the current dispatch method requires a reset operation
+        by checking if it matches specific reset-enabled dispatch methods.
+
+        :return: True if dispatch method requires reset, False otherwise.
+        """
+        return self.dispatch_method in [DispatchMethod.WRITE_RESET, DispatchMethod.SB_RESET]
+
+    @property
+    def use_dispatch_write(self) -> bool:
+        """Check if write memory method should be used to deploy TP firmware.
+
+        This method determines whether the dispatch method is configured to use
+        write memory operations for Trust Provisioning firmware deployment.
+
+        :return: True if dispatch method uses write memory, False otherwise.
+        """
+        return self.dispatch_method in [DispatchMethod.WRITE_ONLY, DispatchMethod.WRITE_RESET]
+
+    @property
+    def use_dispatch_sb_file(self) -> bool:
+        """Check if SB file should be used to deploy TP firmware.
+
+        This method determines whether the current dispatch method requires using
+        a Secure Binary (SB) file for Trust Provisioning firmware deployment.
+
+        :return: True if SB file should be used for TP FW deployment, False otherwise.
+        """
+        return self.dispatch_method in [DispatchMethod.SB_RESET, DispatchMethod.SB_ONLY]
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:  # type: ignore[override]  # pylint: disable=arguments-differ
-        """Get JSON schema for validating configuration data."""
+        """Get JSON schema for validating EL2GO configuration data.
+
+        Builds and returns validation schemas based on family-specific database settings.
+        The method dynamically constructs schemas by combining base schemas with
+        family-specific properties and requirements based on provisioning method
+        and data usage configuration.
+
+        :param family: Target family and revision for schema generation.
+        :return: List containing family schema and EL2GO-specific schema dictionaries.
+        """
         schema_file = get_schema_file(DatabaseManager.EL2GO_TP)
         schema_family = get_schema_file("general")["family"]
         update_validation_schema_family(
@@ -657,6 +974,7 @@ class EL2GOTPClient(EL2GOClient):
             schema["required"].extend(schema_file["secure_objects_address"]["required"])
         if use_uboot:
             schema["properties"].update(schema_file["uboot_path"]["properties"])
+            schema["properties"].update(schema_file["imx_bootloader_path"]["properties"])
             schema["properties"].update(schema_file["fatwrite"]["properties"])
             schema["properties"].update(schema_file["linux_boot"]["properties"])
         else:
@@ -667,17 +985,29 @@ class EL2GOTPClient(EL2GOClient):
 
     @classmethod
     def get_supported_families(cls) -> list[FamilyRevision]:
-        """Get family names supported by WPCTarget."""
+        """Get family names supported by WPCTarget.
+
+        :return: List of family revisions supported by WPC target.
+        """
         return get_families(DatabaseManager.EL2GO_TP)
 
     @classmethod
     def get_config_template(cls, family: FamilyRevision, mode: Literal["device", "product"] = "device") -> str:  # type: ignore[override]  # pylint: disable=arguments-differ
-        """Generate configuration YAML template for given family."""
+        """Generate configuration YAML template for given family.
+
+        Creates a YAML configuration template for EdgeLock 2GO Offline Provisioning
+        flow with validation schemas specific to the provided family.
+
+        :param family: Target MCU family and revision for template generation.
+        :param mode: Configuration mode, either "device" or "product", defaults to "device".
+        :return: YAML configuration template as string.
+        """
         schemas = cls.get_validation_schemas(family=family)
 
-        if mode == "product":
-            schema_file = get_schema_file(DatabaseManager.EL2GO_TP)
-            schemas.append(schema_file["prov_report_address"])
+        # temporarily disabled
+        # if mode == "product":
+        #     schema_file = get_schema_file(DatabaseManager.EL2GO_TP)
+        #     schemas.append(schema_file["prov_report_address"])
 
         return super().get_config_template(
             family,
@@ -687,13 +1017,26 @@ class EL2GOTPClient(EL2GOClient):
 
 
 def split_user_data(data: bytes) -> tuple[bytes, bytes]:
-    """Split TLV binary into Internal and External blocks."""
+    """Split TLV binary into Internal and External blocks.
+
+    :param data: TLV binary data to be split into internal and external blocks.
+    :return: Tuple containing internal block bytes and external block bytes.
+    """
     internal, external = SecureObjects.parse(data).split_int_ext()
     return internal, external
 
 
 def get_el2go_otp_binary(config: Config) -> bytes:
-    """Create EL2GO OTP Binary from the user config data."""
+    """Create EL2GO OTP Binary from the user config data.
+
+    The method loads fuse configuration, validates register names, and creates a binary
+    in EL2GO OTP TLV format. Each OTP entry contains tag-length-value structure with
+    OTP index and value information.
+
+    :param config: Configuration object containing OTP fuse register definitions.
+    :raises SPSDKError: No OTP fuses found in configuration or invalid fuse name.
+    :return: Binary data in EL2GO OTP format ready for provisioning.
+    """
     defaults = Fuses.load_from_config(config)
 
     selected_register_names: list[str] = list(config.get_dict("registers").keys())
@@ -730,7 +1073,15 @@ def get_el2go_otp_binary(config: Config) -> bytes:
 
 
 def _get_ignored_otp_indexes(family: FamilyRevision) -> list[int]:
-    """Get all list of indexes of OTPs that should be ignored."""
+    """Get list of OTP indexes that should be ignored during processing.
+
+    The method retrieves ignored OTP indexes from the database configuration,
+    including both individual indexes and ranges of indexes that should be
+    excluded from OTP operations.
+
+    :param family: Family and revision specification for database lookup.
+    :return: List of OTP indexes to be ignored.
+    """
     result: list[int] = []
     db = get_db(family=family)
     ignored_otp = db.get_list(DatabaseManager.EL2GO_TP, "ignored_otp", default=[])
@@ -745,6 +1096,15 @@ def _get_ignored_otp_indexes(family: FamilyRevision) -> list[int]:
 
 
 def _should_ignore_register(reg: FuseRegister, ignore_list: list[int]) -> bool:
+    """Check if a fuse register should be ignored based on the ignore list.
+
+    The method evaluates whether a register or any of its sub-registers have OTP indices
+    that are present in the provided ignore list.
+
+    :param reg: The fuse register to check for ignoring.
+    :param ignore_list: List of OTP indices that should be ignored.
+    :return: True if the register should be ignored, False otherwise.
+    """
     if reg.otp_index and reg.otp_index in ignore_list:
         return True
     if reg.has_group_registers():

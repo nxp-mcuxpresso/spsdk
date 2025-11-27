@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module for generating FMC certificate template."""
+"""SPSDK DICE alias certificate generation utilities.
+
+This module provides functionality for generating FMC (First Mutable Code) certificate
+templates and handling DICE (Device Identifier Composition Engine) alias certificates
+in SPSDK context.
+"""
 
 import logging
 import math
@@ -35,14 +40,27 @@ logger = logging.getLogger(__name__)
 
 
 def to_be_bytes(number: int, length: Optional[int] = None) -> bytes:
-    """Convert number into big-endian bytes with given length."""
+    """Convert number into big-endian bytes with given length.
+
+    :param number: Integer number to convert to bytes.
+    :param length: Target byte length. If None, calculated from number bit length.
+    :return: Big-endian byte representation of the number.
+    """
     if length is None:
         length = math.ceil(number.bit_length() / 8)
     return number.to_bytes(length, "big")
 
 
 def get_mode(config: Config) -> Literal["ecdsa", "mldsa"]:
-    """Get ecdsa/mldsa mode from config."""
+    """Get cryptographic mode from configuration.
+
+    Extracts the cryptographic algorithm mode (ECDSA or ML-DSA) from the provided
+    configuration object with ECDSA as the default fallback.
+
+    :param config: Configuration object containing mode settings.
+    :raises SPSDKValueError: When mode is not 'ecdsa' or 'mldsa'.
+    :return: The cryptographic mode, either 'ecdsa' or 'mldsa'.
+    """
     mode: Literal["ecdsa", "mldsa"] = config.get_str("mode", "ecdsa")  # type: ignore[assignment]
     if mode not in ["ecdsa", "mldsa"]:
         raise SPSDKValueError("Mode must be either 'ecdsa' or 'mldsa'")
@@ -50,7 +68,14 @@ def get_mode(config: Config) -> Literal["ecdsa", "mldsa"]:
 
 
 def get_printable_string(data: bytes) -> bytes:
-    """Get ANS1 printable string from data."""
+    """Get ASN.1 printable string from data.
+
+    Converts input data to hexadecimal representation and wraps it in ASN.1 printable string format
+    with proper tag and length encoding.
+
+    :param data: Input bytes to be converted to ASN.1 printable string format.
+    :return: ASN.1 encoded printable string with tag 0x13, length, and hex-encoded data.
+    """
     ps = data.hex().encode("utf-8")
     return bytes([0x13, len(ps)]) + ps
 
@@ -67,7 +92,17 @@ NXP_FWID = 48 * b"\x99"
 
 
 def generate_fmc(config: Config) -> None:
-    """Generate FMC certificate template in form of a tp container."""
+    """Generate FMC certificate template in form of a TP container.
+
+    Creates a DICE FMC (First Mutable Code) certificate template with configurable TCB
+    (Trusted Computing Base) information tables and packages it into a TP container format.
+    The method supports both ECDSA and ML-DSA signature algorithms and generates the
+    necessary descriptors for certificate field offsets.
+
+    :param config: Configuration object containing certificate parameters, key settings,
+        output paths, and TCB table configuration options.
+    :raises SPSDKError: When certificate generation or file operations fail.
+    """
     mode = get_mode(config)
     if config.get("template_key"):
         issuer_private_key = PrivateKey.load(config.get_input_file_name("template_key"))
@@ -255,7 +290,16 @@ def generate_fmc(config: Config) -> None:
 
 
 def make_container(config: Config) -> None:
-    """Make FMC certificate template container from existing template and descriptor file."""
+    """Make FMC certificate template container from existing template and descriptor file.
+
+    Creates a TPDataContainer with certificate descriptor and template entries based on the
+    specified cryptographic mode (ECDSA or MLDSA). The container is exported and saved to
+    the configured output path.
+
+    :param config: Configuration object containing input/output file paths and mode settings.
+    :raises SPSDKError: If input files cannot be loaded or output file cannot be written.
+    :raises SPSDKValueError: If configuration contains invalid mode or missing file paths.
+    """
     mode = get_mode(config)
 
     template = config.get_input_file_name("template_output")

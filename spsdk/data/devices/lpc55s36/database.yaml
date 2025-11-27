@@ -218,37 +218,44 @@ features:
         field090:
           bitfields:
             field090-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field094:
           bitfields:
             field094-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field098:
           bitfields:
             field098-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field09C:
           bitfields:
             field09C-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field0A4:
           bitfields:
             field0A4-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field0A8:
           bitfields:
             field0A8-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field0AC:
           bitfields:
             field0AC-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
     rules:
       - ../../common/pfrc_rules.yaml
@@ -330,6 +337,9 @@ features:
   # ======== DICE configuration ========
   dice:
     buffer_address: 0x3001_5000
+    buffer_size: 0x1000
     csr_address: 0x2000_0000
     csr_length: 208
+    rkth_length: 32
+    rkth_truncated_length: 32
     response_length: 324

@@ -4,7 +4,13 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Nxpimage Secure Binary group."""
+"""SPSDK Secure Binary (SB) command-line interface utilities.
+
+This module provides CLI commands for working with NXP Secure Binary files
+across different versions (SB2.1, SB3.1, SB4.0). It supports exporting,
+parsing, template generation, and key management operations for secure
+boot and firmware update scenarios.
+"""
 
 import logging
 import os

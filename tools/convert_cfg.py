@@ -5,7 +5,16 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Convert and clean up old typically JSON SCHEMAS."""
+"""SPSDK configuration file conversion utilities.
+
+This module provides functionality for converting and cleaning up legacy
+configuration files, particularly JSON schemas used across various SPSDK
+components and NXP MCU features.
+The module supports conversion for multiple SPSDK components including MBI,
+SB3.1, DevHSM, certificate blocks, AHAB, and various other MCU-specific
+configurations through dedicated schema retrieval functions and a unified
+conversion interface.
+"""
 
 import os
 import sys
@@ -32,6 +41,7 @@ from spsdk.image.otfad.otfad import Otfad
 from spsdk.image.trustzone import TrustZone
 from spsdk.image.xmcd.xmcd import XMCD
 from spsdk.pfr.pfr import CFPA, CMACTABLE, CMPA, ROMCFG
+from spsdk.sbfile.sb4.images import SecureBinary4
 from spsdk.sbfile.sb31.devhsm import DevHsmSB31
 from spsdk.sbfile.sb31.images import SecureBinary31
 from spsdk.utils.binary_image import BinaryImage
@@ -45,11 +55,22 @@ disable_files_dirs_formatters: dict[str, Callable[[str], bool]] = {
     "file": lambda x: bool(os.path.basename(x.replace("\\", "/"))),
     "file_name": lambda x: os.path.basename(x.replace("\\", "/")) not in ("", None),
     "optional_file": lambda x: not x or bool(os.path.basename(x.replace("\\", "/"))),
+    "file-or-hex-value": lambda x: bool(os.path.basename(x.replace("\\", "/")))
+    or isinstance(x, (int, str)),
 }
 
 
 def get_all_files(source: str, recursive: bool = False) -> list[str]:
-    """Gather all python files in root_folders."""
+    """Gather all configuration files from the specified source path.
+
+    The method searches for JSON and YAML configuration files in the given source.
+    If source is a file, it returns that file. If source is a directory, it searches
+    for files with extensions .json, .yaml, or .yml.
+
+    :param source: File path or directory path to search for configuration files.
+    :param recursive: If True, search recursively through subdirectories, defaults to False.
+    :return: List of paths to found configuration files.
+    """
     all_files = []
 
     if os.path.isfile(source):
@@ -67,10 +88,15 @@ def get_all_files(source: str, recursive: bool = False) -> list[str]:
 
 
 def get_schemas_mbi(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Get validation schema for MBI configurations.
+    """Get validation schemas for MBI configurations.
 
-    :param config: Any configuration of MBI
-    :return: Validation JSON schemas
+    This method retrieves the appropriate MBI class based on the configuration,
+    gets validation schemas for the specified family revision, validates the
+    configuration against those schemas, and returns the schemas.
+
+    :param config: MBI configuration dictionary containing family and revision information.
+    :raises SPSDKError: If configuration validation fails or invalid MBI class.
+    :return: List of validation JSON schemas for the MBI configuration.
     """
     mbi_cls = MasterBootImage.get_mbi_class(config)
     schemas = mbi_cls.get_validation_schemas(FamilyRevision.load_from_config(config))
@@ -79,10 +105,15 @@ def get_schemas_mbi(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def get_schemas_sb31(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Get validation schema for SB3.1 configurations.
+    """Get validation schemas for SB3.1 configurations.
 
-    :param config: Any configuration of SB3.1
-    :return: Validation JSON schemas
+    This method validates the provided configuration against basic schemas first,
+    then retrieves the complete validation schemas for the specific family revision
+    and performs a final validation with disabled file/directory formatters.
+
+    :param config: SB3.1 configuration dictionary to validate and get schemas for.
+    :raises SPSDKError: Invalid configuration or validation failure.
+    :return: List of validation JSON schemas for the given SB3.1 configuration.
     """
     check_config(config, SecureBinary31.get_validation_schemas_basic())
     schemas = SecureBinary31.get_validation_schemas(FamilyRevision.load_from_config(config))
@@ -90,11 +121,27 @@ def get_schemas_sb31(config: dict[str, Any]) -> list[dict[str, Any]]:
     return schemas
 
 
-def get_schemas_devhsm(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Get validation schema for DEVHSM configurations.
+def get_schemas_sb40(config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Get validation schema for SB4.0 configurations.
 
-    :param config: Any configuration of DEVHSM
+    :param config: Any configuration of SB4.0
     :return: Validation JSON schemas
+    """
+    check_config(config, SecureBinary4.get_validation_schemas_basic())
+    schemas = SecureBinary4.get_validation_schemas(FamilyRevision.load_from_config(config))
+    check_config(config=config, schemas=schemas, extra_formatters=disable_files_dirs_formatters)
+    return schemas
+
+
+def get_schemas_devhsm(config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Get validation schemas for DEVHSM configurations.
+
+    This method validates the provided configuration against basic SecureBinary31 schemas,
+    then retrieves and validates against DevHsmSB31-specific schemas for the family revision.
+
+    :param config: DEVHSM configuration dictionary containing device and security settings.
+    :raises SPSDKError: Invalid configuration or unsupported family revision.
+    :return: List of validation JSON schemas for DEVHSM configuration.
     """
     check_config(config, SecureBinary31.get_validation_schemas_basic())
 
@@ -104,10 +151,15 @@ def get_schemas_devhsm(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def get_schemas_cert_block(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Get validation schema for Certification block configurations.
+    """Get validation schemas for Certification block configurations.
 
-    :param config: Any configuration of Certification block
-    :return: Validation JSON schemas
+    This method retrieves validation schemas from CertBlockV21 based on the family revision
+    loaded from the configuration, adds the cert_block_output schema, validates the
+    configuration against all schemas, and returns the complete list of schemas.
+
+    :param config: Configuration dictionary for Certification block containing family and revision information.
+    :return: List of validation JSON schema dictionaries used for cert block validation.
+    :raises SPSDKError: If configuration validation fails against the schemas.
     """
     schemas = CertBlockV21.get_validation_schemas(FamilyRevision.load_from_config(config))
     schemas.append(get_schema_file(DatabaseManager.CERT_BLOCK)["cert_block_output"])
@@ -116,10 +168,15 @@ def get_schemas_cert_block(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def get_schemas_ahab(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Get validation schema for AHAB configurations.
+    """Get validation schemas for AHAB configurations.
 
-    :param config: Any configuration of AHAB
-    :return: Validation JSON schemas
+    The method validates the basic configuration first, then retrieves family-specific
+    validation schemas and performs additional validation with disabled file/directory
+    formatters.
+
+    :param config: AHAB configuration dictionary to validate and get schemas for.
+    :raises SPSDKError: Invalid configuration or validation failure.
+    :return: List of validation JSON schemas for the AHAB configuration.
     """
     check_config(config, AHABImage.get_validation_schemas_basic())
     schemas = AHABImage.get_validation_schemas(FamilyRevision.load_from_config(config))
@@ -128,10 +185,15 @@ def get_schemas_ahab(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def get_schemas_signed_message(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Get validation schema for Signed Message configurations.
+    """Get validation schemas for Signed Message configurations.
 
-    :param config: Any configuration of Signed Message
-    :return: Validation JSON schemas
+    This method retrieves the validation schemas for Signed Message configurations
+    based on the family revision information from the provided config. It also
+    performs configuration validation using the retrieved schemas.
+
+    :param config: Configuration dictionary containing Signed Message settings.
+    :return: List of validation JSON schemas for the configuration.
+    :raises SPSDKError: If configuration validation fails or family revision cannot be loaded.
     """
     schemas = SignedMessage.get_validation_schemas(FamilyRevision.load_from_config(config))
 
@@ -140,10 +202,15 @@ def get_schemas_signed_message(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def get_schemas_otfad(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Get validation schema for OTFAD configurations.
+    """Get validation schemas for OTFAD configurations.
 
-    :param config: Any configuration of OTFAD
-    :return: Validation JSON schemas
+    The method validates the basic OTFAD configuration, extracts the family information,
+    retrieves the appropriate validation schemas for that family, and performs a second
+    validation with the complete schemas.
+
+    :param config: OTFAD configuration dictionary to validate and get schemas for.
+    :raises SPSDKError: Invalid configuration or unsupported family.
+    :return: List of validation JSON schemas for the specified OTFAD configuration.
     """
     check_config(
         config,
@@ -159,8 +226,13 @@ def get_schemas_otfad(config: dict[str, Any]) -> list[dict[str, Any]]:
 def get_schemas_iee(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for IEE configurations.
 
-    :param config: Any configuration of IEE
-    :return: Validation JSON schemas
+    The method validates the basic IEE configuration, extracts the family information,
+    retrieves the appropriate validation schemas for that family, and performs a second
+    validation with the family-specific schemas.
+
+    :param config: IEE configuration dictionary to validate and get schemas for.
+    :raises SPSDKError: Invalid configuration or unsupported family.
+    :return: List of validation JSON schemas for the specified IEE family.
     """
     check_config(
         config,
@@ -174,10 +246,14 @@ def get_schemas_iee(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def get_schemas_fcb(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Get validation schema for FCB configurations.
+    """Get validation schemas for FCB configurations.
 
-    :param config: Any configuration of FCB
-    :return: Validation JSON schemas
+    The method validates the basic FCB configuration, extracts chip family and memory type
+    information, then retrieves and validates the complete schemas for the specific hardware.
+
+    :param config: FCB configuration dictionary containing chip family, memory type and other settings.
+    :raises SPSDKError: Invalid configuration or unsupported chip family/memory type combination.
+    :return: List of validation JSON schemas for the FCB configuration.
     """
     check_config(config, FCB.get_validation_schemas_basic())
     chip_family = FamilyRevision.load_from_config(config)
@@ -189,10 +265,16 @@ def get_schemas_fcb(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def get_schemas_bootable_image(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Get validation schema for Bootable Image configurations.
+    """Get validation schemas for Bootable Image configurations.
 
-    :param config: Any configuration of bootable image
-    :return: Validation JSON schemas
+    The method validates the basic configuration structure, extracts chip family and memory type
+    information, then retrieves and validates against the complete validation schemas for the
+    specific bootable image configuration.
+
+    :param config: Configuration dictionary containing bootable image settings including
+        chip family, revision, and memory type information.
+    :raises SPSDKError: Invalid configuration structure or unsupported chip family/memory type.
+    :return: List of validation JSON schema dictionaries for the bootable image configuration.
     """
     check_config(config, BootableImage.get_validation_schemas_basic())
     chip_family = FamilyRevision.load_from_config(config)
@@ -205,10 +287,15 @@ def get_schemas_bootable_image(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def get_schemas_xmcd(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Get validation schema for XMCD configurations.
+    """Get validation schemas for XMCD configurations.
 
-    :param config: Any configuration of XMCD
-    :return: Validation JSON schemas
+    This method validates the basic XMCD configuration, extracts chip family,
+    memory type, and configuration type, then retrieves and validates the
+    complete validation schemas for the specific XMCD configuration.
+
+    :param config: XMCD configuration dictionary containing chip family, memory type, and configuration type.
+    :raises SPSDKError: Invalid configuration or unsupported chip family/memory type combination.
+    :return: List of validation JSON schemas for the specified XMCD configuration.
     """
     check_config(config, XMCD.get_validation_schemas_basic())
     chip_family = FamilyRevision.load_from_config(config)
@@ -224,8 +311,13 @@ def get_schemas_xmcd(config: dict[str, Any]) -> list[dict[str, Any]]:
 def get_schemas_bee(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for BEE configurations.
 
-    :param config: Any configuration of BEE
-    :return: Validation JSON schemas
+    The method retrieves validation JSON schemas for BEE (Bus Encryption Engine) configurations
+    using a temporary solution with mimxrt1050 family revision for backward compatibility with
+    old configurations. It also performs configuration validation against the schemas.
+
+    :param config: BEE configuration dictionary to validate against schemas.
+    :raises SPSDKError: Configuration validation fails against the schemas.
+    :return: List of validation JSON schemas for BEE configurations.
     """
     schemas = Bee.get_validation_schemas(
         FamilyRevision("mimxrt1050")
@@ -235,10 +327,15 @@ def get_schemas_bee(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def get_schemas_trust_zone(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Get validation schema for Trust Zone configurations.
+    """Get validation schemas for Trust Zone configurations.
 
-    :param config: Any configuration of Trust Zone
-    :return: Validation JSON schemas
+    The method validates the configuration against basic schemas first, then retrieves
+    family-specific validation schemas and performs additional validation with disabled
+    file/directory formatters.
+
+    :param config: Trust Zone configuration dictionary to validate and get schemas for.
+    :raises SPSDKError: Invalid configuration that doesn't match validation schemas.
+    :return: List of validation JSON schemas for the Trust Zone configuration.
     """
     check_config(config, TrustZone.get_validation_schemas_basic())
     schemas = TrustZone.get_validation_schemas(FamilyRevision.load_from_config(config))
@@ -249,8 +346,13 @@ def get_schemas_trust_zone(config: dict[str, Any]) -> list[dict[str, Any]]:
 def get_schemas_binary_image(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for Binary Image merge configurations.
 
-    :param config: Any configuration of Binary Image merge
-    :return: Validation JSON schemas
+    The method retrieves validation schemas from BinaryImage class and validates
+    the provided configuration against these schemas using disabled file/directory
+    formatters.
+
+    :param config: Configuration dictionary for Binary Image merge operations.
+    :raises SPSDKError: If configuration validation fails against the schemas.
+    :return: List of validation JSON schema dictionaries.
     """
     schemas = BinaryImage.get_validation_schemas()
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
@@ -258,10 +360,15 @@ def get_schemas_binary_image(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def get_schemas_pfr_cmpa(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Get validation schema for PFR CMPA configurations.
+    """Get validation schemas for PFR CMPA configurations.
 
-    :param config: Any configuration of PFR CMPA
-    :return: Validation JSON schemas
+    The method retrieves validation schemas for Protected Flash Region (PFR) Customer Manufacturing
+    Programming Area (CMPA) based on the provided configuration and validates the configuration
+    against these schemas.
+
+    :param config: Configuration dictionary for PFR CMPA containing family and other settings.
+    :raises SPSDKError: Invalid configuration or unsupported family.
+    :return: List of validation JSON schemas for the specified family.
     """
     schemas = CMPA.get_validation_schemas(family=FamilyRevision.load_from_config(config))
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
@@ -269,10 +376,15 @@ def get_schemas_pfr_cmpa(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def get_schemas_pfr_cfpa(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Get validation schema for PFR CFPA configurations.
+    """Get validation schemas for PFR CFPA configurations.
 
-    :param config: Any configuration of PFR CFPA
-    :return: Validation JSON schemas
+    This method retrieves validation schemas for Protected Flash Region (PFR)
+    Customer Field Programmable Area (CFPA) configurations and validates the
+    provided configuration against these schemas.
+
+    :param config: Configuration dictionary for PFR CFPA containing family and revision information.
+    :raises SPSDKError: Invalid configuration or validation failure.
+    :return: List of validation JSON schemas for the specified family.
     """
     schemas = CFPA.get_validation_schemas(family=FamilyRevision.load_from_config(config))
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
@@ -280,10 +392,14 @@ def get_schemas_pfr_cfpa(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def get_schemas_ifr_romcfg(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Get validation schema for IFR ROMCFG configurations.
+    """Get validation schemas for IFR ROMCFG configurations.
 
-    :param config: Any configuration of IFR ROMCFG
-    :return: Validation JSON schemas
+    This method retrieves validation schemas for IFR ROMCFG based on the provided
+    configuration and validates the configuration against those schemas.
+
+    :param config: Configuration dictionary for IFR ROMCFG containing family and revision information.
+    :raises SPSDKError: Invalid configuration or schema validation failure.
+    :return: List of validation JSON schema dictionaries.
     """
     schemas = ROMCFG.get_validation_schemas(family=FamilyRevision.load_from_config(config))
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
@@ -291,10 +407,14 @@ def get_schemas_ifr_romcfg(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def get_schemas_ifr_cmactable(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Get validation schema for IFR CMACTABLE configurations.
+    """Get validation schemas for IFR CMACTABLE configurations.
 
-    :param config: Any configuration of IFR CMACTABLE
-    :return: Validation JSON schemas
+    The method retrieves validation schemas for IFR CMACTABLE based on the provided
+    configuration and validates the configuration against those schemas.
+
+    :param config: Configuration dictionary for IFR CMACTABLE containing family and revision information.
+    :raises SPSDKError: Invalid configuration or schema validation failure.
+    :return: List of validation JSON schema dictionaries.
     """
     schemas = CMACTABLE.get_validation_schemas(family=FamilyRevision.load_from_config(config))
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
@@ -304,8 +424,12 @@ def get_schemas_ifr_cmactable(config: dict[str, Any]) -> list[dict[str, Any]]:
 def get_schemas_shadowregs(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for Shadow register configurations.
 
-    :param config: Any configuration of Shadow  registers
-    :return: Validation JSON schemas
+    This method retrieves validation schemas for Shadow register configurations based on the
+    provided configuration and validates the configuration against those schemas.
+
+    :param config: Configuration dictionary containing Shadow register settings and family information.
+    :raises SPSDKError: Invalid configuration or schema validation failure.
+    :return: List of validation JSON schema dictionaries for Shadow registers.
     """
     schemas = ShadowRegisters.get_validation_schemas(family=FamilyRevision.load_from_config(config))
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
@@ -313,10 +437,14 @@ def get_schemas_shadowregs(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def get_schemas_dc(config: dict[str, Any]) -> list[dict[str, Any]]:
-    """Get validation schema for DC file configurations.
+    """Get validation schemas for Debug Credential Certificate configurations.
 
-    :param config: Any configuration of DC file
-    :return: Validation JSON schemas
+    Retrieves validation schemas for Debug Credential Certificate files based on the
+    provided configuration and validates the configuration against these schemas.
+
+    :param config: Configuration dictionary containing family and DC settings
+    :raises SPSDKError: Invalid configuration or unsupported family
+    :return: List of validation JSON schemas for the specified configuration
     """
     schemas = DebugCredentialCertificate.get_validation_schemas(
         family=FamilyRevision.load_from_config(config)
@@ -328,8 +456,13 @@ def get_schemas_dc(config: dict[str, Any]) -> list[dict[str, Any]]:
 def get_schemas_dat(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Get validation schema for DAT configurations.
 
-    :param config: Any configuration of DAT
-    :return: Validation JSON schemas
+    This method retrieves and validates the JSON schemas used for Debug Authentication Tool (DAT)
+    configurations. It loads the family revision from the provided configuration and performs
+    validation using the obtained schemas.
+
+    :param config: Dictionary containing DAT configuration data including family and revision information.
+    :raises SPSDKError: If the configuration validation fails or family revision cannot be loaded.
+    :return: List of validation JSON schemas for the specified DAT configuration.
     """
     schemas = DebugAuthenticateResponse.get_validation_schemas(
         family=FamilyRevision.load_from_config(config)
@@ -341,6 +474,7 @@ def get_schemas_dat(config: dict[str, Any]) -> list[dict[str, Any]]:
 CONVERTORS = {
     "mbi": (get_schemas_mbi, "Master Boot Image"),
     "sb31": (get_schemas_sb31, "Secure Binary v3.1"),
+    "sb40": (get_schemas_sb40, "Secure Binary v4.0"),
     "cert_block": (get_schemas_cert_block, "Certification block"),
     "ahab": (get_schemas_ahab, "AHAB"),
     "signed-msg": (get_schemas_signed_message, "Signed Message"),
@@ -367,7 +501,16 @@ CONVERTORS = {
 
 
 def convert_file(config: str, cfg_type: Optional[str] = None) -> Optional[str]:
-    """Convert any type of configuration."""
+    """Convert any type of configuration file to a standardized format.
+
+    This method attempts to load and convert configuration files using available
+    convertors. It tries each convertor until one successfully processes the input
+    configuration, then formats the result with appropriate titles and family information.
+
+    :param config: Path to the configuration file to be converted.
+    :param cfg_type: Optional specific configuration type to convert. If None, all convertors are tried.
+    :return: Converted configuration as a string if successful, None if conversion fails.
+    """
     click.echo(f"Processing: {config}")
     try:
         configuration = load_configuration(config)
@@ -442,7 +585,18 @@ def main(
     output: Optional[str],
     rename: bool,
 ) -> None:
-    """Main convert utility."""
+    """Main configuration file conversion utility.
+
+    Converts configuration files from various formats to YAML format. Supports both
+    single file and directory processing with optional recursive scanning. Handles
+    file renaming and output directory specification.
+
+    :param config: List of source file or directory paths to convert.
+    :param recursive: Enable recursive directory scanning for configuration files.
+    :param config_type: Specific configuration type to convert, if None auto-detects format.
+    :param output: Output directory path, uses source directory if not specified.
+    :param rename: Rename original files by adding .converted extension after conversion.
+    """
     for source in config:
         source_base_path = source if os.path.isdir(source) else os.path.dirname(source)
         output_folder = output or source_base_path
@@ -478,7 +632,13 @@ def main(
 
 @catch_spsdk_error
 def safe_main() -> None:
-    """Call the main function."""
+    """Call the main function and exit with its return code.
+
+    This function serves as a safe wrapper around the main function, ensuring
+    proper exit code handling and exception management for the CLI application.
+
+    :raises SystemExit: Always raised with the return code from main function.
+    """
     sys.exit(main())  # pylint: disable=no-value-for-parameter
 
 

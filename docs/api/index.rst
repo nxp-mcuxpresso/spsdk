@@ -1,5 +1,6 @@
 API Development Guide
 =====================
+.. automodule:: spsdk
 
 .. toctree::
     :maxdepth: 1

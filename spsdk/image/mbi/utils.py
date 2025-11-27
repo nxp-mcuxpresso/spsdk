@@ -5,7 +5,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module that contains help utilities for Master Boot image processing."""
+"""SPSDK Master Boot Image utilities.
+
+This module provides utility functions for Master Boot Image (MBI) processing,
+including AHAB hash algorithm support and validation schema management.
+"""
 
 
 from typing import Any
@@ -29,10 +33,13 @@ def get_ahab_supported_hashes(family: FamilyRevision) -> list[EnumHashAlgorithm]
 
 
 def get_mbi_ahab_validation_schemas(ahab_config: AhabChipConfig) -> dict[str, Any]:
-    """Create the list of validation schemas for the SB4.0 container.
+    """Create the MBI AHAB validation schemas for configuration.
 
-    :param ahab_config: Ahab chip config.
-    :return: List of validation schemas.
+    The method dynamically configures validation schemas based on the AHAB chip configuration,
+    including support for multiple hash types and core IDs when available.
+
+    :param ahab_config: AHAB chip configuration containing family and core ID information.
+    :return: Dictionary containing the configured validation schemas for MBI AHAB.
     """
     mbi_sch_cfg = get_schema_file(DatabaseManager.MBI)
 

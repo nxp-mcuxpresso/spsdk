@@ -12,10 +12,16 @@ family: mimx9596
 # -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
 # Description: If needed this could be used to specify silicon revision of device.
 # Possible options: <a0, latest>
-revision: a1
+revision: latest
 # ------------------------------------------===== Memory type [Required] =====------------------------------------------
 # Description: Specify type of memory used by bootable image description.
 memory_type: serial_downloader
+# ----------------------------------------===== Initial segment [Optional] =====----------------------------------------
+# Description: The segment name or the index of initial segment in exported image
+init_offset: 0
+# -------------------------------===== Path to directory for post export [Optional] =====-------------------------------
+# Description: Path to directory where post export artifacts like fuse scripts, keyblobs etc. will be exported
+post_export: ./outputs/post_export
 # ======================================================================================================================
 #                                      == Primary executable Segment definition ==
 # ======================================================================================================================

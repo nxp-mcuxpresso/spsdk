@@ -4302,16 +4302,6 @@
               "description": "ROP_STATE[31:0]",
               "values": [
                 {
-                  "name": "ROP_LEVEL0",
-                  "value": 4294967295,
-                  "description": "ROP_STATE = 0xFFFF_FFFF (erased FLASH value), no ROP. Default for blank state"
-                },
-                {
-                  "name": "ROP_LEVEL1",
-                  "value": 4005168323,
-                  "description": "ROP_STATE = 0xEEBA_04C3. Debug disabled and unlocked, can be modified by customer, only limited debug mailbox commands available"
-                },
-                {
                   "name": "ROP_LEVEL2",
                   "value": 1228508555,
                   "description": "ROP_STATE = 0x4939_8D8B. Debug disabled and locked, cannot be modified by customer, only limited debug mailbox commands available"
@@ -4320,6 +4310,16 @@
                   "name": "ROP_LEVEL3",
                   "value": 2964043523,
                   "description": "ROP_STATE = 0xB0AB_B703. Debug disabled and locked, cannot be modified by customer, no debug mailbox commands available"
+                },
+                {
+                  "name": "ROP_LEVEL1",
+                  "value": 4005168323,
+                  "description": "ROP_STATE = 0xEEBA_04C3. Debug disabled and unlocked, can be modified by customer, only limited debug mailbox commands available"
+                },
+                {
+                  "name": "ROP_LEVEL0",
+                  "value": 4294967295,
+                  "description": "ROP_STATE = 0xFFFF_FFFF (erased FLASH value), no ROP. Default for blank state"
                 }
               ]
             }
@@ -4361,16 +4361,6 @@
               "description": "ROP_STATE_DP[31:0]",
               "values": [
                 {
-                  "name": "ROP_LEVEL0",
-                  "value": 4294967295,
-                  "description": "ROP_STATE = 0xFFFF_FFFF (erased FLASH value), no ROP. Default for blank state"
-                },
-                {
-                  "name": "ROP_LEVEL1",
-                  "value": 4005168323,
-                  "description": "ROP_STATE = 0xEEBA_04C3. Debug disabled and unlocked, can be modified by customer, only limited debug mailbox commands available"
-                },
-                {
                   "name": "ROP_LEVEL2",
                   "value": 1228508555,
                   "description": "ROP_STATE = 0x4939_8D8B. Debug disabled and locked, cannot be modified by customer, only limited debug mailbox commands available"
@@ -4379,6 +4369,16 @@
                   "name": "ROP_LEVEL3",
                   "value": 2964043523,
                   "description": "ROP_STATE = 0xB0AB_B703. Debug disabled and locked, cannot be modified by customer, no debug mailbox commands available"
+                },
+                {
+                  "name": "ROP_LEVEL1",
+                  "value": 4005168323,
+                  "description": "ROP_STATE = 0xEEBA_04C3. Debug disabled and unlocked, can be modified by customer, only limited debug mailbox commands available"
+                },
+                {
+                  "name": "ROP_LEVEL0",
+                  "value": 4294967295,
+                  "description": "ROP_STATE = 0xFFFF_FFFF (erased FLASH value), no ROP. Default for blank state"
                 }
               ]
             }

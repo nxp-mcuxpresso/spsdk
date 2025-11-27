@@ -5,4 +5,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module for working with SHE (Secure Hardware Extension)."""
+"""SPSDK SHE (Secure Hardware Extension) support module.
+
+This module provides functionality for working with SHE (Secure Hardware Extension)
+protocol and operations in SPSDK context.
+"""

@@ -4,7 +4,13 @@
 # Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Module for creation commands."""
+"""SPSDK SB3.1 secure boot file command implementations.
+
+This module provides command classes and utilities for creating and managing
+SB3.1 (Secure Binary version 3.1) file commands. It includes implementations
+for various boot commands such as load, execute, erase, program fuses,
+and memory operations used in NXP MCU secure boot processes.
+"""
 
 import lzma
 import os
@@ -39,7 +45,17 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 class BaseCmd(BaseClass):
-    """Functions for creating cmd intended for inheritance."""
+    """Base command class for SB3.1 file format operations.
+
+    This abstract base class provides the foundation for all SB3.1 command types,
+    defining common properties like address and length validation, export functionality,
+    and the basic command structure format.
+
+    :cvar FORMAT: Binary format string for command serialization.
+    :cvar SIZE: Size of the command header in bytes.
+    :cvar TAG: Command identification tag.
+    :cvar CMD_TAG: Enumerated command type identifier.
+    """
 
     FORMAT = "<4L"
     SIZE = calcsize(FORMAT)
@@ -48,24 +64,41 @@ class BaseCmd(BaseClass):
 
     @property
     def address(self) -> int:
-        """Get address."""
+        """Get address value.
+
+        :return: The address value stored in this object.
+        """
         return self._address
 
     @address.setter
     def address(self, value: int) -> None:
-        """Set address."""
+        """Set address value for the command.
+
+        :param value: Address value to be set, must be within 32-bit range (0x00000000-0xFFFFFFFF).
+        :raises SPSDKError: Invalid address value outside the valid range.
+        """
         if value < 0x00000000 or value > 0xFFFFFFFF:
             raise SPSDKError("Invalid address")
         self._address = value
 
     @property
     def length(self) -> int:
-        """Get length."""
+        """Get length of the command.
+
+        :return: Length of the command in bytes.
+        """
         return self._length
 
     @length.setter
     def length(self, value: int) -> None:
-        """Set value."""
+        """Set the length value with validation.
+
+        Validates that the provided length value is within the valid 32-bit unsigned integer range
+        (0x00000000 to 0xFFFFFFFF) before setting the internal length attribute.
+
+        :param value: Length value to set, must be within 32-bit unsigned integer range.
+        :raises SPSDKError: If the length value is outside the valid range.
+        """
         if value < 0x00000000 or value > 0xFFFFFFFF:
             raise SPSDKError("Invalid length")
         self._length = value
@@ -74,36 +107,53 @@ class BaseCmd(BaseClass):
     def export_length(self) -> int:
         """Get export length.
 
-        :return: The length of the exported command data
+        :return: The length of the exported command data.
         """
         return self.SIZE
 
     def __init__(self, address: int, length: int) -> None:
-        """Constructor for Commands header.
+        """Initialize Commands header with address and length.
 
-        :param address: Input address
-        :param length: Input length
+        :param address: Memory address for the command header.
+        :param length: Length of the command data in bytes.
         """
         self._address = address
         self._length = length
 
     def __repr__(self) -> str:
+        """Get string representation of the SB3.1 command.
+
+        :return: String representation containing command class name.
+        """
         return f"SB3.1 Command: {self.__class__.__name__}"
 
     def __str__(self) -> str:
-        """Get info of command.
+        """Get string representation of the command.
 
-        :raises NotImplementedError: Derived class has to implement this method
+        This method provides a human-readable string representation of the command object,
+        typically used for debugging and logging purposes.
+
+        :raises NotImplementedError: Derived class has to implement this method.
+        :return: String representation of the command.
         """
         raise NotImplementedError("Derived class has to implement this method.")
 
     def export(self) -> bytes:
-        """Export command as bytes."""
+        """Export command as bytes.
+
+        Serializes the command into binary format using the predefined FORMAT structure
+        with TAG, address, length, and CMD_TAG values.
+
+        :return: Binary representation of the command.
+        """
         return pack(self.FORMAT, self.TAG, self.address, self.length, self.CMD_TAG.tag)
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Parse object from bytes array.
+        """Parse command object from bytes array.
+
+        This is an abstract method that must be implemented by derived classes
+        to handle specific command parsing logic.
 
         :param data: Input data as bytes array
         :return: Parsed command object
@@ -115,10 +165,12 @@ class BaseCmd(BaseClass):
     def header_parse_raw(cls, data: bytes) -> tuple[int, int, int]:
         """Parse header command from bytes array.
 
-        :param data: Input data as bytes array
-        :raises SPSDKError: Raised if tag is not equal to required TAG
-        :raises SPSDKError: Raised if cmd is not equal EnumCmdTag
-        :return: Tuple
+        The method extracts tag, address, length, and command values from the binary data
+        and validates the tag against the expected class TAG value.
+
+        :param data: Input data as bytes array containing the header command.
+        :raises SPSDKError: Raised if tag is not equal to required TAG.
+        :return: Tuple containing address, length, and command values.
         """
         tag, address, length, cmd = unpack_from(cls.FORMAT, data)
         if tag != cls.TAG:
@@ -129,10 +181,11 @@ class BaseCmd(BaseClass):
     def header_parse(cls, data: bytes) -> tuple[int, int]:
         """Parse header command from bytes array.
 
-        :param data: Input data as bytes array
-        :raises SPSDKError: Raised if tag is not equal to required TAG
-        :raises SPSDKError: Raised if cmd is not equal EnumCmdTag
-        :return: Tuple
+        Validates that the parsed command tag matches the expected command tag for this class.
+
+        :param data: Input data as bytes array to parse the header from.
+        :raises SPSDKError: Raised if parsed command tag does not match the expected command tag.
+        :return: Tuple containing address and length extracted from the header.
         """
         address, length, cmd = cls.header_parse_raw(data)
         if cmd != cls.CMD_TAG.tag:
@@ -143,9 +196,12 @@ class BaseCmd(BaseClass):
     def load_from_config(cls, config: Config) -> list[Self]:
         """Load configuration from dictionary.
 
+        The method creates a list of command objects from the provided configuration
+        dictionary. This is an abstract method that must be implemented by derived classes.
+
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configuration.
-        :raises NotImplementedError: Derived class has to implement this method
+        :return: List of command objects loaded from configuration.
+        :raises NotImplementedError: Derived class has to implement this method.
         """
         raise NotImplementedError("Derived class has to implement this method.")
 
@@ -157,6 +213,7 @@ class BaseCmd(BaseClass):
         command-specific settings and parameters.
 
         :param data_path: Path to store the data files of configuration.
+        :raises NotImplementedError: Method must be implemented by derived classes.
         :return: Configuration object with command-specific settings.
         """
         raise NotImplementedError("Derived class has to implement this method.")
@@ -167,6 +224,7 @@ class BaseCmd(BaseClass):
         Generates a configuration object representing the current state of the SecureBinary4 instance.
 
         :param data_path: Path to store the data files of configuration.
+        :return: Configuration object with current SecureBinary4 settings.
         """
         config = Config({})
         config[self.CMD_TAG.label] = self.get_config_context(data_path)
@@ -177,7 +235,14 @@ class BaseCmd(BaseClass):
 # Commands Classes version 3.1
 ########################################################################################################################
 class CmdLoadBase(BaseCmd):
-    """Base class for commands loading data."""
+    """Base class for SB3.1 commands that load data into memory.
+
+    This class provides common functionality for commands that transfer data to target memory,
+    including optional LZMA compression support and memory identification. It serves as the
+    foundation for specific load command implementations in the SB3.1 format.
+
+    :cvar HAS_MEMORY_ID_BLOCK: Indicates this command type includes memory ID information.
+    """
 
     HAS_MEMORY_ID_BLOCK = True
 
@@ -188,13 +253,17 @@ class CmdLoadBase(BaseCmd):
         memory_id: int = 0,
         compress: bool = False,
     ) -> None:
-        """Constructor for command.
+        """Initialize SB3.1 load command with data and optional compression.
 
-        :param cmd_tag: Command tag for the derived class
-        :param address: Address for the load command
-        :param data: Data to load
-        :param memory_id: Memory ID
-        :param compress: Compress data
+        The constructor sets up a load command that can optionally compress the data
+        if compression results in significant size reduction (at least 16 bytes saved).
+        When compression is enabled and beneficial, it calculates CRC and stores
+        original data size for verification.
+
+        :param address: Target memory address where data will be loaded
+        :param data: Binary data to be loaded into memory
+        :param memory_id: Target memory identifier (default: 0)
+        :param compress: Enable data compression if beneficial (default: False)
         """
         self.compressed = False
         self.crc = 0
@@ -214,6 +283,14 @@ class CmdLoadBase(BaseCmd):
         self.data = data
 
     def _compress_data(self, data: bytes) -> bytes:
+        """Compress data using LZMA compression algorithm.
+
+        The method applies LZMA1 compression with extreme preset and optimized settings
+        for small dictionary size and fast mode to achieve efficient compression.
+
+        :param data: Raw data to be compressed.
+        :return: Compressed data in LZMA format.
+        """
         settings = {
             "id": lzma.FILTER_LZMA1,
             "preset": 9 | lzma.PRESET_EXTREME,
@@ -225,14 +302,35 @@ class CmdLoadBase(BaseCmd):
         return compressed_data
 
     def _decompress_data(self) -> bytes:
+        """Decompress LZMA compressed data.
+
+        Decompresses the stored data using LZMA decompression algorithm.
+
+        :raises LZMAError: If the data cannot be decompressed or is corrupted.
+        :return: Decompressed data as bytes.
+        """
         return lzma.decompress(self.data)
 
     def _calc_crc(self, data: bytes) -> int:
+        """Calculate CRC32 checksum for given data.
+
+        Uses CRC32 MPEG algorithm to compute the checksum value.
+
+        :param data: Input data bytes to calculate CRC for.
+        :return: Calculated CRC32 checksum as integer value.
+        """
         crc_obj = from_crc_algorithm(CrcAlg.CRC32_MPEG)
         return crc_obj.calculate(data)
 
     def export(self) -> bytes:
-        """Export command as bytes."""
+        """Export command as bytes array.
+
+        Serializes the command into a binary format suitable for storage or transmission.
+        The method handles memory ID blocks, compression metadata, and ensures proper
+        16-byte alignment of the output data.
+
+        :return: Binary representation of the command with proper alignment.
+        """
         data = super().export()
         if self.HAS_MEMORY_ID_BLOCK:
             data += pack("<L", self.memory_id)
@@ -253,7 +351,7 @@ class CmdLoadBase(BaseCmd):
         Calculate the total export length including the command header, memory ID block (if present),
         and the data payload (aligned to 16-byte boundary).
 
-        :return: The length of the exported command data in bytes
+        :return: The length of the exported command data in bytes.
         """
         # Start with the base command header size
         length = self.SIZE
@@ -268,7 +366,13 @@ class CmdLoadBase(BaseCmd):
         return length
 
     def __str__(self) -> str:
-        """Get info about the load command."""
+        """Get string representation of the load command.
+
+        Provides formatted information about the load command including address, length,
+        and memory ID (if applicable).
+
+        :return: Formatted string with command details.
+        """
         msg = f"{self.CMD_TAG.label}: "
         if self.HAS_MEMORY_ID_BLOCK:
             msg += f"Address=0x{self.address:08X}, Length={self.length}, Memory ID={self.memory_id}"
@@ -280,9 +384,18 @@ class CmdLoadBase(BaseCmd):
     def _extract_data(cls, data: bytes) -> tuple[int, int, bytes, int, int, bool, int, int]:
         """Extract data from the command bytes.
 
-        :param data: Command data bytes
-        :return: Tuple containing (address, length, data, cmd_tag, memory_id, is_compressed, crc, check_size)
-        :raises SPSDKError: If TAG is invalid
+        This method parses command data bytes, extracts various fields including address, length,
+        and payload data. It also handles compressed data using LZMA decompression and performs
+        CRC verification when applicable.
+
+        :param data: Command data bytes to be parsed.
+        :return: Tuple containing (address, length, data, cmd_tag, memory_id, is_compressed, crc,
+                 check_size) where address is target address, length is data length, data is the
+                 payload (decompressed if needed), cmd_tag is command tag, memory_id is memory
+                 identifier, is_compressed indicates if data was compressed, crc is checksum
+                 value, and check_size is expected decompressed size.
+        :raises SPSDKError: If TAG is invalid, padding is incorrect, CRC verification fails,
+                           size verification fails, or LZMA decompression fails.
         """
         tag, address, length, cmd = unpack_from(cls.FORMAT, data)
         memory_id = 0
@@ -334,6 +447,9 @@ class CmdLoadBase(BaseCmd):
     def parse(cls, data: bytes) -> Self:
         """Parse command from bytes array.
 
+        The method extracts command data from a byte array and validates the command tag
+        before creating a new command instance.
+
         :param data: Input data as bytes array
         :return: Command instance
         :raises SPSDKError: Invalid cmd_tag was found
@@ -351,34 +467,51 @@ class CmdLoadBase(BaseCmd):
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configuration.
+        :raises NotImplementedError: Method must be implemented by derived class.
+        :return: List of command objects loaded from configuration.
         """
         raise NotImplementedError("Derived class has to implement this method.")
 
 
 class CmdErase(BaseCmd):
-    """Erase given address range. The erase will be rounded up to the sector size."""
+    """SB3.1 erase command for memory operations.
+
+    This command erases a specified address range in memory, with the erase
+    operation automatically rounded up to the sector size. The command supports
+    different memory types through memory ID specification.
+
+    :cvar CMD_TAG: Command tag identifier for erase operations.
+    """
 
     CMD_TAG = EnumCmdTag.ERASE
 
     def __init__(self, address: int, length: int, memory_id: int = 0) -> None:
-        """Constructor for command.
+        """Initialize SB3.1 command with address, length and memory parameters.
 
-        :param address: Input address
-        :param length: Input length
-        :param memory_id: Memory ID
+        :param address: Target memory address for the command operation
+        :param length: Number of bytes to be processed by the command
+        :param memory_id: Identifier of the target memory interface, defaults to 0
         """
         super().__init__(address=address, length=length)
         self.memory_id = memory_id
 
     def __str__(self) -> str:
-        """Get info of command."""
+        """Get string representation of the erase command.
+
+        :return: Formatted string containing address, length, and memory ID information.
+        """
         return (
             f"ERASE: Address=0x{self.address:08X}, Length={self.length}, Memory ID={self.memory_id}"
         )
 
     def export(self) -> bytes:
-        """Export command as bytes."""
+        """Export command as bytes array.
+
+        Serializes the command into a binary format suitable for secure boot file generation.
+        The exported data includes the base command data followed by memory ID and padding.
+
+        :return: Binary representation of the command.
+        """
         data = super().export()
         data += pack("<4L", self.memory_id, 0, 0, 0)
         return data
@@ -387,7 +520,10 @@ class CmdErase(BaseCmd):
     def export_length(self) -> int:
         """Get export length.
 
-        :return: The length of the exported command data
+        Calculate the total length of the exported command data, including the base command size
+        and additional bytes for memory ID and padding.
+
+        :return: The length of the exported command data in bytes.
         """
         return self.SIZE + 16  # BaseCmd.SIZE (16) + additional 16 bytes for memory_id and padding
 
@@ -395,9 +531,12 @@ class CmdErase(BaseCmd):
     def parse(cls, data: bytes) -> Self:
         """Parse command from bytes array.
 
-        :param data: Input data as bytes array
-        :return: CmdErase
-        :raises SPSDKError: Invalid padding
+        This method deserializes a CmdErase command from its binary representation,
+        extracting the address, length, and memory ID while validating padding fields.
+
+        :param data: Input data as bytes array containing the serialized command
+        :return: CmdErase instance parsed from the input data
+        :raises SPSDKError: Invalid padding in the command data
         """
         address, length = cls.header_parse(data=data)
         memory_id, pad0, pad1, pad2 = unpack_from("<4L", data, offset=16)
@@ -409,8 +548,10 @@ class CmdErase(BaseCmd):
     def load_from_config(cls, config: Config) -> list[Self]:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configuration.
+        Creates command objects from configuration data including address, size, and memory ID.
+
+        :param config: Configuration object containing command parameters.
+        :return: List of command objects loaded from configuration.
         """
         address = config.get_int("address", 0)
         length = config.get_int("size", 0)
@@ -421,13 +562,12 @@ class CmdErase(BaseCmd):
         """Create configuration for the ERASE command.
 
         This method generates a configuration dictionary containing the command's properties
-        and settings, including memory address, length, and memory ID.
+        and settings, including memory address, length, and memory ID. The ERASE command
+        erases a specified memory region, with the operation being rounded up to the
+        sector size for the specified memory.
 
-        The ERASE command erases a specified memory region, with the operation being
-        rounded up to the sector size for the specified memory.
-
-        :param data_path: Path to store any data files (not used for this command)
-        :return: Configuration object with command-specific settings
+        :param data_path: Path to store any data files (not used for this command).
+        :return: Configuration object with command-specific settings.
         """
         config_dict = {"address": self.address, "size": self.length, "memoryId": self.memory_id}
         return Config(config_dict)
@@ -440,10 +580,11 @@ def load_cmd_data_from_cfg(config: Config) -> bytes:
     1. Direct conversion to bytes if possible
     2. Parsing as list of values or comma-separated string
     3. Loading from a file specified in configuration
+    The method provides backward compatibility for obsolete configuration keys (value/values/file).
 
-    :param config: Dictionary with configuration fields
-    :return: Binary data extracted from configuration
-    :raises SPSDKError: When data cannot be loaded from any source
+    :param config: Configuration object containing data source specification.
+    :return: Binary data extracted from configuration.
+    :raises SPSDKError: When data cannot be loaded from any source.
     """
     # We kept there the backward compatibility code to load obsolete keys: value/values/file
     data = config.get("data", config.get("value", config.get("values", config.get("file"))))
@@ -484,11 +625,12 @@ class CmdLoad(CmdLoadBase):
     def __init__(
         self, address: int, data: bytes, memory_id: int = 0, compress: bool = False
     ) -> None:
-        """Constructor for command.
+        """Initialize Load command with specified parameters.
 
-        :param address: Address for the load command
-        :param data: Data to load
-        :param memory_id: Memory ID
+        :param address: Target memory address where data will be loaded
+        :param data: Binary data to be loaded into memory
+        :param memory_id: Target memory identifier (default: 0)
+        :param compress: Enable data compression for the load operation (default: False)
         """
         super().__init__(
             address=address,
@@ -499,11 +641,17 @@ class CmdLoad(CmdLoadBase):
 
     @classmethod
     def load_from_config(cls, config: Config) -> list[Self]:
-        """Load configuration from dictionary.
+        """Load configuration from dictionary and create command objects.
 
-        :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configuration.
-        :raises SPSDKError: Invalid configuration field.
+        Creates one or more command objects based on the configuration. When compression
+        is enabled, the data is split into sector-aligned chunks and multiple commands
+        are created.
+
+        :param config: Configuration object with command fields including address,
+            memoryId, data source, compression settings, and sector size.
+        :return: List of command objects loaded from configuration.
+        :raises SPSDKValueError: Address not aligned to sector size when compression
+            is enabled.
         """
         address = config.get_int("address", 0)
         memory_id = config.get_int("memoryId", 0)
@@ -535,13 +683,12 @@ class CmdLoad(CmdLoadBase):
         """Create configuration for the LOAD command.
 
         This method generates a configuration dictionary containing the command's properties
-        and settings, including address, memory ID, and data representation.
+        and settings, including address, memory ID, and data representation. The LOAD command
+        writes data to a specified memory address, which is essential for programming firmware,
+        configuration parameters, or other data into device memory.
 
-        The LOAD command writes data to a specified memory address, which is essential for
-        programming firmware, configuration parameters, or other data into device memory.
-
-        :param data_path: Path to store any data files that might be created for large data
-        :return: Configuration object with command-specific settings
+        :param data_path: Path to store any data files that might be created for large data.
+        :return: Configuration object with command-specific settings.
         """
         config_dict: dict[str, Union[str, int]] = {
             "address": self.address,
@@ -578,14 +725,17 @@ class CmdExecute(BaseCmd):
     CMD_TAG = EnumCmdTag.EXECUTE
 
     def __init__(self, address: int) -> None:
-        """Constructor for Command.
+        """Initialize Command with specified address.
 
-        :param address: Input address
+        :param address: Memory address where the command will be executed.
         """
         super().__init__(address=address, length=0)
 
     def __str__(self) -> str:
-        """Get info of command."""
+        """Get string representation of the EXECUTE command.
+
+        :return: Formatted string containing command type and execution address in hexadecimal format.
+        """
         return f"EXECUTE: Address=0x{self.address:08X}"
 
     @classmethod
@@ -593,7 +743,8 @@ class CmdExecute(BaseCmd):
         """Parse command from bytes array.
 
         :param data: Input data as bytes array
-        :return: CmdExecute
+        :raises SPSDKError: Invalid data format or parsing error
+        :return: CmdExecute instance created from parsed data
         """
         address, _ = cls.header_parse(data=data)
         return cls(address=address)
@@ -602,8 +753,10 @@ class CmdExecute(BaseCmd):
     def load_from_config(cls, config: Config) -> list[Self]:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configuration.
+        Creates a list of command objects based on the provided configuration data.
+
+        :param config: Configuration object containing command fields.
+        :return: List of command objects loaded from configuration.
         """
         return [cls(address=config.get_int("address", 0))]
 
@@ -611,13 +764,12 @@ class CmdExecute(BaseCmd):
         """Create configuration for the EXECUTE command.
 
         This method generates a configuration dictionary containing the command's properties
-        and settings, including the address to jump to for execution.
+        and settings, including the address to jump to for execution. The EXECUTE command
+        triggers execution at a specified address, which is typically used to start running
+        code after it has been loaded into memory.
 
-        The EXECUTE command triggers execution at a specified address, which is typically
-        used to start running code after it has been loaded into memory.
-
-        :param data_path: Path to store any data files (not used for this command)
-        :return: Configuration object with command-specific settings
+        :param data_path: Path to store any data files (not used for this command).
+        :return: Configuration object with command-specific settings.
         """
         config_dict = {"address": self.address}
         return Config(config_dict)
@@ -629,14 +781,17 @@ class CmdCall(BaseCmd):
     CMD_TAG = cmd_tag = EnumCmdTag.CALL
 
     def __init__(self, address: int) -> None:
-        """Constructor for Command.
+        """Initialize Command with specified address.
 
-        :param address: Input address
+        :param address: Memory address where the command will be executed.
         """
         super().__init__(address=address, length=0)
 
     def __str__(self) -> str:
-        """Get info of command."""
+        """Get string representation of the CALL command.
+
+        :return: Formatted string containing command type and target address in hexadecimal format.
+        """
         return f"CALL: Address=0x{self.address:08X}"
 
     @classmethod
@@ -644,7 +799,8 @@ class CmdCall(BaseCmd):
         """Parse command from bytes array.
 
         :param data: Input data as bytes array
-        :return: CmdCall
+        :raises SPSDKValueError: Invalid data format or corrupted command structure
+        :return: Parsed CmdCall command instance
         """
         address, _ = cls.header_parse(data=data)
         return cls(address=address)
@@ -653,8 +809,10 @@ class CmdCall(BaseCmd):
     def load_from_config(cls, config: Config) -> list[Self]:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configuration.
+        Creates a list of command objects based on the provided configuration data.
+
+        :param config: Configuration object containing command parameters.
+        :return: List of command objects loaded from configuration.
         """
         return [cls(address=config.get_int("address", 0))]
 
@@ -662,13 +820,12 @@ class CmdCall(BaseCmd):
         """Create configuration for the CALL command.
 
         This method generates a configuration dictionary containing the command's properties
-        and settings, including the address to call.
+        and settings, including the address to call. The CALL command executes code at a
+        specified address but unlike EXECUTE, it returns control to the bootloader after
+        completion.
 
-        The CALL command executes code at a specified address but unlike EXECUTE, it returns
-        control to the bootloader after completion.
-
-        :param data_path: Path to store any data files (not used for this command)
-        :return: Configuration object with command-specific settings
+        :param data_path: Path to store any data files (not used for this command).
+        :return: Configuration object with command-specific settings.
         """
         config_dict = {"address": self.address}
         return Config(config_dict)
@@ -681,16 +838,29 @@ class CmdProgFuses(CmdLoadBase):
     CMD_TAG = EnumCmdTag.PROGRAM_FUSES
 
     def __init__(self, address: int, data: bytes) -> None:
-        """Constructor for Command.
+        """Initialize SB3.1 command with address and data.
 
-        :param address: Input address
-        :param data: Input data
+        The constructor sets up the command with the provided address and data,
+        and adjusts the length by dividing it by 4 to convert from bytes to words.
+
+        :param address: Target address for the command operation.
+        :param data: Binary data payload for the command.
         """
         super().__init__(address=address, data=data)
         self.length //= 4
 
     @classmethod
     def _extract_data_prog_fuses(cls, data: bytes) -> tuple[int, int, bytes, int, int]:
+        """Extract data for programming fuses command from binary data.
+
+        This method parses binary data to extract command information including address,
+        length, load data, command value, and memory ID for fuse programming operations.
+        It validates the command tag and handles optional memory ID blocks.
+
+        :param data: Binary data containing the command information to be parsed.
+        :raises SPSDKError: Invalid TAG value or invalid padding in memory ID block.
+        :return: Tuple containing (address, length, load_data, cmd, memory_id).
+        """
         tag, address, length, cmd = unpack_from(cls.FORMAT, data)
         length *= 4
         memory_id = 0
@@ -710,17 +880,22 @@ class CmdProgFuses(CmdLoadBase):
         """Parse command from bytes array.
 
         :param data: Input data as bytes array
-        :return: CmdProgFuses
+        :raises SPSDKValueError: Invalid data format or corrupted input data
+        :return: CmdProgFuses instance created from parsed data
         """
         address, _, data, _, _ = cls._extract_data_prog_fuses(data=data)
         return cls(address=address, data=data)
 
     @classmethod
     def load_from_config(cls, config: Config) -> list[Self]:
-        """Load configuration from dictionary.
+        """Load configuration from dictionary to create command objects.
 
-        :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configuration.
+        The method parses configuration data to extract address and fuse values, then creates
+        command objects with the parsed data. Fuse values can be provided as a single integer
+        or as a comma-separated string of values.
+
+        :param config: Configuration object containing address and values fields.
+        :return: List of command objects created from the configuration data.
         """
         address = config.get_int("address", 0)
         if isinstance(config["values"], int):
@@ -735,11 +910,10 @@ class CmdProgFuses(CmdLoadBase):
 
         This method generates a configuration dictionary containing the command's properties
         and settings, including the fuse register address and values to be programmed.
-
         Fuse values are represented as comma-separated hexadecimal or decimal values.
 
-        :param data_path: Path to store any data files (not used for this command)
-        :return: Configuration object with command-specific settings
+        :param data_path: Path to store any data files (not used for this command).
+        :return: Configuration object with command-specific settings.
         """
         config_dict: dict[str, Union[str, int]] = {"address": self.address}
 
@@ -766,10 +940,12 @@ class CmdProgIfr(CmdLoadBase):
     HAS_MEMORY_ID_BLOCK = False
 
     def __init__(self, address: int, data: bytes) -> None:
-        """Constructor for Command.
+        """Constructor for SB3.1 command.
 
-        :param address: Input address
-        :param data: Input data as bytes array
+        Initializes a new SB3.1 command with the specified address and data payload.
+
+        :param address: Target address where the command will be executed
+        :param data: Command data payload as bytes array
         """
         super().__init__(address=address, data=data)
 
@@ -778,7 +954,8 @@ class CmdProgIfr(CmdLoadBase):
         """Parse command from bytes array.
 
         :param data: Input data as bytes array
-        :return: CmdProgFuses
+        :raises SPSDKError: Invalid data format or parsing error
+        :return: CmdProgFuses instance created from parsed data
         """
         address, _, data, _, _, _, _, _ = cls._extract_data(data=data)
         return cls(address=address, data=data)
@@ -787,8 +964,8 @@ class CmdProgIfr(CmdLoadBase):
     def load_from_config(cls, config: Config) -> list[Self]:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configuration.
+        :param config: Configuration object with command fields.
+        :return: List containing single command object loaded from configuration.
         """
         address = config.get_int("address", 0)
         data = load_cmd_data_from_cfg(config)
@@ -799,11 +976,10 @@ class CmdProgIfr(CmdLoadBase):
 
         This method generates a configuration dictionary containing the command's properties
         and settings, including the address into the IFR region and the data to be programmed.
-
         The IFR data is stored in a separate binary file for better management.
 
-        :param data_path: Path where the IFR data file will be stored
-        :return: Configuration object with command-specific settings
+        :param data_path: Path where the IFR data file will be stored.
+        :return: Configuration object with command-specific settings.
         """
         # Create base config with address
         config_dict: dict[str, Union[str, int]] = {"address": self.address}
@@ -826,11 +1002,11 @@ class CmdLoadCmac(CmdLoadBase):
     CMD_TAG = EnumCmdTag.LOAD_CMAC
 
     def __init__(self, address: int, data: bytes, memory_id: int = 0) -> None:
-        """Constructor for command.
+        """Initialize Load command with target address and data.
 
-        :param address: Address for the load command
-        :param data: Data to load
-        :param memory_id: Memory ID
+        :param address: Target memory address where data will be loaded
+        :param data: Binary data to be loaded into memory
+        :param memory_id: Target memory identifier, defaults to 0
         """
         super().__init__(address=address, data=data, memory_id=memory_id)
 
@@ -838,8 +1014,11 @@ class CmdLoadCmac(CmdLoadBase):
     def load_from_config(cls, config: Config) -> list[Self]:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configuration.
+        The method creates command objects from configuration data including address,
+        memory ID, and binary file data.
+
+        :param config: Configuration object with command fields.
+        :return: List of command objects loaded from configuration.
         :raises SPSDKError: Invalid configuration field.
         """
         address = config.get_int("address", 0)
@@ -851,12 +1030,11 @@ class CmdLoadCmac(CmdLoadBase):
         """Create configuration for the LOAD_CMAC command.
 
         This method generates a configuration dictionary containing the command's properties
-        and settings, including address, memory ID, and CMAC data.
+        and settings, including address, memory ID, and CMAC data. The CMAC data is stored
+        in a separate binary file for better management.
 
-        The CMAC data is stored in a separate binary file for better management.
-
-        :param data_path: Path where the CMAC data file will be stored
-        :return: Configuration object with command-specific settings
+        :param data_path: Path where the CMAC data file will be stored.
+        :return: Configuration object with command-specific settings.
         """
         # Create base config with address
         config_dict: dict[str, Union[str, int]] = {
@@ -878,6 +1056,9 @@ class CmdLoadCmac(CmdLoadBase):
     @classmethod
     def parse(cls, data: bytes) -> Self:
         """Parse command from bytes array.
+
+        Extracts command data from a byte array and creates a command instance
+        with the parsed address, data, and memory ID.
 
         :param data: Input data as bytes array
         :return: Command instance
@@ -904,13 +1085,16 @@ class CmdCopy(BaseCmd):
         memory_id_from: int = 0,
         memory_id_to: int = 0,
     ) -> None:
-        """Constructor for command.
+        """Initialize SB3.1 copy command.
 
-        :param address: Input address
-        :param length: Input length
-        :param destination_address: Destination address
-        :param memory_id_from: Memory ID
-        :param memory_id_to: Memory ID
+        Creates a new copy command that transfers data from one memory location to another,
+        potentially between different memory regions.
+
+        :param address: Source memory address to copy data from.
+        :param length: Number of bytes to copy from source address.
+        :param destination_address: Target memory address where data will be copied to.
+        :param memory_id_from: Source memory region identifier.
+        :param memory_id_to: Target memory region identifier.
         """
         super().__init__(address=address, length=length)
         self.destination_address = destination_address
@@ -918,7 +1102,13 @@ class CmdCopy(BaseCmd):
         self.memory_id_to = memory_id_to
 
     def __str__(self) -> str:
-        """Get info of command."""
+        """Get string representation of the COPY command.
+
+        Returns formatted string containing command details including source address,
+        data length, destination address, and memory IDs.
+
+        :return: Formatted string with COPY command information.
+        """
         return (
             f"COPY: Address=0x{self.address:08X}, Length={self.length}, "
             f"Destination address={self.destination_address}"
@@ -926,16 +1116,26 @@ class CmdCopy(BaseCmd):
         )
 
     def export(self) -> bytes:
-        """Export command as bytes."""
+        """Export command as bytes array.
+
+        Serializes the command into a binary format suitable for transmission or storage.
+        The exported data includes the base command data followed by destination address,
+        source memory ID, target memory ID, and a reserved field.
+
+        :return: Binary representation of the command.
+        """
         data = super().export()
         data += pack("<4L", self.destination_address, self.memory_id_from, self.memory_id_to, 0)
         return data
 
     @property
     def export_length(self) -> int:
-        """Export length of command.
+        """Export length of command in bytes.
 
-        :return: Length of command in bytes
+        Calculates the total export length including the base header (16 bytes) and additional
+        COPY command specific fields (16 bytes).
+
+        :return: Length of command in bytes.
         """
         return (
             super().export_length + 16
@@ -945,9 +1145,12 @@ class CmdCopy(BaseCmd):
     def parse(cls, data: bytes) -> Self:
         """Parse command from bytes array.
 
-        :param data: Input data as bytes array
-        :return: CmdCopy
-        :raises SPSDKError: Invalid padding
+        Deserializes a CmdCopy command from its binary representation by extracting
+        the header information and command-specific parameters.
+
+        :param data: Input data as bytes array containing the serialized command
+        :return: CmdCopy instance created from the parsed data
+        :raises SPSDKError: Invalid padding detected in the command data
         """
         address, length = cls.header_parse(data=data)
         destination_address, memory_id_from, memory_id_to, pad0 = unpack_from(
@@ -967,8 +1170,11 @@ class CmdCopy(BaseCmd):
     def load_from_config(cls, config: Config) -> list[Self]:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configuration.
+        The method creates a command object by extracting configuration parameters
+        from the provided Config object and returns it as a single-item list.
+
+        :param config: Configuration object containing command parameters.
+        :return: List containing single command object loaded from configuration.
         """
         address = config.get_int("addressFrom", 0)
         length = config.get_int("size", 0)
@@ -990,12 +1196,11 @@ class CmdCopy(BaseCmd):
 
         This method generates a configuration dictionary containing the command's properties
         and settings, including source address, destination address, size, and memory IDs.
-
         The COPY command transfers data between different memory regions, which is useful
         for copying firmware or data from one memory location to another.
 
-        :param data_path: Path to store any data files (not used for this command)
-        :return: Configuration object with command-specific settings
+        :param data_path: Path to store any data files (not used for this command).
+        :return: Configuration object with command-specific settings.
         """
         config_dict = {
             "address": self.address,  # Source address
@@ -1009,21 +1214,34 @@ class CmdCopy(BaseCmd):
 
 
 class CmdLoadHashLocking(CmdLoadBase):
-    """Load hash. ROM is calculating hash."""
+    """SB3.1 Load Hash Locking command for secure boot operations.
+
+    This command loads hash data to a specified memory address while enabling ROM-based
+    hash calculation and locking mechanisms. It extends the base load functionality with
+    additional security features including hash verification and memory protection.
+
+    :cvar CMD_TAG: Command identifier for load hash locking operations.
+    """
 
     CMD_TAG = EnumCmdTag.LOAD_HASH_LOCKING
 
     def __init__(self, address: int, data: bytes, memory_id: int = 0) -> None:
-        """Constructor for command.
+        """Initialize Load command with target address and data.
 
-        :param address: Address for the load command
-        :param data: Data to load
-        :param memory_id: Memory ID
+        :param address: Target memory address where data will be loaded
+        :param data: Binary data to be loaded into memory
+        :param memory_id: Target memory identifier, defaults to 0
         """
         super().__init__(address=address, data=data, memory_id=memory_id)
 
     def export(self) -> bytes:
-        """Export command as bytes."""
+        """Export command as bytes array.
+
+        Exports the command data by calling the parent class export method and
+        appending 64 null bytes for padding or alignment purposes.
+
+        :return: Command data as bytes with additional padding.
+        """
         data = super().export()
         data += bytes(64)
         return data
@@ -1032,7 +1250,7 @@ class CmdLoadHashLocking(CmdLoadBase):
     def export_length(self) -> int:
         """Export length of command.
 
-        :return: Length of command in bytes
+        :return: Length of command in bytes.
         """
         return super().export_length + 64
 
@@ -1040,8 +1258,11 @@ class CmdLoadHashLocking(CmdLoadBase):
     def load_from_config(cls, config: Config) -> list[Self]:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configuration.
+        The method creates command objects from configuration data including address,
+        memory ID, and binary file data.
+
+        :param config: Configuration object with command fields.
+        :return: List of command objects loaded from configuration.
         :raises SPSDKError: Invalid configuration field.
         """
         address = config.get_int("address", 0)
@@ -1053,12 +1274,11 @@ class CmdLoadHashLocking(CmdLoadBase):
         """Create configuration for the LOAD_HASH_LOCKING command.
 
         This method generates a configuration dictionary containing the command's properties
-        and settings, including address, memory ID, and hash data.
+        and settings, including address, memory ID, and hash data. The hash data is stored
+        in a separate binary file for better management.
 
-        The hash data is stored in a separate binary file for better management.
-
-        :param data_path: Path where the hash data file will be stored
-        :return: Configuration object with command-specific settings
+        :param data_path: Path where the hash data file will be stored, defaults to current directory.
+        :return: Configuration object with command-specific settings.
         """
         # Create base config with address and memory ID
         config_dict: dict[str, Union[str, int]] = {
@@ -1082,9 +1302,12 @@ class CmdLoadHashLocking(CmdLoadBase):
     def parse(cls, data: bytes) -> Self:
         """Parse command from bytes array.
 
-        :param data: Input data as bytes array
-        :return: Command instance
-        :raises SPSDKError: Invalid cmd_tag was found
+        Extracts command data from a byte array and creates a command instance with the parsed
+        address, data, and memory ID. Validates that the command tag matches the expected type.
+
+        :param data: Input data as bytes array to be parsed
+        :return: Command instance created from the parsed data
+        :raises SPSDKError: Invalid cmd_tag was found during parsing
         """
         address, _, data, cmd_tag, memory_id, _, _, _ = cls._extract_data(data)
         cmd_tag_enum = EnumCmdTag.from_tag(cmd_tag)
@@ -1095,26 +1318,48 @@ class CmdLoadHashLocking(CmdLoadBase):
 
 
 class CmdLoadKeyBlob(BaseCmd):
-    """Load key blob."""
+    """SB3.1 command for loading encrypted key blobs into device memory.
+
+    This command handles the secure loading of wrapped key material using NXP customer
+    KEK (Key Encryption Key) for both internal and external secure keys. The command
+    supports different key wrap versions and provides family-specific key ID resolution.
+
+    :cvar CMD_TAG: Command identifier for load key blob operation.
+    :cvar FORMAT: Binary format string for command serialization.
+    """
 
     CMD_TAG = EnumCmdTag.LOAD_KEY_BLOB
 
     FORMAT = "<L2H2L"
 
     class _KeyWraps(BuiltinEnum):
-        """KeyWrap IDs used by the CmdLoadKeyBlob command."""
+        """KeyWrap identifier enumeration for SB3.1 key blob operations.
+
+        Defines the available key wrap identifiers used by the CmdLoadKeyBlob command
+        to specify different key encryption key types for secure key provisioning.
+        """
 
         NXP_CUST_KEK_INT_SK = 16
         NXP_CUST_KEK_EXT_SK = 17
 
     class _KeyWrapsV2(BuiltinEnum):
-        """KeyWrap IDs used by the CmdLoadKeyBlob command."""
+        """KeyWrap identifier enumeration for SB3.1 key blob operations.
+
+        This enumeration defines the available key wrap identifiers used by the
+        CmdLoadKeyBlob command in SB3.1 format, specifying different key encryption
+        key types for secure key provisioning.
+        """
 
         NXP_CUST_KEK_INT_SK = 18
         NXP_CUST_KEK_EXT_SK = 19
 
     class KeyTypes(BuiltinEnum):
-        """KeyTypes for NXP_CUST_KEK_INT_SK, NXP_CUST_KEK_EXT_SK."""
+        """SB3.1 key type enumeration for customer KEK configurations.
+
+        This enumeration defines the available key types for NXP customer Key Encryption Key
+        (KEK) configurations in SB3.1 secure boot files, supporting both internal and
+        external key storage options.
+        """
 
         NXP_CUST_KEK_INT_SK = 1
         NXP_CUST_KEK_EXT_SK = 2
@@ -1123,9 +1368,13 @@ class CmdLoadKeyBlob(BaseCmd):
     def get_key_id(cls, family: FamilyRevision, key_name: KeyTypes) -> int:
         """Get key ID based on family and key name.
 
-        :param family: chip family
-        :param key_name: NXP_CUST_KEK_INT_SK or NXP_CUST_KEK_EXT_SK
-        :return: integer value representing key
+        The method retrieves the appropriate key identifier by looking up the chip family database
+        and determining the correct key wraps version to use for the specified key type.
+
+        :param family: Chip family revision to determine key mapping.
+        :param key_name: Key type, either NXP_CUST_KEK_INT_SK or NXP_CUST_KEK_EXT_SK.
+        :raises SPSDKValueError: Unsupported key wraps version found in database.
+        :return: Integer value representing the key identifier.
         """
         database = get_db(family)
         feature_name = [x for x in database.features.keys() if str(x).startswith("sb")][0]
@@ -1138,11 +1387,12 @@ class CmdLoadKeyBlob(BaseCmd):
     def __init__(
         self, offset: int, data: bytes, key_wrap_id: int, plain_input: bool = False
     ) -> None:
-        """Constructor for command.
+        """Initialize SB3.1 command with key wrapping parameters.
 
-        :param offset: Input offset
-        :param key_wrap_id: Key wrap ID (NXP_CUST_KEK_INT_SK = 16, NXP_CUST_KEK_EXT_SK = 17)
-        :param data: Wrapped key blob
+        :param offset: Input offset for the command execution.
+        :param data: Wrapped key blob data to be processed.
+        :param key_wrap_id: Key wrap identifier (NXP_CUST_KEK_INT_SK = 16, NXP_CUST_KEK_EXT_SK = 17).
+        :param plain_input: Whether the input data is in plain format, defaults to False.
         """
         super().__init__(address=offset, length=len(data))
         self.key_wrap_id = key_wrap_id
@@ -1150,21 +1400,45 @@ class CmdLoadKeyBlob(BaseCmd):
         self.plain_input = plain_input
 
     def __str__(self) -> str:
-        """Get info of command."""
+        """Get string representation of the LOAD_KEY_BLOB command.
+
+        Returns a formatted string containing the command type, memory address offset,
+        data length, and key wrap identifier for debugging and logging purposes.
+
+        :return: Formatted string with command details including offset, length, and key wrap ID.
+        """
         return f"LOAD_KEY_BLOB: Offset=0x{self.address:08X}, Length={self.length}, Key wrap ID={self.key_wrap_id}"
 
     @property
     def length(self) -> int:
-        """Get data length."""
+        """Get data length.
+
+        :return: Length of the data in bytes.
+        """
         return len(self.data)
 
     @length.setter
     def length(self, value: int) -> None:
-        """Set data length."""
+        """Set data length.
+
+        This property setter always raises an exception as the length property
+        is read-only for this command type.
+
+        :param value: The length value to set (ignored).
+        :raises SPSDKError: Always raised since length property is read-only.
+        """
         raise SPSDKError(f"Length property for {self.__class__.__name__} is read-only")
 
     def export(self) -> bytes:
-        """Export command as bytes."""
+        """Export command as bytes array.
+
+        Serializes the command into a binary format according to the SB3.1 specification.
+        The exported data includes command header with TAG, address, key wrap ID, length,
+        and command-specific tag, followed by the actual data payload. The result is
+        aligned to 16-byte boundary with zero padding.
+
+        :return: Binary representation of the command ready for SB3.1 file inclusion.
+        """
         result_data = pack(
             self.FORMAT,
             self.TAG,
@@ -1182,11 +1456,11 @@ class CmdLoadKeyBlob(BaseCmd):
     def export_length(self) -> int:
         """Calculate the total export length including the command header and data.
 
-        This property returns the total size in bytes that the command will occupy
-        when exported to binary format, including both the fixed-size command header
-        and any variable-length data payload.
+        This property returns the total size in bytes that the command will occupy when exported to
+        binary format, including both the fixed-size command header and any variable-length data
+        payload. The result is aligned to 16-byte boundary.
 
-        :return: Total length in bytes of the exported command
+        :return: Total length in bytes of the exported command.
         """
         # Calculate the total export length including the command header and data
         return align((calcsize(self.FORMAT) + len(self.data)), alignment=16)
@@ -1195,8 +1469,12 @@ class CmdLoadKeyBlob(BaseCmd):
     def parse(cls, data: bytes) -> Self:
         """Parse command from bytes array.
 
-        :param data: Input data as bytes array
-        :return: CmdLoadKeyBlob
+        Deserializes a CmdLoadKeyBlob command from its binary representation by extracting
+        the CMPA offset, key wrap ID, and key blob data.
+
+        :param data: Input data as bytes array containing the serialized command
+        :raises struct.error: If data format is invalid or insufficient data provided
+        :return: CmdLoadKeyBlob instance with parsed parameters
         """
         _, cmpa_offset, key_wrap_id, length, _ = unpack_from(cls.FORMAT, data)
         key_blob_data = unpack_from(f"<{length}s", data, cls.SIZE)[0]
@@ -1204,16 +1482,29 @@ class CmdLoadKeyBlob(BaseCmd):
 
     @classmethod
     def load_from_config(cls, config: Config) -> list[Self]:
-        """Load configuration from dictionary.
+        """Load configuration from dictionary to create command objects.
 
-        :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configuration.
+        The method processes configuration data including offset, wrapping key ID, family revision,
+        and input data format. It handles special cases for YAML boolean conversion and supports
+        both hexadecimal and binary input formats.
+
+        :param config: Configuration object with command fields including offset, wrappingKeyId,
+            family information, plainInput format, and input file path.
+        :return: List containing single command object loaded from configuration.
+        :raises SPSDKValueError: When plainInput field is not a string type.
         """
         offset = config.get_int("offset", 0)
         key_wrap_name = config["wrappingKeyId"]
         family = FamilyRevision.load_from_config(config)
         key_wrap_id = cls.get_key_id(family, cls.KeyTypes[key_wrap_name])
-        plain_input = config.get_str("plainInput", "bin")
+
+        plain_input = config.get("plainInput", "bin")
+        # handle special case, when the user supplies plainInput as boolean
+        #  due to YAML's auto-conversion: no -> False, yes -> True
+        if isinstance(plain_input, bool):
+            plain_input = "bin" if plain_input else "no"
+        if not isinstance(plain_input, str):
+            raise SPSDKValueError("plainInput must be a string")
 
         if plain_input == "hex":
             hex_data = load_text(config.get_input_file_name("file"))
@@ -1230,11 +1521,10 @@ class CmdLoadKeyBlob(BaseCmd):
 
         This method generates a configuration dictionary containing the command's properties
         and settings, including offset, key wrap ID, and the key blob data.
-
         The key blob data is stored in a separate binary file for better management and security.
 
-        :param data_path: Path where the key blob file will be stored
-        :return: Configuration object with command-specific settings
+        :param data_path: Path where the key blob file will be stored.
+        :return: Configuration object with command-specific settings.
         """
         # Find the key wrap type based on the ID
         key_wrap_type = None
@@ -1274,25 +1564,41 @@ class CmdLoadKeyBlob(BaseCmd):
 
 
 class CmdConfigureMemory(BaseCmd):
-    """Configure memory."""
+    """SB3.1 command for configuring memory parameters.
+
+    This command sets up memory configuration parameters required before performing
+    memory operations in the secure boot process. It specifies the target memory
+    address and memory identifier for subsequent operations.
+
+    :cvar CMD_TAG: Command tag identifier for CONFIGURE_MEMORY operations.
+    """
 
     CMD_TAG = EnumCmdTag.CONFIGURE_MEMORY
 
     def __init__(self, address: int, memory_id: int = 0) -> None:
-        """Constructor for command.
+        """Initialize SB3.1 command with address and memory ID.
 
-        :param address: Input address
-        :param memory_id: Memory ID
+        :param address: Target address for the command operation.
+        :param memory_id: Memory identifier, defaults to 0.
         """
         super().__init__(address=address, length=0)
         self.memory_id = memory_id
 
     def __str__(self) -> str:
-        """Get info of command."""
+        """Get string representation of the CONFIGURE_MEMORY command.
+
+        :return: Formatted string containing command address and memory ID information.
+        """
         return f"CONFIGURE_MEMORY: Address=0x{self.address:08X}, Memory ID={self.memory_id}"
 
     def export(self) -> bytes:
-        """Export command as bytes."""
+        """Export command as bytes array.
+
+        Serializes the command into a binary format using the predefined FORMAT structure
+        with TAG, memory_id, address, and CMD_TAG.tag fields.
+
+        :return: Binary representation of the command.
+        """
         return pack(self.FORMAT, self.TAG, self.memory_id, self.address, self.CMD_TAG.tag)
 
     @classmethod
@@ -1300,7 +1606,8 @@ class CmdConfigureMemory(BaseCmd):
         """Parse command from bytes array.
 
         :param data: Input data as bytes array
-        :return: CmdConfigureMemory
+        :raises SPSDKError: Invalid data format or parsing failure
+        :return: CmdConfigureMemory instance created from parsed data
         """
         memory_id, address = cls.header_parse(data=data)
         return cls(address=address, memory_id=memory_id)
@@ -1309,8 +1616,10 @@ class CmdConfigureMemory(BaseCmd):
     def load_from_config(cls, config: Config) -> list[Self]:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configuration.
+        Creates a list of command objects from the provided configuration data.
+
+        :param config: Configuration object containing command parameters.
+        :return: List containing a single command object loaded from configuration.
         """
         return [
             cls(address=config.get_int("configAddress", 0), memory_id=config.get_int("memoryId", 0))
@@ -1321,12 +1630,11 @@ class CmdConfigureMemory(BaseCmd):
 
         This method generates a configuration dictionary containing the command's properties
         and settings, including the memory configuration address and memory ID.
-
         The CONFIGURE_MEMORY command sets up memory parameters required before performing
         operations on the specified memory.
 
-        :param data_path: Path to store any data files (not used for this command)
-        :return: Configuration object with command-specific settings
+        :param data_path: Path to store any data files (not used for this command).
+        :return: Configuration object with command-specific settings.
         """
         config_dict = {"configAddress": self.address, "memoryId": self.memory_id}
 
@@ -1334,26 +1642,44 @@ class CmdConfigureMemory(BaseCmd):
 
 
 class CmdFillMemory(BaseCmd):
-    """Fill memory range by pattern."""
+    """SB3.1 command for filling memory range with a specified pattern.
+
+    This command writes a repeating pattern to a contiguous block of memory,
+    effectively initializing or clearing memory regions during secure boot
+    operations.
+
+    :cvar CMD_TAG: Command identifier for fill memory operations.
+    """
 
     CMD_TAG = EnumCmdTag.FILL_MEMORY
 
     def __init__(self, address: int, length: int, pattern: int) -> None:
-        """Constructor for command.
+        """Initialize fill memory command.
 
-        :param address: Input address
-        :param length: Input length
-        :param pattern: Pattern for fill memory with
+        Creates a command that fills a specified memory region with a given pattern.
+
+        :param address: Target memory address to start filling
+        :param length: Secure Binary bytes to fill in memory
+        :param pattern: Fill pattern value to write to memory
         """
         super().__init__(address=address, length=length)
         self.pattern = pattern
 
     def __str__(self) -> str:
-        """Get info of command."""
+        """Get string representation of FILL_MEMORY command.
+
+        :return: Formatted string containing command address, length, and pattern information.
+        """
         return f"FILL_MEMORY: Address=0x{self.address:08X}, Length={self.length}, PATTERN={hex(self.pattern)}"
 
     def export(self) -> bytes:
-        """Export command as bytes."""
+        """Export command as bytes array.
+
+        Serializes the command data including the pattern and padding into a binary format
+        suitable for storage or transmission.
+
+        :return: Binary representation of the command with pattern and padding.
+        """
         data = super().export()
         data += pack("<4L", self.pattern, 0, 0, 0)
         return data
@@ -1362,7 +1688,7 @@ class CmdFillMemory(BaseCmd):
     def export_length(self) -> int:
         """Calculate the total export length including the command header and data.
 
-        :return: Total length in bytes of the exported command
+        :return: Total length in bytes of the exported command.
         """
         return super().export_length + 16
 
@@ -1370,9 +1696,12 @@ class CmdFillMemory(BaseCmd):
     def parse(cls, data: bytes) -> Self:
         """Parse command from bytes array.
 
+        Deserializes a CmdErase command from its binary representation by extracting
+        address, length, and pattern fields while validating padding bytes.
+
         :param data: Input data as bytes array
-        :return: CmdErase
-        :raises SPSDKError: Invalid padding
+        :return: CmdErase command instance
+        :raises SPSDKError: Invalid padding bytes detected
         """
         address, length = cls.header_parse(data=data)
         pattern, pad0, pad1, pad2 = unpack_from("<4L", data, offset=16)
@@ -1384,8 +1713,11 @@ class CmdFillMemory(BaseCmd):
     def load_from_config(cls, config: Config) -> list[Self]:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configuration.
+        The method creates a command object by extracting address, size, and pattern values
+        from the provided configuration dictionary with default fallback values.
+
+        :param config: Configuration object containing command parameters.
+        :return: List containing single command object loaded from configuration.
         """
         address = config.get_int("address", 0)
         length = config.get_int("size", 0)
@@ -1398,12 +1730,11 @@ class CmdFillMemory(BaseCmd):
         This method generates a configuration dictionary containing the command's properties
         and settings, including the starting address, size of the region to fill, and
         the pattern value to use for filling.
-
         The FILL_MEMORY command fills a specified memory region with a repeating pattern,
         which is useful for initializing memory areas or erasing sensitive data.
 
-        :param data_path: Path to store any data files (not used for this command)
-        :return: Configuration object with command-specific settings
+        :param data_path: Path to store any data files (not used for this command).
+        :return: Configuration object with command-specific settings.
         """
         config_dict = {"address": self.address, "size": self.length, "pattern": self.pattern}
 
@@ -1411,12 +1742,24 @@ class CmdFillMemory(BaseCmd):
 
 
 class CmdFwVersionCheck(BaseCmd):
-    """Check counter value with stored value, if values are not same, SB file is rejected."""
+    """SB3.1 firmware version check command.
+
+    This command validates firmware version counters against stored values during
+    secure boot processing. If the counter values do not match the expected values,
+    the SB file execution is rejected, providing version rollback protection.
+
+    :cvar CMD_TAG: Command identifier tag for firmware version check operations.
+    """
 
     CMD_TAG = EnumCmdTag.FW_VERSION_CHECK
 
     class CounterID(SpsdkEnum):
-        """Counter IDs used by the CmdFwVersionCheck command."""
+        """Counter ID enumeration for firmware version check operations.
+
+        This enumeration defines the available counter identifiers used by the
+        CmdFwVersionCheck command to specify which firmware version counter
+        should be validated during secure boot operations.
+        """
 
         NONE = (0, "none")
         NONSECURE = (1, "nonsecure")
@@ -1424,12 +1767,12 @@ class CmdFwVersionCheck(BaseCmd):
         RADIO = (3, "radio")
         SNT = (4, "snt")
         BOOTLOADER = (5, "bootloader")
-        RADIO_IP = (7, "radio_ip")
+        RADIO_LP = (7, "radio_lp")
 
     def __init__(self, value: int, counter_id: CounterID) -> None:
-        """Constructor for command.
+        """Initialize command with value and counter ID.
 
-        :param value: Input value
+        :param value: Input value for the command
         :param counter_id: Counter ID (NONSECURE = 1, SECURE = 2)
         """
         super().__init__(address=0, length=0)
@@ -1437,11 +1780,20 @@ class CmdFwVersionCheck(BaseCmd):
         self.counter_id = counter_id
 
     def __str__(self) -> str:
-        """Get info of command."""
+        """Get string representation of the FW_VERSION_CHECK command.
+
+        :return: Formatted string containing command value and counter ID information.
+        """
         return f"FW_VERSION_CHECK: Value={self.value}, Counter ID={self.counter_id}"
 
     def export(self) -> bytes:
-        """Export command as bytes."""
+        """Export command as bytes array.
+
+        Serializes the command into a binary format using the predefined FORMAT structure
+        with command tag, value, counter ID tag, and command tag.
+
+        :return: Binary representation of the command.
+        """
         return pack(self.FORMAT, self.TAG, self.value, self.counter_id.tag, self.CMD_TAG.tag)
 
     @classmethod
@@ -1449,17 +1801,22 @@ class CmdFwVersionCheck(BaseCmd):
         """Parse command from bytes array.
 
         :param data: Input data as bytes array
-        :return: CmdFwVersionCheck
+        :raises SPSDKValueError: Invalid data format or parsing error
+        :return: CmdFwVersionCheck instance created from parsed data
         """
         value, counter_id = cls.header_parse(data=data)
         return cls(value=value, counter_id=cls.CounterID.from_tag(counter_id))
 
     @classmethod
     def load_from_config(cls, config: Config) -> list[Self]:
-        """Load configuration from dictionary.
+        """Load configuration from dictionary to create firmware version check commands.
 
-        :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configuration.
+        This method parses the configuration dictionary to extract the value and counter ID
+        parameters needed to create a firmware version check command instance.
+
+        :param config: Configuration dictionary containing 'value' and 'counterId' fields.
+        :raises SPSDKValueError: Invalid value format or unknown counter ID label.
+        :return: List containing single firmware version check command object.
         """
         value = value_to_int(config["value"], 0)
         counter_id = CmdFwVersionCheck.CounterID.from_label(config.get_str("counterId"))
@@ -1470,11 +1827,9 @@ class CmdFwVersionCheck(BaseCmd):
 
         This method generates a configuration dictionary containing the command's properties
         and settings, including the version value to check and the counter ID.
-
         The FW_VERSION_CHECK command verifies that the firmware version meets or exceeds
         the specified value for the given counter type. This prevents downgrade attacks
         or installation of incompatible firmware.
-
         Counter IDs include:
         - none (0): No counter
         - nonsecure (1): Non-secure firmware counter
@@ -1483,8 +1838,8 @@ class CmdFwVersionCheck(BaseCmd):
         - snt (4): SNT firmware counter
         - bootloader (5): Bootloader firmware counter
 
-        :param data_path: Path to store any data files (not used for this command)
-        :return: Configuration object with command-specific settings
+        :param data_path: Path to store any data files (not used for this command).
+        :return: Configuration object with command-specific settings.
         """
         config_dict = {
             "value": f"0x{self.value:08X}",  # Format as hex string
@@ -1495,16 +1850,31 @@ class CmdFwVersionCheck(BaseCmd):
 
 
 class CmdReset(BaseCmd):
-    """Reset command, added for SBx."""
+    """SB3.1 Reset command implementation.
+
+    This class represents a reset command that triggers a system reset of the target device.
+    The reset operation is typically used to complete a programming sequence or ensure the
+    device starts from a clean state after applying configuration changes. This command
+    requires no parameters and performs a straightforward system reset operation.
+
+    :cvar CMD_TAG: Command identifier tag for the reset operation.
+    """
 
     CMD_TAG = EnumCmdTag.RESET
 
     def __init__(self) -> None:
-        """Constructor for reset command."""
+        """Initialize reset command.
+
+        Creates a new reset command instance with zero address and length values.
+        This command is used to reset the target device during secure boot execution.
+        """
         super().__init__(address=0, length=0)
 
     def __str__(self) -> str:
-        """Get info about command."""
+        """Get string representation of the RESET command.
+
+        :return: String representation of the command.
+        """
         return "RESET"
 
     @classmethod
@@ -1512,7 +1882,8 @@ class CmdReset(BaseCmd):
         """Parse command from bytes array.
 
         :param data: Input data as bytes array
-        :return: CmdReset
+        :raises SPSDKError: Invalid data format or parsing error
+        :return: CmdReset instance
         """
         _, _ = cls.header_parse(data=data)
         return cls()
@@ -1522,7 +1893,7 @@ class CmdReset(BaseCmd):
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configuration.
+        :return: List of command objects loaded from configuration.
         """
         return [cls()]
 
@@ -1531,41 +1902,56 @@ class CmdReset(BaseCmd):
 
         This method generates a minimal configuration dictionary as the RESET command
         doesn't require any specific parameters.
-
         The RESET command triggers a system reset of the device, which is useful for
         completing a programming sequence or to ensure the device starts from a clean state
         after applying configuration changes.
 
-        :param data_path: Path to store any data files (not used for this command)
-        :return: Configuration object with command-specific settings (empty for this command)
+        :param data_path: Path to store any data files (not used for this command).
+        :return: Configuration object with command-specific settings (empty for this command).
         """
         # Reset command doesn't need any parameters
         return Config({})
 
 
 class CmdWriteIfr(BaseCmd):
-    """Address will be the address into the IFR region."""
+    """SB3.1 command for writing data to IFR (Internal Flash Region) memory.
+
+    This command handles writing configuration data to specific IFR regions
+    including CFPA (Customer Field Programmable Area) and CMPA (Certified
+    Manufacturer Programmable Area) sections of the target device.
+
+    :cvar CMD_TAG: Command identifier for IFR write operations.
+    """
 
     CMD_TAG = EnumCmdTag.WRITE_IFR
 
     class WriteIfrType(BuiltinEnum):
-        """Write IFR types."""
+        """Write IFR (Internal Flash Region) operation types for SB3.1 commands.
+
+        This enumeration defines the available types of IFR write operations that can be
+        performed in Secure Binary 3.1 files, specifying which configuration areas
+        should be written during the provisioning process.
+        """
 
         CFPA = 0
         CFPA_AND_CMPA = 1
 
     def __init__(self, address: int, data: bytes, ifr_type: WriteIfrType) -> None:
-        """Constructor for Command.
+        """Initialize WriteIfr command with address, data, and IFR type.
 
-        :param address: Input address
-        :param data: Input data as bytes array
+        :param address: Target address for the IFR write operation.
+        :param data: Binary data to be written to the IFR.
+        :param ifr_type: Type of IFR write operation to perform.
         """
         super().__init__(address=address, length=len(data))
         self.ifr_type = ifr_type
         self.data = data
 
     def __str__(self) -> str:
-        """Get info of command."""
+        """Get string representation of the WRITE IFR command.
+
+        :return: Formatted string containing command address, length, and IFR destination type.
+        """
         return (
             f"WRITE IFR: Address=0x{self.address:08X}, Length={self.length}, "
             f"Destination address={self.ifr_type.name}"
@@ -1575,9 +1961,12 @@ class CmdWriteIfr(BaseCmd):
     def parse(cls, data: bytes) -> Self:
         """Parse command from bytes array.
 
-        :param data: Input data as bytes array
-        :return: CmdWriteIfr
-        :raises SPSDKError: Invalid padding
+        Parses a CmdWriteIfr command from the provided byte data by extracting the address,
+        length, IFR type, and IFR data components.
+
+        :param data: Input data as bytes array containing the command structure.
+        :return: CmdWriteIfr instance created from the parsed data.
+        :raises SPSDKError: Invalid padding in the command structure.
         """
         address, length = cls.header_parse(data=data)
         ifr_type, pad0, pad1, pad2 = unpack_from("<4L", data, offset=16)
@@ -1588,7 +1977,13 @@ class CmdWriteIfr(BaseCmd):
         return cls(address=address, data=ifr_data, ifr_type=CmdWriteIfr.WriteIfrType(ifr_type))
 
     def export(self) -> bytes:
-        """Export command as bytes."""
+        """Export command as bytes array.
+
+        Serializes the command into a binary format by combining the parent class
+        export data with IFR type information and command data, aligned to 16 bytes.
+
+        :return: Binary representation of the command.
+        """
         data = super().export()
         data += pack("<4L", self.ifr_type.value, 0, 0, 0)
         data += self.data
@@ -1597,10 +1992,13 @@ class CmdWriteIfr(BaseCmd):
 
     @classmethod
     def load_from_config(cls, config: Config) -> list[Self]:
-        """Load configuration from dictionary.
+        """Load configuration from dictionary to create WriteIfr command instances.
 
-        :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configuration.
+        Creates WriteIfr command objects from configuration data, automatically setting
+        the address to 0 as it points to the beginning of IFR region.
+
+        :param config: Configuration dictionary containing command fields and IFR type.
+        :return: List containing single WriteIfr command object loaded from configuration.
         """
         data = load_cmd_data_from_cfg(config)
         # address is always 0 as it point to the beginning of IFR region
@@ -1611,11 +2009,10 @@ class CmdWriteIfr(BaseCmd):
 
         This method generates a configuration dictionary containing the command's properties
         and settings, including the address into the IFR region and the data to be written.
-
         The IFR data is stored in a separate binary file for better management.
 
-        :param data_path: Path where the IFR data file will be stored
-        :return: Configuration object with command-specific settings
+        :param data_path: Path where the IFR data file will be stored.
+        :return: Configuration object with command-specific settings.
         """
         # Create base config with address
         config_dict: dict[str, Union[str, int]] = {
@@ -1636,18 +2033,26 @@ class CmdWriteIfr(BaseCmd):
 
 
 class CmdSectionHeader(BaseClass):
-    """Create section header."""
+    """SB3.1 command section header representation.
+
+    This class represents a section header for SB3.1 secure boot file commands,
+    providing functionality to create, parse, and export section header data with
+    section UID, type, and length information.
+
+    :cvar FORMAT: Binary format string for section header structure.
+    :cvar SIZE: Size of the section header in bytes.
+    """
 
     FORMAT = "<4L"
     SIZE = calcsize(FORMAT)
 
     # pylint: disable=super-init-not-called
     def __init__(self, length: int, section_uid: int = 1, section_type: int = 1) -> None:
-        """Constructor for Commands section.
+        """Initialize Commands section with specified parameters.
 
-        :param section_uid: Input uid
-        :param section_type: Input type
-        :param length: Input length
+        :param length: Length of the commands section in bytes.
+        :param section_uid: Unique identifier for the section, defaults to 1.
+        :param section_type: Type identifier for the section, defaults to 1.
         """
         self.section_uid = section_uid
         self.section_type = section_type
@@ -1655,23 +2060,40 @@ class CmdSectionHeader(BaseClass):
         self._pad = 0
 
     def __repr__(self) -> str:
+        """Return string representation of SB3.1 Command Section Header.
+
+        :return: String containing section type information.
+        """
         return f"SB3.1 Command Section Header, Type:{self.section_type}"
 
     def __str__(self) -> str:
-        """Get info of Section header."""
+        """Get string representation of Section header.
+
+        Returns formatted string containing section UID, type, and length information.
+
+        :return: Formatted string with section header details.
+        """
         return f"Section header: UID=0x{self.section_uid:08X}, Type={self.section_type}, Length={self.length}"
 
     def export(self) -> bytes:
-        """Export command as bytes."""
+        """Export command as bytes.
+
+        Serializes the command data into binary format using the predefined FORMAT structure.
+
+        :return: Binary representation of the command containing section UID, type, length and padding.
+        """
         return pack(self.FORMAT, self.section_uid, self.section_type, self.length, self._pad)
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
         """Parse command from bytes array.
 
-        :param data: Input data as bytes array
-        :raises SPSDKError: Raised when FORMAT is bigger than length of the data without offset
-        :return: CmdSectionHeader
+        The method deserializes a CmdSectionHeader object from binary data by unpacking
+        the section UID, section type, and length fields according to the defined FORMAT.
+
+        :param data: Input data as bytes array containing the serialized command.
+        :raises SPSDKError: Raised when FORMAT is bigger than length of the data.
+        :return: CmdSectionHeader object parsed from the input data.
         """
         if calcsize(cls.FORMAT) > len(data):
             raise SPSDKError("FORMAT is bigger than length of the data without offset!")
@@ -1723,10 +2145,13 @@ CFG_NAME_TO_CLASS: Mapping[str, Type[BaseCmd]] = {
 def parse_command(data: bytes) -> object:
     """Parse command from bytes array.
 
-    :param data: Input data as bytes array
-    :raises SPSDKError: Raised when tag is not in cmd_class
-    :raises SPSDKError: Raised when tag is invalid
-    :return: object
+    Parses a command structure from the provided bytes data by extracting and validating
+    the command tag, then creating the appropriate command object based on the tag type.
+
+    :param data: Input data as bytes array containing the command structure.
+    :raises SPSDKError: Invalid tag in command header.
+    :raises SPSDKError: Unsupported or invalid command tag.
+    :return: Parsed command object of the appropriate type.
     """
     #  verify that first 4 bytes of frame are 55aaaa55
     tag, _, _, cmd = unpack_from("<4L", data)

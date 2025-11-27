@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Console script for SDP module aka SDPHost."""
+"""SPSDK Serial Download Protocol (SDP) host application.
+
+This module provides a command-line interface for communicating with NXP MCUs
+using the Serial Download Protocol. It enables operations like memory read/write,
+register access, file transfers, and device configuration through SDP commands.
+"""
 
 import inspect
 import json

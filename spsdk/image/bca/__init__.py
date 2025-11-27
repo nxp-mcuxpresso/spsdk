@@ -5,4 +5,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""This module contains BCA related code."""
+"""SPSDK Boot Configuration Area (BCA) utilities.
+
+This module provides functionality for handling Boot Configuration Area
+data structures used in NXP MCU boot process configuration.
+"""

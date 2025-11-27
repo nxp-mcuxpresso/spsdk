@@ -5,23 +5,31 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""SPSDK Master Boot Image (MBI) testing module.
+
+This module contains comprehensive tests for the Master Boot Image functionality
+in SPSDK, covering various image types, configurations, and validation scenarios
+including plain and signed XIP images, RAM images with encryption, certificate
+chain validation, Trust Zone configurations, and multi-image handling.
+"""
+
 import os
-from typing import Optional
+from typing import List, Optional, Union
 
 import pytest
 
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.signature_provider import SignatureProvider
 from spsdk.exceptions import SPSDKError
+from spsdk.image.cert_block.cert_blocks import CertBlockV1
 from spsdk.image.keystore import KeySourceType, KeyStore
 from spsdk.image.mbi.mbi import MasterBootImage
 from spsdk.image.mbi.mbi_mixin import Mbi_MixinRelocTable, MultipleImageEntry, MultipleImageTable
 from spsdk.image.trustzone import TrustZone
 from spsdk.utils.config import Config
-from spsdk.image.cert_block.cert_blocks import CertBlockV1
 from spsdk.utils.database import DatabaseManager, get_schema_file
-from spsdk.utils.misc import load_binary, load_configuration, write_file
 from spsdk.utils.family import FamilyRevision
+from spsdk.utils.misc import load_binary, write_file
 
 #################################################################
 # To create data sets for Master Boot Image (MBI)
@@ -30,17 +38,26 @@ from spsdk.utils.family import FamilyRevision
 
 
 def certificate_block(
-    data_dir, family, der_file_names, index=0, chain_der_file_names=None
+    data_dir: str,
+    family: FamilyRevision,
+    der_file_names: List[Optional[str]],
+    index: int = 0,
+    chain_der_file_names: Optional[List[str]] = None,
 ) -> CertBlockV1:
-    """
-    :param data_dir: absolute path of data dir where the test keys are located
-    :param der_file_names: list of filenames of the DER certificate
-    :param index: of the root certificate (index to der_file_names list)
-    :param chain_der_file_names: list of filenames of der certificates in chain (applied for `index`)
-    :return: certificate block for testing
+    """Create certificate block for testing purposes.
+
+    Builds a certificate block with specified certificates and chain, validates export
+    functionality, and sets up root key hashes for testing scenarios.
+
+    :param data_dir: Absolute path to data directory containing test keys and certificates.
+    :param family: Target family revision for the certificate block.
+    :param der_file_names: List of DER certificate filenames, may contain None values.
+    :param index: Index of the root certificate in der_file_names list.
+    :param chain_der_file_names: List of DER certificate filenames to add to certificate chain.
+    :return: Configured certificate block ready for testing.
     """
     # read public certificate
-    cert_data_list = list()
+    cert_data_list: List[Optional[bytes]] = list()
     for der_file_name in der_file_names:
         if der_file_name:
             with open(os.path.join(data_dir, "keys_and_certs", der_file_name), "rb") as f:
@@ -50,7 +67,9 @@ def certificate_block(
 
     # create certification block
     cert_block = CertBlockV1(family=family, build_number=1)
-    cert_block.add_certificate(cert_data_list[index])
+    cert_data = cert_data_list[index]
+    if cert_data is not None:
+        cert_block.add_certificate(cert_data)
     if chain_der_file_names:
         for der_file_name in chain_der_file_names:
             with open(os.path.join(data_dir, "keys_and_certs", der_file_name), "rb") as f:
@@ -76,8 +95,17 @@ def certificate_block(
         (0xFF, b"\x05\x04\xff\x00"),
     ],
 )
-def test_lpc55s3x_image_version(img_ver, expected_val):
-    """Test of generating of various image versions into binary MBI"""
+def test_lpc55s3x_image_version(img_ver: int, expected_val: bytes) -> None:
+    """Test of generating of various image versions into binary MBI.
+
+    Validates that the Master Boot Image (MBI) correctly encodes different image version
+    values into the binary format for LPC55S3x family devices. The test creates an MBI
+    with a specified image version and verifies the version is properly written to the
+    expected offset in the exported binary data.
+
+    :param img_ver: Image version value to be encoded in the MBI
+    :param expected_val: Expected binary representation of the image version at offset 0x24-0x28
+    """
     family = FamilyRevision("lpc55s3x")
     mbi = MasterBootImage.create_mbi_class("crc_xip", family)(
         family=family,
@@ -89,15 +117,20 @@ def test_lpc55s3x_image_version(img_ver, expected_val):
 
 
 def _compare_image(mbi: MasterBootImage, data_dir: str, expected_mbi_filename: str) -> bool:
-    """Compare generated image with expected image
+    """Compare generated MBI image with expected reference image.
 
-    :param mbi: master boot image instance configured to generate image data
-    :param expected_mbi_filename: file name of expected image
-    :return: True if data are same; False otherwise
+    The method exports the master boot image data and compares it with the expected
+    binary data from a reference file. If the comparison fails, it writes the
+    generated data to a new file for debugging purposes.
+
+    :param mbi: Master boot image instance configured to generate image data.
+    :param data_dir: Directory path containing the expected image file.
+    :param expected_mbi_filename: File name of the expected reference image.
+    :return: True if generated and expected data are identical; False otherwise.
     """
     generated_image = mbi.export()
 
-    expected_data = load_binary(os.path.join(data_dir, expected_mbi_filename), "rb")
+    expected_data = load_binary(os.path.join(data_dir, expected_mbi_filename))
 
     if generated_image != expected_data:
         write_file(
@@ -117,11 +150,16 @@ def _compare_image(mbi: MasterBootImage, data_dir: str, expected_mbi_filename: s
         ("evkmimxrt595_hello_world.bin", "evkmimxrt595_hello_world_xip_crc_no_tz_mbi.bin"),
     ],
 )
-def test_plain_xip_crc_no_tz(data_dir, input_img, expected_mbi: str):
-    """Test plain image with CRC and no TZ-M
-    :param data_dir: absolute path, where test data are located
-    :param input_img: file name of input image (binary)
-    :param expected_mbi: file name of MBI image file with expected data
+def test_plain_xip_crc_no_tz(data_dir: str, input_img: str, expected_mbi: str) -> None:
+    """Test plain XIP image with CRC and no TrustZone-M.
+
+    This test verifies the creation of a Master Boot Image (MBI) for LPC55S6x family
+    using CRC XIP mode without TrustZone-M support by comparing the generated image
+    against expected reference data.
+
+    :param data_dir: Absolute path to directory containing test data files.
+    :param input_img: File name of the input binary image to be processed.
+    :param expected_mbi: File name of the expected MBI reference file for comparison.
     """
     with open(os.path.join(data_dir, input_img), "rb") as f:
         org_data = f.read()
@@ -155,12 +193,19 @@ def test_plain_xip_crc_no_tz(data_dir, input_img, expected_mbi: str):
         ),
     ],
 )
-def test_signed_xip_single_certificate_no_tz(data_dir, priv_key, der_certificate, expected_mbi):
-    """Test signed XIP image with single certificate, different key length
-    :param data_dir: absolute path, where test data are located
-    :param priv_key: filename of private key used for signing
-    :param der_certificate: filename of corresponding certificate in DER format
-    :param expected_mbi: filename of expected bootable image
+def test_signed_xip_single_certificate_no_tz(
+    data_dir: str, priv_key: str, der_certificate: str, expected_mbi: str
+) -> None:
+    """Test signed XIP image with single certificate and different key lengths.
+
+    This test verifies the creation of a signed XIP (Execute In Place) Master Boot Image
+    using a single certificate without TrustZone configuration. It validates that the
+    generated MBI matches the expected reference image.
+
+    :param data_dir: Absolute path to directory containing test data files.
+    :param priv_key: Filename of the private key used for signing the image.
+    :param der_certificate: Filename of the corresponding certificate in DER format.
+    :param expected_mbi: Filename of the expected reference bootable image for comparison.
     """
     with open(os.path.join(data_dir, "normal_boot.bin"), "rb") as f:
         org_data = f.read()
@@ -168,8 +213,8 @@ def test_signed_xip_single_certificate_no_tz(data_dir, priv_key, der_certificate
     # create certification block
     cert_block = certificate_block(data_dir, family, [der_certificate])
 
-    priv_key = os.path.join(data_dir, "keys_and_certs", priv_key)
-    signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
+    priv_key_path = os.path.join(data_dir, "keys_and_certs", priv_key)
+    signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key_path}")
     mbi = MasterBootImage.create_mbi_class("signed_xip", family)(
         family=family,
         app=org_data,
@@ -201,9 +246,20 @@ def test_signed_xip_single_certificate_no_tz(data_dir, priv_key, der_certificate
         ),
     ],
 )
-def test_signed_ram_single_certificate_no_tz(data_dir, user_key, key_store_filename, expected_mbi):
-    """Test non-XIP signed image with single certificate
-    :param data_dir: absolute path, where test data are located
+def test_signed_ram_single_certificate_no_tz(
+    data_dir: str, user_key: Union[str, bytes], key_store_filename: Optional[str], expected_mbi: str
+) -> None:
+    """Test non-XIP signed image with single certificate.
+
+    This test verifies the creation of a signed RAM-based Master Boot Image (MBI)
+    using a single certificate without TrustZone configuration. It loads test data,
+    creates a certificate block, sets up signature provider, and validates the
+    resulting MBI against expected output.
+
+    :param data_dir: Absolute path where test data are located.
+    :param user_key: HMAC key for image authentication, either as file path or raw bytes.
+    :param key_store_filename: Optional filename of the key store file in data directory.
+    :param expected_mbi: Expected MBI filename for comparison validation.
     """
     with open(os.path.join(data_dir, "normal_boot.bin"), "rb") as f:
         org_data = f.read()
@@ -261,9 +317,28 @@ def test_signed_ram_single_certificate_no_tz(data_dir, user_key, key_store_filen
     ],
 )
 def test_encrypted_ram_single_certificate_no_tz(
-    data_dir, keysource: KeySourceType, keystore_fn: Optional[str], ctr_iv: str, expected_mbi: str
-):
-    """Test encrypted image with fixed counter init vector"""
+    data_dir: str,
+    keysource: KeySourceType,
+    keystore_fn: Optional[str],
+    ctr_iv: str,
+    expected_mbi: str,
+) -> None:
+    """Test encrypted RAM image with single certificate and no TrustZone.
+
+    This test verifies the creation of an encrypted and signed Master Boot Image (MBI)
+    for RAM execution using a single certificate without TrustZone configuration.
+    The test uses a fixed counter initialization vector for encryption and validates
+    the generated image against expected output.
+
+    :param data_dir: Directory path containing test data files including boot binary,
+                     certificates, and keys
+    :param keysource: Type of key source for the key store configuration
+    :param keystore_fn: Optional filename of the key store binary file, if None no
+                        key store file is loaded
+    :param ctr_iv: Hexadecimal string representation of the counter initialization
+                   vector for encryption
+    :param expected_mbi: Filename of the expected MBI output for comparison
+    """
     with open(os.path.join(data_dir, "normal_boot.bin"), "rb") as f:
         org_data = f.read()
     user_key = "E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5"
@@ -294,8 +369,19 @@ def test_encrypted_ram_single_certificate_no_tz(
     assert _compare_image(mbi, data_dir, expected_mbi)
 
 
-def test_encrypted_random_ctr_single_certificate_no_tz(data_dir):
-    """Test encrypted image with random counter init vector"""
+def test_encrypted_random_ctr_single_certificate_no_tz(data_dir: str) -> None:
+    """Test encrypted MBI image with random counter initialization vector and single certificate.
+
+    This test verifies the creation and export of an encrypted and signed Master Boot Image
+    using a random counter initialization vector, single self-signed certificate, and no
+    TrustZone configuration for the RT6xx family.
+
+    :param data_dir: Path to the directory containing test data files including boot binary,
+                     certificates, and private keys
+    :raises AssertionError: If MBI export fails or returns invalid data
+    :raises FileNotFoundError: If required test data files are not found
+    :raises SPSDKError: If MBI creation or configuration fails
+    """
     with open(os.path.join(data_dir, "normal_boot.bin"), "rb") as f:
         org_data = f.read()
     user_key = "E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5"
@@ -346,13 +432,18 @@ def test_encrypted_random_ctr_single_certificate_no_tz(data_dir):
     ],
 )
 def test_signed_xip_multiple_certificates_no_tz(
-    data_dir, der_certificates, root_index, expected_mbi
-):
-    """Test signed image with multiple certificates, different key length
-    :param data_dir: absolute path, where test data are located
-    :param der_certificates: list of filenames of der certificates
-    :param root_index: index of root certificate
-    :param expected_mbi: filename of expected bootable image
+    data_dir: str, der_certificates: list, root_index: int, expected_mbi: str
+) -> None:
+    """Test signed XIP image with multiple certificates and different key lengths.
+
+    Validates the creation of a signed XIP (Execute In Place) Master Boot Image
+    using multiple DER certificates with varying key lengths, without TrustZone
+    configuration.
+
+    :param data_dir: Absolute path to directory containing test data files
+    :param der_certificates: List of DER certificate filenames to be used
+    :param root_index: Index specifying which certificate serves as root certificate
+    :param expected_mbi: Filename of the expected Master Boot Image for comparison
     """
     with open(os.path.join(data_dir, "normal_boot.bin"), "rb") as f:
         org_data = f.read()
@@ -373,17 +464,26 @@ def test_signed_xip_multiple_certificates_no_tz(
     assert _compare_image(mbi, data_dir, expected_mbi)
 
 
-def test_signed_xip_multiple_certificates_invalid_input(data_dir):
-    """Test invalid input for multiple certificates"""
+def test_signed_xip_multiple_certificates_invalid_input(data_dir: str) -> None:
+    """Test invalid input scenarios for multiple certificates in signed XIP MBI.
+
+    This test validates error handling for various invalid certificate configurations
+    including out-of-bounds certificate indexing, None certificate entries,
+    mismatched public/private key pairs, and invalid certificate chains.
+
+    :param data_dir: Path to directory containing test data files including certificates and keys
+    :raises IndexError: When certificate index is out of bounds
+    :raises SPSDKError: When certificate configuration is invalid (None entries, key mismatches, or chain validation failures)
+    """
     family = FamilyRevision("rt6xx")
     # indexed certificate is not specified
-    der_file_names = [
+    der_file_names: list[Optional[str]] = [
         "selfsign_4096_v3.der.crt",
         "selfsign_3072_v3.der.crt",
         "selfsign_2048_v3.der.crt",
     ]
     with pytest.raises(IndexError):
-        certificate_block(data_dir, family, der_file_names, 3)
+        certificate_block(data_dir, family, der_file_names, 3)  # type: ignore
 
     # indexed certificate is not specified
     der_file_names = [
@@ -436,14 +536,23 @@ def test_signed_xip_multiple_certificates_invalid_input(data_dir):
     ],
 )
 def test_signed_xip_certificates_chain_no_tz(
-    data_dir, der_certificates, chain_certificates, priv_key, expected_mbi
-):
-    """Test signed image with multiple certificates, different key length
-    :param data_dir: absolute path, where test data are located
-    :param der_certificates: list of filenames of der root certificates
-    :param chain_certificates: list of filenames of der certificates
-    :param priv_key: private key filename
-    :param expected_mbi: filename of expected bootable image
+    data_dir: str,
+    der_certificates: list,
+    chain_certificates: list,
+    priv_key: str,
+    expected_mbi: str,
+) -> None:
+    """Test signed XIP image with multiple certificates and different key lengths.
+
+    This test verifies the creation of a signed XIP (Execute In Place) Master Boot Image
+    using a certificate chain with multiple certificates of varying key lengths, without
+    TrustZone configuration.
+
+    :param data_dir: Absolute path to directory containing test data files.
+    :param der_certificates: List of DER root certificate filenames.
+    :param chain_certificates: List of DER certificate chain filenames.
+    :param priv_key: Private key filename for signing the image.
+    :param expected_mbi: Expected Master Boot Image filename for comparison.
     """
     with open(os.path.join(data_dir, "normal_boot.bin"), "rb") as f:
         org_data = f.read()
@@ -472,11 +581,15 @@ def test_signed_xip_certificates_chain_no_tz(
         ("evkmimxrt595_hello_world.bin", "evkmimxrt595_hello_world_xip_crc_default_tz_mbi.bin"),
     ],
 )
-def test_plain_xip_crc_default_tz(data_dir, input_img, expected_mbi):
-    """Test plain image with CRC and default TZ-M
-    :param data_dir: absolute path, where test data are located
-    :param input_img: file name of input image (binary)
-    :param expected_mbi: file name of MBI image file with expected data
+def test_plain_xip_crc_default_tz(data_dir: str, input_img: str, expected_mbi: str) -> None:
+    """Test plain image with CRC and default TZ-M.
+
+    This test verifies that a Master Boot Image (MBI) can be correctly created
+    with CRC protection and default TrustZone-M configuration for RT6xx family.
+
+    :param data_dir: Absolute path where test data are located.
+    :param input_img: File name of input image (binary).
+    :param expected_mbi: File name of MBI image file with expected data.
     """
     with open(os.path.join(data_dir, input_img), "rb") as f:
         org_data = f.read()
@@ -500,12 +613,18 @@ def test_plain_xip_crc_default_tz(data_dir, input_img, expected_mbi):
         ),
     ],
 )
-def test_plain_ram_crc_default_tz(data_dir, input_img, load_address, expected_mbi):
-    """Test plain image with CRC and default TZ-M
-    :param data_dir: absolute path, where test data are located
-    :param input_img: file name of input image (binary)
-    :param load_address: address where the image is loaded
-    :param expected_mbi: file name of MBI image file with expected data
+def test_plain_ram_crc_default_tz(
+    data_dir: str, input_img: str, load_address: int, expected_mbi: str
+) -> None:
+    """Test plain image with CRC and default TZ-M.
+
+    This test validates the creation of a Master Boot Image (MBI) with CRC protection
+    and default TrustZone-M configuration for RT6xx family devices.
+
+    :param data_dir: Absolute path where test data are located.
+    :param input_img: File name of input image (binary).
+    :param load_address: Address where the image is loaded.
+    :param expected_mbi: File name of MBI image file with expected data.
     """
     with open(os.path.join(data_dir, input_img), "rb") as f:
         org_data = f.read()
@@ -521,7 +640,7 @@ def test_plain_ram_crc_default_tz(data_dir, input_img, load_address, expected_mb
 
 
 @pytest.mark.parametrize(
-    "input_img,tz_config,family,expected_mbi",
+    "input_img,tz_config,family_str,expected_mbi",
     [
         (
             "lpcxpresso55s06_hello_world.bin",
@@ -597,18 +716,25 @@ def test_plain_ram_crc_default_tz(data_dir, input_img, load_address, expected_mb
         ),
     ],
 )
-def test_plain_xip_crc_custom_tz(data_dir, input_img, tz_config, family, expected_mbi):
-    """Test plain image with CRC and custom TZ-M
-    :param data_dir: absolute path, where test data are located
-    :param input_img: file name of input image (binary)
-    :param tz_config: file name of trust-zone configuration JSON file
-    :param family: identification of the processor for conversion of trust-zone data
-    :param expected_mbi: file name of MBI image file with expected data
+def test_plain_xip_crc_custom_tz(
+    data_dir: str, input_img: str, tz_config: str, family_str: str, expected_mbi: str
+) -> None:
+    """Test plain image with CRC and custom TZ-M.
+
+    This test verifies the creation of a Master Boot Image (MBI) with CRC protection
+    and custom TrustZone-M configuration by comparing the generated image against
+    expected reference data.
+
+    :param data_dir: Absolute path where test data are located.
+    :param input_img: File name of input image (binary).
+    :param tz_config: File name of trust-zone configuration JSON file.
+    :param family_str: Identification of the processor for conversion of trust-zone data.
+    :param expected_mbi: File name of MBI image file with expected data.
     """
     org_data = load_binary(os.path.join(data_dir, input_img))
     # expected_data = load_binary(os.path.join(data_dir, expected_mbi))
     tz_cfg = Config.create_from_file(os.path.join(data_dir, tz_config))
-    family = FamilyRevision(family)
+    family = FamilyRevision(family_str)
     mbi = MasterBootImage.create_mbi_class("crc_xip", family)(
         family=family,
         app=org_data,
@@ -618,9 +744,15 @@ def test_plain_xip_crc_custom_tz(data_dir, input_img, tz_config, family, expecte
     assert _compare_image(mbi, data_dir, expected_mbi)
 
 
-def test_multiple_images_with_relocation_table(data_dir):
-    """Test image that contains multiple binary images and relocation table
-    :param data_dir: absolute path, where test data are located
+def test_multiple_images_with_relocation_table(data_dir: str) -> None:
+    """Test image that contains multiple binary images and relocation table.
+
+    This test verifies the creation and validation of a Master Boot Image (MBI) that
+    includes multiple binary images with a relocation table. It loads test data,
+    creates a multiple image table with entries, configures trust zone settings,
+    and validates the generated MBI against expected output.
+
+    :param data_dir: Absolute path to directory containing test data files.
     """
     img_data = load_binary(os.path.join(data_dir, "multicore", "normal_boot.bin"))
     img1_data = load_binary(os.path.join(data_dir, "multicore", "testfffffff.bin"))
@@ -644,11 +776,32 @@ def test_multiple_images_with_relocation_table(data_dir):
     assert _compare_image(mbi, os.path.join(data_dir, "multicore"), "expected_output.bin")
 
 
-def test_loading_relocation_table(tests_root_dir, data_dir):
-    """Test of relocation table mixin support."""
+def test_loading_relocation_table(tests_root_dir: str, data_dir: str) -> None:
+    """Test relocation table mixin support functionality.
+
+    This test verifies that the Mbi_MixinRelocTable class can properly load
+    and validate relocation table configuration from a YAML file, including
+    JSON schema validation and configuration loading through the mixin.
+
+    :param tests_root_dir: Root directory path for test files and resources
+    :param data_dir: Directory path containing test data files including YAML configuration
+    """
 
     class TestAppTable(Mbi_MixinRelocTable):
+        """Test helper class for MBI application table functionality.
+
+        This class provides a test fixture that inherits from Mbi_MixinRelocTable
+        to facilitate testing of MBI (Master Boot Image) application table operations.
+        It sets up a controlled test environment with predefined application data
+        and search paths for consistent testing scenarios.
+        """
+
         def __init__(self) -> None:
+            """Initialize test MBI object with default values.
+
+            Sets up a test instance with a 100-byte application data buffer,
+            no application table, and search paths pointing to the tests root directory.
+            """
             self.app = bytes(100)
             self.app_table = None
             self.search_paths = [tests_root_dir]
@@ -665,21 +818,44 @@ def test_loading_relocation_table(tests_root_dir, data_dir):
     test_cls.mix_load_from_config(cfg)
 
 
-def test_multiple_image_entry_table_invalid():
+def test_multiple_image_entry_table_invalid() -> None:
+    """Test invalid parameters for MultipleImageEntry constructor.
+
+    Verifies that MultipleImageEntry raises appropriate SPSDKError exceptions
+    when initialized with invalid destination addresses or flags.
+
+    :raises SPSDKError: When destination address exceeds valid range or invalid flags are provided.
+    """
     with pytest.raises(SPSDKError, match="Invalid destination address"):
         MultipleImageEntry(img=bytes(), dst_addr=0xFFFFFFFFA)
     with pytest.raises(SPSDKError):
         MultipleImageEntry(img=bytes(), dst_addr=0xFFFFFFFF, flags=4)
 
 
-def test_multiple_image_table_invalid():
+def test_multiple_image_table_invalid() -> None:
+    """Test that MultipleImageTable export raises error when entries is None.
+
+    Verifies that attempting to export a MultipleImageTable with no entries
+    (entries set to None) raises an SPSDKError with appropriate error message.
+
+    :raises SPSDKError: When there are no entries available for export.
+    """
     with pytest.raises(SPSDKError, match="There must be at least one entry for export"):
         img_table = MultipleImageTable()
-        img_table._entries = None
+        img_table._entries = None  # type: ignore
         img_table.export(start_addr=0xFFF)
 
 
-def test_master_boot_image_invalid_hmac(data_dir):
+def test_master_boot_image_invalid_hmac(data_dir: str) -> None:
+    """Test master boot image with invalid HMAC configuration.
+
+    This test verifies that when the HMAC key is set to None after MBI creation,
+    the compute_hmac method returns empty bytes instead of raising an exception.
+    The test creates an encrypted signed RAM MBI with proper configuration and
+    then invalidates the HMAC key to test error handling behavior.
+
+    :param data_dir: Directory path containing test data files and certificates
+    """
     with open(os.path.join(data_dir, "testfffffff.bin"), "rb") as f:
         org_data = f.read()
     user_key = "E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5"
@@ -698,11 +874,20 @@ def test_master_boot_image_invalid_hmac(data_dir):
         hmac_key=user_key,
         key_store=key_store,
     )
-    mbi.hmac_key = None
-    assert mbi.compute_hmac(data=bytes(16)) == bytes()
+    mbi.hmac_key = None  # type: ignore
+    assert mbi.compute_hmac(data=bytes(16)) == bytes()  # type: ignore
 
 
-def test_invalid_export_mbi(data_dir):
+def test_invalid_export_mbi(data_dir: str) -> None:
+    """Test invalid MBI export scenarios.
+
+    This test verifies that MasterBootImage export fails appropriately when
+    required components are missing or invalid. It tests two failure cases:
+    missing signature provider and missing certificate block.
+
+    :param data_dir: Directory path containing test data files and certificates
+    :raises SPSDKError: When MBI export fails due to missing required components
+    """
     with open(os.path.join(data_dir, "testfffffff.bin"), "rb") as f:
         org_data = f.read()
     user_key = "E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5"
@@ -723,27 +908,36 @@ def test_invalid_export_mbi(data_dir):
         key_store=key_store,
         ctr_init_vector=bytes(16),
     )
-    mbi.signature_provider = None
+    mbi.signature_provider = None  # type: ignore
     with pytest.raises(SPSDKError):
         mbi.export()
-    mbi.signature_provider = signature_provider
+    mbi.signature_provider = signature_provider  # type: ignore
     mbi.cert_block = None
     with pytest.raises(SPSDKError):
         mbi.export()
 
 
-def test_invalid_image_base_address(data_dir):
+def test_invalid_image_base_address(data_dir: str) -> None:
+    """Test invalid image base address configuration for MBI.
+
+    Verifies that SPSDKError is raised when loading MBI configuration with
+    invalid image base address and when app_ext_memory_align is set to
+    an invalid alignment value.
+
+    :param data_dir: Directory path containing test data files
+    :raises SPSDKError: When invalid image base address or alignment is used
+    """
     family = FamilyRevision("rt6xx")
     mbi = MasterBootImage.create_mbi_class("plain_xip", family)(family)
     with pytest.raises(SPSDKError):
         mbi.load_from_config(
-            load_configuration(os.path.join(data_dir, "lpc55s6x_int_xip_plain.yml"))
+            Config.create_from_file(os.path.join(data_dir, "lpc55s6x_int_xip_plain.yml"))
         )
     # test bad alignment
-    mbi.app_ext_memory_align = 31
+    mbi.app_ext_memory_align = 31  # type: ignore
     with pytest.raises(SPSDKError):
         mbi.load_from_config(
-            load_configuration(os.path.join(data_dir, "lpc55s6x_int_xip_plain.yml"))
+            Config.create_from_file(os.path.join(data_dir, "lpc55s6x_int_xip_plain.yml"))
         )
 
 
@@ -753,7 +947,18 @@ def test_invalid_image_base_address(data_dir):
         (FamilyRevision("mimxrt595s"), "evkmimxrt595_hello_world_xip_crc_no_tz_mbi.bin"),
     ],
 )
-def test_parse_image_with_additional_padding(data_dir, family: FamilyRevision, mbi_image: str):
+def test_parse_image_with_additional_padding(
+    data_dir: str, family: FamilyRevision, mbi_image: str
+) -> None:
+    """Test parsing MBI image with additional padding bytes.
+
+    Verifies that the MasterBootImage parser can correctly handle image data
+    that contains extra padding bytes beyond the actual image content.
+
+    :param data_dir: Directory path containing test data files.
+    :param family: Target MCU family and revision for parsing.
+    :param mbi_image: Filename of the MBI image file to test.
+    """
     with open(os.path.join(data_dir, mbi_image), "rb") as f:
         org_data = f.read()
     extra_padding = bytes(64)
@@ -771,7 +976,16 @@ def test_parse_image_with_additional_padding(data_dir, family: FamilyRevision, m
         ("plain_ram", "plain", "load-to-ram"),
     ],
 )
-def test_parse_name(name: str, expected_auth: str, expected_target: str):
+def test_parse_name(name: str, expected_auth: str, expected_target: str) -> None:
+    """Test parsing of MasterBootImage name into authentication and target components.
+
+    Validates that the _parse_name method correctly extracts authentication type
+    and target information from a given name string.
+
+    :param name: Input name string to be parsed.
+    :param expected_auth: Expected authentication type result.
+    :param expected_target: Expected target information result.
+    """
     auth, target = MasterBootImage._parse_name(name)
     assert auth == expected_auth
     assert target == expected_target

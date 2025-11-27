@@ -4,7 +4,12 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Nxpimage OTFAD group."""
+"""SPSDK OTFAD (On-The-Fly AES Decryption) command-line interface.
+
+This module provides CLI commands for managing OTFAD functionality including
+exporting OTFAD data, retrieving KEK (Key Encryption Key) values, and
+generating configuration templates for NXP image processing.
+"""
 
 import logging
 import os

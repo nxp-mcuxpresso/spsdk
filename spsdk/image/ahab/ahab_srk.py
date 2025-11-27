@@ -4,21 +4,12 @@
 # Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Implementation of AHAB container SRK (Super Root Keys) support.
+"""SPSDK AHAB container Super Root Keys (SRK) management utilities.
 
-This module provides classes and functionality for creating, parsing, verifying and exporting
+This module provides functionality for creating, parsing, verifying and exporting
 Super Root Keys used in AHAB (Advanced High Assurance Boot) secure boot implementations.
 The module supports multiple cryptographic algorithms including RSA, ECDSA, SM2, and
 post-quantum cryptography (Dilithium/ML-DSA).
-
-The main classes are:
-- SRKRecordBase: Base class for SRK records
-- SRKRecord: Class for SRK records version 1
-- SRKRecordV2: Enhanced version supporting post-quantum cryptography
-- SRKData: Class for storing key data
-- SRKTable: Class representing a table of SRK records
-- SRKTableV2: Enhanced SRK table supporting PQC keys
-- SRKTableArray: Class managing multiple SRK tables
 """
 
 
@@ -83,12 +74,14 @@ logger = logging.getLogger(__name__)
 
 
 def get_key_by_val(dictionary: dict, val: Any) -> Any:
-    """Get Dictionary key by its value or default.
+    """Get dictionary key by its value.
+
+    Searches through the provided dictionary to find the key that corresponds to the given value.
 
     :param dictionary: Dictionary to search in.
-    :param val: Value to search
-    :raises SPSDKValueError: In case that dictionary doesn't contains the value.
-    :return: Key.
+    :param val: Value to search for in the dictionary.
+    :raises SPSDKValueError: In case that dictionary doesn't contain the value.
+    :return: Key corresponding to the given value.
     """
     for key, value in dictionary.items():
         if value == val:
@@ -99,11 +92,12 @@ def get_key_by_val(dictionary: dict, val: Any) -> Any:
 
 
 class SRKRecordBase(HeaderContainerInverted):
-    """Class representing SRK (Super Root Key) record as part of SRK table in the AHAB container.
+    """SRK (Super Root Key) record representation for AHAB container SRK tables.
 
-    The class holds information about RSA/ECDSA signing algorithms.
-
-    SRK Record::
+    This class manages SRK record data containing cryptographic key information for various
+    signing algorithms including RSA, ECDSA, SM2, and Dilithium/ML-DSA. It handles the
+    binary structure and provides access to key parameters and metadata.
+    SRK Record Binary Format::
 
         +-----+---------------------------------------------------------------+
         |Off  |    Byte 3    |    Byte 2      |    Byte 1    |     Byte 0     |
@@ -118,6 +112,11 @@ class SRKRecordBase(HeaderContainerInverted):
         |0x0C |                 SRK record general data                       |
         +-----+---------------------------------------------------------------+
 
+    :cvar KEY_SIZES: Mapping of key type identifiers to their parameter lengths.
+    :cvar ECC_KEY_TYPE: Mapping of ECC curves to their type identifiers.
+    :cvar RSA_KEY_TYPE: Mapping of RSA key sizes to their type identifiers.
+    :cvar DILITHIUM_KEY_TYPE: Mapping of Dilithium security levels to type identifiers.
+    :cvar MLDSA_KEY_TYPE: Mapping of ML-DSA parameter sets to type identifiers.
     """
 
     SIGN_ALGORITHM_ENUM = AHABSignAlgorithmV2
@@ -157,15 +156,20 @@ class SRKRecordBase(HeaderContainerInverted):
         crypto_params: bytes = b"",
         legacy_rsa_exponent_size: bool = False,
     ):
-        """Class object initializer.
+        """Initialize AHAB SRK Record object.
 
-        :param src_key: Optional source public key used to create the SRKRecord
-        :param signing_algorithm: signing algorithm type.
-        :param hash_type: hash algorithm type.
-        :param key_size: key (curve) size.
-        :param srk_flags: flags.
-        :param crypto_params: RSA modulus (big endian) or ECDSA X (big endian) or Hash of SRK data.
-        :param legacy_rsa_exponent_size: Use legacy 4-byte RSA exponent size for backward compatibility.
+        Creates a new SRK (Super Root Key) Record for AHAB (Advanced High Assurance Boot)
+        with specified cryptographic parameters and key information.
+
+        :param src_key: Source public key used to create the SRKRecord, defaults to None.
+        :param signing_algorithm: Signing algorithm type for the SRK record.
+        :param hash_type: Hash algorithm type used for cryptographic operations.
+        :param key_size: Size of the cryptographic key or curve in bits.
+        :param srk_flags: Configuration flags for the SRK record.
+        :param crypto_params: Cryptographic parameters - RSA modulus (big endian), ECDSA X
+            coordinate (big endian), or hash of SRK data.
+        :param legacy_rsa_exponent_size: Enable legacy 4-byte RSA exponent size for backward
+            compatibility with older implementations.
         """
         super().__init__(
             tag=self.TAG,
@@ -186,16 +190,14 @@ class SRKRecordBase(HeaderContainerInverted):
 
         This property determines the sizes of the key parameters based on the key_size attribute.
         For RSA keys, it calculates the actual exponent size if a source key is available.
-
         The returned tuple contains:
-
         - For RSA keys: (modulus_size, exponent_size) in bytes
         - For ECDSA keys: (x_coordinate_size, y_coordinate_size) in bytes
         - For SM2 keys: (x_coordinate_size, y_coordinate_size) in bytes
         - For Dilithium/ML-DSA keys: (raw_key_size, 0) in bytes
 
-        :raises SPSDKError: If the key_size value is not supported
-        :return: Tuple containing the sizes of the two key parameters in bytes
+        :raises SPSDKError: If the key_size value is not supported.
+        :return: Tuple containing the sizes of the two key parameters in bytes.
         """
         # If we have parsed parameter lengths, use them
         if self._param_lengths:
@@ -255,33 +257,49 @@ class SRKRecordBase(HeaderContainerInverted):
 
     @property
     def parameter_lengths(self) -> bytes:
-        """Parameter lengths field.
+        """Get parameter lengths field as bytes.
 
-        :return: Created parameter lengths field from the key parameter
+        Packs the key sizes into a binary format using little-endian byte order
+        with two 16-bit unsigned integers representing the parameter lengths.
+
+        :return: Binary representation of parameter lengths field containing key sizes.
         """
         key_sizes = self.key_sizes
         return pack(LITTLE_ENDIAN + UINT16 + UINT16, key_sizes[0], key_sizes[1])
 
     @classmethod
     def _crypto_params_length(cls, parameter_lengths: bytes) -> int:
-        """Decode crypto parameters length.
+        """Decode crypto parameters length from parameter lengths bytes.
 
-        :return: Length of crypto parameters.
+        The method unpacks two 16-bit unsigned integers from the input bytes and returns
+        their sum as the total length of crypto parameters.
+
+        :param parameter_lengths: Byte data containing two packed 16-bit length values.
+        :return: Combined length of crypto parameters as integer.
         """
         len1, len2 = unpack(LITTLE_ENDIAN + UINT16 + UINT16, parameter_lengths[:4])
         return len1 + len2
 
     @property
     def signing_algorithm(self) -> AHABSignAlgorithm:
-        """Return the signing algorithm used by this SRK record.
+        """Get signing algorithm used by this SRK record.
 
         Converts the internal version tag into the corresponding AHABSignAlgorithm enum value.
 
-        :return: The signing algorithm as an AHABSignAlgorithm enum value
+        :return: The signing algorithm as an AHABSignAlgorithm enum value.
         """
         return self.SIGN_ALGORITHM_ENUM.from_tag(self.version)
 
     def __eq__(self, other: object) -> bool:
+        """Check equality of two SRK (Super Root Key) objects.
+
+        Compares this SRK object with another object by checking the hash algorithm,
+        key size, SRK flags, and cryptographic parameters in addition to the parent
+        class equality check.
+
+        :param other: Object to compare with this SRK instance.
+        :return: True if objects are equal, False otherwise.
+        """
         if isinstance(other, type(self)):
             if (
                 super().__eq__(other)  # pylint: disable=too-many-boolean-expressions
@@ -295,12 +313,30 @@ class SRKRecordBase(HeaderContainerInverted):
         return False
 
     def __len__(self) -> int:
+        """Get the total length of the SRK table including crypto parameters.
+
+        The length includes the base SRK table size plus the size of all
+        associated cryptographic parameters.
+
+        :return: Total length in bytes of the SRK table with crypto parameters.
+        """
         return super().__len__() + len(self.crypto_params)
 
     def __repr__(self) -> str:
+        """Return string representation of AHAB SRK record.
+
+        :return: String containing AHAB SRK record information with key name.
+        """
         return f"AHAB SRK record, key: {self.get_key_name()}"
 
     def __str__(self) -> str:
+        """Return string representation of AHAB SRK Record.
+
+        Provides a formatted string containing the key name, SRK flags, and crypto
+        parameters for debugging and logging purposes.
+
+        :return: Formatted string representation of the AHAB SRK Record.
+        """
         return (
             "AHAB SRK Record:\n"
             f"  Key:                {self.get_key_name()}\n"
@@ -310,7 +346,14 @@ class SRKRecordBase(HeaderContainerInverted):
 
     @classmethod
     def format(cls) -> str:
-        """Format of binary representation."""
+        """Get format string for binary representation of SRK table entry.
+
+        The format string defines the structure used for packing/unpacking the binary
+        data of a Super Root Key (SRK) table entry, including hash algorithm, key size,
+        curve information, SRK flags, and crypto parameters length.
+
+        :return: Format string compatible with struct module for binary operations.
+        """
         return (
             super().format()
             + UINT8  # Hash Algorithm
@@ -321,17 +364,21 @@ class SRKRecordBase(HeaderContainerInverted):
         )
 
     def update_fields(self) -> None:
-        """Update all fields depended on input values."""
+        """Update all fields dependent on input values.
+
+        This method automatically calculates and sets the length field if it's not
+        properly initialized (i.e., if length is zero or negative).
+        """
         if self.length <= 0:
             self.length = len(self)
 
     def export(self) -> bytes:
-        """Export one SRK record, little big endian format.
+        """Export one SRK record in little endian format.
 
         The crypto parameters (X/Y for ECDSA or modulus/exponent) are kept in
         big endian form.
 
-        :return: bytes representing container content.
+        :return: Bytes representing the SRK record container content.
         """
         return (
             pack(
@@ -349,12 +396,24 @@ class SRKRecordBase(HeaderContainerInverted):
         )
 
     def _verify(self, name: str) -> Verifier:
-        """Verify object data.
+        """Verify AHAB SRK object data integrity.
 
-        :return: Verifier object with loaded all valid verification records
+        Performs comprehensive validation of the Super Root Key (SRK) object including
+        header verification, signing algorithm validation, flag checks, hash algorithm
+        verification, and crypto parameter length validation.
+
+        :param name: Name identifier for the verification process.
+        :return: Verifier object with loaded verification records and results.
         """
 
         def verify_flags() -> Verifier:
+            """Verify SRK flags and create verification report.
+
+            Creates a verifier object that validates the SRK (Super Root Key) flags,
+            including range checks and CA (Certificate Authority) flag validation.
+
+            :return: Verifier object containing SRK flags validation results.
+            """
             ver_flags = Verifier("Flags")
             ver_flags.add_record_bit_range("Range", self.srk_flags, 8)
             ver_flags.add_record(
@@ -363,6 +422,12 @@ class SRKRecordBase(HeaderContainerInverted):
             return ver_flags
 
         def verify_key_size() -> None:
+            """Validate key size against the configured signing algorithm.
+
+            Verifies that the key size is compatible with the current signing algorithm
+            (RSA, RSA-PSS, ECDSA, or SM2) and adds appropriate verification records to
+            the result object.
+            """
             if self.signing_algorithm in (
                 self.SIGN_ALGORITHM_ENUM.RSA,
                 self.SIGN_ALGORITHM_ENUM.RSA_PSS,
@@ -405,9 +470,13 @@ class SRKRecordBase(HeaderContainerInverted):
         return ret
 
     def verify(self, name: str) -> Verifier:
-        """Verify object data.
+        """Verify SRK object data integrity.
 
-        :return: Verifier object with loaded all valid verification records
+        Validates the SRK (Super Root Key) object by checking if the actual length
+        matches the computed length based on key sizes and fixed components.
+
+        :param name: Name identifier for the verification context.
+        :return: Verifier object with loaded verification records including any errors found.
         """
         ret = self._verify(name)
         key_sizes = self.key_sizes
@@ -432,15 +501,20 @@ class SRKRecordBase(HeaderContainerInverted):
         hash_algorithm: Optional[AHABSignHashAlgorithm] = None,
         legacy_rsa_exponent_size: bool = False,
     ) -> Self:
-        """Create instance from key data.
+        """Create AHAB SRK instance from cryptographic key data.
 
-        :param public_key: Loaded public key.
-        :param srk_flags: SRK flags for key.
-        :param srk_id: Index of key in SRK table
-        :param hash_algorithm: Optional hash algorithm to use, if None default will be selected based on key type
-        :param legacy_rsa_exponent_size: Use legacy 4-byte RSA exponent size for backward compatibility.
-        :raises SPSDKValueError: Unsupported keys size is detected.
-        :raises SPSDKUnsupportedOperation: Unsupported public key
+        Converts a public key into an AHAB SRK (Super Root Key) table entry with appropriate
+        cryptographic parameters. Supports RSA, ECC, and SM2 key types with automatic algorithm
+        selection based on key characteristics.
+
+        :param public_key: Public key object (RSA, ECC, or SM2) to convert.
+        :param srk_flags: SRK configuration flags for the key entry.
+        :param srk_id: Index position of key in the SRK table.
+        :param hash_algorithm: Hash algorithm to use, defaults to key-type appropriate algorithm.
+        :param legacy_rsa_exponent_size: Use 4-byte RSA exponent for backward compatibility.
+        :raises SPSDKValueError: Unsupported key size or invalid key parameters.
+        :raises SPSDKUnsupportedOperation: Unsupported public key type.
+        :return: New AHAB SRK instance configured with the provided key data.
         """
         if hasattr(public_key, "ca"):
             srk_flags |= cls.FLAGS_CA_MASK
@@ -525,6 +599,10 @@ class SRKRecordBase(HeaderContainerInverted):
     def parse(cls, data: bytes) -> Self:
         """Parse input binary chunk to the container object.
 
+        The method parses binary data containing SRK (Super Root Key) record block and recreates
+        the SRK record object. It handles both RSA and non-RSA keys, with special processing for
+        RSA exponent size determination.
+
         :param data: Binary data with SRK record block to parse.
         :raises SPSDKLengthError: Invalid length of SRK record data block.
         :return: SRK record recreated from the binary data.
@@ -591,7 +669,11 @@ class SRKRecordBase(HeaderContainerInverted):
     def get_key_name(self) -> str:
         """Get text key name in SRK record.
 
-        :return: Key name.
+        The method determines the appropriate key name string based on the signing algorithm
+        and key size. Supports RSA, RSA-PSS, ECDSA, SM2, Dilithium, and ML-DSA algorithms.
+
+        :return: Formatted key name string for the current signing algorithm and key size,
+            or "Unknown Key name!" if algorithm is not recognized.
         """
         if self.signing_algorithm == self.SIGN_ALGORITHM_ENUM.RSA:
             return f"rsa{get_key_by_val(self.RSA_KEY_TYPE, self.key_size)}"
@@ -612,17 +694,19 @@ class SRKRecordBase(HeaderContainerInverted):
     def get_public_key(self) -> PublicKey:
         """Recreate the SRK public key.
 
-        :raises SPSDKError: Unsupported public key
+        :raises SPSDKError: Unsupported public key.
+        :return: The SRK public key object.
         """
         raise NotImplementedError()
 
 
 class SRKRecord(SRKRecordBase):
-    """Class representing SRK (Super Root Key) record as part of SRK table in the AHAB container.
+    """SPSDK SRK Record for AHAB container operations.
 
-    The class holds information about RSA/ECDSA signing algorithms.
-
-    SRK Record::
+    This class represents a Super Root Key (SRK) record as part of the SRK table
+    in AHAB containers. It manages RSA and ECDSA signing algorithm information
+    and provides cryptographic parameter access for secure boot operations.
+    SRK Record Format::
 
         +-----+---------------------------------------------------------------+
         |Off  |    Byte 3    |    Byte 2      |    Byte 1    |     Byte 0     |
@@ -638,12 +722,22 @@ class SRKRecord(SRKRecordBase):
         |...  | RSA exponent (big endian) / ECDSA Y (big endian)              |
         +-----+---------------------------------------------------------------+
 
+    :cvar SIGN_ALGORITHM_ENUM: Supported signing algorithms for AHAB v1.
+    :cvar HASH_ALGORITHM_ENUM: Supported hash algorithms for AHAB v1.
     """
 
     SIGN_ALGORITHM_ENUM: TypeAlias = AHABSignAlgorithmV1
     HASH_ALGORITHM_ENUM: TypeAlias = AHABSignHashAlgorithmV1
 
     def __eq__(self, other: object) -> bool:
+        """Check equality of two AHAB SRK objects.
+
+        Compares this AHAB SRK object with another object for equality by checking the parent class
+        equality and comparing crypto_param1 and crypto_param2 attributes.
+
+        :param other: Object to compare with this AHAB SRK object.
+        :return: True if objects are equal, False otherwise.
+        """
         if isinstance(other, type(self)):
             if (
                 super().__eq__(other)
@@ -655,6 +749,13 @@ class SRKRecord(SRKRecordBase):
         return False
 
     def __str__(self) -> str:
+        """Get string representation of the AHAB SRK object.
+
+        Provides a formatted string containing the parent class information along with
+        the cryptographic parameters (param1 and param2) in a human-readable format.
+
+        :return: Formatted string representation of the AHAB SRK object.
+        """
         return super().__str__() + (
             f"  Param 1 value:      {bytes_to_print(self.crypto_param1)})\n"
             f"  Param 2 value:      {bytes_to_print(self.crypto_param2)})\n"
@@ -662,21 +763,49 @@ class SRKRecord(SRKRecordBase):
 
     @property
     def crypto_param1(self) -> bytes:
-        """Crypto parameter number 1."""
+        """Get the first crypto parameter from the crypto parameters buffer.
+
+        Extracts the first cryptographic parameter based on the key size configuration.
+        The length of the extracted parameter is determined by the first element of the
+        KEY_SIZES tuple for the current key size.
+
+        :return: First crypto parameter as bytes.
+        """
         return self.crypto_params[: self.KEY_SIZES[self.key_size][0]]
 
     @property
     def crypto_param2(self) -> bytes:
-        """Crypto parameter number 2."""
+        """Get the second crypto parameter from the key data.
+
+        Extracts the second portion of crypto parameters based on the key size configuration.
+        The split point is determined by the first element of the KEY_SIZES tuple for the
+        current key size.
+
+        :return: Second crypto parameter as bytes.
+        """
         return self.crypto_params[self.KEY_SIZES[self.key_size][0] :]
 
     def verify(self, name: str) -> Verifier:
-        """Verify object data.
+        """Verify AHAB SRK object data integrity.
 
-        :return: Verifier object with loaded all valid verification records
+        Validates the cryptographic parameters and attempts to restore the public key
+        from the stored parameters. Checks parameter lengths against expected key sizes
+        and verifies that the public key can be successfully reconstructed.
+
+        :param name: Name identifier for the verification process.
+        :return: Verifier object containing all validation results and records.
         """
 
         def verify_param_lengths() -> None:
+            """Verify cryptographic parameter lengths against expected key sizes.
+
+            Validates that crypto_param1 and crypto_param2 have the correct lengths
+            according to the key sizes specification. Records verification results
+            for each parameter, including success status with hex representation
+            or error details for missing or incorrectly sized parameters.
+
+            :raises SPSDKError: If verification fails due to invalid parameter lengths.
+            """
             key_sizes = self.key_sizes
             if self.crypto_param1 is None:
                 ret.add_record("Crypto parameter 1", VerifierResult.ERROR, "Not exists")
@@ -717,9 +846,14 @@ class SRKRecord(SRKRecordBase):
         return ret
 
     def get_public_key(self) -> PublicKey:
-        """Recreate the SRK public key.
+        """Recreate the SRK public key from stored cryptographic parameters.
 
-        :raises SPSDKError: Unsupported public key
+        The method reconstructs a public key object based on the signing algorithm and
+        cryptographic parameters stored in the SRK. Supports RSA, RSA-PSS, ECDSA, and
+        SM2 key types.
+
+        :raises SPSDKUnsupportedOperation: Unsupported public key type or algorithm.
+        :return: Recreated public key object corresponding to the SRK parameters.
         """
         par1 = int.from_bytes(self.crypto_param1, Endianness.BIG.value)
         par2 = int.from_bytes(self.crypto_param2, Endianness.BIG.value)
@@ -743,11 +877,16 @@ class SRKRecord(SRKRecordBase):
 
 
 class SRKRecordV2(SRKRecordBase):
-    """Class representing SRK (Super Root Key) record Version 2 as part of SRK table in the AHAB container.
+    """SRK (Super Root Key) record Version 2 for AHAB container SRK table.
 
-    The class holds information about RSA/ECDSA/Dilithium signing algorithms.
+    This class manages SRK records that hold cryptographic information for RSA, ECDSA, and Dilithium
+    signing algorithms used in AHAB (Advanced High Assurance Boot) containers. It handles the binary
+    format representation and validation of SRK data including algorithm parameters, key sizes, and
+    cryptographic hashes.
 
-    SRK Record V2::
+    :cvar CRYPTO_PARAMS_LEN: Length of cryptographic parameters section (64 bytes).
+    :cvar DIFF_ATTRIBUTES_OBJECTS: List of attributes used for object comparison.
+    SRK Record V2 Binary Format::
 
         +-----+---------------------------------------------------------------+
         |Off  |    Byte 3    |    Byte 2      |    Byte 1    |     Byte 0     |
@@ -778,14 +917,19 @@ class SRKRecordV2(SRKRecordBase):
         crypto_params: bytes = b"",
         legacy_rsa_exponent_size: bool = False,
     ):
-        """Class object initializer.
+        """Initialize AHAB SRK record with cryptographic parameters.
 
-        :param src_key: Optional source public key used to create the SRKRecord
-        :param signing_algorithm: signing algorithm type.
-        :param hash_type: hash algorithm type.
-        :param key_size: key (curve) size.
-        :param srk_flags: flags.
-        :param crypto_params: RSA modulus (big endian) or ECDSA X (big endian) or Hash of SRK data.
+        Creates a new SRK (Super Root Key) record instance for AHAB (Advanced High Assurance Boot)
+        with specified cryptographic algorithms and key material.
+
+        :param src_key: Source public key used to create the SRKRecord.
+        :param signing_algorithm: Signing algorithm type for the SRK record.
+        :param hash_type: Hash algorithm type for the SRK record.
+        :param key_size: Size of the cryptographic key or curve in bits.
+        :param srk_flags: Configuration flags for the SRK record.
+        :param crypto_params: Cryptographic parameters - RSA modulus (big endian), ECDSA X coordinate
+            (big endian), or hash of SRK data.
+        :param legacy_rsa_exponent_size: Whether to use legacy RSA exponent size format.
         """
         super().__init__(
             src_key,
@@ -799,6 +943,14 @@ class SRKRecordV2(SRKRecordBase):
         self.srk_data: Optional[SRKData] = None
 
     def __eq__(self, other: object) -> bool:
+        """Check equality between two AHAB SRK objects.
+
+        Compares this AHAB SRK instance with another object for equality. The comparison
+        includes both the parent class attributes and the crypto_params specific to this class.
+
+        :param other: Object to compare with this AHAB SRK instance.
+        :return: True if objects are equal, False otherwise.
+        """
         if isinstance(other, type(self)):
             if super().__eq__(other) and self.crypto_params == other.crypto_params:
                 return True
@@ -806,18 +958,35 @@ class SRKRecordV2(SRKRecordBase):
         return False
 
     def __str__(self) -> str:
+        """Return string representation of the SRK table entry.
+
+        Provides a formatted string containing the parent class information and the
+        SRK data hash in hexadecimal format.
+
+        :return: Formatted string representation of the SRK table entry.
+        """
         return super().__str__() + f"  SRK Data Hash:      {bytes_to_print(self.crypto_params)}\n"
 
     @property
     def srk_data_hash(self) -> bytes:
-        """SRK Data Hash value."""
+        """Get SRK Data Hash value.
+
+        Returns the cryptographic parameters that represent the SRK (Super Root Key) data hash
+        used in AHAB container authentication.
+
+        :return: SRK data hash as bytes.
+        """
         return self.crypto_params
 
     @classmethod
     def _crypto_params_length(cls, parameter_lengths: bytes) -> int:
-        """Decode crypto parameters length.
+        """Decode crypto parameters length from parameter lengths data.
 
-        :return: Length of crypto parameters.
+        This method returns a fixed length value for SRK record version 2, which uses
+        a fixed 512-bit hash for the SRK Data container.
+
+        :param parameter_lengths: Raw bytes containing parameter length information.
+        :return: Length of crypto parameters in bytes.
         """
         # In case of SRK record version 2 the is fixed value of SRK Data container HASH of 512 bits
         return cls.CRYPTO_PARAMS_LEN
@@ -825,7 +994,10 @@ class SRKRecordV2(SRKRecordBase):
     def compute_srk_data_hash(self, srk_data: "SRKData") -> bytes:
         """Compute Hash of SRK data.
 
-        :param srk_data: SRK data block.
+        The method computes a hash of the provided SRK data block using the configured hash
+        algorithm and extends the result to 512 bits with padding.
+
+        :param srk_data: SRK data block to compute hash from.
         :return: Hash extended to 512 bits of SRK Data.
         """
         return extend_block(
@@ -838,7 +1010,14 @@ class SRKRecordV2(SRKRecordBase):
         )
 
     def update_fields(self) -> None:
-        """Update all fields depended on input values."""
+        """Update all fields dependent on input values.
+
+        This method updates the SRK (Super Root Key) data fields and computes
+        the hash of the SRK data if crypto parameters are not already set.
+        It ensures all dependent fields are properly synchronized.
+
+        :raises SPSDKError: If SRK data update fails or hash computation encounters an error.
+        """
         # Compute hash block if empty
         if self.srk_data:
             self.srk_data.update_fields()
@@ -848,12 +1027,27 @@ class SRKRecordV2(SRKRecordBase):
         super().update_fields()
 
     def verify(self, name: str) -> Verifier:
-        """Verify object data.
+        """Verify SRK (Super Root Key) object data integrity and cryptographic parameters.
 
-        :return: Verifier object with loaded all valid verification records
+        Performs comprehensive validation of the SRK data including hash verification,
+        cryptographic parameter length checks, and public key restoration attempts.
+        The verification covers both RSA and non-RSA key types with appropriate
+        parameter validation for each algorithm type.
+
+        :param name: Name identifier for the verification context
+        :return: Verifier object containing all validation results and records
         """
 
         def verify_param_lengths() -> None:
+            """Verify cryptographic parameter lengths for SRK data.
+
+            Validates that the cryptographic parameters in the SRK data have the correct lengths
+            based on the signing algorithm. For RSA algorithms, validates modulus and exponent
+            sizes. For other algorithms, validates fixed-size parameters according to the
+            algorithm specifications.
+
+            :raises AssertionError: If srk_data is not an instance of SRKData.
+            """
             assert isinstance(self.srk_data, SRKData)
             key_sizes = self.key_sizes
 
@@ -964,13 +1158,19 @@ class SRKRecordV2(SRKRecordBase):
     ) -> Self:
         """Create instance from key data.
 
-        :param public_key: Loaded public key.
-        :param srk_flags: SRK flags for key.
-        :param srk_id: Index of key in SRK table
-        :param hash_algorithm: Optional hash algorithm to use, if None default will be selected based on key type
-        :param legacy_rsa_exponent_size: Use legacy 4-byte RSA exponent size for backward compatibility.
-        :raises SPSDKValueError: Unsupported keys size is detected.
+        Creates an AHAB SRK (Super Root Key) instance from a provided public key with
+        configurable signing and hash algorithms based on the key type.
+
+        :param public_key: Loaded public key (RSA, ECC, SM2, Dilithium, or ML-DSA).
+        :param srk_flags: SRK flags for key configuration, defaults to 0.
+        :param srk_id: Index of key in SRK table, defaults to 0.
+        :param hash_algorithm: Optional hash algorithm to use, if None default will be selected
+            based on key type.
+        :param legacy_rsa_exponent_size: Use legacy 4-byte RSA exponent size for backward
+            compatibility, defaults to False.
+        :raises SPSDKValueError: Unsupported key size or unsupported public key type.
         :raises SPSDKUnsupportedOperation: Unsupported key type or operation.
+        :return: New instance of the class configured with the provided key data.
         """
         if hash_algorithm:
             assert isinstance(
@@ -1055,9 +1255,14 @@ class SRKRecordV2(SRKRecordBase):
         return ret
 
     def get_public_key(self) -> PublicKey:
-        """Recreate the SRK public key.
+        """Recreate the SRK public key from stored SRK data.
 
-        :raises SPSDKError: Unsupported public key
+        The method reconstructs a public key object based on the signing algorithm and key size.
+        Supports RSA, RSA-PSS, ECDSA, SM2, Dilithium, and ML-DSA algorithms when available.
+
+        :raises SPSDKError: Missing SRK data required for key recreation.
+        :raises SPSDKUnsupportedOperation: Unsupported public key algorithm type.
+        :return: Reconstructed public key object matching the signing algorithm.
         """
         if self.srk_data is None:
             raise SPSDKError("Cannot recreate public key due missing SRK Data")
@@ -1108,11 +1313,12 @@ class SRKRecordV2(SRKRecordBase):
 
 
 class SRKData(HeaderContainer):
-    """Class representing SRK (Super Root Key) data as part of SRK table in the AHAB container.
+    """SPSDK SRK (Super Root Key) data container for AHAB image format.
 
-    The class holds information about RSA/ECDSA/Dilithium signing algorithms.
-
-    SRK Data::
+    This class represents SRK data as part of the SRK table in AHAB containers,
+    supporting RSA, ECDSA, and Dilithium signing algorithms. It manages the
+    binary structure and key data according to AHAB specification.
+    SRK Data Binary Format::
 
         +-----+---------------------------------------------------------------+
         |Off  |    Byte 3    |    Byte 2      |    Byte 1    |     Byte 0     |
@@ -1127,6 +1333,8 @@ class SRKData(HeaderContainer):
         |...  | Dilithium Raw key (Big endian)                                |
         +-----+---------------------------------------------------------------+
 
+    :cvar TAG: AHAB tag identifier for SRK data.
+    :cvar VERSION: Version number for SRK data format.
     """
 
     TAG = AHABTags.SRK_DATA.tag
@@ -1134,11 +1342,14 @@ class SRKData(HeaderContainer):
     DIFF_ATTRIBUTES_VALUES = ["srk_id", "data"]
 
     def __init__(self, srk_id: int, src_key: Optional[PublicKey] = None, data: bytes = b""):
-        """Class object initializer.
+        """Initialize AHAB SRK Data object.
 
-        :param srk_id: Index of SRK record in SRK table to identified SRK Data
+        Creates a new SRK (Super Root Key) Data object for AHAB container with specified
+        parameters and cryptographic key data.
+
+        :param srk_id: Index of SRK record in SRK table to identify SRK Data
         :param src_key: Optional source public key used to create the SRKData
-        :param data: RSA modulus (big endian) or ECDSA X (big endian) or Dilithium Raw data
+        :param data: RSA modulus (big endian) or ECDSA X (big endian) or Dilithium raw data
         """
         super().__init__(
             tag=self.TAG,
@@ -1150,17 +1361,42 @@ class SRKData(HeaderContainer):
         self.data = data
 
     def __eq__(self, other: object) -> bool:
+        """Check equality of two SRKData objects.
+
+        Compares this SRKData instance with another object for equality by checking
+        the parent class equality, data content, and SRK ID.
+
+        :param other: Object to compare with this SRKData instance.
+        :return: True if objects are equal SRKData instances with same data and SRK ID, False otherwise.
+        """
         if isinstance(other, SRKData):
             return super().__eq__(other) and self.data == other.data and self.srk_id == other.srk_id
         return False
 
     def __len__(self) -> int:
+        """Get the total length of the SRK table including data.
+
+        Calculates the combined length of the parent class and the associated data.
+
+        :return: Total length in bytes of the SRK table and its data.
+        """
         return super().__len__() + len(self.data)
 
     def __repr__(self) -> str:
+        """Return string representation of AHAB SRK Data object.
+
+        :return: String containing AHAB SRK Data information with key ID.
+        """
         return f"AHAB SRK Data, key ID: {self.srk_id}"
 
     def __str__(self) -> str:
+        """Get string representation of AHAB SRK data.
+
+        Provides a formatted string containing the SRK ID, data length, and hexadecimal
+        representation of the SRK data for debugging and display purposes.
+
+        :return: Formatted string representation of the AHAB SRK data.
+        """
         return (
             "AHAB SRK Data:\n"
             f"  SRK ID:             {self.srk_id}\n"
@@ -1170,11 +1406,22 @@ class SRKData(HeaderContainer):
 
     @classmethod
     def format(cls) -> str:
-        """Format of binary representation."""
+        """Get format of binary representation.
+
+        Returns the format string used for binary packing/unpacking of the SRK structure,
+        including the parent format plus additional fields for reserved bytes and SRK ID.
+
+        :return: Format string for struct packing/unpacking.
+        """
         return super().format() + UINT16 + UINT8 + UINT8  # Reserved - Reserved - SRK ID
 
     def update_fields(self) -> None:
-        """Update all fields depended on input values."""
+        """Update all fields dependent on input values.
+
+        This method automatically calculates and sets the length field if it's not
+        already set (i.e., if length is less than or equal to 0). The length is
+        determined by calculating the total size of the object.
+        """
         if self.length <= 0:
             self.length = len(self)
 
@@ -1184,7 +1431,7 @@ class SRKData(HeaderContainer):
         The crypto parameters (X/Y for ECDSA or modulus/exponent for RSA or Raw data for Dilithium) are kept in
         big endian form.
 
-        :return: bytes representing container content.
+        :return: Bytes representing container content.
         """
         return (
             pack(
@@ -1200,9 +1447,13 @@ class SRKData(HeaderContainer):
         )
 
     def verify(self, name: str) -> Verifier:
-        """Verify object data.
+        """Verify AHAB SRK object data integrity and structure.
 
-        :return: Verifier object with loaded all valid verification records
+        Performs comprehensive verification of the SRK (Super Root Key) object including
+        header validation, SRK ID range checking, and data presence verification.
+
+        :param name: Name identifier for the verification process.
+        :return: Verifier object containing all validation results and records.
         """
         ret = Verifier(name, description="")
         ret.add_child(self.verify_parsed_header())
@@ -1221,10 +1472,15 @@ class SRKData(HeaderContainer):
     ) -> Self:
         """Create instance from public key.
 
-        :param public_key: Loaded public key.
-        :param srk_id: SRK Identification 0-3.
-        :param legacy_rsa_exponent_size: Use legacy 4-byte RSA exponent size for backward compatibility.
-        :raises SPSDKValueError: Unsupported keys size is detected.
+        Supports RSA, ECC, SM2, Dilithium, and ML-DSA public keys. For RSA keys,
+        allows legacy 4-byte exponent size for backward compatibility.
+
+        :param public_key: Loaded public key (RSA, ECC, SM2, Dilithium, or ML-DSA).
+        :param srk_id: SRK Identification number (0-3).
+        :param legacy_rsa_exponent_size: Use legacy 4-byte RSA exponent size for backward
+            compatibility.
+        :raises SPSDKValueError: Unsupported key type or invalid key parameters.
+        :return: New SRK record instance created from the public key.
         """
         if isinstance(public_key, PublicKeyRsa):
             par_n: int = public_key.public_numbers.n
@@ -1275,6 +1531,9 @@ class SRKData(HeaderContainer):
     def parse(cls, data: bytes) -> Self:
         """Parse input binary chunk to the container object.
 
+        The method validates the container header, extracts SRK ID and data from the binary
+        chunk, and reconstructs the SRK record object with parsed header information.
+
         :param data: Binary data with SRK record block to parse.
         :raises SPSDKLengthError: Invalid length of SRK record data block.
         :return: SRK record recreated from the binary data.
@@ -1294,9 +1553,13 @@ class SRKData(HeaderContainer):
 
 
 class SRKTable(HeaderContainerInverted):
-    """Class representing SRK (Super Root Key) table in the AHAB container as part of signature block.
+    """SRK (Super Root Key) table container for AHAB signature blocks.
 
-    SRK Table::
+    This class manages a collection of SRK records that form the Super Root Key table
+    used in AHAB (Advanced High Assurance Boot) containers for secure boot operations.
+    The table contains up to 4 SRK records and provides functionality for key management,
+    hash computation, and binary serialization.
+    SRK Table Binary Format::
 
         +-----+---------------------------------------------------------------+
         |Off  |    Byte 3    |    Byte 2      |    Byte 1    |     Byte 0     |
@@ -1312,6 +1575,10 @@ class SRKTable(HeaderContainerInverted):
         |...  |    SRK Record 4                                               |
         +-----+---------------------------------------------------------------+
 
+    :cvar TAG: AHAB tag identifier for SRK table.
+    :cvar VERSION: SRK table format version.
+    :cvar SRK_HASH_ALGORITHM: Hash algorithm used for SRK computations.
+    :cvar SRK_RECORDS_CNT: Maximum number of SRK records in table.
     """
 
     TAG = AHABTags.SRK_TABLE.tag
@@ -1322,17 +1589,30 @@ class SRKTable(HeaderContainerInverted):
     DIFF_ATTRIBUTES_OBJECTS = ["srk_records"]
 
     def __init__(self, srk_records: Optional[Sequence[SRKRecordBase]] = None) -> None:
-        """Class object initializer.
+        """Initialize SRK Table with optional SRK records.
 
-        :param srk_records: list of SRK Record objects.
+        Creates a new SRK Table instance with the specified SRK records or an empty list if none provided.
+
+        :param srk_records: Optional sequence of SRK Record objects to initialize the table with.
         """
         super().__init__(tag=self.TAG, length=-1, version=self.VERSION)
         self.srk_records: list[SRKRecordBase] = list(srk_records) if srk_records else []
 
     def __repr__(self) -> str:
+        """Return string representation of AHAB SRK Table.
+
+        :return: String with basic information about AHAB SRK Table including count of SRK records.
+        """
         return f"AHAB SRK TABLE, keys count: {len(self.srk_records)}"
 
     def __str__(self) -> str:
+        """Get string representation of AHAB SRK table.
+
+        Provides a formatted string containing the SRK table information including the number
+        of keys, total length, and computed SRK hash value.
+
+        :return: Formatted string representation of the SRK table.
+        """
         return (
             "AHAB SRK table:\n"
             f"  Keys count:         {len(self.srk_records)}\n"
@@ -1341,7 +1621,11 @@ class SRKTable(HeaderContainerInverted):
         )
 
     def clear(self) -> None:
-        """Clear the SRK Table Object."""
+        """Clear the SRK Table Object.
+
+        Removes all SRK records from the table and resets the length to -1,
+        effectively returning the object to its initial empty state.
+        """
         self.srk_records.clear()
         self.length = -1
 
@@ -1355,11 +1639,14 @@ class SRKTable(HeaderContainerInverted):
     ) -> None:
         """Add SRK table record.
 
-        :param public_key: Loaded public key.
-        :param srk_flags: SRK flags for key.
-        :param srk_id: Index of key in SRK table
-        :param hash_algorithm: Optional hash algorithm to use
-        :param legacy_rsa_exponent_size: Use legacy 4-byte RSA exponent size for backward compatibility.
+        Creates a new SRK (Super Root Key) record from the provided public key and adds it to the SRK table.
+
+        :param public_key: Loaded public key to be added to the SRK table.
+        :param srk_flags: SRK flags for the key, defaults to 0.
+        :param srk_id: Index of the key in SRK table, defaults to 0.
+        :param hash_algorithm: Optional hash algorithm to use for the key.
+        :param legacy_rsa_exponent_size: Use legacy 4-byte RSA exponent size for backward compatibility,
+            defaults to False.
         """
         self.srk_records.append(
             self.SRK_RECORD.create_from_key(
@@ -1372,10 +1659,13 @@ class SRKTable(HeaderContainerInverted):
         )
 
     def __eq__(self, other: object) -> bool:
-        """Compares for equality with other SRK Table objects.
+        """Compare SRK Table objects for equality.
 
-        :param other: object to compare with.
-        :return: True on match, False otherwise.
+        Compares this SRK Table with another object by checking both the parent class
+        equality and SRK records equality.
+
+        :param other: Object to compare with this SRK Table.
+        :return: True if objects are equal, False otherwise.
         """
         if isinstance(other, SRKTable):
             if super().__eq__(other) and self.srk_records == other.srk_records:
@@ -1384,10 +1674,20 @@ class SRKTable(HeaderContainerInverted):
         return False
 
     def __bool__(self) -> bool:
-        """Check existence."""
+        """Check if SRK table contains any records.
+
+        :return: True if SRK table has records, False otherwise.
+        """
         return bool(len(self.srk_records))
 
     def __len__(self) -> int:
+        """Get the total length of the SRK table including all records.
+
+        Calculates the combined length of the base SRK table structure and all
+        contained SRK records.
+
+        :return: Total length in bytes of the SRK table with all records.
+        """
         records_len = 0
         for record in self.srk_records:
             records_len += len(record)
@@ -1395,29 +1695,41 @@ class SRKTable(HeaderContainerInverted):
 
     @property
     def srk_count(self) -> int:
-        """Get count of used signatures in container."""
+        """Get count of used signatures in container.
+
+        :return: Number of used signatures in the container.
+        """
         return 1
 
     def update_fields(self) -> None:
-        """Update all fields depended on input values."""
+        """Update all fields dependent on input values.
+
+        This method iterates through all SRK records and updates their fields,
+        then recalculates the length if it's not already set.
+        """
         for rec in self.srk_records:
             rec.update_fields()
         if self.length <= 0:
             self.length = len(self)
 
     def compute_srk_hash(self, srk_id: int = 0) -> bytes:
-        """Computes a SHA256 out of all SRK records.
+        """Compute SHA256 hash of all SRK records.
 
-        :param srk_id: ID of SRK table in case of using multiple Signatures, default is 0.
-        :return: SHA256 computed over SRK records.
+        The method generates a SHA256 hash over the exported SRK table data using the
+        configured hash algorithm.
+
+        :param srk_id: ID of SRK table in case of using multiple signatures, defaults to 0.
+        :return: SHA256 hash computed over SRK records.
         """
         return get_hash(data=self.export(), algorithm=self.SRK_HASH_ALGORITHM)
 
     def get_source_keys(self) -> list[PublicKey]:
-        """Return list of source public keys.
+        """Get source public keys from SRK records.
 
-        Either from the src_key field or recreate them.
-        :return: List of public keys.
+        Retrieves public keys either from the src_key field if available, or recreates
+        them from the SRK record data when src_key is not present.
+
+        :return: List of public keys extracted from SRK records.
         """
         ret = []
         for srk in self.srk_records:
@@ -1432,6 +1744,9 @@ class SRKTable(HeaderContainerInverted):
     def export(self) -> bytes:
         """Export SRK table data as bytes.
 
+        The method serializes the SRK (Super Root Key) table including its header
+        and all SRK records into a binary format suitable for AHAB container.
+
         :return: Bytes representation of SRK table.
         """
         data = pack(self.format(), self.tag, self.length, self.version)
@@ -1442,9 +1757,23 @@ class SRKTable(HeaderContainerInverted):
         return data
 
     def verify(self) -> Verifier:
-        """Verify SRK table data."""
+        """Verify SRK table data integrity and consistency.
+
+        Performs comprehensive validation of the SRK (Super Root Key) table including header
+        verification, record count validation, individual SRK record verification, and
+        consistency checks across all records to ensure they have matching algorithms,
+        key sizes, and flags.
+
+        :return: Verifier object containing detailed verification results and any errors found.
+        """
 
         def verify_count_of_records() -> None:
+            """Verify the count of SRK records matches the expected number.
+
+            Validates that the SRK records exist and that the number of records matches
+            the required SRK_RECORDS_CNT. Adds verification results to the ret object
+            indicating success, error for missing records, or error for count mismatch.
+            """
             if self.srk_records is None:
                 ret.add_record("Count", VerifierResult.ERROR, "Not exists records")
             elif len(self.srk_records) != self.SRK_RECORDS_CNT:
@@ -1487,6 +1816,9 @@ class SRKTable(HeaderContainerInverted):
     def parse(cls, data: bytes) -> Self:
         """Parse input binary chunk to the container object.
 
+        The method validates the container header, calculates SRK record sizes, and reconstructs
+        the SRK table with all its records from the binary data.
+
         :param data: Binary data with SRK table block to parse.
         :raises SPSDKLengthError: Invalid length of SRK table data block.
         :return: Object recreated from the binary data.
@@ -1512,10 +1844,14 @@ class SRKTable(HeaderContainerInverted):
 
     @classmethod
     def pre_parse_verify(cls, data: bytes) -> Verifier:
-        """Pre-Parse verify of AHAB SRK table Block.
+        """Pre-parse and verify AHAB SRK table block structure.
 
-        :param data: Binary data with SRK table block to pre-parse.
-        :return: Verifier of pre-parsed binary data.
+        This method performs initial validation of the SRK table block including container
+        header verification, length alignment checks, and pre-parsing of individual SRK records
+        to ensure the binary data structure is valid before full parsing.
+
+        :param data: Binary data containing the SRK table block to pre-parse and verify.
+        :return: Verifier object containing validation results and any detected errors.
         """
         ret = cls.check_container_head(data)
         if ret.has_errors:
@@ -1539,9 +1875,12 @@ class SRKTable(HeaderContainerInverted):
     def get_config(self, data_path: str, index: int) -> Config:
         """Create configuration of the AHAB Image SRK Table.
 
+        The method generates a configuration dictionary containing SRK records and exports
+        public keys to PEM files in the specified data path.
+
         :param data_path: Path to store the data files of configuration.
         :param index: Container Index.
-        :return: Configuration dictionary.
+        :return: Configuration dictionary with flag_ca and srk_array fields.
         """
         ret_cfg = Config()
         cfg_srk_records = []
@@ -1563,12 +1902,13 @@ class SRKTable(HeaderContainerInverted):
 
     @classmethod
     def load_from_config(cls, config: Config) -> Self:
-        """Converts the configuration option into an AHAB image object.
+        """Load SRK table from configuration.
 
-        "config" content of container configurations.
+        Creates an SRK (Super Root Key) table object from the provided configuration
+        containing public keys and their associated flags and algorithms.
 
-        :param config: array of AHAB containers configuration dictionaries.
-        :return: SRK Table object.
+        :param config: Configuration object containing SRK array and optional settings.
+        :return: SRK Table object with loaded public keys and configurations.
         """
         srk_table = cls()
         flags = 0
@@ -1603,12 +1943,12 @@ class SRKTable(HeaderContainerInverted):
 
 
 class SRKTableV2(SRKTable):
-    """Class representing SRK (Super Root Key) table in the AHAB container.
+    """SRK (Super Root Key) Table Version 2 for AHAB containers.
 
-    This is a new type of SRK Table that supports PQC keys and is part of SRK table array.
-
-
-    SRK Table::
+    This class represents an enhanced SRK table that supports Post-Quantum Cryptography (PQC)
+    keys and is designed to be part of SRK table arrays in AHAB (Advanced High Assurance Boot)
+    containers. It extends the base SRK table functionality with version 2 capabilities.
+    SRK Table Structure::
 
         +-----+---------------------------------------------------------------+
         |Off  |    Byte 3    |    Byte 2      |    Byte 1    |     Byte 0     |
@@ -1624,6 +1964,9 @@ class SRKTableV2(SRKTable):
         |...  |    SRK Record 4                                               |
         +-----+---------------------------------------------------------------+
 
+    :cvar VERSION: SRK table version identifier (0x43).
+    :cvar SRK_RECORD: Type alias for SRK record version 2.
+    :cvar SRK_HASH_ALGORITHM: Default hash algorithm (SHA512).
     """
 
     VERSION = 0x43
@@ -1632,12 +1975,14 @@ class SRKTableV2(SRKTable):
 
     @classmethod
     def load_from_config(cls, config: Config) -> Self:
-        """Converts the configuration option into an AHAB image object.
+        """Create SRK Table from configuration data.
 
-        "config" content of container configurations.
+        Processes the configuration to build an SRK (Super Root Key) Table with public keys
+        and associated metadata for AHAB container authentication.
 
-        :param config: array of AHAB containers configuration dictionaries.
-        :return: SRK Table object.
+        :param config: Configuration object containing SRK table settings including
+                       srk_array, flags, hash algorithm, and RSA exponent options.
+        :return: Configured SRK Table object with loaded public keys and records.
         """
         srk_table = cls()
         flags = 0
@@ -1676,10 +2021,13 @@ class SRKTableV2(SRKTable):
     def get_config(self, data_path: str, index: int, srk_table_index: int = 0) -> Config:
         """Create configuration of the AHAB Image SRK Table.
 
+        The method generates a configuration dictionary containing SRK records and exports
+        public keys to PEM files in the specified data path directory structure.
+
         :param data_path: Path to store the data files of configuration.
         :param index: Container Index.
         :param srk_table_index: SRK table index, default is 0.
-        :return: Configuration dictionary.
+        :return: Configuration dictionary with flag_ca and srk_array entries.
         """
         ret_cfg = Config()
         cfg_srk_records = []
@@ -1705,9 +2053,11 @@ class SRKTableV2(SRKTable):
 
 
 class SRKTableArray(HeaderContainer):
-    """Class representing SRK (Super Root Key) table array in the AHAB container as part of signature block.
+    """AHAB SRK Table Array container for secure boot authentication.
 
-    SRK Table::
+    Manages a collection of Super Root Key (SRK) tables used in AHAB container
+    signature blocks for device authentication and secure boot processes.
+    SRK Table Structure::
 
         +-----+---------------------------------------------------------------+
         |Off  |    Byte 3    |    Byte 2      |    Byte 1    |     Byte 0     |
@@ -1725,6 +2075,10 @@ class SRKTableArray(HeaderContainer):
         |...  |    SRK Data 1 (Optional)                                      |
         +-----+---------------------------------------------------------------+
 
+    :cvar TAG: AHAB tag identifier for SRK table array.
+    :cvar VERSION: SRK table array format version.
+    :cvar SRK_TABLE_MIN_CNT: Minimum required number of SRK tables.
+    :cvar SRK_TABLE_MAX_CNT: Maximum allowed number of SRK tables.
     """
 
     TAG = AHABTags.SRK_TABLE_ARRAY.tag
@@ -1736,19 +2090,36 @@ class SRKTableArray(HeaderContainer):
     def __init__(
         self, chip_config: AhabChipContainerConfig, srk_tables: Optional[list[SRKTableV2]] = None
     ) -> None:
-        """Class object initializer.
+        """Initialize AHAB SRK (Super Root Key) container.
+
+        Creates a new AHAB SRK container with the specified chip configuration and optional
+        SRK tables for secure boot authentication.
 
         :param chip_config: AHAB container chip configuration.
-        :param srk_tables: list of SRK Tables V2 objects.
+        :param srk_tables: List of SRK Tables V2 objects, defaults to empty list if None.
         """
         super().__init__(tag=self.TAG, length=-1, version=self.VERSION)
         self._srk_tables: list[SRKTableV2] = srk_tables or []
         self.chip_config = chip_config
 
     def __repr__(self) -> str:
+        """Return string representation of AHAB SRK Array.
+
+        Provides a human-readable string showing the number of SRK tables contained
+        in this AHAB SRK Array instance.
+
+        :return: String representation showing the count of SRK tables.
+        """
         return f"AHAB SRK ARRAY, tables count: {len(self._srk_tables)}"
 
     def __str__(self) -> str:
+        """Get string representation of AHAB SRK table array.
+
+        Provides a formatted string containing information about the SRK tables count,
+        total length, and computed hash values for each SRK table in the array.
+
+        :return: Formatted string representation of the AHAB SRK table array.
+        """
         ret = (
             "AHAB SRK table array:\n"
             f"  SRK tables count:   {len(self._srk_tables)}\n"
@@ -1761,10 +2132,13 @@ class SRKTableArray(HeaderContainer):
         return ret
 
     def __eq__(self, other: object) -> bool:
-        """Compares for equality with other SRK Table array objects.
+        """Compare SRK Table array objects for equality.
 
-        :param other: object to compare with.
-        :return: True on match, False otherwise.
+        Compares this SRK Table array object with another object to determine if they are equal.
+        The comparison checks both the parent class equality and the SRK tables content.
+
+        :param other: Object to compare with this SRK Table array.
+        :return: True if objects are equal, False otherwise.
         """
         if isinstance(other, SRKTableArray):
             if super().__eq__(other) and self._srk_tables == other._srk_tables:
@@ -1773,10 +2147,20 @@ class SRKTableArray(HeaderContainer):
         return False
 
     def __bool__(self) -> bool:
-        """Check existence."""
+        """Check if the SRK (Super Root Key) table has any entries.
+
+        :return: True if SRK table contains at least one key, False otherwise.
+        """
         return bool(self.srk_count)
 
     def __len__(self) -> int:
+        """Get the total length of the SRK container including all SRK tables and records.
+
+        The method calculates the combined length of the base container plus all SRK tables
+        and their associated SRK record data for the configured SRK ID.
+
+        :return: Total length in bytes of the SRK container with all tables and records.
+        """
         tables_len = 0
         for table in self._srk_tables:
             tables_len += len(table)
@@ -1790,26 +2174,43 @@ class SRKTableArray(HeaderContainer):
 
     @classmethod
     def format(cls) -> str:
-        """Format of binary representation."""
+        """Get format string for binary representation of SRK table.
+
+        This method returns the format string used for packing/unpacking the binary
+        data structure, extending the parent class format with additional fields.
+
+        :return: Format string for struct packing/unpacking operations.
+        """
         return super().format() + UINT8 + UINT16 + UINT8
 
     @property
     def srk_count(self) -> int:
-        """Get count of used signatures in container."""
+        """Get count of SRK tables in container.
+
+        :return: Number of SRK tables currently stored in the container.
+        """
         return len(self._srk_tables)
 
     def update_fields(self) -> None:
-        """Update all fields depended on input values."""
+        """Update all fields dependent on input values.
+
+        This method iterates through all SRK tables and updates their fields,
+        then recalculates the length if it's not already set.
+        """
         for rec in self._srk_tables:
             rec.update_fields()
         if self.length <= 0:
             self.length = len(self)
 
     def compute_srk_hash(self, srk_id: int = 0) -> bytes:
-        """Computes a SHA512 out of all SRK tables.
+        """Compute SHA512 hash of the specified SRK table.
 
-        :param srk_id: ID of SRK table in case of using multiple Signatures, default is 0.
-        :return: SHA512 computed over SRK table.
+        The method calculates SHA512 hash over the exported data of the SRK table
+        identified by the given SRK ID.
+
+        :param srk_id: ID of SRK table in case of using multiple signatures, defaults to 0.
+        :raises SPSDKValueError: The SRK ID is out of range.
+        :return: SHA512 hash computed over SRK table data.
         """
         if srk_id >= len(self._srk_tables):
             raise SPSDKValueError(f"The SRK ID({srk_id}) is out of range.")
@@ -1819,7 +2220,10 @@ class SRKTableArray(HeaderContainer):
     def export(self) -> bytes:
         """Export SRK table array to bytes.
 
-        :return: Bytes representation of SRK table array
+        The method serializes the SRK table array structure including header information
+        and all contained SRK tables with their corresponding SRK data records.
+
+        :return: Bytes representation of SRK table array structure.
         """
         data = pack(
             self.format(),
@@ -1840,7 +2244,13 @@ class SRKTableArray(HeaderContainer):
         return data
 
     def verify(self) -> Verifier:
-        """Verify SRK table array data."""
+        """Verify SRK table array data.
+
+        Performs comprehensive verification of the SRK (Super Root Key) table array including
+        header validation, table count checks, and individual SRK table verification.
+
+        :return: Verifier object containing verification results and any found issues.
+        """
         ret = Verifier("SRK table", description="")
         ret.add_child(self.verify_parsed_header())
         ret.add_child(self.verify_header())
@@ -1861,6 +2271,9 @@ class SRKTableArray(HeaderContainer):
     @classmethod
     def parse(cls, data: bytes, chip_config: AhabChipContainerConfig) -> Self:  # type: ignore[override]
         """Parse input binary chunk to the container object.
+
+        The method validates the container header, extracts SRK tables and their associated data,
+        and reconstructs the SRKTableArray object with proper relationships between tables and records.
 
         :param data: Binary data with SRK table array block to parse.
         :param chip_config: AHAB container chip configuration.
@@ -1891,10 +2304,13 @@ class SRKTableArray(HeaderContainer):
 
     @classmethod
     def pre_parse_verify(cls, data: bytes) -> Verifier:
-        """Pre-Parse verify of AHAB SRK table array Block.
+        """Pre-parse and verify AHAB SRK table array block.
 
-        :param data: Binary data with SRK table block to pre-parse.
-        :return: Verifier of pre-parsed binary data.
+        Validates the structure and integrity of an AHAB SRK table array block by checking
+        the container header, parsing individual SRK tables, and verifying associated SRK data.
+
+        :param data: Binary data containing the SRK table block to pre-parse and verify.
+        :return: Verifier object containing validation results and any detected errors.
         """
         ret = cls.check_container_head(data)
         if ret.has_errors:
@@ -1923,9 +2339,12 @@ class SRKTableArray(HeaderContainer):
     def get_config(self, data_path: str, index: int) -> Config:
         """Create configuration of the AHAB Image SRK Table.
 
+        The method generates configuration data for SRK (Super Root Key) tables,
+        handling up to two SRK tables if present in the AHAB image.
+
         :param data_path: Path to store the data files of configuration.
         :param index: Container Index.
-        :return: Configuration dictionary.
+        :return: Configuration dictionary containing SRK table configuration data.
         """
         ret_cfg = Config()
 
@@ -1938,11 +2357,12 @@ class SRKTableArray(HeaderContainer):
 
     @classmethod
     def load_from_config(cls, config: Config, chip_config: AhabChipContainerConfig) -> Self:
-        """Converts the configuration option into an AHAB image object.
+        """Load SRK table array from configuration.
 
-        "config" content of container configurations.
+        Creates an SRK table array object from the provided configuration, supporting
+        up to two SRK tables if specified in the configuration.
 
-        :param config: array of AHAB containers configuration dictionaries.
+        :param config: Configuration object containing SRK table settings.
         :param chip_config: AHAB container chip configuration.
         :return: SRK Table array object.
         """

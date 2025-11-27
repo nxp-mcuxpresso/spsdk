@@ -131,3 +131,10 @@ A proposed order of *el2go-host* application usage is presented below:
     * **Description**: This command will provision the device. The FLASH memory address where Secure Objects downloaded using *get-secure-objects* should be passed as argument or else operation will fail.
 
     * **Note**: Device needs to be in FlexSPI boot mode.
+
+
+-------------
+Known Issues
+-------------
+
+EdgeLock 2GO per product provisioning is supported for the MCXNxxx processors except MCXN235

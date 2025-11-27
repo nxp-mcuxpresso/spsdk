@@ -74,6 +74,16 @@ uboot_path:
       title: Path to U-Boot binary
       description: Path to U-Boot binary that will be used for writing assets to EMMC/SD
       template_value: u-boot.bin
+      skip_in_template: True
+
+imx_bootloader_path:
+  properties:
+    imx_bootloader_path:
+      type: string
+      format: optional_file
+      title: Path to imx-bootloader
+      description: Path to imx-bootloader binary that will be used for writing assets to EMMC/SD. This bootloader will be loaded using the SDPS protocol as part of the preparation step.
+      template_value: flash.bin
 
 fw_load_address:
   properties:

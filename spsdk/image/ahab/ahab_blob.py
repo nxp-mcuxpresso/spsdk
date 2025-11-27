@@ -4,7 +4,12 @@
 # Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Implementation of AHAB container encryption blob support."""
+"""SPSDK AHAB container encryption blob support.
+
+This module provides functionality for handling encryption blobs used in
+AHAB (Advanced High Assurance Boot) containers, enabling secure boot
+operations for NXP MCUs.
+"""
 
 
 import logging
@@ -33,11 +38,11 @@ logger = logging.getLogger(__name__)
 
 
 class AhabBlob(HeaderContainer):
-    """The Blob object used in Signature Container.
+    """AHAB Blob container for secure key management.
 
-    Represents the encryption blob structure for AHAB (Advanced High Assurance Boot) container.
-    Contains metadata and wrapped key information for secure data encryption/decryption operations.
-
+    Represents the encryption blob structure used in AHAB (Advanced High Assurance Boot) containers
+    for secure data encryption and decryption operations. Contains metadata and wrapped key
+    information following the AHAB blob format specification.
     Blob (DEK) content::
 
         +-----+--------------+--------------+----------------+----------------+
@@ -50,6 +55,12 @@ class AhabBlob(HeaderContainer):
         |0x08 |                        Wrapped Key                            |
         +-----+--------------+--------------+----------------+----------------+
 
+    :cvar TAG: AHAB blob tag identifier.
+    :cvar VERSION: Blob format version.
+    :cvar FLAGS_KEK_KEY: KEK (Key Encryption Key) flag value.
+    :cvar FLAGS_DEK: DEK (Data Encryption Key) flag value.
+    :cvar FLAGS_DFLT: Default flags configuration.
+    :cvar SUPPORTED_KEY_SIZES: List of supported key sizes in bits.
     """
 
     TAG = AHABTags.BLOB.tag
@@ -68,7 +79,11 @@ class AhabBlob(HeaderContainer):
     ]
 
     class BlobKeySizes(SpsdkEnum):
-        """AHAB Blob key sizes."""
+        """AHAB Blob encryption key sizes enumeration.
+
+        This enumeration defines the supported key sizes for AHAB (Advanced High Assurance Boot)
+        blob encryption operations, including 128-bit, 192-bit, and 256-bit key lengths.
+        """
 
         KEY_128 = (128, "Key size 128 bits")
         KEY_192 = (192, "Key size 192 bits")
@@ -84,15 +99,18 @@ class AhabBlob(HeaderContainer):
         dek_keyblob: Optional[bytes] = None,
         key_identifier: int = 0,
     ) -> None:
-        """Class object initializer.
+        """Initialize AHAB key blob container.
 
-        :param flags: Keyblob flags
-        :param size: key size [128,192,256]
-        :param dek: DEK key
-        :param mode: DEK BLOB mode
-        :param algorithm: Encryption algorithm
-        :param dek_keyblob: DEK keyblob
-        :param key_identifier: Key identifier. Must be same as it was used for keyblob generation
+        Creates a new AHAB key blob with specified encryption parameters and DEK configuration.
+        The key blob is used for secure key storage and provisioning in AHAB containers.
+
+        :param flags: Key blob configuration flags, defaults to FLAGS_DFLT
+        :param size: DEK key size in bits, supported values are 128, 192, or 256
+        :param algorithm: Encryption algorithm for key blob, defaults to AES_CBC
+        :param mode: DEK blob mode configuration value
+        :param dek: Data Encryption Key bytes, optional
+        :param dek_keyblob: Encrypted DEK key blob data, optional
+        :param key_identifier: Unique key identifier matching the one used for key blob generation
         """
         super().__init__(tag=self.TAG, length=56 + size // 8, version=self.VERSION)
         self.mode = mode
@@ -104,6 +122,15 @@ class AhabBlob(HeaderContainer):
         self.key_identifier = key_identifier
 
     def __eq__(self, other: object) -> bool:
+        """Check equality of two AhabBlob objects.
+
+        Compares all attributes of the current AhabBlob instance with another object
+        to determine if they are equal. The comparison includes parent class attributes
+        as well as mode, algorithm, size, flags, dek_keyblob, and key_identifier.
+
+        :param other: Object to compare with this AhabBlob instance.
+        :return: True if objects are equal, False otherwise.
+        """
         if isinstance(other, AhabBlob):
             if (
                 super().__eq__(other)  # pylint: disable=too-many-boolean-expressions
@@ -119,9 +146,20 @@ class AhabBlob(HeaderContainer):
         return False
 
     def __repr__(self) -> str:
+        """Return string representation of AHAB Blob.
+
+        :return: String representation of the AHAB Blob object.
+        """
         return "AHAB Blob"
 
     def __str__(self) -> str:
+        """Get string representation of AHAB Blob.
+
+        Provides a formatted string containing all key properties of the AHAB Blob
+        including mode, algorithm, key size, flags, key identifier, and DEK keyblob.
+
+        :return: Formatted string representation of the AHAB Blob.
+        """
         return (
             "AHAB Blob:\n"
             f"  Mode:               {self.mode}\n"
@@ -136,6 +174,9 @@ class AhabBlob(HeaderContainer):
     def compute_keyblob_size(key_size: int) -> int:
         """Compute Keyblob size.
 
+        The method calculates the total size of a keyblob based on the AES key size,
+        adding the fixed overhead of 48 bytes for keyblob structure.
+
         :param key_size: Input AES key size in bits
         :return: Keyblob size in bytes.
         """
@@ -143,7 +184,13 @@ class AhabBlob(HeaderContainer):
 
     @classmethod
     def format(cls) -> str:
-        """Format of binary representation."""
+        """Get format of binary representation.
+
+        Returns the format string that describes the binary layout of this class,
+        including endianness, header fields, and specific data fields.
+
+        :return: Format string for binary representation.
+        """
         return (
             super().format()  # endianness, header: tag, length, version
             + UINT8  # mode
@@ -153,15 +200,20 @@ class AhabBlob(HeaderContainer):
         )
 
     def __len__(self) -> int:
+        """Get the total length of the AHAB blob.
+
+        :return: Total length of the AHAB blob in bytes.
+        """
         # return super()._total_length() + len(self.dek_keyblob)
         return self.length
 
     def export(self) -> bytes:
         """Export Signature Block Blob.
 
-        Packs the blob data into its binary representation format.
+        Packs the blob data into its binary representation format by combining
+        the header fields and DEK keyblob data.
 
-        :return: Binary data representing the Signature Block Blob
+        :return: Binary data representing the Signature Block Blob.
         """
         blob = (
             pack(
@@ -185,7 +237,7 @@ class AhabBlob(HeaderContainer):
         Checks the integrity and correctness of all blob components including headers,
         key size, algorithm, DEK key, and wrapped key.
 
-        :return: Verifier object with verification results
+        :return: Verifier object with verification results.
         """
         ret = Verifier("Blob", description="")
         ret.add_child(self.verify_parsed_header())
@@ -216,10 +268,11 @@ class AhabBlob(HeaderContainer):
         """Parse binary data into an AhabBlob object.
 
         Extracts blob information from the provided binary data and creates
-        a corresponding AhabBlob instance.
+        a corresponding AhabBlob instance with parsed header and configuration.
 
-        :param data: Binary data containing the Blob block
-        :return: AhabBlob object recreated from the binary data
+        :param data: Binary data containing the Blob block to be parsed.
+        :raises SPSDKParsingError: Invalid or corrupted binary data format.
+        :return: AhabBlob object recreated from the binary data.
         """
         AhabBlob.check_container_head(data).validate()
         (
@@ -251,9 +304,9 @@ class AhabBlob(HeaderContainer):
         Exports the current blob configuration into a Config object and saves
         related binary data to the specified path.
 
-        :param data_path: Path where to store the data files of configuration
-        :param index: Container index used for filename generation
-        :return: Configuration object with blob settings
+        :param data_path: Path where to store the data files of configuration.
+        :param index: Container index used for filename generation.
+        :return: Configuration object with blob settings.
         """
         ret_cfg = Config()
         assert isinstance(self.dek_keyblob, bytes)
@@ -271,6 +324,7 @@ class AhabBlob(HeaderContainer):
         """Convert configuration options into an AHAB image signature block blob object.
 
         Processes the given configuration and creates a properly configured AhabBlob instance.
+        If DEK keyblob is not specified in configuration, creates empty keyblob placeholder.
 
         :param config: Blob configuration containing key size, DEK key, and other blob parameters
         :raises SPSDKValueError: If configuration contains invalid DEK KeyBlob data
@@ -310,10 +364,10 @@ class AhabBlob(HeaderContainer):
 
         Uses the appropriate encryption algorithm based on the blob's algorithm setting.
 
-        :param iv: Initial vector 128 bits length
-        :param data: Data to encrypt
-        :raises SPSDKError: Missing DEK or unsupported algorithm
-        :return: Encrypted data
+        :param iv: Initial vector 128 bits length.
+        :param data: Data to encrypt.
+        :raises SPSDKError: Missing DEK or unsupported algorithm.
+        :return: Encrypted data.
         """
         if not self.dek:
             raise SPSDKError("The AHAB keyblob hasn't defined DEK to encrypt data")
@@ -332,10 +386,10 @@ class AhabBlob(HeaderContainer):
 
         Uses the appropriate decryption algorithm based on the blob's algorithm setting.
 
-        :param iv: Initial vector 128 bits length
-        :param encrypted_data: Data to decrypt
-        :raises SPSDKError: Missing DEK or unsupported algorithm
-        :return: Decrypted plain data
+        :param iv: Initial vector 128 bits length.
+        :param encrypted_data: Data to decrypt.
+        :raises SPSDKError: Missing DEK or unsupported algorithm.
+        :return: Decrypted plain data.
         """
         if not self.dek:
             raise SPSDKError("The AHAB keyblob hasn't defined DEK to encrypt data")

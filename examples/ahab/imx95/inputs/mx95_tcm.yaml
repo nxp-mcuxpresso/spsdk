@@ -1,4 +1,4 @@
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # ==========================  Advanced High-Assurance Boot Configuration template for mimx9596.  ===========================
@@ -13,7 +13,7 @@
 family: mimx9596
 # -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
 # Description: Revision of silicon
-revision: a0
+revision: latest
 # ----------------------------------===== Target memory [Conditionally required] =====----------------------------------
 # Description: Target memory for AHAB container
 # Possible options: <serial_downloader, standard, nand_2k, nand_4k>
@@ -29,7 +29,7 @@ containers:
     binary_container:
       # -----------------------------===== The AHAB container binary file [Required] =====------------------------------
       # Description: The binary file that contains AHAB "my_binary_container.bin
-      path: inputs/mx95a0-ahab-container.img
+      path: inputs/mx95b0-ahab-container.img
 
   - # --------------------------------------===== AHAB Container [Required] =====---------------------------------------
     # Description: Configurable Container format to add to AHAB image. This allow to configure all aspects of the AHAB
@@ -49,7 +49,7 @@ containers:
       # ---------------------------------------===== Image array [Required] =====---------------------------------------
       # Description: Array of image entries.
       images:
-        - # OEI with DDR PHY tunning images
+          # OEI with DDR PHY tunning images
           # Image array default settings. Can be override by defines that are hidden in template:
           # image_offset:                  0x00010400
           # load_address:                  0x000000001FFC0000
@@ -59,16 +59,16 @@ containers:
           # hash_type:                     SHA384
           # -----------------------------===== LPDDR memory FW in 1D mode [Required] =====------------------------------
           # Description: Firmware for LPDDR4/5 memory in 1D mode.
-          lpddr_imem: lpddr4x_imem_v202311.bin
+        - lpddr_imem: lpddr4x_imem_v202409.bin
           # -----------------------------===== LPDDR memory FW in 2D mode [Required] =====------------------------------
           # Description: Firmware for LPDDR4/5 memory in 2D mode.
-          lpddr_imem_qb: lpddr4x_imem_qb_v202311.bin
+          lpddr_imem_qb: lpddr4x_imem_qb_v202409.bin
           # ----------------------------===== LPDDR memory data in 1D mode [Required] =====-----------------------------
           # Description: Data for LPDDR4/5 memory in 1D mode.
-          lpddr_dmem: lpddr4x_dmem_v202311.bin
+          lpddr_dmem: lpddr4x_dmem_v202409.bin
           # ----------------------------===== LPDDR memory data in 2D mode [Required] =====-----------------------------
           # Description: Data for LPDDR4/5 memory in 2D mode.
-          lpddr_dmem_qb: lpddr4x_dmem_qb_v202311.bin
+          lpddr_dmem_qb: lpddr4x_dmem_qb_v202409.bin
           # -----------------------------------------===== OEI [Required] =====-----------------------------------------
           # Description: OEI - Optional Executable Image firmware
           oei_ddr: oei-m33-ddr.bin

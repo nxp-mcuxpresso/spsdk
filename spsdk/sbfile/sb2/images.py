@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Boot Image V2.0, V2.1."""
+"""SPSDK SB2 boot image generation and management utilities.
+
+This module provides functionality for creating and managing Secure Binary version 2.0
+and 2.1 boot images, including advanced parameter configuration and image processing
+capabilities for NXP MCU secure provisioning.
+"""
 
 import logging
 import os
@@ -47,14 +52,24 @@ logger = logging.getLogger(__name__)
 
 
 class SBV2xAdvancedParams:
-    """The class holds advanced parameters for the SB file encryption.
+    """SBV2x Advanced Parameters Manager.
 
-    These parameters are used for the tests; for production, use can use default values (random keys + current time)
+    This class manages advanced encryption parameters for SB file generation including
+    DEK/MAC keys, nonce, timestamp, and padding. Primarily used for testing scenarios
+    where deterministic values are needed, while production usage typically relies on
+    default random values and current timestamps.
     """
 
     @staticmethod
     def _create_nonce() -> bytes:
-        """Return random nonce."""
+        """Generate a random 16-byte nonce with specific bit clearing.
+
+        Creates a cryptographically secure random nonce where bits at positions 31 and 63
+        are cleared to zero. This ensures compatibility with specific cryptographic
+        protocols that require these bits to be unset.
+
+        :return: 16-byte random nonce with cleared bits at positions 31 and 63.
+        """
         nonce = bytearray(random_bytes(16))
         # clear nonce bit at offsets 31 and 63
         nonce[9] &= 0x7F
@@ -71,13 +86,17 @@ class SBV2xAdvancedParams:
     ):
         """Initialize SBV2xAdvancedParams.
 
-        :param dek: DEK key
-        :param mac: MAC key
-        :param nonce: nonce
-        :param timestamp: fixed timestamp for the header; use None to use current date/time
-        :param padding: header padding (8 bytes) for testing purpose; None to use random values (recommended)
-        :raises SPSDKError: Invalid dek or mac
-        :raises SPSDKError: Invalid length of nonce
+        Creates advanced parameters for SB2.x file generation with encryption keys, nonce, timestamp and padding.
+        If parameters are not provided, secure random values or current timestamp will be used.
+
+        :param dek: DEK (Data Encryption Key) - must be 32 bytes if provided.
+        :param mac: MAC (Message Authentication Code) key - must be 32 bytes if provided.
+        :param nonce: Cryptographic nonce - must be 16 bytes if provided.
+        :param timestamp: Fixed timestamp for the header; use None to use current date/time.
+        :param padding: Header padding (8 bytes) for testing purpose; None to use random values
+            (recommended).
+        :raises SPSDKError: Invalid dek or mac key length.
+        :raises SPSDKError: Invalid length of nonce.
         """
         self._dek: bytes = dek if dek else random_bytes(32)
         self._mac: bytes = mac if mac else random_bytes(32)
@@ -92,7 +111,13 @@ class SBV2xAdvancedParams:
             raise SPSDKError("Invalid length of nonce")
 
     def __str__(self) -> str:
-        """String representation."""
+        """String representation of advanced parameters.
+
+        Returns a formatted string containing DEK, MAC, nonce, timestamp, and padding values
+        in hexadecimal format for debugging and display purposes.
+
+        :return: Formatted string with all advanced parameters and their values.
+        """
         return (
             f"Advanced params: \nDEK: {self.dek.hex()}\n"
             + f"MAC: {self.mac.hex()}\n"
@@ -103,40 +128,67 @@ class SBV2xAdvancedParams:
 
     @property
     def dek(self) -> bytes:
-        """Return DEK key."""
+        """Get DEK (Data Encryption Key).
+
+        :return: The DEK key as bytes.
+        """
         return self._dek
 
     @property
     def mac(self) -> bytes:
-        """Return MAC key."""
+        """Get MAC key.
+
+        :return: MAC key as bytes.
+        """
         return self._mac
 
     @property
     def nonce(self) -> bytes:
-        """Return NONCE."""
+        """Get the NONCE value.
+
+        :return: The NONCE as bytes.
+        """
         return self._nonce
 
     @property
     def timestamp(self) -> datetime:
-        """Return timestamp."""
+        """Get the timestamp of the SB2 image.
+
+        :return: Timestamp when the image was created.
+        """
         return self._timestamp
 
     @property
     def padding(self) -> bytes:
-        """Return padding."""
+        """Get the padding bytes for the image.
+
+        :return: Padding bytes as a byte string.
+        """
         return self._padding
 
     @property
     def zero_padding(self) -> bool:
-        """Return True if padding is zero, False otherwise."""
+        """Check if the padding bytes are all zeros.
+
+        :return: True if padding consists of 8 zero bytes, False otherwise.
+        """
         return self._padding == b"\x00" * 8
 
 
 ########################################################################################################################
-# Secure Boot Image Class (Version 2.0)
+# Secure Binary Image Class (Version 2.0)
 ########################################################################################################################
 class BootImageV20(BaseClass):
-    """Boot Image V2.0 class."""
+    """Secure Binary Image V2.0 container for NXP MCU secure provisioning.
+
+    This class manages the creation and manipulation of Secure Binary (SB) version 2.0 image files,
+    including encryption, signing, and section management for secure firmware deployment on NXP
+    microcontrollers.
+
+    :cvar HEADER_MAC_SIZE: Size of the MAC key in bytes (32).
+    :cvar DEK_MAC_SIZE: Size of AES encrypted DEK and MAC including padding (80).
+    :cvar KEY_BLOB_SIZE: Size of the key blob structure (80).
+    """
 
     # Image specific data
     # size of the MAC key
@@ -156,15 +208,18 @@ class BootImageV20(BaseClass):
         build_number: int = 0,
         advanced_params: SBV2xAdvancedParams = SBV2xAdvancedParams(),
     ) -> None:
-        """Initialize Secure Boot Image V2.0.
+        """Initialize Secure Binary Image V2.0.
+
+        Creates a new instance of Secure Binary Image version 2.0 with specified configuration
+        parameters and boot sections.
 
         :param signed: True if image is signed, False otherwise
-        :param kek: key for wrapping DEK and MAC keys
+        :param kek: Key for wrapping DEK and MAC keys
+        :param sections: Boot sections to be included in the image
         :param product_version: The product version (default: 1.0.0)
         :param component_version: The component version (default: 1.0.0)
         :param build_number: The build number value (default: 0)
         :param advanced_params: Advanced parameters for encryption of the SB file, use for tests only
-        :param sections: Boot sections
         :raises SPSDKError: Invalid dek or mac
         """
         self._kek = kek
@@ -203,32 +258,54 @@ class BootImageV20(BaseClass):
 
     @property
     def header(self) -> ImageHeaderV2:
-        """Return image header."""
+        """Get image header.
+
+        :return: Image header containing metadata and configuration information.
+        """
         return self._header
 
     @property
     def dek(self) -> bytes:
-        """Data encryption key."""
+        """Get data encryption key.
+
+        :return: Data encryption key as bytes.
+        """
         return self._dek
 
     @property
     def mac(self) -> bytes:
-        """Message authentication code."""
+        """Get message authentication code.
+
+        :return: Message authentication code as bytes.
+        """
         return self._mac
 
     @property
     def kek(self) -> bytes:
-        """Return key for wrapping DEK and MAC keys."""
+        """Return key for wrapping DEK and MAC keys.
+
+        :return: KEK (Key Encryption Key) used for wrapping DEK and MAC keys.
+        """
         return self._kek
 
     @property
     def signed(self) -> bool:
-        """Check whether sb is signed + encrypted or only encrypted."""
+        """Check whether SB file is signed and encrypted or only encrypted.
+
+        :return: True if the SB file is signed and encrypted, False if only encrypted.
+        """
         return self._signed
 
     @property
     def cert_block(self) -> Optional[CertBlockV1]:
-        """Return certificate block; None if SB file not signed or block not assigned yet."""
+        """Get certificate block from the SB file.
+
+        The method retrieves the certificate block from the certificate section if the SB file
+        is signed and the block has been assigned.
+
+        :return: Certificate block if available, None if SB file is not signed or block is not
+            assigned yet.
+        """
         cert_sect = self._cert_section
         if cert_sect is None:
             return None
@@ -237,9 +314,12 @@ class BootImageV20(BaseClass):
 
     @cert_block.setter
     def cert_block(self, value: Optional[CertBlockV1]) -> None:
-        """Setter.
+        """Set certificate block for the SB file.
 
-        :param value: block to be assigned; None to remove previously assigned block
+        Assigns a certificate block to the SB file or removes previously assigned block.
+        The certificate block can only be used when the SB file is configured as signed.
+
+        :param value: Certificate block to be assigned; None to remove previously assigned block
         :raises SPSDKError: When certificate block is used when SB file is not signed
         """
         if value is not None:
@@ -249,7 +329,12 @@ class BootImageV20(BaseClass):
 
     @property
     def cert_header_size(self) -> int:
-        """Return image raw size (not aligned) for certificate header."""
+        """Calculate the raw size (not aligned) for certificate header.
+
+        The size includes the image header, MAC, key blob, and all boot sections.
+
+        :return: Total raw size in bytes for the certificate header.
+        """
         size = ImageHeaderV2.SIZE + self.HEADER_MAC_SIZE + self.KEY_BLOB_SIZE
         for boot_section in self._boot_sections:
             size += boot_section.raw_size
@@ -257,7 +342,14 @@ class BootImageV20(BaseClass):
 
     @property
     def raw_size_without_signature(self) -> int:
-        """Return image raw size without signature, used to calculate image blocks."""
+        """Return image raw size without signature, used to calculate image blocks.
+
+        The method calculates the total size including header, HMAC, key blob,
+        certificates section (if signed), and all boot sections.
+
+        :raises SPSDKError: When certification block is not present for signed image.
+        :return: Total raw size in bytes without signature.
+        """
         # Header, HMAC and KeyBlob
         size = ImageHeaderV2.SIZE + self.HEADER_MAC_SIZE + self.KEY_BLOB_SIZE
         # Certificates Section
@@ -274,7 +366,14 @@ class BootImageV20(BaseClass):
 
     @property
     def raw_size(self) -> int:
-        """Return image raw size."""
+        """Get the total raw size of the image including signature if present.
+
+        The method calculates the complete raw size by adding the signature size
+        to the base raw size when the image is signed.
+
+        :raises SPSDKError: Certificate block not present for signed image.
+        :return: Total raw size of the image in bytes.
+        """
         size = self.raw_size_without_signature
 
         if self.signed:
@@ -286,19 +385,47 @@ class BootImageV20(BaseClass):
         return size
 
     def __len__(self) -> int:
+        """Get the number of boot sections in the image.
+
+        :return: Number of boot sections.
+        """
         return len(self._boot_sections)
 
     def __getitem__(self, key: int) -> BootSectionV2:
+        """Get boot section at specified index.
+
+        :param key: Index of the boot section to retrieve.
+        :raises IndexError: If the index is out of range.
+        :return: Boot section at the specified index.
+        """
         return self._boot_sections[key]
 
     def __setitem__(self, key: int, value: BootSectionV2) -> None:
+        """Set boot section at specified index.
+
+        Assigns a boot section to the specified index in the boot sections collection.
+
+        :param key: Index where to store the boot section.
+        :param value: Boot section to be stored at the specified index.
+        """
         self._boot_sections[key] = value
 
     def __iter__(self) -> Iterator[BootSectionV2]:
+        """Return iterator over boot sections.
+
+        Provides iteration capability over the collection of boot sections in the SB2 image.
+
+        :return: Iterator yielding BootSectionV2 objects from the internal boot sections collection.
+        """
         return self._boot_sections.__iter__()
 
     def update(self) -> None:
-        """Update boot image."""
+        """Update boot image header and internal structures.
+
+        This method recalculates and updates various header fields including boot section IDs,
+        block sizes, offsets, and MAC counts. It also updates certificate block headers if
+        present and sets appropriate flags based on whether the image is signed.
+        """
         if self._boot_sections:
             self._header.first_boot_section_id = self._boot_sections[0].uid
             # calculate first boot tag block
@@ -327,10 +454,24 @@ class BootImageV20(BaseClass):
             cert_blk.header.image_length = self.cert_header_size
 
     def __repr__(self) -> str:
+        """Return string representation of SB2 image.
+
+        Provides a human-readable string indicating the SB file version and whether
+        it is signed or plain (unsigned).
+
+        :return: String representation in format "SB2.0, Signed/Plain".
+        """
         return f"SB2.0, {'Signed' if self.signed else 'Plain'} "
 
     def __str__(self) -> str:
-        """Return text description of the instance."""
+        """Return text description of the SB2 image instance.
+
+        Generates a formatted string representation containing the image header,
+        certificates block (if present), and all boot sections with their UIDs.
+        The method automatically updates the instance before generating the description.
+
+        :return: Formatted multi-line string with complete image information.
+        """
         self.update()
         nfo = "\n"
         nfo += ":::::::::::::::::::::::::::::::::: IMAGE HEADER ::::::::::::::::::::::::::::::::::::::\n"
@@ -347,7 +488,7 @@ class BootImageV20(BaseClass):
     def add_boot_section(self, section: BootSectionV2) -> None:
         """Add new Boot section into image.
 
-        :param section: Boot section
+        :param section: Boot section to be added to the image
         :raises SPSDKError: Raised when section is not instance of BootSectionV2 class
         :raises SPSDKError: Raised when boot section has duplicate UID
         """
@@ -359,15 +500,21 @@ class BootImageV20(BaseClass):
         self._boot_sections.append(section)
 
     def export(self, padding: Optional[bytes] = None) -> bytes:
-        """Export image object.
+        """Export image object to binary format.
 
-        :param padding: Header padding (8 bytes) for testing purpose; None to use random values (recommended)
-        :return: Exported bytes
-        :raises SPSDKError: Raised when there are no boot sections or is not signed or private keys are missing
-        :raises SPSDKError: Raised when there is invalid dek or mac
-        :raises SPSDKError: Raised when certificate data is not present
-        :raises SPSDKError: Raised when there is invalid certificate block
-        :raises SPSDKError: Raised when there is invalid length of exported data
+        The method serializes the complete SB2 image including header, certificates,
+        boot sections, and signature into a binary representation ready for deployment.
+
+        :param padding: Header padding (8 bytes) for testing purpose; None to use random
+                        values (recommended)
+        :return: Exported bytes representing the complete SB2 image
+        :raises SPSDKError: No boot sections available
+        :raises SPSDKError: Invalid DEK or MAC key length (must be 32 bytes each)
+        :raises SPSDKError: Certificate section required for signed images
+        :raises SPSDKError: Signature provider not assigned for signed image
+        :raises SPSDKError: Certificate block not assigned for signed image
+        :raises SPSDKError: Header nonce is missing
+        :raises SPSDKError: Invalid length of exported data
         """
         if len(self.dek) != 32 or len(self.mac) != 32:
             raise SPSDKError("Invalid dek or mac")
@@ -416,16 +563,21 @@ class BootImageV20(BaseClass):
     # pylint: disable=too-many-locals
     @classmethod
     def parse(cls, data: bytes, kek: bytes = bytes()) -> Self:
-        """Parse image from bytes.
+        """Parse SB2.x image from raw bytes data.
 
-        :param data: Raw data of parsed image
-        :param kek: The Key for unwrapping DEK and MAC keys (required)
-        :return: parsed image object
-        :raises SPSDKError: raised when header is in wrong format
-        :raises SPSDKError: raised when there is invalid header version
-        :raises SPSDKError: raised when signature is incorrect
-        :raises SPSDKError: Raised when kek is empty
-        :raises SPSDKError: raised when header's nonce is not present
+        This method parses a Secure Binary 2.x image from binary data, validates the header MAC,
+        decrypts the content using the provided KEK, and reconstructs the image object with
+        all its sections including certificate and boot sections.
+
+        :param data: Raw binary data containing the SB2.x image to be parsed
+        :param kek: Key Encryption Key for unwrapping DEK and MAC keys (required for decryption)
+        :return: Parsed SB2.x image object with all sections loaded
+        :raises SPSDKError: Invalid or corrupted header format
+        :raises SPSDKError: Unsupported header version (not 2.0)
+        :raises SPSDKError: Header MAC validation failed
+        :raises SPSDKError: KEK parameter is empty or not provided
+        :raises SPSDKError: Header nonce field is missing
+        :raises SPSDKError: Certificate section signature verification failed
         """
         if not kek:
             raise SPSDKError("kek cannot be empty")
@@ -482,10 +634,21 @@ class BootImageV20(BaseClass):
 
 
 ########################################################################################################################
-# Secure Boot Image Class (Version 2.1)
+# Secure Binary Image Class (Version 2.1)
 ########################################################################################################################
 class BootImageV21(BaseClass):
-    """Boot Image V2.1 class."""
+    """Secure Binary Image V2.1 container for NXP MCU secure provisioning.
+
+    This class represents a Secure Binary Image version 2.1 that encapsulates boot sections
+    with encryption and authentication capabilities. It manages the image header, cryptographic
+    keys, and provides functionality for creating signed and encrypted boot images.
+
+    :cvar HEADER_MAC_SIZE: Size of the header MAC in bytes (32).
+    :cvar KEY_BLOB_SIZE: Size of the key blob in bytes (80).
+    :cvar SHA_256_SIZE: Size of SHA-256 hash in bytes (32).
+    :cvar FLAGS_SHA_PRESENT_BIT: Flag indicating SHA-256 presence (0x8000).
+    :cvar FLAGS_ENCRYPTED_SIGNED_BIT: Flag for signed and encrypted image (0x0008).
+    """
 
     # Image specific data
     HEADER_MAC_SIZE = 32
@@ -506,17 +669,18 @@ class BootImageV21(BaseClass):
         advanced_params: SBV2xAdvancedParams = SBV2xAdvancedParams(),
         flags: int = FLAGS_SHA_PRESENT_BIT | FLAGS_ENCRYPTED_SIGNED_BIT,
     ) -> None:
-        """Initialize Secure Boot Image V2.1.
+        """Initialize Secure Binary Image V2.1.
 
-        :param kek: key to wrap DEC and MAC keys
+        Creates a new Secure Binary Image V2.1 instance with the specified encryption key and configuration
+        parameters. The image can contain multiple boot sections that will be processed during secure boot.
 
-        :param product_version: The product version (default: 1.0.0)
-        :param component_version: The component version (default: 1.0.0)
-        :param build_number: The build number value (default: 0)
-
-        :param advanced_params: optional advanced parameters for encryption; it is recommended to use default value
-        :param flags: see flags defined in class.
-        :param sections: Boot sections
+        :param kek: Key encryption key used to wrap DEK and MAC keys.
+        :param sections: Variable number of boot sections to include in the image.
+        :param product_version: Product version string in format "x.y.z".
+        :param component_version: Component version string in format "x.y.z".
+        :param build_number: Build number for the image.
+        :param advanced_params: Advanced encryption parameters including DEK, MAC, nonce, and timestamp.
+        :param flags: Image flags controlling SHA presence and encryption/signing behavior.
         """
         self._kek = kek
         self.signature_provider: Optional[SignatureProvider] = (
@@ -542,34 +706,55 @@ class BootImageV21(BaseClass):
 
     @property
     def header(self) -> ImageHeaderV2:
-        """Return image header."""
+        """Get image header.
+
+        :return: Image header containing metadata and configuration information.
+        """
         return self._header
 
     @property
     def dek(self) -> bytes:
-        """Data encryption key."""
+        """Get the data encryption key.
+
+        :return: Data encryption key as bytes.
+        """
         return self._dek
 
     @property
     def mac(self) -> bytes:
-        """Message authentication code."""
+        """Get the message authentication code.
+
+        :return: Message authentication code as bytes.
+        """
         return self._mac
 
     @property
     def kek(self) -> bytes:
-        """Return key to wrap DEC and MAC keys."""
+        """Return key to wrap DEC and MAC keys.
+
+        :return: Key encryption key as bytes.
+        """
         return self._kek
 
     @property
     def cert_block(self) -> Optional[CertBlockV1]:
-        """Return certificate block; None if SB file not signed or block not assigned yet."""
+        """Get certificate block from SB file.
+
+        Returns the certificate block if the SB file is signed and the block has been assigned,
+        otherwise returns None.
+
+        :return: Certificate block instance or None if not available.
+        """
         return self._cert_block
 
     @cert_block.setter
     def cert_block(self, value: CertBlockV1) -> None:
-        """Setter.
+        """Set certificate block for the image.
 
-        :param value: block to be assigned; None to remove previously assigned block
+        The method assigns a certificate block and sets its alignment to 16 bytes.
+
+        :param value: Certificate block to be assigned to the image.
+        :raises AssertionError: If value is not an instance of CertBlockV1.
         """
         assert isinstance(value, CertBlockV1)
         self._cert_block = value
@@ -577,12 +762,23 @@ class BootImageV21(BaseClass):
 
     @property
     def signed(self) -> bool:
-        """Return flag whether SB file is signed."""
+        """Check if the SB file is signed.
+
+        SB2.1 format files are always signed by design.
+
+        :return: True as SB2.1 files are always signed.
+        """
         return True  # SB2.1 is always signed
 
     @property
     def cert_header_size(self) -> int:
-        """Return image raw size (not aligned) for certificate header."""
+        """Calculate the raw size of the certificate header section.
+
+        The method computes the total size including the image header, MAC, key blob,
+        and certificate block if present. The size is not aligned to any boundary.
+
+        :return: Raw size in bytes of the certificate header section.
+        """
         size = ImageHeaderV2.SIZE + self.HEADER_MAC_SIZE
         size += self.KEY_BLOB_SIZE
         # Certificates Section
@@ -593,7 +789,14 @@ class BootImageV21(BaseClass):
 
     @property
     def raw_size(self) -> int:
-        """Return image raw size (not aligned)."""
+        """Return image raw size (not aligned).
+
+        Calculates the total raw size of the image including header, HMAC, key blob,
+        certificate block (if present with signature), and all boot sections.
+
+        :raises SPSDKError: If certificate block exists but is not signed.
+        :return: Total raw size in bytes of the image components.
+        """
         # Header, HMAC and KeyBlob
         size = ImageHeaderV2.SIZE + self.HEADER_MAC_SIZE
         size += self.KEY_BLOB_SIZE
@@ -610,19 +813,50 @@ class BootImageV21(BaseClass):
         return size
 
     def __len__(self) -> int:
+        """Get the number of boot sections in the image.
+
+        :return: Number of boot sections.
+        """
         return len(self.boot_sections)
 
     def __getitem__(self, key: int) -> BootSectionV2:
+        """Get boot section by index.
+
+        :param key: Index of the boot section to retrieve.
+        :return: Boot section at the specified index.
+        """
         return self.boot_sections[key]
 
     def __setitem__(self, key: int, value: BootSectionV2) -> None:
+        """Set boot section at specified index.
+
+        Assigns a boot section to the specified index position in the boot sections collection.
+
+        :param key: Index position where to set the boot section.
+        :param value: Boot section object to be assigned at the specified index.
+        """
         self.boot_sections[key] = value
 
     def __iter__(self) -> Iterator[BootSectionV2]:
+        """Iterate over boot sections in the image.
+
+        Provides an iterator interface to access all boot sections contained
+        in this SB2 image sequentially.
+
+        :return: Iterator yielding BootSectionV2 objects.
+        """
         return self.boot_sections.__iter__()
 
     def update(self) -> None:
-        """Update BootImageV21."""
+        """Update the BootImageV21 internal structure and header fields.
+
+        This method recalculates and updates various header fields including boot section IDs,
+        block sizes, offsets, and MAC counts. It also updates the certificate block header
+        if present. The method ensures all internal structures are synchronized with the
+        current state of boot sections and certificate blocks.
+
+        :raises SPSDKError: When certificate block exists but is not signed.
+        """
         if self.boot_sections:
             self._header.first_boot_section_id = self.boot_sections[0].uid
             # calculate first boot tag block
@@ -652,10 +886,23 @@ class BootImageV21(BaseClass):
             cert_clk.header.image_length = self.cert_header_size
 
     def __repr__(self) -> str:
+        """Return string representation of SB2.1 image.
+
+        Provides a human-readable string indicating the SB2.1 format and whether
+        the image is signed or plain (unsigned).
+
+        :return: String representation showing format and signing status.
+        """
         return f"SB2.1, {'Signed' if self.signed else 'Plain'} "
 
     def __str__(self) -> str:
-        """Return text description of the instance."""
+        """Return text description of the SB2 image instance.
+
+        Generates a comprehensive string representation including the image header,
+        certificates block (if present), and all boot sections with their UIDs.
+
+        :return: Formatted string containing detailed image information.
+        """
         self.update()
         nfo = "\n"
         nfo += ":::::::::::::::::::::::::::::::::: IMAGE HEADER ::::::::::::::::::::::::::::::::::::::\n"
@@ -681,16 +928,17 @@ class BootImageV21(BaseClass):
 
     # pylint: disable=too-many-locals
     def export(self, padding: Optional[bytes] = None) -> bytes:
-        """Export image object.
+        """Export SB2 image to binary format.
 
-        :param padding: Header padding (8 bytes) for testing purpose; None to use random values (recommended)
-        :return: Exported bytes
-        :raises SPSDKError: Raised when there is no boot section to be added
-        :raises SPSDKError: Raised when certificate is not assigned
-        :raises SPSDKError: Raised when private key is not assigned
-        :raises SPSDKError: Raised when private header's nonce is invalid
-        :raises SPSDKError: Raised when private key does not match certificate
-        :raises SPSDKError: Raised when there is no debug info
+        The method validates all required components, updates internal structures, and exports
+        the complete SB2 image including header, certificates, boot sections, and signature.
+
+        :param padding: Header padding (8 bytes) for testing purpose; None to use random values
+        :return: Complete SB2 image as binary data
+        :raises SPSDKError: No boot section available for export
+        :raises SPSDKError: Certificate block not assigned
+        :raises SPSDKError: Signature provider not assigned
+        :raises SPSDKError: Invalid header nonce value
         """
         # validate params
         if not self.boot_sections:
@@ -748,18 +996,22 @@ class BootImageV21(BaseClass):
         kek: bytes = bytes(),
         plain_sections: bool = False,
     ) -> "BootImageV21":
-        """Parse image from bytes.
+        """Parse SB2.1 boot image from binary data.
 
-        :param data: Raw data of parsed image
-        :param offset: The offset of input data
-        :param kek: The Key for unwrapping DEK and MAC keys (required)
-        :param plain_sections: Sections are not encrypted; this is used only for debugging,
-            not supported by ROM code
-        :return: BootImageV21 parsed object
-        :raises SPSDKError: raised when header is in incorrect format
-        :raises SPSDKError: raised when signature is incorrect
-        :raises SPSDKError: Raised when kek is empty
-        :raises SPSDKError: raised when header's nonce not present"
+        This method parses a Secure Binary 2.1 image from raw bytes, verifying signatures,
+        unwrapping encryption keys, and reconstructing the boot image structure with all
+        its components including certificate blocks and boot sections.
+
+        :param data: Raw binary data containing the SB2.1 image to parse
+        :param offset: Starting offset within the data where parsing begins
+        :param kek: Key Encryption Key used for unwrapping DEK and MAC keys
+        :param plain_sections: Whether sections are unencrypted (debug mode only, not ROM supported)
+        :return: Parsed BootImageV21 object with all components initialized
+        :raises SPSDKError: When KEK is empty or missing
+        :raises SPSDKError: When header format is invalid or offset mismatch occurs
+        :raises SPSDKError: When certificate block signature verification fails
+        :raises SPSDKError: When header nonce is not present
+        :raises SPSDKError: When bootable section SHA-256 verification fails
         """
         if not kek:
             raise SPSDKError("kek cannot be empty")
@@ -841,9 +1093,12 @@ class BootImageV21(BaseClass):
 
     @staticmethod
     def get_supported_families() -> list[FamilyRevision]:
-        """Return list of supported families.
+        """Get supported families for SB2.1 format.
 
-        :return: List of supported families.
+        This method retrieves all device families that support the SB2.1 secure boot file format
+        from the database manager.
+
+        :return: List of supported family revisions for SB2.1 format.
         """
         return get_families(DatabaseManager.SB21)
 
@@ -851,10 +1106,14 @@ class BootImageV21(BaseClass):
     def get_commands_validation_schemas(
         cls, family: Optional[FamilyRevision] = None
     ) -> list[dict[str, Any]]:
-        """Create the list of validation schemas.
+        """Create the list of validation schemas for SB2.1 commands.
+
+        The method retrieves the base SB2.1 schema and optionally filters commands
+        based on the specified device family. When a family is provided, only
+        commands supported by that family are included in the validation schema.
 
         :param family: Device family filter, if None all commands are returned.
-        :return: List of validation schemas.
+        :return: List of validation schemas for SB2.1 commands.
         """
         sb2_sch_cfg = get_schema_file(DatabaseManager.SB21)
 
@@ -879,10 +1138,14 @@ class BootImageV21(BaseClass):
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Create the list of validation schemas.
+        """Create the list of validation schemas for SB2 image configuration.
 
-        :param family: Device family
-        :return: List of validation schemas.
+        The method builds a comprehensive list of validation schemas by combining family-specific
+        schemas, MBI schemas, SB2 schemas, and optionally keyblob schemas based on device
+        family capabilities.
+
+        :param family: Device family revision to get validation schemas for.
+        :return: List of validation schema dictionaries for configuration validation.
         """
         sb2_schema = get_schema_file(DatabaseManager.SB21)
         mbi_schema = get_schema_file(DatabaseManager.MBI)
@@ -908,10 +1171,13 @@ class BootImageV21(BaseClass):
 
     @classmethod
     def get_config_template(cls, family: FamilyRevision) -> str:
-        """Generate configuration template.
+        """Generate configuration template for Secure Binary v2.1.
 
-        :param family: Device family.
-        :return: Dictionary of individual templates (key is name of template, value is template itself).
+        Creates a configuration template with validation schemas for the specified device family.
+        The template includes all necessary configuration options and their descriptions.
+
+        :param family: Device family revision to generate template for.
+        :return: Configuration template as a string with comments and validation schemas.
         """
         title = "Secure Binary v2.1 Configuration template"
         if family in cls.get_supported_families():
@@ -927,11 +1193,16 @@ class BootImageV21(BaseClass):
         config_path: str,
         external_files: Optional[list[str]] = None,
     ) -> Config:
-        """Create lexer and parser, load the BD file content and parse it.
+        """Parse SB2.1 configuration file and create configuration object.
+
+        The method attempts to parse the configuration file as a BD (Boot Data) file first.
+        If that fails, it falls back to parsing as a YAML configuration file with validation.
 
         :param config_path: Path to configuration file either BD or YAML formatted.
-        :param external_files: Optional list of external files for BD processing
-        :return: Dictionary with parsed configuration.
+        :param external_files: Optional list of external files for BD processing.
+        :raises SPSDKError: Invalid BD file or configuration parsing error.
+        :raises SPSDKValueError: Missing required options or family key in BD file.
+        :return: Parsed configuration object with family and revision information.
         """
         try:
             bd_file_content = load_text(config_path)
@@ -959,10 +1230,13 @@ class BootImageV21(BaseClass):
 
     @classmethod
     def get_advanced_params(cls, config: dict[str, Any]) -> SBV2xAdvancedParams:
-        """Get advanced test params from configuration.
+        """Get advanced parameters from configuration.
 
-        :param config: Input standard configuration.
-        :return: SBV2xAdvancedParams advanced test params
+        Extracts and processes advanced SB 2.x parameters including timestamp, DEK, MAC,
+        nonce, and zero padding settings from the provided configuration dictionary.
+
+        :param config: Configuration dictionary containing advanced parameter settings.
+        :return: Advanced parameters object for SB 2.x file generation.
         """
         # Test params
         timestamp = config.get("timestamp")
@@ -989,19 +1263,22 @@ class BootImageV21(BaseClass):
         root_key_certificate_paths: Optional[list[str]] = None,
         rkth_out_path: Optional[str] = None,
     ) -> Self:
-        """Creates an instance of BootImageV21 from configuration.
+        """Create an instance of BootImageV21 from configuration.
 
-        :param config: Input standard configuration.
-        :param key_file_path: path to key file.
-        :param signature_provider: Signature provider to sign final image
-        :param signing_certificate_file_paths: signing certificate chain.
-        :param root_key_certificate_paths: paths to root key certificate(s) for
-            verifying other certificates. Only 4 root key certificates are allowed,
-            others are ignored. One of the certificates must match the first certificate
-            passed in signing_certificate_file_paths.
-        :param rkth_out_path: output path to hash of hashes of root keys. If set to
-            None, 'hash.bin' is created under working directory.
-        :return: Instance of Secure Binary V2.1 class
+        This method constructs a Secure Binary V2.1 image by parsing the provided configuration,
+        setting up certificate blocks, loading encryption keys, processing sections and commands,
+        and configuring signature providers. It also handles root key hash generation and output.
+
+        :param config: Input standard configuration containing image settings and sections.
+        :param key_file_path: Path to key file for SB-KEK encryption key.
+        :param signature_provider: Signature provider instance to sign the final image.
+        :param signing_certificate_file_paths: List of paths to signing certificate chain files.
+        :param root_key_certificate_paths: List of paths to root key certificate files for
+            verifying other certificates. Maximum 4 certificates allowed, extras ignored.
+            One certificate must match the first in signing_certificate_file_paths.
+        :param rkth_out_path: Output path for root key hash table file. If None, uses
+            'hash.bin' in working directory or config-specified path.
+        :return: Configured BootImageV21 instance ready for image generation.
         """
         options = config.get_config("options")
         flags = options.get_int(
@@ -1093,7 +1370,7 @@ class BootImageV21(BaseClass):
     def validate_header(binary: bytes) -> None:
         """Validate SB2.1 header in binary data.
 
-        :param binary: Binary data to be validate
+        :param binary: Binary data to be validated
         :raises SPSDKError: Invalid header of SB2.1 data
         """
         ImageHeaderV2.parse(binary)

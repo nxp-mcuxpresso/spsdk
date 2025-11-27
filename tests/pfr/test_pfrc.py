@@ -4,7 +4,12 @@
 # Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""The test file for PFRC API."""
+"""SPSDK PFRC (Protected Flash Region Checker) testing module.
+
+This module contains comprehensive test cases for the PFRC functionality,
+including configuration validation, rule checking, and error handling for
+NXP MCU protected flash regions.
+"""
 
 import os
 
@@ -12,28 +17,50 @@ import pytest
 import ruamel.yaml
 
 from spsdk.exceptions import SPSDKError
-from spsdk.pfr.exceptions import SPSDKPfrConfigError, SPSDKPfrError
+from spsdk.pfr.exceptions import SPSDKPfrError
 from spsdk.pfr.pfr import CFPA, CMPA
-from spsdk.pfr.pfrc import Pfrc, RulesList
+from spsdk.pfr.pfrc import Pfrc, Rule, RulesList
 from spsdk.utils.config import Config
 
 
-def test_pfrc_without_any_config():
-    """Test if pfrc raises an error if no config is provided"""
+def test_pfrc_without_any_config() -> None:
+    """Test PFRC initialization without configuration parameters.
+
+    Verifies that the Pfrc class constructor raises an appropriate error when
+    instantiated without providing either CMPA or CFPA configuration parameters.
+
+    :raises SPSDKPfrError: When no CMPA or CFPA configurations are specified.
+    """
     with pytest.raises(SPSDKPfrError, match="No cmpa or cfpa configurations specified"):
         Pfrc()
 
 
-def test_pfrc_with_unsupported_device(data_dir):
-    """Test if pfrc raises an error if unsupported device is provided"""
+def test_pfrc_with_unsupported_device(data_dir: str) -> None:
+    """Test if PFRC raises an error when an unsupported device is provided.
+
+    This test verifies that the PFRC constructor properly validates device support
+    and raises an appropriate error when attempting to create a PFRC instance
+    with a CFPA configuration for an unsupported device.
+
+    :param data_dir: Directory path containing test data files
+    :raises SPSDKError: Expected exception when unsupported device is used
+    """
     cfpa_config_path = os.path.join(data_dir, "cfpa-lpc551x.yaml")
     cfpa_config = Config.create_from_file(cfpa_config_path)
     with pytest.raises(SPSDKError):
         Pfrc(cfpa=CFPA.load_from_config(cfpa_config))
 
 
-def test_pfrc_with_cfpa_and_cmpa_configs(data_dir):
-    """Test the PFCA with cfpa and cmpa config."""
+def test_pfrc_with_cfpa_and_cmpa_configs(data_dir: str) -> None:
+    """Test PFRC functionality with CFPA and CMPA configuration files.
+
+    This test validates that PFRC can properly load and process both CFPA and CMPA
+    configurations, load validation rules, and execute brick condition validation
+    without any failures or skipped tests.
+
+    :param data_dir: Directory path containing test configuration files
+    :raises AssertionError: When validation fails or produces unexpected results
+    """
     cfpa_config_path = os.path.join(data_dir, "cfpa_lpc55s3x_default.yaml")
     cfpa_config = Config.create_from_file(cfpa_config_path)
     cfpa = CFPA.load_from_config(cfpa_config)
@@ -48,28 +75,44 @@ def test_pfrc_with_cfpa_and_cmpa_configs(data_dir):
     assert len(passed) == len(rules) - len(failed)
 
 
-def test_pfrc_with_cfpa_config(data_dir):
-    """Test the PFCA with only cfpa config."""
+def test_pfrc_with_cfpa_config(data_dir: str) -> None:
+    """Test PFRC validation with only CFPA configuration.
+
+    This test verifies that PFRC correctly handles validation when only CFPA
+    configuration is provided. It loads a default CFPA configuration, creates
+    a PFRC instance, and validates that rules requiring CMPA data are properly
+    skipped while CFPA-only rules pass validation.
+
+    :param data_dir: Directory path containing test data files including CFPA configuration.
+    """
     cfpa_config_path = os.path.join(data_dir, "cfpa_lpc55s3x_default.yaml")
     cfpa_config = Config.create_from_file(cfpa_config_path)
     cfpa = CFPA.load_from_config(cfpa_config)
     pfrc = Pfrc(cfpa=cfpa)
     rules = pfrc.load_rules()
-    rules_to_be_skipped = RulesList(rule for rule in rules if "CMPA." in rule.cond)
+    rules_to_be_skipped: list[Rule] = [rule for rule in rules if "CMPA." in rule.cond]
     passed, failed, skipped = pfrc.validate_brick_conditions()
 
     assert len(skipped) == len(rules_to_be_skipped)
     for rule in skipped:
         assert rule in rules_to_be_skipped
-    rules_to_be_passed = RulesList(rule for rule in rules if rule not in rules_to_be_skipped)
+    rules_to_be_passed: list[Rule] = [rule for rule in rules if rule not in rules_to_be_skipped]
     assert len(passed) == len(rules_to_be_passed)
     for rule in passed:
         assert rule in rules_to_be_passed
     assert len(failed) == 0
 
 
-def test_loading_of_rules_with_additional_rules(data_dir):
-    """Test the integrity of rules data."""
+def test_loading_of_rules_with_additional_rules(data_dir: str) -> None:
+    """Test loading of rules with additional rules functionality.
+
+    Verifies that the Pfrc class correctly loads and combines default rules
+    with additional custom rules from an external file. The test ensures
+    that the total number of rules equals the sum of default and custom rules.
+
+    :param data_dir: Directory path containing test data files including
+                     CMPA configuration and custom rules files.
+    """
     cmpa_config_path = os.path.join(data_dir, "cmpa_pfrc_lpc55s3x.yml")
     cmpa_config = Config.create_from_file(cmpa_config_path)
     pfrc = Pfrc(cmpa=CMPA.load_from_config(cmpa_config))
@@ -80,8 +123,15 @@ def test_loading_of_rules_with_additional_rules(data_dir):
     assert len(all_rules) == len(default_rules + custom_rules)
 
 
-def test_pfrc_with_incorrect_rule(data_dir):
-    """Test the PFCA with incorrect rule."""
+def test_pfrc_with_incorrect_rule(data_dir: str) -> None:
+    """Test PFRC validation with incorrect rule configuration.
+
+    Verifies that PFRC properly handles and raises appropriate errors when
+    provided with malformed or incorrect rule definitions in the rules file.
+
+    :param data_dir: Directory path containing test data files including CFPA configuration and incorrect rules file.
+    :raises SPSDKPfrError: When unable to parse the incorrect rule file.
+    """
     cfpa_config_path = os.path.join(data_dir, "cfpa_pfrc_lpc55s3x.yml")
     cfpa_config = Config.create_from_file(cfpa_config_path)
     cfpa = CFPA.load_from_config(cfpa_config)
@@ -91,8 +141,16 @@ def test_pfrc_with_incorrect_rule(data_dir):
         pfrc.validate_brick_conditions(additional_rules_file=rules_path)
 
 
-def test_pfrc_with_non_existing_register(data_dir):
-    """Test the validation with non-existing register."""
+def test_pfrc_with_non_existing_register(data_dir: str) -> None:
+    """Test the validation with non-existing register.
+
+    This test verifies that the PFRC validation properly handles and raises
+    an SPSDKPfrError when attempting to validate brick conditions with rules
+    that reference non-existing registers.
+
+    :param data_dir: Directory path containing test data files including CMPA configuration and rules files.
+    :raises SPSDKPfrError: When validation encounters rules referencing non-existing registers.
+    """
     cmpa_config_path = os.path.join(data_dir, "cmpa_pfrc_lpc55s3x.yml")
     cmpa_config = Config.create_from_file(cmpa_config_path)
     pfrc = Pfrc(cmpa=CMPA.load_from_config(cmpa_config))
@@ -111,8 +169,26 @@ def test_pfrc_with_non_existing_register(data_dir):
         (1, [("FA_CMD_EN", 1)], [("ISP_CMD_EN", 1)]),
     ],
 )
-def test_rule_1_1(tmp_path, data_dir, nr_of_failed, cmpa_pin_bitfields, cfpa_pin_bitfields):
-    """Test that non-zero CFPA.DCFG_CC_SOCU_NS_PIN bit and zero CMPA.DCFG_CC_SOCU_PIN bit are breaking the rule: 1.1"""
+def test_rule_1_1(
+    tmp_path: str,
+    data_dir: str,
+    nr_of_failed: int,
+    cmpa_pin_bitfields: list[tuple[str, int]],
+    cfpa_pin_bitfields: list[tuple[str, int]],
+) -> None:
+    """Test PFR rule 1.1 validation for DCFG_CC_SOCU pin configuration.
+
+    Validates that non-zero CFPA.DCFG_CC_SOCU_NS_PIN bits combined with zero
+    CMPA.DCFG_CC_SOCU_PIN bits properly trigger PFR rule 1.1 violation detection.
+    The test creates temporary CMPA and CFPA configuration files with specified
+    bitfield values and verifies the expected number of validation failures.
+
+    :param tmp_path: Temporary directory path for output files.
+    :param data_dir: Directory path containing test data templates.
+    :param nr_of_failed: Expected number of validation failures.
+    :param cmpa_pin_bitfields: List of tuples containing CMPA bitfield names and values.
+    :param cfpa_pin_bitfields: List of tuples containing CFPA bitfield names and values.
+    """
     cmpa_config_template = os.path.join(data_dir, "cmpa_lpc55s3x_default.yaml")
     cmpa_config, cmpa_ind, cmpa_bsi = ruamel.yaml.util.load_yaml_guess_indent(
         open(cmpa_config_template)
@@ -158,8 +234,26 @@ def test_rule_1_1(tmp_path, data_dir, nr_of_failed, cmpa_pin_bitfields, cfpa_pin
         (1, [("FA_CMD_EN", 1)], [("ISP_CMD_EN", 1)]),
     ],
 )
-def test_rule_1_2(tmp_path, data_dir, nr_of_failed, cmpa_dflt_bitfields, cfpa_dflt_bitfields):
-    """Test that non-zero CFPA.DCFG_CC_SOCU_NS_DFLT bit and zero CMPA.DCFG_CC_SOCU_DFLT bit are breaking the rule: 1.2"""
+def test_rule_1_2(
+    tmp_path: str,
+    data_dir: str,
+    nr_of_failed: int,
+    cmpa_dflt_bitfields: list[tuple[str, int]],
+    cfpa_dflt_bitfields: list[tuple[str, int]],
+) -> None:
+    """Test PFR validation rule 1.2 for DCFG_CC_SOCU configuration conflicts.
+
+    Validates that non-zero CFPA.DCFG_CC_SOCU_NS_DFLT bits combined with zero
+    CMPA.DCFG_CC_SOCU_DFLT bits properly trigger validation rule 1.2 failure.
+    The test creates CMPA and CFPA configurations with specified bitfield values,
+    runs PFR validation, and verifies the expected number of rule 1.2 failures.
+
+    :param tmp_path: Temporary directory path for output files.
+    :param data_dir: Directory path containing test data templates.
+    :param nr_of_failed: Expected number of rule 1.2 validation failures.
+    :param cmpa_dflt_bitfields: List of tuples containing CMPA bitfield names and values to set.
+    :param cfpa_dflt_bitfields: List of tuples containing CFPA bitfield names and values to set.
+    """
     cmpa_config_template = os.path.join(data_dir, "cmpa_lpc55s3x_default.yaml")
     cmpa_config, cmpa_ind, cmpa_bsi = ruamel.yaml.util.load_yaml_guess_indent(
         open(cmpa_config_template)
@@ -191,9 +285,9 @@ def test_rule_1_2(tmp_path, data_dir, nr_of_failed, cmpa_dflt_bitfields, cfpa_df
     pfrc = Pfrc(cmpa=cmpa, cfpa=cfpa)
     _, failed, _ = pfrc.validate_brick_conditions()
     # Some other rules may be broken with this config
-    failed = [fail for fail in failed if fail.req_id == "1.2"]
-    assert len(failed) == nr_of_failed
-    for fail in failed:
+    failed_filtered = [fail for fail in failed if fail.req_id == "1.2"]
+    assert len(failed_filtered) == nr_of_failed
+    for fail in failed_filtered:
         assert "Never write any non-zero configuration" in fail.desc
 
 
@@ -219,8 +313,25 @@ def test_rule_1_2(tmp_path, data_dir, nr_of_failed, cmpa_dflt_bitfields, cfpa_df
         ),
     ],
 )
-def test_cmpa_inverse_bits_rules(tmp_path, data_dir, nr_of_failed, pin_bitfields, dflt_bitfields):
-    """Test the CMPA rules regarding inverse bits are detected: 1.3, 1.4"""
+def test_cmpa_inverse_bits_rules(
+    tmp_path: str,
+    data_dir: str,
+    nr_of_failed: int,
+    pin_bitfields: list[tuple[str, int]],
+    dflt_bitfields: list[tuple[str, int]],
+) -> None:
+    """Test the CMPA rules regarding inverse bits are detected: 1.3, 1.4.
+
+    This test validates that the PFR checker correctly identifies violations of CMPA
+    inverse bit rules by injecting error values into PIN and DFLT bitfields and
+    verifying the expected number of validation failures.
+
+    :param tmp_path: Temporary directory path for test files.
+    :param data_dir: Directory path containing test data files.
+    :param nr_of_failed: Expected number of validation failures.
+    :param pin_bitfields: List of tuples containing PIN bitfield names and values to inject.
+    :param dflt_bitfields: List of tuples containing DFLT bitfield names and values to inject.
+    """
     cmpa_config_template = os.path.join(data_dir, "cmpa_lpc55s3x_default_full.yaml")
     config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(open(cmpa_config_template))
     cmpa_config_path = os.path.join(tmp_path, "output.yaml")
@@ -268,8 +379,22 @@ def test_cmpa_inverse_bits_rules(tmp_path, data_dir, nr_of_failed, pin_bitfields
         ),
     ],
 )
-def test_cfpa_inverse_bits_rules(tmp_path, data_dir, nr_of_failed, pin_bitfields, dflt_bitfields):
-    """Test the CFPA rules regarding inverse bits are detected: 1.5, 1.6"""
+def test_cfpa_inverse_bits_rules(
+    tmp_path: str, data_dir: str, nr_of_failed: int, pin_bitfields: list, dflt_bitfields: list
+) -> None:
+    """Test the CFPA rules regarding inverse bits are detected: 1.5, 1.6.
+
+    This test validates that the PFRC (Protected Flash Region Checker) properly
+    detects violations of inverse bit rules in CFPA (Customer Field Programmable Area)
+    configuration. It injects error values into PIN and DFLT bitfields and verifies
+    that the expected number of validation failures are detected.
+
+    :param tmp_path: Temporary directory path for test files.
+    :param data_dir: Directory path containing test data files.
+    :param nr_of_failed: Expected number of validation failures.
+    :param pin_bitfields: List of tuples containing PIN bitfield names and values to inject.
+    :param dflt_bitfields: List of tuples containing DFLT bitfield names and values to inject.
+    """
     cfpa_config_template = os.path.join(data_dir, "cfpa_lpc55s3x_default_full.yaml")
     config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(open(cfpa_config_template))
     cfpa_config_path = os.path.join(tmp_path, "output.yaml")
@@ -307,9 +432,29 @@ def test_cfpa_inverse_bits_rules(tmp_path, data_dir, nr_of_failed, pin_bitfields
     ],
 )
 def test_cmpa_invalid_pin_dflt_configuration_rules(
-    tmp_path, data_dir, test_pass, pin_value, dflt_value, pin_bitfield, dflt_bitfield
-):
-    """Test the CMPA rules regarding invalid pin/dflt configuration: 1.7"""
+    tmp_path: str,
+    data_dir: str,
+    test_pass: bool,
+    pin_value: int,
+    dflt_value: int,
+    pin_bitfield: str,
+    dflt_bitfield: str,
+) -> None:
+    """Test CMPA rules for invalid pin/default configuration combinations.
+
+    This test validates rule 1.7 which checks for invalid bit combinations between
+    DCFG_CC_SOCU_PIN and DCFG_CC_SOCU_DFLT bitfields. It creates a temporary CMPA
+    configuration with specified pin and default values, then validates whether
+    the brick conditions are properly detected.
+
+    :param tmp_path: Temporary directory path for test files.
+    :param data_dir: Directory containing test data files.
+    :param test_pass: Expected test result - True if validation should pass, False if it should fail.
+    :param pin_value: Value to set for the pin bitfield.
+    :param dflt_value: Value to set for the default bitfield.
+    :param pin_bitfield: Name of the pin bitfield to modify.
+    :param dflt_bitfield: Name of the default bitfield to modify.
+    """
     cmpa_config_template = os.path.join(data_dir, "cmpa_lpc55s3x_default.yaml")
     config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(open(cmpa_config_template))
     config["settings"]["DCFG_CC_SOCU_PIN"]["bitfields"][pin_bitfield] = pin_value
@@ -341,9 +486,30 @@ def test_cmpa_invalid_pin_dflt_configuration_rules(
     ],
 )
 def test_cfpa_invalid_pin_dflt_configuration_rules(
-    tmp_path, data_dir, test_pass, pin_value, dflt_value, pin_bitfield, dflt_bitfield
-):
-    """Test the CFPA rules regarding invalid pin/dflt configuration: 1.8"""
+    tmp_path: str,
+    data_dir: str,
+    test_pass: bool,
+    pin_value: int,
+    dflt_value: int,
+    pin_bitfield: str,
+    dflt_bitfield: str,
+) -> None:
+    """Test CFPA rules for invalid pin/default configuration combinations.
+
+    This test validates the CFPA (Customer Field Programmable Area) brick condition
+    rules specifically for invalid pin/default configuration scenarios (rule 1.8).
+    It creates a temporary YAML configuration file with specified pin and default
+    values, then validates whether the configuration should pass or fail based on
+    the expected test outcome.
+
+    :param tmp_path: Temporary directory path for creating test files.
+    :param data_dir: Directory path containing test data files.
+    :param test_pass: Expected test outcome - True if validation should pass, False if it should fail.
+    :param pin_value: Value to set for the pin configuration.
+    :param dflt_value: Value to set for the default configuration.
+    :param pin_bitfield: Name of the pin bitfield to modify in the configuration.
+    :param dflt_bitfield: Name of the default bitfield to modify in the configuration.
+    """
     cfpa_config_template = os.path.join(data_dir, "cfpa_lpc55s3x_default.yaml")
     config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(open(cfpa_config_template))
     config["settings"]["DCFG_CC_SOCU_NS_PIN"]["bitfields"][pin_bitfield] = pin_value
@@ -372,8 +538,21 @@ def test_cfpa_invalid_pin_dflt_configuration_rules(
         (False, 0xA0000000),
     ],
 )
-def test_cmpa_prog_in_progress_rule(tmp_path, data_dir, test_pass, cmpa_prog_in_progress_value):
-    """Test that CMPA_PROG_IN_PROGRESS is always 0: 2.1"""
+def test_cmpa_prog_in_progress_rule(
+    tmp_path: str, data_dir: str, test_pass: bool, cmpa_prog_in_progress_value: int
+) -> None:
+    """Test CMPA_PROG_IN_PROGRESS validation rule.
+
+    This test verifies that the PFRC validation correctly enforces the rule that
+    CMPA_PROG_IN_PROGRESS must always be set to 0 (rule 2.1). It creates a CFPA
+    configuration with a specified CMPA_PROG_IN_PROGRESS value and validates
+    the brick conditions.
+
+    :param tmp_path: Temporary directory path for test files
+    :param data_dir: Directory containing test data files
+    :param test_pass: Whether the test should pass (True) or fail (False)
+    :param cmpa_prog_in_progress_value: Value to set for CMPA_PROG_IN_PROGRESS field
+    """
     cfpa_config_template = os.path.join(data_dir, "cfpa_lpc55s3x_default.yaml")
     config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(open(cfpa_config_template))
     config["settings"]["CMPA_PROG_IN_PROGRESS"]["value"] = cmpa_prog_in_progress_value
@@ -402,8 +581,21 @@ def test_cmpa_prog_in_progress_rule(tmp_path, data_dir, test_pass, cmpa_prog_in_
         (False, 32, 65500),
     ],
 )
-def test_vendor_usage_rule(tmp_path, data_dir, test_pass, vendor_usage_value, inverse_value):
-    """Test the CFPA rules regarding inverse bits of VENDOR_USAGE register are detected: 5.1"""
+def test_vendor_usage_rule(
+    tmp_path: str, data_dir: str, test_pass: bool, vendor_usage_value: int, inverse_value: int
+) -> None:
+    """Test CFPA rules for inverse bits validation in VENDOR_USAGE register.
+
+    Validates that PFRC correctly detects mismatched inverse bits in the VENDOR_USAGE
+    register according to rule 5.1. The test injects specific values into the
+    DBG_VENDOR_USAGE and INVERSE_VALUE bitfields and verifies the validation results.
+
+    :param tmp_path: Temporary directory path for test files
+    :param data_dir: Directory containing test data files
+    :param test_pass: Expected test outcome - True if validation should pass, False if it should fail
+    :param vendor_usage_value: Value to inject into DBG_VENDOR_USAGE bitfield
+    :param inverse_value: Value to inject into INVERSE_VALUE bitfield
+    """
     cfpa_config_template = os.path.join(data_dir, "cfpa_lpc55s3x_default_full.yaml")
     config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(open(cfpa_config_template))
 

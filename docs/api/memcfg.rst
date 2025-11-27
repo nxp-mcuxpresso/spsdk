@@ -1,7 +1,6 @@
 Memory Configuration API
 ========================
-
-Module implementing managing the configuration option words for various memories used by BLHOST configure-memory command.
+.. automodule:: spsdk.memcfg
 
 Memory Config API
 --------------------

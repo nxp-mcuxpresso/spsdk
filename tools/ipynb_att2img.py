@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Simple script to get the attached pictures in Jupiter notebooks to external files."""
+"""SPSDK Jupyter notebook attachment extraction utility.
+
+This module provides functionality to extract embedded images and attachments
+from Jupyter notebook files and save them as separate external files.
+"""
 
 import base64
 import json
@@ -27,10 +31,16 @@ from spsdk.utils.misc import load_text, write_file
     help="Relative path to original file to store images",
 )
 def export_images(filepath: str, output_dir: str) -> None:
-    """Parse JUPITER and export attached PNG pictures to external files.
+    """Parse Jupyter Notebook and export attached PNG pictures to external files.
 
-    :param filepath: Path to Jupiter Notebook file.
+    The method extracts PNG images from notebook cell attachments, saves them as
+    external files, and updates the notebook source to reference the new file paths.
+    The original notebook file is modified in place with updated image references.
+
+    :param filepath: Path to Jupyter Notebook file.
     :param output_dir: Relative path to store exported files.
+    :raises SPSDKError: If the notebook file cannot be read or parsed.
+    :raises SPSDKError: If the output directory cannot be created or files cannot be written.
     """
     jupiter = json.loads(load_text(filepath))
     jupiter_cells: list[dict[str, Any]] = jupiter["cells"]

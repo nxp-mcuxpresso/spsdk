@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""CAN Mboot interface implementation."""
+"""SPSDK CAN interface implementation for MBoot protocol.
+
+This module provides CAN (Controller Area Network) communication interface
+for MBoot protocol operations, enabling secure provisioning and device
+management over CAN bus networks.
+"""
+
 import logging
 from typing import Optional, Union
 
@@ -18,7 +24,16 @@ logger = logging.getLogger(__name__)
 
 
 class MbootCANInterface(MbootSerialProtocol):
-    """UART interface."""
+    """MbootCANInterface for CAN communication with MCU bootloader.
+
+    This class provides CAN (Controller Area Network) interface implementation for
+    communicating with NXP MCU bootloaders using the MBoot protocol. It handles
+    CAN device scanning, connection management, and protocol communication over
+    CAN bus.
+
+    :cvar default_bitrate: Default CAN bus bitrate (1,000,000 bps).
+    :cvar identifier: Interface type identifier string.
+    """
 
     default_bitrate = 1_000_000
     device: CANDevice
@@ -27,7 +42,8 @@ class MbootCANInterface(MbootSerialProtocol):
     def __init__(self, device: CANDevice):
         """Initialize the MbootCANInterface object.
 
-        :param device: The device instance
+        :param device: The CAN device instance to be used for communication.
+        :raises AssertionError: If device is not an instance of CANDevice.
         """
         assert isinstance(device, CANDevice)
         super().__init__(device=device)
@@ -42,18 +58,18 @@ class MbootCANInterface(MbootSerialProtocol):
         txid: Optional[int] = None,
         rxid: Optional[int] = None,
     ) -> list[Self]:
-        """Scan connected UART devices.
+        """Scan connected CAN devices.
 
         Returns list of CAN interfaces with devices that respond to PING command.
         If no devices are found, return an empty list.
 
-        :param interface: name of preferred CAN interface
-        :param channel: channel of the CAN interface
-        :param bitrate: bitrate of the CAN interface
-        :param timeout: timeout for the scan
-        :param txid: default arbitration ID for TX
-        :param rxid: default arbitration ID for RX
-        :return: list of interfaces responding to the PING command
+        :param interface: Name of preferred CAN interface.
+        :param channel: Channel of the CAN interface.
+        :param bitrate: Bitrate of the CAN interface.
+        :param timeout: Timeout for the scan operation.
+        :param txid: Default arbitration ID for TX messages.
+        :param rxid: Default arbitration ID for RX messages.
+        :return: List of CAN interfaces responding to the PING command.
         """
         interfaces = []
         bitrate = bitrate or cls.default_bitrate

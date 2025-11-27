@@ -1,0 +1,111 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ======================  Signed message Configuration template for mimx9352, Revision: latest.  =======================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mimx9352
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, a1, latest>
+revision: latest
+# ---------------------------------------===== Output file name [Required] =====----------------------------------------
+# Description: Output Signed Message file name
+output: ../outputs/signed_msg_fr_oem.bin
+
+# ======================================================================================================================
+#                                            == Settings of Signed Message ==                                           
+# ======================================================================================================================
+# -----------------------------------===== Super Root Key (SRK) set [Required] =====------------------------------------
+# Description: Defines which set is used to authenticate the signed message.
+# Possible options: <none, oem, nxp>
+srk_set: oem
+# -------------------------------------------===== Used SRK [Required] =====--------------------------------------------
+# Description: Which key from SRK set is being used.
+used_srk_id: 0
+# ----------------------------------------===== SRK revoke mask [Required] =====----------------------------------------
+# Description: Bitmask to indicate which SRKs to revoke. Bit set to 1 means revoke key. Bit 0 = revoke SRK_0, bit 1 =
+# revoke SRK_1 etc.
+srk_revoke_mask: 0
+# -----------------------------------------===== Fuse version [Required] =====------------------------------------------
+# Description: The value must be equal or greater than the version stored in fuses to allow loading this container.
+fuse_version: 0
+# ---------------------------------------===== Software version [Required] =====----------------------------------------
+# Description: Number used by Privileged Host Boot Companion (PHBC) to select between multiple images with same Fuse
+# version field.
+sw_version: 0
+# --------------------------------===== Signed Message container signer [Required] =====--------------------------------
+# Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
+# private key used for sign the container header. Header can be signed by SRK. The referenced SRK must not have been
+# revoked.
+signer: ../../../_data/keys/ecc384/srk0_ecc384.pem
+
+# ======================================================================================================================
+#                                    == Configuration of Signed Message SRK table ==                                    
+# ======================================================================================================================
+# -------------------------------------------===== SRK Table [Required] =====-------------------------------------------
+# Description: SRK (Super Root key) table definition.
+srk_table:
+  # -------------------------------------------===== CA Flag [Optional] =====-------------------------------------------
+  # Description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys. In AHAB CA Flag only
+  # affects the final SRKH (Super Root Key Hash) value burned into chip fuses. It is not used in the AHAB signing
+  # process itself. This option exists only for compatibility with systems where fuses are already programmed. In most
+  # cases, this should remain false.
+  flag_ca: false
+  # ---------------------------------------===== Hash Algorithm [Optional] =====----------------------------------------
+  # Description: Hash algorithm used for SRK records. If not specified, default algorithm based on key type will be
+  # used.
+  # Possible options: <default, sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, sm3>
+  hash_algorithm: default
+  # ---------------------------------===== Super Root Key (SRK) table [Required] =====----------------------------------
+  # Description: Table containing the used SRK records. All SRKs must be of the same type. Supported signing algorithms
+  # are: RSA-PSS, ECDSA, Dilithium or SM2. Supported hash algorithms: sha256, sha384, sha512, sha3_256, sha3_384,
+  # sha3_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1, rsa2048, rsa4096, dilithium3, sm2.
+  # Certificate may be of Certificate Authority. Dilithium algorithms are supported just in new type of AHAB container
+  srk_array:
+    - ../../../_data/keys/ecc384/srk0_ecc384.pub
+    - ../../../_data/keys/ecc384/srk1_ecc384.pub
+    - ../../../_data/keys/ecc384/srk2_ecc384.pub
+    - ../../../_data/keys/ecc384/srk3_ecc384.pub
+
+# ======================================================================================================================
+#              == Optional configuration of AHAB Container Certificate (if not used, erase the section) ==              
+# ======================================================================================================================
+# -------------------------------------===== The AHAB certificate [Optional] =====--------------------------------------
+# Description: The file that contains AHAB certificate. It could be used already prepared binary form signed by SRK, or
+# it is possible to use configuration YAML file of certificate and the AHAB export process it will export it itself.
+# certificate: my_ahab_certificate.bin
+# -----------------------------------------===== IV file path [Optional] =====------------------------------------------
+# Description: Used only for encrypted messages. Fixed size at 256 bits. If defined the encryption is used for this
+# Signed message. The HEX format is accepted.
+# iv_path: my_IV.txt
+
+# ======================================================================================================================
+#                                               == Settings of Message ==                                               
+# ======================================================================================================================
+message:
+  # -------------------------------------===== Certificate version [Optional] =====-------------------------------------
+  # Description: Certificate version
+  cert_version: 0
+  # -----------------------------------===== Certificate permission [Optional] =====------------------------------------
+  # Description: Certificate permission, to be used in future. The stated permission must allow the operation requested
+  # by the signed message.
+  cert_permission: 0
+  # -----------------------------------------===== Issue date [Optional] =====------------------------------------------
+  # Description: Optional Issue date of message, if not defined the current date is used. The format must be following:
+  # 'YYYY-MM'
+  issue_date: 2022-10
+  # -----------------------------------------===== Device UUID [Optional] =====-----------------------------------------
+  # Description: Unique identifier of the chip. It could be retrieve by BLHOST command from chip or also the debug
+  # authentication protocol could provide this value. Hex string format (hexadecimal string without '0x'). In case that
+  # the restriction on UUID is not needed the field could be omitted.
+  uuid: '0000000000000000'
+  command:
+    # ----------------------------------------===== Life Cycle [Required] =====-----------------------------------------
+    # Description: Value of life cycle to be moved on. The value 16 is used for OEM keys (FIELD_RETURN_OEM) and 32 for
+    # NXP keys(FIELD_RETURN_NXP).
+    RETURN_LIFECYCLE_UPDATE_REQ: 16

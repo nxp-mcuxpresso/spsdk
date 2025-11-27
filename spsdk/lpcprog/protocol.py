@@ -4,7 +4,12 @@
 # Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""ISP Communication protocol for LPC devices."""
+"""ISP Communication protocol for LPC devices.
+
+This module implements the In-System Programming (ISP) communication protocol
+for NXP LPC microcontrollers, providing low-level protocol handling and
+device interaction capabilities for secure provisioning operations.
+"""
 
 import inspect
 import logging
@@ -25,13 +30,12 @@ logger = logging.getLogger(__name__)
 
 
 class LPCProgCRPLevels(SpsdkEnum):
-    """LPC CRP Levels.
+    """LPC Code Read Protection (CRP) levels enumeration.
 
-    Code Read Protection is a mechanism that allows the user to enable different levels of
-    security in the system so that access to the on-chip flash and use of the ISP can be
-    restricted. When needed, CRP is invoked by programming a specific pattern in the flash
-    image at offset 0x0000 02FC. IAP commands are not affected by the code read
-    protection.
+    This enumeration defines the available Code Read Protection levels for LPC microcontrollers.
+    CRP is a security mechanism that restricts access to on-chip flash and ISP functionality
+    by programming specific patterns at flash offset 0x0000 02FC. Each level provides different
+    restrictions on SWD access and ISP command availability, while IAP commands remain unaffected.
     """
 
     NO_ISP = (
@@ -50,7 +54,17 @@ class LPCProgCRPLevels(SpsdkEnum):
 
 
 class LPCProgProtocol:
-    """LPCProg protocol."""
+    """LPCProg communication protocol handler.
+
+    This class implements the LPCProg protocol for communicating with NXP LPC
+    microcontrollers, providing low-level operations for device programming,
+    synchronization, and status management.
+
+    :cvar UNLOCK_CODE: Magic unlock code for device operations.
+    :cvar SECTOR_SIZE: Standard sector size in bytes.
+    :cvar PAGE_SIZE: Standard page size in bytes.
+    :cvar ALLOWED_BAUD_RATES: List of supported communication baud rates.
+    """
 
     UNLOCK_CODE = 23130
     SECTOR_SIZE = 1024
@@ -70,7 +84,15 @@ class LPCProgProtocol:
         print_func: Callable[[str], None],
         device: Optional[LPCDevice] = None,
     ) -> None:
-        """Initialize the LPCProgProtocol."""
+        """Initialize the LPCProgProtocol.
+
+        Sets up the protocol handler with the specified interface and configuration options.
+        Opens the interface and initializes internal state tracking.
+
+        :param interface: Communication interface for LPC programming operations.
+        :param print_func: Function to handle output messages during operations.
+        :param device: Optional LPC device specification for targeted operations.
+        """
         self.interface = interface
         self.print_func = print_func
         self.synced = False
@@ -82,11 +104,20 @@ class LPCProgProtocol:
         self.latest_status: Optional[StatusCode] = StatusCode.SUCCESS
 
     def __del__(self) -> None:
-        """Destructor to ensure the interface is closed properly."""
+        """Destructor to ensure the interface is closed properly.
+
+        This method is automatically called when the object is being destroyed
+        to guarantee that any open interface connections are properly closed
+        and resources are released.
+        """
         self.close()
 
     def close(self) -> None:
-        """Close the interface."""
+        """Close the communication interface.
+
+        Safely closes the active communication interface if one is currently open.
+        The method performs cleanup operations to ensure proper resource management.
+        """
         if self.interface:
             self.interface.close()
 
@@ -94,14 +125,23 @@ class LPCProgProtocol:
     def get_supported_families() -> list[FamilyRevision]:
         """Get the list of supported families by LPCProg.
 
-        :return: List of supported families.
+        This method retrieves all MCU families that are supported by the LPCProg protocol
+        from the database manager.
+
+        :return: List of supported MCU families with their revision information.
         """
         return get_families(DatabaseManager.LPCPROG)
 
     def get_device(self) -> LPCDevice:
         """Get LPCDevice if defined or read it from part ID.
 
-        :return: LPCDevice
+        This method first checks if a device is already defined. If not, it attempts to
+        decode the device from the part ID by reading it from the target. If the device
+        cannot be determined, an exception is raised.
+
+        :raises SPSDKError: When LPC Device cannot be decoded from part ID and no family
+            is specified.
+        :return: LPCDevice instance.
         """
         # if device is defined return it
         if self.device:
@@ -119,9 +159,13 @@ class LPCProgProtocol:
         return self.device
 
     def print_status(self, status: Optional[StatusCode]) -> None:
-        """Print status from the status code.
+        """Print status information from the provided status code.
 
-        :param status: StatusCode
+        The method displays the status label and optionally includes a detailed
+        description if the status code tag is non-zero.
+
+        :param status: Status code object containing tag and label information, or None if no status
+            to display.
         """
         if status:
             if status.tag == 0:
@@ -132,33 +176,56 @@ class LPCProgProtocol:
                 )
 
     def get_latest_status(self) -> str:
-        """Get latest status."""
+        """Get latest status information from the protocol.
+
+        Retrieves the most recent status information including status label and description
+        if available. Returns formatted status string or indicates no status is available.
+
+        :return: Formatted status string with label and description, or "No status" if unavailable.
+        """
         if self.latest_status and self.latest_status.tag == 0:
             return f"\nStatus: {self.latest_status.label}"
-        elif self.latest_status:
-            return f"\nStatus: {self.latest_status.label}\nDescription: {StatusCode.get_description(self.latest_status.tag)}"
+        if self.latest_status:
+            return (
+                f"\nStatus: {self.latest_status.label}\n"
+                "Description: {StatusCode.get_description(self.latest_status.tag)}"
+            )
         return "No status"
 
     def return_status(self, status: Optional[StatusCode]) -> bool:
-        """Return True if status is SUCCESS. Otherwise False."""
+        """Check if the given status code indicates success.
+
+        :param status: Status code to evaluate, can be None.
+        :return: True if status equals SUCCESS, False otherwise.
+        """
         if status:
             return status == StatusCode.SUCCESS
         return False
 
     def assert_rc(self, status: bool) -> None:
-        """Assert status."""
+        """Assert command execution status and raise exception on failure.
+
+        This method checks if the provided status indicates success and raises an
+        SPSDKError with the latest status information if the command failed.
+
+        :param status: Boolean indicating whether the command was successful.
+        :raises SPSDKError: When status is False, indicating command failure.
+        """
         if not status:
             raise SPSDKError(f"Command failed with status: {self.latest_status}")
 
     def send_command(
         self, command: str, print_status: bool = False, expect_rc: bool = True
     ) -> Optional[StatusCode]:
-        """Send command.
+        """Send command to the interface and process the response.
 
-        :param command: command to send
-        :param print_status: print status
-        :param expect_rc: expect return code
-        :return: status code
+        The method sends a command through the interface, processes any return code
+        to create a status object, logs the operation, and optionally prints status.
+
+        :param command: Command string to send to the interface.
+        :param print_status: Whether to print the status after command execution.
+        :param expect_rc: Whether to expect a return code from the command.
+        :return: StatusCode object if return code received, None otherwise.
         """
         logger.debug(f"->SEND COMMAND: {command}")
         rc = self.interface.send_command(command, expect_rc)
@@ -173,16 +240,19 @@ class LPCProgProtocol:
         return None
 
     def sync_connection(self, frequency: int, retries: int = 10) -> bool:
-        """Synchronize connection.
+        """Synchronize connection with the target device.
 
-        :param frequency: frequency of the crystal
-        :param retries: number of retries
-        :return: True if synchronized
+        Establishes communication by performing a handshake sequence that includes
+        sending synchronization commands and clearing the serial interface buffer.
 
         1. Send ? to get baud rate
         2. Receive "Synchronized" message
         3. Send "Synchronized" message
         4. Receive "OK" message
+
+        :param frequency: Frequency of the crystal in Hz.
+        :param retries: Number of synchronization attempts, defaults to 10.
+        :return: True if synchronization is successful.
         """
         self.interface.sync_connection(frequency, retries)
         try:
@@ -197,22 +267,26 @@ class LPCProgProtocol:
         return True
 
     def unlock(self, print_status: bool = True) -> bool:
-        """This command is used to unlock Flash Write, Erase, and Go commands.
+        """Unlock Flash Write, Erase, and Go commands.
 
-        :param print_status: print status
-        :return: True if unlocked
+        This command removes the protection from flash operations, allowing
+        write, erase, and go commands to be executed on the target device.
+
+        :param print_status: Whether to print command status information.
+        :return: True if unlock operation was successful, False otherwise.
         """
         return self.return_status(self.send_command(f"U {self.UNLOCK_CODE}", print_status))
 
     def set_baud_rate(self, baud_rate: int, stop_bits: int = 1, print_status: bool = True) -> bool:
-        """This command is used to change the baud rate.
+        """Change the baud rate for communication.
 
-        :param baud_rate: new baud rate
-        :param stop_bits: number of stop bits
-        :param print_status: print status
+        The new baud rate is effective after the command handler sends the CMD_SUCCESS return code.
 
-        The new baud rate is effective after the command
-        handler sends the CMD_SUCCESS return code.
+        :param baud_rate: New baud rate value to set.
+        :param stop_bits: Number of stop bits to use, defaults to 1.
+        :param print_status: Whether to print status information, defaults to True.
+        :raises SPSDKValueError: Invalid baud rate provided.
+        :return: True if baud rate change was successful, False otherwise.
         """
         if baud_rate not in self.ALLOWED_BAUD_RATES:
             raise SPSDKValueError(f"Invalid baud rate: {baud_rate}")
@@ -221,30 +295,33 @@ class LPCProgProtocol:
         return self.return_status(status)
 
     def set_echo(self, echo: bool, print_status: bool = True) -> bool:
-        """The default setting for echo command is ON.
+        """Set echo mode for ISP command handler.
 
-        :param echo: echo
-        :param print_status: print status
-        :return: True if echo is set
-
-        When ON the ISP command handler sends the
+        The default setting for echo command is ON. When ON the ISP command handler sends the
         received serial data back to the host.
+
+        :param echo: Enable or disable echo mode.
+        :param print_status: Whether to print command status information.
+        :return: True if echo mode was successfully set, False otherwise.
         """
         status = self.send_command(f"E {int(echo)}", print_status)
         self.interface.echo = echo
         return self.return_status(status)
 
     def write_ram(self, address: int, data: bytes) -> bool:
-        """This command is used to download data to RAM.
+        """Write data to RAM memory.
 
-        :param address: address in RAM
-        :param data: data to write
-
-        This command is blocked when code read protection levels 2 or 3 are enabled.
-        Writing to addresses below 0x1000 0600 is disabled for CRP1.
-
+        This command is used to download data to RAM. The command is blocked when code read
+        protection levels 2 or 3 are enabled. Writing to addresses below 0x1000 0600 is
+        disabled for CRP1.
         The host should send the plain binary code after receiving the CMD_SUCCESS return code.
-        This ISP command handler responds with “OK<CR><LF>” when the transfer has finished.
+        This ISP command handler responds with "OK<CR><LF>" when the transfer has finished.
+
+        :param address: Target address in RAM memory.
+        :param data: Binary data to write (must be aligned to 4-byte boundary).
+        :raises SPSDKAlignmentError: Data is not aligned to four bytes boundary.
+        :raises SPSDKError: Cannot write to RAM due to communication or protection error.
+        :return: True if write operation was successful, False otherwise.
         """
         if len(data) % 4 != 0:
             raise SPSDKAlignmentError("Data must be aligned to four bytes boundary")
@@ -266,15 +343,17 @@ class LPCProgProtocol:
         binary: Optional[str] = None,
         progress_callback: Optional[Callable[[int, int], None]] = None,
     ) -> bytes:
-        """This command is used to read data from RAM or flash memory.
+        """Read data from RAM or flash memory.
 
-        :param address: address in RAM or flash
-        :param length: length of data to read
-        :param binary: binary file to write the data
-        :param progress_callback: progress callback
-        :return: read data
+        This command reads specified amount of data from device memory starting at given address.
+        The data is read in chunks and can be optionally saved to a binary file. Command is blocked
+        when code read protection is enabled.
 
-        This command is blocked when code read protection is enabled.
+        :param address: Starting address in RAM or flash memory to read from.
+        :param length: Number of bytes to read from memory.
+        :param binary: Optional path to binary file where read data will be saved.
+        :param progress_callback: Optional callback function called with (current, total) progress.
+        :return: Read data as bytes.
         """
         read_data = b""
         total_length = length
@@ -303,93 +382,98 @@ class LPCProgProtocol:
     def prepare_sectors_for_write(
         self, start_sector: int, end_sector: int, print_status: bool = True
     ) -> bool:
-        """Prepare sectors for write.
+        """Prepare sectors for write operation.
 
-        :param start_sector: start sector
-        :param end_sector: end sector
-        :param print_status: print status
-        :return: True if prepared
+        This command must be executed before executing "Copy RAM to flash", "Erase Sector(s)",
+        or "Erase Pages" command. Successful execution of these commands causes relevant sectors
+        to be protected again. To prepare a single sector use the same start and end sector numbers.
 
-        This command must be executed before executing
-        "Copy RAM to flash" or "Erase Sector(s)", or “Erase Pages” command.
-
-        Successful execution of the "Copy RAM to flash" or "Erase Sector(s)" or “Erase Pages”
-        command causes relevant sectors to be protected again.
-        To prepare a single sector use the same "Start" and "End" sector numbers.
+        :param start_sector: Starting sector number to prepare.
+        :param end_sector: Ending sector number to prepare.
+        :param print_status: Whether to print command status during execution.
+        :return: True if sectors were successfully prepared, False otherwise.
         """
         return self.return_status(self.send_command(f"P {start_sector} {end_sector}", print_status))
 
     def copy_ram_to_flash(
         self, flash_address: int, ram_address: int, length: int, print_status: bool = True
     ) -> bool:
-        """This command is used to program the flash memory.
+        """Copy data from RAM to flash memory.
 
-        :param flash_address: address in flash
-        :param ram_address: address in RAM
-        :param length: length of data to copy
-        :param print_status: print status
-        :return: True if copied
+        This command programs the flash memory by copying data from RAM. The "Prepare Sector(s)
+        for Write Operation" command should precede this command. The affected sectors are
+        automatically protected again once the copy command is successfully executed. This command
+        is blocked when code read protection is enabled.
 
-        The "Prepare Sector(s) for Write Operation" command should precede this command.
-        The affected sectors are automatically protected again once the copy
-        command is successfully executed. This command is blocked when
-        code read protection is enabled.
+        :param flash_address: Starting address in flash memory where data will be written.
+        :param ram_address: Starting address in RAM where data will be read from.
+        :param length: Number of bytes to copy from RAM to flash.
+        :param print_status: Whether to print command execution status.
+        :return: True if data was successfully copied to flash, False otherwise.
         """
         return self.return_status(
             self.send_command(f"C {flash_address} {ram_address} {length}", print_status)
         )
 
     def go(self, address: int, thumb_mode: bool = False) -> None:
-        """This command is used to execute a program residing in RAM or flash memory.
+        """Execute a program residing in RAM or flash memory.
 
-        :param address: address in RAM or flash
-        :param thumb_mode: thumb mode
-
-        It may not be possible to return to the ISP
-        command handler once this command is successfully executed.
+        This command starts execution at the specified address. It may not be possible
+        to return to the ISP command handler once this command is successfully executed.
         This command is blocked when code read protection is enabled.
+
+        :param address: Address in RAM or flash memory where program execution starts.
+        :param thumb_mode: Enable Thumb mode execution if True, ARM mode if False.
+        :raises SPSDKError: When the command execution fails or is blocked by code protection.
         """
         mode = " T" if thumb_mode else ""
         self.send_command(f"G {address}{mode}")
 
     def erase_sector(self, start_sector: int, end_sector: int, print_status: bool = True) -> bool:
-        """This command is used to erase one or more sector(s) of on-chip flash memory.
+        """Erase one or more sectors of on-chip flash memory.
 
-        :param start_sector: start sector
-        :param end_sector: end sector
-        :param print_status: print status
-        :return: True if erased
+        This command only allows erasure of all user sectors when the code read
+        protection is enabled.
 
-        This command only allows
-        erasure of all user sectors when the code read protection is enabled.
+        :param start_sector: Starting sector number to erase.
+        :param end_sector: Ending sector number to erase.
+        :param print_status: Whether to print operation status messages.
+        :return: True if sectors were successfully erased, False otherwise.
         """
         return self.return_status(self.send_command(f"E {start_sector} {end_sector}", print_status))
 
     def erase_page(self, start_page: int, end_page: int, print_status: bool = True) -> bool:
-        """This command is used to erase one or more page(s) of on-chip flash memory.
+        """Erase one or more pages of on-chip flash memory.
 
-        :param start_page: start page
-        :param end_page: end page
-        :param print_status: print status
-        :return: True if erased
+        This command sends an erase command to the target device to clear the specified
+        range of flash memory pages.
+
+        :param start_page: Starting page number to erase.
+        :param end_page: Ending page number to erase (inclusive).
+        :param print_status: Whether to print command status information.
+        :return: True if pages were successfully erased, False otherwise.
         """
         return self.return_status(self.send_command(f"X {start_page} {end_page}", print_status))
 
     def blank_check_sectors(
         self, start_sector: int, end_sector: int, print_status: bool = True
     ) -> bool:
-        """This command is used to blank check one or more sectors of on-chip flash memory.
+        """Check if one or more sectors of on-chip flash memory are blank.
 
-        :param start_sector: start sector
-        :param end_sector: end sector
-        :param print_status: print status
-        :return: True if blank
+        This command verifies whether the specified range of flash memory sectors
+        contains only erased (blank) data. If sectors are not blank, it provides
+        details about the first non-blank word found.
+
+        :param start_sector: Starting sector number for blank check.
+        :param end_sector: Ending sector number for blank check.
+        :param print_status: Whether to print status messages during operation.
+        :return: True if all specified sectors are blank, False otherwise.
         """
         rc = self.send_command(f"I {start_sector} {end_sector}", print_status)
         if rc == StatusCode.SUCCESS:
             self.print_func("Sectors are blank")
             return True
-        elif rc == StatusCode.SECTOR_NOT_BLANK:
+        if rc == StatusCode.SECTOR_NOT_BLANK:
             self.print_func("Sectors are not blank")
             first_word = self.interface.read_line()
             self.print_func(f"Offset of the first non blank word {first_word}")
@@ -399,12 +483,23 @@ class LPCProgProtocol:
         return False
 
     def read_part_id(self) -> str:
-        """This command is used to read the part identification number."""
+        """Read the part identification number from the device.
+
+        This command sends a 'J' command to the device and reads back the part ID.
+
+        :return: Part identification number as a string.
+        """
         self.send_command("J")
         return self.interface.read_line()
 
     def read_boot_code_version(self) -> str:
-        """Read boot code version."""
+        """Read boot code version from the device.
+
+        The method sends a 'K' command to the device and reads the version information
+        in two parts: minor and major version numbers.
+
+        :return: Boot code version in format "major.minor".
+        """
         self.send_command("K")
         minor = self.interface.read_line().strip()
         major = self.interface.read_line().strip()
@@ -413,13 +508,17 @@ class LPCProgProtocol:
     def compare(
         self, dst_address: int, src_address: int, length: int, print_status: bool = True
     ) -> bool:
-        """This command is used to compare the memory contents at two locations.
+        """Compare memory contents at two locations.
 
-        :param dst_address: destination address
-        :param src_address: source address
-        :param length: length of data to compare
-        :param print_status: print status
-        :return: True if content is same
+        This command compares the memory contents between destination and source addresses
+        for the specified length and reports whether they are identical.
+
+        :param dst_address: Destination memory address to compare.
+        :param src_address: Source memory address to compare.
+        :param length: Number of bytes to compare (must be multiple of 4).
+        :param print_status: Whether to print status messages during operation.
+        :raises SPSDKAlignmentError: If length is not multiple of 4.
+        :return: True if memory contents are identical, False otherwise.
         """
         if length % 4 != 0:
             raise SPSDKAlignmentError("Byte count must be multiple of 4")
@@ -427,26 +526,33 @@ class LPCProgProtocol:
         if rc == StatusCode.SUCCESS:
             self.print_func("Content is same")
             return True
-        elif rc == StatusCode.COMPARE_ERROR:
+        if rc == StatusCode.COMPARE_ERROR:
             self.print_func("Content differs")
             diff = self.interface.read_line()
             self.print_func(f"Offset of first difference {diff}")
         return False
 
     def read_uid(self) -> str:
-        """This command is used to read the unique ID."""
+        """Read the unique ID from the device.
+
+        This command sends a read UID request to the device and formats the response
+        as a space-separated string of hexadecimal values.
+
+        :return: Formatted unique ID as space-separated hexadecimal values
+            (e.g., "0x12345678 0x9abcdef0 0x11223344 0x55667788").
+        """
         self.send_command("N")
         uuids = [self.interface.read_line() for _ in range(4)]
         return " ".join([f"0x{int(uid):08x}" for uid in uuids])
 
     def read_crc_checksum(self, address: int, length: int) -> Optional[int]:
-        """This command is used to read the CRC checksum of a block of RAM or flash memory.
-
-        :param address: address in RAM or flash
-        :param length: length of data
-        :return: CRC checksum
+        """Read CRC checksum of a block of RAM or flash memory.
 
         This command is blocked when code read protection is enabled.
+
+        :param address: Address in RAM or flash memory.
+        :param length: Length of data block in bytes.
+        :return: CRC checksum value if successful, None if operation failed.
         """
         rc = self.send_command(f"S {address} {length}")
         if rc == StatusCode.SUCCESS:
@@ -456,13 +562,17 @@ class LPCProgProtocol:
     def read_flash_signature(
         self, start_address: int, end_address: int, wait_states: int = 2, mode: int = 0
     ) -> int:
-        """This command is used to read the flash signature generated by the flash controller.
+        """Read flash signature generated by the flash controller.
 
-        :param start_address: start address
-        :param end_address: end address
-        :param wait_states: wait states
-        :param mode: mode
-        :return: flash signature
+        This command uses the flash controller to generate a signature for the specified
+        memory range with configurable wait states and mode parameters.
+
+        :param start_address: Starting address of the flash memory range to sign.
+        :param end_address: Ending address of the flash memory range to sign.
+        :param wait_states: Number of wait states for flash access (default: 2).
+        :param mode: Flash signature generation mode (default: 0).
+        :raises SPSDKError: When flash signature reading fails.
+        :return: Flash signature value as integer.
         """
         rc = self.send_command(f"Z {start_address} {end_address} {wait_states} {mode}")
         if rc == StatusCode.SUCCESS:
@@ -472,7 +582,16 @@ class LPCProgProtocol:
         raise SPSDKError("Cannot read flash signature")
 
     def decode_part_id(self, part_id: str) -> Optional[str]:
-        """Return decoded part ID from the database."""
+        """Decode part ID from the database and identify the corresponding device.
+
+        This method converts the input part ID to a standardized hex format and searches
+        through all available device families in the LPCPROG database to find a matching
+        part ID. When found, it sets the device attribute and returns the decoded name.
+
+        :param part_id: Raw part ID value to decode (string or numeric format)
+        :raises SPSDKValueError: When part_id cannot be converted to integer
+        :return: Decoded part ID name if found, None if no match exists in database
+        """
         part_id = hex(value_to_int(part_id))[-4:].strip()
         devices = get_families(DatabaseManager.LPCPROG)
         for device in devices:
@@ -487,7 +606,11 @@ class LPCProgProtocol:
     def get_crp_level(self) -> LPCProgCRPLevels:
         """Read CRP level from offset 0x2FC and decode it.
 
-        :return: CRP level
+        The method reads the Code Read Protection (CRP) level from the device memory at a specific
+        offset and decodes it into a corresponding CRP level enum value. If reading fails or the
+        value cannot be decoded, it defaults to CRP2 level.
+
+        :return: Decoded CRP level from device memory, defaults to CRP2 on error.
         """
         try:
             crp = value_to_int(self.read_memory(self.CRP_OFFSET, self.CRP_LENGTH))
@@ -496,14 +619,12 @@ class LPCProgProtocol:
             return LPCProgCRPLevels.CRP2
 
     def get_info(self) -> str:
-        """Returns info about the device.
+        """Get device information summary.
 
-        1. Part ID
-        2. UID
-        3. Boot code version
-        4. CRP level
+        Retrieves and formats comprehensive device information including Part ID,
+        UID, Boot code version, and CRP (Code Read Protection) level with description.
 
-        :return: string containing description
+        :return: Formatted string containing device information summary.
         """
         uid = self.read_uid()
         boot_code_version = self.read_boot_code_version()
@@ -519,8 +640,10 @@ class LPCProgProtocol:
     def calc_crc(data: bytes) -> int:
         """Calculate CRC from the data.
 
-        :param data: data to calculate CRC from
-        :return: calculated CRC
+        The method uses CRC32 algorithm to compute checksum for the provided data bytes.
+
+        :param data: Data bytes to calculate CRC from.
+        :return: Calculated CRC32 checksum as integer.
         """
         crc_ob = from_crc_algorithm(CrcAlg.CRC32)
         return crc_ob.calculate(data)
@@ -528,12 +651,11 @@ class LPCProgProtocol:
     def program_flash_sector(
         self, data: bytes, sector: int, verify: bool = False, erase: bool = True
     ) -> bool:
-        """This command is used for programming the flash sector.
+        """Program flash sector with data verification.
 
-        :param data: data to be written
-        :param sector: sector to write
-        :param verify: verify the written data
-        :param erase: erase the sector before writing
+        Writes data to the specified flash sector using a multi-step process that includes
+        RAM buffering, sector preparation, optional erasing, and CRC verification to ensure
+        data integrity.
 
         Approach for writing the sector
         1) Write data to RAM
@@ -541,6 +663,14 @@ class LPCProgProtocol:
         3) Erase sector
         4) Again prepare sector
         5) Copy RAM to flash
+
+        :param data: Data bytes to be written to the flash sector.
+        :param sector: Target sector number for programming.
+        :param verify: Enable verification of data written to RAM buffer.
+        :param erase: Enable sector erase before writing new data.
+        :raises SPSDKAlignmentError: Data size exceeds sector size limit.
+        :raises SPSDKError: Data verification failed or CRC checksum mismatch.
+        :return: Status of the programming operation.
         """
         ram_address = self.get_device().buffer_address
         flash_start = self.get_device().flash_address
@@ -593,19 +723,23 @@ class LPCProgProtocol:
     def program_flash_page(
         self, data: bytes, page_index: int, verify: bool = False, erase: bool = True
     ) -> bool:
-        """This command is used for programming a single flash page.
+        """Program a single flash page with data.
 
-        :param data: data to be written
-        :param page_index: index of the page to write
-        :param verify: verify the written data
-        :param erase: erase the page before writing
+        This command writes data to a flash page using a multi-step approach:
+        1) Write data to RAM buffer
+        2) Prepare sector for writing operations
+        3) Erase page (if erase flag is enabled)
+        4) Prepare sector again after erase
+        5) Copy data from RAM to flash memory
+        6) Verify operation using CRC checksum
 
-        Approach for writing a single page:
-        1) Write data to RAM
-        2) Prepare sector for writing
-        3) Erase page (if required)
-        4) Again prepare sector
-        5) Copy RAM to flash
+        :param data: Binary data to be written to flash page.
+        :param page_index: Zero-based index of the flash page to program.
+        :param verify: Whether to verify data written to RAM before flash operation.
+        :param erase: Whether to erase the page before writing new data.
+        :raises SPSDKAlignmentError: When data size exceeds page size.
+        :raises SPSDKError: When data verification fails or CRC checksum mismatch occurs.
+        :return: True if operation completed successfully, False otherwise.
         """
         ram_address = self.get_device().buffer_address
         flash_start = self.get_device().flash_address
@@ -658,11 +792,25 @@ class LPCProgProtocol:
         return self.return_status(self.latest_status)
 
     def calculate_sector_count(self, data: bytes) -> int:
-        """Calculate number of sectors needed for writing the data."""
+        """Calculate number of sectors needed for writing the data.
+
+        This method determines how many device sectors are required to accommodate
+        the given data based on the device's sector size.
+
+        :param data: Binary data to be written to the device.
+        :return: Number of sectors required to store the data.
+        """
         return (len(data) + self.get_device().sector_size - 1) // self.get_device().sector_size
 
     def calculate_page_count(self, data: bytes) -> int:
-        """Calculate number of pages needed for writing the data."""
+        """Calculate number of pages needed for writing the data.
+
+        The method calculates how many device pages are required to store the given data
+        by dividing the data length by the device page size and rounding up.
+
+        :param data: Binary data to be written to the device.
+        :return: Number of pages required to store the data.
+        """
         return (len(data) + self.get_device().page_size - 1) // self.get_device().page_size
 
     def program_flash(
@@ -675,19 +823,28 @@ class LPCProgProtocol:
         erase: bool = True,
         verify: bool = True,
     ) -> bool:
-        """This command is used for programming the flash memory.
+        """Program binary data to flash memory with optional erase and verify.
 
-        :param bin_data: binary data to be written
-        :param start_sector: start sector to write
-        :param start_page: start page to write
-        :param progress_callback: callback function for progress
-        :param print_status: print status
-        :param erase: erase the sector before writing
-        :param verify: verify the written data
+        The method programs flash memory in reverse order to prevent device bricking.
+        When programming from sector 0, it first erases the first sector to make the
+        image un-bootable during programming process.
 
         1) Erase the first sector to make the image un-bootable and prevent bricking
         2) Optionally write the checksum to the image vector table
         3) Write the image in reverse order
+
+        :param bin_data: Binary data to be written to flash memory.
+        :param start_sector: Starting sector number for programming.
+        :param start_page: Starting page number for programming (mutually exclusive
+            with start_sector).
+        :param progress_callback: Optional callback function called with
+            (bytes_written, total_bytes) for progress tracking.
+        :param print_status: Whether to print programming status information.
+        :param erase: Whether to erase sectors/pages before writing.
+        :param verify: Whether to verify written data after programming.
+        :raises SPSDKValueError: When sector count exceeds available sectors or when
+            both start_sector and start_page are specified.
+        :return: True if programming completed successfully, False otherwise.
         """
         sector_size = self.get_device().sector_size
         page_size = self.get_device().page_size

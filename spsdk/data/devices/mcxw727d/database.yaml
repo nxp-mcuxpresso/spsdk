@@ -8,7 +8,7 @@ alias: kw47b42zb7
 info:
   purpose: Wireless Connectivity MCUs
   # Web page of MCU representative
-  web: https://www.nxp.com/products/MCX-W72X
+  web: https://www.nxp.com/products/MCX-W72
   use_in_doc: True # Include this MCU in generated documentation
   memory_map: # Memory map basic info
     internal-flash:

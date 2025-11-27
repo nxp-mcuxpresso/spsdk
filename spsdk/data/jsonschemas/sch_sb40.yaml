@@ -31,12 +31,46 @@ sb4:
       title: Part Common Key
       description: Path to PCK/NPK 256 or 128 bit key in plain hex string format or path to binary file or hex string.
       template_value: my_pck.txt
-      format: file-or-hex-value
+      format: file-or-hex-value-or-config-string
     kdkAccessRights:
       type: number
       title: KDK access rights
       description: Accepted values are 0, 1, 2 and 3. Value used as key properties for key derivation process, more details can be found in CSSv2 manual.
       enum: [0, 1, 2, 3]
+      template_value: 0
+  allOf:
+    - if:
+        properties:
+          isEncrypted:
+            enum: [true, null]
+      then:
+        required: [containerKeyBlobEncryptionKey]
+      else:
+        required: []
+
+
+image_version:
+  type: object
+  title: AHAB Container format to add to ECC + PQC sign.
+  properties:
+    imageVersion:
+      type: [number, string]
+      title: Image version.
+      description: |
+        Image version used for rollback protection in SB4 format. While primarily designed for dual boot scenarios in MBI (Master Boot Image), this field provides security through firmware version validation.
+
+        **Rollback Protection Mechanism:**
+        The image version must be equal to or greater than the version stored in fuses or PFR (Protected Flash Region) to ensure proper rollback protection.
+
+        **Version Calculation (e.g., MCXN556s series):**
+        The firmware version is calculated by combining the image version with the fuse version:
+
+        fw_version = (imageVersion << 8) | fuse_version
+
+
+        **Validation Process:**
+        During rollback protection, the calculated firmware version is checked against the 'SECURE_FW_VERSION' value stored in the CFPA (Customer Field Programmable Area) page. Only firmware with versions equal to or higher than the stored value will be allowed to execute.
+      format: number
       template_value: 0
 
 sb4_test:

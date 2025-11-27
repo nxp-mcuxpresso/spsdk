@@ -4,7 +4,13 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Module used for generation SecureBinary X."""
+"""SPSDK Secure Binary Container (SBC) image generation and management.
+
+This module provides functionality for creating and handling Secure Binary Container
+images, including header management, command processing, and binary generation for
+secure boot applications across NXP MCU portfolio.
+"""
+
 import logging
 from struct import calcsize, pack, unpack_from
 from typing import Any, Optional
@@ -23,10 +29,21 @@ logger = logging.getLogger(__name__)
 
 
 ########################################################################################################################
-# Secure Boot Image Class (Version C)
+# Secure Binary Image Class (Version C)
 ########################################################################################################################
 class SecureBinaryCHeader(BaseClass):
-    """Header of the SecureBinary X."""
+    """SecureBinary C Header for SB3.1 format files.
+
+    This class represents the header structure for Secure Binary version 3.1 files,
+    managing header metadata including firmware version, description, timestamps,
+    and format-specific parameters required for secure provisioning operations.
+
+    :cvar MAGIC: Magic bytes identifier for SB3.1 format (b"sbv3").
+    :cvar FORMAT_VERSION: Supported format version string ("3.1").
+    :cvar HEADER_SIZE: Total size of the header structure in bytes.
+    :cvar BLOCK_SIZE: Standard block size for SB3.1 files.
+    :cvar CERT_OFFSET: Offset position for certificate data in the header.
+    """
 
     HEADER_FORMAT = "<4s2H3LQ4L16s"
     HEADER_SIZE = calcsize(HEADER_FORMAT) + 32
@@ -125,7 +142,15 @@ class SecureBinaryCHeader(BaseClass):
     def parse(cls, data: bytes, offset: int = 0) -> Self:
         """Parse binary data into SecureBinaryC Header.
 
-        :raises SPSDKError: Unable to parse SBc Header.
+        This method unpacks binary data according to the SBC header format and creates
+        a new instance with the parsed values. It validates the magic number, version,
+        and block size to ensure the data represents a valid SBC header.
+
+        :param data: Binary data containing the SBC header.
+        :param offset: Offset in the data where parsing should start.
+        :raises SPSDKError: Unable to parse SBc Header due to invalid magic, version,
+                           or block size.
+        :return: New instance of SecureBinaryC Header with parsed data.
         """
         (
             magic,
@@ -160,9 +185,13 @@ class SecureBinaryCHeader(BaseClass):
         return obj
 
     def validate(self) -> None:
-        """Validate the settings of class members.
+        """Validate the settings of SBC header class members.
 
-        :raises SPSDKError: Invalid configuration of SBc header blob class members.
+        Performs comprehensive validation of all SBC header attributes including flags,
+        block count, block size, firmware version, timestamp, total length, and description.
+        Ensures all required fields are properly set with valid values.
+
+        :raises SPSDKError: Invalid configuration of SBC header class members.
         """
         if self.flags is None:
             raise SPSDKError("Invalid SBc header flags.")
@@ -181,14 +210,29 @@ class SecureBinaryCHeader(BaseClass):
 
 
 class SecureBinaryCCommands(SecureBinary31Commands):
-    """Blob containing SBC commands."""
+    """Secure Binary Container (SBc) commands manager.
+
+    This class manages SBc format commands for secure binary containers,
+    extending the SB3.1 command functionality with SBc-specific features
+    and command processing capabilities.
+
+    :cvar FEATURE: Database feature identifier for SBC operations.
+    :cvar SB_COMMANDS_NAME: Display name for SBc command format.
+    """
 
     FEATURE = DatabaseManager.SBC
     SB_COMMANDS_NAME = "SBc"
 
 
 class SecureBinaryC(FeatureBaseClass):
-    """Secure Binary SBC class."""
+    """Secure Binary Container (SBC) image generator for NXP MCUs.
+
+    This class provides functionality to create, validate, and export Secure Binary Container
+    images used for secure boot and firmware updates across NXP's MCU portfolio. It manages
+    the SBC header, commands, and overall image structure according to the SBC specification.
+
+    :cvar FEATURE: Database manager feature identifier for SBC functionality.
+    """
 
     FEATURE = DatabaseManager.SBC
 
@@ -203,13 +247,12 @@ class SecureBinaryC(FeatureBaseClass):
     ) -> None:
         """Constructor for Secure Binary vC data container.
 
-        :param family: The CPU family
-        :param firmware_version: Firmware version
-        :param description: Custom description up to 16 characters long, defaults to None
-        :param image_type: SecureBinaryCType
-        :param signature_provider: signature provider to final sign of SBC image
-            in case of OEM and NXP_PROVISIONING types
-        :param flags: Flags for SB file, defaults to 0
+        :param family: The MCU/MPU family and revision information.
+        :param firmware_version: Firmware version number.
+        :param commands: Secure Binary C commands container.
+        :param description: Custom description up to 16 characters long, defaults to None.
+        :param image_type: Secure Binary C type identifier, defaults to 6.
+        :param flags: Flags for SB file configuration, defaults to 1.
         """
         # in our case, timestamp is the number of seconds since "Jan 1, 2000"
         self.family = family
@@ -232,11 +275,15 @@ class SecureBinaryC(FeatureBaseClass):
     def get_validation_schemas(
         cls, family: FamilyRevision, include_test_configuration: bool = False
     ) -> list[dict[str, Any]]:
-        """Create the list of validation schemas.
+        """Create the list of validation schemas for SBC configuration.
 
-        :param family: Family description.
+        The method retrieves and combines validation schemas from different sources including
+        MBI, SBC, and general family schemas. It supports optional inclusion of test
+        configuration schemas for development purposes.
+
+        :param family: Family description containing chip family and revision information.
         :param include_test_configuration: Add also testing configuration schemas.
-        :return: List of validation schemas.
+        :return: List of validation schemas for SBC configuration validation.
         """
         mbi_sch_cfg = get_schema_file(DatabaseManager.MBI)
         sbc_sch_cfg = get_schema_file(DatabaseManager.SBC)
@@ -273,8 +320,11 @@ class SecureBinaryC(FeatureBaseClass):
     def load_from_config(cls, config: Config) -> Self:
         """Creates an instance of SecureBinaryC from configuration.
 
-        :param config: Input standard configuration.
-        :return: Instance of Secure Binary C class
+        Loads SecureBinaryC object with all necessary components including family revision,
+        commands, firmware version and description from the provided configuration.
+
+        :param config: Input standard configuration containing SBC parameters.
+        :return: Instance of Secure Binary C class.
         """
         description = config.get_str("description", "SBC file")
         firmware_version = config.get_int("firmwareVersion", 1)
@@ -290,7 +340,11 @@ class SecureBinaryC(FeatureBaseClass):
         )
 
     def get_config(self, data_path: str = "./") -> Config:
-        """Create configuration of the Feature."""
+        """Create configuration of the Feature.
+
+        :param data_path: Path to directory containing configuration data files.
+        :raises SPSDKNotImplementedError: Method not implemented in base class.
+        """
         raise SPSDKNotImplementedError()
 
     def validate(self) -> None:
@@ -301,13 +355,22 @@ class SecureBinaryC(FeatureBaseClass):
         self.sb_header.validate()
 
     def update_header(self) -> None:
-        """Update SBc header."""
+        """Update SBc header.
+
+        Updates the SB header with information from the current SB commands collection.
+        This method synchronizes the header metadata to reflect the state of all
+        commands that will be included in the secure boot file.
+        """
         self.sb_header.update(self.sb_commands)
 
     def export_header(self, final_hash: bytes = bytes(32)) -> bytes:
         """Export SBc header without signature for encryption on device.
 
-        :return: plain header without signature in bytes
+        The method combines the SB header data with a final hash to create
+        a plain header suitable for device-side encryption processing.
+
+        :param final_hash: Hash of the next block to append to header data.
+        :return: Plain header without signature in bytes.
         """
         final_data = bytes()
         final_data += self.sb_header.export()
@@ -319,6 +382,10 @@ class SecureBinaryC(FeatureBaseClass):
     def export(self) -> bytes:
         """Generate binary output of SBc file.
 
+        The method validates the SBc file structure and exports it as a complete binary format
+        including header, hash, signature placeholder, and command data blocks.
+
+        :raises SPSDKError: If validation of the SBc file structure fails.
         :return: Content of SBc file in bytes.
         """
         self.validate()
@@ -341,10 +408,21 @@ class SecureBinaryC(FeatureBaseClass):
         return final_data
 
     def __repr__(self) -> str:
+        """Return string representation of SBc Container.
+
+        :return: String representation of the SBc Container object.
+        """
         return "SBc Container"
 
     def __str__(self) -> str:
-        """Create string information about SBc loaded file."""
+        """Create string representation of SBc loaded file.
+
+        The method validates the SBc file and returns a formatted string containing
+        information about the SBc header and commands blob.
+
+        :raises SPSDKError: If validation of the SBc file fails.
+        :return: Formatted string with SBc header and commands information.
+        """
         self.validate()
         ret = ""
 
@@ -360,6 +438,9 @@ class SecureBinaryC(FeatureBaseClass):
     def parse(cls, data: bytes, offset: int = 0) -> Self:
         """Parse object from bytes array.
 
-        :raises NotImplementedError: Not yet implemented
+        :param data: Input bytes array to parse the object from.
+        :param offset: Starting offset in the bytes array, defaults to 0.
+        :raises NotImplementedError: Not yet implemented.
+        :return: Parsed object instance.
         """
         raise NotImplementedError("Not yet implemented.")

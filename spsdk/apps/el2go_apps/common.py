@@ -5,7 +5,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Common utilities for EdgeLock 2GO applications."""
+"""SPSDK EdgeLock 2GO common utilities.
+
+This module provides shared functionality for EdgeLock 2GO applications,
+including template management and device identification utilities.
+"""
 
 from typing import Literal
 

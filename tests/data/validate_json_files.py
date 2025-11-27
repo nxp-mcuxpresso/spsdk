@@ -5,15 +5,11 @@
 ## Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""JSON Schema Validator for SPSDK.
+"""JSON Schema Validator for SPSDK test data files.
 
-This script validates JSON files in the repository against their respective schemas:
-- fuses_*.json files against tools/json_schemas/fuses_schema.json
-- tz_*.json files against tools/json_schemas/trustzone_schema.json
-- other *.json files against tools/json_schemas/processor_register_schema.json
-
-Usage:
-    python validate_json_files.py [root_directory]
+This module provides validation functionality for JSON files in the SPSDK repository
+against their respective schemas. It validates fuses configuration files, TrustZone
+configuration files, and processor register files to ensure data integrity.
 """
 
 import glob
@@ -35,7 +31,13 @@ except ImportError:
 
 
 class JsonSchemaValidator:
-    """Validator for JSON files against schemas."""
+    """JSON Schema Validator for SPSDK configuration files.
+
+    This class provides comprehensive validation of JSON files against predefined schemas
+    including fuses, processor registers, and TrustZone configurations. It automatically
+    discovers JSON files in the project structure and validates them against appropriate
+    schemas to ensure configuration integrity across the SPSDK ecosystem.
+    """
 
     def __init__(self, root_dir: str = ".", schemas_dir: Optional[str] = None) -> None:
         """Initialize the validator with the root directory to search and schemas directory.
@@ -79,8 +81,12 @@ class JsonSchemaValidator:
     def _create_schema_registry(self) -> Union[dict[str, Any], "referencing.Registry"]:
         """Create a registry for schema references using the referencing library.
 
-        Returns:
-            Union[dict[str, Any], referencing.Registry]: A registry that can handle localschema references
+        Loads all JSON schema files from the schemas directory and creates either a
+        referencing.Registry object (if the referencing library is available) or a
+        simple dictionary store for schema validation purposes.
+
+        :return: Registry that can handle localschema references, either as a
+                 referencing.Registry object or a dictionary mapping schema URIs to schema data.
         """
         # Create a schema store for all schema files
         schema_store: dict[str, Any] = {}
@@ -100,6 +106,15 @@ class JsonSchemaValidator:
         if "referencing" in sys.modules:
             # Create a retrieval function that handles the localschema URIs
             def retrieve(uri: str) -> "referencing.Resource":
+                """Retrieve a schema resource from the schema store.
+
+                This method looks up a schema by its URI in the local schema store and returns
+                it as a referencing Resource object for JSON schema validation.
+
+                :param uri: The URI identifier of the schema to retrieve.
+                :raises referencing.exceptions.Unretrievable: When the requested URI is not found in the schema store.
+                :return: A referencing Resource object containing the schema contents.
+                """
                 if uri in schema_store:
                     return referencing.Resource.from_contents(schema_store[uri])
                 raise referencing.exceptions.Unretrievable(uri)
@@ -116,12 +131,13 @@ class JsonSchemaValidator:
     ) -> tuple[list[str], list[str], list[str]]:
         """Find all JSON files in the repository or specified directory.
 
-        Args:
-            search_dir (str, optional): Directory to search for JSON files.
-                                       If None, uses the root_dir. Defaults to None.
+        Searches recursively through the specified directory (or root directory if none provided)
+        to categorize JSON files into fuses files, trustzone files, and other JSON files.
+        Schema files are excluded from the results.
 
-        Returns:
-            tuple: (fuses_files, trustzone_files, other_files) - Lists of paths to JSON files
+        :param search_dir: Directory to search for JSON files. If None, uses the root_dir.
+        :return: Tuple containing three lists: (fuses_files, trustzone_files, other_files)
+            with paths to respective JSON files.
         """
         fuses_files: list[str] = []
         trustzone_files: list[str] = []
@@ -156,12 +172,14 @@ class JsonSchemaValidator:
     ) -> tuple[bool, Optional[str]]:
         """Validate a JSON file against a schema.
 
-        Args:
-            file_path: Path to the JSON file
-            schema: JSON schema to validate against
+        The method supports both modern referencing library and legacy RefResolver
+        for JSON schema validation with proper error handling and fallback mechanisms.
 
-        Returns:
-            tuple: (is_valid, error_message)
+        :param file_path: Path to the JSON file to validate.
+        :param schema: JSON schema dictionary to validate against.
+        :raises json.JSONDecodeError: Invalid JSON format in the file.
+        :raises jsonschema.exceptions.ValidationError: Schema validation failed.
+        :return: Tuple containing validation result (True if valid, False otherwise) and error message (None if valid).
         """
         try:
             with open(file_path, "r", encoding="utf-8") as f:
@@ -199,12 +217,14 @@ class JsonSchemaValidator:
     ) -> dict[str, dict[str, Union[bool, Optional[str]]]]:
         """Validate all JSON files against their respective schemas.
 
-        Args:
-            search_dir (str, optional): Directory to search for JSON files.
-                                       If None, uses the root_dir. Defaults to None.
+        Searches for JSON files in the specified directory and validates them against
+        appropriate schemas based on file naming patterns. Fuses files are validated
+        against fuses schema, TrustZone files against TrustZone schema, and other
+        JSON files against register schema.
 
-        Returns:
-            dict: Results of validation with file paths as keys
+        :param search_dir: Directory to search for JSON files. If None, uses the root_dir.
+        :return: Dictionary with file paths as keys and validation results as values.
+                 Each result contains 'valid' (bool) and 'error' (str or None) keys.
         """
         results: dict[str, dict[str, Union[bool, Optional[str]]]] = {}
         fuses_files, trustzone_files, other_files = self.find_json_files(search_dir)

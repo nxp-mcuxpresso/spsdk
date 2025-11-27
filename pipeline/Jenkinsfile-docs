@@ -1,0 +1,53 @@
+@Library('shared-lib') _
+
+// Abort older builds
+def buildNumber = BUILD_NUMBER as int
+if (buildNumber > 1) milestone(buildNumber - 1)
+milestone(buildNumber)
+
+pipeline {
+    agent { label 'spsdk-doc' }
+
+    options {
+        timeout(time: 5, unit: 'HOURS')   // timeout on whole pipeline job
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout([
+                        $class: 'GitSCM',
+                        branches: scm.branches,
+                        doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
+                        extensions: scm.extensions + [[$class: 'CloneOption', noTags: false, reference: '', shallow: false]],
+                        submoduleCfg: [],
+                        userRemoteConfigs: scm.userRemoteConfigs
+                    ])
+            }
+        }
+        stage('Codecheck') {
+            steps {
+                withVenv(
+                    'uv pip install --force-reinstall ".[all]"',
+                    'uv pip install --upgrade -r requirements-develop.txt',
+                    'cd docs',
+                    'make clean',
+                    'make html',
+                    'cp -r _build/html /var/www/',
+                    'zip -r -9 html.zip _build/html',
+                )
+            }
+        }
+    }
+
+	post {
+		always {
+			archiveArtifacts artifacts: 'docs/_build/html/**', fingerprint: true
+			emailext(body: '${DEFAULT_CONTENT}', mimeType: 'text/html',
+			replyTo: '$DEFAULT_REPLYTO', subject: '${DEFAULT_SUBJECT}',
+			to: emailextrecipients([[$class: 'CulpritsRecipientProvider'],
+									[$class: 'RequesterRecipientProvider']]))
+
+		}
+	}
+}

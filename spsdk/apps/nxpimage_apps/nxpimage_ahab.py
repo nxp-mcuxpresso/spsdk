@@ -4,7 +4,12 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Nxpimage AHAB group."""
+"""SPSDK AHAB (Advanced High Assurance Boot) image management utilities.
+
+This module provides command-line interface functionality for creating, parsing,
+verifying, and managing AHAB container images and certificate blocks used in
+NXP secure boot process.
+"""
 
 import logging
 import os
@@ -113,7 +118,9 @@ def ahab_parse(family: FamilyRevision, binary: str, dek: str, output: str) -> No
     if not os.path.exists(parsed_folder):
         os.makedirs(parsed_folder, exist_ok=True)
 
-    logger.info(f"Identified AHAB image for {ahab_image.chip_config.target_memory.label} target")
+    logger.info(
+        f"Identified AHAB image for {ahab_image.chip_config.target_memory.memory_type.label} target"
+    )
     logger.info(f"Parsed AHAB image memory map: {ahab_image.image_info().draw()}")
     if dek:
         for container in ahab_image.ahab_containers:
@@ -427,7 +434,12 @@ def ahab_re_sign_command(
 
 
 @ahab_group.command(name="sign", no_args_is_help=True)
-@spsdk_config_option()
+@spsdk_config_option(
+    help=(
+        "Path to YAML/JSON configuration file for signing. "
+        "Use 'nxpimage ahab get-template -s' to generate a signing template."
+    )
+)
 @spsdk_output_option(force=True)
 @click.option(
     "-b",
@@ -527,7 +539,7 @@ def ahab_fix_signature_block_command(family: FamilyRevision, binary: str, output
 
 @ahab_certificate_group.command(name="export", no_args_is_help=True)
 @spsdk_config_option(klass=AhabCertificate)
-@spsdk_output_option(required=True)
+@spsdk_output_option(required=False)
 def ahab_cert_block_export_command(config: Config, output: str) -> None:
     """Generate AHAB Certificate Blob from YAML/JSON configuration.
 
@@ -538,6 +550,12 @@ def ahab_cert_block_export_command(config: Config, output: str) -> None:
 
 def ahab_cert_block_export(config: Config, output: str, plugin: Optional[str] = None) -> None:
     """Generate AHAB Certificate Blob from YAML/JSON configuration."""
+    if not output:
+        if "containerOutputFile" in config:
+            output = config.get_output_file_name("containerOutputFile")
+        else:
+            raise SPSDKAppError("No output file specified for AHAB Certificate Blob export")
+
     family = FamilyRevision.load_from_config(config)
     cert_block = get_ahab_certificate_class(family).load_from_config(config)
     # Sign the certificate blob

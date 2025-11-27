@@ -4,7 +4,12 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Nxpimage Signed Message group."""
+"""SPSDK NXP Image signed message and TLV command-line interface.
+
+This module provides CLI commands for creating, parsing, verifying, and managing
+signed messages and TLV (Type-Length-Value) structures used in NXP secure boot
+and provisioning workflows.
+"""
 
 import logging
 import os

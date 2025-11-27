@@ -4,7 +4,13 @@
 # Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Module for key generation and saving keys to file."""
+"""SPSDK cryptographic key management and operations.
+
+This module provides comprehensive functionality for handling cryptographic keys
+including RSA and ECC key types. It supports key generation, loading, saving,
+and cryptographic operations like signing and verification across the SPSDK
+ecosystem.
+"""
 
 import abc
 import getpass
@@ -71,12 +77,16 @@ if IS_DILITHIUM_SUPPORTED:
 
 
 def _load_pem_private_key(data: bytes, password: Optional[bytes]) -> Any:
-    """Load PEM Private key.
+    """Load PEM private key from binary data.
 
-    :param data: key data
-    :param password: optional password
-    :raises SPSDKError: if the key cannot be decoded
-    :return: Key
+    The method attempts to load a private key using multiple algorithms including
+    standard cryptographic algorithms, SM2 (if OSCCA support is available), and
+    post-quantum algorithms like Dilithium and ML-DSA (if supported).
+
+    :param data: Binary data containing the PEM-encoded private key.
+    :param password: Optional password for encrypted private keys.
+    :raises SPSDKError: If the key cannot be decoded with any supported algorithm.
+    :return: Loaded private key object (type depends on the key algorithm).
     """
     last_error: Exception
     try:
@@ -104,12 +114,16 @@ def _load_pem_private_key(data: bytes, password: Optional[bytes]) -> Any:
 
 
 def _load_der_private_key(data: bytes, password: Optional[bytes]) -> Any:
-    """Load DER Private key.
+    """Load DER private key from binary data.
 
-    :param data: key data
-    :param password: optional password
-    :raises SPSDKError: if the key cannot be decoded
-    :return: Key
+    The method attempts to load a DER-encoded private key using multiple algorithms
+    including standard cryptographic keys, SM2 (if OSCCA support is available),
+    and post-quantum algorithms like Dilithium and ML-DSA (if supported).
+
+    :param data: DER-encoded private key binary data.
+    :param password: Optional password for encrypted private keys.
+    :raises SPSDKError: If the key cannot be decoded with any supported algorithm.
+    :return: Loaded private key object (type varies based on key algorithm).
     """
     last_error: Exception
     try:
@@ -138,15 +152,18 @@ def _load_der_private_key(data: bytes, password: Optional[bytes]) -> Any:
 def _crypto_load_private_key(
     encoding: SPSDKEncoding, data: bytes, password: Optional[bytes]
 ) -> Union[ec.EllipticCurvePrivateKey, rsa.RSAPrivateKey]:
-    """Load Private key.
+    """Load private key from encoded data.
 
-    :param encoding: Encoding of input data
-    :param data: Key data
-    :param password: Optional password
-    :raises SPSDKValueError: Unsupported encoding
-    :raises SPSDKWrongKeyPassphrase: Private key is encrypted and passphrase is incorrect
-    :raises SPSDKKeyPassphraseMissing: Private key is encrypted and passphrase is missing
-    :return: Key
+    The method supports both DER and PEM encoding formats and handles encrypted
+    private keys with optional password protection.
+
+    :param encoding: Encoding format of the input key data (DER or PEM).
+    :param data: Raw key data in bytes.
+    :param password: Optional password for encrypted private keys.
+    :raises SPSDKValueError: Unsupported encoding format provided.
+    :raises SPSDKWrongKeyPassphrase: Private key is encrypted and passphrase is incorrect.
+    :raises SPSDKKeyPassphraseMissing: Private key is encrypted and passphrase is missing.
+    :return: Loaded private key object (ECC or RSA).
     """
     if encoding not in [SPSDKEncoding.DER, SPSDKEncoding.PEM]:
         raise SPSDKValueError(f"Unsupported encoding: {encoding}")
@@ -169,11 +186,15 @@ def _crypto_load_private_key(
 
 
 def _load_pem_public_key(data: bytes) -> Any:
-    """Load PEM Public key.
+    """Load PEM public key from byte data.
 
-    :param data: key data
-    :raises SPSDKError: if the key cannot be decoded
-    :return: PublicKey
+    Attempts to load a PEM-formatted public key using multiple cryptographic libraries
+    including standard cryptography, SM2 (if OSCCA support is enabled), and post-quantum
+    algorithms like Dilithium and ML-DSA (if available).
+
+    :param data: PEM-formatted public key data as bytes
+    :raises SPSDKError: If the key cannot be decoded by any supported method
+    :return: Public key object (type varies based on key algorithm)
     """
     last_error: Exception
     try:
@@ -201,11 +222,15 @@ def _load_pem_public_key(data: bytes) -> Any:
 
 
 def _load_der_public_key(data: bytes) -> Any:
-    """Load DER Public key.
+    """Load DER public key from binary data.
 
-    :param data: key data
-    :raises SPSDKError: if the key cannot be decoded
-    :return: PublicKey
+    Attempts to decode the provided DER-encoded public key data using multiple algorithms
+    including standard cryptographic keys, SM2 (if OSCCA support is available), and
+    post-quantum algorithms like Dilithium and ML-DSA (if supported).
+
+    :param data: DER-encoded public key binary data
+    :raises SPSDKError: If the key cannot be decoded with any supported algorithm
+    :return: Decoded public key object (type varies based on key algorithm)
     """
     last_error: Exception
     try:
@@ -232,19 +257,36 @@ def _load_der_public_key(data: bytes) -> Any:
 
 
 class SPSDKInvalidKeyType(SPSDKError):
-    """Invalid Key Type."""
+    """SPSDK exception for invalid cryptographic key types.
+
+    This exception is raised when an unsupported or invalid key type is
+    encountered during cryptographic operations in SPSDK.
+    """
 
 
 class SPSDKKeyPassphraseMissing(SPSDKError):
-    """Passphrase for decryption of private key is missing."""
+    """SPSDK exception for missing private key passphrase.
+
+    This exception is raised when a passphrase is required to decrypt a private key
+    but none has been provided during cryptographic operations.
+    """
 
 
 class SPSDKWrongKeyPassphrase(SPSDKError):
-    """Passphrase for decryption of private key is wrong."""
+    """SPSDK exception for incorrect private key passphrase.
+
+    This exception is raised when an incorrect or invalid passphrase is provided
+    for decrypting a private key during cryptographic operations.
+    """
 
 
 class PrivateKey(BaseClass, abc.ABC):
-    """SPSDK Private Key."""
+    """SPSDK Private Key abstract base class.
+
+    This abstract class defines the interface for private key operations in SPSDK,
+    providing cryptographic functionality for signing operations and key management
+    across different key types and algorithms.
+    """
 
     key: Any
 
@@ -253,44 +295,60 @@ class PrivateKey(BaseClass, abc.ABC):
     def generate_key(cls) -> Self:
         """Generate SPSDK Key (private key).
 
-        :return: SPSDK private key
+        :return: SPSDK private key instance.
         """
 
     @property
     @abc.abstractmethod
     def default_hash_algorithm(self) -> EnumHashAlgorithm:
-        """Default hash algorithm for signing/verifying."""
+        """Get default hash algorithm for signing and verifying operations.
+
+        :return: Default hash algorithm enumeration value.
+        """
 
     @property
     @abc.abstractmethod
     def signature_size(self) -> int:
-        """Size of signature data."""
+        """Get the size of signature data in bytes.
+
+        :return: Size of signature data in bytes.
+        """
 
     @property
     @abc.abstractmethod
     def key_size(self) -> int:
-        """Key size in bits.
+        """Get key size in bits.
 
-        :return: Key Size
+        :return: Key size in bits.
         """
 
     @abc.abstractmethod
     def get_public_key(self) -> "PublicKey":
-        """Generate public key.
+        """Get public key from the private key.
 
-        :return: Public key
+        :return: Public key object derived from this private key.
         """
 
     @abc.abstractmethod
     def verify_public_key(self, public_key: "PublicKey") -> bool:
-        """Verify public key.
+        """Verify that the given public key forms a cryptographic pair with this private key.
 
-        :param public_key: Public key to verify
-        :return: True if is in pair, False otherwise
+        This method checks if the provided public key corresponds to this private key
+        by verifying their mathematical relationship in the cryptographic key pair.
+
+        :param public_key: Public key to verify against this private key.
+        :return: True if the keys form a valid pair, False otherwise.
         """
 
     def __eq__(self, obj: Any) -> bool:
-        """Check object equality."""
+        """Check object equality.
+
+        Compares this object with another object by checking if they are of the same class
+        and have identical public keys.
+
+        :param obj: Object to compare with this instance.
+        :return: True if objects are equal, False otherwise.
+        """
         return isinstance(obj, self.__class__) and self.get_public_key() == obj.get_public_key()
 
     def save(
@@ -301,9 +359,10 @@ class PrivateKey(BaseClass, abc.ABC):
     ) -> None:
         """Save the Private key to the given file.
 
-        :param file_path: path to the file, where the key will be stored
-        :param password: password to private key; None to store without password
-        :param encoding: encoding type, default is PEM
+        :param file_path: Path to the file where the key will be stored.
+        :param password: Password to encrypt private key; None to store without password.
+        :param encoding: Encoding type for the saved key, default is PEM.
+        :raises SPSDKError: If the file cannot be written or key export fails.
         """
         write_file(self.export(password=password, encoding=encoding), file_path, mode="wb")
 
@@ -311,19 +370,24 @@ class PrivateKey(BaseClass, abc.ABC):
     def load(cls, file_path: str, password: Optional[str] = None) -> Self:
         """Load the Private key from the given file.
 
-        :param file_path: path to the file, where the key is stored
-        :param password: password to private key; None to load without password
+        :param file_path: Path to the file where the key is stored.
+        :param password: Password to private key; None to load without password.
+        :raises SPSDKError: If the file cannot be loaded or parsed.
+        :return: Loaded private key instance.
         """
         data = load_binary(file_path)
         return cls.parse(data=data, password=password)
 
     @abc.abstractmethod
     def sign(self, data: bytes, **kwargs: Any) -> bytes:
-        """Sign input data.
+        """Sign input data with the cryptographic key.
 
-        :param data: Input data
-        :param kwargs: Keyword arguments for specific type of key
-        :return: Signed data
+        This method performs cryptographic signing of the provided data using the
+        underlying key material and algorithm.
+
+        :param data: Input data to be signed.
+        :param kwargs: Additional keyword arguments specific to the key type and signing algorithm.
+        :return: Digital signature of the input data.
         """
 
     @abc.abstractmethod
@@ -334,18 +398,22 @@ class PrivateKey(BaseClass, abc.ABC):
     ) -> bytes:
         """Export key into bytes in requested format.
 
-        :param password: password to private key; None to store without password
-        :param encoding: encoding type, default is DER
-        :return: Byte representation of key
+        :param password: Password to private key; None to store without password.
+        :param encoding: Encoding type, default is DER.
+        :return: Byte representation of key.
         """
 
     @classmethod
     def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
-        """Parse object from bytes array.
+        """Parse private key from bytes array.
 
-        :param data: Data to be parsed
-        :param password: password to private key; None to store without password
-        :returns: Recreated key
+        The method supports multiple encodings (PEM, DER) and various key types including
+        RSA, ECC, SM2, Dilithium, and ML-DSA private keys.
+
+        :param data: Raw key data to be parsed.
+        :param password: Password for encrypted private key; None for unencrypted keys.
+        :return: Recreated private key object.
+        :raises SPSDKError: Invalid key data or unsupported key type.
         """
         try:
             private_key = {
@@ -368,11 +436,15 @@ class PrivateKey(BaseClass, abc.ABC):
 
     @classmethod
     def create(cls, key: Any) -> Self:
-        """Create Private Key object.
+        """Create Private Key object from supported cryptographic key types.
 
-        :param key: Supported private key.
-        :raises SPSDKInvalidKeyType: Unsupported private key given
-        :return: SPSDK Private Kye object
+        This factory method creates an appropriate SPSDK private key wrapper based on the
+        input key type. It supports ECC, RSA, SM2 (if OSCCA is available), and post-quantum
+        Dilithium/ML-DSA keys (if Dilithium support is available).
+
+        :param key: A cryptographic private key object (ECC, RSA, SM2, Dilithium, or ML-DSA).
+        :raises SPSDKInvalidKeyType: Unsupported private key type provided.
+        :return: SPSDK Private Key object wrapping the input key.
         """
         SUPPORTED_KEYS = {
             PrivateKeyEcc: ec.EllipticCurvePrivateKey,
@@ -393,7 +465,15 @@ class PrivateKey(BaseClass, abc.ABC):
 
 
 class PublicKey(BaseClass, abc.ABC):
-    """SPSDK Public Key."""
+    """SPSDK Public Key abstraction for cryptographic operations.
+
+    This abstract base class provides a unified interface for public key operations
+    across different cryptographic algorithms and key types. It handles key loading,
+    saving, signature verification, and key format conversions while maintaining
+    consistency across the SPSDK cryptographic framework.
+
+    :cvar RECOMMENDED_ENCODING: Default encoding format for key serialization.
+    """
 
     key: Any
     RECOMMENDED_ENCODING = SPSDKEncoding.PEM
@@ -401,23 +481,36 @@ class PublicKey(BaseClass, abc.ABC):
     @property
     @abc.abstractmethod
     def default_hash_algorithm(self) -> EnumHashAlgorithm:
-        """Default hash algorithm for signing/verifying."""
+        """Get default hash algorithm for signing/verifying.
+
+        :return: Default hash algorithm enumeration value.
+        """
 
     @property
     @abc.abstractmethod
     def signature_size(self) -> int:
-        """Size of signature data."""
+        """Get the size of signature data in bytes.
+
+        :return: Size of signature data in bytes.
+        """
 
     @property
     @abc.abstractmethod
     def public_numbers(self) -> Any:
-        """Public numbers."""
+        """Get the public numbers of the cryptographic key.
+
+        Returns the public key numbers which contain the mathematical components
+        that make up the public portion of the key.
+
+        :return: Public key numbers object containing the key's mathematical components.
+        """
 
     def save(self, file_path: str, encoding: SPSDKEncoding = SPSDKEncoding.PEM) -> None:
         """Save the public key to the file.
 
-        :param file_path: path to the file, where the key will be stored
-        :param encoding: encoding type, default is PEM
+        :param file_path: Path to the file where the key will be stored.
+        :param encoding: Encoding type for the key export, defaults to PEM.
+        :raises SPSDKError: If the file cannot be written or export fails.
         """
         write_file(data=self.export(encoding=encoding), path=file_path, mode="wb")
 
@@ -425,7 +518,12 @@ class PublicKey(BaseClass, abc.ABC):
     def load(cls, file_path: str) -> Self:
         """Load the Public key from the given file.
 
-        :param file_path: path to the file, where the key is stored
+        The method loads binary data from the specified file path and parses it to create
+        a public key instance.
+
+        :param file_path: Path to the file where the key is stored.
+        :raises SPSDKError: If the file cannot be loaded or parsed.
+        :return: Public key instance created from the file data.
         """
         data = load_binary(file_path)
         return cls.parse(data=data)
@@ -438,29 +536,36 @@ class PublicKey(BaseClass, abc.ABC):
         algorithm: Optional[EnumHashAlgorithm] = None,
         **kwargs: Any,
     ) -> bool:
-        """Verify input data.
+        """Verify signature against input data using cryptographic algorithm.
 
-        :param signature: The signature of input data
-        :param data: Input data
-        :param algorithm: Used algorithm, defaults, automatic selection - None
-        :param kwargs: Keyword arguments for specific type of key
-        :return: True if signature is valid, False otherwise
+        The method validates the provided signature against the input data using the specified
+        or automatically selected hash algorithm.
+
+        :param signature: The signature bytes to verify against the data.
+        :param data: Input data bytes that were signed.
+        :param algorithm: Hash algorithm to use for verification, defaults to automatic selection.
+        :param kwargs: Additional keyword arguments specific to the key type.
+        :return: True if signature is valid, False otherwise.
         """
 
     @abc.abstractmethod
     def export(self, encoding: SPSDKEncoding = SPSDKEncoding.NXP) -> bytes:
         """Export key into bytes to requested format.
 
-        :param encoding: encoding type, default is NXP
-        :return: Byte representation of key
+        :param encoding: Encoding type for the exported key data, defaults to NXP format.
+        :return: Byte representation of the key in specified encoding format.
         """
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Parse object from bytes array.
+        """Parse public key from bytes array.
 
-        :param data: Data to be parsed
-        :returns: Recreated key
+        Attempts to parse public key data from various formats including PEM, DER,
+        ECC, RSA, Dilithium, ML-DSA, and NXP OTPS formats.
+
+        :param data: Raw bytes containing public key data in supported format.
+        :return: Parsed public key object.
+        :raises SPSDKError: Unable to parse public key data from any supported format.
         """
         encoding = SPSDKEncoding.get_file_encodings(data)
         if encoding == SPSDKEncoding.PEM:
@@ -508,22 +613,36 @@ class PublicKey(BaseClass, abc.ABC):
     def key_hash(self, algorithm: EnumHashAlgorithm = EnumHashAlgorithm.SHA256) -> bytes:
         """Get key hash.
 
-        :param algorithm: Used hash algorithm, defaults to sha256
-        :return: Key Hash
+        Computes hash of the exported key data using the specified hash algorithm.
+
+        :param algorithm: Hash algorithm to use for key hashing, defaults to SHA256.
+        :return: Hash of the key data as bytes.
         """
         return get_hash(self.export(), algorithm)
 
     def __eq__(self, obj: Any) -> bool:
-        """Check object equality."""
+        """Check object equality.
+
+        Compare this object with another object to determine if they are equal.
+        Two objects are considered equal if they are instances of the same class
+        and have identical public_numbers attributes.
+
+        :param obj: Object to compare with this instance.
+        :return: True if objects are equal, False otherwise.
+        """
         return isinstance(obj, self.__class__) and self.public_numbers == obj.public_numbers
 
     @classmethod
     def create(cls, key: Any) -> Self:
-        """Create Public Key object.
+        """Create Public Key object from supported key types.
 
-        :param key: Supported public key.
-        :raises SPSDKInvalidKeyType: Unsupported public key given
-        :return: SPSDK Public Kye object
+        This factory method creates an appropriate SPSDK Public Key wrapper object based on the
+        type of the input key. It supports various key types including ECC, RSA, SM2 (if OSCCA
+        is supported), and post-quantum algorithms like Dilithium and ML-DSA (if available).
+
+        :param key: A supported public key object (ECC, RSA, SM2, Dilithium, or ML-DSA).
+        :raises SPSDKInvalidKeyType: Unsupported public key type provided.
+        :return: SPSDK Public Key object wrapping the input key.
         """
         SUPPORTED_KEYS = {
             PublicKeyEcc: ec.EllipticCurvePublicKey,
@@ -544,23 +663,41 @@ class PublicKey(BaseClass, abc.ABC):
 
 
 class NonSupportingPublicKey(PublicKey):
-    """Just for non supported keys."""
+    """Placeholder class for unsupported public key types.
+
+    This class serves as a fallback implementation that raises an exception
+    when instantiated, indicating that the specific key type is not supported
+    by the SPSDK crypto module.
+    """
 
     def __init__(self) -> None:
-        """Just constructor to inform about not supported key type.
+        """Initialize unsupported key type constructor.
 
-        :raises SPSDKNotImplementedError: Key is not implemented exception.
+        This constructor is designed to immediately raise an exception to indicate
+        that the specific key type is not supported or implemented in the current
+        version of SPSDK.
+
+        :raises SPSDKNotImplementedError: The key type is not supported or implemented.
         """
         raise SPSDKNotImplementedError("The key is not supported.")
 
 
 class NonSupportingPrivateKey(PrivateKey):
-    """Just for non supported keys."""
+    """Placeholder class for unsupported private key types.
+
+    This class serves as a fallback implementation that raises an exception
+    when instantiated, indicating that the specific private key type is not
+    supported by the SPSDK crypto module.
+    """
 
     def __init__(self) -> None:
-        """Just constructor to inform about not supported key type.
+        """Initialize unsupported key type constructor.
 
-        :raises SPSDKNotImplementedError: Key is not implemented exception.
+        This constructor is designed to immediately raise an exception to indicate
+        that the specific key type is not supported or implemented in the current
+        version of SPSDK.
+
+        :raises SPSDKNotImplementedError: The key type is not supported or implemented.
         """
         raise SPSDKNotImplementedError("The key is not supported.")
 
@@ -575,26 +712,38 @@ class NonSupportingPrivateKey(PrivateKey):
 
 
 class PrivateKeyRsa(PrivateKey):
-    """SPSDK Private Key."""
+    """SPSDK RSA Private Key implementation.
+
+    This class provides RSA private key functionality for cryptographic operations
+    including key generation, signing, and public key derivation. It supports
+    standard RSA key sizes and integrates with SPSDK's cryptographic framework.
+
+    :cvar SUPPORTED_KEY_SIZES: List of supported RSA key sizes in bits.
+    """
 
     SUPPORTED_KEY_SIZES = [2048, 3072, 4096]
 
     key: rsa.RSAPrivateKey
 
     def __init__(self, key: rsa.RSAPrivateKey) -> None:
-        """Create SPSDK Key.
+        """Create SPSDK RSA private key wrapper.
 
-        :param key: Only RSA key is accepted
+        Initialize the SPSDK key object with an RSA private key for cryptographic operations.
+
+        :param key: RSA private key instance to be wrapped by SPSDK key object.
         """
         self.key = key
 
     @classmethod
     def generate_key(cls, key_size: int = 2048, exponent: int = 65537) -> Self:
-        """Generate SPSDK Key (private key).
+        """Generate SPSDK RSA private key.
 
-        :param key_size: key size in bits; must be >= 512
-        :param exponent: public exponent; must be >= 3 and odd
-        :return: SPSDK private key
+        This method creates a new RSA private key with specified parameters for use in
+        SPSDK cryptographic operations.
+
+        :param key_size: Key size in bits, must be >= 512.
+        :param exponent: Public exponent, must be >= 3 and odd.
+        :return: New SPSDK private key instance.
         """
         return cls(
             rsa.generate_private_key(
@@ -605,34 +754,45 @@ class PrivateKeyRsa(PrivateKey):
 
     @property
     def default_hash_algorithm(self) -> EnumHashAlgorithm:
-        """Default hash algorithm for signing/verifying."""
+        """Get default hash algorithm for signing/verifying operations.
+
+        :return: Default hash algorithm enumeration value (SHA256).
+        """
         return EnumHashAlgorithm.SHA256
 
     @property
     def signature_size(self) -> int:
-        """Size of signature data."""
+        """Get the size of signature data in bytes.
+
+        :return: Size of signature data in bytes.
+        """
         return self.key.key_size // 8
 
     @property
     def key_size(self) -> int:
         """Key size in bits.
 
-        :return: Key Size
+        :return: Key size in bits.
         """
         return self.key.key_size
 
     def get_public_key(self) -> "PublicKeyRsa":
-        """Generate public key.
+        """Get public key from RSA private key.
 
-        :return: Public key
+        Extracts the public key component from the RSA private key instance.
+
+        :return: RSA public key object.
         """
         return PublicKeyRsa(self.key.public_key())
 
     def verify_public_key(self, public_key: PublicKey) -> bool:
-        """Verify public key.
+        """Verify that the given public key matches this private key.
 
-        :param public_key: Public key to verify
-        :return: True if is in pair, False otherwise
+        This method compares the provided public key with the public key derived
+        from this private key to determine if they form a valid key pair.
+
+        :param public_key: Public key to verify against this private key
+        :return: True if the keys form a valid pair, False otherwise
         """
         return self.get_public_key() == public_key
 
@@ -643,9 +803,9 @@ class PrivateKeyRsa(PrivateKey):
     ) -> bytes:
         """Export the Private key to the bytes in requested encoding.
 
-        :param password: password to private key; None to store without password
-        :param encoding: encoding type, default is DER
-        :returns: Private key in bytes
+        :param password: Password to private key; None to store without password.
+        :param encoding: Encoding type, default is DER.
+        :return: Private key in bytes.
         """
         enc = (
             BestAvailableEncryption(password=password.encode("utf-8"))
@@ -664,14 +824,17 @@ class PrivateKeyRsa(PrivateKey):
         prehashed: bool = False,
         **kwargs: Any,
     ) -> bytes:
-        """Sign input data.
+        """Sign input data with the private key.
 
-        :param data: Input data
-        :param algorithm: Used algorithm
-        :param pss_padding: Use RSA-PSS signing scheme
-        :param prehashed: Data for signing is already pre-hashed
-        :param kwargs: Sink for unused parameters
-        :return: Signed data
+        The method supports both PKCS#1 v1.5 and PSS padding schemes for RSA keys.
+        It can handle both raw data and pre-hashed data depending on the prehashed parameter.
+
+        :param data: Input data to be signed.
+        :param algorithm: Hash algorithm to use for signing, defaults to key's default algorithm.
+        :param pss_padding: Whether to use RSA-PSS padding scheme instead of PKCS#1 v1.5.
+        :param prehashed: Whether the input data is already hashed.
+        :param kwargs: Additional unused parameters for compatibility.
+        :return: Digital signature as bytes.
         """
         hash_alg = get_hash_algorithm(algorithm or self.default_hash_algorithm)
         pad = (
@@ -686,11 +849,15 @@ class PrivateKeyRsa(PrivateKey):
 
     @classmethod
     def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
-        """Parse object from bytes array.
+        """Parse RSA private key from bytes array.
 
-        :param data: Data to be parsed
-        :param password: password to private key; None to store without password
-        :returns: Recreated key
+        The method parses binary data to recreate an RSA private key object with optional
+        password protection support.
+
+        :param data: Binary data containing the RSA private key to be parsed.
+        :param password: Password for encrypted private key; None for unencrypted keys.
+        :raises SPSDKInvalidKeyType: When the data cannot be parsed as RSA private key.
+        :return: Recreated RSA private key object.
         """
         key = super().parse(data=data, password=password)
         if isinstance(key, PrivateKeyRsa):
@@ -699,41 +866,63 @@ class PrivateKeyRsa(PrivateKey):
         raise SPSDKInvalidKeyType("Can't parse Rsa private key from given data")
 
     def __repr__(self) -> str:
+        """Return string representation of the RSA private key.
+
+        :return: String containing key type and size information.
+        """
         return f"RSA{self.key_size} Private Key"
 
     def __str__(self) -> str:
-        """Object description in string format."""
+        """Get string representation of the RSA private key.
+
+        Returns a formatted string containing the key size and private exponent value
+        in hexadecimal format for debugging and logging purposes.
+
+        :return: String representation showing RSA key size and private exponent.
+        """
         ret = f"RSA{self.key_size} Private key: \nd({hex(self.key.private_numbers().d)})"
         return ret
 
 
 class PublicKeyRsa(PublicKey):
-    """SPSDK Public Key."""
+    """SPSDK RSA Public Key implementation.
+
+    This class provides RSA public key operations for cryptographic functions
+    including signature verification and key property access. It wraps the
+    cryptography library's RSA public key with SPSDK-specific functionality.
+    """
 
     key: rsa.RSAPublicKey
 
     def __init__(self, key: rsa.RSAPublicKey) -> None:
         """Create SPSDK Public Key.
 
-        :param key: SPSDK Public Key data or file path
+        :param key: RSA public key object to be wrapped by SPSDK.
+        :raises SPSDKError: If the provided key is invalid or unsupported.
         """
         self.key = key
 
     @property
     def default_hash_algorithm(self) -> EnumHashAlgorithm:
-        """Default hash algorithm for signing/verifying."""
+        """Get default hash algorithm for signing and verifying operations.
+
+        :return: Default hash algorithm enumeration value (SHA256).
+        """
         return EnumHashAlgorithm.SHA256
 
     @property
     def signature_size(self) -> int:
-        """Size of signature data."""
+        """Get the size of signature data in bytes.
+
+        :return: Size of signature data in bytes.
+        """
         return self.key.key_size // 8
 
     @property
     def key_size(self) -> int:
         """Key size in bits.
 
-        :return: Key Size
+        :return: Key size in bits.
         """
         return self.key.key_size
 
@@ -747,17 +936,23 @@ class PublicKeyRsa(PublicKey):
 
     @property
     def e(self) -> int:
-        """Public number E.
+        """Get the public exponent E of the RSA key.
 
-        :return: E
+        The public exponent E is a component of the RSA public key used in cryptographic
+        operations for encryption and signature verification.
+
+        :return: The public exponent E as an integer.
         """
         return self.public_numbers.e
 
     @property
     def n(self) -> int:
-        """Public number N.
+        """Get the RSA public key modulus N.
 
-        :return: N
+        The modulus N is one of the two components of an RSA public key, representing the product
+        of two prime numbers used in RSA encryption and signature operations.
+
+        :return: The RSA public key modulus as an integer.
         """
         return self.public_numbers.n
 
@@ -767,12 +962,15 @@ class PublicKeyRsa(PublicKey):
         exp_length: Optional[int] = None,
         modulus_length: Optional[int] = None,
     ) -> bytes:
-        """Save the public key to the bytes in NXP or DER format.
+        """Export the public key to bytes in specified format.
 
-        :param encoding: encoding type, default is NXP
-        :param exp_length: Optional specific exponent length in bytes
-        :param modulus_length: Optional specific modulus length in bytes
-        :returns: Public key in bytes
+        The method supports both NXP proprietary format (modulus + exponent) and standard DER format.
+        For NXP encoding, the output contains modulus followed by exponent in big-endian byte order.
+
+        :param encoding: Encoding format for the exported key, defaults to NXP format.
+        :param exp_length: Optional specific exponent length in bytes for NXP format.
+        :param modulus_length: Optional specific modulus length in bytes for NXP format.
+        :return: Public key exported as bytes in the specified format.
         """
         if encoding == SPSDKEncoding.NXP:
             exp_rotk = self.e
@@ -796,15 +994,18 @@ class PublicKeyRsa(PublicKey):
         prehashed: bool = False,
         **kwargs: Any,
     ) -> bool:
-        """Verify input data.
+        """Verify signature against provided data using RSA cryptographic verification.
 
-        :param signature: The signature of input data
-        :param data: Input data
-        :param algorithm: Used algorithm
-        :param pss_padding: Use RSA-PSS signing scheme
-        :param prehashed: Data for signing is already pre-hashed
-        :param kwargs: Sink for unused parameters
-        :return: True if signature is valid, False otherwise
+        The method supports both PKCS#1 v1.5 and PSS padding schemes, with configurable
+        hash algorithms and pre-hashed data verification.
+
+        :param signature: The signature bytes to verify against the data.
+        :param data: Input data bytes to verify signature against.
+        :param algorithm: Hash algorithm to use for verification, defaults to key's default.
+        :param pss_padding: Use RSA-PSS padding scheme instead of PKCS#1 v1.5.
+        :param prehashed: Indicates if data is already hashed and ready for verification.
+        :param kwargs: Additional unused parameters for compatibility.
+        :return: True if signature is valid, False otherwise.
         """
         hash_alg = get_hash_algorithm(algorithm or self.default_hash_algorithm)
         pad = (
@@ -827,24 +1028,45 @@ class PublicKeyRsa(PublicKey):
         return True
 
     def __eq__(self, obj: Any) -> bool:
-        """Check object equality."""
+        """Check object equality.
+
+        Compare this object with another object to determine if they are equal.
+        Two objects are considered equal if they are instances of the same class
+        and have identical public_numbers attributes.
+
+        :param obj: Object to compare with this instance.
+        :return: True if objects are equal, False otherwise.
+        """
         return isinstance(obj, self.__class__) and self.public_numbers == obj.public_numbers
 
     def __repr__(self) -> str:
+        """Return string representation of the RSA public key.
+
+        Provides a human-readable string format showing the key type and size
+        for debugging and logging purposes.
+
+        :return: String representation in format "RSA{key_size} Public Key".
+        """
         return f"RSA{self.key_size} Public Key"
 
     def __str__(self) -> str:
-        """Object description in string format."""
+        """Get string representation of RSA public key.
+
+        Returns a formatted string containing the RSA key size, exponent (e), and modulus (n)
+        in hexadecimal format.
+
+        :return: String representation showing RSA key size and key components.
+        """
         ret = f"RSA{self.key_size} Public key: \ne({hex(self.e)}) \nn({hex(self.n)})"
         return ret
 
     @classmethod
     def recreate(cls, exponent: int, modulus: int) -> Self:
-        """Recreate RSA public key from Exponent and modulus.
+        """Recreate RSA public key from exponent and modulus.
 
         :param exponent: Exponent of RSA key.
         :param modulus: Modulus of RSA key.
-        :return: RSA public key.
+        :return: RSA public key instance.
         """
         public_numbers = rsa.RSAPublicNumbers(e=exponent, n=modulus)
         return cls(public_numbers.public_key())
@@ -853,18 +1075,21 @@ class PublicKeyRsa(PublicKey):
     def recreate_from_data(cls, data: bytes) -> Self:
         """Recreate RSA public key from exponent and modulus in data blob.
 
-        :param data: Data blob of exponent and modulus in bytes (in Big Endian)
-        :return: RSA public key.
+        :param data: Data blob containing exponent and modulus in bytes (Big Endian format).
+        :return: RSA public key instance.
         """
         return cls(cls.recreate_public_numbers(data).public_key())
 
     @staticmethod
     def recreate_public_numbers(data: bytes) -> rsa.RSAPublicNumbers:
-        """Recreate public numbers from data.
+        """Recreate RSA public numbers from raw key data.
 
-        :param data: Dat with raw key.
-        :raises SPSDKError: Un recognized data.
-        :return: RAS public numbers.
+        The method attempts to parse the input data as an RSA public key by trying different
+        supported key sizes and extracting the modulus (n) and exponent (e) components.
+
+        :param data: Raw key data containing modulus and exponent in big-endian format.
+        :raises SPSDKError: Unrecognized data format or unsupported key size.
+        :return: RSA public numbers object containing the extracted key components.
         """
         data_len = len(data)
         for key_size in PrivateKeyRsa.SUPPORTED_KEY_SIZES:
@@ -878,10 +1103,14 @@ class PublicKeyRsa(PublicKey):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Parse object from bytes array.
+        """Parse RSA public key from bytes array.
 
-        :param data: Data to be parsed
-        :returns: Recreated key
+        Attempts to parse the data using the parent class method first. If that fails,
+        tries to recreate the RSA public key using RSA-specific parsing methods.
+
+        :param data: Raw bytes data containing the RSA public key information.
+        :raises SPSDKInvalidKeyType: When the data cannot be parsed as RSA public key.
+        :return: Recreated RSA public key instance.
         """
         try:
             key = super().parse(data=data)
@@ -904,7 +1133,11 @@ class PublicKeyRsa(PublicKey):
 
 
 class EccCurve(str, Enum):
-    """Supported ecc key types."""
+    """Enumeration of supported elliptic curve cryptographic key types.
+
+    This enumeration defines the elliptic curve types that are supported
+    by SPSDK cryptographic operations for ECC key generation and processing.
+    """
 
     SECP256R1 = "secp256r1"
     SECP384R1 = "secp384r1"
@@ -912,17 +1145,35 @@ class EccCurve(str, Enum):
 
 
 class SPSDKUnsupportedEccCurve(SPSDKValueError):
-    """Unsupported Ecc curve error."""
+    """SPSDK exception for unsupported ECC curve operations.
+
+    This exception is raised when an operation is attempted with an ECC curve
+    that is not supported by the SPSDK cryptographic functionality.
+    """
 
 
 class KeyEccCommon:
-    """SPSDK Common Key."""
+    """SPSDK Common ECC Key Handler.
+
+    This class provides common functionality for Elliptic Curve Cryptography (ECC) keys,
+    supporting both private and public key operations. It offers standardized access to
+    key properties, signature operations, and curve management across different ECC
+    curve types used in SPSDK cryptographic operations.
+    """
 
     key: Union[ec.EllipticCurvePrivateKey, ec.EllipticCurvePublicKey]
 
     @property
     def default_hash_algorithm(self) -> EnumHashAlgorithm:
-        """Default hash algorithm for signing/verifying."""
+        """Get default hash algorithm for signing/verifying operations.
+
+        Determines the appropriate hash algorithm based on the key size of the cryptographic key.
+        The mapping follows standard practices: 256-bit keys use SHA256, 384-bit keys use SHA384,
+        and 521-bit keys use SHA512.
+
+        :return: Hash algorithm enum value corresponding to the key size.
+        :raises KeyError: If the key size is not supported (not 256, 384, or 521 bits).
+        """
         return {
             256: EnumHashAlgorithm.SHA256,
             384: EnumHashAlgorithm.SHA384,
@@ -931,22 +1182,37 @@ class KeyEccCommon:
 
     @property
     def coordinate_size(self) -> int:
-        """Size of signature data."""
+        """Get the coordinate size in bytes.
+
+        The coordinate size is calculated based on the key size, representing
+        the number of bytes needed to store one coordinate of the key.
+
+        :return: Size of coordinate in bytes.
+        """
         return math.ceil(self.key.key_size / 8)
 
     @property
     def signature_size(self) -> int:
-        """Size of signature data."""
+        """Get the size of signature data in bytes.
+
+        :return: Size of signature data, calculated as coordinate size multiplied by 2.
+        """
         return self.coordinate_size * 2
 
     @property
     def curve(self) -> EccCurve:
-        """Curve type."""
+        """Get the elliptic curve type of the key.
+
+        :return: The elliptic curve type used by this key.
+        """
         return EccCurve(self.key.curve.name)
 
     @property
     def key_size(self) -> int:
-        """Key size in bits."""
+        """Get the key size in bits.
+
+        :return: Size of the key in bits.
+        """
         return self.key.key_size
 
     @staticmethod
@@ -969,7 +1235,15 @@ class KeyEccCommon:
 
     @staticmethod
     def serialize_signature(signature: bytes, coordinate_length: int) -> bytes:
-        """Re-format ECC ANS.1 DER signature into the format used by ROM code."""
+        """Re-format ECC ANS.1 DER signature into the format used by ROM code.
+
+        Converts an ASN.1 DER encoded ECDSA signature into a concatenated format where
+        the r and s coordinates are represented as fixed-length byte arrays.
+
+        :param signature: ASN.1 DER encoded ECDSA signature bytes.
+        :param coordinate_length: Length in bytes for each coordinate (r and s).
+        :return: Concatenated r and s coordinates as fixed-length byte arrays.
+        """
         r, s = utils.decode_dss_signature(signature)
 
         r_bytes = r.to_bytes(coordinate_length, Endianness.BIG.value)
@@ -978,14 +1252,22 @@ class KeyEccCommon:
 
 
 class PrivateKeyEcc(KeyEccCommon, PrivateKey):
-    """SPSDK Private Key."""
+    """SPSDK ECC Private Key implementation.
+
+    This class provides elliptic curve cryptography private key operations for SPSDK,
+    including key generation, ECDH key exchange, digital signatures, and public key
+    derivation. It wraps cryptographic operations for secure provisioning workflows.
+    """
 
     key: ec.EllipticCurvePrivateKey
 
     def __init__(self, key: ec.EllipticCurvePrivateKey) -> None:
-        """Create SPSDK Ecc Private Key.
+        """Create SPSDK ECC Private Key.
 
-        :param key: Only Ecc key is accepted
+        Initialize an SPSDK ECC private key wrapper with the provided cryptographic key.
+
+        :param key: ECC private key object from cryptography library.
+        :raises TypeError: If the provided key is not an ECC private key.
         """
         self.key = key
 
@@ -993,8 +1275,10 @@ class PrivateKeyEcc(KeyEccCommon, PrivateKey):
     def generate_key(cls, curve_name: EccCurve = EccCurve.SECP256R1) -> Self:
         """Generate SPSDK Key (private key).
 
-        :param curve_name: Name of curve
-        :return: SPSDK private key
+        Creates a new private key using the specified elliptic curve for cryptographic operations.
+
+        :param curve_name: Name of the elliptic curve to use for key generation, defaults to SECP256R1
+        :return: SPSDK private key instance
         """
         curve_obj = cls._get_ec_curve_object(curve_name)
         prv = ec.generate_private_key(curve_obj)
@@ -1003,23 +1287,28 @@ class PrivateKeyEcc(KeyEccCommon, PrivateKey):
     def exchange(self, peer_public_key: "PublicKeyEcc") -> bytes:
         """Exchange key using ECDH algorithm with provided peer public key.
 
-        :param peer_public_key: Peer public key
-        :return: Shared key
+        :param peer_public_key: Peer public key for ECDH key exchange.
+        :return: Shared secret key as bytes.
         """
         return self.key.exchange(algorithm=ec.ECDH(), peer_public_key=peer_public_key.key)
 
     def get_public_key(self) -> "PublicKeyEcc":
-        """Generate public key.
+        """Get public key from private key.
 
-        :return: Public key
+        Extracts the corresponding public key from this private key instance.
+
+        :return: Public key derived from this private key.
         """
         return PublicKeyEcc(self.key.public_key())
 
     def verify_public_key(self, public_key: PublicKey) -> bool:
-        """Verify public key.
+        """Verify that the given public key matches this private key.
 
-        :param public_key: Public key to verify
-        :return: True if is in pair, False otherwise
+        This method compares the provided public key with the public key derived
+        from this private key to determine if they form a valid key pair.
+
+        :param public_key: Public key to verify against this private key
+        :return: True if the keys form a valid pair, False otherwise
         """
         return self.get_public_key() == public_key
 
@@ -1030,9 +1319,12 @@ class PrivateKeyEcc(KeyEccCommon, PrivateKey):
     ) -> bytes:
         """Export the Private key to the bytes in requested format.
 
-        :param password: password to private key; None to store without password
-        :param encoding: encoding type, default is DER
-        :returns: Private key in bytes
+        The method supports multiple encoding formats including DER, PEM, and NXP-specific format.
+        For NXP encoding, only the raw private scalar 'd' is exported.
+
+        :param password: Password to encrypt the private key; None to store without password.
+        :param encoding: Encoding type for the exported key, default is DER.
+        :return: Private key in bytes format.
         """
         if encoding == SPSDKEncoding.NXP:
             # Export raw private scalar 'd' only in NXP format
@@ -1054,14 +1346,17 @@ class PrivateKeyEcc(KeyEccCommon, PrivateKey):
         prehashed: bool = False,
         **kwargs: Any,
     ) -> bytes:
-        """Sign input data.
+        """Sign input data with the private key using ECDSA algorithm.
 
-        :param data: Input data
-        :param algorithm: Used algorithm
-        :param der_format: Use DER format as a output
-        :param prehashed: Use pre hashed value as input
-        :param kwargs: Sink for unused arguments
-        :return: Signed data
+        The method supports both raw data and pre-hashed input data signing.
+        Output format can be either DER or serialized signature format.
+
+        :param data: Input data to be signed or pre-hashed value if prehashed is True.
+        :param algorithm: Hash algorithm to use for signing, defaults to key's default algorithm.
+        :param der_format: If True, return signature in DER format, otherwise use serialized format.
+        :param prehashed: If True, treat input data as already hashed value.
+        :param kwargs: Additional unused arguments for compatibility.
+        :return: Digital signature as bytes in specified format.
         """
         hash_name = algorithm or self.default_hash_algorithm
         if prehashed:
@@ -1077,16 +1372,23 @@ class PrivateKeyEcc(KeyEccCommon, PrivateKey):
 
     @property
     def d(self) -> int:
-        """Private number D."""
+        """Get the private number D from the RSA key.
+
+        :return: The private value D component of the RSA private key.
+        """
         return self.key.private_numbers().private_value
 
     @classmethod
     def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
-        """Parse object from bytes array.
+        """Parse ECC private key object from bytes array.
 
-        :param data: Data to be parsed
-        :param password: password to private key; None to store without password
-        :returns: Recreated key
+        The method parses the provided byte data to recreate an ECC private key object.
+        It validates that the parsed key is specifically an ECC private key type.
+
+        :param data: Raw byte data containing the key information to be parsed.
+        :param password: Optional password for encrypted private key; None for unencrypted keys.
+        :raises SPSDKInvalidKeyType: When the data cannot be parsed as an ECC private key.
+        :return: Recreated ECC private key object.
         """
         key = super().parse(data=data, password=password)
         if isinstance(key, PrivateKeyEcc):
@@ -1100,37 +1402,55 @@ class PrivateKeyEcc(KeyEccCommon, PrivateKey):
 
         :param d: Private number D.
         :param curve: ECC curve.
-
         :return: ECC private key.
         """
         key = ec.derive_private_key(d, cls._get_ec_curve_object(curve))
         return cls(key)
 
     def __repr__(self) -> str:
+        """Return string representation of the ECC private key.
+
+        :return: String representation showing the curve type and key type.
+        """
         return f"ECC {self.curve} Private Key"
 
     def __str__(self) -> str:
-        """Object description in string format."""
+        """Get string representation of the ECC private key.
+
+        Returns a formatted string containing the curve type and private key value
+        in hexadecimal format.
+
+        :return: String representation showing curve and private key value.
+        """
         return f"ECC ({self.curve}) Private key: \nd({hex(self.d)})"
 
 
 class PublicKeyEcc(KeyEccCommon, PublicKey):
-    """SPSDK Public Key."""
+    """SPSDK ECC Public Key implementation.
+
+    This class provides functionality for handling Elliptic Curve Cryptography (ECC) public keys
+    within the SPSDK framework. It supports key export in various formats, signature verification,
+    and coordinate extraction for cryptographic operations across NXP MCU portfolio.
+    """
 
     key: ec.EllipticCurvePublicKey
 
     def __init__(self, key: ec.EllipticCurvePublicKey) -> None:
         """Create SPSDK Public Key.
 
-        :param key: SPSDK Public Key data or file path
+        :param key: Elliptic curve public key instance.
+        :raises SPSDKError: Invalid key provided.
         """
         self.key = key
 
     def export(self, encoding: SPSDKEncoding = SPSDKEncoding.NXP) -> bytes:
-        """Export the public key to the bytes in requested format.
+        """Export the public key to bytes in requested format.
 
-        :param encoding: encoding type, default is NXP
-        :returns: Public key in bytes
+        The method supports NXP encoding (concatenated x and y coordinates) and standard
+        cryptographic encodings through the cryptography library.
+
+        :param encoding: Encoding type for the exported key, defaults to SPSDKEncoding.NXP
+        :return: Public key exported as bytes in the specified format
         """
         if encoding == SPSDKEncoding.NXP:
             x_bytes = self.x.to_bytes(self.coordinate_size, Endianness.BIG.value)
@@ -1150,14 +1470,17 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
         prehashed: bool = False,
         **kwargs: Any,
     ) -> bool:
-        """Verify input data.
+        """Verify signature against input data using ECDSA algorithm.
 
-        :param signature: The signature of input data
-        :param data: Input data
-        :param algorithm: Used algorithm
-        :param prehashed: Use pre hashed value as input
-        :param kwargs: Sink for unused arguments
-        :return: True if signature is valid, False otherwise
+        The method supports both raw signature format (r||s coordinates) and DER-encoded
+        signatures. It automatically converts raw signatures to DER format for verification.
+
+        :param signature: The signature bytes to verify against the data.
+        :param data: Input data that was signed.
+        :param algorithm: Hash algorithm to use for verification. If None, uses default.
+        :param prehashed: Whether the input data is already hashed.
+        :param kwargs: Additional unused arguments for compatibility.
+        :return: True if signature is valid, False otherwise.
         """
         coordinate_size = math.ceil(self.key.key_size / 8)
         hash_name = algorithm or self.default_hash_algorithm
@@ -1183,25 +1506,25 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
 
     @property
     def public_numbers(self) -> ec.EllipticCurvePublicNumbers:
-        """Public numbers of key.
+        """Get public numbers of the elliptic curve key.
 
-        :return: Public numbers
+        :return: Public numbers containing the x and y coordinates of the public key point.
         """
         return self.key.public_numbers()
 
     @property
     def x(self) -> int:
-        """Public number X.
+        """Get the X coordinate of the public key point.
 
-        :return: X
+        :return: X coordinate value of the elliptic curve public key point.
         """
         return self.public_numbers.x
 
     @property
     def y(self) -> int:
-        """Public number Y.
+        """Get the Y coordinate of the public key point.
 
-        :return: Y
+        :return: Y coordinate value of the elliptic curve public key point.
         """
         return self.public_numbers.y
 
@@ -1212,6 +1535,7 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
         :param coor_x: X coordinate of point on curve.
         :param coor_y: Y coordinate of point on curve.
         :param curve: ECC curve.
+        :raises SPSDKValueError: Invalid coordinates or curve parameters.
         :return: ECC public key.
         """
         try:
@@ -1227,12 +1551,28 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
     def recreate_from_data(cls, data: bytes, curve: Optional[EccCurve] = None) -> Self:
         """Recreate ECC public key from coordinates in data blob.
 
-        :param data: Data blob of coordinates in bytes (X,Y in Big Endian)
-        :param curve: ECC curve.
-        :return: ECC public key.
+        The method supports both raw binary format (X,Y coordinates in Big Endian) and DER format.
+        If curve is not specified, the method will attempt to determine it from data length.
+
+        :param data: Data blob of coordinates in bytes (X,Y in Big Endian) or DER format.
+        :param curve: ECC curve, if None the curve will be auto-detected from data length.
+        :raises SPSDKUnsupportedEccCurve: When curve cannot be determined from data length.
+        :return: ECC public key instance.
         """
 
         def get_curve(data_length: int, curve: Optional[EccCurve] = None) -> tuple[EccCurve, bool]:
+            """Determine ECC curve and encoding format from signature data length.
+
+            Analyzes the provided data length to identify the matching ECC curve and whether
+            the data uses DER encoding format. If a specific curve is provided, only that
+            curve is checked; otherwise, all available curves are tested.
+
+            :param data_length: Length of the signature data in bytes.
+            :param curve: Optional specific ECC curve to check, defaults to None.
+            :return: Tuple containing the matching ECC curve and boolean indicating if DER
+                encoded (True for DER, False for raw binary).
+            :raises SPSDKUnsupportedEccCurve: When no curve matches the provided data length.
+            """
             curve_list = [curve] if curve else list(EccCurve)
             for cur in curve_list:
                 curve_obj = KeyEccCommon._get_ec_curve_object(EccCurve(cur))
@@ -1261,10 +1601,15 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Parse object from bytes array.
+        """Parse ECC public key object from bytes array.
 
-        :param data: Data to be parsed
-        :returns: Recreated key
+        Attempts to parse the data using the parent class method first. If that fails
+        or doesn't return a PublicKeyEcc instance, falls back to recreating the key
+        from the raw data.
+
+        :param data: Raw bytes data containing the ECC public key information.
+        :raises SPSDKInvalidKeyType: When the data cannot be parsed as an ECC public key.
+        :return: Recreated ECC public key object.
         """
         try:
             key = super().parse(data=data)
@@ -1276,10 +1621,22 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
         raise SPSDKInvalidKeyType("Can't parse ECC public key from given data")
 
     def __repr__(self) -> str:
+        """Return string representation of the ECC public key.
+
+        Provides a human-readable string format showing the curve type and key nature.
+
+        :return: String representation in format "ECC {curve} Public Key".
+        """
         return f"ECC {self.curve} Public Key"
 
     def __str__(self) -> str:
-        """Object description in string format."""
+        """Get string representation of the ECC public key.
+
+        Returns a formatted string containing the curve type and the x, y coordinates
+        of the public key in hexadecimal format.
+
+        :return: String representation with curve type and coordinates.
+        """
         return f"ECC ({self.curve}) Public key: \nx({hex(self.x)}) \ny({hex(self.y)})"
 
 
@@ -1293,14 +1650,20 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
 if IS_OSCCA_SUPPORTED:
 
     class PrivateKeySM2(PrivateKey):
-        """SPSDK SM2 Private Key."""
+        """SPSDK SM2 Private Key implementation.
+
+        This class provides SM2 elliptic curve private key operations for cryptographic
+        functions including key generation, signing, and public key derivation. SM2 is
+        a Chinese national standard for elliptic curve cryptography.
+        """
 
         key: sm2.CryptSM2
 
         def __init__(self, key: sm2.CryptSM2) -> None:
-            """Create SPSDK Key.
+            """Create SPSDK Key with SM2 cryptographic key.
 
-            :param key: Only SM2 key is accepted
+            :param key: SM2 cryptographic key instance to be wrapped by SPSDK Key.
+            :raises SPSDKInvalidKeyType: If the provided key is not of SM2 type.
             """
             if not isinstance(key, sm2.CryptSM2):
                 raise SPSDKInvalidKeyType("The input key is not SM2 type")
@@ -1308,9 +1671,12 @@ if IS_OSCCA_SUPPORTED:
 
         @classmethod
         def generate_key(cls) -> Self:
-            """Generate SM2 Key (private key).
+            """Generate SM2 cryptographic key pair.
 
-            :return: SM2 private key
+            Creates a new SM2 private key with corresponding public key using secure random generation.
+            The method ensures the generated public key meets SM2 format requirements.
+
+            :return: New SM2 key instance with generated private and public key pair.
             """
             key = sm2.CryptSM2(None, "None")
             n = int(key.ecc_table["n"], base=16)
@@ -1325,17 +1691,24 @@ if IS_OSCCA_SUPPORTED:
             return cls(key)
 
         def get_public_key(self) -> "PublicKeySM2":
-            """Generate public key.
+            """Get public key from private key.
 
-            :return: Public key
+            Extracts the public key component from the SM2 private key and wraps it
+            in a PublicKeySM2 object for cryptographic operations.
+
+            :return: Public key object containing the SM2 public key.
             """
             return PublicKeySM2(sm2.CryptSM2(private_key=None, public_key=self.key.public_key))
 
         def verify_public_key(self, public_key: PublicKey) -> bool:
-            """Verify public key.
+            """Verify that the given public key corresponds to this private key.
 
-            :param public_key: Public key to verify
-            :return: True if is in pair, False otherwise
+            This method checks if the provided public key forms a valid cryptographic
+            key pair with the current private key by comparing it with the derived
+            public key.
+
+            :param public_key: Public key to verify against this private key.
+            :return: True if the keys form a valid pair, False otherwise.
             """
             return self.get_public_key() == public_key
 
@@ -1348,12 +1721,15 @@ if IS_OSCCA_SUPPORTED:
         ) -> bytes:
             """Sign data using SM2 algorithm with SM3 hash.
 
+            The method uses SM3 hash function to process the input data and generates
+            a digital signature using the SM2 elliptic curve cryptography algorithm.
+
             :param data: Data to sign.
             :param salt: Salt for signature generation, defaults to None. If not specified a random string will be used.
-            :param use_ber: Encode signature into BER format, defaults to True
-            :param kwargs: Sink for unused arguments
+            :param use_ber: Encode signature into BER format, defaults to False.
+            :param kwargs: Sink for unused arguments.
             :raises SPSDKError: Signature can't be created.
-            :return: SM2 signature.
+            :return: SM2 signature in raw or BER format.
             """
             data_hash = bytes.fromhex(self.key._sm3_z(data))
             if salt is None:
@@ -1372,32 +1748,63 @@ if IS_OSCCA_SUPPORTED:
             password: Optional[str] = None,
             encoding: SPSDKEncoding = SPSDKEncoding.DER,
         ) -> bytes:
-            """Convert key into bytes supported by NXP."""
+            """Export SM2 private key to bytes format supported by NXP.
+
+            The method exports the SM2 private key using DER encoding, which is the only
+            supported encoding format for SM2 keys in NXP systems.
+
+            :param password: Password for key encryption (currently not used for SM2 keys).
+            :param encoding: Encoding format for the exported key, only DER is supported.
+            :raises SPSDKNotImplementedError: When encoding other than DER is requested.
+            :return: SM2 private key encoded as bytes in DER format.
+            """
             if encoding != SPSDKEncoding.DER:
                 raise SPSDKNotImplementedError("Only DER encoding is supported for SM2 keys export")
             keys = SM2PrivateKey(self.key.private_key, self.key.public_key)
             return SM2Encoder().encode_private_key(keys)
 
         def __repr__(self) -> str:
+            """Return string representation of SM2 private key.
+
+            :return: String identifier for SM2 private key object.
+            """
             return "SM2 Private Key"
 
         def __str__(self) -> str:
-            """Object description in string format."""
+            """Get string representation of the SM2Key object.
+
+            Returns a formatted string containing the private and public key information
+            for debugging and logging purposes.
+
+            :return: String representation showing private and public key details.
+            """
             return f"SM2Key(private_key={self.key.private_key}, public_key='{self.key.public_key}')"
 
         @property
         def key_size(self) -> int:
-            """Size of the key in bits."""
+            """Get the size of the key in bits.
+
+            :return: Size of the key in bits.
+            """
             return self.key.para_len
 
         @property
         def default_hash_algorithm(self) -> EnumHashAlgorithm:
-            """Default hash algorithm for signing/verifying."""
+            """Get default hash algorithm for signing and verifying operations.
+
+            Returns the SM3 hash algorithm as the default choice for cryptographic
+            operations with this key type.
+
+            :return: SM3 hash algorithm enum value.
+            """
             return EnumHashAlgorithm.SM3
 
         @property
         def signature_size(self) -> int:
-            """Signature size."""
+            """Get the signature size in bytes.
+
+            :return: Size of the signature in bytes (always 64 for this implementation).
+            """
             return 64
 
         def save(
@@ -1406,19 +1813,35 @@ if IS_OSCCA_SUPPORTED:
             password: Optional[str] = None,
             encoding: SPSDKEncoding = SPSDKEncoding.PEM,
         ) -> None:
-            """Save the Private key to the given file."""
+            """Save the Private key to the given file.
+
+            Saves the private key to a file in DER encoding format regardless of the encoding
+            parameter specified.
+
+            :param file_path: Path where the private key file will be saved.
+            :param password: Optional password for encrypting the private key file.
+            :param encoding: Encoding format (parameter ignored, always saves as DER).
+            """
             return super().save(file_path, password, encoding=SPSDKEncoding.DER)
 
     class PublicKeySM2(PublicKey):
-        """SM2 Public Key."""
+        """SM2 Public Key implementation for SPSDK cryptographic operations.
+
+        This class provides SM2 elliptic curve public key functionality including signature
+        verification and key export operations. SM2 is a Chinese national standard for
+        elliptic curve cryptography.
+
+        :cvar RECOMMENDED_ENCODING: Default encoding format for SM2 key export operations.
+        """
 
         RECOMMENDED_ENCODING = SPSDKEncoding.DER
         key: sm2.CryptSM2
 
         def __init__(self, key: sm2.CryptSM2) -> None:
-            """Create SPSDK Public Key.
+            """Create SPSDK Public Key from SM2 cryptographic key.
 
-            :param key: SPSDK Public Key data or file path
+            :param key: SM2 cryptographic key instance to wrap.
+            :raises SPSDKInvalidKeyType: If the provided key is not an SM2 type.
             """
             if not isinstance(key, sm2.CryptSM2):
                 raise SPSDKInvalidKeyType("The input key is not SM2 type")
@@ -1431,13 +1854,18 @@ if IS_OSCCA_SUPPORTED:
             algorithm: Optional[EnumHashAlgorithm] = None,
             **kwargs: Any,
         ) -> bool:
-            """Verify signature.
+            """Verify SM2 signature against provided data.
 
-            :param signature: SM2 signature to verify
-            :param data: Signed data
-            :param algorithm: Just to keep compatibility with abstract class
-            :param kwargs: Sink for unused arguments
-            :raises SPSDKError: Invalid signature
+            The method supports both BER-formatted signatures (starting with 0x30) and raw format
+            signatures (r || s concatenated). The data is hashed using SM3 algorithm before
+            verification.
+
+            :param signature: SM2 signature to verify in BER or raw format.
+            :param data: Original data that was signed.
+            :param algorithm: Hash algorithm parameter for compatibility with abstract class.
+            :param kwargs: Additional unused arguments.
+            :raises SPSDKError: Invalid signature format or verification failure.
+            :return: True if signature is valid, False otherwise.
             """
             # Check if the signature is BER formatted
             if len(signature) > 64 and signature[0] == 0x30:
@@ -1449,7 +1877,12 @@ if IS_OSCCA_SUPPORTED:
         def export(self, encoding: SPSDKEncoding = SPSDKEncoding.DER) -> bytes:
             """Convert key into bytes supported by NXP.
 
-            :return: Byte representation of key
+            Exports the SM2 key in the specified encoding format. Currently only DER encoding
+            is supported for SM2 keys.
+
+            :param encoding: The encoding format to use for export.
+            :raises SPSDKNotImplementedError: If encoding other than DER is requested.
+            :return: Byte representation of the SM2 public key in DER format.
             """
             if encoding != SPSDKEncoding.DER:
                 raise SPSDKNotImplementedError("Only DER encoding is supported for SM2 keys export")
@@ -1458,19 +1891,28 @@ if IS_OSCCA_SUPPORTED:
 
         @property
         def default_hash_algorithm(self) -> EnumHashAlgorithm:
-            """Default hash algorithm for signing/verifying."""
+            """Get default hash algorithm for signing and verifying operations.
+
+            Returns the SM3 hash algorithm as the default choice for cryptographic
+            operations with this key type.
+
+            :return: SM3 hash algorithm enum value.
+            """
             return EnumHashAlgorithm.SM3
 
         @property
         def signature_size(self) -> int:
-            """Signature size."""
+            """Get the signature size in bytes.
+
+            :return: Size of the signature in bytes (always 64 for this implementation).
+            """
             return 64
 
         @property
         def public_numbers(self) -> str:
-            """Public numbers of key.
+            """Get the public numbers of the cryptographic key.
 
-            :return: Public numbers
+            :return: Public numbers representation of the key.
             """
             return self.key.public_key
 
@@ -1478,8 +1920,8 @@ if IS_OSCCA_SUPPORTED:
         def recreate(cls, data: bytes) -> Self:
             """Recreate SM2 public key from data.
 
-            :param data: public key data
-            :return: SPSDK public key.
+            :param data: Raw bytes containing the SM2 public key data to be reconstructed.
+            :return: New SPSDK SM2 public key instance created from the provided data.
             """
             return cls(sm2.CryptSM2(private_key=None, public_key=data.hex()))
 
@@ -1487,23 +1929,37 @@ if IS_OSCCA_SUPPORTED:
         def recreate_from_data(cls, data: bytes) -> Self:
             """Recreate SM2 public key from data.
 
-            :param data: PEM or DER encoded key.
-            :return: SM2 public key.
+            The method creates a new SM2 public key instance from PEM or DER encoded key data.
+            It sanitizes the input data and decodes it using SM2Encoder.
+
+            :param data: PEM or DER encoded key data as bytes.
+            :return: New SM2 public key instance.
             """
             key_data = sanitize_pem(data)
             public_key = SM2Encoder().decode_public_key(data=key_data)
             return cls(sm2.CryptSM2(private_key=None, public_key=public_key.public))
 
         def __repr__(self) -> str:
+            """Return string representation of SM2 public key.
+
+            :return: String identifier for SM2 public key object.
+            """
             return "SM2 Public Key"
 
         def __str__(self) -> str:
-            """Object description in string format."""
+            """Get string representation of SM2 public key.
+
+            :return: String representation containing the public key numbers.
+            """
             ret = f"SM2 Public Key <{self.public_numbers}>"
             return ret
 
         def save(self, file_path: str, encoding: SPSDKEncoding = SPSDKEncoding.PEM) -> None:
-            """Save the Private key to the given file."""
+            """Save the Private key to the given file.
+
+            :param file_path: Path to the file where the private key will be saved.
+            :param encoding: Encoding format for the key (defaults to PEM, but saves as DER).
+            """
             return super().save(file_path, encoding=SPSDKEncoding.DER)
 
 else:
@@ -1513,16 +1969,26 @@ else:
 
 
 class ECDSASignature:
-    """ECDSA Signature."""
+    """ECDSA Signature representation and manipulation.
+
+    This class provides functionality for handling ECDSA signatures including parsing
+    from different formats (DER, NXP), exporting to various encodings, and managing
+    signature components (r, s values) along with their associated ECC curve parameters.
+
+    :cvar COORDINATE_LENGTHS: Mapping of ECC curves to their coordinate byte lengths.
+    """
 
     COORDINATE_LENGTHS = {EccCurve.SECP256R1: 32, EccCurve.SECP384R1: 48, EccCurve.SECP521R1: 66}
 
     def __init__(self, r: int, s: int, ecc_curve: EccCurve) -> None:
-        """ECDSA Signature constructor.
+        """Initialize ECDSA signature with r and s values.
 
-        :param r: r value of signature
-        :param s: s value of signature
-        :param ecc_curve: ECC Curve enum
+        Creates an ECDSA signature object containing the mathematical components
+        of the signature along with the associated elliptic curve parameters.
+
+        :param r: The r component of the ECDSA signature (x-coordinate of random point).
+        :param s: The s component of the ECDSA signature (calculated signature value).
+        :param ecc_curve: The elliptic curve used for the signature generation.
         """
         self.r = r
         self.s = s
@@ -1532,7 +1998,12 @@ class ECDSASignature:
     def parse(cls, signature: bytes) -> Self:
         """Parse signature in DER or NXP format.
 
-        :param signature: Signature binary
+        The method automatically detects the encoding format and creates an instance with the parsed
+        signature components (r, s) and the appropriate ECC curve.
+
+        :param signature: Binary signature data in either DER or NXP format.
+        :raises SPSDKValueError: Invalid signature encoding format.
+        :return: New instance with parsed signature components.
         """
         encoding = cls.get_encoding(signature)
         if encoding == SPSDKEncoding.DER:
@@ -1549,8 +2020,13 @@ class ECDSASignature:
     def export(self, encoding: SPSDKEncoding = SPSDKEncoding.NXP) -> bytes:
         """Export signature in DER or NXP format.
 
-        :param encoding: Signature encoding
-        :return: Signature as bytes
+        The method converts the signature's r and s coordinates into the specified encoding format.
+        For NXP encoding, it concatenates the r and s values as big-endian bytes. For DER encoding,
+        it uses the standard ASN.1 DER format for DSS signatures.
+
+        :param encoding: Signature encoding format (NXP or DER).
+        :raises SPSDKValueError: Invalid signature encoding format.
+        :return: Signature as bytes in the specified encoding format.
         """
         if encoding == SPSDKEncoding.NXP:
             r_bytes = self.r.to_bytes(self.COORDINATE_LENGTHS[self.ecc_curve], Endianness.BIG.value)
@@ -1564,7 +2040,13 @@ class ECDSASignature:
     def get_encoding(cls, signature: bytes) -> SPSDKEncoding:
         """Get encoding of signature.
 
-        :param signature: Signature
+        Detects the encoding format of a given signature by analyzing its length and structure.
+        The method first checks for NXP format based on signature length, then attempts to
+        decode as DER format.
+
+        :param signature: The signature bytes to analyze for encoding detection.
+        :raises SPSDKValueError: When signature doesn't match any supported encoding format.
+        :return: The detected encoding format (NXP or DER).
         """
         signature_length = len(signature)
         # Try detect the NXP format by data length
@@ -1582,9 +2064,15 @@ class ECDSASignature:
 
     @classmethod
     def get_ecc_curve(cls, signature_length: int) -> EccCurve:
-        """Get the Elliptic Curve of signature.
+        """Get the Elliptic Curve based on signature length.
 
-        :param signature_length: Signature length
+        The method determines the appropriate ECC curve by matching the signature length
+        against known coordinate lengths. It supports both exact matches and ranges
+        for DER-encoded signatures.
+
+        :param signature_length: Length of the signature in bytes
+        :return: The corresponding ECC curve
+        :raises SPSDKValueError: If signature length doesn't match any known ECC curve
         """
         for curve, coord_len in cls.COORDINATE_LENGTHS.items():
             if signature_length == coord_len * 2:
@@ -1605,7 +2093,15 @@ if IS_DILITHIUM_SUPPORTED:
     # ===================================================================================================
     # ===================================================================================================
     class PQCKey:
-        """Generic base class for all PQC keys."""
+        """Post-Quantum Cryptography key wrapper for SPSDK operations.
+
+        This class provides a unified interface for working with post-quantum cryptographic keys,
+        supporting both Dilithium and ML-DSA key types. It handles key operations including
+        signature verification and provides access to key properties and metadata.
+
+        :cvar SUPPORTED_LEVELS: List of supported security levels for PQC algorithms.
+        :cvar RECOMMENDED_ENCODING: Preferred encoding format for key serialization.
+        """
 
         SUPPORTED_LEVELS = [2, 3, 5]
         RECOMMENDED_ENCODING = SPSDKEncoding.PEM
@@ -1615,35 +2111,64 @@ if IS_DILITHIUM_SUPPORTED:
             self,
             key: Union[DilithiumPrivateKey, DilithiumPublicKey, MLDSAPublicKey, MLDSAPublicKey],
         ):
-            """Initialize PQC key."""
+            """Initialize PQC key.
+
+            :param key: The post-quantum cryptography key object to initialize with.
+            :raises TypeError: If the provided key is not a supported PQC key type.
+            """
             self.key = key
 
         @property
         def default_hash_algorithm(self) -> EnumHashAlgorithm:
-            """Default hash algorithm for signing/verifying."""
+            """Get default hash algorithm for signing and verifying operations.
+
+            :return: Default hash algorithm enumeration value (SHA384).
+            """
             return EnumHashAlgorithm.SHA384
 
         @property
         def signature_size(self) -> int:
-            """Size of signature data."""
+            """Get the size of signature data in bytes.
+
+            :return: Size of the signature in bytes.
+            """
             return self.key.signature_size
 
         @property
         def public_numbers(self) -> bytes:
-            """Public numbers of key."""
+            """Get public numbers of the cryptographic key.
+
+            Returns the public data portion of the key as raw bytes, which contains
+            the public key material that can be shared openly.
+
+            :return: Raw bytes containing the public key data.
+            """
             return self.key.public_data
 
         @property
         def key_size(self) -> int:
-            """Key size in bytes."""
+            """Get the key size in bytes.
+
+            :return: Size of the key in bytes.
+            """
             return self.key.key_size
 
         @property
         def level(self) -> int:
-            """Get Key level."""
+            """Get Key level.
+
+            :return: The level of the key.
+            """
             return self.key.level
 
         def __str__(self) -> str:
+            """Return string representation of the object.
+
+            This method provides a string representation by delegating to the repr() method,
+            ensuring consistent string formatting across different contexts.
+
+            :return: String representation of the object.
+            """
             return repr(self)
 
         def verify_signature(
@@ -1654,14 +2179,18 @@ if IS_DILITHIUM_SUPPORTED:
             prehashed: bool = False,
             **kwargs: Any,
         ) -> bool:
-            """Verify input data.
+            """Verify signature against input data using the public key.
 
-            :param signature: The signature of input data
-            :param data: Input data
-            :param algorithm: Used algorithm, defaults, automatic selection - None
-            :param prehashed: Use pre hashed value as input
-            :param kwargs: Keyword arguments for specific type of key
-            :return: True if signature is valid, False otherwise
+            The method supports both raw data and pre-hashed data verification. When prehashed
+            is False, the data will be hashed using the specified or default algorithm before
+            verification.
+
+            :param signature: The signature bytes to verify against the data.
+            :param data: Input data to verify or pre-hashed data if prehashed is True.
+            :param algorithm: Hash algorithm to use, defaults to key's default algorithm.
+            :param prehashed: Whether the input data is already hashed.
+            :param kwargs: Additional keyword arguments for specific key types.
+            :return: True if signature is valid, False otherwise.
             """
             if prehashed:
                 data_to_sign = data
@@ -1670,24 +2199,45 @@ if IS_DILITHIUM_SUPPORTED:
             return self.key.verify(data=data_to_sign, signature=signature)
 
     class PQCPublicKey(PQCKey, PublicKey):
-        """Generic base class for PQC public keys."""
+        """Post-Quantum Cryptography public key wrapper.
+
+        This class provides a unified interface for handling PQC public keys,
+        supporting both Dilithium and ML-DSA algorithms. It manages key export
+        operations and provides comparison functionality for PQC public keys.
+        """
 
         key: Union[DilithiumPublicKey, MLDSAPublicKey]
 
         def export(self, encoding: SPSDKEncoding = SPSDKEncoding.NXP) -> bytes:
             """Export key into bytes to requested format.
 
-            :param encoding: encoding type, default is NXP
-            :return: Byte representation of key
+            The method supports multiple encoding formats including NXP proprietary format and PEM format.
+
+            :param encoding: Encoding type for key export, defaults to SPSDKEncoding.NXP.
+            :return: Byte representation of the exported key.
             """
             if encoding == SPSDKEncoding.NXP:
                 return self.key.public_data
             return self.key.export(pem=encoding == SPSDKEncoding.PEM)
 
         def __repr__(self) -> str:
+            """Return string representation of the public key.
+
+            :return: String containing the algorithm type and key designation.
+            """
             return f"{self.key.algorithm.value} Public key"
 
         def __eq__(self, obj: Any) -> bool:
+            """Check equality between PQC public keys.
+
+            Compares two PQC public keys by their public data content. Since Dilithium and MLDSA
+            public keys cannot be distinguished by type, the comparison is based on the actual
+            public key data rather than the specific key type.
+
+            :param obj: Object to compare with this PQC public key.
+            :return: True if both objects are PQC public keys with identical public data,
+                     False otherwise.
+            """
             # since we can't distinguish between Dilithium and MLDSA public keys
             # we compare the public data directly and don't care about the specific type
             # this shall be rectified soon to avoid problems in the future
@@ -1696,7 +2246,13 @@ if IS_DILITHIUM_SUPPORTED:
             return self.key.public_data == obj.key.public_data
 
     class PQCPrivateKey(PQCKey, PrivateKey):
-        """Generic base class for PQC private keys."""
+        """SPSDK Post-Quantum Cryptography private key wrapper.
+
+        This class provides a unified interface for PQC private key operations including
+        digital signing and key export functionality. It wraps underlying PQC private key
+        implementations (Dilithium, ML-DSA) and provides standardized methods for
+        cryptographic operations across different PQC algorithms.
+        """
 
         key: Union[DilithiumPrivateKey, MLDSAPrivateKey]
 
@@ -1707,13 +2263,17 @@ if IS_DILITHIUM_SUPPORTED:
             prehashed: bool = False,
             **kwargs: Any,
         ) -> bytes:
-            """Sign input data.
+            """Sign input data with the private key.
 
-            :param data: Input data
-            :param algorithm: Used algorithm
-            :param prehashed: Use pre hashed value as input
-            :param kwargs: Keyword arguments for specific type of key
-            :return: Signed data
+            The method supports both raw data signing and pre-hashed data signing based on the
+            prehashed parameter. When prehashed is False, the data is hashed using the specified
+            or default algorithm before signing.
+
+            :param data: Input data to be signed or pre-hashed data if prehashed is True.
+            :param algorithm: Hash algorithm to use for data hashing, uses default if None.
+            :param prehashed: If True, treats input data as already hashed.
+            :param kwargs: Additional keyword arguments for specific key implementations.
+            :return: Digital signature as bytes.
             """
             if prehashed:
                 data_to_sign = data
@@ -1726,31 +2286,50 @@ if IS_DILITHIUM_SUPPORTED:
         ) -> bytes:
             """Export key into bytes to requested format.
 
-            :param encoding: encoding type, default is NXP
-            :param password: password to private key; None to store without password
-            :return: Byte representation of key
+            :param password: Password to private key; None to store without password.
+            :param encoding: Encoding type, defaults to DER.
+            :return: Byte representation of key.
             """
             if encoding == SPSDKEncoding.NXP:
                 return self.key.private_data + (self.key.public_data or bytes())
             return self.key.export(pem=encoding == SPSDKEncoding.PEM)
 
         def __repr__(self) -> str:
+            """Return string representation of the private key.
+
+            :return: String describing the algorithm type and key nature.
+            """
             return f"{self.key.algorithm.value} Private key"
 
         def __eq__(self, obj: Any) -> bool:
+            """Check equality of two private key objects.
+
+            Compares this private key instance with another object by checking if the other
+            object is of the same class and has identical private key data.
+
+            :param obj: Object to compare with this private key instance.
+            :return: True if objects are equal private keys, False otherwise.
+            """
             return isinstance(obj, self.__class__) and self.key.private_data == obj.key.private_data
 
     class PublicKeyDilithium(PQCPublicKey):
-        """Dilithium Public Key."""
+        """Dilithium Public Key implementation for post-quantum cryptography.
+
+        This class provides a wrapper for Dilithium public keys, enabling parsing
+        and handling of Dilithium public key data within the SPSDK framework.
+        Dilithium is a post-quantum digital signature algorithm designed to be
+        secure against quantum computer attacks.
+        """
 
         key: DilithiumPublicKey
 
         @classmethod
         def parse(cls, data: bytes) -> Self:
-            """Parse object from bytes array.
+            """Parse Dilithium public key object from bytes array.
 
-            :param data: Data to be parsed
-            :returns: Recreated key
+            :param data: Raw bytes data containing the Dilithium public key to be parsed.
+            :raises SPSDKInvalidKeyType: Invalid or corrupted Dilithium public key data.
+            :return: Recreated Dilithium public key object.
             """
             try:
                 return cls(DilithiumPublicKey.parse(data=data))
@@ -1758,7 +2337,11 @@ if IS_DILITHIUM_SUPPORTED:
                 raise SPSDKInvalidKeyType(f"Can't parse Dilithium Public from data: {e}") from e
 
     class PrivateKeyDilithium(PQCPrivateKey):
-        """Dilithium Private Key."""
+        """SPSDK Dilithium private key implementation for post-quantum cryptography.
+
+        This class provides a wrapper around Dilithium private keys, enabling generation,
+        parsing, and cryptographic operations with post-quantum security.
+        """
 
         key: DilithiumPrivateKey
 
@@ -1771,7 +2354,8 @@ if IS_DILITHIUM_SUPPORTED:
             One of 'level' or 'algorithm' must be specified.
 
             :param level: NIST claim level, defaults to None
-            :param algorithm: Exact PQC algorithm to use , defaults to None
+            :param algorithm: Exact PQC algorithm to use, defaults to None
+            :raises SPSDKError: Could not create Dilithium key
             :return: Dilithium Private key
             """
             try:
@@ -1780,13 +2364,27 @@ if IS_DILITHIUM_SUPPORTED:
                 raise SPSDKError(f"Could not create Dilithium key: {e}") from e
 
         def get_public_key(self) -> PublicKeyDilithium:
-            """Generate public key."""
+            """Get the public key from the Dilithium private key.
+
+            Extracts and returns the public key portion from this Dilithium private key instance.
+
+            :raises SPSDKUnsupportedOperation: When the Dilithium key doesn't have public portion.
+            :return: Public key instance containing the Dilithium public key data.
+            """
             if self.key.public_data is None:
                 raise SPSDKUnsupportedOperation("Dilithium key doesn't have public portion")
             return PublicKeyDilithium(DilithiumPublicKey(public_data=self.key.public_data))
 
         def verify_public_key(self, public_key: PublicKey) -> bool:
-            """Verify public key."""
+            """Verify that the provided public key matches this key's public key.
+
+            This method checks if the given public key is of the correct Dilithium type and
+            compares the public key data to determine if they are identical.
+
+            :param public_key: The public key to verify against this key.
+            :raises SPSDKInvalidKeyType: If the public key is not a Dilithium public key.
+            :return: True if the public keys match, False otherwise.
+            """
             if not isinstance(public_key, PublicKeyDilithium):
                 raise SPSDKInvalidKeyType("Public key type is not a Dilithium public key")
             return self.key.public_data == public_key.key.public_data
@@ -1795,9 +2393,10 @@ if IS_DILITHIUM_SUPPORTED:
         def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
             """Parse object from bytes array.
 
-            :param data: Data to be parsed
-            :param password: Password in case of encrypted key
-            :returns: Recreated key
+            :param data: Data to be parsed.
+            :param password: Password in case of encrypted key.
+            :raises SPSDKError: Could not parse key.
+            :return: Recreated key.
             """
             try:
                 return cls(DilithiumPrivateKey.parse(data=data))
@@ -1805,16 +2404,22 @@ if IS_DILITHIUM_SUPPORTED:
                 raise SPSDKError(f"Could not parse key: {e}") from e
 
     class PublicKeyMLDSA(PQCPublicKey):
-        """ML-DSA Public key."""
+        """ML-DSA (Module-Lattice-Based Digital Signature Algorithm) public key implementation.
+
+        This class provides a wrapper for ML-DSA public keys, offering parsing capabilities
+        and integration with the SPSDK cryptographic framework. ML-DSA is a post-quantum
+        cryptographic signature algorithm designed to be secure against quantum attacks.
+        """
 
         key: MLDSAPublicKey
 
         @classmethod
         def parse(cls, data: bytes) -> Self:
-            """Parse object from bytes array.
+            """Parse MLDSA public key object from bytes array.
 
-            :param data: Data to be parsed
-            :returns: Recreated key
+            :param data: Raw bytes data containing the MLDSA public key to be parsed.
+            :raises SPSDKError: If the key data cannot be parsed or is invalid.
+            :return: Recreated MLDSA public key instance.
             """
             try:
                 return cls(MLDSAPublicKey.parse(data=data))
@@ -1822,7 +2427,12 @@ if IS_DILITHIUM_SUPPORTED:
                 raise SPSDKError(f"Could not parse key: {e}") from e
 
     class PrivateKeyMLDSA(PQCPrivateKey):
-        """ML-DSA Private Key."""
+        """ML-DSA Private Key for post-quantum cryptographic operations.
+
+        This class provides a wrapper around ML-DSA (Module-Lattice-Based Digital Signature Algorithm)
+        private keys, enabling key generation, public key derivation, verification, and serialization
+        operations within the SPSDK framework.
+        """
 
         key: MLDSAPrivateKey
 
@@ -1835,7 +2445,8 @@ if IS_DILITHIUM_SUPPORTED:
             One of 'level' or 'algorithm' must be specified.
 
             :param level: NIST claim level, defaults to None
-            :param algorithm: Exact PQC algorithm to use , defaults to None
+            :param algorithm: Exact PQC algorithm to use, defaults to None
+            :raises SPSDKError: Could not create Dilithium key
             :return: ML-DSA Private key
             """
             try:
@@ -1845,24 +2456,39 @@ if IS_DILITHIUM_SUPPORTED:
             return cls(key)
 
         def get_public_key(self) -> PublicKeyMLDSA:
-            """Generate public key."""
+            """Get the public key from the Dilithium private key.
+
+            Extracts and returns the public key portion of the ML-DSA (Dilithium) key pair.
+
+            :raises SPSDKUnsupportedOperation: When the Dilithium key doesn't have a public portion.
+            :return: The public key as PublicKeyMLDSA instance.
+            """
             if self.key.public_data is None:
                 raise SPSDKUnsupportedOperation("Dilithium key doesn't have public portion")
             return PublicKeyMLDSA(MLDSAPublicKey(public_data=self.key.public_data))
 
         def verify_public_key(self, public_key: PublicKey) -> bool:
-            """Verify public key."""
+            """Verify that the provided public key matches this private key.
+
+            The method checks if the public key is of the correct type (Dilithium/ML-DSA) and
+            compares the public data to ensure it corresponds to this private key.
+
+            :param public_key: The public key to verify against this private key.
+            :raises SPSDKInvalidKeyType: If the public key is not a Dilithium public key.
+            :return: True if the public key matches this private key, False otherwise.
+            """
             if not isinstance(public_key, PublicKeyMLDSA):
                 raise SPSDKInvalidKeyType("Public key type is not a Dilithium public key")
             return self.key.public_data == public_key.key.public_data
 
         @classmethod
         def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
-            """Parse object from bytes array.
+            """Parse MLDSA private key object from bytes array.
 
-            :param data: Data to be parsed
-            :param password: Password in case of encrypted key
-            :returns: Recreated key
+            :param data: Raw bytes data containing the MLDSA private key to be parsed.
+            :param password: Optional password for encrypted key decryption.
+            :raises SPSDKError: When the key parsing fails or data is invalid.
+            :return: Recreated MLDSA private key object.
             """
             try:
                 return cls(MLDSAPrivateKey.parse(data=data))
@@ -1888,10 +2514,14 @@ KeyGeneratorInfo = dict[str, tuple[Callable[..., PrivateKey], GeneratorParams]]
 
 
 def get_supported_keys_generators(basic: bool = False) -> KeyGeneratorInfo:
-    """Generate list with list of supported key types.
+    """Get supported key generators dictionary.
 
-    :param basic: Return only the RSA and ECC keys generators
-    :return: `KeyGeneratorInfo` dictionary of supported key types.
+    Returns a dictionary mapping key type names to their corresponding generator functions
+    and parameters. Supports RSA, ECC, and optionally SM2, Dilithium, and ML-DSA key types
+    based on system capabilities.
+
+    :param basic: If True, return only RSA and ECC key generators, defaults to False
+    :return: Dictionary mapping key type names to tuples of (generator_function, parameters)
     """
     ret: KeyGeneratorInfo = {
         # RSA keys
@@ -1921,9 +2551,14 @@ def get_supported_keys_generators(basic: bool = False) -> KeyGeneratorInfo:
 
 
 def get_ecc_curve(key_length: int) -> EccCurve:
-    """Get curve name for Crypto library.
+    """Get ECC curve based on key length.
 
-    :param key_length: Length of ecc key in bytes
+    Determines the appropriate elliptic curve cryptography curve type based on the
+    provided key length in bytes. Supports SECP256R1, SECP384R1, and SECP521R1 curves.
+
+    :param key_length: Length of ECC key in bytes
+    :return: Corresponding ECC curve type
+    :raises SPSDKError: When key length doesn't correspond to any supported curve
     """
     if key_length <= 32 or key_length == 64:
         return EccCurve.SECP256R1
@@ -1935,7 +2570,15 @@ def get_ecc_curve(key_length: int) -> EccCurve:
 
 
 def prompt_for_passphrase() -> str:
-    """Prompt interactively for private key passphrase."""
+    """Prompt interactively for private key passphrase.
+
+    This function displays a secure password prompt to the user and waits for input.
+    The entered passphrase is hidden from display for security purposes.
+
+    :raises SPSDKError: When interactive mode is disabled via SPSDK_INTERACTIVE_DISABLED
+                       environment variable.
+    :return: The passphrase entered by the user.
+    """
     if SPSDK_INTERACTIVE_DISABLED:
         raise SPSDKError(
             "Prompting for passphrase failed. The interactive mode is turned off."

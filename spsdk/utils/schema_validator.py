@@ -4,7 +4,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module for schema-based configuration validation."""
+"""SPSDK schema-based configuration validation utilities.
+
+This module provides comprehensive functionality for validating configuration
+data against JSON schemas, merging configurations with different strategies,
+and handling commented YAML configurations within the SPSDK framework.
+"""
 
 import copy
 import io
@@ -35,15 +40,23 @@ logger = logging.getLogger(__name__)
 def cmap_update(cmap: CMap, updater: CMap) -> None:
     """Update CMap including comments.
 
+    This method updates the original CMap with data from the updater CMap,
+    ensuring that both the main data and comment annotations are properly merged.
+
     :param cmap: Original CMap to be updated.
-    :param updater: CMap updater.
+    :param updater: CMap updater containing new data and comments to merge.
     """
     cmap.update(updater)
     cmap.ca.items.update(updater.ca.items)
 
 
 class PropertyRequired(SpsdkEnum):
-    """Enum describing if the property is required or optional."""
+    """Property requirement level enumeration for schema validation.
+
+    This enumeration defines the different requirement levels that can be applied
+    to properties in SPSDK schema validation, indicating whether a property must
+    be present, conditionally required, or optional.
+    """
 
     REQUIRED = (0, "REQUIRED", "Required")
     CONDITIONALLY_REQUIRED = (1, "CONDITIONALLY_REQUIRED", "Conditionally required")
@@ -51,12 +64,27 @@ class PropertyRequired(SpsdkEnum):
 
 
 class SPSDKListStrategies(ListStrategies):
-    """Extended List Strategies."""
+    """SPSDK List Strategies for configuration merging.
+
+    This class extends the base ListStrategies to provide custom list merging
+    strategies for SPSDK configuration processing. It implements specialized
+    handling for combining lists during configuration merges, including set-based
+    deduplication with fallback mechanisms for unhashable objects.
+    """
 
     # pylint: disable=unused-argument   # because of the base class
     @staticmethod
-    def strategy_set(_config, _path, base, nxt):  # type: ignore
-        """Use the set of both as a output."""
+    def strategy_set(_config: Merger, _path: list, base: list, nxt: list):  # type: ignore
+        """Merge two lists using set strategy to create a unique sorted output.
+
+        This strategy combines two lists by creating a set union to remove duplicates,
+        then sorts the result. Falls back to concatenation if items are unhashable,
+        or override strategy if concatenation fails.
+
+        :param base: Base list to merge from.
+        :param nxt: Next list to merge with base.
+        :return: Merged list with unique elements, sorted if possible.
+        """
         try:
             ret = list(set(base + nxt))
             ret.sort()
@@ -73,7 +101,14 @@ class SPSDKListStrategies(ListStrategies):
 
 
 class SPSDKMerger(Merger):
-    """Modified Merger to add new list strategy 'set'."""
+    """SPSDK Configuration Merger with enhanced list strategies.
+
+    This class extends the base Merger functionality to provide additional merge strategies
+    specifically for SPSDK configuration processing, including a new 'set' strategy for
+    list merging operations.
+
+    :cvar PROVIDED_TYPE_STRATEGIES: Mapping of data types to their available merge strategies.
+    """
 
     PROVIDED_TYPE_STRATEGIES = {
         list: SPSDKListStrategies,
@@ -87,22 +122,29 @@ class SPSDKMerger(Merger):
         fallback_strategies: list = ["override"],
         type_conflict_strategies: list = ["override"],
     ):
-        """SPSDK Merger constructor.
+        """Initialize SPSDK Merger with configurable merge strategies.
 
-        :param type_strategies: Type of merge strategies, defaults to
-            [(list, ["set"]), (dict, ["merge"]), (set, ["union"])]
-        :param fallback_strategies: Fallback strategies, defaults to ["override"]
-        :param type_conflict_strategies: Conflict strategies, defaults to ["override"]
+        The merger provides flexible data merging capabilities with customizable strategies
+        for different data types and conflict resolution.
+
+        :param type_strategies: List of tuples defining merge strategies for specific types,
+            each tuple contains (type, [strategy_list]).
+        :param fallback_strategies: List of fallback strategies to use when no type-specific
+            strategy is defined.
+        :param type_conflict_strategies: List of strategies for resolving type conflicts
+            during merge operations.
         """
         super().__init__(type_strategies, fallback_strategies, type_conflict_strategies)
 
 
 def _is_number(param: Any) -> bool:
-    """Checks whether the input represents a number.
+    """Check if the input parameter represents a number.
 
-    :param param: Input to analyze
-    :raises SPSDKError: Input doesn't represent a number
-    :return: True if input represents a number
+    The method uses value_to_int conversion to determine if the input can be
+    interpreted as a numeric value.
+
+    :param param: Input value to analyze for numeric representation.
+    :return: True if input represents a number, False otherwise.
     """
     try:
         value_to_int(param)
@@ -112,11 +154,14 @@ def _is_number(param: Any) -> bool:
 
 
 def _is_hex_number(param: Any) -> bool:
-    """Checks whether the input represents a hexnumber.
+    """Check if the input represents a hexadecimal number.
 
-    :param param: Input to analyze
-    :raises SPSDKError: Input doesn't represent a hexnumber
-    :return: True if input represents a hexnumber
+    The method validates whether the input parameter can be interpreted as a valid hexadecimal
+    number. It handles both string inputs (with or without '0x' prefix) and other types that
+    can be converted to hexadecimal format.
+
+    :param param: Input value to analyze for hexadecimal format compatibility.
+    :return: True if input represents a valid hexadecimal number, False otherwise.
     """
     try:
         if isinstance(param, str):
@@ -128,21 +173,46 @@ def _is_hex_number(param: Any) -> bool:
         return False
 
 
+def _is_config_string(param: Any) -> bool:
+    """Checks whether the input represents a valid configuration string.
+
+    :param param: Input to analyze
+    :return: True if input is a valid configuration string
+    """
+    if not isinstance(param, str):
+        return False
+    return param.startswith("type=")
+
+
 def _print_validation_fail_reason(
     exc: fastjsonschema.JsonSchemaValueException,
     extra_formatters: Optional[dict[str, Callable[[str], bool]]] = None,
 ) -> str:
-    """Print formatted and easy to read reason why the  validation failed.
+    """Format JSON schema validation failure into human-readable error message.
 
-    :param exc: Original exception.
-    :param extra_formatters: Additional custom formatters
-    :return: String explaining the reason of fail.
+    The method processes different types of JSON schema validation errors and provides
+    detailed explanations for common failure scenarios including missing required fields,
+    format violations, and complex rule failures (oneOf, anyOf).
+
+    :param exc: The JSON schema validation exception to process.
+    :param extra_formatters: Optional dictionary of custom format validators for schema validation.
+    :return: Formatted error message explaining the validation failure reason.
     """
 
     def process_one_of_rule(
         exception: fastjsonschema.JsonSchemaValueException,
         extra_formatters: Optional[dict[str, Callable[[str], bool]]],
     ) -> str:
+        """Process oneOf JSON schema validation rule and generate error message.
+
+        This method analyzes a oneOf validation exception by testing each rule definition
+        against the exception value and collecting failure reasons. It helps provide
+        detailed error messages for complex schema validation failures.
+
+        :param exception: The JSON schema validation exception containing oneOf rule data.
+        :param extra_formatters: Optional dictionary of custom format validators.
+        :return: Formatted error message describing why oneOf validation failed.
+        """
         message = ""
         for rule_def in exception.rule_definition:
             try:
@@ -166,6 +236,18 @@ def _print_validation_fail_reason(
         exception: fastjsonschema.JsonSchemaValueException,
         extra_formatters: Optional[dict[str, Callable[[str], bool]]],
     ) -> str:
+        """Process nested JSON schema validation rule and generate detailed error message.
+
+        Analyzes each rule definition within a nested validation exception to determine
+        which specific rules passed or failed, providing comprehensive feedback for
+        debugging schema validation issues.
+
+        :param exception: The JSON schema validation exception containing nested rule definitions.
+        :param extra_formatters: Optional dictionary of custom format validators for schema
+            validation.
+        :return: Formatted string containing detailed analysis of rule validation results
+            and failure reasons.
+        """
         message = ""
         for rule_def_ix, rule_def in enumerate(exception.rule_definition):
             try:
@@ -194,8 +276,14 @@ def _print_validation_fail_reason(
         elif exc.rule_definition == "file-or-hex-value":
             message += (
                 f"; Value '{exc.value}' is neither a valid hex value nor an existing file path"
+                "; The value must be either a valid hex string (e.g. 0x1234ABCD) or a path to an existing file."
             )
-            message += "; The value must be either a valid hex string (e.g. 0x1234ABCD) or a path to an existing file."
+        elif exc.rule_definition == "file-or-hex-value-or-config-string":
+            message += (
+                f"; Value '{exc.value}' is neither a valid hex value, an existing file path, "
+                "nor a valid configuration string."
+            )
+
     elif exc.rule == "anyOf":
         message += process_nested_rule(exc, extra_formatters=extra_formatters)
     elif exc.rule == "oneOf":
@@ -204,17 +292,28 @@ def _print_validation_fail_reason(
 
 
 def check_unknown_properties(config_dict: dict, schema_dict: dict, path: str = "") -> None:
-    """Recursively check for unknown properties in config."""
+    """Recursively check for unknown properties in configuration against schema.
+
+    This method validates that all properties in the configuration dictionary
+    are defined in the corresponding schema. It handles nested objects, arrays,
+    and pattern properties. When unknown properties are found, it either raises
+    an exception (in strict mode) or logs a warning.
+
+    :param config_dict: Configuration dictionary to validate
+    :param schema_dict: JSON schema dictionary defining allowed properties
+    :param path: Current path in the configuration for error reporting
+    :raises SPSDKError: When unknown property is found and strict mode is enabled
+    """
 
     def process_nested_schemas(schemas: dict) -> dict:
         """Process and merge nested schema structures.
 
-        This function handles structures that contain nested schemas
-        under keywords like 'oneOf', 'allOf', or 'anyOf'. It merges all nested
-        schemas into a single schema that can be used for property checking.
+        This function handles structures that contain nested schemas under keywords like 'oneOf',
+        'allOf', or 'anyOf'. It merges all nested schemas into a single schema that can be used
+        for property checking.
 
-        :param schemas: Original schema dictionary that may contain nested schemas
-        :return: Merged schema if nested schemas were found, otherwise the original schema
+        :param schemas: Original schema dictionary that may contain nested schemas.
+        :return: Merged schema if nested schemas were found, otherwise the original schema.
         """
         nested_ch_keywords = ["oneOf", "allOf", "anyOf"]
         if not any(key in schemas for key in nested_ch_keywords):
@@ -278,12 +377,16 @@ def check_config(
 ) -> None:
     """Check the configuration by provided list of validation schemas.
 
-    :param config: Configuration to check
-    :param schemas: List of validation schemas
-    :param extra_formatters: Additional custom formatters
-    :param search_paths: List of paths where to search for the file, defaults to None
-    :param check_unknown_props: If True, check for unknown properties in config and print warnings
-    :raises SPSDKError: Invalid validation schema or configuration
+    The method validates configuration data against multiple JSON schemas that are merged together.
+    It supports custom formatters for file/directory validation and can optionally check for
+    unknown properties in the configuration.
+
+    :param config: Configuration dictionary to validate.
+    :param schemas: List of JSON schema dictionaries for validation.
+    :param extra_formatters: Additional custom format validators for schema validation.
+    :param search_paths: List of directory paths to search for files during validation.
+    :param check_unknown_props: Whether to check and warn about unknown properties in config.
+    :raises SPSDKError: Invalid validation schema or configuration validation failed.
     """
     custom_formatters: dict[str, Callable[[str], bool]] = {
         "dir": lambda x: bool(find_dir(x, search_paths=search_paths, raise_exc=False)),
@@ -294,8 +397,14 @@ def check_config(
         or bool(find_file(x, search_paths=search_paths, raise_exc=False)),
         "number": _is_number,
         "hex_value": _is_hex_number,
-        "file-or-hex-value": lambda x: _is_hex_number(x)
-        or bool(find_file(x, search_paths=search_paths, raise_exc=False)),
+        "file-or-hex-value": lambda x: (
+            _is_hex_number(x) or bool(find_file(x, search_paths=search_paths, raise_exc=False))
+        ),
+        "file-or-hex-value-or-config-string": lambda x: (
+            _is_hex_number(x)
+            or _is_config_string(x)
+            or bool(find_file(x, search_paths=search_paths, raise_exc=False))
+        ),
     }
 
     config_to_check = copy.deepcopy(config)
@@ -342,7 +451,13 @@ def check_config(
 
 
 class CommentedConfig:
-    """Class for generating commented config templates or custom configurations."""
+    """SPSDK Configuration Template Generator.
+
+    This class generates commented YAML configuration templates and custom configurations
+    with proper formatting, indentation, and documentation comments for SPSDK operations.
+
+    :cvar MAX_LINE_LENGTH: Maximum line length for generated comments and formatting.
+    """
 
     MAX_LINE_LENGTH = 120 - 2  # Minus '# '
 
@@ -352,11 +467,15 @@ class CommentedConfig:
         schemas: list[dict[str, Any]],
         note: Optional[str] = None,
     ):
-        """Constructor for Config templates.
+        """Initialize configuration template generator.
 
-        :param main_title: Main title of final template.
-        :param schemas: Main description of final template.
-        :param note: Additional Note after title test.
+        Creates a new instance for generating configuration templates from JSON schemas.
+        The generator processes multiple schemas to create comprehensive configuration
+        documentation with proper formatting and structure.
+
+        :param main_title: Main title of the generated configuration template.
+        :param schemas: List of JSON schema dictionaries to process for template generation.
+        :param note: Optional additional note to display after the title section.
         """
         self.main_title = main_title
         self.schemas = schemas
@@ -366,15 +485,24 @@ class CommentedConfig:
 
     @property
     def max_line(self) -> int:
-        """Maximal line with current indent."""
+        """Get maximum line length adjusted for current indentation level.
+
+        Calculates the maximum allowed line length by subtracting the current
+        indentation space from the base maximum line length constant.
+
+        :return: Maximum line length accounting for current indent level.
+        """
         return self.MAX_LINE_LENGTH - max(SPSDK_YML_INDENT * (self.indent - 1), 0)
 
     def _get_title_block(self, title: str, description: Optional[str] = None) -> str:
-        """Get unified title blob.
+        """Get unified title block for display formatting.
 
-        :param title: Simple title of block
-        :param description: Description of block
-        :return: ASCII art block
+        Creates an ASCII art formatted block with centered title and optional description,
+        surrounded by delimiter lines for visual separation.
+
+        :param title: Simple title of block to be displayed.
+        :param description: Optional description text to include below title.
+        :return: Formatted ASCII art block as string.
         """
         delimiter = "=" * self.max_line
         title_str = f" == {title} == "
@@ -391,15 +519,28 @@ class CommentedConfig:
 
     @staticmethod
     def get_property_optional_required(key: str, block: dict[str, Any]) -> PropertyRequired:
-        """Function to determine if the config property is required or not.
+        """Determine if a configuration property is required, optional, or conditionally required.
 
-        :param key: Name of config record
-        :param block: Source data block
-        :return: Final description.
+        The method analyzes JSON schema blocks to classify property requirements by checking
+        direct required arrays, nested conditional structures, and schema keywords like
+        allOf, anyOf, oneOf, if/then/else constructs.
+
+        :param key: Name of the configuration property to check.
+        :param block: JSON schema block containing property definitions and requirements.
+        :return: PropertyRequired enum indicating if property is REQUIRED, OPTIONAL, or
+            CONDITIONALLY_REQUIRED.
         """
         schema_kws = ["allOf", "anyOf", "oneOf", "if", "then", "else"]
 
         def _find_required(d_in: dict[str, Any]) -> Optional[list[str]]:
+            """Find required fields in a dictionary structure.
+
+            Recursively searches through a dictionary to locate the first occurrence of a 'required' key
+            and returns its associated list of required field names.
+
+            :param d_in: Dictionary to search for required fields
+            :return: List of required field names if found, None otherwise
+            """
             if "required" in d_in:
                 return d_in["required"]
 
@@ -411,7 +552,14 @@ class CommentedConfig:
             return None
 
         def _find_required_in_schema_kws(schema_node: Union[list, dict[str, Any]]) -> list[str]:
-            """Find all required properties in structure composed of nested properties."""
+            """Find all required properties in structure composed of nested properties.
+
+            Recursively traverses a schema structure (dictionary or list) to extract all property names
+            that are marked as required in JSON schema format.
+
+            :param schema_node: Schema structure to search for required properties (dict or list).
+            :return: List of unique required property names found in the schema structure.
+            """
             all_props: list[str] = []
             if isinstance(schema_node, dict):
                 for k, v in schema_node.items():
@@ -447,16 +595,19 @@ class CommentedConfig:
         block: dict[str, dict[str, Any]],
         custom_value: Optional[Union[dict[str, Any], list[Any]]] = None,
     ) -> CMap:
-        """Private function used to create object block with data.
+        """Create object block with data from schema definition.
 
-        :param block: Source block with data
-        :param custom_value:
-            Optional dictionary or List of properties to be exported.
-        It is recommended to pass OrderedDict to preserve the key order.
-            - key is property ID to be exported
-            - value is its value; or None if default value shall be used
-        :return: CMap or CSeq base configuration object
-        :raises SPSDKError: In case of invalid data pattern.
+        This private method processes a schema block of type 'object' and creates a CMap
+        configuration object with the specified properties. It handles custom values,
+        validates required properties, and adds comments based on schema definitions.
+
+        :param block: Source schema block containing object definition with properties.
+        :param custom_value: Optional dictionary or list of custom property values to override
+            defaults. Keys represent property IDs, values are the custom values or None to
+            skip the property. OrderedDict recommended to preserve key order.
+        :return: CMap configuration object containing the processed properties.
+        :raises SPSDKError: If block type is not 'object', properties are missing, value
+            creation fails, or required property definitions are invalid.
         """
         if block.get("type") != "object":
             raise SPSDKError(f"block type is not 'object' but {block.get('type')}")
@@ -498,11 +649,15 @@ class CommentedConfig:
     def _create_array_block(
         self, block: dict[str, dict[str, Any]], custom_value: Optional[list[Any]]
     ) -> CSeq:
-        """Private function used to create array block with data.
+        """Create array block configuration from schema definition.
 
-        :param block: Source block with data
-        :return: CS base configuration object
-        :raises SPSDKError: In case of invalid data pattern.
+        This method processes an array-type schema block and generates a corresponding
+        CSeq configuration object with the appropriate data values.
+
+        :param block: Schema block dictionary containing array definition with 'type' and 'items' keys.
+        :param custom_value: Optional list of custom values to use instead of schema defaults.
+        :raises SPSDKError: If block type is not 'array' or 'items' key is missing.
+        :return: CSeq configuration object containing the array elements.
         """
         if block.get("type") != "array":
             raise SPSDKError(f"block type is not 'array' but {block.get('type')}")
@@ -531,14 +686,27 @@ class CommentedConfig:
 
     @staticmethod
     def _check_matching_oneof_option(one_of: dict[str, Any], cust_val: Any) -> bool:
-        """Find matching given custom value to "oneOf" schema.
+        """Check if custom value matches oneOf schema option.
 
-        :param one_of:oneOf schema
-        :param cust_val: custom value
-        :raises SPSDKError: if not found
+        The method validates whether a given custom value conforms to a specific oneOf schema
+        option by checking type compatibility and structural requirements.
+
+        :param one_of: Dictionary containing oneOf schema definition with type and properties.
+        :param cust_val: Custom value to validate against the schema option.
+        :raises SPSDKError: If properties are not defined for object type validation.
+        :return: True if custom value matches the schema option, False otherwise.
         """
 
         def check_type(option: dict, t: str) -> bool:
+            """Check if option type matches the specified type.
+
+            Validates whether the given option's type field matches the target type string.
+            Handles both single type strings and lists of multiple allowed types.
+
+            :param option: Dictionary containing option configuration with 'type' field.
+            :param t: Target type string to check against.
+            :return: True if the option type matches the target type, False otherwise.
+            """
             option_type = option.get("type")
             if isinstance(option_type, list):
                 return t in option_type
@@ -565,14 +733,28 @@ class CommentedConfig:
         block: dict[str, Any],
         custom_value: Optional[Union[dict[str, Any], list[Any]]] = None,
     ) -> CMap:
-        """Private function used to create oneOf block with data, and return as an array that contains all values.
+        """Handle oneOf schema block and generate configuration map.
 
-        :param block: Source block with data
-        :param custom_value: custom value to fill the array
-        :return: CS base configuration object
+        Processes a oneOf schema block to create a configuration map with all possible options.
+        When custom_value is provided, finds and returns the matching option. Otherwise,
+        generates a template with all available options as examples.
+
+        :param block: Source oneOf schema block containing multiple option definitions.
+        :param custom_value: Optional custom configuration data to match against schema options.
+        :raises SPSDKError: When custom_value doesn't match any available oneOf option.
+        :return: Configuration map with schema values or template examples.
         """
 
         def get_help_name(schema: dict) -> str:
+            """Get help name from JSON schema.
+
+            Extracts a human-readable name from a JSON schema object. For object schemas with a single
+            property, returns that property name. For object schemas with multiple properties, returns
+            the list of property names. For other schema types, returns the title or type.
+
+            :param schema: JSON schema dictionary to extract name from.
+            :return: Help name as string representation.
+            """
             if schema.get("type") == "object":
                 options = list(schema["properties"].keys())
                 if len(options) == 1:
@@ -630,15 +812,26 @@ class CommentedConfig:
     def _get_schema_value(
         self, block: dict[str, Any], custom_value: Any
     ) -> Union[CMap, CSeq, str, int, float, list]:
-        """Private function used to fill up configuration block with data.
+        """Get schema value from configuration block with optional custom data.
 
-        :param block: Source block with data
-        :param custom_value: value to be saved instead of default value
-        :return: CM/CS base configuration object with comment
-        :raises SPSDKError: In case of invalid data pattern.
+        Processes a configuration block according to its schema type (object, array, or oneOf)
+        and fills it with either custom provided values or template default values.
+
+        :param block: Source configuration block containing schema definition and data.
+        :param custom_value: Custom value to use instead of template default value.
+        :return: Configuration object with comments (CMap/CSeq) or primitive value.
+        :raises SPSDKError: In case of invalid data pattern or missing required values.
         """
 
         def get_custom_or_template() -> Any:
+            """Get custom value or template value from block configuration.
+
+            Returns the custom value if it's not None, otherwise returns the template_value
+            from the block dictionary. Raises an error if neither is available.
+
+            :raises SPSDKError: When neither custom_value nor template_value is defined in block.
+            :return: The custom value if available, otherwise the template value from block.
+            """
             if not (custom_value or "template_value" in block.keys()):
                 raise SPSDKError("Custom value or template_value must be defined")
             return (
@@ -680,7 +873,11 @@ class CommentedConfig:
         value: Optional[Union[CMap, CSeq, str, int, float, list]],
         required: str,
     ) -> None:
-        """Private function used to create comment for block.
+        """Add comment block to configuration based on JSON schema.
+
+        Creates formatted comment blocks with title, description, and possible values
+        for configuration keys. Handles both single-line and multi-line comments with
+        proper indentation and wrapping.
 
         :param cfg: Target configuration where the comment should be stored
         :param schema: Object configuration JSON SCHEMA
@@ -726,10 +923,13 @@ class CommentedConfig:
             self._update_before_comment(cfg, key, "\n" + self._get_title_block(template_title))
 
     def _get_schema_block_keys(self, schema: dict[str, dict[str, Any]]) -> list[str]:
-        """Creates list of property keys in given schema.
+        """Get property keys from schema based on template configuration.
 
-        :param schema: Input schema piece.
-        :return: List of all property keys.
+        Filters out properties marked with 'skip_in_template' unless creating a configuration.
+        Returns all property keys when no 'properties' section exists in schema.
+
+        :param schema: Input schema dictionary containing properties definition.
+        :return: List of property keys that should be included in the template.
         """
         if "properties" not in schema:
             return []
@@ -747,14 +947,26 @@ class CommentedConfig:
     ) -> None:
         """Update comment to add new comment before current one.
 
-        :param sfg: Commented map / Commented Sequence
-        :param key: Key name
-        :param comment: Comment that should be place before current one.
+        The method manipulates YAML comment structure by inserting new comment lines
+        before existing comments in a commented map or sequence configuration.
+
+        :param cfg: Commented map or Commented Sequence to update.
+        :param key: Key name or index for the comment location.
+        :param comment: Comment text that should be placed before current one.
         """
         from ruamel.yaml.error import CommentMark
         from ruamel.yaml.tokens import CommentToken
 
         def comment_token(s: str, mark: CommentMark) -> CommentToken:
+            """Create a comment token with the given string and comment mark.
+
+            Handles empty lines by adding no comment prefix, while non-empty lines get
+            the standard comment prefix.
+
+            :param s: The string content to be converted into a comment token.
+            :param mark: The comment mark indicating the position or type of comment.
+            :return: A CommentToken object containing the formatted comment string.
+            """
             # handle empty lines as having no comment
             return CommentToken(("# " if s else "") + s + "\n", mark)
 
@@ -770,9 +982,13 @@ class CommentedConfig:
     def export(self, config: Optional[dict[str, Any]] = None) -> CMap:
         """Export configuration template into CommentedMap.
 
-        :param config: Configuration to be applied to template.
-        :raises SPSDKError: Error
-        :return: Configuration template in CM.
+        This method processes the schema configuration by merging multiple schemas,
+        organizing properties into logical blocks, and generating a formatted
+        configuration template with proper comments and structure.
+
+        :param config: Optional configuration dictionary to be applied to template.
+        :raises SPSDKError: Template generation failed due to processing errors.
+        :return: Configuration template as CommentedMap with proper formatting.
         """
         self.indent = 0
         self.creating_configuration = bool(config)
@@ -851,26 +1067,33 @@ class CommentedConfig:
             raise SPSDKError(f"Template generation failed: {str(exc)}") from exc
 
     def get_template(self) -> str:
-        """Export Configuration template directly into YAML string format.
+        """Export configuration template directly into YAML string format.
 
-        :return: YAML string.
+        The method converts the exported configuration model into a YAML formatted
+        string that can be used as a template for configuration files.
+
+        :return: Configuration template as YAML formatted string.
         """
         return self.convert_cm_to_yaml(self.export())
 
     def get_config(self, config: dict[str, Any]) -> str:
         """Export Configuration directly into YAML string format.
 
-        :return: YAML string.
+        :param config: Configuration dictionary to be exported.
+        :return: YAML string representation of the configuration.
         """
         return self.convert_cm_to_yaml(self.export(config))
 
     @staticmethod
     def convert_cm_to_yaml(config: CMap) -> str:
-        """Convert Commented Map for into final YAML string.
+        """Convert Commented Map into final YAML string.
 
-        :param config: Configuration in CM format.
-        :raises SPSDKError: If configuration is empty
-        :return: YAML string with configuration to use to store in file.
+        The method converts a configuration in Commented Map format to a properly formatted YAML string
+        with appropriate indentation and width settings for file storage.
+
+        :param config: Configuration in Commented Map format.
+        :raises SPSDKError: If configuration is empty.
+        :return: YAML string with configuration ready for file storage.
         """
         if not config:
             raise SPSDKError("Configuration cannot be empty")

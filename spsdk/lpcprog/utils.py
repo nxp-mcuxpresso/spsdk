@@ -4,7 +4,12 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""LPCProg utility functions."""
+"""LPCProg utility functions for LPC microcontroller programming.
+
+This module provides utilities for manipulating LPC microcontroller images,
+including CRP (Code Read Protection) value updates and making images bootable
+by calculating and setting proper checksums in the vector table.
+"""
 
 import struct
 
@@ -17,8 +22,12 @@ VECT_TABLE_SIZE = 32
 def lpcprog_update_crp_value(bin_data: bytes, crp: int) -> bytes:
     """Update the CRP value in a binary image.
 
-    :param bin_data: The original binary data.
-    :param crp: The CRP value to be set.
+    The method modifies the Code Read Protection (CRP) value at the predefined
+    offset in the binary data, ensuring the image has the correct protection level.
+
+    :param bin_data: The original binary data to be modified.
+    :param crp: The CRP value to be set in the binary image.
+    :raises ValueError: Binary data is too short to contain CRP value at offset.
     :return: The modified binary data with the updated CRP value.
     """
     if len(bin_data) < CRP_OFFSET + CRP_LENGTH:
@@ -36,8 +45,12 @@ def lpcprog_update_crp_value(bin_data: bytes, crp: int) -> bytes:
 def lpcprog_make_image_bootable(data: bytes) -> bytes:
     """Make the image bootable by inserting the checksum in the correct place.
 
-    :param data: image data
-    :return: image data with correct checksum
+    The method calculates a 2's complement checksum of the first 7 vector table entries
+    and inserts it at the 8th entry (offset 0x1C) to make the LPC image bootable.
+
+    :param data: Binary image data containing vector table.
+    :raises ValueError: Binary data is too short to contain a valid vector table.
+    :return: Image data with correct checksum inserted.
     """
     if len(data) < VECT_TABLE_SIZE:
         raise ValueError("Binary data is too short to contain a valid vector table.")

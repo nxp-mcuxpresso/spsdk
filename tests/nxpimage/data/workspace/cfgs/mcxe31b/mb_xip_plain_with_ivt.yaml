@@ -40,10 +40,10 @@ inputImageFile: .\workspace\input_images\mcxe31b_app_red_blinky_with_ivt.bin
 appSwtInit: false
 # -----------------------------------===== Application Start Address [Required] =====-----------------------------------
 # Description: Start address for CM7_0 core application
-appStartAddress: '0x00401000'
+# appStartAddress: '0x00401000'
 # --------------------------------===== Lifecycle Configuration Address [Optional] =====--------------------------------
 # Description: Address of lifecycle configuration data
-lcConfigAddr: '0x0'
+# lcConfigAddr: '0x0'
 # -------------------------------------===== HSE Firmware Address [Optional] =====--------------------------------------
 # Description: Address of HSE firmware
-hseFwAddr: '0x0'
+# hseFwAddr: '0x0'

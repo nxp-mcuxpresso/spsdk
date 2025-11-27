@@ -6,7 +6,14 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Helper module for more human-friendly interpretation of the target device properties."""
+"""SPSDK MBoot device properties management and interpretation utilities.
+
+This module provides comprehensive functionality for handling and interpreting
+target device properties in the MBoot context. It includes property definitions,
+value parsing, formatting utilities, and human-readable representations of
+device characteristics such as available peripherals, memory attributes,
+and security features.
+"""
 
 import ctypes
 import logging
@@ -33,11 +40,15 @@ logger = logging.getLogger(__name__)
 # McuBoot helper functions
 ########################################################################################################################
 def size_fmt(value: Union[int, float], kibibyte: bool = True) -> str:
-    """Convert size value into string format.
+    """Convert size value into human-readable string format.
 
-    :param value: The raw value
-    :param kibibyte: True if 1024 Bytes represent 1kB or False if 1000 Bytes represent 1kB
-    :return: Stringified value
+    Converts a numeric size value (in bytes) into a formatted string with appropriate
+    unit suffix (B, kB/kiB, MB/MiB, etc.) for better readability.
+
+    :param value: The raw size value in bytes to be converted.
+    :param kibibyte: True for binary units (1024 bytes = 1 kiB), False for decimal
+        units (1000 bytes = 1 kB).
+    :return: Human-readable size string with value and unit suffix.
     """
     base, suffix = [(1000.0, "B"), (1024.0, "iB")][kibibyte]
     x = "B"
@@ -50,7 +61,16 @@ def size_fmt(value: Union[int, float], kibibyte: bool = True) -> str:
 
 
 def int_fmt(value: int, format_str: str) -> str:
-    """Get stringified integer representation."""
+    """Format integer value to string representation based on specified format.
+
+    Converts an integer value to its string representation using various formatting
+    options including size formatting, hexadecimal, decimal, signed 32-bit integer,
+    or custom format strings.
+
+    :param value: Integer value to be formatted.
+    :param format_str: Format specification - 'size', 'hex', 'dec', 'int32', or custom format.
+    :return: Formatted string representation of the integer value.
+    """
     if format_str == "size":
         str_value = size_fmt(value)
     elif format_str == "hex":
@@ -70,12 +90,23 @@ def int_fmt(value: int, format_str: str) -> str:
 
 
 class Version:
-    """McuBoot current and target version type."""
+    """McuBoot version representation and management.
+
+    This class provides version handling for McuBoot operations, supporting version
+    parsing from string and integer formats, version comparison operations, and
+    conversion between different version representations. The version consists of
+    mark, major, minor, and fixation components.
+    """
 
     def __init__(self, *args: Union[str, int], **kwargs: int):
         """Initialize the Version object.
 
-        :raises McuBootError: Argument passed the not str not int
+        Creates a Version object from either an integer or string representation,
+        or from individual version components passed as keyword arguments.
+
+        :param args: Version data as integer or string representation
+        :param kwargs: Individual version components (mark, major, minor, fixation)
+        :raises McuBootError: When argument is neither string nor integer type
         """
         self.mark = kwargs.get("mark", "K")
         self.major = kwargs.get("major", 0)
@@ -90,33 +121,92 @@ class Version:
                 raise McuBootError("Value must be 'str' or 'int' type !")
 
     def __eq__(self, obj: object) -> bool:
+        """Check equality between two Version objects.
+
+        Compares this Version instance with another object by checking if the other object
+        is also a Version instance and has identical attributes.
+
+        :param obj: Object to compare with this Version instance.
+        :return: True if objects are equal Version instances with same attributes, False otherwise.
+        """
         return isinstance(obj, Version) and vars(obj) == vars(self)
 
     def __ne__(self, obj: object) -> bool:
+        """Check if this object is not equal to another object.
+
+        This method implements the inequality comparison by negating the equality comparison.
+
+        :param obj: Object to compare with this instance.
+        :return: True if objects are not equal, False if they are equal.
+        """
         return not self.__eq__(obj)
 
     def __lt__(self, obj: "Version") -> bool:
+        """Compare this version with another version object.
+
+        This method implements the less-than comparison operator for Version objects by converting
+        both versions to integer representation and comparing them.
+
+        :param obj: Version object to compare against.
+        :return: True if this version is less than the compared version, False otherwise.
+        """
         return self.to_int(True) < obj.to_int(True)
 
     def __le__(self, obj: "Version") -> bool:
+        """Check if this version is less than or equal to another version.
+
+        Compares two Version objects using their integer representation to determine
+        if this version is less than or equal to the other version.
+
+        :param obj: Version object to compare against.
+        :return: True if this version is less than or equal to the other version, False otherwise.
+        """
         return self.to_int(True) <= obj.to_int(True)
 
     def __gt__(self, obj: "Version") -> bool:
+        """Compare if this version is greater than another version.
+
+        :param obj: Version object to compare against.
+        :return: True if this version is greater than the compared version, False otherwise.
+        """
         return self.to_int(True) > obj.to_int(True)
 
     def __ge__(self, obj: "Version") -> bool:
+        """Check if this version is greater than or equal to another version.
+
+        Compares two Version objects using their integer representation to determine
+        if this version is greater than or equal to the provided version object.
+
+        :param obj: Version object to compare against.
+        :return: True if this version is greater than or equal to obj, False otherwise.
+        """
         return self.to_int(True) >= obj.to_int(True)
 
     def __repr__(self) -> str:
+        """Return string representation of Version object.
+
+        Provides a detailed string representation showing all version components
+        including mark, major, minor, and fixation values.
+
+        :return: String representation in format '<Version(mark=X, major=Y, minor=Z, fixation=W)>'.
+        """
         return f"<Version(mark={self.mark}, major={self.major}, minor={self.minor}, fixation={self.fixation})>"
 
     def __str__(self) -> str:
+        """Return string representation of the object.
+
+        :return: String representation of the object.
+        """
         return self.to_str()
 
     def from_int(self, value: int) -> None:
-        """Parse version data from raw int value.
+        """Parse version data from raw integer value.
 
-        :param value: Raw integer input
+        Extracts version components (mark, major, minor, fixation) from a 32-bit integer
+        where each component occupies 8 bits. The mark is converted to ASCII character
+        if it represents a valid uppercase letter (A-Z).
+
+        :param value: Raw 32-bit integer containing packed version information
         """
         mark = (value >> 24) & 0xFF
         self.mark = chr(mark) if 64 < mark < 91 else None  # type: ignore
@@ -127,7 +217,11 @@ class Version:
     def from_str(self, value: str) -> None:
         """Parse version data from string value.
 
-        :param value: String representation input
+        The method parses a version string in format "X.Y.Z" or "MX.Y.Z" where M is a mark character,
+        X is major version, Y is minor version, and Z is fixation version.
+
+        :param value: String representation of version in format "X.Y.Z" or "MX.Y.Z"
+        :raises ValueError: Invalid version string format or non-numeric version components
         """
         mark_major, minor, fixation = value.split(".")
         if len(mark_major) > 1 and mark_major[0] not in "0123456789":
@@ -141,8 +235,11 @@ class Version:
     def to_int(self, no_mark: bool = False) -> int:
         """Get version value in raw integer format.
 
-        :param no_mark: If True, return value without mark
-        :return: Integer representation
+        The method combines major, minor, and fixation version components into a single
+        integer value. Optionally includes a character mark in the most significant byte.
+
+        :param no_mark: If True, return value without mark component.
+        :return: Integer representation of the version with optional mark.
         """
         value = self.major << 16 | self.minor << 8 | self.fixation
         mark = 0 if no_mark or self.mark is None else ord(self.mark) << 24  # type: ignore
@@ -151,8 +248,8 @@ class Version:
     def to_str(self, no_mark: bool = False) -> str:
         """Get version value in readable string format.
 
-        :param no_mark: If True, return value without mark
-        :return: String representation
+        :param no_mark: If True, return value without mark.
+        :return: String representation of the version.
         """
         value = f"{self.major}.{self.minor}.{self.fixation}"
         mark = "" if no_mark or self.mark is None else self.mark
@@ -165,7 +262,14 @@ class Version:
 
 # fmt: off
 class PropertyTag(Enum):
-    """McuBoot Properties."""
+    """McuBoot property tag enumeration.
+    
+    This enumeration defines all available property tags that can be queried from McuBoot-enabled
+    devices. Each property represents a specific device characteristic such as flash memory
+    attributes, RAM configuration, security state, or bootloader capabilities. The enumeration
+    provides multiple representations for each property including internal labels, CLI-friendly
+    names, and human-readable descriptions.
+    """
     LIST_PROPERTIES            = ('ListProperties', 'list-properties', 'List Properties')
     CURRENT_VERSION            = ('CurrentVersion', 'current-version', 'Current Version')
     AVAILABLE_PERIPHERALS      = ('AvailablePeripherals', 'available-peripherals', 'Available Peripherals')
@@ -209,26 +313,38 @@ class PropertyTag(Enum):
 
     @property
     def label(self) -> str:
-        """The internal name of the property tag."""
+        """Get the internal name of the property tag.
+        
+        :return: Internal name of the property tag.
+        """
         return self.value[0]
 
     @property
     def friendly_name(self) -> str:
-        """The friendly name of the property tag."""
+        """Get the friendly name of the property tag.
+        
+        :return: The human-readable name associated with this property tag.
+        """
         return self.value[1]
 
     @property
     def description(self) -> str:
-        """The description of the property tag."""
+        """Get the description of the property tag.
+        
+        :return: Description string of the property tag.
+        """
         return self.value[2]
 
     @classmethod
     def from_name(cls, name: str) -> Self:
         """Convert a name to its corresponding PropertyTag.
-
-        :param name: The name to convert
-        :return: The matching PropertyTag
-        :raises SPSDKValueError: If no matching PropertyTag is found
+        
+        Searches through all PropertyTag members to find a match based on either
+        the label or friendly_name attribute.
+        
+        :param name: The name to convert (label or friendly_name).
+        :return: The matching PropertyTag instance.
+        :raises SPSDKValueError: If no matching PropertyTag is found.
         """
         for item in cls.__members__.values():
             if item.label == name or item.friendly_name == name:
@@ -237,12 +353,15 @@ class PropertyTag(Enum):
 
     @classmethod
     def from_index(cls, index: int, family: Optional[FamilyRevision] = None) -> "PropertyTag":
-        """Convert a name to its corresponding PropertyTag.
-
-        :param index: Property index
-        :param family: Device family
-        :return: The matching PropertyTag
-        :raises SPSDKError: If no matching PropertyTag is found
+        """Convert property index to its corresponding PropertyTag.
+        
+        The method searches through available properties for the given family
+        and returns the PropertyTag that matches the specified index.
+        
+        :param index: Property index to search for.
+        :param family: Device family to get properties from, defaults to None.
+        :return: The matching PropertyTag instance.
+        :raises SPSDKError: If no matching PropertyTag is found for the given index.
         """
         properties = get_properties(family)
         for idx, prop in properties.items():
@@ -291,7 +410,16 @@ COMMON_PROPERTY_INDEXES = {
 }
 
 def get_property_index(prop:Union[PropertyTag, int], family:Optional[FamilyRevision] = None) -> int:
-    """Get index of given property."""
+    """Get index of given property.
+    
+    Retrieves the numeric index for a property, either by returning the integer directly
+    or by looking up the PropertyTag in the family-specific properties dictionary.
+    
+    :param prop: Property tag or integer index to look up.
+    :param family: Optional family revision to get properties for specific MCU family.
+    :raises SPSDKError: When the property tag is not found in the properties dictionary.
+    :return: Numeric index of the property.
+    """
     if isinstance(prop, int):
         return prop
     properties = get_properties(family)
@@ -301,7 +429,15 @@ def get_property_index(prop:Union[PropertyTag, int], family:Optional[FamilyRevis
     raise SPSDKError(f"Unknown property: {prop.name}")
 
 def get_properties(family: Optional[FamilyRevision] = None)-> dict[int, PropertyTag]:
-    """Get all properties including family specific properties if family defined."""
+    """Get all properties including family specific properties if family defined.
+    
+    This method retrieves common property indexes and optionally merges them with
+    family-specific overridden properties from the database if a family is specified.
+    
+    :param family: Optional family revision to get specific properties for.
+    :raises SPSDKValueError: When family has no blhost support defined in database.
+    :return: Dictionary mapping property indexes to PropertyTag objects.
+    """
     property_indexes = deepcopy(COMMON_PROPERTY_INDEXES)
     if family:
         try:
@@ -314,7 +450,13 @@ def get_properties(family: Optional[FamilyRevision] = None)-> dict[int, Property
     return property_indexes
 
 class PeripheryTag(SpsdkEnum):
-    """Tags representing peripherals."""
+    """Enumeration of peripheral interface tags for bootloader communication.
+    
+    This class defines standardized tags that identify different peripheral
+    interfaces supported by the bootloader for communication with the host.
+    Each tag contains a numeric identifier, short name, and descriptive label
+    for the corresponding peripheral interface type.
+    """
 
     UART      = (0x01, "UART", "UART Interface")
     I2C_SLAVE = (0x02, "I2C-Slave", "I2C Slave Interface")
@@ -327,7 +469,15 @@ class PeripheryTag(SpsdkEnum):
 
 
 class FlashReadMargin(SpsdkEnum):
-    """Scopes for flash read."""
+    """Flash read margin enumeration for memory operations.
+    
+    This enumeration defines the different margin levels used when reading
+    flash memory to verify data integrity under various conditions.
+    
+    :cvar NORMAL: Standard read margin for normal operation.
+    :cvar USER: User-defined read margin level.
+    :cvar FACTORY: Factory-set read margin for production testing.
+    """
 
     NORMAL  = (0, "NORMAL")
     USER    = (1, "USER")
@@ -335,7 +485,11 @@ class FlashReadMargin(SpsdkEnum):
 
 
 class PfrKeystoreUpdateOpt(SpsdkEnum):
-    """Options for PFR updating."""
+    """PFR keystore update operation options enumeration.
+    
+    This enumeration defines the available options for updating PFR (Protected Flash Region)
+    keystore operations, specifying different methods for provisioning and memory operations.
+    """
 
     KEY_PROVISIONING = (0, "KEY_PROVISIONING", "KeyProvisioning")
     WRITE_MEMORY     = (1, "WRITE_MEMORY", "WriteMemory")
@@ -347,7 +501,13 @@ class PfrKeystoreUpdateOpt(SpsdkEnum):
 
 
 class PropertyValueBase:
-    """Base class for property value."""
+    """Base class for property value representation in SPSDK.
+
+    This class provides a foundation for handling property values with associated
+    metadata including property tags, names, and descriptions. Derived classes
+    must implement the to_str() method to provide specific string representations
+    of their property values.
+    """
 
     __slots__ = ("prop", "name", "desc")
 
@@ -356,7 +516,7 @@ class PropertyValueBase:
     ) -> None:
         """Initialize the base of property.
 
-        :param tag: Property tag, see: `PropertyTag`
+        :param prop: Property tag, see: `PropertyTag`
         :param name: Optional name for the property
         :param desc: Optional description for the property
         """
@@ -366,25 +526,40 @@ class PropertyValueBase:
 
     @property
     def tag(self) -> int:
-        """Property index."""
+        """Get the property tag index.
+
+        :return: Integer index representing the property tag.
+        """
         return get_property_index(self.prop)
 
     def __str__(self) -> str:
+        """Return string representation of the property.
+
+        Provides a formatted string showing the property description and its value.
+
+        :return: Formatted string in format "description = value".
+        """
         return f"{self.desc} = {self.to_str()}"
 
     def to_str(self) -> str:
-        """Stringified representation of a property.
+        """Convert property value to string representation.
 
-        Derived classes should implement this function.
+        This is an abstract method that must be implemented by derived classes
+        to provide a human-readable string format of the property value.
 
-        :return: String representation
-        :raises NotImplementedError: Derived class has to implement this method
+        :return: String representation of the property value.
+        :raises NotImplementedError: Derived class has to implement this method.
         """
         raise NotImplementedError("Derived class has to implement this method.")
 
 
 class IntValue(PropertyValueBase):
-    """Integer-based value property."""
+    """Integer-based property value representation.
+
+    This class handles integer property values from MCU boot properties,
+    providing formatted string representation and raw integer access with
+    support for decimal, hexadecimal, and size formatting options.
+    """
 
     __slots__ = (
         "value",
@@ -394,7 +569,7 @@ class IntValue(PropertyValueBase):
     def __init__(self, prop: PropertyTag, raw_values: list[int], str_format: str = "dec") -> None:
         """Initialize the integer-based property object.
 
-        :param tag: Property tag, see: `PropertyTag`
+        :param prop: Property tag, see: `PropertyTag`
         :param raw_values: List of integers representing the property
         :param str_format: Format to display the value ('dec', 'hex', 'size')
         """
@@ -403,16 +578,30 @@ class IntValue(PropertyValueBase):
         self.value = raw_values[0]
 
     def to_int(self) -> int:
-        """Get the raw integer property representation."""
+        """Get the raw integer property representation.
+
+        :return: Integer value of the property.
+        """
         return self.value
 
     def to_str(self) -> str:
-        """Get stringified property representation."""
+        """Get stringified property representation.
+
+        Converts the property value to a formatted string representation using
+        the internal format specification.
+
+        :return: Formatted string representation of the property value.
+        """
         return int_fmt(self.value, self._fmt)
 
 
 class IntListValue(PropertyValueBase):
-    """List of integers property."""
+    """Property value container for lists of integers.
+
+    This class represents a property value that contains a list of integer values,
+    providing formatted string representation with configurable display format
+    and delimiter options for the integer list elements.
+    """
 
     __slots__ = ("value", "_fmt", "delimiter")
 
@@ -425,7 +614,7 @@ class IntListValue(PropertyValueBase):
     ) -> None:
         """Initialize the integer-list-based property object.
 
-        :param tag: Property tag, see: `PropertyTag`
+        :param prop: Property tag, see: `PropertyTag`
         :param raw_values: List of integers representing the property
         :param str_format: Format to display the value ('dec', 'hex', 'size')
         :param delimiter: Delimiter for values in a list
@@ -436,13 +625,24 @@ class IntListValue(PropertyValueBase):
         self.delimiter = delimiter
 
     def to_str(self) -> str:
-        """Get stringified property representation."""
+        """Get stringified property representation.
+
+        Converts the property values to a formatted string representation using the
+        configured format and delimiter.
+
+        :return: String representation of property values in format "[value1,value2,...]".
+        """
         values = [int_fmt(v, self._fmt) for v in self.value]
         return f"[{self.delimiter.join(values)}]"
 
 
 class BoolValue(PropertyValueBase):
-    """Boolean-based value property."""
+    """Boolean property value representation for SPSDK device properties.
+
+    This class handles boolean-based property values with customizable true/false
+    representations, allowing flexible interpretation of raw integer values as
+    boolean states with configurable string representations.
+    """
 
     __slots__ = (
         "value",
@@ -463,12 +663,12 @@ class BoolValue(PropertyValueBase):
     ) -> None:
         """Initialize the Boolean-based property object.
 
-        :param tag: Property tag, see: `PropertyTag`
+        :param prop: Property tag, see: `PropertyTag`
         :param raw_values: List of integers representing the property
         :param true_values: Values representing 'True', defaults to (1,)
-        :param true_string: String representing 'True, defaults to 'YES'
+        :param true_string: String representing 'True', defaults to 'YES'
         :param false_values: Values representing 'False', defaults to (0,)
-        :param false_string: String representing 'False, defaults to 'NO'
+        :param false_string: String representing 'False', defaults to 'NO'
         """
         super().__init__(prop)
         self._true_values = true_values
@@ -478,19 +678,40 @@ class BoolValue(PropertyValueBase):
         self.value = raw_values[0]
 
     def __bool__(self) -> bool:
+        """Check if the property value represents a boolean true.
+
+        Evaluates whether the current property value is considered true by checking
+        if it exists in the predefined set of true values.
+
+        :return: True if the property value represents a boolean true, False otherwise.
+        """
         return self.value in self._true_values
 
     def to_int(self) -> int:
-        """Get the raw integer portion of the property."""
+        """Get the raw integer portion of the property.
+
+        :return: The integer value of the property.
+        """
         return self.value
 
     def to_str(self) -> str:
-        """Get stringified property representation."""
+        """Get stringified property representation.
+
+        Converts the boolean property value to its string representation based on
+        the configured true/false string values.
+
+        :return: String representation of the property value.
+        """
         return self._true_string if self.value in self._true_values else self._false_string
 
 
 class EnumValue(PropertyValueBase):
-    """Enumeration value property."""
+    """Property value wrapper for enumeration-based data.
+
+    This class represents a property value that maps raw integer data to
+    enumeration labels, providing both numeric and string representations
+    of the property value with fallback handling for unknown values.
+    """
 
     __slots__ = ("value", "enum", "_na_msg")
 
@@ -503,10 +724,10 @@ class EnumValue(PropertyValueBase):
     ) -> None:
         """Initialize the enumeration-based property object.
 
-        :param tag: Property tag, see: `PropertyTag`
-        :param raw_values: List of integers representing the property
-        :param enum: Enumeration to pick from
-        :param na_msg: Message to display if an item is not found in the enum
+        :param prop: Property tag, see PropertyTag enum.
+        :param raw_values: List of integers representing the property values.
+        :param enum: Enumeration class to pick property values from.
+        :param na_msg: Message to display if an item is not found in the enum.
         """
         super().__init__(prop)
         self._na_msg = na_msg
@@ -514,11 +735,21 @@ class EnumValue(PropertyValueBase):
         self.value = raw_values[0]
 
     def to_int(self) -> int:
-        """Get the raw integer portion of the property."""
+        """Get the raw integer portion of the property.
+
+        :return: The integer value of the property.
+        """
         return self.value
 
     def to_str(self) -> str:
-        """Get stringified property representation."""
+        """Get stringified property representation.
+
+        Converts the property value to its string representation using the associated enum label.
+        If the enum label is not found, returns a formatted string with the raw value.
+
+        :return: String representation of the property value or formatted error message.
+        :raises SPSDKKeyError: When enum label cannot be found for the property value.
+        """
         try:
             return self.enum.get_label(self.value)
         except SPSDKKeyError:
@@ -526,37 +757,53 @@ class EnumValue(PropertyValueBase):
 
 
 class VersionValue(PropertyValueBase):
-    """Version property class."""
+    """SPSDK property value container for version information.
+
+    This class represents a property value that contains version data, providing
+    methods to access and format version information as both integer and string
+    representations.
+    """
 
     __slots__ = ("value",)
 
     def __init__(self, prop: PropertyTag, raw_values: list[int]) -> None:
         """Initialize the Version-based property object.
 
-        :param tag: Property tag, see: `PropertyTag`
+        :param prop: Property tag, see: `PropertyTag`
         :param raw_values: List of integers representing the property
         """
         super().__init__(prop)
         self.value = Version(raw_values[0])
 
     def to_int(self) -> int:
-        """Get the raw integer portion of the property."""
+        """Get the raw integer portion of the property.
+
+        :return: The integer value of the property.
+        """
         return self.value.to_int()
 
     def to_str(self) -> str:
-        """Get stringified property representation."""
+        """Get stringified property representation.
+
+        :return: String representation of the property value.
+        """
         return self.value.to_str()
 
 
 class DeviceUidValue(PropertyValueBase):
-    """Device UID value property."""
+    """Device UID value property representation.
+
+    This class handles device unique identifier values from MCU properties,
+    providing conversion methods to different formats including integer and
+    hexadecimal string representations.
+    """
 
     __slots__ = ("value",)
 
     def __init__(self, prop: PropertyTag, raw_values: list[int]) -> None:
         """Initialize the Version-based property object.
 
-        :param tag: Property tag, see: `PropertyTag`
+        :param prop: Property tag, see: `PropertyTag`
         :param raw_values: List of integers representing the property
         """
         super().__init__(prop)
@@ -565,24 +812,42 @@ class DeviceUidValue(PropertyValueBase):
         )
 
     def to_int(self) -> int:
-        """Get the raw integer portion of the property."""
+        """Get the raw integer portion of the property.
+
+        Converts the property value bytes to an integer using big-endian byte order.
+
+        :return: Integer representation of the property value.
+        """
         return int.from_bytes(self.value, byteorder=Endianness.BIG.value)
 
     def to_str(self) -> str:
-        """Get stringified property representation."""
+        """Get stringified property representation.
+
+        Converts the property value to a hexadecimal string representation where each byte
+        is formatted as a two-digit lowercase hexadecimal value.
+
+        :return: Hexadecimal string representation of the property value.
+        """
         return "".join(f"{item:02x}" for item in self.value)
 
 
 class ReservedRegionsValue(PropertyValueBase):
-    """Reserver Regions property."""
+    """Reserved Regions property value container.
+
+    This class represents and manages reserved memory regions property data,
+    parsing raw integer values into structured memory region objects for
+    easier access and manipulation.
+    """
 
     __slots__ = ("regions",)
 
     def __init__(self, prop: PropertyTag, raw_values: list[int]) -> None:
         """Initialize the ReserverRegion-based property object.
 
-        :param tag: Property tag, see: `PropertyTag`
-        :param raw_values: List of integers representing the property
+        Creates memory regions from raw integer values, filtering out regions with zero size.
+
+        :param prop: Property tag, see: `PropertyTag`
+        :param raw_values: List of integers representing the property in pairs (address, size)
         """
         super().__init__(prop)
         self.regions: list[MemoryRegion] = []
@@ -592,33 +857,60 @@ class ReservedRegionsValue(PropertyValueBase):
             self.regions.append(MemoryRegion(raw_values[i], raw_values[i + 1]))
 
     def __str__(self) -> str:
+        """Return string representation of the property.
+
+        Provides a formatted string showing the property description followed by
+        its detailed string representation.
+
+        :return: Formatted string with property description and detailed content.
+        """
         return f"{self.desc} =\n{self.to_str()}"
 
     def to_str(self) -> str:
-        """Get stringified property representation."""
+        """Get stringified property representation.
+
+        Converts the regions collection into a formatted multi-line string where each region
+        is numbered and displayed on a separate line with proper indentation.
+
+        :return: Multi-line string representation of all regions with numbering and indentation.
+        """
         return "\n".join([f"    Region {i}: {region}" for i, region in enumerate(self.regions)])
 
 
 class AvailablePeripheralsValue(PropertyValueBase):
-    """Available Peripherals property."""
+    """Available Peripherals property value container.
+
+    This class represents and manages the available peripherals property value,
+    providing methods to convert the raw peripheral data into integer and
+    human-readable string formats with peripheral names.
+    """
 
     __slots__ = ("value",)
 
     def __init__(self, prop: PropertyTag, raw_values: list[int]) -> None:
         """Initialize the AvailablePeripherals-based property object.
 
-        :param tag: Property tag, see: `PropertyTag`
+        :param prop: Property tag, see: `PropertyTag`
         :param raw_values: List of integers representing the property
         """
         super().__init__(prop)
         self.value = raw_values[0]
 
     def to_int(self) -> int:
-        """Get the raw integer portion of the property."""
+        """Get the raw integer portion of the property.
+
+        :return: The integer value of the property.
+        """
         return self.value
 
     def to_str(self) -> str:
-        """Get stringified property representation."""
+        """Get stringified property representation.
+
+        Converts the property value to a human-readable string by extracting and joining
+        the labels of all peripheral tags that match the property's bit flags.
+
+        :return: Comma-separated string of peripheral tag labels that are set in the property value.
+        """
         return ", ".join(
             [
                 peripheral_tag.label
@@ -629,13 +921,25 @@ class AvailablePeripheralsValue(PropertyValueBase):
 
 
 class AvailableCommandsValue(PropertyValueBase):
-    """Available commands property."""
+    """Available commands property value container.
+
+    This class represents and manages the available commands property from MCU bootloader,
+    providing methods to check command availability and convert the bitmask value into
+    human-readable command lists.
+    """
 
     __slots__ = ("value",)
 
     @property
     def tags(self) -> list[int]:
-        """List of tags representing Available commands."""
+        """Get list of command tags for available commands.
+
+        Returns a list of integer tags representing commands that are available
+        based on the current property value. Each bit in the property value
+        corresponds to a specific command tag.
+
+        :return: List of integer command tags for available commands.
+        """
         return [
             cmd_tag.tag
             for cmd_tag in CommandTag
@@ -645,17 +949,31 @@ class AvailableCommandsValue(PropertyValueBase):
     def __init__(self, prop: PropertyTag, raw_values: list[int]) -> None:
         """Initialize the AvailableCommands-based property object.
 
-        :param tag: Property tag, see: `PropertyTag`
+        :param prop: Property tag, see: `PropertyTag`
         :param raw_values: List of integers representing the property
         """
         super().__init__(prop)
         self.value = raw_values[0]
 
     def __contains__(self, item: int) -> bool:
+        """Check if a specific bit position is set in the property value.
+
+        This method implements the 'in' operator for checking if a bit at the given
+        position is set (equals 1) in the property's value.
+
+        :param item: Bit position to check (1-based indexing).
+        :return: True if the bit at the specified position is set, False otherwise.
+        """
         return isinstance(item, int) and bool((1 << item - 1) & self.value)
 
     def to_str(self) -> str:
-        """Get stringified property representation."""
+        """Get stringified property representation.
+
+        Converts the property value to a list of command tag labels that correspond
+        to the bits set in the property value.
+
+        :return: List of command tag labels for bits set in the property value.
+        """
         return [
             cmd_tag.label  # type: ignore
             for cmd_tag in CommandTag
@@ -664,46 +982,77 @@ class AvailableCommandsValue(PropertyValueBase):
 
 
 class IrqNotifierPinValue(PropertyValueBase):
-    """IRQ notifier pin property."""
+    """IRQ notifier pin property value container.
+
+    This class represents and manages IRQ (Interrupt Request) notifier pin configuration
+    data, providing access to pin number, port number, and enablement status from raw
+    property values.
+    """
 
     __slots__ = ("value",)
 
     @property
     def pin(self) -> int:
-        """Number of the pin used for reporting IRQ."""
+        """Get the pin number used for reporting IRQ.
+
+        Extracts the pin number from the lower 8 bits of the value.
+
+        :return: Pin number (0-255) used for IRQ reporting.
+        """
         return self.value & 0xFF
 
     @property
     def port(self) -> int:
-        """Number of the port used for reporting IRQ."""
+        """Get the port number used for reporting IRQ.
+
+        Extracts the port number from bits 8-15 of the property value using bitwise
+        operations to isolate the relevant byte.
+
+        :return: Port number as an integer value (0-255).
+        """
         return (self.value >> 8) & 0xFF
 
     @property
     def enabled(self) -> bool:
-        """Indicates whether IRQ reporting is enabled."""
+        """Indicates whether IRQ reporting is enabled.
+
+        :return: True if IRQ reporting is enabled, False otherwise.
+        """
         return bool(self.value & (1 << 31))
 
     def __init__(self, prop: PropertyTag, raw_values: list[int]) -> None:
         """Initialize the IrqNotifierPin-based property object.
 
-        :param tag: Property tag, see: `PropertyTag`
+        :param prop: Property tag, see: `PropertyTag`
         :param raw_values: List of integers representing the property
         """
         super().__init__(prop)
         self.value = raw_values[0]
 
     def __bool__(self) -> bool:
+        """Return the boolean representation of the property status.
+
+        :return: True if the property is enabled, False otherwise.
+        """
         return self.enabled
 
     def to_str(self) -> str:
-        """Get stringified property representation."""
+        """Get stringified property representation.
+
+        :return: String representation of the IRQ port property including port, pin, and enabled status.
+        """
         return (
             f"IRQ Port[{self.port}], Pin[{self.pin}] is {'enabled' if self.enabled else 'disabled'}"
         )
 
 
 class ExternalMemoryAttributesValue(PropertyValueBase):
-    """Attributes for external memories."""
+    """External memory attributes property value container.
+
+    This class represents and manages attribute information for external memories
+    in SPSDK bootloader operations, including memory geometry parameters such as
+    start address, total size, page size, sector size, and block size.
+    """
 
     __slots__ = (
         "value",
@@ -718,7 +1067,7 @@ class ExternalMemoryAttributesValue(PropertyValueBase):
     def __init__(self, prop: PropertyTag, raw_values: list[int], mem_id: int = 0) -> None:
         """Initialize the ExternalMemoryAttributes-based property object.
 
-        :param tag: Property tag, see: `PropertyTag`
+        :param prop: Property tag, see: `PropertyTag`
         :param raw_values: List of integers representing the property
         :param mem_id: ID of the external memory
         """
@@ -736,7 +1085,14 @@ class ExternalMemoryAttributesValue(PropertyValueBase):
         self.value = raw_values[0]
 
     def to_str(self) -> str:
-        """Get stringified property representation."""
+        """Get stringified property representation.
+
+        Formats the property object into a human-readable string containing available
+        property information such as start address, total size, page size, sector size,
+        and block size.
+
+        :return: Comma-separated string of formatted property values.
+        """
         str_values = []
         if self.start_address is not None:
             str_values.append(f"Start Address: 0x{self.start_address:08X}")
@@ -752,32 +1108,50 @@ class ExternalMemoryAttributesValue(PropertyValueBase):
 
 
 class FuseLock:
-    """Fuse Lock."""
+    """Fuse Lock representation for MCU OTP (One-Time Programmable) memory.
+
+    This class represents the lock status of individual fuses in the MCU's OTP memory,
+    providing information about whether a specific fuse index is locked or unlocked.
+    """
 
     def __init__(self, index: int, locked: bool) -> None:
         """Initialize object representing information about fuse lock.
 
-        :param index: value of OTP index
-        :param locked: status of the lock, true if locked
+        :param index: Value of OTP index.
+        :param locked: Status of the lock, true if locked.
         """
         self.index = index
         self.locked = locked
 
     def __str__(self) -> str:
+        """Return string representation of the fuse status.
+
+        Formats the fuse information including its index and lock status in a
+        human-readable format.
+
+        :return: Formatted string showing fuse index and lock status.
+        """
         status = "LOCKED" if self.locked else "UNLOCKED"
         return f"  FUSE{(self.index):03d}: {status}\r\n"
 
 
 class FuseLockRegister:
-    """Fuse Lock Register."""
+    """OTP Controller Fuse Lock Register representation.
+
+    This class represents a fuse lock register from the OTP (One-Time Programmable)
+    controller, providing access to individual fuse lock status bits and their
+    formatted representation.
+    """
 
     def __init__(self, value: int, index: int, start: int = 0) -> None:
         """Initialize object representing the OTP Controller Program Locked Status.
 
-        :param value: value of the register
-        :param index: index of the fuse
-        :param start: shift to the start of the register
+        Creates bitfields for each fuse position from the start index to bit 31,
+        indicating whether each fuse is locked based on the register value.
 
+        :param value: Value of the register containing lock status bits.
+        :param index: Base index of the fuse register.
+        :param start: Bit position to start processing from (default is 0).
         """
         self.value = value
         self.index = index
@@ -791,7 +1165,13 @@ class FuseLockRegister:
             shift += 1
 
     def __str__(self) -> str:
-        """Get stringified property representation."""
+        """Get stringified property representation.
+
+        Converts the property to its string representation, including any associated
+        bitfields if present.
+
+        :return: Formatted string representation of the property with bitfields.
+        """
         if self.bitfields:
             for bitfield in self.bitfields:
                 self.msg += str(bitfield)
@@ -799,14 +1179,19 @@ class FuseLockRegister:
 
 
 class FuseLockedStatus(PropertyValueBase):
-    """Class representing FuseLocked registers."""
+    """SPSDK Fuse Locked Status Property.
+
+    This class represents and manages the locked status of OTP (One-Time Programmable)
+    fuses in NXP MCU devices. It processes raw register values and provides structured
+    access to individual fuse lock states through register and bitfield representations.
+    """
 
     __slots__ = ("fuses",)
 
     def __init__(self, prop: PropertyTag, raw_values: list[int]) -> None:
         """Initialize the FuseLockedStatus property object.
 
-        :param tag: Property tag, see: `PropertyTag`
+        :param prop: Property tag, see: `PropertyTag`
         :param raw_values: List of integers representing the property
         """
         super().__init__(prop)
@@ -822,7 +1207,14 @@ class FuseLockedStatus(PropertyValueBase):
                 idx -= 16
 
     def to_str(self) -> str:
-        """Get stringified property representation."""
+        """Get stringified property representation.
+
+        Converts the OTP Controller Program Locked Status registers to a formatted
+        string representation showing each register's status with its index.
+
+        :return: Formatted string containing all OTP Controller Program Locked Status
+            registers with their respective indices.
+        """
         msg = "\r\n"
         for count, register in enumerate(self.fuses):
             msg += f"OTP Controller Program Locked Status {count} Register: {register}"
@@ -831,7 +1223,10 @@ class FuseLockedStatus(PropertyValueBase):
     def get_fuses(self) -> list[FuseLock]:
         """Get list of fuses bitfield objects.
 
-        :return: list of FuseLockBitfield objects
+        The method iterates through all fuse registers and extracts their bitfield objects
+        into a single flat list.
+
+        :return: List of FuseLockBitfield objects from all fuse registers.
         """
         fuses = []
         for registers in self.fuses:
@@ -840,14 +1235,19 @@ class FuseLockedStatus(PropertyValueBase):
 
 
 class SHEFlashPartition(PropertyValueBase):
-    """Class representing SHE Flash Partition property."""
+    """SHE Flash Partition property representation for SPSDK mboot operations.
+
+    This class handles the parsing and formatting of SHE (Secure Hardware Extension)
+    flash partition properties, including maximum key capacity and flash size
+    configuration for CSEc (Cryptographic Services Engine compact) operations.
+    """
 
     __slots__ = ("max_keys", "flash_size")
 
     def __init__(self, prop: PropertyTag, raw_values: list[int]) -> None:
         """Initialize the SHE Flash Partition property object.
 
-        :param tag: Property tag, see: `PropertyTag`
+        :param prop: Property tag, see: `PropertyTag`
         :param raw_values: List of integers representing the property
         """
         super().__init__(prop)
@@ -855,7 +1255,13 @@ class SHEFlashPartition(PropertyValueBase):
         self.flash_size = (raw_values[0] >> 8) & 0x03
 
     def to_str(self) -> str:
-        """Get stringified property representation."""
+        """Get stringified property representation.
+
+        Converts the property values into a human-readable string format that displays
+        EEPROM flash size and maximum keys configuration.
+
+        :return: Formatted string containing flash size and maximum keys information.
+        """
         max_keys_mapping = {
             0: "0 Keys, CSEc disabled",
             1: "max 5 Key",
@@ -875,14 +1281,20 @@ class SHEFlashPartition(PropertyValueBase):
 
 
 class SHEBootMode(PropertyValueBase):
-    """Class representing SHE Boot Mode property."""
+    """SHE Boot Mode property representation for SPSDK mboot operations.
+
+    This class handles the parsing and formatting of SHE (Secure Hardware Extension) boot mode
+    properties, extracting boot mode type and boot size information from raw property values.
+    The class provides human-readable formatting of boot mode configurations including strict,
+    serial, parallel, and undefined boot modes.
+    """
 
     __slots__ = ("size", "mode")
 
     def __init__(self, prop: PropertyTag, raw_values: list[int]) -> None:
         """Initialize the SHE Boot Mode property object.
 
-        :param tag: Property tag, see: `PropertyTag`
+        :param prop: Property tag, see: `PropertyTag`
         :param raw_values: List of integers representing the property
         """
         super().__init__(prop)
@@ -890,7 +1302,13 @@ class SHEBootMode(PropertyValueBase):
         self.mode = (raw_values[0] >> 30) & 0x03
 
     def to_str(self) -> str:
-        """Get stringified property representation."""
+        """Get stringified property representation.
+
+        Converts the SHE (Secure Hardware Extension) boot property into a human-readable
+        string format showing boot mode and size information.
+
+        :return: Formatted string containing SHE boot mode and size details.
+        """
         mode_mapping = {0: "Strict Boot", 1: "Serial Boot", 2: "Parallel Boot", 3: "Undefined"}
         return (
             f"SHE Boot Mode: {mode_mapping.get(self.mode, 'Unknown')} ({self.mode})\n"
@@ -898,6 +1316,10 @@ class SHEBootMode(PropertyValueBase):
         )
 
     def __str__(self) -> str:
+        """Return string representation of the object.
+
+        :return: String representation obtained from to_str() method.
+        """
         return self.to_str()
 
 
@@ -1044,11 +1466,14 @@ def parse_property_value(
 ) -> Optional[PropertyValueBase]:
     """Parse the property value received from the device.
 
-    :param property_tag: Tag representing the property
-    :param raw_values: Data received from the device
-    :param ext_mem_id: ID of the external memory used to read the property, defaults to None
-    :param family: supported family
-    :return: Object representing the property
+    The method converts raw property data from device into a structured property object.
+    It handles property tag conversion and applies family-specific configurations.
+
+    :param property_tag: Tag representing the property, either as integer or PropertyTag enum.
+    :param raw_values: List of integer values received from the device.
+    :param ext_mem_id: ID of the external memory used to read the property, defaults to None.
+    :param family: Supported family revision for property parsing, defaults to None.
+    :return: Object representing the parsed property or None if parsing fails.
     """
     assert isinstance(raw_values, list)
     properties_dict = get_properties(family)
@@ -1072,7 +1497,16 @@ def parse_property_value(
 def get_property_tag_label(
     mboot_property: Union[PropertyTag, int], family: Optional[FamilyRevision] = None
 ) -> tuple[int, str]:
-    """Get property tag and label."""
+    """Get property tag and label from property identifier.
+
+    Converts property identifier (either PropertyTag enum or integer) to a tuple
+    containing the property index and its human-readable label. For unknown
+    integer properties, returns "Unknown" as the label.
+
+    :param mboot_property: Property identifier as PropertyTag enum or integer value.
+    :param family: Optional family revision for property lookup context.
+    :return: Tuple containing property index (int) and property label (str).
+    """
     if isinstance(mboot_property, int):
         try:
             prop = PropertyTag.from_index(mboot_property, family)

@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module with Debug Authentication Response (DAR) Packet."""
+"""SPSDK Debug Authentication Response (DAR) packet implementation.
+
+This module provides classes for creating and handling Debug Authentication
+Response packets used in the debug authentication process across NXP MCUs.
+It supports multiple cryptographic algorithms including RSA and various ECC
+curves, as well as EdgeLock Enclave V2 authentication responses.
+"""
 
 import logging
 from struct import pack
@@ -34,7 +40,14 @@ logger = logging.getLogger(__name__)
 
 
 class DebugAuthenticateResponse(FeatureBaseClass):
-    """Class for DAR packet."""
+    """Debug Authenticate Response packet for secure debug authentication.
+
+    This class manages the creation and processing of DAR (Debug Authenticate Response) packets
+    used in NXP MCU secure debug authentication flow. It combines debug credentials,
+    authentication challenges, and digital signatures to enable authorized debug access.
+
+    :cvar FEATURE: Database manager feature identifier for DAT operations.
+    """
 
     FEATURE = DatabaseManager.DAT
 
@@ -48,11 +61,11 @@ class DebugAuthenticateResponse(FeatureBaseClass):
     ) -> None:
         """Initialize the DebugAuthenticateResponse object.
 
-        :param family: Family name of used chip for DAR
-        :param debug_credential: the path, where the dc is store
-        :param auth_beacon: authentication beacon value
-        :param dac: the path, where the dac is store
-        :param path_dck_private: the path, where the dck private key is store
+        :param family: Family revision of the target chip for DAR processing.
+        :param debug_credential: Debug credential certificate object containing authentication data.
+        :param auth_beacon: Authentication beacon value (will be truncated to 16 bits if exceeds 0xFFFF).
+        :param dac: Debug authentication challenge object.
+        :param sign_provider: Optional signature provider for cryptographic operations.
         """
         self.debug_credential = debug_credential
         if auth_beacon > 0xFFFF:
@@ -64,22 +77,49 @@ class DebugAuthenticateResponse(FeatureBaseClass):
         self.sign_provider = sign_provider
 
     def __repr__(self) -> str:
+        """Return string representation of DAR packet.
+
+        Provides a formatted string showing the DAC version and SOCC value in hexadecimal format.
+
+        :return: String representation containing DAC version and SOCC value.
+        """
         return f"DAR v{self.dac.version}, SOCC: 0x{self.dac.socc:08X}"
 
     def __str__(self) -> str:
-        """String representation of DebugAuthenticateResponse."""
+        """String representation of DebugAuthenticateResponse.
+
+        Creates a formatted string containing the Debug Authentication Certificate (DAC),
+        Debug Credential (DC), and Authentication Beacon value for display purposes.
+
+        :return: Formatted string representation of the DebugAuthenticateResponse object.
+        """
         msg = f"DAC:\n{str(self.dac)}\n"
         msg += f"DC:\n{str(self.debug_credential)}\n"
         msg += f"Authentication Beacon: {hex(self.auth_beacon)}\n"
         return msg
 
     def _get_data_for_signature(self) -> bytes:
-        """Collects the data for signature in bytes format."""
+        """Collect the data for signature in bytes format.
+
+        The method gathers common data and appends the DAC challenge to create
+        the complete data payload that will be used for digital signature generation.
+
+        :return: Combined data bytes ready for signature computation.
+        """
         data = self._get_common_data()
         data += self.dac.challenge
         return data
 
     def _get_signature(self) -> bytes:
+        """Get signature for the DAR packet data.
+
+        This method uses the configured signature provider to sign the packet data
+        that is prepared for signature. The signature provider must be set before
+        calling this method.
+
+        :raises SPSDKError: Signature provider is not set or signature generation failed.
+        :return: Generated signature bytes for the packet data.
+        """
         if not self.sign_provider:
             raise SPSDKError("Signature provider is not set")
         signature = self.sign_provider.sign(self._get_data_for_signature())
@@ -88,23 +128,39 @@ class DebugAuthenticateResponse(FeatureBaseClass):
         return signature
 
     def export(self) -> bytes:
-        """Export to binary form (serialization).
+        """Export DAR packet to binary form.
 
-        :return: the exported bytes from object
+        Serializes the DAR packet by combining common data and signature into a binary representation
+        suitable for transmission or storage.
+
+        :return: Binary representation of the DAR packet.
         """
         data = self._get_common_data()
         data += self._get_signature()
         return data
 
     def _get_common_data(self) -> bytes:
-        """Collects dc, auth_beacon."""
+        """Get common data by collecting debug credential and authentication beacon.
+
+        The method exports the debug credential data and appends the authentication
+        beacon value as a 4-byte little-endian unsigned integer.
+
+        :return: Combined binary data containing debug credential and auth beacon.
+        """
         data = self.debug_credential.export()
         data += pack("<L", self.auth_beacon)
         return data
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Parse the DAR."""
+        """Parse DAR packet from binary data.
+
+        This is an abstract method that must be implemented by derived classes
+        to handle specific DAR packet formats.
+
+        :param data: Binary data containing the DAR packet to parse.
+        :raises SPSDKNotImplementedError: Always raised as this is an abstract method.
+        """
         raise SPSDKNotImplementedError("Derived class has to implement this method.")
 
     @classmethod
@@ -113,10 +169,14 @@ class DebugAuthenticateResponse(FeatureBaseClass):
         config: Config,
         dac: Optional[DebugAuthenticationChallenge] = None,
     ) -> Self:
-        """Converts the configuration option into an Debug authentication response object.
+        """Create Debug Authentication Response object from configuration.
+
+        Loads and validates configuration parameters to construct a Debug Authentication
+        Response (DAR) object with proper cryptographic setup and credentials.
 
         :param config: Debug authentication response configuration dictionaries.
-        :param dac: Debug Credential Challenge
+        :param dac: Debug Authentication Challenge object required for response creation.
+        :raises SPSDKValueError: When DAC object is not provided.
         :return: Debug authentication response object.
         """
         if dac is None:
@@ -133,7 +193,14 @@ class DebugAuthenticateResponse(FeatureBaseClass):
 
     @staticmethod
     def _use_pss_padding(family: FamilyRevision) -> bool:
-        """Check if it's needed to use PSS padding."""
+        """Check if PSS padding should be used for the given family.
+
+        The method checks the database for the specified family to determine if PSS padding
+        is required for signing operations.
+
+        :param family: Family revision to check PSS padding requirement for.
+        :return: True if PSS padding should be used, False otherwise.
+        """
         db = get_db(family)
         if DatabaseManager.SIGNING not in db.features:
             return False
@@ -141,11 +208,15 @@ class DebugAuthenticateResponse(FeatureBaseClass):
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Create the validation schema.
+        """Get validation schemas for DAR packet configuration.
 
-        :param family: Family description.
+        The method retrieves and configures validation schemas for DAR (Debug Authentication Response)
+        packet based on the specified family. It combines general family schema with DAR-specific
+        classic schema and updates family validation rules.
+
+        :param family: Family description containing chip family and revision information.
         :raises SPSDKError: Family or revision is not supported.
-        :return: List of validation schemas.
+        :return: List of validation schemas containing family and DAR classic schemas.
         """
         schemas = get_schema_file(DatabaseManager.DAT)
         family_schema = get_schema_file("general")["family"]
@@ -160,8 +231,9 @@ class DebugAuthenticateResponse(FeatureBaseClass):
 
         If the class doesn't behave generally, just override this implementation.
 
-        :param config: Valid configuration
-        :return: Validation schemas
+        :param config: Valid configuration object containing family and device settings.
+        :raises SPSDKError: Invalid configuration or unsupported family.
+        :return: List of validation schema dictionaries for the specified configuration.
         """
         config.check(cls.get_validation_schemas_basic())
         family = FamilyRevision.load_from_config(config)
@@ -171,8 +243,13 @@ class DebugAuthenticateResponse(FeatureBaseClass):
     def _get_class_from_cfg(cls, config: Config) -> Type[Self]:
         """Get DAR class based on input configuration.
 
-        :param config: CConfiguration of DAT
-        :return: Class of DAR
+        This method determines the appropriate Debug Authentication Response (DAR) class
+        by analyzing the family configuration and debug credential certificate. It handles
+        special cases for EdgeLock Enclave V2 and falls back to protocol version-based
+        class selection.
+
+        :param config: Configuration of DAT containing family and certificate information.
+        :return: Class type for Debug Authentication Response handling.
         """
         family = FamilyRevision.load_from_config(config)
         db = get_db(family)
@@ -192,8 +269,15 @@ class DebugAuthenticateResponse(FeatureBaseClass):
     def _get_class(cls, family: FamilyRevision, protocol_version: ProtocolVersion) -> Type[Self]:
         """Get the right Debug Authentication Response class by the protocol version.
 
+        The method determines the appropriate DAR class based on the chip family's
+        database configuration and protocol version. For EdgeLock Enclave v2 based
+        families, it returns the specialized v2 class, otherwise maps to the
+        protocol version.
+
         :param family: The chip family name
         :param protocol_version: DAT protocol version
+        :return: Debug Authentication Response class type
+        :raises KeyError: When protocol version is not found in version mapping
         """
         db = get_db(family)
         if (
@@ -205,13 +289,22 @@ class DebugAuthenticateResponse(FeatureBaseClass):
         return _version_mapping[protocol_version.version]  # type: ignore
 
     def get_config(self, data_path: str = "./") -> Config:
-        """Create configuration of the Feature."""
+        """Create configuration of the Feature.
+
+        :param data_path: Path to directory containing configuration data files.
+        :raises SPSDKNotImplementedError: Method is not implemented in base class.
+        """
         raise SPSDKNotImplementedError
 
     def _verify_rot_hash(self) -> VerifierRecord:
         """Verify Root of Trust Hash between DAC and DC.
 
-        :return: VerifierRecord containing the RoT Hash verification result
+        Compares the Root of Trust Key Hash (RKTH) from the Debug Authentication
+        Certificate (DAC) with the calculated hash from the Debug Credential (DC).
+        The verification considers family-specific RoT configurations.
+
+        :return: VerifierRecord containing the RoT Hash verification result with
+                 success/error status and relevant hash values or error details.
         """
         db = get_db(self.family)
         dac_rot_type = db.get_str(DatabaseManager.DAT, "dac_rot_type", "default")
@@ -242,25 +335,21 @@ class DebugAuthenticateResponse(FeatureBaseClass):
 
         This comprehensive validation method performs cross-verification of multiple debug authentication
         components to ensure data consistency and security compliance. The verifier systematically checks:
-
         - **Protocol Version Compatibility**: Ensures DAC (Debug Authentication Challenge) and DC
-          (Debug Credential) use compatible protocol versions
+        (Debug Credential) use compatible protocol versions
         - **SoC Class (SOCC) Validation**: Verifies that the SoC Class values match between DAC, DC,
-          and the target chip family specifications
+        and the target chip family specifications
         - **Device UUID Consistency**: Confirms that device unique identifiers are consistent across
-          all authentication components, with special handling for general/wildcard UUIDs
+        all authentication components, with special handling for general/wildcard UUIDs
         - **Root of Trust Hash Verification**: Validates that the Root of Trust Key Hash (RoTKH)
-          matches between the challenge and credential data
-        - **Cryptographic Key Validation**: Ensures public keys and signatures are properly formatted
-          and mathematically valid
-        - **Constraint Verification**: Checks credential constraints (SOCU, VU, Beacon) against
-          challenge requirements and family-specific limitations
+        matches between the challenge and credential data
 
         The method uses the DAR instance's debug_credential, dac, and family attributes to perform
         validation. It generates detailed verification results with specific error messages, warnings
         for non-critical issues (like general UUIDs), and success confirmations for valid components.
 
-        :return: The final Verifier object containing detailed validation results and status for each checked component
+        :return: Verifier object containing detailed validation results and status for each checked
+                 component.
         """
         db = get_db(self.family)
         ret = Verifier(
@@ -338,17 +427,35 @@ class DebugAuthenticateResponse(FeatureBaseClass):
 
 
 class DebugAuthenticateResponseRSA(DebugAuthenticateResponse):
-    """Class for RSA specifics of DAR packet."""
+    """Debug Authenticate Response packet with RSA-specific implementation.
+
+    This class extends the base DebugAuthenticateResponse to handle RSA cryptographic
+    operations and data structures specific to RSA-based debug authentication protocols.
+    """
 
 
 class DebugAuthenticateResponseECC(DebugAuthenticateResponse):
-    """Class for DAR, using Elliptic curve keys."""
+    """Debug Authentication Response for Elliptic Curve Cryptography.
+
+    This class implements the Debug Authentication Response (DAR) packet specifically
+    for elliptic curve cryptographic operations, extending the base DAR functionality
+    with ECC-specific key handling and signature generation.
+
+    :cvar KEY_LENGTH: Length of the ECC key in bytes.
+    :cvar CURVE: Default elliptic curve specification used for cryptographic operations.
+    """
 
     KEY_LENGTH = 0
     CURVE = "secp256r1"
 
     def _get_common_data(self) -> bytes:
-        """Collects dc, auth_beacon and UUID."""
+        """Get common data by collecting debug credential, auth beacon and UUID.
+
+        This method exports the debug credential data and combines it with the
+        authentication beacon and DAC UUID to create a common data structure.
+
+        :return: Combined binary data containing debug credential, auth beacon and UUID.
+        """
         data = self.debug_credential.export()
         data += pack("<L", self.auth_beacon)
         data += pack("<16s", self.dac.uuid)
@@ -356,28 +463,58 @@ class DebugAuthenticateResponseECC(DebugAuthenticateResponse):
 
 
 class DebugAuthenticateResponseECC_256(DebugAuthenticateResponseECC):
-    """Class for DAR, using Elliptic curve, 256 bits sized keys."""
+    """Debug Authentication Response for ECC P-256 curve.
+
+    This class implements Debug Authentication Response (DAR) functionality
+    specifically for Elliptic Curve Cryptography using the P-256 curve with
+    256-bit keys.
+
+    :cvar KEY_LENGTH: Length of the cryptographic key in bytes (32 bytes for 256-bit keys).
+    :cvar CURVE: The elliptic curve specification used for cryptographic operations.
+    """
 
     KEY_LENGTH = 32
     CURVE = "secp256r1"
 
 
 class DebugAuthenticateResponseECC_384(DebugAuthenticateResponseECC):
-    """Class for DAR, using Elliptic curve, 384 bits sized keys."""
+    """Debug Authentication Response handler for ECC P-384 curve operations.
+
+    This class implements Debug Authentication Response (DAR) functionality
+    specifically for elliptic curve cryptography using the NIST P-384 curve
+    with 384-bit key sizes.
+
+    :cvar KEY_LENGTH: Length of the cryptographic key in bytes (48 bytes for P-384).
+    :cvar CURVE: The elliptic curve identifier used for cryptographic operations.
+    """
 
     KEY_LENGTH = 48
     CURVE = "secp384r1"
 
 
 class DebugAuthenticateResponseECC_521(DebugAuthenticateResponseECC):
-    """Class for DAR, using Elliptic curve, 521 bits sized keys."""
+    """Debug Authentication Response for ECC P-521 curve.
+
+    This class implements debug authentication response handling specifically
+    for elliptic curve cryptography using the NIST P-521 curve with 521-bit keys.
+
+    :cvar KEY_LENGTH: Length of the ECC P-521 key in bytes (66 bytes).
+    :cvar CURVE: The elliptic curve identifier for NIST P-521 curve.
+    """
 
     KEY_LENGTH = 66
     CURVE = "secp521r1"
 
 
 class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
-    """Class for DAR, using AHAB Signed message version 2."""
+    """Debug Authentication Response for EdgeLock Enclave devices using AHAB v2.
+
+    This class implements the Debug Authentication Response (DAR) protocol specifically
+    for NXP devices equipped with EdgeLock Enclave security subsystem that utilize
+    AHAB (Advanced High Assurance Boot) signed message format version 2. It handles
+    the creation and export of authentication responses required for secure debug
+    access to protected MCU resources.
+    """
 
     def __init__(
         self,
@@ -387,7 +524,17 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
         dac: DebugAuthenticationChallenge,
         sign_message: SignedMessage,
     ) -> None:
-        """Constructor of DAR for devices that using EdgeLock Enclave with AHAB v2."""
+        """Initialize DAR packet for EdgeLock Enclave devices with AHAB v2.
+
+        Constructor for Debug Authentication Response (DAR) packet specifically designed
+        for devices using EdgeLock Enclave with Authentication Header Boot (AHAB) version 2.
+
+        :param family: Target MCU family and revision information
+        :param debug_credential: Debug credential certificate for authentication
+        :param auth_beacon: Authentication beacon value for the debug session
+        :param dac: Debug authentication challenge data
+        :param sign_message: Signed message containing authentication data
+        """
         super().__init__(
             family,
             debug_credential,
@@ -398,12 +545,21 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
         self.sign_message = sign_message
 
     def __repr__(self) -> str:
+        """Return string representation of the DAR packet.
+
+        Provides a human-readable string representation showing the DAR packet
+        is based on ELE v2 and includes the SOCC value in hexadecimal format.
+
+        :return: String representation with ELE version and SOCC value.
+        """
         return f"DAR based on ELE v2, SOCC: 0x{self.dac.socc:08X}"
 
     def export(self) -> bytes:
         """Export to binary form (serialization).
 
-        :return: the exported bytes from object
+        The method updates the sign message fields and exports the object as bytes.
+
+        :return: The exported bytes from object.
         """
         self.sign_message.update_fields()
         return self.sign_message.export()
@@ -414,10 +570,16 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
         config: Config,
         dac: Optional[DebugAuthenticationChallenge] = None,
     ) -> Self:
-        """Converts the configuration option into an Debug authentication response object.
+        """Load debug authentication response from configuration.
+
+        The method creates a Debug Authentication Response (DAR) object by processing
+        the configuration and combining it with the Debug Authentication Challenge (DAC).
+        It handles beacon configuration, loads debug credentials, and creates a signed
+        message for the authentication response.
 
         :param config: Debug authentication response configuration dictionaries.
-        :param dac: Debug Credential Challenge
+        :param dac: Debug Authentication Challenge object containing UUID and challenge vector.
+        :raises SPSDKValueError: If DAC object is not provided.
         :return: Debug authentication response object.
         """
         if dac is None:
@@ -455,11 +617,15 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Create the validation schema.
+        """Create the validation schemas for DAR packet configuration.
 
-        :param family: Family description.
+        This method builds a list of validation schemas by combining family schema,
+        modified SignedMessage schema, AHAB debug certificate schema, and optionally
+        ELE authentication beacon schema based on family capabilities.
+
+        :param family: Family description containing device family and revision information.
         :raises SPSDKError: Family or revision is not supported.
-        :return: List of validation schemas.
+        :return: List of validation schemas for DAR packet configuration.
         """
         family_schema = get_schema_file("general")["family"]
         update_validation_schema_family(
@@ -474,6 +640,8 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
         schemas_smsg["required"].remove("srk_revoke_mask")
 
         schemas_smsg["properties"].pop("output")
+        schemas_smsg["properties"].pop("fuse_version")
+        schemas_smsg["properties"].pop("sw_version")
         schemas_smsg["properties"].pop("check_all_signatures")
         schemas_smsg["properties"].pop("iv_path")
         schemas_smsg["properties"].pop("message")
@@ -490,7 +658,12 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
     def _verify_rot_hash(self) -> VerifierRecord:
         """Verify Root of Trust Hash between DAC and DC.
 
-        :return: VerifierRecord containing the RoT Hash verification result
+        The method compares the Root of Trust Key Hash (RKTH) from the DAC with the
+        calculated hash from the signing message. It handles different RoT types including
+        ECC and ECC+PQC combinations based on the device family configuration.
+
+        :return: VerifierRecord containing the RoT Hash verification result with success
+                 or error status and corresponding hash values.
         """
         db = get_db(self.family)
         dac_rot_type = db.get_str(DatabaseManager.DAT, "dac_rot_type", "default")

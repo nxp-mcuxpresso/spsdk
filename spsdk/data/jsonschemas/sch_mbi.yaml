@@ -164,8 +164,10 @@ ahab_sign_support:
       type: [number, string]
       title: Fuse version
       description:
-        The value must be equal or greater than the version stored in fuses
-        to allow loading this container.
+        The value must be equal or greater than the version stored in fuses or PFR
+        to provide proper rollback protection. For example, on the MCXN556s series, the fuse version is used for rollback protection,
+        where it is joined with the image version to create a firmware version 'fw_version = (imageVersion << 8) | (fuse_version)'.
+        During rollback protection, the firmware version is checked against 'SECURE_FW_VERSION' in the CFPA page.
       format: number
       template_value: 0
     signer:
@@ -281,7 +283,7 @@ ahab_sign_support_add_core_id:
 
 ahab_sign_support_add_crc:
   type: object
-  title: AHAB Container format to add to ECC + PQC sign.
+  title: Additional Checks.
   properties:
     add_crc_check:
       type: boolean
@@ -545,7 +547,6 @@ hse_ivt:
       description: "Address of HSE firmware"
       format: number
       template_value: "0x0"
-  required: [appStartAddress]
 
 hse_app_boot_header:
   type: object

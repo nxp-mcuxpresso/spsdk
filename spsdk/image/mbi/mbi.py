@@ -6,7 +6,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-"""Master Boot Image."""
+"""SPSDK Master Boot Image generation and management utilities.
+
+This module provides functionality for creating, configuring, and managing
+Master Boot Images (MBI) used in NXP MCU secure boot process. It includes
+the main MasterBootImage class for image creation and configuration
+template generation utilities.
+"""
 
 import logging
 import re
@@ -35,10 +41,14 @@ DEBUG_TRACE_ENABLE = False
 
 
 def mbi_generate_config_templates(family: FamilyRevision) -> dict[str, str]:
-    """Generate all possible configuration for selected family.
+    """Generate all possible MBI configuration templates for selected family.
 
-    :param family: Family description.
-    :return: Dictionary of individual templates (key is name of template, value is template itself).
+    The method retrieves all available Master Boot Image classes for the specified
+    family and generates configuration templates for each one. If no MBI classes
+    are found for the family, an empty dictionary is returned.
+
+    :param family: Family revision specification for template generation.
+    :return: Dictionary mapping template names to their configuration content.
     """
     ret: dict[str, str] = {}
     # 1: Generate all configuration for MBI
@@ -55,7 +65,18 @@ def mbi_generate_config_templates(family: FamilyRevision) -> dict[str, str]:
 
 
 class MasterBootImage(FeatureBaseClass):
-    """Master Boot Image Interface."""
+    """Master Boot Image Interface.
+
+    This class provides a unified interface for creating and managing Master Boot Images
+    across NXP MCU portfolio. It handles image creation, authentication, encryption,
+    and signing operations for different target types and authentication methods.
+
+    :cvar FEATURE: Database feature identifier for MBI operations.
+    :cvar IMAGE_TYPE: Default image type for plain images.
+    :cvar IMAGE_TARGET: Default target location for image loading.
+    :cvar IMAGE_AUTHENTICATIONS: Default authentication method.
+    :cvar IMAGE_TYPES: Supported image target types and aliases.
+    """
 
     FEATURE = DatabaseManager.MBI
     IMAGE_TYPE = MbiImageTypeEnum.PLAIN_IMAGE
@@ -87,7 +108,10 @@ class MasterBootImage(FeatureBaseClass):
     def get_mbi_classes(cls, family: FamilyRevision) -> dict[str, tuple[Type[Self], str, str]]:
         """Get all Master Boot Image supported classes for chip family.
 
-        :param family: Chip family.
+        The method retrieves MBI classes for all supported target and authentication combinations
+        for the specified chip family from the database configuration.
+
+        :param family: Chip family to get MBI classes for.
         :raises SPSDKValueError: The invalid family.
         :return: Dictionary with key like image name and values are Tuple with it's MBI Class
             and target and authentication type.
@@ -111,10 +135,17 @@ class MasterBootImage(FeatureBaseClass):
 
     @classmethod
     def get_mbi_class(cls, config: dict[str, Any]) -> Type[Self]:
-        """Get Master Boot Image class.
+        """Get Master Boot Image class based on configuration.
 
-        :raises SPSDKUnsupportedImageType: The invalid configuration.
-        :return: MBI Class.
+        This method validates the configuration and determines the appropriate MBI class
+        based on the image type, target family, execution target, and authentication type.
+
+        :param config: Configuration dictionary containing image parameters including
+                       outputImageExecutionTarget and outputImageAuthenticationType.
+        :raises SPSDKUnsupportedImageType: When image type is not supported or when
+                                           memory target and authentication combination
+                                           is not supported for the specified family.
+        :return: MBI Class type for the specified configuration.
         """
         # Validate needed configuration to recognize MBI class
         image_type = config.get("outputImageExecutionTarget", "Non-specified image type")
@@ -142,11 +173,16 @@ class MasterBootImage(FeatureBaseClass):
 
     @classmethod
     def create_mbi_class(cls, name: str, family: FamilyRevision) -> Type[Self]:
-        """Create Master Boot image class.
+        """Create Master Boot Image class dynamically.
 
-        :param name: Name of Class
-        :param family: Name of chip family
-        :return: Master Boot Image class
+        This method creates a new MBI class by combining the base MasterBootImage class
+        with appropriate mixins based on the configuration stored in the database for
+        the specified family and class name.
+
+        :param name: Name of the MBI class to create
+        :param family: Chip family revision for database lookup
+        :raises SPSDKValueError: When the specified MBI class name is not supported
+        :return: Dynamically created Master Boot Image class
         """
         db = get_db(family)
         mbi_classes = db.get_dict(DatabaseManager.MBI, "mbi_classes")
@@ -181,7 +217,15 @@ class MasterBootImage(FeatureBaseClass):
 
     @classmethod
     def _parse_name(cls, name: str) -> tuple[str, str]:
-        """Parse configuration name into authentication, target tuple."""
+        """Parse configuration name into authentication and target tuple.
+
+        The method extracts authentication type and target type from a configuration
+        name string by matching against known authentication and target identifiers.
+
+        :param name: Configuration name string to parse.
+        :raises ValueError: Name does not contain known authentication or target type.
+        :return: Tuple containing authentication type and target type strings.
+        """
         auth = next(
             (
                 MAP_AUTHENTICATIONS[auth_identifier][0]
@@ -215,7 +259,9 @@ class MasterBootImage(FeatureBaseClass):
     def _get_mixins(cls) -> list[Type[mbi_mixin.Mbi_Mixin]]:
         """Get the list of Mbi Mixin classes.
 
-        :return: List of Mbi_Mixins.
+        This method filters the base classes to return only those that are subclasses of Mbi_Mixin.
+
+        :return: List of Mbi_Mixin classes that are base classes of the current class.
         """
         return [x for x in cls.__bases__ if issubclass(x, mbi_mixin.Mbi_Mixin)]
 
@@ -223,9 +269,12 @@ class MasterBootImage(FeatureBaseClass):
     def get_image_type(cls, family: FamilyRevision, data: bytes) -> int:
         """Get image type from MBI data and family.
 
-        :param family: device family to be fetched from DB
-        :param data: MBI raw data
-        :return: Image type int representation
+        The method retrieves the image type either from a fixed configuration in the database
+        or dynamically determines it using the appropriate IVT mixin class based on the family.
+
+        :param family: Device family revision to fetch configuration from database.
+        :param data: Raw MBI binary data to analyze for image type.
+        :return: Integer representation of the image type.
         """
         img_type = get_db(family).get_int(DatabaseManager.MBI, ["fixed_image_type"], -1)
         if img_type < 0:
@@ -237,7 +286,10 @@ class MasterBootImage(FeatureBaseClass):
 
     @classmethod
     def hash(cls) -> str:
-        """Unique identifier for MasterBootImage class based on mixins.
+        """Generate unique identifier for MasterBootImage class based on mixins.
+
+        Creates acronyms from base class names by removing common prefixes/suffixes
+        and generating abbreviations from remaining words.
 
         :return: Acronym for each MBI base class separated by "-"
         """
@@ -260,9 +312,17 @@ class MasterBootImage(FeatureBaseClass):
         return "-".join(acronyms)
 
     def __init__(self, family: FamilyRevision, **kwargs: Any) -> None:
-        """Initialization of MBI.
+        """Initialize MBI (Master Boot Image) instance.
 
-        :param kwargs: Various input parameters based on used dynamic class.
+        Sets up the MBI object with the specified family revision and additional
+        parameters. Validates that all required class members are present after
+        initialization through mixins.
+
+        :param family: The target MCU family and revision information.
+        :param kwargs: Additional initialization parameters specific to the dynamic
+            class implementation.
+        :raises SPSDKValueError: When a required class member is missing after mixin
+            initialization.
         """
         # Check if all needed class instance members are available (validation of class due to mixin problems)
         self.family = family
@@ -278,9 +338,12 @@ class MasterBootImage(FeatureBaseClass):
 
     @property
     def total_len(self) -> int:
-        """Compute Master Boot Image data length.
+        """Compute Master Boot Image total data length.
 
-        :return: Final image data length.
+        The method iterates through all available mixins and calculates their individual
+        lengths to determine the final combined image data length.
+
+        :return: Total length of the Master Boot Image data in bytes.
         """
         ret = 0
         for base in self._get_mixins():
@@ -291,9 +354,12 @@ class MasterBootImage(FeatureBaseClass):
 
     @property
     def total_length_for_cert_block(self) -> int:
-        """Compute Master Boot Image data length.
+        """Compute total length for certificate block in Master Boot Image.
 
-        :return: Final image data length.
+        The method iterates through all mixins and sums up lengths of those
+        that should be counted in legacy certificate block length calculation.
+
+        :return: Total length of certificate block data in bytes.
         """
         ret = 0
         for base in self._get_mixins():
@@ -305,7 +371,10 @@ class MasterBootImage(FeatureBaseClass):
     def app_len(self) -> int:
         """Compute application data length.
 
-        :return: Final image data length.
+        The method iterates through all mixins and accumulates their individual
+        application data lengths to determine the total final image data length.
+
+        :return: Final image data length in bytes.
         """
         ret = 0
         for base in self._get_mixins():
@@ -316,7 +385,11 @@ class MasterBootImage(FeatureBaseClass):
     def rkth(self) -> Optional[bytes]:
         """Get Root Key Table Hash from certificate block if present.
 
-        :return: Root Key Table Hash as hex string.
+        The method extracts the Root Key Table Hash from the certificate block
+        if it exists and is of supported type (CertBlockV1 or CertBlockV21).
+
+        :return: Root Key Table Hash as bytes if certificate block is present and valid,
+            None otherwise.
         """
         if hasattr(self, "cert_block") and isinstance(self.cert_block, (CertBlockV1, CertBlockV21)):
             return self.cert_block.rkth
@@ -324,10 +397,14 @@ class MasterBootImage(FeatureBaseClass):
 
     @classmethod
     def get_validation_schemas_from_cfg(cls, config: Config) -> list[dict[str, Any]]:
-        """Get validation schema based on configuration.
+        """Get validation schemas based on configuration.
 
-        :param config: Valid configuration
-        :return: Validation schemas
+        This method retrieves the appropriate MBI class from configuration, validates the basic
+        schemas, loads family revision information, and returns the complete validation schemas
+        for the specific family.
+
+        :param config: Valid configuration object containing MBI settings and family information.
+        :return: List of validation schema dictionaries for the specified family.
         """
         mbi_cls = cls.get_mbi_class(config)
         config.check(mbi_cls.get_validation_schemas_basic())
@@ -338,7 +415,11 @@ class MasterBootImage(FeatureBaseClass):
     def load_from_config(cls, config: Config) -> Self:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
+        Creates an MBI instance from configuration data by determining the appropriate
+        MBI class based on family information and applying mixin configurations.
+
+        :param config: Configuration object containing MBI settings and family information.
+        :return: Configured MBI instance of the appropriate class type.
         """
         family = FamilyRevision.load_from_config(config)
         mbi_cls = cls.get_mbi_class(config)(family=family)
@@ -350,7 +431,11 @@ class MasterBootImage(FeatureBaseClass):
     def export_image(self) -> BinaryImage:
         """Export final bootable image.
 
-        :return: Bootable Image in Binary Image format.
+        The method processes the MBI image through a complete pipeline: validates input data,
+        collects raw image data, optionally encrypts the image, applies post-encryption updates,
+        optionally signs the image, and finalizes it into a bootable format.
+
+        :return: Final bootable image ready for deployment.
         """
         BinaryImage(
             name="MBI Image",
@@ -384,7 +469,7 @@ class MasterBootImage(FeatureBaseClass):
     def export(self) -> bytes:
         """Export final bootable image.
 
-        :return: Bootable Image in bytes.
+        :return: Bootable image in bytes.
         """
         return self.export_image().export()
 
@@ -397,11 +482,16 @@ class MasterBootImage(FeatureBaseClass):
     ) -> Self:
         """Parse the final image to individual fields.
 
+        This method performs reverse engineering of an MBI image by detecting the appropriate
+        MBI class type, parsing mixins in dependency order, and then reversing the image
+        creation process (finalize, sign, post-encrypt, encrypt operations) to extract
+        the original components.
+
         :param data: Final Image in bytes
-        :param family: Device family
+        :param family: Device family revision for MBI class detection
         :param dek: The decryption key for encrypted images
         :raises SPSDKParsingError: Cannot determinate the decoding class
-        :return: MBI parsed class
+        :return: MBI parsed class instance with extracted image components
         """
         # 1: Get the right class to parse MBI
         mbi_classes = cls.get_mbi_classes(family)
@@ -468,8 +558,12 @@ class MasterBootImage(FeatureBaseClass):
     def get_config(self, data_path: str = "./") -> Config:
         """Create configuration file and its data files from the MBI class.
 
+        The method generates a configuration dictionary by collecting settings from all mixins
+        and adding MBI-specific configuration values including family, target, and authentication
+        information.
+
         :param data_path: Path to store the data files of configuration.
-        :returns: Configuration dictionary.
+        :return: Configuration dictionary with MBI settings.
         """
         cfg_values = Config()
         for mixin in self._get_mixins():
@@ -495,7 +589,10 @@ class MasterBootImage(FeatureBaseClass):
     def get_validation_schemas_basic(cls) -> list[dict[str, Any]]:
         """Create the validation family schema for current image type.
 
-        :return: Validation schema.
+        The method retrieves the general schema file, updates the family validation schema
+        with supported families for the current class, and returns it as a list.
+
+        :return: List containing the family validation schema dictionary.
         """
         schema_family = get_schema_file("general")["family"]
         update_validation_schema_family(schema_family["properties"], cls.get_supported_families())
@@ -505,8 +602,12 @@ class MasterBootImage(FeatureBaseClass):
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Create the validation schema for current image type.
 
-        :param family: Family description.
-        :return: Validation schema.
+        The method builds a comprehensive validation schema by combining family-specific schemas,
+        image type configurations, and mixin schemas. It dynamically updates execution targets
+        and authentication types based on the family's supported configurations.
+
+        :param family: Family description containing revision and chip information.
+        :return: List of validation schema dictionaries for the image type.
         """
         schemas = []
         schema_cfg = get_schema_file(DatabaseManager.MBI)
@@ -541,14 +642,34 @@ class MasterBootImage(FeatureBaseClass):
         return schemas
 
     def validate(self) -> None:
-        """Validate the setting of image."""
+        """Validate the setting of image.
+
+        Iterates through all available mixins and calls their validation methods
+        to ensure the image configuration is correct and complete.
+
+        :raises SPSDKError: If any mixin validation fails or image settings are invalid.
+        """
         for base in self._get_mixins():
             base.mix_validate(self)  # type: ignore
 
     def __repr__(self) -> str:
+        """Return string representation of MBI object.
+
+        Provides a human-readable string containing the family name and image type
+        description for debugging and logging purposes.
+
+        :return: String representation in format "MBI class {family}, {description}".
+        """
         return f"MBI class {self.family}, {self.IMAGE_TYPE.description}"
 
     def __str__(self) -> str:
+        """Get string representation of MBI class instance.
+
+        Creates a formatted string containing the family name, image type description,
+        and a list of all available mixins for this MBI instance.
+
+        :return: Formatted string with MBI class information and available mixins.
+        """
         ret = (
             f"MBI class for {self.family}, {self.IMAGE_TYPE.description}:\n" " List of mixins:\n - "
         )

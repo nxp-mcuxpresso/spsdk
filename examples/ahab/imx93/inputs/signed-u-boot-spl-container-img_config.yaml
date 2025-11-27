@@ -45,7 +45,7 @@ containers:
       # Description: Number used by Privileged Host Boot Companion (PHBC) to select between multiple images with same
       # Fuse version field.
       sw_version: 0
-      signer: ../_data/keys/ecc384/srk0_ecc384.pem # [Conditionally required], AHAB container signing key, Private key used for sign the container header. Header can be signed by SRK or by image key that was signed by SRK. If an image key is used, it must be the same algorithm and key size as the SRK. In both cases, the referenced SRK must not have been revoked.
+      signer: ../../_data/keys/ecc384/srk0_ecc384.pem # [Conditionally required], AHAB container signing key, Private key used for sign the container header. Header can be signed by SRK or by image key that was signed by SRK. If an image key is used, it must be the same algorithm and key size as the SRK. In both cases, the referenced SRK must not have been revoked.
       # ================================================================================================================
       #                     == Configuration of AHAB Container images (array of multiple images) ==
       # ================================================================================================================
@@ -85,12 +85,12 @@ containers:
         # ----------------------------------------------------------------------------------------------------
       srk_table: # [Conditionally required], SRK Table, SRK (Super Root key) table definition.
         srk_array: # [Required], Super Root Key (SRK) table, Table containing the used SRK records. All SRKs must be of the same type. Supported signing algorithms are: RSASSA-PSS or ECDSA. Supported hash algorithms: sha256, sha384, sha512. Supported key sizes/curves: prime256v1, sec384r1, sec512r1, rsa2048, rsa4096. Certificate may be of Certificate Authority.
-          - ../_data/keys/ecc384/srk0_ecc384.pub # SRK key, Path to SRK Key file.
-          - ../_data/keys/ecc384/srk1_ecc384.pub # SRK key, Path to SRK Key file.
-          - ../_data/keys/ecc384/srk2_ecc384.pub # SRK key, Path to SRK Key file.
-          - ../_data/keys/ecc384/srk3_ecc384.pub # SRK key, Path to SRK Key file.
+          - ../../_data/keys/ecc384/srk0_ecc384.pub # SRK key, Path to SRK Key file.
+          - ../../_data/keys/ecc384/srk1_ecc384.pub # SRK key, Path to SRK Key file.
+          - ../../_data/keys/ecc384/srk2_ecc384.pub # SRK key, Path to SRK Key file.
+          - ../../_data/keys/ecc384/srk3_ecc384.pub # SRK key, Path to SRK Key file.
       blob:
         key_identifier: 0
         dek_key_size: 128
-        dek_key: ../_data/keys/dek_key.txt
-        dek_keyblob: ../_data/keys/dek_keyblob.bin
+        dek_key: ../../_data/keys/dek_key.txt
+        dek_keyblob: ../../_data/keys/dek_keyblob.bin

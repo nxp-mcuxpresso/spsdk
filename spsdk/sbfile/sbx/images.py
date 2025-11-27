@@ -4,7 +4,13 @@
 # Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Module used for generation SecureBinary X."""
+"""SPSDK SecureBinary X image generation and management utilities.
+
+This module provides functionality for creating and handling SecureBinary X (SBX) images,
+including TPM HSM blob management, secure binary headers, commands, and complete SBX image
+construction for NXP MCU secure provisioning.
+"""
+
 import logging
 from enum import Enum
 from struct import calcsize, pack, unpack_from
@@ -26,10 +32,20 @@ logger = logging.getLogger(__name__)
 
 
 ########################################################################################################################
-# Secure Boot Image Class (Version X)
+# Secure Binary Image Class (Version X)
 ########################################################################################################################
 class TpHsmBlobHeader(BaseClass):
-    """TP HSM blob header."""
+    """TP HSM blob header for secure provisioning operations.
+
+    This class represents and manages the header structure for
+    TP HSM (TrustProvisioning Hardware Security Module) blobs, providing
+    functionality to create, parse, and export binary header data with
+    version control and OEM encryption support.
+
+    :cvar FORMAT: Binary format string for header structure.
+    :cvar SIZE: Total size of the header in bytes.
+    :cvar SIGNATURE: Expected signature for header validation.
+    """
 
     FORMAT = "<2BH16s"
     SIZE = calcsize(FORMAT)
@@ -38,12 +54,12 @@ class TpHsmBlobHeader(BaseClass):
     def __init__(
         self, version: int = 1, blob_type: int = 0, oem_enc_data: bytes = bytes(16)
     ) -> None:
-        """Constructor.
+        """Initialize TpHsmBlob instance.
 
-        :param version: blob version
-        :param blob_type: type of the HSM blob
-        :param build_number: of the certificate
-        :raises SPSDKError: When there is invalid version
+        :param version: Blob version number.
+        :param blob_type: Type of the HSM blob.
+        :param oem_enc_data: OEM encryption data, defaults to 16 zero bytes.
+        :raises SPSDKError: When there is invalid version.
         """
         self.version = version
         self.blob_type = blob_type
@@ -51,25 +67,41 @@ class TpHsmBlobHeader(BaseClass):
         self.oem_enc_data = oem_enc_data
 
     def __str__(self) -> str:
+        """Get string representation of TP HSM Blob header.
+
+        Creates a formatted string containing the version, blob type, and blob size
+        information of the TP HSM Blob header.
+
+        :return: Formatted string with header information including version, type, and size.
+        """
         nfo = f"TP HSM Blob header: V={self.version}, T={self.blob_type}, BS={self.blob_size},"
         return nfo
 
     def __repr__(self) -> str:
-        """Info of the certificate header in text form."""
+        """Get string representation of the TP HSM blob header.
+
+        :return: String representation of the header.
+        """
         return "TP HSM blob header"
 
     def export(self) -> bytes:
-        """TP HSM block header in binary form."""
+        """Export TP HSM block header in binary form.
+
+        Serializes the TP HSM block header into its binary representation using the
+        defined format structure.
+
+        :return: Binary representation of the TP HSM block header.
+        """
         return pack(self.FORMAT, self.version, self.blob_type, self.blob_size, self.oem_enc_data)
 
     @classmethod
     def parse(cls, header_data: bytes, offset: int = 0) -> "TpHsmBlobHeader":
-        """Parse object from bytes array.
+        """Parse TpHsmBlobHeader object from bytes array.
 
-        :param header_data: Input data as bytes
-        :param offset: The offset of input data (default: 0)
-        :return: Certificate Header instance
-        :raises SPSDKParsingError: Unexpected size or signature of data
+        :param header_data: Input data as bytes to parse the header from.
+        :param offset: The offset of input data (default: 0).
+        :return: TpHsmBlobHeader instance.
+        :raises SPSDKParsingError: Unexpected size or signature of data.
         """
         if cls.SIZE > len(header_data) - offset:
             raise SPSDKParsingError("Unexpected size or signature of data")
@@ -90,7 +122,15 @@ class TpHsmBlobHeader(BaseClass):
 
 
 class TpHsmBlob(BaseClass):
-    """TP HSM blob."""
+    """TP HSM (Trusted Provisioning Hardware Security Module) blob container.
+
+    This class represents a cryptographically secured blob used in trusted provisioning
+    operations. It combines a TP HSM header with HMAC-based authentication to ensure
+    data integrity and authenticity during secure provisioning workflows.
+
+    :cvar FORMAT: Binary format string for blob structure.
+    :cvar SIZE: Total size of the blob in bytes.
+    """
 
     FORMAT = "<20s32s"
     SIZE = calcsize(FORMAT)
@@ -101,12 +141,17 @@ class TpHsmBlob(BaseClass):
         signature: Optional[bytes] = None,
         hmac_key: Optional[str] = None,
     ) -> None:
-        """Constructor.
+        """Initialize TPHSM blob with header and authentication.
 
-        :param tphsm_header: TPHSM header
-        :param signature: blob signature
-        :param hmac_key: of the certificate
-        :raises SPSDKError: When there is invalid version
+        Creates a new TPHSM blob instance with the provided header and either a signature
+        or HMAC key for authentication. If HMAC key is provided, it will be used to generate
+        the signature from the header data.
+
+        :param tphsm_header: TPHSM header object or raw header bytes.
+        :param signature: Pre-computed blob signature bytes, optional.
+        :param hmac_key: Hexadecimal string representation of HMAC key for signature
+            generation, optional.
+        :raises SPSDKError: When neither signature nor HMAC key is provided.
         """
         self.header = tphsm_header
         if not hmac_key and not signature:
@@ -120,28 +165,44 @@ class TpHsmBlob(BaseClass):
             self.signature = hmac(self.hmac_key, header)
 
     def __repr__(self) -> str:
+        """Return string representation of TP HSM Blob header.
+
+        :return: String representation of the TP HSM Blob header.
+        """
         return "TP HSM Blob header"
 
     def __str__(self) -> str:
-        """Info about TP HSM blob in text form."""
+        """Get string representation of TP HSM blob.
+
+        Returns formatted information about the TP HSM blob including HMAC key and signature
+        in human-readable text format.
+
+        :return: Formatted string containing HMAC key and signature information.
+        """
         msg = f"HMAC Key: {self.hmac_key.decode('ascii')}"
         msg += f"Signature: {self.signature.decode('ascii')}"
         return msg
 
     def export(self) -> bytes:
-        """TP HSM blob in binary form."""
+        """Export TP HSM blob in binary form.
+
+        Converts the TP HSM blob object into its binary representation by combining
+        the header and signature components.
+
+        :return: Binary representation of the TP HSM blob.
+        """
         if isinstance(self.header, TpHsmBlobHeader):
             return self.header.export() + self.signature
         return self.header + self.signature
 
     @classmethod
     def parse(cls, data: bytes, offset: int = 0) -> "TpHsmBlob":
-        """Parse object from bytes array.
+        """Parse TpHsmBlob object from bytes array.
 
-        :param data: Input data as bytes
-        :param offset: The offset of input data (default: 0)
-        :return: Certificate Header instance
-        :raises SPSDKParsingError: Unexpected size or signature of data
+        :param data: Input data as bytes to parse the TpHsmBlob from.
+        :param offset: The offset of input data (default: 0).
+        :return: TpHsmBlob instance parsed from the data.
+        :raises SPSDKParsingError: Unexpected size or signature of data.
         """
         if cls.SIZE > len(data) - offset:
             raise SPSDKParsingError("Unexpected size or signature of data")
@@ -158,7 +219,11 @@ class TpHsmBlob(BaseClass):
 
 
 class SecureBinaryXType(Enum):
-    """Type of the Secure Binary X container."""
+    """Secure Binary X container type enumeration.
+
+    This enumeration defines the different types of Secure Binary X containers
+    used in SPSDK for various provisioning and deployment scenarios.
+    """
 
     NXP_PROVISIONING = 1
     OEM_PROVISIONING = 2
@@ -166,7 +231,20 @@ class SecureBinaryXType(Enum):
 
 
 class SecureBinaryXHeader(BaseClass):
-    """Header of the SecureBinary X."""
+    """SecureBinary X file header representation.
+
+    This class manages the header structure for SecureBinary X (SBx) files, handling
+    metadata such as firmware version, timestamps, image types, and descriptions.
+    It provides functionality for creating, validating, and serializing SBx headers
+    according to the NXP secure binary format specification.
+
+    :cvar HEADER_FORMAT: Binary format string for header structure.
+    :cvar HEADER_SIZE: Total size of the header in bytes.
+    :cvar MAGIC: Magic bytes identifier for SBx files.
+    :cvar FORMAT_VERSION: Version of the SBx format.
+    :cvar DESCRIPTION_LENGTH: Maximum length for description field.
+    :cvar BLOCK_SIZE: Size of data blocks in the SBx file.
+    """
 
     HEADER_FORMAT = "<4s2H3LQ3L16s"
     HEADER_SIZE = calcsize(HEADER_FORMAT) + 84
@@ -185,11 +263,11 @@ class SecureBinaryXHeader(BaseClass):
     ) -> None:
         """Initialize the SecureBinary X Header.
 
-        :param firmware_version: Firmware version
-        :param description: Custom description up to 16 characters long, defaults to None
-        :param timestamp: Timestamp (number of seconds since Jan 1st, 2000), if None use current time
-        :param image_type: type of the SB file, defaults to OEM_PROVISIONING
-        :param flags: Flags for SBx file, defaults to 0
+        :param firmware_version: Firmware version number.
+        :param description: Custom description up to 16 characters long, defaults to None.
+        :param timestamp: Timestamp (number of seconds since Jan 1st, 2000), if None use current time.
+        :param image_type: Type of the SB file, defaults to OEM_PROVISIONING.
+        :param flags: Flags for SBx file, defaults to 0.
         """
         self.flags = flags
         self.block_count = 1
@@ -203,7 +281,15 @@ class SecureBinaryXHeader(BaseClass):
         self.block_size = self.BLOCK_SIZE
 
     def _adjust_description(self, description: Optional[str] = None) -> bytes:
-        """Format the description."""
+        """Format the description to fixed-length byte array.
+
+        Converts string description to ASCII bytes and pads or truncates to match
+        the required DESCRIPTION_LENGTH. If no description is provided, returns
+        a zero-filled byte array.
+
+        :param description: Optional description string to format.
+        :return: Fixed-length byte array of DESCRIPTION_LENGTH size.
+        """
         if not description:
             return bytes(self.DESCRIPTION_LENGTH)
         desc = bytes(description, encoding="ascii")
@@ -212,10 +298,21 @@ class SecureBinaryXHeader(BaseClass):
         return desc
 
     def __repr__(self) -> str:
+        """Return string representation of Secure Binary X header.
+
+        :return: String representation of the header.
+        """
         return "Secure Binary X header"
 
     def __str__(self) -> str:
-        """Get info of SB v31 as a string."""
+        """Get string representation of SB v3.1 image information.
+
+        Returns formatted string containing all SB v3.1 image properties including magic,
+        version, flags, block information, firmware version, image type, timestamp,
+        and description.
+
+        :return: Formatted string with SB v3.1 image details.
+        """
         info = str()
         info += f" Magic:                       {self.MAGIC.decode('ascii')}\n"
         info += f" Version:                     {self.FORMAT_VERSION}\n"
@@ -232,14 +329,17 @@ class SecureBinaryXHeader(BaseClass):
     def update(self, commands: "SecureBinaryXCommands") -> None:
         """Updates the volatile fields in header by real commands.
 
-        :param commands: SBx Commands block
+        :param commands: SBx Commands block to extract data from.
         """
         self.block_count = commands.block_count
 
     def export(self) -> bytes:
         """Export the SB file to bytes.
 
-        :return: Exported header bytes
+        Converts the SBX image header structure into a binary representation using the defined
+        header format and packing all header fields according to the specification.
+
+        :return: Exported header bytes containing the complete SBX image header structure.
         """
         major_format_version, minor_format_version = [
             int(v) for v in self.FORMAT_VERSION.split(".")
@@ -263,7 +363,13 @@ class SecureBinaryXHeader(BaseClass):
     def parse(cls, data: bytes, offset: int = 0) -> Self:
         """Parse binary data into SecureBinaryXHeader.
 
-        :raises SPSDKError: Unable to parse SBX Header.
+        This method deserializes binary data according to the SBX header format and creates
+        a SecureBinaryXHeader instance with the parsed values.
+
+        :param data: Binary data containing the SBX header.
+        :param offset: Offset in the data where parsing should start.
+        :raises SPSDKError: Unable to parse SBX Header due to invalid magic, version, or block size.
+        :return: Parsed SecureBinaryXHeader instance.
         """
         (
             magic,
@@ -298,7 +404,11 @@ class SecureBinaryXHeader(BaseClass):
         return obj
 
     def validate(self) -> None:
-        """Validate the settings of class members.
+        """Validate the settings of SBx header class members.
+
+        Performs comprehensive validation of all required SBx header attributes including flags,
+        block count, block size, image type, firmware version, timestamp, block 0 total length,
+        and image description to ensure they meet the SBx format requirements.
 
         :raises SPSDKError: Invalid configuration of SBx header blob class members.
         """
@@ -321,14 +431,28 @@ class SecureBinaryXHeader(BaseClass):
 
 
 class SecureBinaryXCommands(SecureBinary31Commands):
-    """Blob containing SBX commands."""
+    """SBX (Secure Binary X) commands container for NXP MCU provisioning.
+
+    This class manages and processes SBX format commands used in secure provisioning
+    operations for NXP microcontrollers, extending the SB3.1 command functionality.
+
+    :cvar FEATURE: Database feature identifier for SBX operations.
+    :cvar SB_COMMANDS_NAME: Human-readable name for SBX command format.
+    """
 
     FEATURE = DatabaseManager.SBX
     SB_COMMANDS_NAME = "SBX"
 
 
 class SecureBinaryX(FeatureBaseClass):
-    """Secure Binary SBX class."""
+    """Secure Binary X (SBX) container for NXP MCU secure provisioning.
+
+    This class manages the creation, validation, and export of Secure Binary X format
+    files used for secure provisioning and firmware updates on NXP MCUs. It handles
+    SBX headers, command sequences, cryptographic signatures, and TP-HSM integration.
+
+    :cvar FEATURE: Database manager feature identifier for SBX support.
+    """
 
     FEATURE = DatabaseManager.SBX
 
@@ -345,14 +469,17 @@ class SecureBinaryX(FeatureBaseClass):
     ) -> None:
         """Constructor for Secure Binary vX data container.
 
-        :param family: The CPU family
-        :param tphsm_blob: TP HSM blob
+        :param family: The MCU/MPU family.
         :param firmware_version: Firmware version.
-        :param description: Custom description up to 16 characters long, defaults to None
-        :param image_type: SecureBinaryXType
-        :param signature_provider: signature provider to final sign of SBX image
-            in case of OEM and NXP_PROVISIONING types
-        :param flags: Flags for SB file, defaults to 0
+        :param tphsm_blob: TP HSM blob, optional.
+        :param commands: SecureBinaryX commands container.
+        :param description: Custom description up to 16 characters long, defaults to None.
+        :param image_type: SecureBinaryXType, defaults to OEM_PROVISIONING.
+        :param signature_provider: Signature provider to final sign of SBX image in case of OEM
+            and NXP_PROVISIONING types, defaults to None.
+        :param flags: Flags for SB file, defaults to 0.
+        :raises SPSDKError: If signature provider is not provided for OEM and NXP_PROVISIONING
+            images.
         """
         # in our case, timestamp is the number of seconds since "Jan 1, 2000"
         self.family = family
@@ -380,18 +507,27 @@ class SecureBinaryX(FeatureBaseClass):
 
     @property
     def isk_signed(self) -> bool:
-        """Return true if SBx is signed by ISK certificate."""
+        """Check if SBx image is signed by ISK certificate.
+
+        This method determines whether the secure binary image uses ISK (Intermediate Signing Key)
+        certificate for signing by checking if the image type is OEM or NXP_PROVISIONING.
+
+        :return: True if the image is signed by ISK certificate, False otherwise.
+        """
         return self.image_type in [SecureBinaryXType.OEM, SecureBinaryXType.NXP_PROVISIONING]
 
     @classmethod
     def get_validation_schemas(
         cls, family: FamilyRevision, include_test_configuration: bool = False
     ) -> list[dict[str, Any]]:
-        """Create the list of validation schemas.
+        """Create the list of validation schemas for SBX image configuration.
 
-        :param family: Family description.
+        The method retrieves and combines validation schemas from MBI and SBX schema files,
+        including family-specific schemas and optional test configuration schemas.
+
+        :param family: Family description specifying the target MCU family.
         :param include_test_configuration: Add also testing configuration schemas.
-        :return: List of validation schemas.
+        :return: List of validation schemas for SBX image configuration.
         """
         mbi_sch_cfg = get_schema_file(DatabaseManager.MBI)
         sbx_sch_cfg = get_schema_file(DatabaseManager.SBX)
@@ -429,8 +565,12 @@ class SecureBinaryX(FeatureBaseClass):
     def load_from_config(cls, config: Config) -> Self:
         """Creates an instance of SecureBinaryX from configuration.
 
-        :param config: Input standard configuration.
-        :return: Instance of Secure Binary X class
+        The method parses the configuration to extract all necessary parameters for creating
+        a SecureBinaryX instance, including family revision, image type, signature provider,
+        and commands.
+
+        :param config: Input standard configuration containing SBX parameters.
+        :return: Instance of Secure Binary X class.
         """
         description = config.get_str("description", "SBX file")
         firmware_version = config.get_int("firmwareVersion", 1)
@@ -457,7 +597,11 @@ class SecureBinaryX(FeatureBaseClass):
         )
 
     def get_config(self, data_path: str = "./") -> Config:
-        """Create configuration of the Feature."""
+        """Create configuration of the Feature.
+
+        :param data_path: Path to directory containing configuration data files.
+        :raises SPSDKNotImplementedError: Method is not implemented in base class.
+        """
         raise SPSDKNotImplementedError()
 
     def validate(self) -> None:
@@ -470,20 +614,32 @@ class SecureBinaryX(FeatureBaseClass):
     def load_tphsm(self, tphsm: bytes, offset: int = 0) -> None:
         """Load TPHSM blob from binary data.
 
-        :param tphsm: TPHSM binary data
-        :param offset: offset, defaults to 0
+        This method parses the provided TPHSM binary data and stores it as a TpHsmBlob object
+        in the instance.
+
+        :param tphsm: TPHSM binary data to be parsed.
+        :param offset: Starting offset in the binary data, defaults to 0.
         """
         self.tphsm_blob = TpHsmBlob.parse(tphsm, offset)
 
     def update_header(self) -> None:
-        """Update SBx header."""
+        """Update SBx header.
+
+        Updates the SB header with current command information from sb_commands.
+        This method synchronizes the header metadata to reflect the current state
+        of the command sequence.
+        """
         self.sb_header.update(self.sb_commands)
 
     def export_header(self, final_hash: bytes = bytes(32)) -> bytes:
         """Export SBx header without signature for encryption on device.
 
-        :raises SPSDKError: TPHSM blob must be loaded first
-        :return: plain header without signature in bytes
+        The method exports the SB header combined with TPHSM blob and final hash
+        for device-side encryption processing.
+
+        :param final_hash: Hash of the next block to be included in header.
+        :raises SPSDKError: TPHSM blob must be loaded first.
+        :return: Plain header without signature in bytes.
         """
         if not isinstance(self.tphsm_blob, TpHsmBlob):
             raise SPSDKError("TPHSM blob must be loaded first")
@@ -498,6 +654,9 @@ class SecureBinaryX(FeatureBaseClass):
 
     def export(self) -> bytes:
         """Generate binary output of SBx file.
+
+        The method exports the complete SBx file structure including header, TPHSM blob,
+        hash of previous block, signature placeholder, and commands data.
 
         :raises SPSDKError: TPHSM blob must be loaded first
         :return: Content of SBx file in bytes.
@@ -528,10 +687,21 @@ class SecureBinaryX(FeatureBaseClass):
         return final_data
 
     def __repr__(self) -> str:
+        """Return string representation of SBx Container.
+
+        :return: String representation of the SBx Container object.
+        """
         return "SBx Container"
 
     def __str__(self) -> str:
-        """Create string information about SBx loaded file."""
+        """Create string representation of SBx loaded file.
+
+        The method validates the SBx file and returns a formatted string containing
+        information about the SBx header and commands blob.
+
+        :raises SPSDKError: If validation fails.
+        :return: Formatted string with SBx header and commands information.
+        """
         self.validate()
         ret = ""
 
@@ -547,6 +717,9 @@ class SecureBinaryX(FeatureBaseClass):
     def parse(cls, data: bytes, offset: int = 0) -> Self:
         """Parse object from bytes array.
 
-        :raises NotImplementedError: Not yet implemented
+        :param data: Input bytes array to parse the object from.
+        :param offset: Starting offset in the bytes array, defaults to 0.
+        :raises NotImplementedError: Not yet implemented.
+        :return: Parsed object instance.
         """
         raise NotImplementedError("Not yet implemented.")

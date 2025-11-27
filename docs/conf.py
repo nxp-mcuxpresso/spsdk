@@ -5,6 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
+"""SPSDK Sphinx documentation configuration module.
+
+This module contains the configuration settings for generating SPSDK documentation
+using Sphinx. It sets up the documentation build environment, including project
+metadata, extensions, themes, and various output formatting options.
+"""
+
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full
@@ -34,7 +41,7 @@ logging.basicConfig(level=logging.INFO)
 # -- Project information -----------------------------------------------------
 
 project = "SPSDK"
-copyright = f"2019-{datetime.datetime.now().year}, NXP"
+copyright = f"2019-{datetime.datetime.now().year}, NXP"  # pylint: disable=redefined-builtin
 author = "NXP"
 
 # The full version, including alpha/beta/rc tags

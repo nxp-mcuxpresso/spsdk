@@ -45,4 +45,4 @@ features:
         alt_names: [REG1_OLD]
         bitfields:
           field000-bits0-1: [REG1_BF1_OLD]
-          field000-bits2-3: [REG1_BF2_OLD, REG1_BF2_SUPEROLD]
+          field000-bits2-3: [REG1_BF2_OLD, REG1_BF2_SUPER_OLD]

@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module with Fault Analysis Mode certificate."""
+"""SPSDK Fault Analysis Mode image handling utilities.
+
+This module provides functionality for creating, managing, and processing
+Fault Analysis Mode images used in NXP MCU security provisioning workflows.
+The main component is the FaModeImage class which handles the structure
+and operations of FA mode certificate images.
+"""
 
 import logging
 import os
@@ -30,7 +36,15 @@ logger = logging.getLogger(__name__)
 
 
 class FaModeImage(FeatureBaseClass):
-    """Fault Analysis Mode certificate class."""
+    """Fault Analysis Mode image generator for NXP MCU security features.
+
+    This class manages the creation and validation of Fault Analysis Mode certificates
+    and images, providing secure boot functionality with fault analysis capabilities
+    for supported NXP MCU families.
+
+    :cvar FAMODE_DATA_SIZE: Size of fault analysis mode data in bytes (64).
+    :cvar FAMODE_DATA_FORMAT: Binary format string for fault analysis data structure.
+    """
 
     FEATURE = DatabaseManager.DAT
     SUB_FEATURE = "famode_cert"
@@ -39,29 +53,44 @@ class FaModeImage(FeatureBaseClass):
     FAMODE_DATA_FORMAT = "<LL56s"
 
     def __init__(self, family: FamilyRevision, image: MasterBootImage) -> None:
-        """Constructor of Fault Analysis Image.
+        """Initialize Fault Analysis Image.
 
-        :param family: The CPU family
-        :param image: The MBI FA mode image
+        Creates a new instance of the Fault Analysis Image with the specified MCU/MPU family
+        and Master Boot Image configured for FA mode.
+
+        :param family: The target MCU/MPU family and revision information.
+        :param image: The Master Boot Image configured for Fault Analysis mode.
         """
         self.family = family
         self.mbi = image
 
     def __repr__(self) -> str:
-        """Class representation text."""
+        """Get string representation of the Fault Analysis Mode Image.
+
+        :return: String representation containing the family name.
+        """
         return f"Fault Analysis Mode Image for {self.family}"
 
     def __str__(self) -> str:
-        """Class representation text."""
+        """Get string representation of the FAMode image.
+
+        Provides a detailed string representation including the object's repr
+        and the MBI (Master Boot Image) information.
+
+        :return: String representation of the FAMode image object.
+        """
         ret = repr(self)
         ret += "\n" + str(self.mbi)
         return ret
 
     @classmethod
     def pre_check_config(cls, config: Config) -> None:
-        """Check the input configuration.
+        """Check the input configuration for FA mode image.
 
-        :param config: Feature configuration.
+        The method modifies the input configuration, determines the appropriate MBI class,
+        and performs pre-check validation using that class.
+
+        :param config: Feature configuration to be validated.
         :raises SPSDKError: In case of invalid configuration.
         """
         mbi_config = cls._modify_input_config(config)
@@ -72,10 +101,12 @@ class FaModeImage(FeatureBaseClass):
     def get_validation_schemas_from_cfg(cls, config: Config) -> list[dict[str, Any]]:
         """Get validation schema based on configuration.
 
+        This method retrieves validation schemas by first checking the configuration against basic
+        schemas, then loading family revision and authentication type to get specific schemas.
         If the class doesn't behave generally, just override this implementation.
 
-        :param config: Valid configuration
-        :return: Validation schemas
+        :param config: Valid configuration object containing family revision and authentication type.
+        :return: List of validation schema dictionaries.
         """
         config.check(cls.get_validation_schemas_basic())
         return cls.get_validation_schemas(
@@ -87,9 +118,13 @@ class FaModeImage(FeatureBaseClass):
     def get_real_class_name(family: FamilyRevision, mbi_class_name: str) -> str:
         """Get the real class name from famode certificate list.
 
-        :param family: The CPU family revision
-        :param mbi_class_name: The MBI class name to match
-        :return: Real class name from famode certificate list
+        The method searches through the famode certificate list to find a matching class name
+        based on whether the input MBI class name contains 'nxp'. It returns the first matching
+        real class name or the original MBI class name if no match is found.
+
+        :param family: The MCU/MPU family revision to get database for.
+        :param mbi_class_name: The MBI class name to match against famode certificates.
+        :return: Real class name from famode certificate list or original MBI class name.
         """
         db = get_db(family)
         famode_cert = db.get_list(DatabaseManager.DAT, "famode_cert", [])
@@ -104,12 +139,30 @@ class FaModeImage(FeatureBaseClass):
     def get_validation_schemas(
         cls, family: FamilyRevision, mbi_class_name: str = "famode"
     ) -> list[dict[str, Any]]:
-        """Create the list of validation schemas.
+        """Create the list of validation schemas for FAMode image configuration.
 
-        :return: List of validation schemas.
+        The method generates validation schemas by retrieving the base schemas from the appropriate
+        MBI class and customizing them for FAMode usage. It updates family information, modifies
+        authentication type options, sets default template values, and removes configuration
+        options that have default values in the database.
+
+        :param family: Target family and revision for schema generation.
+        :param mbi_class_name: Name of the MBI class to use as base, defaults to "famode".
+        :raises SPSDKError: When required schema is not found in the schema list.
+        :return: List of validation schemas customized for FAMode image configuration.
         """
 
         def find_schema(key: str, schemas: list[dict[str, Any]]) -> dict[str, Any]:
+            """Find schema containing the specified key.
+
+            Searches through a list of schemas to find the one that contains the given key
+            in its properties section.
+
+            :param key: The key to search for in schema properties.
+            :param schemas: List of schema dictionaries to search through.
+            :raises SPSDKError: When no schema contains the specified key.
+            :return: The schema dictionary that contains the key in its properties.
+            """
             for schema in schemas:
                 p: dict[str, Any] = schema["properties"]
                 if key in p:
@@ -159,13 +212,27 @@ class FaModeImage(FeatureBaseClass):
     def get_famode_classes(family: FamilyRevision) -> dict[str, Type["MasterBootImage"]]:
         """Get all Master Boot Image supported classes for chip family.
 
-        :param family: Chip family.
+        Creates dynamically generated MasterBootImage classes with appropriate mixins
+        and configuration for the specified chip family's supported image types.
+
+        :param family: Chip family to get supported MBI classes for.
         :raises SPSDKValueError: The invalid family.
-        :return: Dictionary with key like image name and values are Tuple with it's MBI Class
-            and target and authentication type.
+        :return: Dictionary with image names as keys and corresponding MasterBootImage
+            class types as values.
         """
 
         def create_famode_class(mbi_classes: dict, cls_name: str) -> type[MasterBootImage]:
+            """Create a dynamically generated MasterBootImage class for FA mode.
+
+            This method dynamically constructs a new class by combining MasterBootImage with
+            specified mixins and setting required class attributes based on the provided
+            class description.
+
+            :param mbi_classes: Dictionary containing class descriptions with mixins and
+                               image type information.
+            :param cls_name: Name of the class to be created.
+            :return: Dynamically created MasterBootImage class with mixed-in functionality.
+            """
             class_descr = mbi_classes[cls_name]
             members = {
                 "IMAGE_TYPE": MbiImageTypeEnum.from_label(class_descr["image_type"]),
@@ -199,10 +266,14 @@ class FaModeImage(FeatureBaseClass):
 
     @classmethod
     def _modify_input_config(cls, config: Config) -> Config:
-        """Modify the input config to fit for FA MOde Image simplification against MBI.
+        """Modify the input config to fit for FA Mode Image simplification against MBI.
 
-        :param config: Input configuration.
-        :return: Output Modified Configuration.
+        The method updates configuration defaults from database, generates FA mode data block
+        with SOCC and SRK set values, writes it to a temporary file, and updates the input
+        image file path in configuration.
+
+        :param config: Input configuration to be modified.
+        :return: Modified configuration with FA mode specific settings and generated data file.
         """
         family = FamilyRevision.load_from_config(config)
         db = get_db(family)
@@ -229,6 +300,11 @@ class FaModeImage(FeatureBaseClass):
     def check_famode_data(self) -> None:  # TODO Make a verifier
         """Check if the data are in FA mode format.
 
+        Validates that the MBI application data conforms to FA mode format by checking:
+        - SOCC (SoC Class) matches the required value for the family
+        - SRK set is correctly configured (2 for NXP, 1 for OEM)
+        - Fill bytes are properly zeroed (56 bytes of zeros)
+
         :raises SPSDKError: In case that the data are not in FA mode format.
         """
         assert isinstance(self.mbi.app, bytes)
@@ -248,8 +324,12 @@ class FaModeImage(FeatureBaseClass):
     def load_from_config(cls, config: Config) -> Self:
         """Load feature object from configuration.
 
-        :param config: Configuration dictionary.
-        :return: Initialized feature object.
+        This method creates a FAMode image feature by parsing the configuration,
+        determining the appropriate family and authentication type, and initializing
+        the corresponding MBI class with proper mixins.
+
+        :param config: Configuration dictionary containing family, revision, and authentication settings.
+        :return: Initialized FAMode feature object with configured family and image.
         """
         modified_cfg = cls._modify_input_config(config=config)
         family = FamilyRevision.load_from_config(modified_cfg)
@@ -267,8 +347,12 @@ class FaModeImage(FeatureBaseClass):
     def get_config(self, data_path: str = "./") -> Config:
         """Create configuration of the Fault Analysis image.
 
+        The method generates a configuration by first clearing the MBI application data, then
+        retrieving the base MBI configuration and updating it with FA mode specific defaults
+        from the database if available.
+
         :param data_path: Path to store the data files of configuration.
-        :return: Configuration dictionary.
+        :return: Configuration dictionary with FA mode specific settings.
         """
         self.mbi.app = b""
         cfg = self.mbi.get_config(data_path)
@@ -283,19 +367,23 @@ class FaModeImage(FeatureBaseClass):
 
     @classmethod
     def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
-        """Parse object from bytes array.
+        """Parse FAMode image object from bytes array.
 
-        :param data: Input bytes data.
-        :param family: Optional family specification.
-        :return: Initialized feature object.
+        Creates a FAMode image by parsing the provided byte data into a Master Boot Image
+        and wrapping it in the appropriate family context.
+
+        :param data: Input bytes data containing the FAMode image.
+        :param family: Target MCU family specification for parsing context.
+        :return: Initialized FAMode image object.
         """
         mbi = MasterBootImage.parse(family=family, data=data)
         return cls(family=family, image=mbi)
 
     def export(self) -> bytes:
-        """`Export` the Fault Analysis mode image to bytes.
+        """Export the Fault Analysis mode image to bytes.
 
         This method ensures the FA mode data is properly packed and included in the MBI export.
+
         :return: Exported bytes representation of the Fault Analysis mode image.
         """
         return self.mbi.export()

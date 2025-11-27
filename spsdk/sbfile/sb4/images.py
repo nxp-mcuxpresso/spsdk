@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module used for generation SecureBinary V4.0 ."""
+"""SPSDK SecureBinary V4.0 image generation and management.
+
+This module provides functionality for creating, manipulating, and managing
+SecureBinary V4.0 images used in NXP MCU secure boot processes. It includes
+classes for image description, command handling, and complete image assembly.
+"""
+
 import logging
 from datetime import datetime
 from struct import calcsize, pack, unpack, unpack_from
@@ -32,10 +38,16 @@ logger = logging.getLogger(__name__)
 
 
 ########################################################################################################################
-# Secure Boot Image Class (Version 3.1)
+# Secure Binary Image Class (Version 4.0)
 ########################################################################################################################
 class SecureBinary4Descr(BaseClass):
     """SecureBinary V4.0 descriptor.
+
+    This class manages the header and metadata structure for SB4.0 secure binary images,
+    handling parsing, validation, and export operations for the binary descriptor format.
+    The descriptor contains essential metadata including magic signature, format version,
+    block information, timestamps, and security-related data like hash values and OEM
+    share blobs for Device HSM operations.
 
     Structure definition for SB4.0 image descriptor with specific header
     format and metadata (4 bytes values are in little endian):
@@ -48,14 +60,10 @@ class SecureBinary4Descr(BaseClass):
         4-byte timestamp[2]
         byte description[16]
         byte nextBlockHash[48]
-        byte oemShareBlob[64]
 
-    maxBlockSize: maximal size of the data block used in SB4 file. In case that SB4 uses various data block sizes,
-        the field contains the size of the largest data block. The size is meant as size of complete block
-        (the same definition as nextBlockSize)
-
-    oemShareBlob[64]: contains OEM share blob. This field is used for Device HSM SB4 file only.
-        For other types it is filed by zeros
+    :cvar MAGIC: Magic signature for SB4 files (b"sbv4")
+    :cvar FORMAT_VERSION: Supported format version ("4.0")
+    :cvar SUPPORTED_HASHES: List of supported hash algorithms for validation
     """
 
     DESCRIPTION_LENGTH = 16
@@ -77,9 +85,9 @@ class SecureBinary4Descr(BaseClass):
 
         Creates a new header instance with specified hash type and optional description and timestamp.
 
-        :param hash_type: Hash type used in commands binary block
         :param description: Custom description up to 16 characters long, defaults to None
         :param timestamp: Timestamp (number of seconds since Jan 1st, 2000), if None use current time
+        :param hash_type: Hash type used in commands binary block (deprecated parameter)
         :raises SPSDKValueError: If hash type is not supported
         """
         if hash_type and hash_type.label.lower() not in self.SUPPORTED_HASHES:
@@ -96,13 +104,14 @@ class SecureBinary4Descr(BaseClass):
         self.oem_share_block = bytes(64)
 
     def _adjust_description(self, description: Optional[str] = None) -> bytes:
-        """Format the description.
+        """Format the description to fit fixed-length field.
 
         Adjusts the description to fit the fixed-length field by truncating if too long or
-        padding with zeros if too short. If no description is provided, returns a zero-filled byte array.
+        padding with zeros if too short. If no description is provided, returns a zero-filled
+        byte array.
 
-        :param description: Text description to format
-        :return: Formatted description as a fixed-length byte array
+        :param description: Text description to format, optional.
+        :return: Formatted description as a fixed-length byte array.
         """
         if not description:
             return bytes(self.DESCRIPTION_LENGTH)
@@ -112,16 +121,19 @@ class SecureBinary4Descr(BaseClass):
         return desc
 
     def __repr__(self) -> str:
-        """Get string representation of the object.
+        """Get string representation of the SB4.0 Header object.
 
-        :return: String representation of the object
+        :return: String representation containing timestamp information.
         """
         return f"SB4.0 Header, Timestamp: {self.timestamp}"
 
     def __str__(self) -> str:
         """Get detailed information about SB v4.0 header as a string.
 
-        :return: Formatted string with header information
+        The method formats all header fields including magic number, version, block information,
+        timestamp, description, and hash values into a human-readable string representation.
+
+        :return: Formatted string with header information.
         """
         info = str()
         info += f" Magic:                       {self.MAGIC.decode('ascii')}\n"
@@ -141,7 +153,7 @@ class SecureBinary4Descr(BaseClass):
         Updates the block count, hash, and length fields in the header based on the
         provided commands block.
 
-        :param commands: SB4.0 Commands block
+        :param commands: SB4.0 Commands block containing the data to update header fields.
         """
         self.block_count = commands.block_count
         self.block1_hash = commands.final_hash
@@ -153,7 +165,11 @@ class SecureBinary4Descr(BaseClass):
     def export(self) -> bytes:
         """Serialize the SB file header to bytes.
 
-        :return: Binary representation of the header
+        The method converts the header data structure into its binary representation
+        using the predefined format. It parses the format version and packs all header
+        fields according to the MANIFEST_FORMAT specification.
+
+        :return: Binary representation of the header as bytes.
         """
         major_format_version, minor_format_version = [
             int(v) for v in self.FORMAT_VERSION.split(".")
@@ -177,12 +193,14 @@ class SecureBinary4Descr(BaseClass):
     def parse(cls, data: bytes, hash_type: EnumHashAlgorithm = EnumHashAlgorithm.SHA384) -> Self:
         """Parse binary data into a SecureBinary V4.0 Header object.
 
-        Extracts header information from raw binary data and initializes a new header object.
+        Extracts header information from raw binary data and initializes a new header object
+        with parsed values including description, timestamp, block information, and hash data.
 
-        :param data: Binary data containing the header information
-        :param hash_type: Hash algorithm used for header validation
-        :return: Initialized SecureBinary V4.0 Header object
-        :raises SPSDKError: When header data is invalid or cannot be parsed
+        :param data: Binary data containing the header information to be parsed.
+        :param hash_type: Hash algorithm used for header validation, defaults to SHA384.
+        :return: Initialized SecureBinary V4.0 Header object with parsed data.
+        :raises SPSDKError: When header data is invalid, too small, has wrong magic number,
+            or unsupported version.
         """
         if len(data) < cls.MANIFEST_SIZE:
             raise SPSDKError("Invalid input header binary size.")
@@ -218,7 +236,10 @@ class SecureBinary4Descr(BaseClass):
         return obj
 
     def validate(self) -> None:
-        """Validate the settings of class members.
+        """Validate the settings of SB4.0 header blob class members.
+
+        Performs comprehensive validation of all required class members including
+        block count, hash type, block sizes, timestamp, and image description.
 
         :raises SPSDKError: Invalid configuration of SB4.0 header blob class members.
         """
@@ -237,7 +258,16 @@ class SecureBinary4Descr(BaseClass):
 
 
 class SecureBinary4Commands(SecureBinary31Commands):
-    """Blob containing SB4.0 commands."""
+    """Secure Binary 4.0 commands container for NXP MCU provisioning.
+
+    This class manages SB4.0 format command blocks, providing parsing and processing
+    capabilities for secure binary files. It extends SB3.1 functionality with
+    enhanced block header structure and SHA384 hash verification.
+
+    :cvar FEATURE: Database feature identifier for SB4.0 support.
+    :cvar SB_COMMANDS_NAME: Human-readable name for this command format.
+    :cvar SUPPORTED_HASHES: List of supported hash algorithms for SB4.0.
+    """
 
     FEATURE = DatabaseManager.SB40
     SB_COMMANDS_NAME = "SB4.0"
@@ -254,13 +284,19 @@ class SecureBinary4Commands(SecureBinary31Commands):
     ) -> tuple[int, int, bytes, bytes]:
         """Parse the block header from the input data and verify its integrity.
 
+        The method extracts block information from SB4.0 format including block number,
+        next block size, next block hash, and encrypted block data. It also performs
+        hash verification to ensure block integrity.
+
         :param block_data: Binary data of the block
         :param offset: Offset in the data where the header begins
         :param block_size: Size of the block in bytes
         :param block_hash: Expected hash of the block for verification
-        :param hash_type: Hash algorithm used for block hashing
-        :return: Tuple containing block number, next block size, next block hash, and encrypted block data
-        :raises SPSDKError: When the block hash verification fails
+        :param hash_type: Hash algorithm used for block hashing, defaults to SHA384
+        :return: Tuple containing block number, next block size, next block hash, and
+                 encrypted block data
+        :raises SPSDKError: When the block hash verification fails or unsupported hash
+                            type is used
         """
         if hash_type != EnumHashAlgorithm.SHA384:
             raise SPSDKError(f"Unsupported hash type: {hash_type}")
@@ -288,10 +324,12 @@ class SecureBinary4Commands(SecureBinary31Commands):
     def process_cmd_blocks_to_export(self, data_blocks: list[bytes]) -> bytes:
         """Process given data blocks for export.
 
-        Processes and packages command blocks for export, updating internal tracking counters.
+        Processes and packages command blocks for export by encrypting each block, creating a chain
+        with hash linking, and updating internal tracking counters. Blocks are processed in reverse
+        order to build the hash chain correctly.
 
-        :param data_blocks: List of binary data blocks to process
-        :return: Processed binary data ready for export
+        :param data_blocks: List of binary data blocks to process for export
+        :return: Processed binary data ready for export with encrypted blocks and hash chain
         """
         next_block_hash = bytes(get_hash_length(self.hash_type))
         next_block_size = 0
@@ -318,7 +356,17 @@ class SecureBinary4Commands(SecureBinary31Commands):
 
 
 class SecureBinary4(FeatureBaseClass):
-    """Secure Binary SB4.0 class."""
+    """Secure Binary v4.0 container for NXP MCU secure boot operations.
+
+    This class manages the creation, validation, and processing of Secure Binary v4.0 files
+    used for secure provisioning and boot operations across NXP MCU families. It combines
+    AHAB container functionality with secure binary commands to create complete bootable
+    images.
+
+    :cvar FEATURE: Database feature identifier for SB4.0 support.
+    :cvar PCK_SIZES: Supported package sizes in bytes for SB4.0 format.
+    :cvar SB4_BLOCK_ALIGNMENT: Required block alignment for SB4.0 data structures.
+    """
 
     FEATURE = DatabaseManager.SB40
 
@@ -335,10 +383,13 @@ class SecureBinary4(FeatureBaseClass):
     ) -> None:
         """Initialize Secure Binary v4.0 data container.
 
-        :param family: Family revision information.
-        :param container: AHAB Container v2 instance.
-        :param sb_commands: Secure Binary commands.
-        :param description: Custom description up to 16 characters long, defaults to None
+        Creates a new instance of the Secure Binary v4.0 data container with the specified
+        family revision, AHAB container, commands, and optional description.
+
+        :param family: Family revision information for the target device.
+        :param container: AHAB Container v2 instance containing security configuration.
+        :param sb_commands: Secure Binary commands to be executed.
+        :param description: Custom description up to 16 characters long, defaults to None.
         """
         self.family = family
         self.description = description
@@ -353,8 +404,12 @@ class SecureBinary4(FeatureBaseClass):
     def get_commands_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Create the list of validation schemas for commands.
 
-        :param family: Family description.
-        :return: List of validation schemas.
+        The method retrieves SB3 command schemas and filters them based on family-specific
+        supported commands. It also handles compression-related properties for families
+        that don't support compression by marking them to be skipped in templates.
+
+        :param family: Family description containing revision information.
+        :return: List of validation schemas with family-specific command filtering applied.
         """
         sb3_sch_cfg = get_schema_file(DatabaseManager.SB31)
         db = get_db(family)
@@ -379,8 +434,12 @@ class SecureBinary4(FeatureBaseClass):
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Create the list of validation schemas for the SB4.0 container.
 
-        :param family: Family description.
-        :return: List of validation schemas.
+        This method generates a comprehensive set of validation schemas including family-specific
+        schemas, SB4.0 container schemas, AHAB signing support schemas, and command validation
+        schemas for the specified chip family.
+
+        :param family: Family description containing chip family and revision information.
+        :return: List of validation schema dictionaries for SB4.0 container validation.
         """
         mbi_sch_cfg = get_mbi_ahab_validation_schemas(
             create_chip_config(family, feature=SecureBinary4.FEATURE, base_key=["ahab"])
@@ -393,6 +452,8 @@ class SecureBinary4(FeatureBaseClass):
         schemas.extend(
             [sb4_sch_cfg[x] for x in ["sb4", "sb4_description", "sb4_output", "sb4_test"]]
         )
+
+        schemas.append(sb4_sch_cfg["image_version"])
         schemas.append(mbi_sch_cfg["ahab_sign_support"])
         schemas.append(mbi_sch_cfg["ahab_sign_support_add_image_hash_type"])
         schemas.append(mbi_sch_cfg["ahab_sign_support_add_core_id"])
@@ -409,7 +470,7 @@ class SecureBinary4(FeatureBaseClass):
         setting up the AHAB container, image descriptors, and command blocks.
 
         :param config: Input standard configuration.
-        :return: Instance of SecureBinary4 class
+        :return: Instance of SecureBinary4 class.
         """
         family = FamilyRevision.load_from_config(config)
         description = config.get_str("description", "")
@@ -426,14 +487,16 @@ class SecureBinary4(FeatureBaseClass):
 
         block_hash_type = EnumHashAlgorithm.SHA384
 
-        # Add commands into the SB3 object
+        # Add commands into the SB4 object
         sb_commands = SecureBinary4Commands.load_from_config(config, hash_type=block_hash_type)
         sb_descr = SecureBinary4Descr(
             description=description, timestamp=sb_commands.timestamp, hash_type=block_hash_type
         )
         chip_config = create_chip_config(family, feature=cls.FEATURE, base_key=["ahab"])
         ahab = AHABContainerV2(chip_config)
+        image_version = config.get_int("imageVersion", 0)
         ahab.load_from_config_generic(config)
+        ahab.sw_version = image_version
         core_id = chip_config.core_ids.from_label(
             config.get_str("core_id", chip_config.core_ids.labels()[0])
         )
@@ -444,6 +507,7 @@ class SecureBinary4(FeatureBaseClass):
             .tag,
             core_id=core_id.tag,
             hash_type=cast(AHABSignHashAlgorithm, hash_type),
+            is_image_descriptor=True,
         )
         data_image = ImageArrayEntryV2(
             chip_config=ahab.chip_config,
@@ -466,13 +530,14 @@ class SecureBinary4(FeatureBaseClass):
         Generates a configuration object representing the current state of the SecureBinary4 instance.
 
         :param data_path: Path to store the data files of configuration.
-        :raises NotImplementedError: This method is not yet implemented.
+        :return: Configuration object with SecureBinary4 settings.
         """
         ret = self.container._create_config(0, data_path=data_path)
         ret["family"] = self.family.name
         ret["revision"] = self.family.revision
         ret["description"] = self.sb_descriptor.original_description
         ret["containerOutputFile"] = "sb4.bin"
+        ret["imageVersion"] = ret.pop("sw_version", 0)
 
         ret.update(self.sb_commands.get_config(data_path))
         return ret

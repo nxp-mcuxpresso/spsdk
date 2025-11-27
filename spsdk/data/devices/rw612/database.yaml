@@ -244,6 +244,7 @@ features:
   el2go_tp:
     el2go_name: RW6
     prov_method: dispatch_fw
-    fw_load_address: 0x08001000
+    dispatch_method: write_reset
+    fw_load_address: 0x0800_1000
     ignored_otp_ranges: [92, 103, 104, 115]
     use_prov_report: true

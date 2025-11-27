@@ -4,7 +4,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Miscellaneous functions used throughout the SPSDK."""
+"""SPSDK miscellaneous utilities and helper functions.
+
+This module provides a collection of utility functions and classes used throughout
+the SPSDK library, including data manipulation, file operations, configuration
+loading, and various helper utilities for binary data processing.
+"""
+
 import contextlib
 import hashlib
 import json
@@ -35,19 +41,33 @@ logger = logging.getLogger(__name__)
 
 
 class Endianness(str, Enum):
-    """Endianness enum."""
+    """Endianness enumeration for byte order specification.
+
+    This enumeration defines the byte order options used throughout SPSDK
+    for data processing and binary operations.
+
+    :cvar BIG: Big-endian byte order representation.
+    :cvar LITTLE: Little-endian byte order representation.
+    """
 
     BIG = "big"
     LITTLE = "little"
 
     @classmethod
     def values(cls) -> list[str]:
-        """Get enumeration values."""
+        """Get enumeration values.
+
+        :return: List of all enumeration values as strings.
+        """
         return [mem.value for mem in Endianness.__members__.values()]
 
 
 class BinaryPattern:
-    """Binary pattern class.
+    """Binary pattern generator for creating filled data blocks.
+
+    This class provides functionality to generate binary data blocks filled with
+    various patterns including special patterns (random, zeros, ones, incremental)
+    and custom numeric values that can be repeated to fill the entire block.
 
     Supported patterns:
         - rand: Random Pattern
@@ -56,20 +76,21 @@ class BinaryPattern:
         - inc: Filled with repeated numbers incremented by one 0-0xff
         - any kind of number, that will be repeated to fill up whole image.
           The format could be decimal, hexadecimal, bytes.
+
+    :cvar SPECIAL_PATTERNS: List of supported special pattern names.
     """
 
     SPECIAL_PATTERNS = ["rand", "zeros", "ones", "inc"]
 
     def __init__(self, pattern: str) -> None:
-        """Constructor of pattern class.
+        """Initialize binary pattern generator.
 
-        :param pattern: Supported patterns:
-                        - rand: Random Pattern
-                        - zeros: Filled with zeros
-                        - ones: Filled with all ones
-                        - inc: Filled with repeated numbers incremented by one 0-0xff
-                        - any kind of number, that will be repeated to fill up whole image.
-                        The format could be decimal, hexadecimal, bytes.
+        Creates a new binary pattern generator that can produce data based on the specified
+        pattern type. Supports predefined patterns (rand, zeros, ones, inc) and custom
+        numeric values that will be repeated to fill the target data.
+
+        :param pattern: Pattern specification - predefined patterns (rand, zeros, ones, inc)
+            or numeric value in decimal/hexadecimal/bytes format to be repeated
         :raises SPSDKValueError: Unsupported pattern detected.
         """
         try:
@@ -85,8 +106,11 @@ class BinaryPattern:
     def get_block(self, size: int) -> bytes:
         """Get block filled with pattern.
 
-        :param size: Size of block to return.
-        :return: Filled up block with specified pattern.
+        Generate a block of bytes with the specified size using the configured pattern.
+        Supports predefined patterns (zeros, ones, rand, inc) and custom byte patterns.
+
+        :param size: Size of block to return in bytes.
+        :return: Block of bytes filled with the specified pattern.
         """
         if self._pattern == "zeros":
             return bytes(size)
@@ -106,9 +130,12 @@ class BinaryPattern:
 
     @property
     def pattern(self) -> str:
-        """Get the pattern.
+        """Get the pattern in string representation.
 
-        :return: Pattern in string representation.
+        Converts the internal pattern to hexadecimal format if it's a numeric value,
+        otherwise returns the pattern as-is.
+
+        :return: Pattern as hexadecimal string if numeric, otherwise original string pattern.
         """
         try:
             return hex(value_to_int(self._pattern))
@@ -117,12 +144,16 @@ class BinaryPattern:
 
 
 def align(number: int, alignment: int = 4) -> int:
-    """Align number (size or address) size to specified alignment, typically 4, 8 or 16 bytes boundary.
+    """Align number to specified byte boundary.
 
-    :param number: input to be aligned
-    :param alignment: the boundary to align; typical value is power of 2
-    :return: aligned number; result is always >= size (e.g. aligned up)
-    :raises SPSDKError: When there is wrong alignment
+    The function aligns the input number up to the nearest multiple of the specified
+    alignment value. This is commonly used for memory alignment requirements where
+    data must be positioned at specific byte boundaries.
+
+    :param number: The number to be aligned (size or address).
+    :param alignment: The boundary alignment value, typically a power of 2 (4, 8, 16).
+    :return: Aligned number that is always greater than or equal to the input number.
+    :raises SPSDKError: When alignment is non-positive or number is negative.
     """
     if alignment <= 0 or number < 0:
         raise SPSDKError("Wrong alignment")
@@ -137,11 +168,11 @@ def align_block(
 ) -> bytes:
     """Align binary data block length to specified boundary by adding padding bytes to the end.
 
-    :param data: to be aligned
-    :param alignment: boundary alignment (typically 2, 4, 16, 64 or 256 boundary)
-    :param padding: byte to be added or BinaryPattern
-    :return: aligned block
-    :raises SPSDKError: When there is wrong alignment
+    :param data: Binary data to be aligned.
+    :param alignment: Boundary alignment in bytes (typically 2, 4, 16, 64 or 256).
+    :param padding: Padding byte value, string pattern, or BinaryPattern instance to use.
+    :return: Aligned binary data block.
+    :raises SPSDKError: When alignment value is invalid.
     """
     assert isinstance(data, (bytes, bytearray))
 
@@ -159,18 +190,30 @@ def align_block(
 
 
 def align_block_fill_random(data: bytes, alignment: int = 4) -> bytes:
-    """Same as `align_block`, just parameter `padding` is fixed to `-1` to fill with random data."""
+    """Align block data to specified boundary using random padding.
+
+    This function extends align_block functionality by automatically using random data
+    for padding instead of requiring a padding parameter.
+
+    :param data: Input binary data to be aligned.
+    :param alignment: Byte boundary for alignment, defaults to 4 bytes.
+    :return: Aligned binary data with random padding if needed.
+    """
     return align_block(data, alignment, BinaryPattern("rand"))
 
 
 def extend_block(data: bytes, length: int, padding: int = 0) -> bytes:
-    """Add padding to the binary data block to extend the length to specified value.
+    """Extend binary data block with padding to reach specified length.
 
-    :param data: block to be extended
-    :param length: requested block length; the value must be >= current block length
-    :param padding: 8-bit value value to be used as a padding
-    :return: block extended with padding
-    :raises SPSDKError: When the length is incorrect
+    Add padding bytes to the end of a binary data block to extend its length
+    to the specified value. If the target length equals current length, returns
+    the original data unchanged.
+
+    :param data: Binary block to be extended.
+    :param length: Requested block length; must be >= current block length.
+    :param padding: 8-bit value to be used as padding (default: 0).
+    :return: Block extended with padding bytes.
+    :raises SPSDKError: When the length is smaller than current block length.
     """
     current_len = len(data)
     if length < current_len:
@@ -182,10 +225,13 @@ def extend_block(data: bytes, length: int, padding: int = 0) -> bytes:
 
 
 def clean_up_file_name(original_name: str) -> str:
-    """Clean up the file name.
+    """Clean up the file name by removing invalid characters.
 
-    :param original_name: Input file name
-    :return: Sanitized name.
+    Removes characters that are not allowed in file names on Windows systems
+    including: < > : " | ? * \
+
+    :param original_name: Input file name to be sanitized.
+    :return: Sanitized file name with invalid characters removed.
     """
     invalid_characters = '<>:"|?*\\'
     for ch in invalid_characters:
@@ -195,21 +241,24 @@ def clean_up_file_name(original_name: str) -> str:
 
 
 def find_first(iterable: Iterable[T], predicate: Callable[[T], bool]) -> Optional[T]:
-    """Find first element from the list, that matches the condition.
+    """Find first element from iterable that matches the given condition.
 
-    :param iterable: list of elements
-    :param predicate: function for selection of the element
-    :return: found element; None if not found
+    :param iterable: Iterable collection of elements to search through.
+    :param predicate: Function that takes an element and returns True if it matches the condition.
+    :return: First matching element or None if no element matches the predicate.
     """
     return next((a for a in iterable if predicate(a)), None)
 
 
 def load_binary(path: str, search_paths: Optional[list[str]] = None) -> bytes:
-    """Loads binary file into bytes.
+    """Load binary file into bytes.
 
-    :param path: Path to the file.
-    :param search_paths: List of paths where to search for the file, defaults to None
-    :return: content of the binary file as bytes
+    The method loads a binary file from the specified path or searches for it
+    in the provided search paths if the direct path doesn't exist.
+
+    :param path: Path to the binary file to load.
+    :param search_paths: List of paths where to search for the file, defaults to None.
+    :return: Content of the binary file as bytes.
     """
     data = load_file(path, mode="rb", search_paths=search_paths)
     assert isinstance(data, bytes)
@@ -217,11 +266,14 @@ def load_binary(path: str, search_paths: Optional[list[str]] = None) -> bytes:
 
 
 def load_text(path: str, search_paths: Optional[list[str]] = None) -> str:
-    """Loads text file into string.
+    """Load text file content into string.
 
-    :param path: Path to the file.
-    :param search_paths: List of paths where to search for the file, defaults to None
-    :return: content of the text file as string
+    The method loads a text file and returns its content as a string. It supports
+    searching for the file in multiple directories if search paths are provided.
+
+    :param path: Path to the text file to load.
+    :param search_paths: List of directories to search for the file, defaults to None.
+    :return: Content of the text file as string.
     """
     text = load_file(path, mode="r", search_paths=search_paths)
     assert isinstance(text, str)
@@ -231,12 +283,15 @@ def load_text(path: str, search_paths: Optional[list[str]] = None) -> str:
 def load_file(
     path: str, mode: str = "r", search_paths: Optional[list[str]] = None
 ) -> Union[str, bytes]:
-    """Loads a file into bytes.
+    """Load file content from specified path.
 
-    :param path: Path to the file.
-    :param mode: mode for reading the file 'r'/'rb'
-    :param search_paths: List of paths where to search for the file, defaults to None
-    :return: content of the binary file as bytes or str (based on mode)
+    The method searches for the file in provided search paths and loads its content
+    either as text or binary data based on the specified mode.
+
+    :param path: Path to the file to be loaded.
+    :param mode: File reading mode, 'r' for text or 'rb' for binary.
+    :param search_paths: List of paths where to search for the file, defaults to None.
+    :return: File content as string (text mode) or bytes (binary mode).
     """
     path = find_file(path, search_paths=search_paths)
     logger.debug(f"Loading {'binary' if 'b' in mode else 'text'} file from {path}")
@@ -252,14 +307,18 @@ def write_file(
     encoding: str = "utf-8",
     overwrite: bool = True,
 ) -> int:
-    """Writes data into a file.
+    """Write data to a file with automatic directory creation and overwrite protection.
 
-    :param data: data to write
-    :param path: Path to the file.
-    :param mode: writing mode, 'w' for text, 'wb' for binary data, defaults to 'w'
-    :param encoding: Encoding of written file ('ascii', 'utf-8'), default is 'utf-8'.
-    :param overwrite: If False, doesn't overwrite existing file but creates new one with appended number
-    :return: number of written elements
+    The method automatically creates parent directories if they don't exist and supports
+    both text and binary modes. When overwrite is disabled, it generates a unique filename
+    by appending a counter to avoid conflicts.
+
+    :param data: Data to write to the file.
+    :param path: Path to the target file.
+    :param mode: File writing mode ('w' for text, 'wb' for binary), defaults to 'w'.
+    :param encoding: Text encoding ('ascii', 'utf-8'), defaults to 'utf-8'.
+    :param overwrite: Whether to overwrite existing files, defaults to True.
+    :return: Number of characters or bytes written to the file.
     """
     path = path.replace("\\", "/")
     folder = os.path.dirname(path)
@@ -283,10 +342,14 @@ def write_file(
 
 
 def get_abs_path(file_path: str, base_dir: Optional[str] = None) -> str:
-    """Return a full path to the file.
+    """Convert relative or absolute file path to normalized absolute path.
 
-    param base_dir: Base directory to create absolute path, if not specified the system CWD is used.
-    return: Absolute file path.
+    The method handles both relative and absolute paths, normalizing path separators
+    to forward slashes for cross-platform compatibility.
+
+    :param file_path: File path to be converted to absolute path.
+    :param base_dir: Base directory to create absolute path, if not specified the system CWD is used.
+    :return: Absolute file path with normalized separators.
     """
     if os.path.isabs(file_path):
         return file_path.replace("\\", "/")
@@ -301,16 +364,18 @@ def _find_path(
     search_paths: Optional[list[str]] = None,
     raise_exc: bool = True,
 ) -> str:
-    """Return a full path to the file.
+    """Find and return the full path to a file or directory.
 
-    `search_paths` takes precedence over `CWD` if used (default)
+    The method searches for the given path in multiple locations with configurable search order.
+    Search paths take precedence over current working directory when both are specified.
 
-    :param path: File name, part of file path or full path
-    :param use_cwd: Try current working directory to find the file, defaults to True
-    :param search_paths: List of paths where to search for the file, defaults to None
-    :param raise_exc: Raise exception if file is not found, defaults to True
-    :return: Full path to the file
-    :raises SPSDKError: File not found
+    :param path: File name, part of file path or full path to search for.
+    :param check_func: Function to validate if the found path exists and meets criteria.
+    :param use_cwd: Try current working directory to find the file, defaults to True.
+    :param search_paths: List of paths where to search for the file, defaults to None.
+    :param raise_exc: Raise exception if file is not found, defaults to True.
+    :return: Full absolute path to the found file or empty string if not found and raise_exc is False.
+    :raises SPSDKError: File not found in any of the searched locations.
     """
     path = path.replace("\\", "/")
 
@@ -350,16 +415,18 @@ def find_dir(
     search_paths: Optional[list[str]] = None,
     raise_exc: bool = True,
 ) -> str:
-    """Return a full path to the directory.
+    """Find directory path with flexible search options.
 
-    `search_paths` takes precedence over `CWD` if used (default)
+    The method searches for a directory using multiple strategies: absolute path check,
+    current working directory search, and custom search paths. Search paths take
+    precedence over current working directory when both are specified.
 
     :param dir_path: Directory name, part of directory path or full path
     :param use_cwd: Try current working directory to find the directory, defaults to True
     :param search_paths: List of paths where to search for the directory, defaults to None
     :param raise_exc: Raise exception if directory is not found, defaults to True
     :return: Full path to the directory
-    :raises SPSDKError: File not found
+    :raises SPSDKError: Directory not found
     """
     return _find_path(
         path=dir_path,
@@ -376,16 +443,18 @@ def find_file(
     search_paths: Optional[list[str]] = None,
     raise_exc: bool = True,
 ) -> str:
-    """Return a full path to the file.
+    """Find file in filesystem using multiple search strategies.
 
-    `search_paths` takes precedence over `CWD` if used (default)
+    The method searches for a file by checking the provided path directly, then optionally
+    searching in the current working directory and additional search paths. Search paths
+    take precedence over current working directory when both are enabled.
 
-    :param file_path: File name, part of file path or full path
-    :param use_cwd: Try current working directory to find the file, defaults to True
-    :param search_paths: List of paths where to search for the file, defaults to None
-    :param raise_exc: Raise exception if file is not found, defaults to True
-    :return: Full path to the file
-    :raises SPSDKError: File not found
+    :param file_path: File name, part of file path or full path to search for.
+    :param use_cwd: Try current working directory to find the file, defaults to True.
+    :param search_paths: List of paths where to search for the file, defaults to None.
+    :param raise_exc: Raise exception if file is not found, defaults to True.
+    :return: Full absolute path to the found file.
+    :raises SPSDKError: File not found in any of the search locations.
     """
     return _find_path(
         path=file_path,
@@ -401,11 +470,11 @@ def use_working_directory(path: str) -> Iterator[None]:
     # pylint: disable=missing-yield-doc
     """Execute the block in given directory.
 
-    Cd into specific directory.
-    Execute the block.
-    Change the directory back into the original one.
+    Changes current directory to the specified path, executes the block,
+    and restores the original directory afterwards.
 
-    :param path: the path, where the current directory will be changed to
+    :param path: The path where the current directory will be changed to.
+    :return: Iterator for context manager usage.
     """
     current_dir = os.getcwd()
     try:
@@ -418,10 +487,17 @@ def use_working_directory(path: str) -> Iterator[None]:
 
 
 def format_value(value: int, size: int, delimiter: str = "_", use_prefix: bool = True) -> str:
-    """Convert the 'value' into either BIN or HEX string, depending on 'size'.
+    """Convert integer value to formatted binary or hexadecimal string representation.
 
-    if 'size' is divisible by 8, function returns HEX, BIN otherwise
-    digits in result string are grouped by 4 using 'delimiter' (underscore)
+    The function automatically selects binary format when size is not divisible by 8,
+    otherwise uses hexadecimal format. Digits are grouped by 4 characters using the
+    specified delimiter for better readability.
+
+    :param value: Integer value to be converted.
+    :param size: Bit size that determines output format and padding.
+    :param delimiter: Character used to separate digit groups, defaults to underscore.
+    :param use_prefix: Whether to include format prefix (0b/0x), defaults to True.
+    :return: Formatted string representation of the value.
     """
     padding = size if size % 8 else (size // 8) * 2
     infix = "b" if size % 8 else "x"
@@ -435,13 +511,16 @@ def format_value(value: int, size: int, delimiter: str = "_", use_prefix: bool =
 def get_bytes_cnt_of_int(
     value: int, align_to_2n: bool = True, byte_cnt: Optional[int] = None
 ) -> int:
-    """Returns count of bytes needed to store handled integer.
+    """Calculate the minimum number of bytes needed to store an integer value.
 
-    :param value: Input integer value.
-    :param align_to_2n: The result will be aligned to standard sizes 1,2,4,8,12,16,20.
-    :param byte_cnt: The result count of bytes.
+    The method determines the byte count required for integer storage with optional
+    alignment to standard sizes and validation against a specified byte count.
+
+    :param value: Input integer value to analyze.
+    :param align_to_2n: If True, align result to standard sizes (1,2,4,8,12,16,20...).
+    :param byte_cnt: Optional fixed byte count to validate against and return.
     :raises SPSDKValueError: The integer input value doesn't fit into byte_cnt.
-    :return: Number of bytes needed to store integer.
+    :return: Number of bytes needed to store the integer.
     """
     cnt = 0
     if value == 0:
@@ -465,12 +544,15 @@ def get_bytes_cnt_of_int(
 
 
 def value_to_int(value: Union[bytes, bytearray, int, str], default: Optional[int] = None) -> int:
-    """Function loads value from lot of formats to integer.
+    """Convert value from multiple formats to integer.
 
-    :param value: Input value.
-    :param default: Default Value in case of invalid input.
-    :return: Value in Integer.
-    :raises SPSDKError: Unsupported input type.
+    Supports conversion from integers, bytes, bytearrays, and string representations
+    (including binary, octal, decimal, and hexadecimal formats with optional prefixes).
+
+    :param value: Input value to convert (int, bytes, bytearray, or str).
+    :param default: Default value returned when conversion fails.
+    :return: Converted integer value.
+    :raises SPSDKError: Unsupported input type or invalid conversion without default.
     """
     if isinstance(value, int):
         return value
@@ -501,13 +583,16 @@ def value_to_bytes(
     byte_cnt: Optional[int] = None,
     endianness: Endianness = Endianness.BIG,
 ) -> bytes:
-    """Function loads value from lot of formats.
+    """Convert value from multiple formats to bytes representation.
 
-    :param value: Input value.
-    :param align_to_2n: When is set, the function aligns length of return array to 1,2,4,8,12 etc.
-    :param byte_cnt: The result count of bytes.
-    :param endianness: The result bytes endianness ['big', 'little'].
-    :return: Value in bytes.
+    The function accepts various input types (bytes, bytearray, int, str) and converts them
+    to a standardized bytes format with configurable alignment and endianness.
+
+    :param value: Input value to be converted to bytes.
+    :param align_to_2n: When True, aligns the output length to powers of 2 (1,2,4,8,16...).
+    :param byte_cnt: Specific number of bytes for the result, overrides alignment.
+    :param endianness: Byte order for the result ('big' or 'little' endian).
+    :return: Value converted to bytes format.
     """
     if isinstance(value, bytes):
         return value
@@ -522,10 +607,14 @@ def value_to_bytes(
 
 
 def value_to_bool(value: Optional[Union[bool, int, str]]) -> bool:
-    """Function decode bool value from various formats.
+    """Convert various input formats to boolean value.
 
-    :param value: Input value.
-    :return: Boolean value.
+    The function accepts boolean, integer, string, or None values and converts them
+    to boolean. For strings, it recognizes "True", "true", "T", and "1" as True,
+    all other strings as False. For other types, uses Python's built-in bool() conversion.
+
+    :param value: Input value to convert (bool, int, str, or None).
+    :return: Boolean representation of the input value.
     :raises SPSDKError: Unsupported input type.
     """
     if isinstance(value, str):
@@ -540,14 +629,18 @@ def load_hex_string(
     search_paths: Optional[list[str]] = None,
     name: Optional[str] = "key",
 ) -> bytes:
-    """Get the HEX string from the command line parameter (Keys, digests, etc).
+    """Load hexadecimal data from various sources.
 
-    :param source: File path to key file or hexadecimal value. If not specified random value is used.
-    :param expected_size: Expected size of key in bytes.
-    :param search_paths: List of paths where to search for the file, defaults to None
-    :param name: Name for the key/data to load
-    :raises SPSDKError: Invalid key
-    :return: Key in bytes.
+    The method supports loading from file paths, direct hexadecimal strings, bytes, or integers.
+    If no source is provided, a random value of the expected size is generated. The method
+    handles both text files containing hex strings and binary files.
+
+    :param source: File path, hexadecimal string, bytes, or integer. Random value if None.
+    :param expected_size: Expected size of the data in bytes.
+    :param search_paths: List of paths where to search for the file, defaults to None.
+    :param name: Name for the key/data to load, defaults to "key".
+    :raises SPSDKError: Invalid input data or size mismatch.
+    :return: Data in bytes with the expected size.
     """
     if not source:
         logger.warning(
@@ -591,11 +684,14 @@ def load_hex_string(
 
 
 def reverse_bytes_in_longs(arr: bytes) -> bytes:
-    """The function reverse byte order in longs from input bytes.
+    """Reverse byte order in 32-bit words from input bytes array.
 
-    :param arr: Input array.
-    :return: New array with reversed bytes.
-    :raises SPSDKError: Raises when invalid value is in input.
+    The function processes the input bytes array in 4-byte chunks (32-bit words) and reverses
+    the byte order within each word. The input array length must be divisible by 4.
+
+    :param arr: Input bytes array to process, must be divisible by 4.
+    :raises SPSDKError: Input array length is not divisible by 4.
+    :return: New bytes array with reversed byte order in each 32-bit word.
     """
     arr_len = len(arr)
     if arr_len % 4 != 0:
@@ -613,9 +709,13 @@ def reverse_bytes_in_longs(arr: bytes) -> bytes:
 def change_endianness(bin_data: bytes) -> bytes:
     """Convert binary format used in files to binary used in register object.
 
-    :param bin_data: input binary array.
-    :return: Converted array (practically little to big endianness).
-    :raises SPSDKError: Invalid value on input.
+    The method handles endianness conversion for different data lengths. Single bytes are
+    returned unchanged, 2-byte values are reversed, 3-byte values are not supported, and
+    longer values use specialized long word reversal.
+
+    :param bin_data: Input binary array to convert endianness.
+    :return: Converted array with changed endianness (little to big endian conversion).
+    :raises SPSDKError: Unsupported length (3 bytes) for endianness conversion.
     """
     data = bytearray(bin_data)
     length = len(data)
@@ -634,7 +734,14 @@ def change_endianness(bin_data: bytes) -> bytes:
 
 
 class Timeout:
-    """Simple timeout handle class."""
+    """Timeout handler for SPSDK operations.
+
+    This class provides timeout functionality with configurable time units and methods
+    to track elapsed time and remaining time during operations. It supports microseconds,
+    milliseconds, and seconds as time units.
+
+    :cvar UNITS: Supported time units and their conversion factors to microseconds.
+    """
 
     UNITS = {
         "s": 1000000,
@@ -643,10 +750,10 @@ class Timeout:
     }
 
     def __init__(self, timeout: int, units: str = "s") -> None:
-        """Simple timeout class constructor.
+        """Initialize timeout class with specified timeout value and units.
 
-        :param timeout: Timeout value.
-        :param units: Timeout units (MUST be from the UNITS list)
+        :param timeout: Timeout value in specified units.
+        :param units: Timeout units (MUST be from the UNITS list).
         :raises SPSDKValueError: Invalid input value.
         """
         if units not in self.UNITS:
@@ -659,40 +766,47 @@ class Timeout:
 
     @staticmethod
     def _get_current_time_us() -> int:
-        """Returns current system time in microseconds.
+        """Get current system time in microseconds.
 
-        :return: Current time in microseconds
+        The method returns the current system time as an integer value in microseconds,
+        using the system's time.time() function and converting it to microseconds with
+        ceiling rounding.
+
+        :return: Current time in microseconds as integer.
         """
         return ceil(time.time() * 1_000_000)
 
     def _convert_to_units(self, time_us: int) -> int:
-        """Converts time in us into used units.
+        """Convert time from microseconds to the configured time units.
 
-        :param time_us: Time in micro seconds.
-        :return: Time in user units.
+        :param time_us: Time value in microseconds.
+        :return: Time value converted to the configured units.
         """
         return time_us // self.UNITS[self.units]
 
     def get_consumed_time(self) -> int:
-        """Returns consumed time since start of timeout operation.
+        """Get consumed time since start of timeout operation.
 
-        :return: Consumed time in units as the class was constructed
+        :return: Consumed time in units as the class was constructed.
         """
         return self._convert_to_units(self._get_current_time_us() - self.start_time_us)
 
     def get_consumed_time_ms(self) -> int:
-        """Returns consumed time since start of timed out operation in milliseconds.
+        """Get consumed time since start of timed out operation in milliseconds.
 
-        :return: Consumed time in milliseconds
+        :return: Consumed time in milliseconds.
         """
         return (self._get_current_time_us() - self.start_time_us) // 1000
 
     def get_rest_time(self, raise_exc: bool = False) -> int:
-        """Returns rest time to timeout overflow.
+        """Get remaining time until timeout expiration.
 
-        :param raise_exc: If set, the function raise SPSDKTimeoutError in case of overflow.
-        :return: Rest time in units as the class was constructed
-        :raises SPSDKTimeoutError: In case of overflow
+        The method calculates how much time is left before the timeout occurs. If the timeout
+        has already expired and raise_exc is True, an exception will be raised.
+
+        :param raise_exc: If True, raises SPSDKTimeoutError when timeout has expired.
+        :return: Remaining time in the same units used during class construction.
+        :raises SPSDKTimeoutError: When timeout has expired and raise_exc is True.
         """
         if self.enabled and self._get_current_time_us() > self.end_time and raise_exc:
             raise SPSDKTimeoutError("Timeout of operation.")
@@ -704,11 +818,11 @@ class Timeout:
         )
 
     def get_rest_time_ms(self, raise_exc: bool = False) -> int:
-        """Returns rest time to timeout overflow.
+        """Get remaining time until timeout overflow.
 
-        :param raise_exc: If set, the function raise SPSDKTimeoutError in case of overflow.
-        :return: Rest time in milliseconds
-        :raises SPSDKTimeoutError: In case of overflow
+        :param raise_exc: If set, the function raises SPSDKTimeoutError in case of overflow.
+        :return: Remaining time in milliseconds.
+        :raises SPSDKTimeoutError: In case of timeout overflow when raise_exc is True.
         """
         if self.enabled and self._get_current_time_us() > self.end_time and raise_exc:
             raise SPSDKTimeoutError("Timeout of operation.")
@@ -717,11 +831,14 @@ class Timeout:
         return ((self.end_time - self._get_current_time_us()) // 1000) if self.enabled else 0
 
     def overflow(self, raise_exc: bool = False) -> bool:
-        """Check the the timer has been overflowed.
+        """Check if the timer has overflowed.
 
-        :param raise_exc: If set, the function raise SPSDKTimeoutError in case of overflow.
-        :return: True if timeout overflowed, False otherwise.
-        :raises SPSDKTimeoutError: In case of overflow
+        The method verifies whether the timer has exceeded its configured timeout period.
+        It can optionally raise an exception when overflow is detected.
+
+        :param raise_exc: If True, raises SPSDKTimeoutError when overflow occurs.
+        :return: True if timeout has overflowed, False otherwise.
+        :raises SPSDKTimeoutError: When overflow occurs and raise_exc is True.
         """
         overflow = self.enabled and self._get_current_time_us() > self.end_time
         if overflow and raise_exc:
@@ -730,7 +847,16 @@ class Timeout:
 
 
 def size_fmt(num: Union[float, int], use_kibibyte: bool = True) -> str:
-    """Size format."""
+    """Format byte size into human-readable string representation.
+
+    Converts a numeric byte value into a formatted string with appropriate
+    unit suffix (B, kB/KiB, MB/MiB, etc.) for better readability.
+
+    :param num: The byte size value to format.
+    :param use_kibibyte: If True, use binary prefixes (1024-based) with 'iB' suffix,
+                         if False, use decimal prefixes (1000-based) with 'B' suffix.
+    :return: Formatted size string with value and unit (e.g., "1.5 MiB", "1024 B").
+    """
     base, suffix = [(1000.0, "B"), (1024.0, "iB")][use_kibibyte]
     i = "B"
     for i in ["B"] + [i + suffix for i in list("kMGTP")]:
@@ -745,6 +871,9 @@ def bytes_to_print(
     data: Optional[bytes], max_length: int = 32, unavailable_text: str = "Not available"
 ) -> str:
     """Format bytes data for display with length-based truncation.
+
+    Converts bytes data to hexadecimal string representation with optional truncation for long data.
+    Returns unavailable text when data is None or empty.
 
     :param data: Bytes data to format, can be None or empty.
     :param max_length: Maximum number of bytes to display before truncation.
@@ -764,17 +893,19 @@ def bytes_to_print(
 
 
 def numberify_version(version: str, separator: str = ".", valid_numbers: int = 3) -> int:
-    """Turn version string into a number.
+    """Convert version string into a numerical representation.
 
-    Each group is weighted by a multiple of 1000
+    Each version component is weighted by powers of 1000 to create a comparable integer.
+    This allows for easy version comparison and sorting operations.
 
-    1.2.3    -> 1  * 1_000_000 +   2 * 1_000 + 3 * 1 =  1_002_003
-    21.100.9 -> 21 * 1_000_000 + 100 * 1_000 + 9 * 1 = 21_100_009
+    Examples:
+        1.2.3    -> 1  * 1_000_000 +   2 * 1_000 + 3 * 1 =  1_002_003
+        21.100.9 -> 21 * 1_000_000 + 100 * 1_000 + 9 * 1 = 21_100_009
 
-    :param version: Version string numbers separated by `separator`
-    :param separator: Separator used in the version string, defaults to "."
-    :param valid_numbers: Amount of numbers to sanitize to consider, defaults to 3
-    :return: Number representing the version
+    :param version: Version string with numbers separated by separator.
+    :param separator: Character used to separate version components.
+    :param valid_numbers: Maximum number of version components to process.
+    :return: Integer representation of the version string.
     """
     sanitized_version = sanitize_version(
         version=version, separator=separator, valid_numbers=valid_numbers
@@ -788,18 +919,19 @@ def numberify_version(version: str, separator: str = ".", valid_numbers: int = 3
 
 
 def sanitize_version(version: str, separator: str = ".", valid_numbers: int = 3) -> str:
-    """Sanitize version string.
+    """Sanitize version string to ensure consistent format.
 
-    Append '.0' in case version string has fewer parts than `valid_numbers`
-    Remove right-most version parts after `valid_numbers` amount of parts
+    The method normalizes version strings by padding with '.0' when there are fewer
+    parts than required, or truncating when there are more parts than needed.
 
-    1.2     -> 1.2.0
-    1.2.3.4 -> 1.2.3
+    Examples:
+        1.2     -> 1.2.0
+        1.2.3.4 -> 1.2.3
 
-    :param version: Original version string
-    :param separator: Separator used in the version string, defaults to "."
-    :param valid_numbers: Amount of numbers to sanitize, defaults to 3
-    :return: Sanitized version string
+    :param version: Original version string to be sanitized.
+    :param separator: Separator used in the version string, defaults to ".".
+    :param valid_numbers: Number of version parts to maintain, defaults to 3.
+    :return: Sanitized version string with the specified number of parts.
     """
     version_parts = version.split(separator)
     version_parts += ["0"] * (valid_numbers - len(version_parts))
@@ -807,12 +939,15 @@ def sanitize_version(version: str, separator: str = ".", valid_numbers: int = 3)
 
 
 def get_key_by_val(value: str, dictionary: dict[str, list[str]]) -> str:
-    """Return key by its value.
+    """Return key by its value from dictionary.
 
-    :param value: Value to find.
-    :param dictionary: Dictionary to find in.
+    The method performs case-insensitive search through dictionary values to find the
+    corresponding key.
+
+    :param value: Value to find in dictionary values.
+    :param dictionary: Dictionary with string keys and list of strings as values.
     :raises SPSDKValueError: Value is not present in dictionary.
-    :return: Key name
+    :return: Key name corresponding to the found value.
     """
     for key, item in dictionary.items():
         if value.lower() in [x.lower() for x in item]:
@@ -822,11 +957,14 @@ def get_key_by_val(value: str, dictionary: dict[str, list[str]]) -> str:
 
 
 def swap16(x: int) -> int:
-    """Swap bytes in half word (16bit).
+    """Swap bytes in half word (16-bit).
 
-    :param x: Original number
-    :return: Number with swapped bytes
-    :raises SPSDKError: When incorrect number to be swapped is provided
+    Takes a 16-bit integer value and swaps its high and low bytes, converting
+    between little-endian and big-endian byte order.
+
+    :param x: 16-bit integer value to swap (0x0000 to 0xFFFF).
+    :return: Integer with swapped bytes.
+    :raises SPSDKError: When input value is outside valid 16-bit range.
     """
     if x < 0 or x > 0xFFFF:
         raise SPSDKError("Incorrect number to be swapped")
@@ -834,11 +972,13 @@ def swap16(x: int) -> int:
 
 
 def swap32(x: int) -> int:
-    """Swap 32 bit integer.
+    """Swap 32-bit integer byte order.
 
-    :param x: integer to be swapped
-    :return: swapped value
-    :raises SPSDKError: When incorrect number to be swapped is provided
+    Converts a 32-bit integer from big-endian to little-endian byte order or vice versa.
+
+    :param x: Integer value to be byte-swapped (0 to 0xFFFFFFFF).
+    :return: Integer with swapped byte order.
+    :raises SPSDKError: When the input value is outside the valid 32-bit range.
     """
     if x < 0 or x > 0xFFFFFFFF:
         raise SPSDKError("Incorrect number to be swapped")
@@ -848,9 +988,9 @@ def swap32(x: int) -> int:
 def reverse_bits(x: int, bits_cnt: int = 32) -> int:
     """Reverse bits in integer.
 
-    :param x: Integer to be bit reversed
-    :param bits_cnt: Count of bits to reverse
-    :return: Reversed value value
+    :param x: Integer to be bit reversed.
+    :param bits_cnt: Count of bits to reverse, defaults to 32.
+    :return: Integer with reversed bit order.
     """
     str_bits_format = "{:0{bits_cnt}b}".format(x, bits_cnt=bits_cnt)
     return int(str_bits_format[::-1], 2)
@@ -871,12 +1011,16 @@ def check_range(x: int, start: int = 0, end: int = (1 << 32) - 1) -> bool:
 
 
 def load_configuration(path: str, search_paths: Optional[list[str]] = None) -> dict:
-    """Load configuration from yml/json file.
+    """Load configuration from YAML or JSON file.
 
-    :param path: Path to configuration file
-    :param search_paths: List of paths where to search for the file, defaults to None
-    :raises SPSDKError: When unsupported file is provided
-    :return: Content of configuration as dictionary
+    The method attempts to parse the file content as JSON first, then falls back
+    to YAML parsing if JSON parsing fails. It uses SecretsLoader for YAML parsing
+    to handle sensitive data securely.
+
+    :param path: Path to configuration file (relative or absolute).
+    :param search_paths: List of paths where to search for the file, defaults to None.
+    :raises SPSDKError: When file cannot be loaded, parsed, or contains invalid format.
+    :return: Content of configuration as dictionary.
     """
     try:
         config = load_text(path, search_paths=search_paths)
@@ -902,18 +1046,24 @@ def load_configuration(path: str, search_paths: Optional[list[str]] = None) -> d
 
 
 def split_data(data: Union[bytearray, bytes], size: int) -> Generator[bytes, None, None]:
-    """Split data into chunks of size.
+    """Split data into chunks of specified size.
 
-    :param bytearray data: array of bytes to be split
-    :param int size: size of splitted array
-    :return Generator[bytes]: splitted array
+    :param data: Array of bytes to be split into chunks.
+    :param size: Size of each chunk in bytes.
+    :return: Generator yielding byte chunks of the specified size.
     """
     for i in range(0, len(data), size):
         yield data[i : i + size]
 
 
 def get_hash(text: Union[str, bytes]) -> str:
-    """Returns hash of given text."""
+    """Get hash of given text.
+
+    Computes SHA256 hash of the input text and returns first 8 characters of the hexadecimal digest.
+
+    :param text: Input text to be hashed, either as string or bytes.
+    :return: First 8 characters of SHA256 hash in hexadecimal format.
+    """
     if isinstance(text, str):
         text = text.encode("utf-8")
     return hashlib.sha256(text).digest().hex()[:8]
@@ -922,9 +1072,13 @@ def get_hash(text: Union[str, bytes]) -> str:
 def deep_update(d: dict, u: dict) -> dict:
     """Deep update nested dictionaries.
 
-    :param d: Dictionary that will be updated
-    :param u: Dictionary with update information
-    :returns: Updated dictionary.
+    Recursively merges two dictionaries, updating the first dictionary with values
+    from the second. For nested dictionaries, the merge is performed recursively
+    rather than replacing the entire nested dictionary.
+
+    :param d: Dictionary that will be updated.
+    :param u: Dictionary with update information.
+    :return: Updated dictionary.
     """
     for k, v in u.items():
         if isinstance(v, dict):
@@ -935,26 +1089,29 @@ def deep_update(d: dict, u: dict) -> dict:
 
 
 def wrap_text(text: str, max_line: int = 100) -> str:
-    """Wrap text in SPSDK standard.
+    """Wrap text according to SPSDK formatting standards.
 
-    Count with new lines in input string and do wrapping after that.
+    Processes input text by preserving existing line breaks and applying text wrapping
+    to each line individually to ensure consistent formatting across the SPSDK project.
 
-    :param text: Text to wrap
-    :param max_line: Max line in output, defaults to 100
-    :return: Wrapped text (added new lines characters on right places)
+    :param text: Input text to be wrapped.
+    :param max_line: Maximum line length for wrapped output, defaults to 100.
+    :return: Formatted text with appropriate line breaks inserted.
     """
     lines = text.splitlines()
     return "\n".join([textwrap.fill(text=line, width=max_line) for line in lines])
 
 
 def get_printable_path(path: str) -> str:
-    """Get path to the file.
+    """Get printable path for file display purposes.
 
-    If the JUPYTER_SPSDK environment variable is set to 1,
-    the path is relative to the current working directory.
+    Converts file path to a format suitable for display, with special handling
+    for Jupyter notebook environments. When JUPYTER_SPSDK environment variable
+    is set to "1", returns relative path from current working directory using
+    POSIX format. Otherwise returns the original path unchanged.
 
-    :param path: Path to the file.
-    :return: Path to the file.
+    :param path: Absolute or relative file path to convert.
+    :return: Display-friendly file path string.
     """
     # check Jupyter env variable
     if "JUPYTER_SPSDK" in os.environ and os.environ["JUPYTER_SPSDK"] == "1":
@@ -966,12 +1123,30 @@ TS = TypeVar("TS", bound="SingletonMeta")  # pylint: disable=invalid-name
 
 
 class SingletonMeta(type):
-    """Singleton metaclass."""
+    """Singleton metaclass for ensuring single instance creation.
+
+    This metaclass implements the singleton pattern by overriding the class
+    instantiation process to ensure only one instance of a class exists
+    throughout the application lifecycle.
+
+    :cvar _instance: Stores the single instance of the class.
+    """
 
     _instance = None
 
     def __call__(cls: Type[TS], *args: Any, **kwargs: Any) -> TS:  # type: ignore
-        """Call dunder override."""
+        """Create or return singleton instance of the class.
+
+        This method implements the singleton pattern by ensuring only one instance
+        of the class exists. If no instance exists, it creates one using the parent
+        class constructor. If an instance already exists, it returns the existing
+        instance.
+
+        :param cls: The class type to instantiate.
+        :param args: Positional arguments to pass to the class constructor.
+        :param kwargs: Keyword arguments to pass to the class constructor.
+        :return: The singleton instance of the class.
+        """
         if cls._instance is None:
             instance = super().__call__(*args, **kwargs)
             cls._instance = instance
@@ -981,19 +1156,19 @@ class SingletonMeta(type):
 def load_secret(value: str, search_paths: Optional[list[str]] = None) -> str:
     """Load secret text from the configuration value.
 
-    :param value: Input string to be used for loading the secret
-    :param search_paths: List of paths where to search for the file, defaults to None
-
-    There are several options how the secret is loaded from the input string
+    The method supports multiple input formats for flexible secret loading:
     1. If the value is an existing path, first line of file is read and returned
     2. If the value has format '$ENV_VAR', the value of environment variable ENV_VAR is returned
     3. If the value has format '$ENV_VAR' and the value contains a valid path to a file,
     the first line of a file is returned
     4. If the value does not match any options above, the input value itself is returned
 
-    Note, that the value with an initial component of ~ or ~user is replaced by that user’s home directory.
+    Note that the value with an initial component of ~ or ~user is replaced by that user's
+    home directory.
 
-    :return: The actual secret value
+    :param value: Input string to be used for loading the secret.
+    :param search_paths: List of paths where to search for the file, defaults to None.
+    :return: The actual secret value.
     """
     # value of api_key may contain '~' for user home or '$' for environment variable
     value = os.path.expanduser(os.path.expandvars(value))
@@ -1007,14 +1182,29 @@ def load_secret(value: str, search_paths: Optional[list[str]] = None) -> str:
 
 
 def swap_bytes(data: bytes) -> bytes:
-    """Swap individual bytes as following: b'abcd' -> b'badc'."""
+    """Swap individual bytes in pairs.
+
+    Swaps adjacent bytes in the input data. For example, b'abcd' becomes b'badc'.
+    If the input has an odd number of bytes, the last byte remains unchanged.
+
+    :param data: Input bytes to swap.
+    :return: Bytes with adjacent pairs swapped.
+    """
     data_array = bytearray(data)
     data_array[0::2], data_array[1::2] = data_array[1::2], data_array[0::2]
     return bytes(data_array)
 
 
 class SecretManager(metaclass=SingletonMeta):
-    """Manager for handling secrets from a YAML file with lazy loading and caching."""
+    """SPSDK Secret Manager for secure configuration data handling.
+
+    This singleton class manages secrets loaded from YAML configuration files with
+    lazy loading and caching capabilities. It provides secure access to sensitive
+    configuration data across the SPSDK library while ensuring secrets are loaded
+    only when needed and cached for performance.
+
+    :cvar secrets_path: Path to the secrets YAML file location.
+    """
 
     _secrets: Optional[dict[str, Any]] = None
     secrets_path = SPSDK_SECRETS_PATH
@@ -1022,9 +1212,9 @@ class SecretManager(metaclass=SingletonMeta):
     def get_secret(self, key: str) -> Any:
         """Get a secret by key, loading the secrets file if needed.
 
-        :param key: The key of the secret to retrieve
-        :return: The secret value
-        :raises ValueError: If the secret key is not found
+        :param key: The key of the secret to retrieve.
+        :raises ValueError: If the secret key is not found.
+        :return: The secret value.
         """
         if self._secrets is None:
             self._load_secrets()
@@ -1038,8 +1228,10 @@ class SecretManager(metaclass=SingletonMeta):
     def _load_secrets(self) -> None:
         """Load secrets from the secrets file.
 
-        :raises FileNotFoundError: If the secrets file doesn't exist
-        :raises yaml.YAMLError: If the secrets file contains invalid YAML
+        The method initializes an empty dictionary if the secrets file doesn't exist, otherwise
+        loads and parses the YAML content from the file.
+
+        :raises yaml.YAMLError: If the secrets file contains invalid YAML.
         """
         if not os.path.exists(self.secrets_path):
             self._secrets = {}  # Initialize with empty dict if file doesn't exist
@@ -1052,17 +1244,22 @@ class SecretManager(metaclass=SingletonMeta):
 def secret_constructor(loader: yaml.SafeLoader, node: yaml.ScalarNode) -> Any:
     """Custom YAML constructor to load secrets from the secrets file.
 
-    :param loader: YAML loader instance
-    :param node: YAML node representing the secret key
-    :return: Secret value corresponding to the key
-    :raises ValueError: If the secret key is not found
+    :param loader: YAML loader instance.
+    :param node: YAML node representing the secret key.
+    :return: Secret value corresponding to the key.
+    :raises ValueError: If the secret key is not found.
     """
     key = loader.construct_scalar(node)
     return SecretManager().get_secret(key)
 
 
 class SecretsLoader(yaml.SafeLoader):
-    """Custom YAML loader that handles !secret tags."""
+    """YAML loader for SPSDK configuration files with secret tag support.
+
+    This custom YAML loader extends SafeLoader to handle special !secret tags
+    in configuration files, enabling secure loading of sensitive data like
+    passwords, keys, and tokens from external sources.
+    """
 
 
 # Register the !secret tag constructor with our custom loader
@@ -1072,10 +1269,13 @@ SecretsLoader.add_constructor("!secret", secret_constructor)
 def swap_endianness(data: bytes, word_size: int = 4) -> bytes:
     """Convert between little-endian and big-endian byte order for data consisting of fixed-size words.
 
-    :param data: Input data bytes to swap endianness
-    :param word_size: Size of each word in bytes (default: 4 for 32-bit words)
-    :return: Data with swapped endianness
-    :raises SPSDKError: If word_size is not supported or data length is not a multiple of word_size
+    The method swaps the endianness of input data by treating it as a sequence of words of the
+    specified size. Supports 16-bit, 32-bit, and 64-bit word sizes.
+
+    :param data: Input data bytes to swap endianness.
+    :param word_size: Size of each word in bytes (default: 4 for 32-bit words).
+    :return: Data with swapped endianness.
+    :raises SPSDKError: If word_size is not supported or data length is not a multiple of word_size.
     """
     if word_size not in (2, 4, 8):
         raise SPSDKError(

@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module for DebugMailbox Debug probes support."""
+"""SPSDK debug probe utilities and management functions.
+
+This module provides comprehensive functionality for discovering, selecting,
+and managing debug probes across different hardware interfaces. It includes
+utilities for probe detection, connection testing, and plugin loading for
+various debug probe types supported by SPSDK.
+"""
 
 import contextlib
 import logging
@@ -36,15 +42,15 @@ def get_connected_probes(
     hardware_id: Optional[str] = None,
     options: Optional[dict] = None,
 ) -> DebugProbes:
-    """Functions returns the list of all connected probes in system.
+    """Get connected debug probes in the system.
 
-    The caller could restrict the scanned interfaces by specification of hardware ID.
+    The caller can restrict the scanned interfaces by specifying interface type or hardware ID.
+    Scans all available probe interfaces and returns matching connected probes.
 
-    :param interface: None to scan all interfaces, otherwise the selected interface is scanned only.
-    :param hardware_id: None to list all probes, otherwise the the only probe with matching
-    :param options: The dictionary with optional options
-        hardware id is listed.
-    :return: list of probe_description's
+    :param interface: Interface type to scan, None to scan all available interfaces.
+    :param hardware_id: Hardware ID filter, None to list all probes or specific ID to match.
+    :param options: Optional configuration dictionary for probe scanning.
+    :return: Collection of connected debug probes matching the specified criteria.
     """
     probes = DebugProbes()
     for key, probe in PROBES.items():
@@ -64,15 +70,19 @@ def select_probe(
     print_func: Callable = print,
     input_func: Callable[[], str] = input,
 ) -> ProbeDescription:
-    """Perform Probe selection.
+    """Select debug probe from available probes.
 
-    :param probes: The input list of probes
-    :param silent: When it True, the functions select the probe if applicable without any prints to log
-    :param print_func: Custom function to print data, defaults to print
-    :param input_func: Custom function to handle user input, defaults to input
-    :return: The record of selected DebugProbe
-    :raises SPSDKProbeNotFoundError: No probe has been founded
-    :raises SPSDKMultipleProbesError: Multiple probes have been found in non-interactive mode
+    Handles automatic selection when only one probe is available, or prompts user
+    for selection when multiple probes are found. Supports silent mode and custom
+    input/output functions for testing.
+
+    :param probes: List of available debug probes to select from.
+    :param silent: If True, suppress output when only one probe is available.
+    :param print_func: Custom function for output, defaults to print.
+    :param input_func: Custom function for user input, defaults to input.
+    :return: Selected probe description.
+    :raises SPSDKProbeNotFoundError: No probe found or invalid selection index.
+    :raises SPSDKMultipleProbesError: Multiple probes found in non-interactive mode.
     """
     probe_len = len(probes)
     if probe_len == 0:
@@ -103,7 +113,10 @@ def select_probe(
 def get_test_address(family: FamilyRevision) -> int:
     """Get AHB access test address for the device.
 
-    The address is stored in SPSDK database. I worst case that address is not found, exception is raised.
+    The address is stored in SPSDK database. In worst case that address is not found, exception is raised.
+
+    :param family: Family revision specification for the target device.
+    :return: Test address for AHB access verification.
     :raises SPSDKError: The address is not stored in database.
     """
     db = get_db(family)
@@ -122,13 +135,18 @@ def test_ahb_access(
     invasive: bool = True,
     test_mem_address: Optional[int] = None,
 ) -> bool:
-    """The function safely test the access of debug probe to AHB in target.
+    """Test the access of debug probe to AHB in target safely.
 
-    :param probe: Probe object to use for test.
-    :param ap_mem: Index of memory access port, defaults to 0
-    :param invasive: Invasive type of test (temporary changed destination RAM value)
-    :param test_mem_address: The address in volatile memory usable to test AHB memory access.
-    :return: True is access to AHB is granted, False otherwise.
+    The function performs a safe test to verify if the debug probe has access to the AHB
+    (Advanced High-performance Bus) in the target device. It can perform both non-invasive
+    and invasive tests depending on the configuration.
+
+    :param probe: Debug probe object to use for testing.
+    :param ap_mem: Index of memory access port, defaults to current probe setting.
+    :param invasive: Enable invasive test that temporarily modifies destination RAM value.
+    :param test_mem_address: Address in volatile memory for testing AHB memory access.
+    :raises SPSDKError: When test connection verification fails during invasive testing.
+    :return: True if access to AHB is granted, False otherwise.
     """
     ahb_enabled = False
     bck_mem_ap = probe.mem_ap_ix
@@ -180,14 +198,19 @@ def open_debug_probe(
     print_func: Callable[[str], None] = print,
     input_func: Callable[[], str] = input,
 ) -> Iterator[DebugProbe]:
-    """Method opens DebugProbe object based on input arguments.
+    """Open debug probe as context manager.
 
-    :param interface: None to scan all interfaces, otherwise the selected interface is scanned only.
-    :param serial_no: None to list all probes, otherwise the the only probe with matching
-    :param debug_probe_params: The dictionary with optional options hardware id is listed.
-    :param print_func: Custom function to print data, defaults to print
-    :param input_func: Custom function to handle user input, defaults to input
-    :return: Active DebugProbe object.
+    The method scans for available debug probes based on the provided criteria,
+    allows user selection if multiple probes are found, opens the selected probe,
+    and yields it as a context manager that automatically closes the probe when done.
+
+    :param interface: Interface type to scan, None to scan all available interfaces.
+    :param serial_no: Serial number of specific probe, None to list all available probes.
+    :param debug_probe_params: Dictionary with optional debug probe configuration parameters.
+    :param print_func: Custom function to print data, defaults to print.
+    :param input_func: Custom function to handle user input, defaults to input.
+    :return: Active DebugProbe object as context manager.
+    :raises SPSDKDebugProbeError: Cannot open selected probe or probe disconnected.
     :raises SPSDKError: Raised with any kind of problems with debug probe.
     """
     debug_probes = get_connected_probes(
@@ -210,12 +233,26 @@ def open_debug_probe(
 
 
 def get_all_debug_probe_plugins() -> dict[str, Type[DebugProbe]]:
-    """Get dictionary of all available debug probe types."""
+    """Get dictionary of all available debug probe types.
+
+    This method loads all debug probe plugins and returns a mapping of probe names
+    to their corresponding DebugProbe class types. It recursively searches through
+    all DebugProbe subclasses to build the complete registry.
+
+    :return: Dictionary mapping debug probe names to their DebugProbe class types.
+    """
 
     def get_subclasses(
         base_class: Type,
     ) -> dict[str, Type[DebugProbe]]:
-        """Recursively find all subclasses."""
+        """Recursively find all subclasses of a given base class.
+
+        The method traverses the inheritance hierarchy and collects only the leaf
+        subclasses (those without further subclasses) mapped by their NAME attribute.
+
+        :param base_class: The base class to find subclasses for.
+        :return: Dictionary mapping subclass names to subclass types.
+        """
         subclasses = {}
         for subclass in base_class.__subclasses__():
             subclasses_dict = get_subclasses(subclass)
@@ -231,14 +268,23 @@ def get_all_debug_probe_plugins() -> dict[str, Type[DebugProbe]]:
 
 
 def load_debug_probe_plugins() -> dict[str, ModuleType]:
-    """Load all installed signature provider plugins."""
+    """Load all installed debug probe plugins.
+
+    Discovers and loads debug probe plugins from entry points using the plugins manager.
+
+    :return: Dictionary mapping plugin names to their corresponding module objects.
+    """
     plugins_manager = PluginsManager()
     plugins_manager.load_from_entrypoints(PluginType.DEBUG_PROBE.label)
     return plugins_manager.plugins
 
 
 def load_all_probe_types() -> None:
-    """Method to load the current list of all debug probe types."""
+    """Load the current list of all debug probe types.
+
+    This method initializes the global PROBES variable by retrieving all available
+    debug probe plugins from the system.
+    """
     global PROBES  # pylint: disable=global-statement
     PROBES = get_all_debug_probe_plugins()
 

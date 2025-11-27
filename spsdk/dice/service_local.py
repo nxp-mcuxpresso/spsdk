@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Module for local DICE attestation."""
+
+"""SPSDK local DICE attestation service implementation.
+
+This module provides a local verification service for DICE (Device Identifier
+Composition Engine) attestation using SQLite database for storage and management
+of attestation records.
+"""
 
 import contextlib
 import logging
@@ -58,11 +64,14 @@ CREATE_DATABASE_COMMAND = """
 
 @contextlib.contextmanager
 def sqlite_cursor(file_path: str) -> Iterator[sqlite3.Cursor]:
-    """Yield an cursor to SQLite database.
+    """Yield a cursor to SQLite database.
 
-    :param file_path: Path to SQLite database file
-    :raises SPSDKDICEError: Error during SQL operation
-    :yield: SQLite cursor
+    This function provides a context manager for SQLite database operations,
+    ensuring proper connection handling and cleanup.
+
+    :param file_path: Path to SQLite database file.
+    :raises SPSDKDICEError: Error during SQL operation or database connection.
+    :yield: SQLite cursor for database operations.
     """
     try:
         conn = sqlite3.connect(file_path)
@@ -81,21 +90,48 @@ def sqlite_cursor(file_path: str) -> Iterator[sqlite3.Cursor]:
 
 
 class LocalDICEVerificationService(DICEVerificationService):
-    """DICE Verification adapter using a local database."""
+    """Local DICE Verification Service implementation.
+
+    This class provides a local database-backed implementation of DICE (Device Identifier
+    Composition Engine) verification services using SQLite3. It manages device identity
+    verification, certificate authority public key registration, firmware version tracking,
+    and challenge-response authentication for secure device provisioning.
+    The service maintains a local SQLite database to store DICE CA public keys, firmware
+    versions with their corresponding RTF (Root of Trust for Firmware) and HAD (Hardware
+    Attestation Data) values, enabling offline verification of device authenticity.
+    """
 
     def __init__(self, file_path: str) -> None:
-        """Initialize the local verification service with given path to database file (sqlite3)."""
+        """Initialize the local verification service with given path to database file.
+
+        The service uses SQLite3 database to store and manage verification data locally.
+
+        :param file_path: Path to the SQLite3 database file.
+        """
         self.db_file = file_path
         self._setup_db()
 
     def _setup_db(self) -> None:
-        """Create database if not already exists."""
+        """Set up the database for DICE service operations.
+
+        Creates the database tables and schema if they don't already exist. This method
+        initializes the SQLite database structure required for storing DICE-related data.
+
+        :raises SPSDKError: If database creation fails or file access is denied.
+        """
         logger.debug("Setting up a database")
         with sqlite_cursor(self.db_file) as cursor:
             cursor.executescript(CREATE_DATABASE_COMMAND)
 
     def register_dice_ca_puk(self, key_data: bytes) -> APIResponse:
-        """Register NXP_CUST_DICE_CA_PUK in the service."""
+        """Register NXP_CUST_DICE_CA_PUK in the service.
+
+        This method reconstructs an ECC key from the provided key data, serializes it to PEM format,
+        and stores it in the local SQLite database. Any existing DICE_CA_PUK entry is replaced.
+
+        :param key_data: Raw bytes containing the public key data to be reconstructed.
+        :return: API response object indicating success or failure of the registration operation.
+        """
         logger.info("Registering NXP_CUST_DICE_CA_PUK")
         ca_puk = reconstruct_ecc_key(puk_data=key_data)
         pem_data = serialize_ecc_key(key=ca_puk)
@@ -114,7 +150,16 @@ class LocalDICEVerificationService(DICEVerificationService):
         )
 
     def register_version(self, data: bytes, allow_update: bool = True) -> APIResponse:
-        """Register new FW version, RTF and HAD based on DICE response."""
+        """Register new FW version, RTF and HAD based on DICE response.
+
+        This method parses the DICE response data to extract version information, RTF (Root Trust Framework),
+        and HAD (Hardware Attestation Data). It stores or updates this information in the local database.
+        If the version already exists and updates are not allowed, it returns an error response.
+
+        :param data: Raw DICE response data containing version, RTF and HAD information.
+        :param allow_update: Whether to allow updating existing version data, defaults to True.
+        :return: API response indicating success or failure of the registration operation.
+        """
         logger.info("Registering RTF and HAD for new version")
         response = DICEResponse.parse(data=data)
         with sqlite_cursor(self.db_file) as cursor:
@@ -151,7 +196,18 @@ class LocalDICEVerificationService(DICEVerificationService):
         )
 
     def get_challenge(self, pre_set: Optional[str] = None) -> bytes:
-        """Get challenge vector from the service."""
+        """Get challenge vector from the service.
+
+        Generates a unique challenge for DICE attestation and stores it in the database
+        with INCOMPLETE status. If a pre-set challenge is provided, any existing record
+        with that challenge is deleted first.
+
+        :param pre_set: Optional pre-set challenge string to use instead of generating
+            a random one.
+        :raises SPSDKDICEError: When unable to generate a unique challenge after
+            multiple attempts.
+        :return: Challenge as bytes converted from hexadecimal string.
+        """
         logger.info("Generating DICE challenge")
         timestamp = datetime.now()
         challenge = pre_set or secrets.token_hex(32)
@@ -178,6 +234,15 @@ class LocalDICEVerificationService(DICEVerificationService):
     def _verify_challenge(
         self, response: DICEResponse, attestation_record: Optional[tuple]
     ) -> None:
+        """Verify challenge from DICE response against stored attestation record.
+
+        The method validates that the challenge exists in the attestation record and hasn't
+        been used previously to prevent replay attacks.
+
+        :param response: DICE response containing the challenge to verify.
+        :param attestation_record: Tuple containing attestation data or None if not found.
+        :raises SPSDKDICEVerificationError: Challenge not found or already used.
+        """
         if not attestation_record:
             raise SPSDKDICEVerificationError(
                 status="INVALID_CHALLENGE",
@@ -190,6 +255,17 @@ class LocalDICEVerificationService(DICEVerificationService):
             )
 
     def _verify_rtf(self, response: DICEResponse, cursor: sqlite3.Cursor) -> None:
+        """Verify RTF value from DICE response against database record.
+
+        The method retrieves the expected RTF value from the database for the given
+        version and compares it with the RTF value from the DICE response to ensure
+        authenticity.
+
+        :param response: DICE response containing RTF value and version information.
+        :param cursor: SQLite database cursor for querying RTF settings.
+        :raises SPSDKDICEVerificationError: RTF value not set for version or RTF
+            mismatch.
+        """
         cursor.execute(
             "SELECT value FROM settings WHERE name = 'RTF' AND version = ?",
             (response.version_int,),
@@ -207,6 +283,15 @@ class LocalDICEVerificationService(DICEVerificationService):
             )
 
     def _verify_ca_puk(self, cursor: sqlite3.Cursor) -> PublicKeyEcc:
+        """Verify and retrieve DICE CA public key from database.
+
+        This method queries the database for the DICE CA public key setting and parses
+        it into a PublicKeyEcc object for cryptographic operations.
+
+        :param cursor: Database cursor for executing SQL queries.
+        :raises SPSDKDICEVerificationError: When DICE_CA_PUK setting is not found in database.
+        :return: Parsed DICE CA public key object.
+        """
         cursor.execute("SELECT value FROM settings WHERE name = 'DICE_CA_PUK'")
         ca_puk_record = cursor.fetchone()
         if not ca_puk_record:
@@ -219,6 +304,17 @@ class LocalDICEVerificationService(DICEVerificationService):
         return ca_puk
 
     def _verify_signatures(self, response: DICEResponse, ca_puk: PublicKeyEcc) -> PublicKeyEcc:
+        """Verify DICE response signatures and extract DIE public key.
+
+        This method validates both the CA signature and DIE signature in the DICE response,
+        ensuring the authenticity and integrity of the received data.
+
+        :param response: DICE response containing signatures to verify.
+        :param ca_puk: CA public key used for CA signature verification.
+        :raises SPSDKDICEVerificationError: CA signature verification failed.
+        :raises SPSDKDICEVerificationError: DIE signature verification failed.
+        :return: Reconstructed DIE public key from the response.
+        """
         if not response.verify_ca_signature(ca_puk=ca_puk):
             raise SPSDKDICEVerificationError(
                 status="INVALID_CA_SIGNATURE",
@@ -236,6 +332,17 @@ class LocalDICEVerificationService(DICEVerificationService):
     def _verify_csr(
         self, response: DICEResponse, die_puk: PublicKeyEcc, cursor: sqlite3.Cursor
     ) -> None:
+        """Verify and store CSR public key in database.
+
+        This method checks if a Certificate Signing Request (CSR) record exists for the given
+        device UUID and version. If not found, it creates a new record. If found, it verifies
+        that the stored public key matches the provided one.
+
+        :param response: DICE response containing UUID and version information.
+        :param die_puk: ECC public key from the device to verify against stored record.
+        :param cursor: SQLite database cursor for executing queries.
+        :raises SPSDKDICEVerificationError: When stored public key differs from provided key.
+        """
         die_puk_pem = serialize_ecc_key(key=die_puk.key)
         cursor.execute(
             "SELECT puk FROM csrs WHERE uuid = ? AND version = ?",
@@ -260,6 +367,16 @@ class LocalDICEVerificationService(DICEVerificationService):
     def _verify_had(
         self, response: DICEResponse, cursor: sqlite3.Cursor
     ) -> Optional[tuple[str, str]]:
+        """Verify Hardware Attestation Data (HAD) against stored value.
+
+        Retrieves the expected HAD value from database for the given version and compares
+        it with the HAD value from the DICE response.
+
+        :param response: DICE response containing HAD value to verify.
+        :param cursor: SQLite database cursor for querying stored HAD values.
+        :raises SPSDKDICEVerificationError: HAD value is not set for the version.
+        :return: Tuple of (expected_had, actual_had) if values don't match, None if they match.
+        """
         cursor.execute(
             "SELECT value FROM settings WHERE name = 'HAD' AND version = ?",
             (response.version_int,),
@@ -279,7 +396,17 @@ class LocalDICEVerificationService(DICEVerificationService):
         return None
 
     def verify(self, data: bytes, reset_challenge: bool = False) -> APIResponse:
-        """Submit DICE response for verification."""
+        """Submit DICE response for verification.
+
+        Verifies the DICE response by validating challenge, CA public key, signatures,
+        CSR, RTF, and HAD components. Updates the attestation record in the database
+        with verification results.
+
+        :param data: Raw DICE response data to be verified.
+        :param reset_challenge: Whether to reset the challenge using the response challenge.
+        :raises SPSDKDICEVerificationError: When verification of any component fails.
+        :return: API response containing verification status and results.
+        """
         logger.info("Verifying DICE Response")
         api = "verify"
         response = DICEResponse.parse(data=data)

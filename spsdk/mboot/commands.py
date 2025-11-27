@@ -6,7 +6,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Commands and responses used by MBOOT module."""
+"""SPSDK MBOOT protocol commands and responses implementation.
+
+This module provides comprehensive support for MBOOT (MCU Bootloader) protocol
+communication, including command packets, response parsing, and protocol-specific
+operations for secure provisioning and device management.
+"""
 
 from struct import pack, unpack, unpack_from
 from typing import Optional, Type
@@ -24,7 +29,13 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 
 # fmt: off
 class CommandTag(SpsdkEnum):
-    """McuBoot Commands."""
+    """McuBoot command enumeration for bootloader operations.
+    
+    This enumeration defines all available commands that can be sent to NXP MCU bootloaders
+    through the McuBoot protocol. Each command includes a numeric identifier, string name,
+    and human-readable description for various memory operations, security functions,
+    and device configuration tasks.
+    """
 
     NO_COMMAND                  = (0x00, "NoCommand", "No Command")
     FLASH_ERASE_ALL             = (0x01, "FlashEraseAll", "Erase Complete Flash")
@@ -62,7 +73,11 @@ class CommandTag(SpsdkEnum):
 
 
 class CommandFlag(SpsdkEnum):
-    """Flags for McuBoot commands."""
+    """McuBoot command flags enumeration.
+    
+    This enumeration defines flags that can be applied to McuBoot commands to specify
+    their behavior and characteristics, such as whether a command includes a data phase.
+    """
 
     NONE           = (0, "NoFlags", "No flags specified")
     HAS_DATA_PHASE = (1, "DataPhase", "Command has a data phase")
@@ -70,7 +85,12 @@ class CommandFlag(SpsdkEnum):
 
 
 class ResponseTag(SpsdkEnum):
-    """McuBoot Responses to Commands."""
+    """McuBoot response tag enumeration.
+    
+    This enumeration defines response tags used by McuBoot protocol to identify different types
+    of responses returned by the target device. Each tag corresponds to a specific command
+    response type with associated metadata including tag value, name, and description.
+    """
 
     GENERIC                     = (0xA0, "GenericResponse", "Generic Response")
     READ_MEMORY                 = (0xA3, "ReadMemoryResponse", "Read Memory Response")
@@ -83,7 +103,11 @@ class ResponseTag(SpsdkEnum):
 
 
 class KeyProvOperation(SpsdkEnum):
-    """Type of key provisioning operation."""
+    """Key provisioning operation type enumeration.
+    
+    This enumeration defines the available operations for key provisioning
+    in SPSDK, including enrollment, key management, and storage operations.
+    """
 
     ENROLL              = (0, "Enroll", "Enroll Operation")
     SET_USER_KEY        = (1, "SetUserKey", "Set User Key Operation")
@@ -95,7 +119,12 @@ class KeyProvOperation(SpsdkEnum):
 
 
 class KeyProvUserKeyType(SpsdkEnum):
-    """Enumeration of supported user keys in PUF. Keys are SoC specific, not all will be supported for the processor."""
+    """Enumeration of supported user keys in PUF for key provisioning operations.
+    
+    This enumeration defines the various types of cryptographic keys that can be
+    provisioned and managed through the Physical Unclonable Function (PUF). The
+    availability of specific key types depends on the target SoC capabilities.
+    """
 
     OTFADKEK        = (2, "OTFADKEK", "Key for OTFAD encryption")
     SBKEK           = (3, "SBKEK", "Key for SB file encryption")
@@ -109,13 +138,12 @@ class KeyProvUserKeyType(SpsdkEnum):
 
 
 class GenerateKeyBlobSelect(SpsdkEnum):
-    """Key selector for the generate-key-blob function.
-
-    For devices with SNVS, valid options of [key_sel] are
-    0, 1 or OTPMK: OTPMK from FUSE or OTP(default),
-    2 or ZMK: ZMK from SNVS,
-    3 or CMK: CMK from SNVS,
-    For devices without SNVS, this option will be ignored.
+    """Key selector enumeration for generate-key-blob operations.
+    
+    Defines available key sources for key blob generation on NXP devices.
+    For devices with SNVS (Secure Non-Volatile Storage), supports OTPMK from
+    FUSE/OTP, ZMK from SNVS, and CMK from SNVS. For devices without SNVS,
+    the key selector is ignored and default behavior applies.
     """
 
     OPTMK   = (0, "OPTMK", "OTPMK from FUSE or OTP(default)")
@@ -124,7 +152,12 @@ class GenerateKeyBlobSelect(SpsdkEnum):
 
 
 class TrustProvOperation(SpsdkEnum):
-    """Operations supported by Trust Provisioning flow."""
+    """Trust Provisioning operation enumeration.
+    
+    This enumeration defines all supported operations for the Trust Provisioning flow,
+    including genuinity proving, wrapped data processing, key management, and DICE
+    certificate operations for secure device provisioning.
+    """
 
     PROVE_GENUINITY = (0xF4, "ProveGenuinity", "Start the proving genuinity process")
     PROVE_GENUINITY_HYBRID = (0xF5, "ProveGenuinityHybrid", "Start the hybrid proving genuinity process")
@@ -141,7 +174,12 @@ class TrustProvOperation(SpsdkEnum):
     OEM_GET_CUST_DICE_RESPONSE  = (7, "GetDiceResponse", "Get DICE response")
 
 class TrustProvOemKeyType(SpsdkEnum):
-    """Type of oem key type definition."""
+    """TrustProv OEM key type enumeration.
+    
+    This enumeration defines the various types of OEM keys used in Trust Provisioning
+    operations, including manufacturing firmware signing keys, encryption keys, and
+    master keys for key derivation functions.
+    """
 
     MFWISK      = (0xC3A5, "MFWISK", "ECDSA Manufacturing Firmware Signing Key")
     ENCKEY      = (0x3CA5, "ENCKEY", "Generic Encryption Key")
@@ -151,7 +189,12 @@ class TrustProvOemKeyType(SpsdkEnum):
 
 
 class TrustProvKeyType(SpsdkEnum):
-    """Type of key type definition."""
+    """Trust Provisioning key type enumeration.
+    
+    Defines the supported key types for trust provisioning operations in SPSDK,
+    including cryptographic key derivation functions, message authentication codes,
+    and encryption keys.
+    """
 
     CKDFK = (1, "CKDFK", "CKDF Master Key")
     HKDFK = (2, "HKDFK", "HKDF Master Key")
@@ -162,14 +205,23 @@ class TrustProvKeyType(SpsdkEnum):
 
 
 class TrustProvWrappingKeyType(SpsdkEnum):
-    """Type of wrapping key type definition."""
+    """Trust Provisioning wrapping key type enumeration.
+    
+    Defines the available wrapping key types used in trust provisioning operations
+    for wrapping MFG_CUST_MK_SK0_BLOB data.
+    """
 
     INT_SK = (0x10, "INT_SK", "The wrapping key for wrapping of MFG_CUST_MK_SK0_BLOB")
     EXT_SK = (0x11, "EXT_SK", "The wrapping key for wrapping of MFG_CUST_MK_SK0_BLOB")
 
 
 class TrustProvWpc(SpsdkEnum):
-    """Type of WPC trusted facility commands for DSC."""
+    """WPC trusted facility command enumeration for DSC operations.
+    
+    This enumeration defines the available commands for Wireless Power Consortium (WPC)
+    trusted facility operations in Device Security Controller (DSC) context, including
+    ID retrieval, certificate management, and certificate signing request operations.
+    """
 
     WPC_GET_ID              = (0x5000000, "wpc_get_id", "WPC get ID")
     NXP_GET_ID              = (0x5000001, "nxp_get_id", "NXP get ID")
@@ -178,7 +230,13 @@ class TrustProvWpc(SpsdkEnum):
 
 
 class TrustProvDevHsmDsc(SpsdkEnum):
-    """Type of DSC Device HSM."""
+    """DSC Device HSM command enumeration for Trust Provisioning.
+    
+    This enumeration defines the available HSM (Hardware Security Module) commands
+    for DSC (Device Security Controller) operations in trust provisioning workflows.
+    Each command represents a specific HSM operation with its corresponding command
+    code and description.
+    """
 
     DSC_HSM_CREATE_SESSION  = (0x6000000, "dsc_hsm_create_session", "DSC HSM create session")
     DSC_HSM_ENC_BLK         = (0x6000001, "dsc_hsm_enc_blk", "DSC HSM encrypt bulk")
@@ -186,7 +244,12 @@ class TrustProvDevHsmDsc(SpsdkEnum):
 
 
 class EL2GOCommandGroup(SpsdkEnum):
-    """EL2GO command group."""
+    """EL2GO command group enumeration for EdgeLock 2GO operations.
+    
+    This enumeration defines the available command groups for EdgeLock 2GO
+    trust provisioning operations including version retrieval, device closure,
+    and batch trust provisioning workflows.
+    """
 
     EL2GO_GET_FW_VERSION    = (0x1, "el2go_get_version", "EL2GO Get Version")
     EL2GO_CLOSE_DEVICE      = (0x2, "el2go_close_device", "EL2GO Close Device")
@@ -200,17 +263,23 @@ class EL2GOCommandGroup(SpsdkEnum):
 
 
 class CmdHeader:
-    """McuBoot command/response header."""
+    """McuBoot command/response header.
+
+    This class represents the header structure for McuBoot protocol commands and responses,
+    providing serialization and parsing capabilities for communication with MCU bootloader.
+
+    :cvar SIZE: Fixed size of the header in bytes (4 bytes).
+    """
 
     SIZE = 4
 
     def __init__(self, tag: int, flags: int, reserved: int, params_count: int) -> None:
         """Initialize the Command Header.
 
-        :param tag: Tag indicating the command, see: `CommandTag` class
+        :param tag: Tag indicating the command, see CommandTag class
         :param flags: Flags for the command
-        :param reserved: Reserved?
-        :param params_count: Number of parameter for the command
+        :param reserved: Reserved field for future use
+        :param params_count: Number of parameters for the command
         """
         self.tag = tag
         self.flags = flags
@@ -218,15 +287,44 @@ class CmdHeader:
         self.params_count = params_count
 
     def __eq__(self, obj: object) -> bool:
+        """Check equality of two CmdHeader objects.
+
+        Compares this CmdHeader instance with another object by checking if the other
+        object is also a CmdHeader instance and has identical attributes.
+
+        :param obj: Object to compare with this CmdHeader instance.
+        :return: True if objects are equal CmdHeader instances, False otherwise.
+        """
         return isinstance(obj, CmdHeader) and vars(obj) == vars(self)
 
     def __ne__(self, obj: object) -> bool:
+        """Check if this object is not equal to another object.
+
+        This method implements the inequality comparison operator by negating the equality check.
+
+        :param obj: Object to compare against for inequality.
+        :return: True if objects are not equal, False if they are equal.
+        """
         return not self.__eq__(obj)
 
     def __repr__(self) -> str:
+        """Return string representation of the object.
+
+        Provides a formatted string containing the tag, flags, and parameter count
+        in hexadecimal and decimal format for debugging and logging purposes.
+
+        :return: String representation with tag, flags and parameters count.
+        """
         return f"<Tag=0x{self.tag:02X}, Flags=0x{self.flags:02X}, ParamsCount={self.params_count}>"
 
     def __str__(self) -> str:
+        """Return string representation of the command header.
+
+        Provides a formatted string containing the tag, flags, reserved field,
+        and parameter count values in a readable format.
+
+        :return: Formatted string representation of the command header.
+        """
         return (
             f"CmdHeader(tag=0x{self.tag:02X}, flags=0x{self.flags:02X}, "
             f"reserved={self.reserved}, params_count={self.params_count})"
@@ -235,18 +333,24 @@ class CmdHeader:
     def export(self) -> bytes:
         """Export the command header to bytes.
 
-        :return: Exported command header as bytes
+        Serializes the command header fields (tag, flags, reserved, params_count) into a 4-byte
+        packed binary format.
+
+        :return: Exported command header as bytes.
         """
         return pack("4B", self.tag, self.flags, self.reserved, self.params_count)
 
     @classmethod
     def parse(cls, data: bytes, offset: int = 0) -> Self:
-        """Parse header from bytes.
+        """Parse command header from binary data.
 
-        :param data: Input data in bytes
-        :param offset: The offset of input data
-        :return: Parsed CmdHeader object
-        :raises McuBootError: Invalid data format
+        The method extracts a 4-byte command header from the provided binary data
+        at the specified offset and creates a CmdHeader object.
+
+        :param data: Binary data containing the command header.
+        :param offset: Byte offset within the data where parsing should start.
+        :return: Parsed CmdHeader object.
+        :raises McuBootError: Invalid data format or insufficient data length.
         """
         if len(data) < 4:
             raise McuBootError(f"Invalid format of RX packet (data length is {len(data)} bytes)")
@@ -254,7 +358,15 @@ class CmdHeader:
 
 
 class CmdPacket(CmdPacketBase):
-    """McuBoot command packet format class."""
+    """McuBoot command packet format class.
+
+    Represents a command packet used in McuBoot protocol communication, handling
+    command formatting, parameter management, and binary serialization for secure
+    boot operations.
+
+    :cvar SIZE: Fixed size of the command packet in bytes.
+    :cvar EMPTY_VALUE: Default empty value used for padding.
+    """
 
     SIZE = 32
     EMPTY_VALUE = 0x00
@@ -264,10 +376,13 @@ class CmdPacket(CmdPacketBase):
     ) -> None:
         """Initialize the Command Packet object.
 
-        :param tag: Tag identifying the command
+        Creates a new command packet with the specified tag, flags, arguments, and optional data.
+        The data is automatically padded to 4-byte alignment if provided.
+
+        :param tag: Tag identifying the command type
         :param flags: Flags used by the command
-        :param args: Arguments used by the command
-        :param data: Additional data, defaults to None
+        :param args: Variable number of integer arguments used by the command
+        :param data: Additional binary data to append to parameters, defaults to None
         """
         self.header = CmdHeader(tag.tag, flags, 0, len(args))
         self.params = list(args)
@@ -278,13 +393,36 @@ class CmdPacket(CmdPacketBase):
             self.header.params_count = len(self.params)
 
     def __eq__(self, obj: object) -> bool:
+        """Check equality between two CmdPacket objects.
+
+        Compares this CmdPacket instance with another object by checking if the other
+        object is also a CmdPacket instance and if all their attributes are equal.
+
+        :param obj: Object to compare with this CmdPacket instance.
+        :return: True if objects are equal CmdPacket instances with same attributes,
+                 False otherwise.
+        """
         return isinstance(obj, CmdPacket) and vars(obj) == vars(self)
 
     def __ne__(self, obj: object) -> bool:
+        """Check if two objects are not equal.
+
+        This method implements the inequality comparison operator by negating the equality
+        comparison result.
+
+        :param obj: Object to compare with this instance.
+        :return: True if objects are not equal, False if they are equal.
+        """
         return not self.__eq__(obj)
 
     def __str__(self) -> str:
-        """Get object info."""
+        """Get string representation of the command object.
+
+        Returns a formatted string containing the command tag, flags, and parameters
+        in hexadecimal format for debugging and logging purposes.
+
+        :return: Formatted string with command details including tag, flags and parameters.
+        """
         tag = (
             CommandTag.get_label(self.header.tag)
             if self.header.tag in CommandTag.tags()
@@ -297,8 +435,12 @@ class CmdPacket(CmdPacketBase):
     def export(self, padding: bool = True) -> bytes:
         """Export CmdPacket into bytes.
 
-        :param padding: If True, add padding to specific size
-        :return: Exported object into bytes
+        The method serializes the command packet by exporting the header with updated
+        parameter count, packing all parameters as unsigned integers, and optionally
+        adding padding to reach the required size.
+
+        :param padding: If True, add padding to reach the specific packet size.
+        :return: Exported command packet as bytes.
         """
         self.header.params_count = len(self.params)
         data = self.header.export()
@@ -309,13 +451,22 @@ class CmdPacket(CmdPacketBase):
 
 
 class CmdResponse(CmdResponseBase):
-    """McuBoot response base format class."""
+    """McuBoot command response handler.
+
+    This class represents a response from McuBoot commands, providing parsing and
+    access to response data including status codes, headers, and raw response content.
+    It handles the interpretation of binary response data and provides convenient
+    access to response status and values.
+    """
 
     def __init__(self, header: CmdHeader, raw_data: bytes) -> None:
         """Initialize the Command Response object.
 
+        Creates a command response instance with the provided header and raw data.
+        The status code is automatically extracted from the raw data.
+
         :param header: Header for the response
-        :param raw_data: Response data
+        :param raw_data: Response data containing status and payload
         """
         assert isinstance(header, CmdHeader)
         assert isinstance(raw_data, (bytes, bytearray))
@@ -326,10 +477,22 @@ class CmdResponse(CmdResponseBase):
 
     @property
     def value(self) -> int:
-        """Return a integer representation of the response."""
+        """Get integer representation of the response.
+
+        Unpacks the first 4 bytes of raw_data as a big-endian unsigned integer.
+
+        :return: Integer value extracted from the response data.
+        """
         return unpack_from(">I", self.raw_data)[0]
 
     def _get_status_label(self) -> str:
+        """Get human-readable label for the status code.
+
+        Converts the numeric status code to a descriptive string label if the status
+        is recognized, otherwise returns a formatted unknown status string.
+
+        :return: Status code label or formatted unknown status string.
+        """
         return (
             StatusCode.get_label(self.status)
             if self.status in StatusCode.tags()
@@ -337,13 +500,34 @@ class CmdResponse(CmdResponseBase):
         )
 
     def __eq__(self, obj: object) -> bool:
+        """Check equality of two CmdResponse objects.
+
+        Compares this CmdResponse instance with another object by checking if the other
+        object is also a CmdResponse instance and has identical attributes.
+
+        :param obj: Object to compare with this CmdResponse instance.
+        :return: True if objects are equal CmdResponse instances with same attributes,
+                 False otherwise.
+        """
         return isinstance(obj, CmdResponse) and vars(obj) == vars(self)
 
     def __ne__(self, obj: object) -> bool:
+        """Check if this object is not equal to another object.
+
+        This method implements the inequality comparison by negating the equality comparison.
+
+        :param obj: Object to compare with this instance.
+        :return: True if objects are not equal, False if they are equal.
+        """
         return not self.__eq__(obj)
 
     def __str__(self) -> str:
-        """Get object info."""
+        """Get string representation of the object.
+
+        Returns formatted string containing tag, flags and raw data in hexadecimal format.
+
+        :return: Formatted string with object information including tag, flags and raw data.
+        """
         return (
             f"Tag=0x{self.header.tag:02X}, Flags=0x{self.header.flags:02X}"
             + " ["
@@ -353,20 +537,31 @@ class CmdResponse(CmdResponseBase):
 
 
 class GenericResponse(CmdResponse):
-    """McuBoot generic response format class."""
+    """McuBoot generic response format class.
+
+    This class represents a standard response format for McuBoot commands, providing
+    parsing and display functionality for command responses that include status
+    information and command tags.
+    """
 
     def __init__(self, header: CmdHeader, raw_data: bytes) -> None:
         """Initialize the Generic response object.
 
         :param header: Header for the response
-        :param raw_data: Response data
+        :param raw_data: Response data containing command tag information
         """
         super().__init__(header, raw_data)
         _, tag = unpack_from("<2I", raw_data)
         self.cmd_tag: int = tag
 
     def __str__(self) -> str:
-        """Get object info."""
+        """Get string representation of the response object.
+
+        Returns a formatted string containing the response tag, status, and command information
+        for debugging and logging purposes.
+
+        :return: Formatted string with tag, status, and command details.
+        """
         tag = ResponseTag.get_label(self.header.tag)
         status = self._get_status_label()
         cmd = (
@@ -378,20 +573,33 @@ class GenericResponse(CmdResponse):
 
 
 class GetPropertyResponse(CmdResponse):
-    """McuBoot get property response format class."""
+    """McuBoot get property response format class.
+
+    This class represents a response from McuBoot get-property commands, handling
+    the parsing and formatting of property values returned by the bootloader.
+    """
 
     def __init__(self, header: CmdHeader, raw_data: bytes) -> None:
         """Initialize the Get-Property response object.
 
-        :param header: Header for the response
-        :param raw_data: Response data
+        Parses the raw response data to extract property values from the mboot get-property command
+        response.
+
+        :param header: Header for the response containing command information
+        :param raw_data: Raw response data bytes to be parsed for property values
         """
         super().__init__(header, raw_data)
         _, *values = unpack_from(f"<{self.header.params_count}I", raw_data)
         self.values: list[int] = list(values)
 
     def __str__(self) -> str:
-        """Get object info."""
+        """Get string representation of the response object.
+
+        Returns a formatted string containing the response tag, status, and all parameter values
+        in hexadecimal format.
+
+        :return: Formatted string with tag, status and parameter values.
+        """
         tag = ResponseTag.get_label(self.header.tag)
         status = self._get_status_label()
         return f"Tag={tag}, Status={status}" + "".join(
@@ -400,33 +608,51 @@ class GetPropertyResponse(CmdResponse):
 
 
 class ReadMemoryResponse(CmdResponse):
-    """McuBoot read memory response format class."""
+    """McuBoot read memory response format class.
+
+    This class represents the response format for read memory operations in McuBoot protocol,
+    handling the parsing and representation of memory data returned from the target device.
+    """
 
     def __init__(self, header: CmdHeader, raw_data: bytes) -> None:
         """Initialize the Read-Memory response object.
 
         :param header: Header for the response
-        :param raw_data: Response data
+        :param raw_data: Response data containing length information
         """
         super().__init__(header, raw_data)
         _, length = unpack_from("<2I", raw_data)
         self.length: int = length
 
     def __str__(self) -> str:
-        """Get object info."""
+        """Get string representation of the response object.
+
+        Returns formatted string containing response tag, status, and length information.
+
+        :return: Formatted string with tag, status, and length details.
+        """
         tag = ResponseTag.get_label(self.header.tag)
         status = self._get_status_label()
         return f"Tag={tag}, Status={status}, Length={self.length}"
 
 
 class FlashReadOnceResponse(CmdResponse):
-    """McuBoot flash read once response format class."""
+    """McuBoot Flash Read Once response handler.
+
+    This class processes and manages response data from McuBoot Flash Read Once operations,
+    parsing the response format and extracting length, values, and data fields for further
+    processing.
+    """
 
     def __init__(self, header: CmdHeader, raw_data: bytes) -> None:
         """Initialize the Flash-Read-Once response object.
 
-        :param header: Header for the response
-        :param raw_data: Response data
+        Parses the raw response data to extract length and values from the Flash-Read-Once command.
+        The method unpacks the response data and extracts the actual data bytes based on the length.
+
+        :param header: Header for the response containing command information
+        :param raw_data: Raw response data bytes to be parsed
+        :raises struct.error: If raw_data cannot be unpacked according to expected format
         """
         super().__init__(header, raw_data)
         _, length, *values = unpack_from(f"<{self.header.params_count}I", raw_data)
@@ -435,67 +661,101 @@ class FlashReadOnceResponse(CmdResponse):
         self.data = raw_data[8 : 8 + self.length] if self.length > 0 else b""
 
     def __str__(self) -> str:
-        """Get object info."""
+        """Get string representation of the response object.
+
+        Returns formatted string containing response tag, status, and length information.
+
+        :return: Formatted string with tag, status, and length details.
+        """
         tag = ResponseTag.get_label(self.header.tag)
         status = self._get_status_label()
         return f"Tag={tag}, Status={status}, Length={self.length}"
 
 
 class FlashReadResourceResponse(CmdResponse):
-    """McuBoot flash read resource response format class."""
+    """McuBoot flash read resource response.
+
+    This class represents the response format for flash read resource operations in McuBoot protocol,
+    containing the response header and the length of the resource data that was read.
+    """
 
     def __init__(self, header: CmdHeader, raw_data: bytes) -> None:
         """Initialize the Flash-Read-Resource response object.
 
         :param header: Header for the response
-        :param raw_data: Response data
+        :param raw_data: Response data containing length information
         """
         super().__init__(header, raw_data)
         _, length = unpack_from("<2I", raw_data)
         self.length: int = length
 
     def __str__(self) -> str:
-        """Get object info."""
+        """Get string representation of the response object.
+
+        Returns formatted string containing response tag, status, and length information.
+
+        :return: Formatted string with tag, status, and length details.
+        """
         tag = ResponseTag.get_label(self.header.tag)
         status = self._get_status_label()
         return f"Tag={tag}, Status={status}, Length={self.length}"
 
 
 class KeyProvisioningResponse(CmdResponse):
-    """McuBoot Key Provisioning response format class."""
+    """McuBoot Key Provisioning response format class.
+
+    Represents the response data structure returned from McuBoot key provisioning operations,
+    including response header information and the length of provisioned key data.
+    """
 
     def __init__(self, header: CmdHeader, raw_data: bytes) -> None:
         """Initialize the Key-Provisioning response object.
 
-        :param header: Header for the response
-        :param raw_data: Response data
+        :param header: Header for the response.
+        :param raw_data: Response data containing length information.
         """
         super().__init__(header, raw_data)
         _, length = unpack_from("<2I", raw_data)
         self.length: int = length
 
     def __str__(self) -> str:
-        """Get object info."""
+        """Get string representation of the response object.
+
+        Returns formatted string containing response tag, status, and length information.
+
+        :return: Formatted string with tag, status and length details.
+        """
         tag = ResponseTag.get_label(self.header.tag)
         status = self._get_status_label()
         return f"Tag={tag}, Status={status}, Length={self.length}"
 
 
 class TrustProvisioningResponse(CmdResponse):
-    """McuBoot Trust Provisioning response format class."""
+    """McuBoot Trust Provisioning response format class.
+
+    Handles response data from trust provisioning operations in McuBoot protocol,
+    including parsing of response values and payload data extraction.
+    """
 
     def __init__(self, header: CmdHeader, raw_data: bytes) -> None:
         """Initialize the Trust-Provisioning response object.
 
-        :param header: Header for the response
-        :param raw_data: Response data
+        Parses the raw response data and extracts parameter values from the binary format.
+
+        :param header: Header for the response containing metadata and parameter count.
+        :param raw_data: Response data in binary format to be unpacked.
         """
         super().__init__(header, raw_data)
         _, *values = unpack(f"<{self.header.params_count}I", raw_data)
         self.values: list[int] = list(values)
 
     def __str__(self) -> str:
-        """Get object info."""
+        """Get string representation of the response object.
+
+        Returns formatted string containing response tag and status information.
+
+        :return: Formatted string with tag and status details.
+        """
         tag = ResponseTag.get_label(self.header.tag)
         status = self._get_status_label()
         return f"Tag={tag}, Status={status}"
@@ -503,7 +763,11 @@ class TrustProvisioningResponse(CmdResponse):
     def get_payload_data(self, offset: int = 0) -> Optional[bytes]:
         """Get the payload from the response.
 
-        :param offset: Offset of integer unit in data
+        Converts response values to bytes starting from specified offset. Each value is converted
+        to 4-byte little-endian format and concatenated.
+
+        :param offset: Offset of integer unit in data to start conversion from.
+        :return: Concatenated bytes from response values, or None if insufficient data.
         """
         if len(self.values) < 2:
             return None
@@ -512,12 +776,17 @@ class TrustProvisioningResponse(CmdResponse):
 
 
 class NoResponse(CmdResponse):
-    """Special internal case when no response is provided by the target."""
+    """SPSDK MBoot NoResponse command representation.
+
+    This class represents a special internal case when no response is provided
+    by the target device during MBoot communication. It extends CmdResponse to
+    handle scenarios where the target fails to respond to issued commands.
+    """
 
     def __init__(self, cmd_tag: int) -> None:
-        """Create a NoResponse to an command that was issued, indicated by its tag.
+        """Create a NoResponse to a command that was issued, indicated by its tag.
 
-        :param cmd_tag: Tag of the command that preceded the no-response from target
+        :param cmd_tag: Tag of the command that preceded the no-response from target.
         """
         header = CmdHeader(tag=cmd_tag, flags=0, reserved=0, params_count=0)
         raw_data = pack("<L", StatusCode.NO_RESPONSE.tag)
@@ -525,11 +794,15 @@ class NoResponse(CmdResponse):
 
 
 def parse_cmd_response(data: bytes, offset: int = 0) -> CmdResponse:
-    """Parse command response.
+    """Parse command response from raw data bytes.
 
-    :param data: Input data in bytes
-    :param offset: The offset of input data
-    :return: Parsed command response from data
+    The method parses the command header to identify the response type and creates
+    the appropriate response object based on the tag. If the response type is not
+    recognized, it returns a generic CmdResponse object.
+
+    :param data: Input data in bytes containing the command response
+    :param offset: The offset position in input data to start parsing from
+    :return: Parsed command response object of appropriate type
     """
     known_response: dict[int, Type[CmdResponse]] = {
         ResponseTag.GENERIC.tag: GenericResponse,

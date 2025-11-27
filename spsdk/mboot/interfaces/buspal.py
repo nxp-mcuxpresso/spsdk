@@ -1,10 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Buspal Mboot device implementation."""
+
+"""SPSDK Buspal interface implementation for MBoot protocol communication.
+
+This module provides Buspal-based communication interfaces for MBoot protocol,
+supporting SPI and I2C communication modes. It includes configuration management,
+protocol handling, and device interaction capabilities for NXP MCU provisioning
+through Buspal bridge devices.
+"""
+
 import datetime
 import logging
 import struct
@@ -25,7 +33,12 @@ logger = logging.getLogger(__name__)
 
 
 class SpiModeCommand(Enum):
-    """Spi mode commands."""
+    """SPI mode command enumeration for Bus Pal interface communication.
+
+    This enumeration defines the command codes used to control SPI operations
+    through the Bus Pal interface, including configuration, data transfer,
+    and peripheral control commands.
+    """
 
     exit = 0x00  # 00000000 - Exit to bit bang mode
     version = 0x01  # 00000001 - Enter raw SPI mode, display version string
@@ -40,7 +53,11 @@ class SpiModeCommand(Enum):
 
 # pylint: disable=invalid-name
 class SpiConfigShift(Enum):
-    """Spi configuration shifts for the mask."""
+    """SPI configuration bit shift positions for mask operations.
+
+    This enumeration defines the bit shift positions used when constructing
+    or parsing SPI configuration masks in the buspal interface.
+    """
 
     direction = 0
     phase = 1
@@ -49,7 +66,12 @@ class SpiConfigShift(Enum):
 
 # pylint: disable=invalid-name
 class SpiClockPolarity(Enum):
-    """SPI clock polarity configuration."""
+    """SPI clock polarity configuration for buspal communication.
+
+    This enumeration defines the available clock polarity settings for SPI
+    communication, determining whether the clock signal is active-high or
+    active-low during data transmission.
+    """
 
     active_high = 0  # Active-high SPI clock (idles low).
     active_low = 1  # Active-low SPI clock (idles high).
@@ -57,7 +79,12 @@ class SpiClockPolarity(Enum):
 
 # pylint: disable=invalid-name
 class SpiClockPhase(Enum):
-    """SPI clock phase configuration."""
+    """SPI clock phase configuration for buspal communication.
+
+    This enumeration defines the timing relationship between the SPI clock signal
+    and data sampling, controlling when the first clock edge occurs relative to
+    the data transfer cycle.
+    """
 
     # First edge on SPSCK occurs at the middle of the first cycle of a data transfer.
     first_edge = 0
@@ -67,14 +94,24 @@ class SpiClockPhase(Enum):
 
 # pylint: disable=invalid-name
 class SpiShiftDirection(Enum):
-    """SPI clock phase configuration."""
+    """SPI shift direction configuration for data transfer bit ordering.
+
+    This enumeration defines the bit order for SPI data transfers, specifying
+    whether data transmission begins with the most significant bit or least
+    significant bit.
+    """
 
     msb_first = 0  # Data transfers start with most significant bit.
     lsb_first = 1  # Data transfers start with least significant bit.
 
 
 class SpiConfiguration:
-    """Dataclass to store SPI configuration."""
+    """SPI Configuration container for BusPal interface.
+
+    This class holds the complete SPI communication parameters including
+    clock speed, polarity, phase, and data shift direction for configuring
+    SPI operations in BusPal interface.
+    """
 
     speed: int
     polarity: SpiClockPolarity
@@ -84,7 +121,11 @@ class SpiConfiguration:
 
 # pylint: disable=invalid-name
 class BBConstants(Enum):
-    """Constants."""
+    """BusPal Binary Mode constants and configuration values.
+
+    This enumeration defines essential constants used for BusPal binary mode communication
+    including reset parameters, response codes, transfer limits, and timing configurations.
+    """
 
     reset_count = 20  # Max number of nulls to send to enter BBIO mode
     response_ok = 0x01  # Successful command response
@@ -93,7 +134,11 @@ class BBConstants(Enum):
 
 
 class Response(str, Enum):
-    """Response to enter bit bang mode."""
+    """BusPal communication response codes.
+
+    Enumeration of standard response strings returned by BusPal devices
+    when entering different communication modes including bit bang, SPI, and I2C.
+    """
 
     BITBANG = "BBIO1"
     SPI = "SPI1"
@@ -101,7 +146,11 @@ class Response(str, Enum):
 
 
 class BuspalMode(Enum):
-    """Bit Bang mode command."""
+    """Buspal communication mode enumeration.
+
+    This enumeration defines the available communication modes for Buspal interface,
+    including reset mode and binary communication protocols for SPI and I2C.
+    """
 
     RESET = 0x00  # Reset, responds "BBIO1"
     SPI = 0x01  # Enter binary SPI mode, responds "SPI1"
@@ -116,7 +165,15 @@ MODE_COMMANDS_RESPONSES = {
 
 
 class MbootBuspalProtocol(MbootSerialProtocol):
-    """Mboot Serial protocol."""
+    """Mboot BUSPAL communication protocol handler.
+
+    This class implements the BUSPAL (Bus Protocol Abstraction Layer) interface for Mboot
+    communication, extending the serial protocol with BUSPAL-specific functionality including
+    mode switching, device scanning, and protocol initialization.
+
+    :cvar default_baudrate: Default communication baudrate (57600).
+    :cvar default_timeout: Default timeout in milliseconds (5000).
+    """
 
     default_baudrate = 57600
     default_timeout = 5000
@@ -126,12 +183,21 @@ class MbootBuspalProtocol(MbootSerialProtocol):
     def __init__(self, device: SerialDevice) -> None:
         """Initialize the MbootBuspalProtocol object.
 
-        :param device: The device instance
+        :param device: The serial device instance to communicate through.
+        :raises SPSDKError: If device initialization fails.
         """
         super().__init__(device)
 
     def open(self) -> None:
-        """Open the interface."""
+        """Open the interface.
+
+        Initialize the buspal interface by opening the underlying device and configuring
+        it for communication. The method first resets the device by entering reset mode,
+        then switches to bit-bang mode for debugging, and finally enters the target
+        communication mode.
+
+        :raises SPSDKError: If device opening or mode switching fails.
+        """
         self.device.open()
         # reset first, send bit-bang command
         self._enter_mode(BuspalMode.RESET)
@@ -148,13 +214,13 @@ class MbootBuspalProtocol(MbootSerialProtocol):
         """Scan connected serial ports and set BUSPAL properties.
 
         Returns list of serial ports with devices that respond to BUSPAL communication protocol.
-        If 'port' is specified, only that serial port is checked
+        If 'port' is specified, only that serial port is checked.
         If no devices are found, return an empty list.
 
-        :param port: name of preferred serial port, defaults to None
-        :param timeout: timeout in milliseconds
-        :param props: buspal target properties
-        :return: list of available interfaces
+        :param port: Name of preferred serial port, defaults to None.
+        :param props: BUSPAL target properties, defaults to None.
+        :param timeout: Timeout in milliseconds, defaults to None.
+        :return: List of available BUSPAL interfaces.
         """
         timeout = timeout or cls.default_timeout
         if port:
@@ -172,12 +238,15 @@ class MbootBuspalProtocol(MbootSerialProtocol):
     def _check_port_buspal(
         cls, port: str, timeout: int, props: Optional[list[str]] = None
     ) -> Optional[SerialDevice]:
-        """Check if device on comport 'port' can connect using BUSPAL communication protocol.
+        """Check if device on COM port can connect using BUSPAL communication protocol.
 
-        :param port: name of port to check
-        :param timeout: timeout in milliseconds
-        :param props: buspal settings
-        :return: None if device doesn't respond to PING, instance of Interface if it does
+        The method attempts to establish a connection with the device, configure it with provided
+        properties, and verify connectivity using a ping operation.
+
+        :param port: Name of the COM port to check.
+        :param timeout: Connection timeout in milliseconds.
+        :param props: Optional list of BUSPAL configuration settings.
+        :return: SerialDevice instance if connection successful, None if device doesn't respond.
         """
         props = props if props is not None else []
         try:
@@ -192,24 +261,43 @@ class MbootBuspalProtocol(MbootSerialProtocol):
             return None
 
     def _send_frame(self, frame: bytes, wait_for_ack: bool = True) -> None:
-        """Send frame method to be implemented by child class."""
+        """Send frame method to be implemented by child class.
+
+        This is an abstract method that must be overridden by concrete implementations
+        to handle the actual frame transmission logic.
+
+        :param frame: The frame data to be sent as bytes.
+        :param wait_for_ack: Whether to wait for acknowledgment after sending the frame.
+        :raises NotImplementedError: This method must be implemented by subclasses.
+        """
         raise NotImplementedError()
 
     def _read(self, size: int, timeout: Optional[int] = None) -> bytes:
-        """Implementation done by child class."""
+        """Read data from the interface.
+
+        This is an abstract method that must be implemented by child classes
+        to provide the actual reading functionality for the specific interface type.
+
+        :param size: Number of bytes to read from the interface.
+        :param timeout: Optional timeout in milliseconds for the read operation.
+        :raises NotImplementedError: This method must be implemented by subclasses.
+        :return: Bytes read from the interface.
+        """
         raise NotImplementedError()
 
     def _configure(self, props: list[str]) -> None:
         """Configure the BUSPAL interface.
 
-        :param props: buspal settings
+        :param props: BUSPAL configuration settings as list of strings.
+        :raises NotImplementedError: Method must be implemented by subclass.
         """
         raise NotImplementedError()
 
     def _enter_mode(self, mode: BuspalMode) -> None:
         """Enter BUSPAL mode.
 
-        :param mode: buspal mode
+        :param mode: BUSPAL mode to enter.
+        :raises SPSDKError: If mode command fails or receives unexpected response.
         """
         response = MODE_COMMANDS_RESPONSES[mode]
         self._send_command_check_response(
@@ -219,8 +307,12 @@ class MbootBuspalProtocol(MbootSerialProtocol):
     def _send_command_check_response(self, command: bytes, response: bytes) -> None:
         """Send a command and check if expected response is received.
 
-        :param command: command to send
-        :param response: expected response
+        The method writes command to the device and validates that the received response
+        matches the expected response exactly.
+
+        :param command: Command bytes to send to the device.
+        :param response: Expected response bytes from the device.
+        :raises McuBootConnectionError: When received response doesn't match expected response.
         """
         self.device.write(command)
         data_recvd = self.device.read(len(response))
@@ -232,12 +324,15 @@ class MbootBuspalProtocol(MbootSerialProtocol):
             )
 
     def _read_frame_header(self, expected_frame_type: Optional[FPType] = None) -> tuple[int, int]:
-        """Read frame header and frame type. Return them as tuple of integers.
+        """Read frame header and frame type from the communication interface.
 
-        :param expected_frame_type: Check if the frame_type is exactly as expected
-        :return: Tuple of integers representing frame header and frame type
-        :raises AssertionError: Unexpected frame header or frame type (if specified)
-        :raises McuBootDataAbortError: Abort frame received
+        The method continuously reads from the device until a valid frame start byte is received
+        or timeout occurs. It validates the frame header and type, handling abort frames appropriately.
+
+        :param expected_frame_type: Expected frame type to validate against (optional).
+        :return: Tuple containing frame header and frame type as integers.
+        :raises McuBootConnectionError: Invalid frame header received or timeout occurred.
+        :raises McuBootDataAbortError: Abort frame received from the device.
         """
         header = None
         time_start = datetime.datetime.now()
@@ -263,7 +358,16 @@ class MbootBuspalProtocol(MbootSerialProtocol):
 
 
 class MbootBuspalSPIInterface(MbootBuspalProtocol):
-    """BUSPAL SPI interface."""
+    """BUSPAL SPI interface for MBoot communication.
+
+    This class implements SPI communication protocol through BUSPAL interface for MBoot operations.
+    It handles SPI-specific configuration including clock polarity, phase, direction, and speed
+    settings, and manages frame transmission with retry mechanisms.
+
+    :cvar TARGET_SETTINGS: List of configurable SPI parameters.
+    :cvar HDR_FRAME_RETRY_CNT: Number of retry attempts for frame transmission.
+    :cvar ACK_WAIT_DELAY: Delay in seconds between acknowledgment attempts.
+    """
 
     TARGET_SETTINGS = ["speed", "polarity", "phase", "direction"]
 
@@ -275,7 +379,7 @@ class MbootBuspalSPIInterface(MbootBuspalProtocol):
     def __init__(self, device: SerialDevice):
         """Initialize the BUSPAL SPI interface.
 
-        :param device: The device instance
+        :param device: The serial device instance to use for communication.
         """
         self.mode = BuspalMode.SPI
         super().__init__(device)
@@ -283,7 +387,14 @@ class MbootBuspalSPIInterface(MbootBuspalProtocol):
     def _configure(self, props: list[str]) -> None:
         """Configure the BUSPAL SPI interface.
 
-        :param props: buspal settings
+        This method sets up the SPI communication parameters including clock speed,
+        polarity, phase, and data direction by sending configuration commands to
+        the BUSPAL device.
+
+        :param props: List of buspal settings containing speed, polarity, phase,
+                      and direction parameters in order defined by TARGET_SETTINGS
+        :raises SPSDKError: When configuration command fails or device responds
+                            with error
         """
         spi_props: dict[str, Any] = dict(zip(self.TARGET_SETTINGS, props))
 
@@ -308,19 +419,23 @@ class MbootBuspalSPIInterface(MbootBuspalProtocol):
     def _send_frame(self, data: bytes, wait_for_ack: bool = True) -> None:
         """Send data to BUSPAL SPI device.
 
-        :param data: Data to send
+        :param data: Data to send to the device.
+        :param wait_for_ack: Whether to wait for acknowledgment from device.
         """
         self._send_frame_retry(data, wait_for_ack, self.HDR_FRAME_RETRY_CNT)
 
     def _send_frame_retry(
         self, data: bytes, wait_for_ack: bool = True, retry_cnt: int = HDR_FRAME_RETRY_CNT
     ) -> None:
-        """Send a frame to BUSPAL SPI device.
+        """Send a frame to BUSPAL SPI device with retry mechanism.
 
-        :param data: Data to send
-        :param wait_for_ack: Wait for ACK frame from device, defaults to True
-        :param retry_cnt: Number of retry in case the header frame is incorrect
-        :raises AssertionError: Unexpected frame header or frame type (if specified)
+        The method sends data to the SPI device and optionally waits for acknowledgment.
+        If the header frame check fails, it will retry up to the specified retry count.
+
+        :param data: Data bytes to send to the device.
+        :param wait_for_ack: Wait for ACK frame from device, defaults to True.
+        :param retry_cnt: Number of retries in case the header frame is incorrect.
+        :raises SPSDKError: Failed retrying reading the SPI header frame after all attempts.
         """
         size = min(len(data), BBConstants.bulk_transfer_max.value)
         command = struct.pack("<BHH", SpiModeCommand.write_then_read.value, size, 0)
@@ -343,9 +458,14 @@ class MbootBuspalSPIInterface(MbootBuspalProtocol):
                     raise SPSDKError("Failed retrying reading the SPI header frame") from error
 
     def _read(self, size: int, timeout: Optional[int] = None) -> bytes:
-        """Read 'length' amount of bytes from BUSPAL SPI device.
+        """Read data from BUSPAL SPI device.
 
-        :return: Data read from the device
+        The method reads a specified amount of bytes from the device, with the size
+        limited by the maximum bulk transfer size.
+
+        :param size: Number of bytes to read from the device.
+        :param timeout: Optional timeout for the read operation in milliseconds.
+        :return: Data read from the device.
         """
         size = min(size, BBConstants.bulk_transfer_max.value)
         command = struct.pack("<BHH", SpiModeCommand.write_then_read.value, 0, size)
@@ -354,7 +474,13 @@ class MbootBuspalSPIInterface(MbootBuspalProtocol):
 
 
 class I2cModeCommand(Enum):
-    """I2c mode commands."""
+    """I2C mode command enumeration for Bus Pirate communication protocol.
+
+    This enumeration defines the command codes used to control I2C operations
+    through the Bus Pirate interface, including basic I2C operations like start/stop
+    bits, read/write operations, bus configuration, and advanced features like
+    bulk transfers and bus sniffing.
+    """
 
     exit = 0x00  # 00000000 - Exit to bit bang mode
     version = 0x01  # 00000001 - Display mode version string, responds "I2Cx"
@@ -373,7 +499,15 @@ class I2cModeCommand(Enum):
 
 
 class MbootBuspalI2CInterface(MbootBuspalProtocol):
-    """BUSPAL I2C interface."""
+    """BUSPAL I2C interface for MBoot communication.
+
+    This class provides I2C communication capabilities through BUSPAL protocol
+    for MBoot operations. It handles I2C-specific configuration including speed
+    and address settings, and manages frame transmission with retry logic.
+
+    :cvar TARGET_SETTINGS: List of configurable I2C parameters (speed, address).
+    :cvar HDR_FRAME_RETRY_CNT: Number of retry attempts for frame transmission.
+    """
 
     TARGET_SETTINGS = ["speed", "address"]
 
@@ -384,16 +518,20 @@ class MbootBuspalI2CInterface(MbootBuspalProtocol):
     def __init__(self, device: SerialDevice):
         """Initialize the BUSPAL I2C interface.
 
-        :param port: name of the serial port, defaults to None
-        :param timeout: read/write timeout in milliseconds
+        :param device: Serial device instance for communication.
+        :raises SPSDKError: If device initialization fails.
         """
         self.mode = BuspalMode.I2C
         super().__init__(device)
 
     def _configure(self, props: list[str]) -> None:
-        """Initialize the BUSPAL I2C interface.
+        """Configure the BUSPAL I2C interface with specified settings.
 
-        :param props: buspal settings
+        Sets up I2C communication parameters including device address and communication speed.
+        Default values are used when settings are not provided in the input parameters.
+
+        :param props: List of buspal configuration settings in format [speed, address].
+        :raises SPSDKError: When command execution fails or invalid response received.
         """
         i2c_props: dict[str, Any] = dict(zip(self.TARGET_SETTINGS, props))
 
@@ -418,19 +556,24 @@ class MbootBuspalI2CInterface(MbootBuspalProtocol):
     ) -> None:
         """Send data to BUSPAL I2C device.
 
-        :param data: Data to send
+        :param data: Data to send to the device.
+        :param wait_for_ack: Whether to wait for acknowledgment from device, defaults to True.
         """
         self._send_frame_retry(data, wait_for_ack, self.HDR_FRAME_RETRY_CNT)
 
     def _send_frame_retry(
         self, data: bytes, wait_for_ack: bool = True, retry_cnt: int = HDR_FRAME_RETRY_CNT
     ) -> None:
-        """Send data to BUSPAL I2C device.
+        """Send data to BUSPAL I2C device with retry mechanism.
 
-        :param data: Data to send
-        :param wait_for_ack: Wait for ACK frame from device, defaults to True
-        :param retry_cnt: Number of retry in case the header frame is incorrect
-        :raises AssertionError: Unexpected frame header or frame type (if specified)
+        The method sends data frames to the I2C device through BUSPAL interface and optionally
+        waits for acknowledgment. If header frame reading fails, it automatically retries
+        up to the specified retry count.
+
+        :param data: Data bytes to send to the device.
+        :param wait_for_ack: Wait for ACK frame from device, defaults to True.
+        :param retry_cnt: Number of retries in case the header frame is incorrect.
+        :raises SPSDKError: Failed retrying reading the I2C header frame after all attempts.
         """
         retry_cnt = self.HDR_FRAME_RETRY_CNT
         size = min(len(data), BBConstants.bulk_transfer_max.value)
@@ -452,9 +595,14 @@ class MbootBuspalI2CInterface(MbootBuspalProtocol):
                     raise SPSDKError("Failed retrying reading the I2C header frame") from error
 
     def _read(self, size: int, timeout: Optional[int] = None) -> bytes:
-        """Read 'length' amount of bytes from BUSPAL I2C device.
+        """Read data from BUSPAL I2C device.
 
-        :return: Data read from the device
+        The method limits the read size to the maximum bulk transfer size and sends
+        a write-then-read command to the device before reading the requested data.
+
+        :param size: Number of bytes to read from the device.
+        :param timeout: Optional timeout for the read operation in milliseconds.
+        :return: Data read from the device.
         """
         size = min(size, BBConstants.bulk_transfer_max.value)
         command = struct.pack("<BHH", I2cModeCommand.write_then_read.value, 0, size)

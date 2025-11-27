@@ -14,7 +14,6 @@ comments:
   load: "Load the binary file to the flash"
   execute: "We do not use this command"
   programFuses: "We do not use this command"
-  prograprogramIFRmFuses: "We do not use this command"
   loadCMAC: "We do not use this command"
   loadHashLocking: "We do not use this command"
   fillMemory: "We do not use this command"

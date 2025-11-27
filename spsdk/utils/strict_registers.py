@@ -4,7 +4,12 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Module to handle strict registers."""
+"""SPSDK strict register management utilities.
+
+This module provides enhanced register handling with strict validation and
+type checking. It extends the base register functionality with additional
+safety measures and validation rules for secure provisioning operations.
+"""
 
 from typing import Any, Union
 
@@ -19,14 +24,28 @@ from spsdk.utils.registers import (
 
 
 class StrictRegister(Register):
-    """Register class that strictly validates bitfield values against allowed values."""
+    """Register class with strict validation of bitfield values against allowed enumerations.
+
+    This class extends the base Register functionality by adding strict validation
+    to ensure that all bitfield values are set only to their predefined allowed
+    values. When setting register values, it validates that each bitfield with
+    defined enumerations contains only values that match the allowed enumeration
+    values, providing enhanced data integrity and error detection.
+    """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize the StrictRegister class."""
+        """Initialize the StrictRegister class.
+
+        :param args: Variable length argument list passed to parent class.
+        :param kwargs: Arbitrary keyword arguments passed to parent class.
+        """
         super().__init__(*args, **kwargs)
 
     def set_value(self, val: Any, raw: bool = False) -> None:
         """Set the new value of register with strict validation of bitfields.
+
+        This method sets a new value to the register and validates that all bitfields
+        contain values that are within their allowed ranges when not in raw mode.
 
         :param val: The new value to set.
         :param raw: Do not use any modification hooks.
@@ -42,6 +61,10 @@ class StrictRegister(Register):
 
     def _validate_bitfield_value(self, bitfield: RegsBitField) -> None:
         """Validate that the bitfield value is in the allowed values.
+
+        This method checks if the current value of a bitfield matches one of the
+        enumerated allowed values. If no enums are defined for the bitfield,
+        validation is skipped.
 
         :param bitfield: The bitfield to validate.
         :raises SPSDKValueError: When bitfield value is not in allowed values.
@@ -64,10 +87,19 @@ class StrictRegister(Register):
 
 
 class StrictRegsBitField(RegsBitField):
-    """Bitfield class that strictly validates values against allowed values."""
+    """Strict register bitfield with enhanced value validation.
+
+    This class extends RegsBitField to provide strict validation of values against
+    predefined allowed values. It ensures that only valid enum values can be set,
+    preventing invalid configurations in register operations.
+    """
 
     def set_value(self, new_val: Any, raw: bool = False, no_preprocess: bool = False) -> None:
         """Updates the value of the bitfield with strict validation.
+
+        This method extends the parent set_value functionality by adding validation
+        against enumerated values when available. In non-raw mode, it ensures the
+        final value matches one of the defined enum values.
 
         :param new_val: New value of bitfield.
         :param raw: If set, no automatic modification of value is applied.
@@ -91,9 +123,13 @@ class StrictRegsBitField(RegsBitField):
                 )
 
     def set_enum_value(self, new_val: Union[str, int], raw: bool = False) -> None:
-        """Updates the value of the bitfield by its enum value with strict validation.
+        """Set enum value for bitfield with strict validation.
 
-        :param new_val: New enum value of bitfield.
+        Updates the value of the bitfield by its enum value. In strict mode, validates that
+        the value is in the list of allowed enum values. Supports RAW: prefix for bypassing
+        validation.
+
+        :param new_val: New enum value of bitfield (string name or integer value).
         :param raw: If set, no automatic modification of value is applied.
         :raises SPSDKRegsErrorEnumNotFound: Input value cannot be decoded.
         :raises SPSDKValueError: The input value is not in allowed values.
@@ -134,12 +170,29 @@ class StrictRegsBitField(RegsBitField):
 
 
 class StrictRegisters(Registers):
-    """SPSDK class for registers handling with strict validation."""
+    """SPSDK Registers container with strict validation enforcement.
+
+    This class extends the standard Registers functionality by enforcing strict
+    validation of bitfield values against their defined enumeration values during
+    parsing operations. It automatically converts all bitfields to strict variants
+    that validate values against allowed enumerations.
+
+    :cvar register_class: Class used for creating register instances.
+    """
 
     register_class = StrictRegister
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize the StrictRegisters class."""
+        """Initialize the StrictRegisters class.
+
+        This constructor creates a StrictRegisters instance by calling the parent constructor
+        and then replacing all RegsBitField instances with StrictRegsBitField instances to
+        enforce strict validation. All properties and enums from original bitfields are
+        preserved during the conversion.
+
+        :param args: Variable length argument list passed to parent constructor.
+        :param kwargs: Arbitrary keyword arguments passed to parent constructor.
+        """
         super().__init__(*args, **kwargs)
 
         # Replace all RegsBitField instances with StrictRegsBitField
@@ -167,9 +220,12 @@ class StrictRegisters(Registers):
                 register._bitfields[i] = strict_bitfield
 
     def parse(self, binary: bytes) -> None:
-        """Parse the binary data values into loaded registers with validation.
+        """Parse binary data into registers with strict validation.
 
-        :param binary: Binary data to parse.
+        This method first parses the binary data using the parent class method,
+        then validates all bitfield values against their allowed enumeration values.
+
+        :param binary: Binary data to parse into registers.
         :raises SPSDKValueError: When a bitfield value is not in allowed values.
         """
         # First parse using the parent method

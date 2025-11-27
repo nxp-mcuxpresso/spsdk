@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module provides support for checking the brick-conditions in PFR settings."""
+"""SPSDK PFR brick-condition validation utilities.
+
+This module provides functionality for checking and validating brick-conditions
+in Protected Flash Region (PFR) settings, including rule definitions and
+configuration validation for CFPA and CMPA regions.
+"""
 
 import logging
 from dataclasses import dataclass
@@ -24,7 +29,12 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Rule:
-    """Dataclass holding information about individual rule."""
+    """PFR rule definition container.
+
+    This class represents a single rule used in Protected Flash Region (PFR)
+    configuration, containing the rule identifier, description, message, and
+    condition for validation purposes.
+    """
 
     req_id: str
     desc: str
@@ -33,14 +43,22 @@ class Rule:
 
 
 class RulesList(list[Rule]):
-    """List of rules."""
+    """SPSDK PFR Rules List container.
+
+    This class extends the built-in list to provide specialized functionality for managing
+    PFR (Protected Flash Region) rules. It offers convenient methods for loading rules
+    from configuration files and supports both single file and multiple file operations.
+    """
 
     @staticmethod
     def load_from_files_list(rules_file_list: list) -> "RulesList":
         """Load the rules from list of files.
 
-        :param rules_file_list: A list of paths to configuration files containing rules to be loaded
-        :returns RulesList object with loaded rules
+        The method loads rules from multiple configuration files and combines them into a single
+        RulesList object.
+
+        :param rules_file_list: A list of paths to configuration files containing rules to be loaded.
+        :return: RulesList object with loaded rules.
         """
         rules_list = RulesList()
         for rules_file in rules_file_list:
@@ -52,8 +70,12 @@ class RulesList(list[Rule]):
     def load_from_file(rules_file: str) -> "RulesList":
         """Load the rules from a single file.
 
-        :param rules_file: A path to a configuration file containing rules to be loaded
-        :returns RulesList object with loaded rules
+        The method loads rules from a configuration file and creates a RulesList object
+        containing all the parsed rules.
+
+        :param rules_file: Path to a configuration file containing rules to be loaded.
+        :raises SPSDKPfrConfigError: No rules found in the configuration file.
+        :return: RulesList object with loaded rules.
         """
         rules_dict: dict[str, list[dict]] = load_configuration(rules_file)
         if "rules" not in rules_dict:
@@ -62,17 +84,26 @@ class RulesList(list[Rule]):
 
 
 class Pfrc:
-    """Class responsible for checking of the conditions."""
+    """SPSDK PFR Conditions Checker.
+
+    This class validates Protected Flash Region (PFR) configurations by checking brick conditions
+    and rules against CMPA and CFPA configuration data to ensure secure provisioning compliance.
+    """
 
     def __init__(
         self,
         cmpa: Optional[CMPA] = None,
         cfpa: Optional[CFPA] = None,
     ) -> None:
-        """Initialize an instance.
+        """Initialize PFRC instance with CMPA and/or CFPA configurations.
 
-        :param cmpa: configuration data loaded from CMPA config file, defaults to None
-        :param cfpa: configuration data loaded from CFPA config file, defaults to None
+        Creates a new PFRC (Protected Flash Region Checker) instance that can handle
+        either CMPA (Customer Manufacturing Programming Area) or CFPA (Customer Field
+        Programming Area) configurations, or both. The instance validates the chip family
+        compatibility and initializes the database connection.
+
+        :param cmpa: CMPA configuration data loaded from config file, defaults to None
+        :param cfpa: CFPA configuration data loaded from config file, defaults to None
         :raises SPSDKPfrError: No configuration is provided
         :raises SPSDKPfrConfigError: Problem with PFR configuration(s) occurred
         """
@@ -93,10 +124,13 @@ class Pfrc:
 
     @staticmethod
     def get_supported_families(include_predecessors: bool = False) -> list[FamilyRevision]:
-        """Return list of supported families.
+        """Get supported families for PFR operations.
 
-        :param include_predecessors: The list will contains also predecessors names
-        :return: List of supported families.
+        Returns a list of device families that have PFR (Protected Flash Region) support
+        by checking for available PFRC rules in the database.
+
+        :param include_predecessors: Include predecessor family names in the result list.
+        :return: List of supported families with PFR capabilities.
         """
         pfr_devices = get_families(DatabaseManager.PFR, include_predecessors=include_predecessors)
         ret = []
@@ -109,11 +143,17 @@ class Pfrc:
     def validate_brick_conditions(
         self, additional_rules_file: Optional[str] = None
     ) -> tuple[RulesList, RulesList, RulesList]:
-        """The method validates the brick conditions for specified configuration.
+        """Validate brick conditions for the specified configuration.
 
-        :param additional_rules_file: Additional rules file, defaults to None
-        :returns Tuple with passed, failed and skipped rules as a RulesList
-        :raises SPSDKPfrError: Brick condition validation failed
+        This method processes brick condition rules against the current CMPA and CFPA
+        configuration to determine which conditions would cause device bricking.
+
+        :param additional_rules_file: Path to additional rules file to supplement
+            default rules, defaults to None
+        :return: Tuple containing (passed_rules, failed_rules, skipped_rules) where
+            each element is a RulesList containing the respective rule results
+        :raises SPSDKPfrError: When brick condition validation fails due to parsing
+            errors, identifier lookup failures, or evaluation errors
         """
         rules = self.load_rules(additional_rules_file)
         translator = Translator(cmpa=self.cmpa, cfpa=self.cfpa)
@@ -144,10 +184,13 @@ class Pfrc:
         return passed_rules, failed_rules, skipped_rules
 
     def load_rules(self, additional_rules_file: Optional[str] = None) -> RulesList:
-        """The function loads the rules for family and optionally add additional rules from user.
+        """Load rules for device family with optional additional user rules.
 
-        :param additional_rules_file: Additional rules file, defaults to None
-        :return: Loaded rules in list of dictionaries.
+        The method retrieves default rules from the database for the current device family
+        and optionally appends additional rules from a user-specified file.
+
+        :param additional_rules_file: Path to additional rules file to append to default rules.
+        :return: Loaded rules as RulesList object containing all applicable rules.
         """
         rules_files = self.db.get_list(DatabaseManager.PFR, "rules")
         rules_files = [self.db.device.create_file_path(rules_file) for rules_file in rules_files]

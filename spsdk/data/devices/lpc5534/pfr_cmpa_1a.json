@@ -1,2181 +1,2181 @@
 {
-    "cpu": "LPC5534",
-    "groups": [
+  "cpu": "lpc5534",
+  "groups": [
+    {
+      "group": {
+        "name": "Configuration",
+        "description": "Configuration"
+      },
+      "registers": [
         {
-            "group": {
-                "name": "Configuration",
-                "description": "Configuration"
-            },
-            "registers": [
+          "id": "field000",
+          "name": "BOOT_CFG",
+          "description": "Boot Configuration",
+          "offset_int": "0",
+          "default_value_int": "0",
+          "bitfields": [
+            {
+              "width": 3,
+              "id": "field000-bits0-2",
+              "name": "Default_Boot_Source",
+              "description": "Default Boot Source",
+              "values": [
                 {
-                    "id": "field000",
-                    "name": "BOOT_CFG",
-                    "description": "Boot Configuration",
-                    "offset_int": "0",
-                    "default_value_int": "0",
-                    "bitfields": [
-                        {
-                            "width": 3,
-                            "id": "field000-bits0-2",
-                            "name": "DEFAULT_BOOT_SOURCE",
-                            "description": "Default Boot Source",
-                            "values": [
-                                {
-                                    "name": "ISP_PIN",
-                                    "value": 0,
-                                    "description": "ISP pin source"
-                                },
-                                {
-                                    "name": "FLEXSPI_FLASH",
-                                    "value": 1,
-                                    "description": "FlexSPI flash"
-                                },
-                                {
-                                    "name": "SERIAL_ISP_BOOT",
-                                    "value": 2,
-                                    "description": "Serial ISP boot"
-                                },
-                                {
-                                    "name": "INTERNAL_FLASH",
-                                    "value": 3,
-                                    "description": "Internal flash"
-                                },
-                                {
-                                    "name": "AUTO_BOOT",
-                                    "value": 4,
-                                    "description": "Auto boot similar to ISP auto boot option"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 3,
-                            "id": "field000-bits4-6",
-                            "name": "DEFAULT_ISP_MODE",
-                            "description": "Default ISP mode",
-                            "values": [
-                                {
-                                    "name": "AUTO_ISP",
-                                    "value": 0,
-                                    "description": "Auto ISP"
-                                },
-                                {
-                                    "name": "USB_HID_MSC",
-                                    "value": 1,
-                                    "description": "USB HID MSC"
-                                },
-                                {
-                                    "name": "UART_ISP",
-                                    "value": 2,
-                                    "description": "UART ISP"
-                                },
-                                {
-                                    "name": "SPI_ISP",
-                                    "value": 3,
-                                    "description": "SPI Slave ISP"
-                                },
-                                {
-                                    "name": "I2C_ISP",
-                                    "value": 4,
-                                    "description": "I2C slave ISP"
-                                },
-                                {
-                                    "name": "CAN_ISP",
-                                    "value": 5,
-                                    "description": "CAN ISP"
-                                },
-                                {
-                                    "name": "DISBL_ISP_FALLTHRU",
-                                    "value": 7,
-                                    "description": "Disable ISP fall through"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 2,
-                            "id": "field000-bits7-8",
-                            "name": "BOOT_SPEED",
-                            "description": "Boot Speed Core Clock",
-                            "values": [
-                                {
-                                    "name": "SYS_SPD_CODE",
-                                    "value": 0,
-                                    "description": "Defined by NMPA.SYSTEM_SPEED_CODE"
-                                },
-                                {
-                                    "name": "MHZ48_FRO",
-                                    "value": 1,
-                                    "description": "48MHz FRO"
-                                },
-                                {
-                                    "name": "MHZ96_FRO",
-                                    "value": 2,
-                                    "description": "96MHz FRO"
-                                },
-                                {
-                                    "name": "MHZ150_FRO",
-                                    "value": 3,
-                                    "description": "150MHz PLL"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1,
-                            "id": "field000-bit21",
-                            "name": "ASRT_FATAL",
-                            "description": "Assert on fatal errors. When set ROM drives BOOT_FAIL_PIN high when fatal error condition occurs on three attempts to boot image before locking the part"
-                        },
-                        {
-                            "width": 1,
-                            "id": "field000-bit22",
-                            "name": "ASRT_RBF",
-                            "description": "Assert on recovery boot. When this bit is set ROM drives the BOOT_FAIL_PIN high whenever no valid image is found in primary boot media and execution enters recovery boot mode from secondary boot media"
-                        },
-                        {
-                            "width": 1,
-                            "id": "field000-bit23",
-                            "name": "ASRT_ISPF",
-                            "description": "Assert on ISP fall through. When this bit is set ROM drives BOOT_FAIL_PIN high whenever there is no valid image in boot media and execution falls through to ISP mode"
-                        },
-                        {
-                            "width": 8,
-                            "id": "field000-bits24-31",
-                            "name": "BOOT_FAILURE_PIN",
-                            "description": "GPIO port and pin number to use for indicating failure reason. The toggle rate of the pin is used to decode the error type. [2:0] - Defines GPIO port [7:3] - Defines GPIO pin"
-                        }
-                    ]
+                  "name": "ISP_PIN",
+                  "value": 0,
+                  "description": "ISP pin source"
                 },
                 {
-                    "id": "field004",
-                    "name": "SPI_CAN_CFG",
-                    "description": "SPI CAN Configuration",
-                    "offset_int": "0x0004",
-                    "default_value_int": "0",
-                    "bitfields": [
-                        {
-                            "width": 2,
-                            "id": "field004-bits0-1",
-                            "name": "SPI_RECOVERY_BOOT_EN",
-                            "description": "REC_BOOT_EN SPI flash recovery boot is enabled, if non-zero value is written to this field"
-                        },
-                        {
-                            "width": 3,
-                            "id": "field004-bits2-4",
-                            "name": "SPI_REC_IF",
-                            "description": "Recovery SPI interface",
-                            "values": [
-                                {
-                                    "name": "HSPI",
-                                    "value": 0,
-                                    "description": "HSPI P1_3-MISO, P0_26-MOSI, P1_1-SSEL1, P1_2-SCK"
-                                },
-                                {
-                                    "name": "FC0",
-                                    "value": 1,
-                                    "description": "FC0 P0_30-MISO, P0_24-MOSI, P0_31-SSEL0, P0_28-SCK"
-                                },
-                                {
-                                    "name": "FC3",
-                                    "value": 2,
-                                    "description": "FC3 P0_2-MISO, P0_3-MOSI, P0_4-SSEL0, P0_6-SCK"
-                                },
-                                {
-                                    "name": "FC1",
-                                    "value": 3,
-                                    "description": "FC1 P2_4-MISO, P2_3-MOSI, P2_5-SSEL0, P1_9-SCK"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 4,
-                            "id": "field004-bits16-19",
-                            "name": "CAN_BAUD_RATE",
-                            "description": "CAN baud rate. Baud rate configured during CAN ISP mode",
-                            "values": [
-                                {
-                                    "name": "AUTO_BAUD_DETECT",
-                                    "value": 0,
-                                    "description": "Auto baud detection (125K, 250K, 500K, 1M)"
-                                },
-                                {
-                                    "name": "KBPS_10",
-                                    "value": 1,
-                                    "description": "10 kbps"
-                                },
-                                {
-                                    "name": "KBPS_20",
-                                    "value": 2,
-                                    "description": "20 kbps"
-                                },
-                                {
-                                    "name": "KBPS_50",
-                                    "value": 3,
-                                    "description": "50 kbps"
-                                },
-                                {
-                                    "name": "KBPS_125",
-                                    "value": 4,
-                                    "description": "125 kbps"
-                                },
-                                {
-                                    "name": "KBPS_250",
-                                    "value": 5,
-                                    "description": "250 kbps"
-                                },
-                                {
-                                    "name": "KBPS_500",
-                                    "value": 6,
-                                    "description": "500 kbps"
-                                },
-                                {
-                                    "name": "KBPS_800",
-                                    "value": 7,
-                                    "description": "800 kbps"
-                                },
-                                {
-                                    "name": "KBPS_1000",
-                                    "value": 8,
-                                    "description": "1,000 kbps"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        }
-                    ]
+                  "name": "FLEXSPI_FLASH",
+                  "value": 1,
+                  "description": "FlexSPI flash"
                 },
                 {
-                    "id": "field008",
-                    "name": "USB_ID",
-                    "description": "USB Identifiers",
-                    "offset_int": "0x0008",
-                    "default_value_int": "0",
-                    "bitfields": [
-                        {
-                            "width": 16,
-                            "id": "field008-bits0-15",
-                            "name": "USB_VENDOR_ID",
-                            "description": "USB Vendor ID"
-                        },
-                        {
-                            "width": 16,
-                            "id": "field008-bits16-31",
-                            "name": "USB_PRODUCT_ID",
-                            "description": "USB Product ID"
-                        }
-                    ]
+                  "name": "SERIAL_ISP_BOOT",
+                  "value": 2,
+                  "description": "Serial ISP boot"
                 },
                 {
-                    "id": "field00C",
-                    "name": "BOOT_TIMEOUT",
-                    "description": "Boot Timeout",
-                    "offset_int": "0x000C",
-                    "default_value_int": "0",
-                    "bitfields": [
-                        {
-                            "width": 16,
-                            "id": "field00C-bits0-15",
-                            "name": "POWERDOWN_TIMEOUT_SECS",
-                            "description": "Power-down timeout: Timeout value in seconds. When a non-zero value is programmed in this field ROM uses it as idle timeout value to enter power-down state to conserve power"
-                        },
-                        {
-                            "width": 16,
-                            "id": "field00C-bits16-31",
-                            "name": "WDOG_TIMEOUT_SECS",
-                            "description": "WDOG timeout: Timeout value in seconds. When a non-zero value is programmed in this field ROM configures the watch dog timer to reset the device on timeout before passing execution control to user code"
-                        }
-                    ]
+                  "name": "INTERNAL_FLASH",
+                  "value": 3,
+                  "description": "Internal flash"
                 },
                 {
-                    "id": "field010",
-                    "name": "DCFG_CC_SOCU_PIN",
-                    "description": "Device Configuration Credential Constraints for SoC specific Use Pinned. Combinations of PIN and DFLT bits and resulting restriction level: - PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. - PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through the debug authentication process by providing an appropriate Debug Credential (DC) certificate. - PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected. - PIN=1,DFLT=0: Restriction level 2. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
-                    "offset_int": "0x0010",
-                    "default_value_int": "0",
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "field010-bit0",
-                            "name": "NIDEN",
-                            "description": "Non Secure non-invasive debug enable",
-                            "values": [
-                                {
-                                    "name": "DISABLED",
-                                    "value": 0,
-                                    "description": "Use DAP to enable"
-                                },
-                                {
-                                    "name": "FIXED_STATE",
-                                    "value": 1,
-                                    "description": "Fixed state"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "field010-bit1",
-                            "name": "DBGEN",
-                            "description": "Non Secure debug enable",
-                            "values": [
-                                {
-                                    "name": "DISABLED",
-                                    "value": 0,
-                                    "description": "Use DAP to enable"
-                                },
-                                {
-                                    "name": "FIXED_STATE",
-                                    "value": 1,
-                                    "description": "Fixed state"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1,
-                            "id": "field010-bit6",
-                            "name": "ISP_CMD_EN",
-                            "description": "ISP boot command enable",
-                            "values": [
-                                {
-                                    "name": "DISABLED",
-                                    "value": 0,
-                                    "description": "Use DAP to enable"
-                                },
-                                {
-                                    "name": "FIXED_STATE",
-                                    "value": 1,
-                                    "description": "Fixed state"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "field010-bit7",
-                            "name": "FA_CMD_EN",
-                            "description": "FA Command Enable",
-                            "values": [
-                                {
-                                    "name": "DISABLED",
-                                    "value": 0,
-                                    "description": "Use DAP to enable"
-                                },
-                                {
-                                    "name": "FIXED_STATE",
-                                    "value": 1,
-                                    "description": "Fixed state"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "field010-bit8",
-                            "name": "ME_CMD_EN",
-                            "description": "Flash Mass Erase Command Enable",
-                            "values": [
-                                {
-                                    "name": "DISABLED",
-                                    "value": 0,
-                                    "description": "Use DAP to enable"
-                                },
-                                {
-                                    "name": "FIXED_STATE",
-                                    "value": 1,
-                                    "description": "Fixed state"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1,
-                            "id": "field010-bit15",
-                            "name": "UUID_CHECK",
-                            "description": "Enforce UUID match during Debug authentication",
-                            "values": [
-                                {
-                                    "name": "DISABLED",
-                                    "value": 0,
-                                    "description": "Disabled"
-                                },
-                                {
-                                    "name": "ENABLED",
-                                    "value": 1,
-                                    "description": "Enabled"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 16,
-                            "id": "field010-bits16-31",
-                            "name": "INVERSE_VALUE",
-                            "description": "Inverse Value",
-                            "calculated": "INVERSE"
-                        }
-                    ]
-                },
-                {
-                    "id": "field014",
-                    "name": "DCFG_CC_SOCU_DFLT",
-                    "description": "Device Configuration Credential Constraints for SoC specific Use Debug Filter. Combinations of PIN and DFLT bits and resulting restriction level: - PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. - PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through the debug authentication process by providing an appropriate Debug Credential (DC) certificate. - PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected. - PIN=1,DFLT=0: Restriction level 2. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
-                    "offset_int": "0x0014",
-                    "default_value_int": "0",
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "field014-bit0",
-                            "name": "NIDEN",
-                            "description": "Non Secure non-invasive debug Fixed state",
-                            "values": [
-                                {
-                                    "name": "DISABLED",
-                                    "value": 0,
-                                    "description": "Disabled"
-                                },
-                                {
-                                    "name": "ENABLED",
-                                    "value": 1,
-                                    "description": "Enabled"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "field014-bit1",
-                            "name": "DBGEN",
-                            "description": "Non Secure debug Fixed state",
-                            "values": [
-                                {
-                                    "name": "DISABLED",
-                                    "value": 0,
-                                    "description": "Disabled"
-                                },
-                                {
-                                    "name": "ENABLED",
-                                    "value": 1,
-                                    "description": "Enabled"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1,
-                            "id": "field014-bit6",
-                            "name": "ISP_CMD_EN",
-                            "description": "ISP command Fixed state",
-                            "values": [
-                                {
-                                    "name": "DISABLED",
-                                    "value": 0,
-                                    "description": "Disabled"
-                                },
-                                {
-                                    "name": "ENABLED",
-                                    "value": 1,
-                                    "description": "Enabled"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "field014-bit7",
-                            "name": "FA_CMD_EN",
-                            "description": "Set FA mode command Fixed state",
-                            "values": [
-                                {
-                                    "name": "DISABLED",
-                                    "value": 0,
-                                    "description": "Disabled"
-                                },
-                                {
-                                    "name": "ENABLED",
-                                    "value": 1,
-                                    "description": "Enabled"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "field014-bit8",
-                            "name": "ME_CMD_EN",
-                            "description": "Mass erase flash command fixed state",
-                            "values": [
-                                {
-                                    "name": "DISABLED",
-                                    "value": 0,
-                                    "description": "Disabled"
-                                },
-                                {
-                                    "name": "ENABLED",
-                                    "value": 1,
-                                    "description": "Enabled"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 16,
-                            "id": "field014-bits16-31",
-                            "name": "INVERSE_VALUE",
-                            "description": "Inverse Value",
-                            "calculated": "INVERSE"
-                        }
-                    ]
-                },
-                {
-                    "id": "Reserved00018",
-                    "name": "Reserved 0x00018",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0018",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved0001C",
-                    "name": "Reserved 0x0001C",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x001C",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved00020",
-                    "name": "Reserved 0x00020",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0020",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved00024",
-                    "name": "Reserved 0x00024",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0024",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved00028",
-                    "name": "Reserved 0x00028",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0028",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved0002C",
-                    "name": "Reserved 0x0002C",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x002C",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field030",
-                    "name": "XTAL_32KHZ_CAPABANK_TRIM",
-                    "description": "Xtal 32kHz Capabank Trimming",
-                    "offset_int": "0x0030",
-                    "default_value_int": "0",
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "field030-bit0",
-                            "name": "TRIM_VALID",
-                            "description": "Trim Valid",
-                            "values": [
-                                {
-                                    "name": "NOT_VALID",
-                                    "value": 0,
-                                    "description": "Capa Bank trimmings not valid. Default trimmings value are used"
-                                },
-                                {
-                                    "name": "VALID",
-                                    "value": 1,
-                                    "description": "Capa Bank trimmings valid"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 10,
-                            "id": "field030-bits1-10",
-                            "name": "XTAL_LOAD_CAP_IEC_PF_X100",
-                            "description": "Load capacitance, pF x 100. For example, 6pF becomes 600"
-                        },
-                        {
-                            "width": 10,
-                            "id": "field030-bits11-20",
-                            "name": "PCB_XIN_PARA_CAP_PF_X100",
-                            "description": "PCB XIN parasitic capacitance, pF x 100. For example, 6pF becomes 600"
-                        },
-                        {
-                            "width": 10,
-                            "id": "field030-bits21-30",
-                            "name": "PCB_XOUT_PARA_CAP_PF_X100",
-                            "description": "PCB XOUT parasitic capacitance, pF x 100. For example, 6pF becomes 600"
-                        },
-                        {
-                            "width": 1
-                        }
-                    ]
-                },
-                {
-                    "id": "field034",
-                    "name": "XTAL_16MHZ_CAPABANK_TRIM",
-                    "description": "Xtal 16MHz Capabank Trimming",
-                    "offset_int": "0x0034",
-                    "default_value_int": "0",
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "field034-bit0",
-                            "name": "TRIM_VALID",
-                            "description": "Trim Valid",
-                            "values": [
-                                {
-                                    "name": "NOT_VALID",
-                                    "value": 0,
-                                    "description": "Capa Bank trimmings not valid. Default trimmings value are used"
-                                },
-                                {
-                                    "name": "VALID",
-                                    "value": 1,
-                                    "description": "Capa Bank trimmings valid"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 10,
-                            "id": "field034-bits1-10",
-                            "name": "XTAL_LOAD_CAP_IEC_PF_X100",
-                            "description": "Load capacitance, pF x 100. For example, 6pF becomes 600"
-                        },
-                        {
-                            "width": 10,
-                            "id": "field034-bits11-20",
-                            "name": "PCB_XIN_PARA_CAP_PF_X100",
-                            "description": "PCB XIN parasitic capacitance, pF x 100. For example, 6pF becomes 600"
-                        },
-                        {
-                            "width": 10,
-                            "id": "field034-bits21-30",
-                            "name": "PCB_XOUT_PARA_CAP_PF_X100",
-                            "description": "PCB XOUT parasitic capacitance, pF x 100. For example, 6pF becomes 600"
-                        },
-                        {
-                            "width": 1
-                        }
-                    ]
-                },
-                {
-                    "id": "field038",
-                    "name": "FLASH_REMAP_SIZE",
-                    "description": "Flash Remap Size",
-                    "offset_int": "0x0038",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field03C",
-                    "name": "FLASH_REMAP_OFFSET",
-                    "description": "Flash Remap Offset",
-                    "offset_int": "0x003C",
-                    "default_value_int": "0"
+                  "name": "AUTO_BOOT",
+                  "value": 4,
+                  "description": "Auto boot similar to ISP auto boot option"
                 }
-            ]
+              ]
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 3,
+              "id": "field000-bits4-6",
+              "name": "Default_ISP_mode",
+              "description": "Default ISP mode",
+              "values": [
+                {
+                  "name": "AUTO_ISP",
+                  "value": 0,
+                  "description": "Auto ISP"
+                },
+                {
+                  "name": "USB_HID_MSC",
+                  "value": 1,
+                  "description": "USB HID MSC"
+                },
+                {
+                  "name": "UART_ISP",
+                  "value": 2,
+                  "description": "UART ISP"
+                },
+                {
+                  "name": "SPI_ISP",
+                  "value": 3,
+                  "description": "SPI Slave ISP"
+                },
+                {
+                  "name": "I2C_ISP",
+                  "value": 4,
+                  "description": "I2C slave ISP"
+                },
+                {
+                  "name": "CAN_ISP",
+                  "value": 5,
+                  "description": "CAN ISP"
+                },
+                {
+                  "name": "DISBL_ISP_FALLTHRU",
+                  "value": 7,
+                  "description": "Disable ISP fall through"
+                }
+              ]
+            },
+            {
+              "width": 2,
+              "id": "field000-bits7-8",
+              "name": "Boot_Speed",
+              "description": "Boot Speed Core Clock",
+              "values": [
+                {
+                  "name": "SYS_SPD_CODE",
+                  "value": 0,
+                  "description": "Defined by NMPA.SYSTEM_SPEED_CODE"
+                },
+                {
+                  "name": "MHZ48_FRO",
+                  "value": 1,
+                  "description": "48MHz FRO"
+                },
+                {
+                  "name": "MHZ96_FRO",
+                  "value": 2,
+                  "description": "96MHz FRO"
+                },
+                {
+                  "name": "MHZ150_FRO",
+                  "value": 3,
+                  "description": "150MHz PLL"
+                }
+              ]
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1,
+              "id": "field000-bit21",
+              "name": "ASRT_FATAL",
+              "description": "Assert on fatal errors. When set ROM drives BOOT_FAIL_PIN high when fatal error condition occurs on three attempts to boot image before locking the part"
+            },
+            {
+              "width": 1,
+              "id": "field000-bit22",
+              "name": "ASRT_RBF",
+              "description": "Assert on recovery boot. When this bit is set ROM drives the BOOT_FAIL_PIN high whenever no valid image is found in primary boot media and execution enters recovery boot mode from secondary boot media"
+            },
+            {
+              "width": 1,
+              "id": "field000-bit23",
+              "name": "ASRT_ISPF",
+              "description": "Assert on ISP fall through. When this bit is set ROM drives BOOT_FAIL_PIN high whenever there is no valid image in boot media and execution falls through to ISP mode"
+            },
+            {
+              "width": 8,
+              "id": "field000-bits24-31",
+              "name": "Boot_failure_pin",
+              "description": "GPIO port and pin number to use for indicating failure reason. The toggle rate of the pin is used to decode the error type. [2:0] - Defines GPIO port [7:3] - Defines GPIO pin"
+            }
+          ]
         },
         {
-            "group": {
-                "name": "Reserved 00040-0007C",
-                "description": "Reserved 00040-0007C"
+          "id": "field004",
+          "name": "SPI_CAN_CFG",
+          "description": "SPI CAN Configuration",
+          "offset_int": "0x0004",
+          "default_value_int": "0",
+          "bitfields": [
+            {
+              "width": 2,
+              "id": "field004-bits0-1",
+              "name": "SPI_RECOVERY_BOOT_EN",
+              "description": "REC_BOOT_EN SPI flash recovery boot is enabled, if non-zero value is written to this field"
             },
-            "registers": [
+            {
+              "width": 3,
+              "id": "field004-bits2-4",
+              "name": "SPI_REC_IF",
+              "description": "Recovery SPI interface",
+              "values": [
                 {
-                    "id": "Reserved00040",
-                    "name": "Reserved 0x00040",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0040",
-                    "is_reserved": true,
-                    "default_value_int": "0"
+                  "name": "HSPI",
+                  "value": 0,
+                  "description": "HSPI P1_3-MISO, P0_26-MOSI, P1_1-SSEL1, P1_2-SCK"
                 },
                 {
-                    "id": "Reserved00044",
-                    "name": "Reserved 0x00044",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0044",
-                    "is_reserved": true,
-                    "default_value_int": "0"
+                  "name": "FC0",
+                  "value": 1,
+                  "description": "FC0 P0_30-MISO, P0_24-MOSI, P0_31-SSEL0, P0_28-SCK"
                 },
                 {
-                    "id": "Reserved00048",
-                    "name": "Reserved 0x00048",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0048",
-                    "is_reserved": true,
-                    "default_value_int": "0"
+                  "name": "FC3",
+                  "value": 2,
+                  "description": "FC3 P0_2-MISO, P0_3-MOSI, P0_4-SSEL0, P0_6-SCK"
                 },
                 {
-                    "id": "Reserved0004C",
-                    "name": "Reserved 0x0004C",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x004C",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved00050",
-                    "name": "Reserved 0x00050",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0050",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved00054",
-                    "name": "Reserved 0x00054",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0054",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved00058",
-                    "name": "Reserved 0x00058",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0058",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved0005C",
-                    "name": "Reserved 0x0005C",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x005C",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved00060",
-                    "name": "Reserved 0x00060",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0060",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved00064",
-                    "name": "Reserved 0x00064",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0064",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved00068",
-                    "name": "Reserved 0x00068",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0068",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved0006C",
-                    "name": "Reserved 0x0006C",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x006C",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved00070",
-                    "name": "Reserved 0x00070",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0070",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved00074",
-                    "name": "Reserved 0x00074",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0074",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved00078",
-                    "name": "Reserved 0x00078",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0078",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved0007C",
-                    "name": "Reserved 0x0007C",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x007C",
-                    "is_reserved": true,
-                    "default_value_int": "0"
+                  "name": "FC1",
+                  "value": 3,
+                  "description": "FC1 P2_4-MISO, P2_3-MOSI, P2_5-SSEL0, P1_9-SCK"
                 }
-            ]
+              ]
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 4,
+              "id": "field004-bits16-19",
+              "name": "CAN_BAUD_RATE",
+              "description": "CAN baud rate. Baud rate configured during CAN ISP mode",
+              "values": [
+                {
+                  "name": "AUTO_BAUD_DETECT",
+                  "value": 0,
+                  "description": "Auto baud detection (125K, 250K, 500K, 1M)"
+                },
+                {
+                  "name": "KBPS_10",
+                  "value": 1,
+                  "description": "10 kbps"
+                },
+                {
+                  "name": "KBPS_20",
+                  "value": 2,
+                  "description": "20 kbps"
+                },
+                {
+                  "name": "KBPS_50",
+                  "value": 3,
+                  "description": "50 kbps"
+                },
+                {
+                  "name": "KBPS_125",
+                  "value": 4,
+                  "description": "125 kbps"
+                },
+                {
+                  "name": "KBPS_250",
+                  "value": 5,
+                  "description": "250 kbps"
+                },
+                {
+                  "name": "KBPS_500",
+                  "value": 6,
+                  "description": "500 kbps"
+                },
+                {
+                  "name": "KBPS_800",
+                  "value": 7,
+                  "description": "800 kbps"
+                },
+                {
+                  "name": "KBPS_1000",
+                  "value": 8,
+                  "description": "1,000 kbps"
+                }
+              ]
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            }
+          ]
         },
         {
-            "group": {
-                "name": "FLEXSPI_BOOT_CFG",
-                "description": "FlexSPI boot cfg"
+          "id": "field008",
+          "name": "USB_ID",
+          "description": "USB Identifiers",
+          "offset_int": "0x0008",
+          "default_value_int": "0",
+          "bitfields": [
+            {
+              "width": 16,
+              "id": "field008-bits0-15",
+              "name": "USB_Vendor_ID",
+              "description": "USB Vendor ID"
             },
-            "registers": [
-                {
-                    "id": "field080",
-                    "name": "FLEXSPI_BOOT_CFG0",
-                    "description": "FlexSPI Boot Configuration 0",
-                    "offset_int": "0x0080",
-                    "default_value_int": "0",
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "field080-bit0",
-                            "name": "FLEXSPI_AUTO_PROBE_EN",
-                            "description": "Quad/Octal-SPI flash auto probe feature enable",
-                            "values": [
-                                {
-                                    "name": "DISABLE",
-                                    "value": 0,
-                                    "description": "Disable"
-                                },
-                                {
-                                    "name": "ENABLE",
-                                    "value": 1,
-                                    "description": "Enable"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 3,
-                            "id": "field080-bits1-3",
-                            "name": "FLEXSPI_PROBE_TYPE",
-                            "description": "Quad/Octal-SPI flash probe type",
-                            "values": [
-                                {
-                                    "name": "QUADSPI_NOR",
-                                    "value": 0,
-                                    "description": "QuadSPI NOR"
-                                },
-                                {
-                                    "name": "MACRONIX_OCTAL_FLASH",
-                                    "value": 1,
-                                    "description": "Macronix Octal FLASH"
-                                },
-                                {
-                                    "name": "MICRON_OCTAL_FLASH",
-                                    "value": 2,
-                                    "description": "Micron Octal FLASH"
-                                },
-                                {
-                                    "name": "ADESTO_OCTAL_FLASH",
-                                    "value": 3,
-                                    "description": "Adesto Octal FLASH"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 3,
-                            "id": "field080-bits4-6",
-                            "name": "FLEXSPI_FLASH_TYPE",
-                            "description": "Define typical Serial NOR Flash types",
-                            "values": [
-                                {
-                                    "name": "QSPI_ADDR_3B",
-                                    "value": 0,
-                                    "description": "QSPI ADDR 3B"
-                                },
-                                {
-                                    "name": "HYPER_1V8",
-                                    "value": 2,
-                                    "description": "HYPER 1V8"
-                                },
-                                {
-                                    "name": "HYPER_3V3",
-                                    "value": 3,
-                                    "description": "HYPER 3V3"
-                                },
-                                {
-                                    "name": "FLEXSPI_DDR_MXIC",
-                                    "value": 4,
-                                    "description": "FlexSPI_DDR_MXIC"
-                                },
-                                {
-                                    "name": "FLEXSPI_DDR_MICRON",
-                                    "value": 5,
-                                    "description": "FlexSPI_DDR_MICRON"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 4,
-                            "id": "field080-bits7-10",
-                            "name": "FLEXSPI_DUMMY_CYCLES",
-                            "description": "Quad/Octal-SPI dummy cycles for read command"
-                        },
-                        {
-                            "width": 3,
-                            "id": "field080-bits11-13",
-                            "name": "FLEXSPI_FREQUENCY",
-                            "description": "Q/O-SPI flash interface frequency",
-                            "values": [
-                                {
-                                    "name": "MHZ_50",
-                                    "value": 0,
-                                    "description": "50Mhz"
-                                },
-                                {
-                                    "name": "MHZ_60",
-                                    "value": 1,
-                                    "description": "60Mhz"
-                                },
-                                {
-                                    "name": "MHZ_80",
-                                    "value": 2,
-                                    "description": "80Mhz"
-                                },
-                                {
-                                    "name": "MHZ_100",
-                                    "value": 3,
-                                    "description": "100Mhz"
-                                },
-                                {
-                                    "name": "MHZ_120",
-                                    "value": 4,
-                                    "description": "120Mhz"
-                                },
-                                {
-                                    "name": "MHZ_133",
-                                    "value": 5,
-                                    "description": "133Mhz"
-                                },
-                                {
-                                    "name": "MHZ_166",
-                                    "value": 6,
-                                    "description": "166Mhz"
-                                },
-                                {
-                                    "name": "MHZ_200",
-                                    "value": 7,
-                                    "description": "200Mhz"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "field080-bit14",
-                            "name": "FLEXSPI_RESET_ENABLE",
-                            "description": "Use QSPI_RESET_PIN to reset the flash device",
-                            "values": [
-                                {
-                                    "name": "NO_RESET",
-                                    "value": 0,
-                                    "description": "NO_RESET(O/QSPI device reset pin is not connected or available.)"
-                                },
-                                {
-                                    "name": "ENABLE_RESET",
-                                    "value": 1,
-                                    "description": "EN_RESET(O/QSPI device reset pin is connected to a GPIO (QSPI_RESET_PIN).)"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 3,
-                            "id": "field080-bits15-17",
-                            "name": "FLEXSPI_RESET_GPIO_PORT",
-                            "description": "GPIO port number to use for O/QSPI reset function"
-                        },
-                        {
-                            "width": 5,
-                            "id": "field080-bits18-22",
-                            "name": "FLEXSPI_RESET_GPIO_PIN",
-                            "description": "GPIO pin number to use for O/QSPI reset function"
-                        },
-                        {
-                            "width": 2,
-                            "id": "field080-bits23-24",
-                            "name": "FLEXSPI_HOLD_TIME",
-                            "description": "Wait time before access to Serial Flash",
-                            "values": [
-                                {
-                                    "name": "WAIT_500_MICROSECS",
-                                    "value": 0,
-                                    "description": "Wait for 500 micro seconds"
-                                },
-                                {
-                                    "name": "WAIT_1_MILISECS",
-                                    "value": 1,
-                                    "description": "Wait for 1 mili seconds"
-                                },
-                                {
-                                    "name": "WAIT_3_MILISECS",
-                                    "value": 2,
-                                    "description": "Wait for 3 mili seconds"
-                                },
-                                {
-                                    "name": "WAIT_10_MILISECS",
-                                    "value": 3,
-                                    "description": "Wait for 10 mili seconds"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 4,
-                            "id": "field080-bits25-28",
-                            "name": "FLEXSPI_PWR_HOLD_TIME",
-                            "description": "Delay after POR before accessing Quad/Octal-SPI flash devices in addition to delay defined by FLEXSPI_HOLD TIME field",
-                            "values": [
-                                {
-                                    "name": "NO_DELAY",
-                                    "value": 0,
-                                    "description": "No delay"
-                                },
-                                {
-                                    "name": "WAIT_100_MICROSECS",
-                                    "value": 1,
-                                    "description": "Waits additional 100 micro-seconds"
-                                },
-                                {
-                                    "name": "WAIT_500_MICROSECS",
-                                    "value": 2,
-                                    "description": "Waits additional 500 micro-seconds"
-                                },
-                                {
-                                    "name": "WAIT_1_MILISECS",
-                                    "value": 3,
-                                    "description": "Waits additional 1 mili-seconds"
-                                },
-                                {
-                                    "name": "WAIT_10_MILISECS",
-                                    "value": 4,
-                                    "description": "Waits additional 10 mili-seconds"
-                                },
-                                {
-                                    "name": "WAIT_20_MILISECS",
-                                    "value": 5,
-                                    "description": "Waits additional 20 mili-seconds"
-                                },
-                                {
-                                    "name": "WAIT_40_MILISECS",
-                                    "value": 6,
-                                    "description": "Waits additional 40 mili-seconds"
-                                },
-                                {
-                                    "name": "WAIT_60_MILISECS",
-                                    "value": 7,
-                                    "description": "Waits additional 60 mili-seconds"
-                                },
-                                {
-                                    "name": "WAIT_80_MILISECS",
-                                    "value": 8,
-                                    "description": "Waits additional 80 mili-seconds"
-                                },
-                                {
-                                    "name": "WAIT_100_MILISECS",
-                                    "value": 9,
-                                    "description": "Waits additional 100 mili-seconds"
-                                },
-                                {
-                                    "name": "WAIT_120_MILISECS",
-                                    "value": 10,
-                                    "description": "Waits additional 120 mili-seconds"
-                                },
-                                {
-                                    "name": "WAIT_140_MILISECS",
-                                    "value": 11,
-                                    "description": "Waits additional 140 mili-seconds"
-                                },
-                                {
-                                    "name": "WAIT_160_MILISECS",
-                                    "value": 12,
-                                    "description": "Waits additional 160 mili-seconds"
-                                },
-                                {
-                                    "name": "WAIT_180_MILISECS",
-                                    "value": 13,
-                                    "description": "Waits additional 180 mili-seconds"
-                                },
-                                {
-                                    "name": "WAIT_200_MILISECS",
-                                    "value": 14,
-                                    "description": "Waits additional 200 mili-seconds"
-                                },
-                                {
-                                    "name": "WAIT_220_MILISECS",
-                                    "value": 15,
-                                    "description": "Waits additional220 mili-seconds"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "field080-bit29",
-                            "name": "PIN_SLEW_RATE",
-                            "description": "Enable faster slew rate. When this bit is set ROM will configure FlexSPI pin with faster slew rate instead of standard slew rate",
-                            "values": [
-                                {
-                                    "name": "STANDARD",
-                                    "value": 0,
-                                    "description": "Standard slew rate"
-                                },
-                                {
-                                    "name": "FASTER",
-                                    "value": 1,
-                                    "description": "Faster slew rate"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        }
-                    ]
-                },
-                {
-                    "id": "field084",
-                    "name": "FLEXSPI_BOOT_CFG1",
-                    "description": "FlexSPI Boot Configuration 1",
-                    "offset_int": "0x0084",
-                    "default_value_int": "0",
-                    "bitfields": [
-                        {
-                            "width": 7,
-                            "id": "field084-bits0-6",
-                            "name": "FLEXSPI_DELAY_CELL_NUM",
-                            "description": "Delay cell numbers for Flash read sampling via DQS (either internal loopback or external DQS)"
-                        },
-                        {
-                            "width": 10,
-                            "id": "field084-bits7-16",
-                            "name": "FLEXSPI_IMAGE_OFFSET",
-                            "description": "Any offset in memory mapped Q/Octal-SPI Flash area could be remapped to offset zero to support eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. FlLEXSPI_IMAGE_OFFSET field specifies the offset location of second image. FLEXSPI_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped. If this field is left blank boot ROM assumes that application intends to not use redundant image boot feature. The physical flash offset is computed as below: physical offset = FLEXSPI_IMAGE_OFFSET"
-                        },
-                        {
-                            "width": 4,
-                            "id": "field084-bits17-20",
-                            "name": "FLEXSPI_REMAP_IMAGE_SIZE",
-                            "description": "Any offset in memory mapped QSPI Flash area could be remapped to offset zero to support eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. QSPI_IMAGE_OFFSET field specifies the offset location of second image. QSPI_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped. SIZE_OFFSET \"Size of the remapped area (aka second half) is same as first half. It is determined by FLEXSPI_IMAGE_OFFSET Field. Remap size = FLEXSPI_IMAGE_OFFSET",
-                            "values": [
-                                {
-                                    "name": "SIZE",
-                                    "value": 0,
-                                    "description": "SIZE"
-                                },
-                                {
-                                    "name": "SIZE_1MB",
-                                    "value": 1,
-                                    "description": "SIZE_1MB Size of remapped area is 1MByte"
-                                },
-                                {
-                                    "name": "SIZE_2MB",
-                                    "value": 2,
-                                    "description": "SIZE_2MB Size of remapped area is 2MByte"
-                                },
-                                {
-                                    "name": "SIZE_3MB",
-                                    "value": 3,
-                                    "description": "SIZE_3MB Size of remapped area is 3MByte"
-                                },
-                                {
-                                    "name": "SIZE_4MB",
-                                    "value": 4,
-                                    "description": "SIZE_4MB Size of remapped area is 4MByte"
-                                },
-                                {
-                                    "name": "SIZE_5MB",
-                                    "value": 5,
-                                    "description": "SIZE_5MB Size of remapped area is 5MByte"
-                                },
-                                {
-                                    "name": "SIZE_6MB",
-                                    "value": 6,
-                                    "description": "SIZE_6MB Size of remapped area is 6MByte"
-                                },
-                                {
-                                    "name": "SIZE_7MB",
-                                    "value": 7,
-                                    "description": "SIZE_7MB Size of remapped area is 7MByte"
-                                },
-                                {
-                                    "name": "SIZE_8MB",
-                                    "value": 8,
-                                    "description": "SIZE_8MB Size of remapped area is 8MByte"
-                                },
-                                {
-                                    "name": "SIZE_9MB",
-                                    "value": 9,
-                                    "description": "SIZE_9MB Size of remapped area is 9MByte"
-                                },
-                                {
-                                    "name": "SIZE_10MB",
-                                    "value": 10,
-                                    "description": "SIZE_10MB Size of remapped area is 10MByte"
-                                },
-                                {
-                                    "name": "SIZE_11MB",
-                                    "value": 11,
-                                    "description": "SIZE_11MB Size of remapped area is 11MByte"
-                                },
-                                {
-                                    "name": "SIZE_12MB",
-                                    "value": 12,
-                                    "description": "SIZE_12MB Size of remapped area is 12MByte"
-                                },
-                                {
-                                    "name": "SIZE_256KB",
-                                    "value": 13,
-                                    "description": "SIZE_256KB Size of remapped area is 256KByte"
-                                },
-                                {
-                                    "name": "SIZE_512KB",
-                                    "value": 14,
-                                    "description": "SIZE_512KB Size of remapped area is 512KByte"
-                                },
-                                {
-                                    "name": "SIZE_768KB",
-                                    "value": 15,
-                                    "description": "SIZE_768KB Size of remapped area is 768KByte"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        }
-                    ]
-                }
-            ]
+            {
+              "width": 16,
+              "id": "field008-bits16-31",
+              "name": "USB_Product_ID",
+              "description": "USB Product ID"
+            }
+          ]
         },
         {
-            "group": {
-                "name": "Reserved 00088-0008C",
-                "description": "Reserved 00088-000AC"
+          "id": "field00C",
+          "name": "BOOT_TIMEOUT",
+          "description": "Boot Timeout",
+          "offset_int": "0x000C",
+          "default_value_int": "0",
+          "bitfields": [
+            {
+              "width": 16,
+              "id": "field00C-bits0-15",
+              "name": "POWERDOWN_TIMEOUT_SECS",
+              "description": "Power-down timeout: Timeout value in seconds. When a non-zero value is programmed in this field ROM uses it as idle timeout value to enter power-down state to conserve power"
             },
-            "registers": [
-                {
-                    "id": "Reserved00088",
-                    "name": "Reserved 0x00088",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0088",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved0008C",
-                    "name": "Reserved 0x0008C",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x008C",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved00090",
-                    "name": "Reserved 0x00090",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0090",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved00094",
-                    "name": "Reserved 0x00094",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0094",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved00098",
-                    "name": "Reserved 0x00098",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x0098",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved0009C",
-                    "name": "Reserved 0x0009C",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x009C",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved000A0",
-                    "name": "Reserved 0x000A0",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00A0",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved000A4",
-                    "name": "Reserved 0x000A4",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00A4",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved000A8",
-                    "name": "Reserved 0x000A8",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00A8",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved000AC",
-                    "name": "Reserved 0x000AC",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00AC",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                }
-            ]
+            {
+              "width": 16,
+              "id": "field00C-bits16-31",
+              "name": "WDOG_TIMEOUT_SECS",
+              "description": "WDOG timeout: Timeout value in seconds. When a non-zero value is programmed in this field ROM configures the watch dog timer to reset the device on timeout before passing execution control to user code"
+            }
+          ]
         },
         {
-            "group": {
-                "name": "Quick GPIO Configuration",
-                "description": "Quick GPIO Configuration"
-            },
-            "registers": [
+          "id": "field010",
+          "name": "DCFG_CC_SOCU_PIN",
+          "description": "Device Configuration Credential Constraints for SoC specific Use Pinned. Combinations of PIN and DFLT bits and resulting restriction level: - PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. - PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through the debug authentication process by providing an appropriate Debug Credential (DC) certificate. - PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected. - PIN=1,DFLT=0: Restriction level 2. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
+          "offset_int": "0x0010",
+          "default_value_int": "0",
+          "bitfields": [
+            {
+              "width": 1,
+              "id": "field010-bit0",
+              "name": "NIDEN",
+              "description": "Non Secure non-invasive debug enable",
+              "values": [
                 {
-                    "id": "field0B0",
-                    "name": "QUICK_SET_GPIO_0",
-                    "description": "Quick Set to Drive GPIO 0 port pins high",
-                    "offset_int": "0x00B0",
-                    "default_value_int": "0"
+                  "name": "DISABLED",
+                  "value": 0,
+                  "description": "Use DAP to enable"
                 },
                 {
-                    "id": "field0B4",
-                    "name": "QUICK_CLR_GPIO_0",
-                    "description": "Quick Clear to Drive GPIO 0 port pins low",
-                    "offset_int": "0x00B4",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field0B8",
-                    "name": "QUICK_SET_GPIO_1",
-                    "description": "Quick Set to Drive GPIO 1 port pins high",
-                    "offset_int": "0x00B8",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field0BC",
-                    "name": "QUICK_CLR_GPIO_1",
-                    "description": "Quick Clear to Drive GPIO 1 port pins low",
-                    "offset_int": "0x00BC",
-                    "default_value_int": "0"
+                  "name": "FIXED_STATE",
+                  "value": 1,
+                  "description": "Fixed state"
                 }
-            ]
+              ]
+            },
+            {
+              "width": 1,
+              "id": "field010-bit1",
+              "name": "DBGEN",
+              "description": "Non Secure debug enable",
+              "values": [
+                {
+                  "name": "DISABLED",
+                  "value": 0,
+                  "description": "Use DAP to enable"
+                },
+                {
+                  "name": "FIXED_STATE",
+                  "value": 1,
+                  "description": "Fixed state"
+                }
+              ]
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1,
+              "id": "field010-bit6",
+              "name": "ISP_CMD_EN",
+              "description": "ISP boot command enable",
+              "values": [
+                {
+                  "name": "DISABLED",
+                  "value": 0,
+                  "description": "Use DAP to enable"
+                },
+                {
+                  "name": "FIXED_STATE",
+                  "value": 1,
+                  "description": "Fixed state"
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "field010-bit7",
+              "name": "FA_CMD_EN",
+              "description": "FA Command Enable",
+              "values": [
+                {
+                  "name": "DISABLED",
+                  "value": 0,
+                  "description": "Use DAP to enable"
+                },
+                {
+                  "name": "FIXED_STATE",
+                  "value": 1,
+                  "description": "Fixed state"
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "field010-bit8",
+              "name": "ME_CMD_EN",
+              "description": "Flash Mass Erase Command Enable",
+              "values": [
+                {
+                  "name": "DISABLED",
+                  "value": 0,
+                  "description": "Use DAP to enable"
+                },
+                {
+                  "name": "FIXED_STATE",
+                  "value": 1,
+                  "description": "Fixed state"
+                }
+              ]
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1,
+              "id": "field010-bit15",
+              "name": "UUID_CHECK",
+              "description": "Enforce UUID match during Debug authentication",
+              "values": [
+                {
+                  "name": "DISABLED",
+                  "value": 0,
+                  "description": "Disabled"
+                },
+                {
+                  "name": "ENABLED",
+                  "value": 1,
+                  "description": "Enabled"
+                }
+              ]
+            },
+            {
+              "width": 16,
+              "id": "field010-bits16-31",
+              "name": "Inverse_value",
+              "description": "Inverse Value",
+              "calculated": "INVERSE"
+            }
+          ]
         },
         {
-            "group": {
-                "name": "Reserved 000C0-000FC",
-                "description": "Reserved 000C0-000FC"
-            },
-            "registers": [
+          "id": "field014",
+          "name": "DCFG_CC_SOCU_DFLT",
+          "description": "Device Configuration Credential Constraints for SoC specific Use Debug Filter. Combinations of PIN and DFLT bits and resulting restriction level: - PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. - PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through the debug authentication process by providing an appropriate Debug Credential (DC) certificate. - PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected. - PIN=1,DFLT=0: Restriction level 2. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
+          "offset_int": "0x0014",
+          "default_value_int": "0",
+          "bitfields": [
+            {
+              "width": 1,
+              "id": "field014-bit0",
+              "name": "NIDEN",
+              "description": "Non Secure non-invasive debug Fixed state",
+              "values": [
                 {
-                    "id": "Reserved000C0",
-                    "name": "Reserved 0x000C0",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00C0",
-                    "is_reserved": true,
-                    "default_value_int": "0"
+                  "name": "DISABLED",
+                  "value": 0,
+                  "description": "Disabled"
                 },
                 {
-                    "id": "Reserved000C4",
-                    "name": "Reserved 0x000C4",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00C4",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved000C8",
-                    "name": "Reserved 0x000C8",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00C8",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved000CC",
-                    "name": "Reserved 0x000CC",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00CC",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved000D0",
-                    "name": "Reserved 0x000D0",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00D0",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved000D4",
-                    "name": "Reserved 0x000D4",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00D4",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved000D8",
-                    "name": "Reserved 0x000D8",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00D8",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved000DC",
-                    "name": "Reserved 0x000DC",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00DC",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved000E0",
-                    "name": "Reserved 0x000E0",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00E0",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved000E4",
-                    "name": "Reserved 0x000E4",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00E4",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved000E8",
-                    "name": "Reserved 0x000E8",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00E8",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved000EC",
-                    "name": "Reserved 0x000EC",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00EC",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved000F0",
-                    "name": "Reserved 0x000F0",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00F0",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved000F4",
-                    "name": "Reserved 0x000F4",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00F4",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved000F8",
-                    "name": "Reserved 0x000F8",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00F8",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved000FC",
-                    "name": "Reserved 0x000FC",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x00FC",
-                    "is_reserved": true,
-                    "default_value_int": "0"
+                  "name": "ENABLED",
+                  "value": 1,
+                  "description": "Enabled"
                 }
-            ]
+              ]
+            },
+            {
+              "width": 1,
+              "id": "field014-bit1",
+              "name": "DBGEN",
+              "description": "Non Secure debug Fixed state",
+              "values": [
+                {
+                  "name": "DISABLED",
+                  "value": 0,
+                  "description": "Disabled"
+                },
+                {
+                  "name": "ENABLED",
+                  "value": 1,
+                  "description": "Enabled"
+                }
+              ]
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1,
+              "id": "field014-bit6",
+              "name": "ISP_CMD_EN",
+              "description": "ISP command Fixed state",
+              "values": [
+                {
+                  "name": "DISABLED",
+                  "value": 0,
+                  "description": "Disabled"
+                },
+                {
+                  "name": "ENABLED",
+                  "value": 1,
+                  "description": "Enabled"
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "field014-bit7",
+              "name": "FA_CMD_EN",
+              "description": "Set FA mode command Fixed state",
+              "values": [
+                {
+                  "name": "DISABLED",
+                  "value": 0,
+                  "description": "Disabled"
+                },
+                {
+                  "name": "ENABLED",
+                  "value": 1,
+                  "description": "Enabled"
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "field014-bit8",
+              "name": "ME_CMD_EN",
+              "description": "Mass erase flash command fixed state",
+              "values": [
+                {
+                  "name": "DISABLED",
+                  "value": 0,
+                  "description": "Disabled"
+                },
+                {
+                  "name": "ENABLED",
+                  "value": 1,
+                  "description": "Enabled"
+                }
+              ]
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 16,
+              "id": "field014-bits16-31",
+              "name": "Inverse_value",
+              "description": "Inverse Value",
+              "calculated": "INVERSE"
+            }
+          ]
         },
         {
-            "group": {
-                "name": "Customer defined",
-                "description": "Customer defined"
-            },
-            "registers": [
-                {
-                    "id": "field100",
-                    "name": "CUSTOMER_DEFINED0",
-                    "description": "Customer Defined (Programmable through ROM API)",
-                    "offset_int": "0x0100",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field104",
-                    "name": "CUSTOMER_DEFINED1",
-                    "description": "CUSTOMER DEFINED1",
-                    "offset_int": "0x0104",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field108",
-                    "name": "CUSTOMER_DEFINED2",
-                    "description": "CUSTOMER DEFINED2",
-                    "offset_int": "0x0108",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field10C",
-                    "name": "CUSTOMER_DEFINED3",
-                    "description": "CUSTOMER DEFINED3",
-                    "offset_int": "0x010C",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field110",
-                    "name": "CUSTOMER_DEFINED4",
-                    "description": "CUSTOMER DEFINED4",
-                    "offset_int": "0x0110",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field114",
-                    "name": "CUSTOMER_DEFINED5",
-                    "description": "CUSTOMER DEFINED5",
-                    "offset_int": "0x0114",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field118",
-                    "name": "CUSTOMER_DEFINED6",
-                    "description": "CUSTOMER DEFINED6",
-                    "offset_int": "0x0118",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field11C",
-                    "name": "CUSTOMER_DEFINED7",
-                    "description": "CUSTOMER DEFINED7",
-                    "offset_int": "0x011C",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field120",
-                    "name": "CUSTOMER_DEFINED8",
-                    "description": "CUSTOMER DEFINED8",
-                    "offset_int": "0x0120",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field124",
-                    "name": "CUSTOMER_DEFINED9",
-                    "description": "CUSTOMER DEFINED9",
-                    "offset_int": "0x0124",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field128",
-                    "name": "CUSTOMER_DEFINED10",
-                    "description": "CUSTOMER DEFINED10",
-                    "offset_int": "0x0128",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field12C",
-                    "name": "CUSTOMER_DEFINED11",
-                    "description": "CUSTOMER DEFINED11",
-                    "offset_int": "0x012C",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field130",
-                    "name": "CUSTOMER_DEFINED12",
-                    "description": "CUSTOMER DEFINED12",
-                    "offset_int": "0x0130",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field134",
-                    "name": "CUSTOMER_DEFINED13",
-                    "description": "CUSTOMER DEFINED13",
-                    "offset_int": "0x0134",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field138",
-                    "name": "CUSTOMER_DEFINED14",
-                    "description": "CUSTOMER DEFINED14",
-                    "offset_int": "0x0138",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field13C",
-                    "name": "CUSTOMER_DEFINED15",
-                    "description": "CUSTOMER DEFINED15",
-                    "offset_int": "0x013C",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field140",
-                    "name": "CUSTOMER_DEFINED16",
-                    "description": "CUSTOMER DEFINED16",
-                    "offset_int": "0x0140",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field144",
-                    "name": "CUSTOMER_DEFINED17",
-                    "description": "CUSTOMER DEFINED17",
-                    "offset_int": "0x0144",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field148",
-                    "name": "CUSTOMER_DEFINED18",
-                    "description": "CUSTOMER DEFINED18",
-                    "offset_int": "0x0148",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field14C",
-                    "name": "CUSTOMER_DEFINED19",
-                    "description": "CUSTOMER DEFINED19",
-                    "offset_int": "0x014C",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field150",
-                    "name": "CUSTOMER_DEFINED20",
-                    "description": "CUSTOMER DEFINED20",
-                    "offset_int": "0x0150",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field154",
-                    "name": "CUSTOMER_DEFINED21",
-                    "description": "CUSTOMER DEFINED21",
-                    "offset_int": "0x0154",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field158",
-                    "name": "CUSTOMER_DEFINED22",
-                    "description": "CUSTOMER DEFINED22",
-                    "offset_int": "0x0158",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field15C",
-                    "name": "CUSTOMER_DEFINED23",
-                    "description": "CUSTOMER DEFINED23",
-                    "offset_int": "0x015C",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field160",
-                    "name": "CUSTOMER_DEFINED24",
-                    "description": "CUSTOMER DEFINED24",
-                    "offset_int": "0x0160",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field164",
-                    "name": "CUSTOMER_DEFINED25",
-                    "description": "CUSTOMER DEFINED25",
-                    "offset_int": "0x0164",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field168",
-                    "name": "CUSTOMER_DEFINED26",
-                    "description": "CUSTOMER DEFINED26",
-                    "offset_int": "0x0168",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field16C",
-                    "name": "CUSTOMER_DEFINED27",
-                    "description": "CUSTOMER DEFINED27",
-                    "offset_int": "0x016C",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field170",
-                    "name": "CUSTOMER_DEFINED28",
-                    "description": "CUSTOMER DEFINED28",
-                    "offset_int": "0x0170",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field174",
-                    "name": "CUSTOMER_DEFINED29",
-                    "description": "CUSTOMER DEFINED29",
-                    "offset_int": "0x0174",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field178",
-                    "name": "CUSTOMER_DEFINED30",
-                    "description": "CUSTOMER DEFINED30",
-                    "offset_int": "0x0178",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field17C",
-                    "name": "CUSTOMER_DEFINED31",
-                    "description": "CUSTOMER DEFINED31",
-                    "offset_int": "0x017C",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field180",
-                    "name": "CUSTOMER_DEFINED32",
-                    "description": "CUSTOMER DEFINED32",
-                    "offset_int": "0x0180",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field184",
-                    "name": "CUSTOMER_DEFINED33",
-                    "description": "CUSTOMER DEFINED33",
-                    "offset_int": "0x0184",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field188",
-                    "name": "CUSTOMER_DEFINED34",
-                    "description": "CUSTOMER DEFINED34",
-                    "offset_int": "0x0188",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field18C",
-                    "name": "CUSTOMER_DEFINED35",
-                    "description": "CUSTOMER DEFINED35",
-                    "offset_int": "0x018C",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field190",
-                    "name": "CUSTOMER_DEFINED36",
-                    "description": "CUSTOMER DEFINED36",
-                    "offset_int": "0x0190",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field194",
-                    "name": "CUSTOMER_DEFINED37",
-                    "description": "CUSTOMER DEFINED37",
-                    "offset_int": "0x0194",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field198",
-                    "name": "CUSTOMER_DEFINED38",
-                    "description": "CUSTOMER DEFINED38",
-                    "offset_int": "0x0198",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field19C",
-                    "name": "CUSTOMER_DEFINED39",
-                    "description": "CUSTOMER DEFINED39",
-                    "offset_int": "0x019C",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1A0",
-                    "name": "CUSTOMER_DEFINED40",
-                    "description": "CUSTOMER DEFINED40",
-                    "offset_int": "0x01A0",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1A4",
-                    "name": "CUSTOMER_DEFINED41",
-                    "description": "CUSTOMER DEFINED41",
-                    "offset_int": "0x01A4",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1A8",
-                    "name": "CUSTOMER_DEFINED42",
-                    "description": "CUSTOMER DEFINED42",
-                    "offset_int": "0x01A8",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1AC",
-                    "name": "CUSTOMER_DEFINED43",
-                    "description": "CUSTOMER DEFINED43",
-                    "offset_int": "0x01AC",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1B0",
-                    "name": "CUSTOMER_DEFINED44",
-                    "description": "CUSTOMER DEFINED44",
-                    "offset_int": "0x01B0",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1B4",
-                    "name": "CUSTOMER_DEFINED45",
-                    "description": "CUSTOMER DEFINED45",
-                    "offset_int": "0x01B4",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1B8",
-                    "name": "CUSTOMER_DEFINED46",
-                    "description": "CUSTOMER DEFINED46",
-                    "offset_int": "0x01B8",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1BC",
-                    "name": "CUSTOMER_DEFINED47",
-                    "description": "CUSTOMER DEFINED47",
-                    "offset_int": "0x01BC",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1C0",
-                    "name": "CUSTOMER_DEFINED48",
-                    "description": "CUSTOMER DEFINED48",
-                    "offset_int": "0x01C0",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1C4",
-                    "name": "CUSTOMER_DEFINED49",
-                    "description": "CUSTOMER DEFINED49",
-                    "offset_int": "0x01C4",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1C8",
-                    "name": "CUSTOMER_DEFINED50",
-                    "description": "CUSTOMER DEFINED50",
-                    "offset_int": "0x01C8",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1CC",
-                    "name": "CUSTOMER_DEFINED51",
-                    "description": "CUSTOMER DEFINED51",
-                    "offset_int": "0x01CC",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1D0",
-                    "name": "CUSTOMER_DEFINED52",
-                    "description": "CUSTOMER DEFINED52",
-                    "offset_int": "0x01D0",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1D4",
-                    "name": "CUSTOMER_DEFINED53",
-                    "description": "CUSTOMER DEFINED53",
-                    "offset_int": "0x01D4",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1D8",
-                    "name": "CUSTOMER_DEFINED54",
-                    "description": "CUSTOMER DEFINED54",
-                    "offset_int": "0x01D8",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1DC",
-                    "name": "CUSTOMER_DEFINED55",
-                    "description": "CUSTOMER DEFINED55",
-                    "offset_int": "0x01DC",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1E0",
-                    "name": "CUSTOMER_DEFINED56",
-                    "description": "CUSTOMER DEFINED56",
-                    "offset_int": "0x01E0",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1E4",
-                    "name": "CUSTOMER_DEFINED57",
-                    "description": "CUSTOMER DEFINED57",
-                    "offset_int": "0x01E4",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1E8",
-                    "name": "CUSTOMER_DEFINED58",
-                    "description": "CUSTOMER DEFINED58",
-                    "offset_int": "0x01E8",
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "field1EC",
-                    "name": "CUSTOMER_DEFINED59",
-                    "description": "CUSTOMER DEFINED59",
-                    "offset_int": "0x01EC",
-                    "default_value_int": "0"
-                }
-            ]
+          "id": "Reserved00018",
+          "name": "Reserved 0x00018",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0018",
+          "is_reserved": true,
+          "default_value_int": "0"
         },
         {
-            "group": {
-                "name": "Reserved 001F0-001F8",
-                "description": "Reserved 001F0-001F8"
-            },
-            "registers": [
-                {
-                    "id": "Reserved001F0",
-                    "name": "Reserved 0x001F0",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x01F0",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved001F4",
-                    "name": "Reserved 0x001F4",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x01F4",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                },
-                {
-                    "id": "Reserved001F8",
-                    "name": "Reserved 0x001F8",
-                    "description": "This field is reserved for internal use",
-                    "offset_int": "0x01F8",
-                    "is_reserved": true,
-                    "default_value_int": "0"
-                }
-            ]
+          "id": "Reserved0001C",
+          "name": "Reserved 0x0001C",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x001C",
+          "is_reserved": true,
+          "default_value_int": "0"
         },
         {
-            "group": {
-                "name": "CRC32",
-                "description": "CRC32 fields"
-            },
-            "registers": [
+          "id": "Reserved00020",
+          "name": "Reserved 0x00020",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0020",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved00024",
+          "name": "Reserved 0x00024",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0024",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved00028",
+          "name": "Reserved 0x00028",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0028",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved0002C",
+          "name": "Reserved 0x0002C",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x002C",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "field030",
+          "name": "XTAL_32KHZ_CAPABANK_TRIM",
+          "description": "Xtal 32kHz Capabank Trimming",
+          "offset_int": "0x0030",
+          "default_value_int": "0",
+          "bitfields": [
+            {
+              "width": 1,
+              "id": "field030-bit0",
+              "name": "TRIM_VALID",
+              "description": "Trim Valid",
+              "values": [
                 {
-                    "id": "field1FC",
-                    "name": "CMPA_CRC32",
-                    "description": "CMPA_CRC32[31:0]",
-                    "offset_int": "0x01FC",
-                    "access": "RO",
-                    "default_value_int": "0"
+                  "name": "NOT_VALID",
+                  "value": 0,
+                  "description": "Capa Bank trimmings not valid. Default trimmings value are used"
+                },
+                {
+                  "name": "VALID",
+                  "value": 1,
+                  "description": "Capa Bank trimmings valid"
                 }
-            ]
+              ]
+            },
+            {
+              "width": 10,
+              "id": "field030-bits1-10",
+              "name": "XTAL_LOAD_CAP_IEC_PF_X100",
+              "description": "Load capacitance, pF x 100. For example, 6pF becomes 600"
+            },
+            {
+              "width": 10,
+              "id": "field030-bits11-20",
+              "name": "PCB_XIN_PARA_CAP_PF_X100",
+              "description": "PCB XIN parasitic capacitance, pF x 100. For example, 6pF becomes 600"
+            },
+            {
+              "width": 10,
+              "id": "field030-bits21-30",
+              "name": "PCB_XOUT_PARA_CAP_PF_X100",
+              "description": "PCB XOUT parasitic capacitance, pF x 100. For example, 6pF becomes 600"
+            },
+            {
+              "width": 1
+            }
+          ]
+        },
+        {
+          "id": "field034",
+          "name": "XTAL_16MHZ_CAPABANK_TRIM",
+          "description": "Xtal 16MHz Capabank Trimming",
+          "offset_int": "0x0034",
+          "default_value_int": "0",
+          "bitfields": [
+            {
+              "width": 1,
+              "id": "field034-bit0",
+              "name": "TRIM_VALID",
+              "description": "Trim Valid",
+              "values": [
+                {
+                  "name": "NOT_VALID",
+                  "value": 0,
+                  "description": "Capa Bank trimmings not valid. Default trimmings value are used"
+                },
+                {
+                  "name": "VALID",
+                  "value": 1,
+                  "description": "Capa Bank trimmings valid"
+                }
+              ]
+            },
+            {
+              "width": 10,
+              "id": "field034-bits1-10",
+              "name": "XTAL_LOAD_CAP_IEC_PF_X100",
+              "description": "Load capacitance, pF x 100. For example, 6pF becomes 600"
+            },
+            {
+              "width": 10,
+              "id": "field034-bits11-20",
+              "name": "PCB_XIN_PARA_CAP_PF_X100",
+              "description": "PCB XIN parasitic capacitance, pF x 100. For example, 6pF becomes 600"
+            },
+            {
+              "width": 10,
+              "id": "field034-bits21-30",
+              "name": "PCB_XOUT_PARA_CAP_PF_X100",
+              "description": "PCB XOUT parasitic capacitance, pF x 100. For example, 6pF becomes 600"
+            },
+            {
+              "width": 1
+            }
+          ]
+        },
+        {
+          "id": "field038",
+          "name": "FLASH_REMAP_SIZE",
+          "description": "Flash Remap Size",
+          "offset_int": "0x0038",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field03C",
+          "name": "FLASH_REMAP_OFFSET",
+          "description": "Flash Remap Offset",
+          "offset_int": "0x003C",
+          "default_value_int": "0"
         }
-    ]
+      ]
+    },
+    {
+      "group": {
+        "name": "Reserved 00040-0007C",
+        "description": "Reserved 00040-0007C"
+      },
+      "registers": [
+        {
+          "id": "Reserved00040",
+          "name": "Reserved 0x00040",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0040",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved00044",
+          "name": "Reserved 0x00044",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0044",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved00048",
+          "name": "Reserved 0x00048",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0048",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved0004C",
+          "name": "Reserved 0x0004C",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x004C",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved00050",
+          "name": "Reserved 0x00050",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0050",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved00054",
+          "name": "Reserved 0x00054",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0054",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved00058",
+          "name": "Reserved 0x00058",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0058",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved0005C",
+          "name": "Reserved 0x0005C",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x005C",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved00060",
+          "name": "Reserved 0x00060",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0060",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved00064",
+          "name": "Reserved 0x00064",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0064",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved00068",
+          "name": "Reserved 0x00068",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0068",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved0006C",
+          "name": "Reserved 0x0006C",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x006C",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved00070",
+          "name": "Reserved 0x00070",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0070",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved00074",
+          "name": "Reserved 0x00074",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0074",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved00078",
+          "name": "Reserved 0x00078",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0078",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved0007C",
+          "name": "Reserved 0x0007C",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x007C",
+          "is_reserved": true,
+          "default_value_int": "0"
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "FLEXSPI_BOOT_CFG",
+        "description": "FlexSPI boot cfg"
+      },
+      "registers": [
+        {
+          "id": "field080",
+          "name": "FLEXSPI_BOOT_CFG0",
+          "description": "FlexSPI Boot Configuration 0",
+          "offset_int": "0x0080",
+          "default_value_int": "0",
+          "bitfields": [
+            {
+              "width": 1,
+              "id": "field080-bit0",
+              "name": "FLEXSPI_AUTO_PROBE_EN",
+              "description": "Quad/Octal-SPI flash auto probe feature enable",
+              "values": [
+                {
+                  "name": "DISABLE",
+                  "value": 0,
+                  "description": "Disable"
+                },
+                {
+                  "name": "ENABLE",
+                  "value": 1,
+                  "description": "Enable"
+                }
+              ]
+            },
+            {
+              "width": 3,
+              "id": "field080-bits1-3",
+              "name": "FLEXSPI_PROBE_TYPE",
+              "description": "Quad/Octal-SPI flash probe type",
+              "values": [
+                {
+                  "name": "QUADSPI_NOR",
+                  "value": 0,
+                  "description": "QuadSPI NOR"
+                },
+                {
+                  "name": "MACRONIX_OCTAL_FLASH",
+                  "value": 1,
+                  "description": "Macronix Octal FLASH"
+                },
+                {
+                  "name": "MICRON_OCTAL_FLASH",
+                  "value": 2,
+                  "description": "Micron Octal FLASH"
+                },
+                {
+                  "name": "ADESTO_OCTAL_FLASH",
+                  "value": 3,
+                  "description": "Adesto Octal FLASH"
+                }
+              ]
+            },
+            {
+              "width": 3,
+              "id": "field080-bits4-6",
+              "name": "FLEXSPI_FLASH_TYPE",
+              "description": "Define typical Serial NOR Flash types",
+              "values": [
+                {
+                  "name": "QSPI_ADDR_3B",
+                  "value": 0,
+                  "description": "QSPI ADDR 3B"
+                },
+                {
+                  "name": "HYPER_1V8",
+                  "value": 2,
+                  "description": "HYPER 1V8"
+                },
+                {
+                  "name": "HYPER_3V3",
+                  "value": 3,
+                  "description": "HYPER 3V3"
+                },
+                {
+                  "name": "FLEXSPI_DDR_MXIC",
+                  "value": 4,
+                  "description": "FlexSPI_DDR_MXIC"
+                },
+                {
+                  "name": "FLEXSPI_DDR_MICRON",
+                  "value": 5,
+                  "description": "FlexSPI_DDR_MICRON"
+                }
+              ]
+            },
+            {
+              "width": 4,
+              "id": "field080-bits7-10",
+              "name": "FLEXSPI_DUMMY_CYCLES",
+              "description": "Quad/Octal-SPI dummy cycles for read command"
+            },
+            {
+              "width": 3,
+              "id": "field080-bits11-13",
+              "name": "FLEXSPI_FREQUENCY",
+              "description": "Q/O-SPI flash interface frequency",
+              "values": [
+                {
+                  "name": "MHZ_50",
+                  "value": 0,
+                  "description": "50Mhz"
+                },
+                {
+                  "name": "MHZ_60",
+                  "value": 1,
+                  "description": "60Mhz"
+                },
+                {
+                  "name": "MHZ_80",
+                  "value": 2,
+                  "description": "80Mhz"
+                },
+                {
+                  "name": "MHZ_100",
+                  "value": 3,
+                  "description": "100Mhz"
+                },
+                {
+                  "name": "MHZ_120",
+                  "value": 4,
+                  "description": "120Mhz"
+                },
+                {
+                  "name": "MHZ_133",
+                  "value": 5,
+                  "description": "133Mhz"
+                },
+                {
+                  "name": "MHZ_166",
+                  "value": 6,
+                  "description": "166Mhz"
+                },
+                {
+                  "name": "MHZ_200",
+                  "value": 7,
+                  "description": "200Mhz"
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "field080-bit14",
+              "name": "FLEXSPI_RESET_ENABLE",
+              "description": "Use QSPI_RESET_PIN to reset the flash device",
+              "values": [
+                {
+                  "name": "NO_RESET",
+                  "value": 0,
+                  "description": "NO_RESET(O/QSPI device reset pin is not connected or available.)"
+                },
+                {
+                  "name": "ENABLE_RESET",
+                  "value": 1,
+                  "description": "EN_RESET(O/QSPI device reset pin is connected to a GPIO (QSPI_RESET_PIN).)"
+                }
+              ]
+            },
+            {
+              "width": 3,
+              "id": "field080-bits15-17",
+              "name": "FLEXSPI_RESET_GPIO_PORT",
+              "description": "GPIO port number to use for O/QSPI reset function"
+            },
+            {
+              "width": 5,
+              "id": "field080-bits18-22",
+              "name": "FLEXSPI_RESET_GPIO_PIN",
+              "description": "GPIO pin number to use for O/QSPI reset function"
+            },
+            {
+              "width": 2,
+              "id": "field080-bits23-24",
+              "name": "FLEXSPI_HOLD_TIME",
+              "description": "Wait time before access to Serial Flash",
+              "values": [
+                {
+                  "name": "WAIT_500_MICROSECS",
+                  "value": 0,
+                  "description": "Wait for 500 micro seconds"
+                },
+                {
+                  "name": "WAIT_1_MILISECS",
+                  "value": 1,
+                  "description": "Wait for 1 mili seconds"
+                },
+                {
+                  "name": "WAIT_3_MILISECS",
+                  "value": 2,
+                  "description": "Wait for 3 mili seconds"
+                },
+                {
+                  "name": "WAIT_10_MILISECS",
+                  "value": 3,
+                  "description": "Wait for 10 mili seconds"
+                }
+              ]
+            },
+            {
+              "width": 4,
+              "id": "field080-bits25-28",
+              "name": "FLEXSPI_PWR_HOLD_TIME",
+              "description": "Delay after POR before accessing Quad/Octal-SPI flash devices in addition to delay defined by FLEXSPI_HOLD TIME field",
+              "values": [
+                {
+                  "name": "NO_DELAY",
+                  "value": 0,
+                  "description": "No delay"
+                },
+                {
+                  "name": "WAIT_100_MICROSECS",
+                  "value": 1,
+                  "description": "Waits additional 100 micro-seconds"
+                },
+                {
+                  "name": "WAIT_500_MICROSECS",
+                  "value": 2,
+                  "description": "Waits additional 500 micro-seconds"
+                },
+                {
+                  "name": "WAIT_1_MILISECS",
+                  "value": 3,
+                  "description": "Waits additional 1 mili-seconds"
+                },
+                {
+                  "name": "WAIT_10_MILISECS",
+                  "value": 4,
+                  "description": "Waits additional 10 mili-seconds"
+                },
+                {
+                  "name": "WAIT_20_MILISECS",
+                  "value": 5,
+                  "description": "Waits additional 20 mili-seconds"
+                },
+                {
+                  "name": "WAIT_40_MILISECS",
+                  "value": 6,
+                  "description": "Waits additional 40 mili-seconds"
+                },
+                {
+                  "name": "WAIT_60_MILISECS",
+                  "value": 7,
+                  "description": "Waits additional 60 mili-seconds"
+                },
+                {
+                  "name": "WAIT_80_MILISECS",
+                  "value": 8,
+                  "description": "Waits additional 80 mili-seconds"
+                },
+                {
+                  "name": "WAIT_100_MILISECS",
+                  "value": 9,
+                  "description": "Waits additional 100 mili-seconds"
+                },
+                {
+                  "name": "WAIT_120_MILISECS",
+                  "value": 10,
+                  "description": "Waits additional 120 mili-seconds"
+                },
+                {
+                  "name": "WAIT_140_MILISECS",
+                  "value": 11,
+                  "description": "Waits additional 140 mili-seconds"
+                },
+                {
+                  "name": "WAIT_160_MILISECS",
+                  "value": 12,
+                  "description": "Waits additional 160 mili-seconds"
+                },
+                {
+                  "name": "WAIT_180_MILISECS",
+                  "value": 13,
+                  "description": "Waits additional 180 mili-seconds"
+                },
+                {
+                  "name": "WAIT_200_MILISECS",
+                  "value": 14,
+                  "description": "Waits additional 200 mili-seconds"
+                },
+                {
+                  "name": "WAIT_220_MILISECS",
+                  "value": 15,
+                  "description": "Waits additional220 mili-seconds"
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "field080-bit29",
+              "name": "PIN_SLEW_RATE",
+              "description": "Enable faster slew rate. When this bit is set ROM will configure FlexSPI pin with faster slew rate instead of standard slew rate",
+              "values": [
+                {
+                  "name": "STANDARD",
+                  "value": 0,
+                  "description": "Standard slew rate"
+                },
+                {
+                  "name": "FASTER",
+                  "value": 1,
+                  "description": "Faster slew rate"
+                }
+              ]
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            }
+          ]
+        },
+        {
+          "id": "field084",
+          "name": "FLEXSPI_BOOT_CFG1",
+          "description": "FlexSPI Boot Configuration 1",
+          "offset_int": "0x0084",
+          "default_value_int": "0",
+          "bitfields": [
+            {
+              "width": 7,
+              "id": "field084-bits0-6",
+              "name": "FLEXSPI_DELAY_CELL_NUM",
+              "description": "Delay cell numbers for Flash read sampling via DQS (either internal loopback or external DQS)"
+            },
+            {
+              "width": 10,
+              "id": "field084-bits7-16",
+              "name": "FLEXSPI_IMAGE_OFFSET",
+              "description": "Any offset in memory mapped Q/Octal-SPI Flash area could be remapped to offset zero to support eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. FlLEXSPI_IMAGE_OFFSET field specifies the offset location of second image. FLEXSPI_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped. If this field is left blank boot ROM assumes that application intends to not use redundant image boot feature. The physical flash offset is computed as below: physical offset = FLEXSPI_IMAGE_OFFSET"
+            },
+            {
+              "width": 4,
+              "id": "field084-bits17-20",
+              "name": "FLEXSPI_REMAP_IMAGE_SIZE",
+              "description": "Any offset in memory mapped QSPI Flash area could be remapped to offset zero to support eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. QSPI_IMAGE_OFFSET field specifies the offset location of second image. QSPI_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped. SIZE_OFFSET \"Size of the remapped area (aka second half) is same as first half. It is determined by FLEXSPI_IMAGE_OFFSET Field. Remap size = FLEXSPI_IMAGE_OFFSET",
+              "values": [
+                {
+                  "name": "SIZE",
+                  "value": 0,
+                  "description": "SIZE"
+                },
+                {
+                  "name": "SIZE_1MB",
+                  "value": 1,
+                  "description": "SIZE_1MB Size of remapped area is 1MByte"
+                },
+                {
+                  "name": "SIZE_2MB",
+                  "value": 2,
+                  "description": "SIZE_2MB Size of remapped area is 2MByte"
+                },
+                {
+                  "name": "SIZE_3MB",
+                  "value": 3,
+                  "description": "SIZE_3MB Size of remapped area is 3MByte"
+                },
+                {
+                  "name": "SIZE_4MB",
+                  "value": 4,
+                  "description": "SIZE_4MB Size of remapped area is 4MByte"
+                },
+                {
+                  "name": "SIZE_5MB",
+                  "value": 5,
+                  "description": "SIZE_5MB Size of remapped area is 5MByte"
+                },
+                {
+                  "name": "SIZE_6MB",
+                  "value": 6,
+                  "description": "SIZE_6MB Size of remapped area is 6MByte"
+                },
+                {
+                  "name": "SIZE_7MB",
+                  "value": 7,
+                  "description": "SIZE_7MB Size of remapped area is 7MByte"
+                },
+                {
+                  "name": "SIZE_8MB",
+                  "value": 8,
+                  "description": "SIZE_8MB Size of remapped area is 8MByte"
+                },
+                {
+                  "name": "SIZE_9MB",
+                  "value": 9,
+                  "description": "SIZE_9MB Size of remapped area is 9MByte"
+                },
+                {
+                  "name": "SIZE_10MB",
+                  "value": 10,
+                  "description": "SIZE_10MB Size of remapped area is 10MByte"
+                },
+                {
+                  "name": "SIZE_11MB",
+                  "value": 11,
+                  "description": "SIZE_11MB Size of remapped area is 11MByte"
+                },
+                {
+                  "name": "SIZE_12MB",
+                  "value": 12,
+                  "description": "SIZE_12MB Size of remapped area is 12MByte"
+                },
+                {
+                  "name": "SIZE_256KB",
+                  "value": 13,
+                  "description": "SIZE_256KB Size of remapped area is 256KByte"
+                },
+                {
+                  "name": "SIZE_512KB",
+                  "value": 14,
+                  "description": "SIZE_512KB Size of remapped area is 512KByte"
+                },
+                {
+                  "name": "SIZE_768KB",
+                  "value": 15,
+                  "description": "SIZE_768KB Size of remapped area is 768KByte"
+                }
+              ]
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "Reserved 00088-0008C",
+        "description": "Reserved 00088-000AC"
+      },
+      "registers": [
+        {
+          "id": "Reserved00088",
+          "name": "Reserved 0x00088",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0088",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved0008C",
+          "name": "Reserved 0x0008C",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x008C",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved00090",
+          "name": "Reserved 0x00090",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0090",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved00094",
+          "name": "Reserved 0x00094",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0094",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved00098",
+          "name": "Reserved 0x00098",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x0098",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved0009C",
+          "name": "Reserved 0x0009C",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x009C",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000A0",
+          "name": "Reserved 0x000A0",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00A0",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000A4",
+          "name": "Reserved 0x000A4",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00A4",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000A8",
+          "name": "Reserved 0x000A8",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00A8",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000AC",
+          "name": "Reserved 0x000AC",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00AC",
+          "is_reserved": true,
+          "default_value_int": "0"
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "Quick GPIO Configuration",
+        "description": "Quick GPIO Configuration"
+      },
+      "registers": [
+        {
+          "id": "field0B0",
+          "name": "QUICK_SET_GPIO_0",
+          "description": "Quick Set to Drive GPIO 0 port pins high",
+          "offset_int": "0x00B0",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field0B4",
+          "name": "QUICK_CLR_GPIO_0",
+          "description": "Quick Clear to Drive GPIO 0 port pins low",
+          "offset_int": "0x00B4",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field0B8",
+          "name": "QUICK_SET_GPIO_1",
+          "description": "Quick Set to Drive GPIO 1 port pins high",
+          "offset_int": "0x00B8",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field0BC",
+          "name": "QUICK_CLR_GPIO_1",
+          "description": "Quick Clear to Drive GPIO 1 port pins low",
+          "offset_int": "0x00BC",
+          "default_value_int": "0"
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "Reserved 000C0-000FC",
+        "description": "Reserved 000C0-000FC"
+      },
+      "registers": [
+        {
+          "id": "Reserved000C0",
+          "name": "Reserved 0x000C0",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00C0",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000C4",
+          "name": "Reserved 0x000C4",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00C4",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000C8",
+          "name": "Reserved 0x000C8",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00C8",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000CC",
+          "name": "Reserved 0x000CC",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00CC",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000D0",
+          "name": "Reserved 0x000D0",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00D0",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000D4",
+          "name": "Reserved 0x000D4",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00D4",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000D8",
+          "name": "Reserved 0x000D8",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00D8",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000DC",
+          "name": "Reserved 0x000DC",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00DC",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000E0",
+          "name": "Reserved 0x000E0",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00E0",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000E4",
+          "name": "Reserved 0x000E4",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00E4",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000E8",
+          "name": "Reserved 0x000E8",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00E8",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000EC",
+          "name": "Reserved 0x000EC",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00EC",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000F0",
+          "name": "Reserved 0x000F0",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00F0",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000F4",
+          "name": "Reserved 0x000F4",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00F4",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000F8",
+          "name": "Reserved 0x000F8",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00F8",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved000FC",
+          "name": "Reserved 0x000FC",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x00FC",
+          "is_reserved": true,
+          "default_value_int": "0"
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "Customer defined",
+        "description": "Customer defined"
+      },
+      "registers": [
+        {
+          "id": "field100",
+          "name": "Customer_Defined0",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0100",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field104",
+          "name": "Customer_Defined1",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0104",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field108",
+          "name": "Customer_Defined2",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0108",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field10C",
+          "name": "Customer_Defined3",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x010C",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field110",
+          "name": "Customer_Defined4",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0110",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field114",
+          "name": "Customer_Defined5",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0114",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field118",
+          "name": "Customer_Defined6",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0118",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field11C",
+          "name": "Customer_Defined7",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x011C",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field120",
+          "name": "Customer_Defined8",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0120",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field124",
+          "name": "Customer_Defined9",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0124",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field128",
+          "name": "Customer_Defined10",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0128",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field12C",
+          "name": "Customer_Defined11",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x012C",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field130",
+          "name": "Customer_Defined12",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0130",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field134",
+          "name": "Customer_Defined13",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0134",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field138",
+          "name": "Customer_Defined14",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0138",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field13C",
+          "name": "Customer_Defined15",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x013C",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field140",
+          "name": "Customer_Defined16",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0140",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field144",
+          "name": "Customer_Defined17",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0144",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field148",
+          "name": "Customer_Defined18",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0148",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field14C",
+          "name": "Customer_Defined19",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x014C",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field150",
+          "name": "Customer_Defined20",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0150",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field154",
+          "name": "Customer_Defined21",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0154",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field158",
+          "name": "Customer_Defined22",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0158",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field15C",
+          "name": "Customer_Defined23",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x015C",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field160",
+          "name": "Customer_Defined24",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0160",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field164",
+          "name": "Customer_Defined25",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0164",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field168",
+          "name": "Customer_Defined26",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0168",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field16C",
+          "name": "Customer_Defined27",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x016C",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field170",
+          "name": "Customer_Defined28",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0170",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field174",
+          "name": "Customer_Defined29",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0174",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field178",
+          "name": "Customer_Defined30",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0178",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field17C",
+          "name": "Customer_Defined31",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x017C",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field180",
+          "name": "Customer_Defined32",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0180",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field184",
+          "name": "Customer_Defined33",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0184",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field188",
+          "name": "Customer_Defined34",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0188",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field18C",
+          "name": "Customer_Defined35",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x018C",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field190",
+          "name": "Customer_Defined36",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0190",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field194",
+          "name": "Customer_Defined37",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0194",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field198",
+          "name": "Customer_Defined38",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x0198",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field19C",
+          "name": "Customer_Defined39",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x019C",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1A0",
+          "name": "Customer_Defined40",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01A0",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1A4",
+          "name": "Customer_Defined41",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01A4",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1A8",
+          "name": "Customer_Defined42",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01A8",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1AC",
+          "name": "Customer_Defined43",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01AC",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1B0",
+          "name": "Customer_Defined44",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01B0",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1B4",
+          "name": "Customer_Defined45",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01B4",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1B8",
+          "name": "Customer_Defined46",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01B8",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1BC",
+          "name": "Customer_Defined47",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01BC",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1C0",
+          "name": "Customer_Defined48",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01C0",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1C4",
+          "name": "Customer_Defined49",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01C4",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1C8",
+          "name": "Customer_Defined50",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01C8",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1CC",
+          "name": "Customer_Defined51",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01CC",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1D0",
+          "name": "Customer_Defined52",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01D0",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1D4",
+          "name": "Customer_Defined53",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01D4",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1D8",
+          "name": "Customer_Defined54",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01D8",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1DC",
+          "name": "Customer_Defined55",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01DC",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1E0",
+          "name": "Customer_Defined56",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01E0",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1E4",
+          "name": "Customer_Defined57",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01E4",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1E8",
+          "name": "Customer_Defined58",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01E8",
+          "default_value_int": "0"
+        },
+        {
+          "id": "field1EC",
+          "name": "Customer_Defined59",
+          "description": "Customer Defined (Programmable through ROM API)",
+          "offset_int": "0x01EC",
+          "default_value_int": "0"
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "Reserved 001F0-001F8",
+        "description": "Reserved 001F0-001F8"
+      },
+      "registers": [
+        {
+          "id": "Reserved001F0",
+          "name": "Reserved 0x001F0",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x01F0",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved001F4",
+          "name": "Reserved 0x001F4",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x01F4",
+          "is_reserved": true,
+          "default_value_int": "0"
+        },
+        {
+          "id": "Reserved001F8",
+          "name": "Reserved 0x001F8",
+          "description": "This field is reserved for internal use",
+          "offset_int": "0x01F8",
+          "is_reserved": true,
+          "default_value_int": "0"
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "CRC32",
+        "description": "CRC32 fields"
+      },
+      "registers": [
+        {
+          "id": "field1FC",
+          "name": "CMPA_CRC32",
+          "description": "CMPA_CRC32[31:0]",
+          "offset_int": "0x01FC",
+          "access": "RO",
+          "default_value_int": "0"
+        }
+      ]
+    }
+  ]
 }

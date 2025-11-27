@@ -4,7 +4,12 @@
 # Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""NXPDICE application is designed to cover DICE-related operations."""
+"""SPSDK NXPDICE application for DICE-related operations and device provisioning.
+
+This module provides a command-line interface for managing Device Identity Composition Engine (DICE)
+operations including certificate authority management, device verification, genuinity proving,
+and secure provisioning workflows for NXP devices.
+"""
 
 import logging
 import os
@@ -59,9 +64,7 @@ def service_options(options: FC) -> FC:
         "--database",
         type=click.Path(dir_okay=False),
         help="Path to local database instead of service-url.",
-    )(
-        options  # type: ignore[arg-type]
-    )
+    )(options)
     options = optgroup.option(
         "-su",
         "--service-url",

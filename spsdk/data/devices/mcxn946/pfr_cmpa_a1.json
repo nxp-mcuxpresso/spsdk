@@ -1222,13 +1222,13 @@
             {
               "width": 16,
               "id": "field034-bits0-15",
-              "name": "USB_VENDOR_ID",
+              "name": "USB_Vendor_ID",
               "description": "Customer defined USB vendor ID used during USB-ISP mode device enumeration"
             },
             {
               "width": 16,
               "id": "field034-bits16-31",
-              "name": "USB_PRODUCT_ID",
+              "name": "USB_Product_ID",
               "description": "Customer defined USB product ID used during USB-ISP mode device enumeration"
             }
           ]
@@ -1243,15 +1243,19 @@
             {
               "width": 8,
               "id": "field038-bits0-7",
-              "name": "USBX_VBUS_PIN",
-              "deprecated_names": ["USB0_VBUS_PIN"],
+              "name": "USBx_VBUS_PIN",
+              "deprecated_names": [
+                "USB0_VBUS_PIN"
+              ],
               "description": "Override default USBx_VBUS_DETECT ISP pin. Identifies the pin to be used as USBx_VBUS detect pin. [4:0] GPIO Pin number [7:5] GPIO port number"
             },
             {
               "width": 4,
               "id": "field038-bits8-11",
-              "name": "USBX_VBUS_FUNC_SLOT",
-              "deprecated_names": ["USB0_VBUS_FUNC_SLOT"],
+              "name": "USBx_VBUS_FUNC_SLOT",
+              "deprecated_names": [
+                "USB0_VBUS_FUNC_SLOT"
+              ],
               "description": "Identifies the ALT pin mux function to use for the pin selected by USBx_VBUS_PIN"
             },
             {
@@ -1483,9 +1487,12 @@
         },
         {
           "id": "field040",
-          "name": "DCFG_CC_SOCU_PIN",
+          "name": "CC_SOCU_PIN",
           "description": "Credential Constraints for SoC specific Use Pinned",
           "offset_int": "0x0040",
+          "deprecated_names": [
+            "DCFG_CC_SOCU_PIN"
+          ],
           "default_value_int": "0",
           "bitfields": [
             {
@@ -1695,7 +1702,7 @@
             {
               "width": 16,
               "id": "field040-bits16-31",
-              "name": "INVERSE_VALUE",
+              "name": "Inverse_value",
               "description": "Inverse Value",
               "calculated": "INVERSE"
             }
@@ -1703,9 +1710,12 @@
         },
         {
           "id": "field044",
-          "name": "DCFG_CC_SOCU_DFLT",
+          "name": "CC_SOCU_DFLT",
           "description": "Credential Constraints for SoC specific Use Debug Filter",
           "offset_int": "0x0044",
+          "deprecated_names": [
+            "DCFG_CC_SOCU_DFLT"
+          ],
           "default_value_int": "0",
           "bitfields": [
             {
@@ -1897,7 +1907,7 @@
             {
               "width": 16,
               "id": "field044-bits16-31",
-              "name": "INVERSE_VALUE",
+              "name": "Inverse_value",
               "description": "Inverse Value",
               "calculated": "INVERSE"
             }
@@ -2313,7 +2323,7 @@
         },
         {
           "id": "field054",
-          "name": "ROTK_USAGE",
+          "name": "RoTK_USAGE",
           "description": "Root of Trust Key Usage",
           "offset_int": "0x0054",
           "default_value_int": "0",
@@ -2321,7 +2331,7 @@
             {
               "width": 3,
               "id": "field054-bits0-2",
-              "name": "ROTK0_USAGE",
+              "name": "RoTK0_Usage",
               "description": "RoT key 0 usage properties",
               "values": [
                 {
@@ -2369,7 +2379,7 @@
             {
               "width": 3,
               "id": "field054-bits3-5",
-              "name": "ROTK1_USAGE",
+              "name": "RoTK1_Usage",
               "description": "RoT key 1 usage properties",
               "values": [
                 {
@@ -2417,7 +2427,7 @@
             {
               "width": 3,
               "id": "field054-bits6-8",
-              "name": "ROTK2_USAGE",
+              "name": "RoTK2_Usage",
               "description": "RoT key 2 usage properties",
               "values": [
                 {
@@ -2465,7 +2475,7 @@
             {
               "width": 3,
               "id": "field054-bits9-11",
-              "name": "ROTK3_USAGE",
+              "name": "RoTK3_Usage",
               "description": "RoT key 3 usage properties",
               "values": [
                 {

@@ -1,6 +1,6 @@
 MBoot Interfaces
 ================
-Module implementing the Mboot communication protocol.
+.. automodule:: spsdk.mboot.interfaces
 
 MBoot UART
 ----------

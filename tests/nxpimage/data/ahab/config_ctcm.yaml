@@ -1,13 +1,14 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  AHAB converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                        == General Options ==
 # ----------------------------------------------------------------------------------------------------
 family: mimxrt1189  # [Required], MCU family; Family identifier including the chip revision. If revision is not present, latest revision is used as default; Possible options:['mx93', 'mimxrt1189']
 revision: a0 # [Optional], MCU revision; Revision of silicon; Possible options:['a0']
-image_type: non_xip # [Required], Type of image; The final use of image, this setting is changing the style of offsets in final container; Possible options:['xip', 'non_xip', 'serial_downloader', 'nand']
+target_memory: sd_emmc # [Required], Type of image; The final use of image, this setting is changing the style of offsets in final container; Possible options:['xip', 'non_xip', 'serial_downloader', 'nand']
 output: cntr_ctcm_cm33_img.bin # [Required], Output file name; Output AHAB file name
 containers: # [Required], List of containers present in AHAB; The order of containers in the list defines the order in AHAB.
   -

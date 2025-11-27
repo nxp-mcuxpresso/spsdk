@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module for local DICE attestation testing."""
+"""SPSDK NXP DICE attestation testing module.
+
+This module contains test cases for validating the NXP DICE (Device Identifier
+Composition Engine) attestation functionality provided by the nxpdice application.
+Tests cover basic attestation workflows and upload scenarios.
+"""
 
 import os
 import shutil
@@ -17,13 +22,31 @@ from spsdk.utils.misc import use_working_directory
 
 
 def run_nxpdice(command: list[str], expected_result: int) -> Result:
+    """Run nxpdice CLI command and validate exit code.
+
+    This is a test helper function that executes nxpdice CLI commands using Click's
+    test runner and asserts that the command exits with the expected result code.
+
+    :param command: List of command line arguments to pass to nxpdice.
+    :param expected_result: Expected exit code from the command execution.
+    :return: Click test result object containing command output and exit information.
+    """
     runner = CliRunner()
     result = runner.invoke(nxpdice.main, command)
     assert result.exit_code == expected_result
     return result
 
 
-def test_default_scenario(data_dir, tmp_path):
+def test_default_scenario(data_dir: str, tmp_path: str) -> None:
+    """Test default DICE scenario with complete workflow.
+
+    This test verifies the complete DICE (Device Identifier Composition Engine) workflow
+    including CA public key registration, version registration, and verification steps
+    using temporary database and working directory.
+
+    :param data_dir: Path to directory containing test data and models.
+    :param tmp_path: Temporary directory path for test execution and database storage.
+    """
     models = os.path.join(data_dir, "models")
     database = os.path.join(tmp_path, "database.sqlite")
     common = ["-f", "lpc55s3x", "-p", "com90", "-md", models, "-db", database]
@@ -39,7 +62,17 @@ def test_default_scenario(data_dir, tmp_path):
         run_nxpdice(cmd, expected_result=0)
 
 
-def test_upload_scenario(data_dir, tmp_path):
+def test_upload_scenario(data_dir: str, tmp_path: str) -> None:
+    """Test complete upload scenario for NXPDICE database operations.
+
+    This test verifies the full workflow of uploading CA public key, version data,
+    and response data to the NXPDICE database. It copies a test database to a
+    temporary location and executes sequential upload commands to ensure proper
+    database functionality.
+
+    :param data_dir: Path to directory containing test data files including database.sqlite, ca_puk.bin, and response.bin
+    :param tmp_path: Temporary directory path where test database will be copied for isolated testing
+    """
     database = shutil.copy(
         os.path.join(data_dir, "database.sqlite"), os.path.join(tmp_path, "database.sqlite")
     )

@@ -1,5 +1,5 @@
 get-property 0x0a
 
-flash-read-once 1 4 # inline commment
+flash-read-once 1 4 # inline comment
      # comment with leading whitespace
 set-property 10 1

@@ -4,7 +4,14 @@
 # Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Module for NXP SPSDK DebugMailbox support."""
+"""SPSDK Debug Mailbox communication interface.
+
+This module provides functionality for communicating with NXP MCU debug mailbox
+through debug probes, enabling secure provisioning and debugging operations.
+Key components:
+- DebugMailbox: Main class for debug mailbox communication
+- DebugMailboxError: Exception handling for mailbox operations
+"""
 
 import functools
 import logging
@@ -22,11 +29,25 @@ logger = logging.getLogger(__name__)
 
 
 class DebugMailboxError(RuntimeError):
-    """Class for DebugMailboxError."""
+    """Debug Mailbox operation error exception.
+
+    Exception raised when Debug Mailbox operations fail due to communication
+    errors, invalid responses, or hardware-related issues during secure
+    provisioning operations.
+    """
 
 
 class DebugMailbox:
-    """Class for DebugMailbox."""
+    """Debug Mailbox communication interface for NXP MCU devices.
+
+    This class provides a standardized interface for communicating with the debug mailbox
+    functionality present in NXP MCU devices. It handles the low-level protocol operations,
+    register access, and synchronization required for debug authentication and provisioning
+    operations through the debug probe connection.
+    The debug mailbox enables secure communication between external tools and the device's
+    ROM code or secure firmware, supporting operations like authentication challenges,
+    key provisioning, and secure debug unlock procedures.
+    """
 
     def __init__(
         self,
@@ -38,12 +59,15 @@ class DebugMailbox:
     ) -> None:
         """Initialize DebugMailbox object.
 
-        :param debug_probe: Debug probe instance.
-        :param family: Chip family.
+        Establishes connection to the debug mailbox by performing resynchronization request
+        and waiting for acknowledgement from ROM code.
+
+        :param debug_probe: Debug probe instance for communication.
+        :param family: Chip family and revision information.
         :param reset: Do reset of debug mailbox during initialization, defaults to True.
-        :param moredelay: Time of extra delay after reset sequence, defaults to 0.0.
-        :param op_timeout: Atomic operation timeout, defaults to 1000.
-        :raises SPSDKIOError: Various kind of vulnerabilities during connection to debug mailbox.
+        :param moredelay: Time of extra delay after reset sequence in seconds, defaults to 0.0.
+        :param op_timeout: Atomic operation timeout in milliseconds, defaults to 1000.
+        :raises SPSDKIOError: Connection timeout or communication failure with debug mailbox.
         """
         # setup debug port / access point
         self.family = family
@@ -112,6 +136,9 @@ class DebugMailbox:
     def read_idr(self) -> int:
         """Read IDR of debug mailbox.
 
+        Reads the Identification Register (IDR) value from the debug mailbox Access Port
+        and validates it against the expected value. Issues a warning if the values don't match.
+
         :return: IDR value of debug mailbox AP.
         """
         idr = self.dbgmlbx_reg_read(addr=self.registers["IDR"]["address"])
@@ -123,15 +150,22 @@ class DebugMailbox:
         return idr
 
     def close(self) -> None:
-        """Close session."""
+        """Close the debug mailbox session.
+
+        This method properly closes the connection to the debug probe and cleans up
+        any associated resources.
+        """
         self.debug_probe.close()
 
     def spin_read(self, reg: int) -> int:
-        """Do atomic read operation to debug mailbox.
+        """Perform atomic read operation from debug mailbox register.
 
-        :param reg: Register address.
-        :return: Read value.
-        :raises SPSDKTimeoutError: When read operation exceed defined operation timeout.
+        This method continuously attempts to read from the specified register until successful
+        or timeout occurs. It handles transient errors by retrying with a small delay.
+
+        :param reg: Register address to read from.
+        :return: Value read from the register.
+        :raises SPSDKTimeoutError: When read operation exceeds defined operation timeout.
         """
         ret = None
         timeout = Timeout(self.op_timeout, units="ms")
@@ -150,11 +184,14 @@ class DebugMailbox:
         return ret
 
     def spin_write(self, reg: int, value: int) -> None:
-        """Do atomic write operation to debug mailbox.
+        """Perform atomic write operation to debug mailbox.
 
-        :param reg: Register address.
-        :param value: Value to write.
-        :raises SPSDKTimeoutError: When write operation exceed defined operation timeout.
+        The method writes data to the specified register and waits for the ROM code to process
+        the request. It includes retry logic with timeout handling to ensure reliable operation.
+
+        :param reg: Register address to write to.
+        :param value: Value to write to the register.
+        :raises SPSDKTimeoutError: When write operation exceeds defined operation timeout.
         """
         timeout = Timeout(self.op_timeout, units="ms")
         while True:
@@ -181,14 +218,32 @@ class DebugMailbox:
     @no_type_check
     # pylint: disable=no-self-argument
     def get_dbgmlbx_ap(func: Any):
-        """Decorator function that secure the getting right DEBUG MAILBOX AP ix for first use.
+        """Decorator function that secures getting the correct DEBUG MAILBOX AP index for first use.
 
-        :param func: Decorated function.
+        The decorator automatically detects the debug mailbox access port index by trying
+        predefined possible indices and validating against the expected IDR register value.
+        If no valid access port is found, it raises an exception.
+
+        :param func: The function to be decorated that requires debug mailbox access.
+        :raises SPSDKError: When debug mailbox access port cannot be found.
+        :return: Decorated function wrapper.
         """
         POSSIBLE_DBGMLBX_AP_IX = [2, 0, 1, 3, 8]
 
         @functools.wraps(func)
         def wrapper(self: "DebugMailbox", *args, **kwargs):
+            """Wrapper function to auto-detect debug mailbox access port if not specified.
+
+            This decorator automatically detects the debug mailbox access port index by iterating
+            through possible access port indices and checking the IDR register value. If the
+            access port index is already set (>= 0), the wrapped function is called directly.
+
+            :param self: DebugMailbox instance.
+            :param args: Variable length argument list to pass to wrapped function.
+            :param kwargs: Arbitrary keyword arguments to pass to wrapped function.
+            :raises SPSDKError: When debug mailbox access port cannot be found.
+            :return: Result of the wrapped function call.
+            """
             if self.dbgmlbx_ap_ix < 0:
                 # Try to find DEBUG MAILBOX AP
                 logger.warning(
@@ -222,11 +277,11 @@ class DebugMailbox:
     def dbgmlbx_reg_read(self, addr: int = 0) -> int:
         """Read debug mailbox access port register.
 
-        This is read debug mailbox register function for SPSDK library to support various DEBUG PROBES.
+        This function reads a debug mailbox register through the debug probe interface to support
+        various debug probes in the SPSDK library.
 
-        :param addr: the register address
-        :return: The read value of addressed register (4 bytes)
-        :raises NotImplementedError: Derived class has to implement this method
+        :param addr: The register address to read from.
+        :return: The read value of addressed register (4 bytes).
         """
         return self.debug_probe.coresight_reg_read_safe(
             addr=self.debug_probe.get_coresight_ap_address(
@@ -238,11 +293,11 @@ class DebugMailbox:
     def dbgmlbx_reg_write(self, addr: int = 0, data: int = 0) -> None:
         """Write debug mailbox access port register.
 
-        This is write debug mailbox register function for SPSDK library to support various DEBUG PROBES.
+        Writes data to a specified register address in the debug mailbox access port
+        using the configured debug probe's CoreSight interface.
 
-        :param addr: the register address
-        :param data: the data to be written into register
-        :raises NotImplementedError: Derived class has to implement this method
+        :param addr: Register address to write to.
+        :param data: Data value to write into the register.
         """
         self.debug_probe.coresight_reg_write_safe(
             addr=self.debug_probe.get_coresight_ap_address(

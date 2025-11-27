@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""WPC certificate service using EL2GO."""
+"""WPC certificate service implementation using EdgeLock 2GO platform.
+
+This module provides WPC (Wireless Power Consortium) certificate provisioning
+functionality through NXP's EdgeLock 2GO cloud service, enabling secure
+certificate management for wireless charging applications.
+"""
 
 import base64
 import json
@@ -26,20 +31,34 @@ logger = logging.getLogger(__name__)
 
 
 class EL2GoWPCError(SPSDKWPCError):
-    """Error thrown by EL2Go during WPC operation."""
+    """EL2Go WPC service error exception.
+
+    This exception is raised when an error occurs during communication with
+    the EL2Go service for WPC (Wireless Power Consortium) operations. It
+    encapsulates the HTTP response from the EL2Go service to provide detailed
+    error information for debugging and error handling.
+    """
 
     def __init__(self, response: requests.Response, desc: Optional[str] = None) -> None:
         """Initialize the EL2GO WPC error.
 
-        :param response: Response from the EL2GO
-        :param desc: Custom description of the error, defaults to None
+        :param response: Response from the EL2GO service.
+        :param desc: Custom description of the error, defaults to None.
         """
         super().__init__(desc)
         self.response = response
 
 
 class WPCCertificateServiceEL2GO(WPCCertificateService):
-    """EdgeLock2GO adapter providing WPC Certificate Chain."""
+    """WPC Certificate Service adapter for EdgeLock2GO platform.
+
+    This class provides integration with NXP's EdgeLock2GO cloud service to obtain
+    WPC (Wireless Power Consortium) certificate chains for device authentication.
+    It handles REST API communication, authentication, and certificate retrieval
+    operations.
+
+    :cvar identifier: Service identifier used for configuration and registration.
+    """
 
     identifier = "el2go"
 
@@ -53,11 +72,11 @@ class WPCCertificateServiceEL2GO(WPCCertificateService):
     ) -> None:
         """Initialize the EL2GO adapter.
 
-        :param url: URL to EL2GO WPC service
-        :param qi_id: Customer's Qi ID
-        :param api_key: Customer's EL2GO REST API access token
-        :param correlation_id: Customer's EL2GO Correlation ID, defaults to None
-        :param timeout: REST API request timeout in seconds
+        :param family: Target MCU family and revision.
+        :param url: URL to EL2GO WPC service.
+        :param qi_id: Customer's Qi ID.
+        :param api_key: Customer's EL2GO REST API access token.
+        :param timeout: REST API request timeout in seconds, defaults to 60.
         """
         super().__init__(family=family)
         self.base_url = url
@@ -72,7 +91,11 @@ class WPCCertificateServiceEL2GO(WPCCertificateService):
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Get JSON schema for validating configuration data."""
+        """Get JSON schema for validating EL2GO configuration data.
+
+        :param family: Target MCU family and revision information.
+        :return: List containing EL2GO validation schema dictionary.
+        """
         schema = get_schema_file(DatabaseManager.WPC)
         return [schema["el2go"]]
 
@@ -80,11 +103,11 @@ class WPCCertificateServiceEL2GO(WPCCertificateService):
     def load_from_config(cls, config: Config) -> Self:
         """Create instance of this class based on configuration data.
 
-        __init__ method of this class will be called with data from config_data.
-        To limit the scope of data, set cls.CONFIG_PARAMS (key in config data).
+        The method loads configuration parameters including API key, URL, QI ID, family revision,
+        and timeout to initialize a new instance. Uses cls.CONFIG_PARAMS to scope configuration data.
 
-        :param config: Configuration data
-        :return: Instance of this class
+        :param config: Configuration data containing service parameters
+        :return: Instance of this class initialized with configuration values
         """
         api_key = config.load_secret(f"{cls.CONFIG_PARAMS}/api_key")
         url = config.get_str(f"{cls.CONFIG_PARAMS}/url")
@@ -94,6 +117,17 @@ class WPCCertificateServiceEL2GO(WPCCertificateService):
         return cls(family=family, url=url, qi_id=qi_id, api_key=api_key, timeout=timeout)
 
     def _handle_request(self, method: str, url: str, payload: dict) -> dict:
+        """Handle HTTP request to EL2Go service with proper error handling.
+
+        Constructs the final URL, generates correlation ID for tracking, logs request details,
+        sends the HTTP request, and processes the response with appropriate error handling.
+
+        :param method: HTTP method to use (GET, POST, PUT, DELETE, etc.).
+        :param url: Relative URL path to append to base URL.
+        :param payload: JSON payload to send with the request.
+        :raises EL2GoWPCError: When HTTP response status code is 400 or higher.
+        :return: JSON response from the service as dictionary.
+        """
         final_url = f"{self.base_url}{url}"
         logger.info(f"Handling url: {final_url}")
         correlation_id = str(uuid.uuid4())
@@ -116,7 +150,22 @@ class WPCCertificateServiceEL2GO(WPCCertificateService):
         return json_response
 
     def get_wpc_cert(self, wpc_id_data: bytes) -> WPCCertChain:
-        """Obtain the WPC Certificate Chain."""
+        """Obtain the WPC Certificate Chain from EL2GO service.
+
+        Retrieves a WPC (Wireless Power Consortium) certificate chain by making a request
+        to the EL2GO service. Supports both CSR (Certificate Signing Request) and RSID
+        (Root Secure ID) request types. Handles certificate re-download if certificate
+        already exists for RSID type.
+
+        :param wpc_id_data: WPC identification data - either CSR bytes for COMPUTED_CSR
+                           type or TP-Data-Container v2 bytes for RSID type
+        :raises SPSDKWPCError: When unsupported WPC ID type is used, response format is
+                              invalid, or unable to parse PUC ID from error description
+        :raises EL2GoWPCError: When EL2GO service request fails (except for handled 422
+                              status code with RSID type)
+        :return: WPC certificate chain containing root CA hash, manufacturer certificate,
+                 and product unit certificate
+        """
         url = f"/api/v1/wpc/product-unit-certificate/{self.qi_id:06}/request-puc"
         if self.wpc_id_type == WPCIdType.COMPUTED_CSR:
             data = {

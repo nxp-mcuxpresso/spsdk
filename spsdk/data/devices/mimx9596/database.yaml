@@ -335,7 +335,7 @@ features:
     spl_load_address: 0x20480000
     spl_core_id: cortex-a55
     spl_meta_data_start_cpu_id: 2
-    spl_image_size_alignment: 0x400
+    spl_ddr_image_size_alignment: 0x400
 
     v2x_dummy_load_address: 0x8b000000
     v2x_dummy_image_type: v2x_dummy
@@ -361,12 +361,14 @@ features:
     kernel_meta_data_start_cpu_id: 2
     kernel_chunk_size: 0x700000
     kernel_revisions_to_split: [a0, a1]
+    kernel_image_size_alignment: 0x400
 
     dtb_load_address: 0x93000000
     dtb_core_id: cortex-a55
     dtb_meta_data_start_cpu_id: 0
     dtb_entry_point: 0x0
     dtb_image_type: data
+    dtb_image_size_alignment: 0x400
 
     extra_images:
       [
@@ -420,7 +422,7 @@ features:
           secondary_image_container_set: -1 # Just behind previous segment
 
   # # ======== OTFAD section ========
-  otfad: 
+  otfad:
     keyblob_byte_swap_cnt: 8
     sb_21_supported: False
     has_kek_fuses: True

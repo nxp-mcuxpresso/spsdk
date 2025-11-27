@@ -1,7 +1,6 @@
 Fuses API
 =====================
-
-This module contains support for Fuses manipulation.
+.. automodule:: spsdk.fuses
 
 Fuses
 ----------------------------------------------------------

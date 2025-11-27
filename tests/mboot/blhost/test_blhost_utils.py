@@ -5,7 +5,14 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Testing utilities for the BLHost application."""
+"""SPSDK BLHost utilities test module.
+
+This module contains comprehensive test cases for BLHost helper utilities,
+focusing on parsing functions and data validation within the SPSDK framework.
+The tests validate parsing of various BLHost command parameters including
+property tags, key types, image files, and trust provisioning configurations.
+"""
+
 import os
 
 import pytest
@@ -18,12 +25,11 @@ from spsdk.apps.blhost_helper import (
     parse_trust_prov_wrapping_key_type,
 )
 from spsdk.utils.binary_image import BinaryImage
-from spsdk.utils.interfaces.device.usbsio_device import UsbSioDevice
 from spsdk.utils.family import FamilyRevision
 
 
 @pytest.mark.parametrize(
-    "input,expected",
+    "parse_input,expected",
     [
         ("1", 1),
         ("0xa", 10),
@@ -35,13 +41,21 @@ from spsdk.utils.family import FamilyRevision
         ("some-nonsense", 0xFF),
     ],
 )
-def test_parse_property_tag(input, expected):
-    actual = parse_property_tag(input)
+def test_parse_property_tag(parse_input: str, expected: int) -> None:
+    """Test parsing of property tag from string input.
+
+    Verifies that the parse_property_tag function correctly converts
+    a string representation of a property tag to its expected integer value.
+
+    :param parse_input: String representation of the property tag to parse.
+    :param expected: Expected integer value after parsing the input string.
+    """
+    actual = parse_property_tag(parse_input)
     assert actual == expected
 
 
 @pytest.mark.parametrize(
-    "input,family,expected",
+    "parse_input,family,expected",
     [
         ("verify-erase", "kw45b41z8", 10),
         ("verify-erase", "k32w148", 10),
@@ -49,13 +63,23 @@ def test_parse_property_tag(input, expected):
         ("current-version", "k32w148", 1),
     ],
 )
-def test_parse_property_tag_override(input, family, expected):
-    actual = parse_property_tag(input, FamilyRevision(family))
+def test_parse_property_tag_override(parse_input: str, family: str, expected: int) -> None:
+    """Test parsing of property tag with family-specific override.
+
+    Verifies that the parse_property_tag function correctly handles property tag
+    parsing when a family-specific override is provided, ensuring the returned
+    value matches the expected result.
+
+    :param parse_input: Property tag string to be parsed.
+    :param family: Target MCU family name for family-specific parsing.
+    :param expected: Expected integer value after parsing the property tag.
+    """
+    actual = parse_property_tag(parse_input, FamilyRevision(family))
     assert actual == expected
 
 
 @pytest.mark.parametrize(
-    "input, expected",
+    "parse_input, expected",
     [
         ("1", 1),
         ("0xa", 10),
@@ -67,8 +91,16 @@ def test_parse_property_tag_override(input, family, expected):
         ("UDS", 12),
     ],
 )
-def test_parse_key_prov_key_type(input, expected):
-    actual = parse_key_prov_key_type(input)
+def test_parse_key_prov_key_type(parse_input: str, expected: int) -> None:
+    """Test parsing of key provisioning key type input strings.
+
+    Verifies that the parse_key_prov_key_type function correctly converts
+    string representations of key types to their corresponding integer values.
+
+    :param parse_input: String representation of the key type to be parsed.
+    :param expected: Expected integer value that should result from parsing the input.
+    """
+    actual = parse_key_prov_key_type(parse_input)
     assert actual == expected
 
 
@@ -93,7 +125,19 @@ def test_parse_key_prov_key_type(input, expected):
         ),
     ],
 )
-def test_parse_image_file(path, segment_info_list: list[tuple[int, int]], data_dir):
+def test_parse_image_file(
+    path: str, segment_info_list: list[tuple[int, int]], data_dir: str
+) -> None:
+    """Test parsing of binary image file against expected segment information.
+
+    Loads a binary image file and validates that the parsed segments match
+    the expected segment information including addresses and sizes.
+
+    :param path: Relative path to the binary image file within data directory.
+    :param segment_info_list: List of tuples containing expected (address, size) pairs for each segment.
+    :param data_dir: Absolute path to the data directory containing test files.
+    :raises AssertionError: When parsed segments don't match expected segment information.
+    """
     result = BinaryImage.load_binary_image(os.path.join(data_dir, path))
     assert len(result.sub_images) == len(segment_info_list)
     for current, ref in zip(result.sub_images, segment_info_list):
@@ -119,7 +163,18 @@ def test_parse_image_file(path, segment_info_list: list[tuple[int, int]], data_d
         ),
     ],
 )
-def test_parse_image_file_aligned_sizes(path, aligned_sizes: list[tuple[int, int]], data_dir):
+def test_parse_image_file_aligned_sizes(
+    path: str, aligned_sizes: list[tuple[int, int]], data_dir: str
+) -> None:
+    """Test that binary image file parsing produces segments with expected aligned sizes.
+
+    Loads a binary image file and verifies that each sub-image segment has the
+    correct aligned start address and length when aligned to 1024-byte boundaries.
+
+    :param path: Relative path to the binary image file within the data directory.
+    :param aligned_sizes: List of tuples containing expected (aligned_start, aligned_length) pairs for each segment.
+    :param data_dir: Base directory path containing test data files.
+    """
     result = BinaryImage.load_binary_image(os.path.join(data_dir, path))
     assert len(result.sub_images) == len(aligned_sizes)
     for segment, expected in zip(result.sub_images, aligned_sizes):
@@ -144,7 +199,15 @@ def test_parse_image_file_aligned_sizes(path, aligned_sizes: list[tuple[int, int
         ("0x3ca5", 15525),
     ],
 )
-def test_parse_tp_prov_oem_key_type(input_value, expected_output):
+def test_parse_tp_prov_oem_key_type(input_value: str, expected_output: int) -> None:
+    """Test parsing of trust provisioning OEM key type values.
+
+    Verifies that the parse_trust_prov_oem_key_type function correctly converts
+    string input values to their corresponding integer representations.
+
+    :param input_value: String representation of the OEM key type to parse.
+    :param expected_output: Expected integer value after parsing.
+    """
     actual = parse_trust_prov_oem_key_type(input_value)
     assert actual == expected_output
 
@@ -166,7 +229,15 @@ def test_parse_tp_prov_oem_key_type(input_value, expected_output):
         ("KUOK", 6),
     ],
 )
-def test_parse_tp_prov_key_type(input_value, expected_output):
+def test_parse_tp_prov_key_type(input_value: str, expected_output: int) -> None:
+    """Test parsing of trust provisioning key type values.
+
+    Verifies that the parse_trust_prov_key_type function correctly converts
+    string input values to their corresponding integer representations.
+
+    :param input_value: String representation of the trust provisioning key type to parse.
+    :param expected_output: Expected integer value that should be returned by the parser.
+    """
     actual = parse_trust_prov_key_type(input_value)
     assert actual == expected_output
 
@@ -180,6 +251,14 @@ def test_parse_tp_prov_key_type(input_value, expected_output):
         ("EXT_SK", 17),
     ],
 )
-def test_parse_tp_prov_wrapping_key_type(input_value, expected_output):
+def test_parse_tp_prov_wrapping_key_type(input_value: str, expected_output: int) -> None:
+    """Test parsing of trust provisioning wrapping key type values.
+
+    Verifies that the parse_trust_prov_wrapping_key_type function correctly
+    converts string input values to their corresponding integer representations.
+
+    :param input_value: String representation of the wrapping key type to parse.
+    :param expected_output: Expected integer value after parsing.
+    """
     actual = parse_trust_prov_wrapping_key_type(input_value)
     assert actual == expected_output

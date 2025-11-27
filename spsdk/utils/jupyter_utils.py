@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module to keep additional utilities for jupyter notebooks."""
+"""SPSDK Jupyter notebook utilities.
+
+This module provides helper functions and utilities specifically designed
+for use within Jupyter notebooks in the SPSDK context, including formatting,
+display, and interactive features.
+"""
 
 import base64
 import difflib
@@ -25,10 +30,13 @@ try:
     from IPython.display import HTML
 
     class YamlDiffWidget(widgets.VBox):
-        """A widget for displaying differences between two YAML files.
+        """Jupyter widget for displaying YAML configuration differences.
 
-        This widget compares a user-provided YAML file with a template YAML file,
-        highlighting the differences and optionally adding comments to specific lines.
+        This widget provides an interactive interface for comparing user YAML configurations
+        with template files, highlighting differences and displaying contextual comments.
+        The widget supports toggling between different views and downloading configurations.
+
+        :cvar MAX_LINE_LENGTH: Maximum line length for display formatting (160 characters).
         """
 
         MAX_LINE_LENGTH = 160  # make it 160 because comments are smaller
@@ -39,8 +47,11 @@ try:
         ) -> None:
             """Initialize the YamlDiffWidget.
 
-            :param config: Dictionary of comments to add to specific lines,
-            optionally contains user_cfg
+            Creates a widget for displaying YAML configuration differences with interactive
+            controls for toggling diff view and downloading configuration files.
+
+            :param config: Path to YAML configuration file containing template, user config,
+                           and optional comments for diff display.
             """
             super().__init__()
 
@@ -77,13 +88,34 @@ try:
             ]
 
         def __copy__(self):  # type: ignore
+            """Implement shallow copy operation.
+
+            This method is intentionally not implemented as copying this object
+            is not supported.
+
+            :raises SPSDKNotImplementedError: Always raised as copying is not supported.
+            """
             raise SPSDKNotImplementedError()
 
         def __deepcopy__(self, memo):  # type: ignore
+            """Prevent deep copying of this object.
+
+            This method is intentionally not implemented to avoid deep copying operations
+            on this object type, which may contain resources that should not be duplicated.
+
+            :param memo: Dictionary used by deepcopy to track already copied objects.
+            :raises SPSDKNotImplementedError: Always raised as deep copying is not supported.
+            """
             raise SPSDKNotImplementedError()
 
         def toggle_view(self) -> None:
-            """Toggle between diff view and user config view."""
+            """Toggle between different configuration views.
+
+            Switches between three view states: diff view showing configuration differences,
+            user config view displaying user configuration options, and hidden view with
+            minimal interface. Updates the widget children and toggle button description
+            accordingly.
+            """
             if self.current_view == "diff":
                 self.children = [
                     widgets.HTML("## User Configuration"),
@@ -107,7 +139,10 @@ try:
         def execute_jupyter_cell(self, cell_content: str) -> None:
             """Execute a Jupyter cell with the given content.
 
-            :param cell_content: The content of the Jupyter cell to execute
+            This method attempts to execute code in a Jupyter notebook environment. If not running
+            in a Jupyter environment, it prints a notification message instead.
+
+            :param cell_content: The content of the Jupyter cell to execute.
             """
             ip = get_ipython()
             if ip:
@@ -119,15 +154,18 @@ try:
         def html(self) -> HTML:
             """Return the HTML representation of the YAML diff.
 
-            :return: HTML widget containing the YAML diff
+            :return: HTML widget containing the YAML diff.
             """
             return HTML(self.get_static_html())
 
         def highlight_yaml(self, line: str) -> str:
             """Apply basic YAML syntax highlighting to a line of text.
 
-            :param line: The line of text to highlight
-            :return: The highlighted line of text
+            The method processes YAML content by adding HTML span tags with CSS classes for syntax
+            highlighting. It handles comments, keys, values, and list items with appropriate styling.
+
+            :param line: The line of text to highlight.
+            :return: The highlighted line of text with HTML span tags.
             """
             # Split the line into code and comment parts
             if "#" in line:
@@ -148,8 +186,12 @@ try:
         def add_comment_bubble(self, line: str) -> str:
             """Add a comment bubble to a line if a matching comment is found in the comments dictionary.
 
-            :param line: The line of text to potentially add a comment to
-            :return: The line with a comment bubble added if applicable
+            The method searches for keys from the comments dictionary within the provided line. If a key
+            is found and the line contains a colon but no existing comment (no '#'), it adds a styled
+            HTML comment bubble to the line and applies text wrapping.
+
+            :param line: The line of text to potentially add a comment to.
+            :return: The line with a comment bubble added if applicable, otherwise the original line.
             """
             for key, comment in self.comments_dict.items():
                 if key in line and ":" in line and "#" not in line:
@@ -162,7 +204,14 @@ try:
 
         # pylint: disable=line-too-long
         def get_static_html(self) -> str:
-            """Generate an interactive HTML representation of the YAML diff with a functional button."""
+            """Generate interactive HTML representation of YAML configuration differences.
+
+            Creates a complete HTML widget with CSS styling and JavaScript functionality that allows
+            users to toggle between diff view and user configuration view. The HTML includes styled
+            buttons, syntax highlighting for YAML content, and a download button for configuration.
+
+            :return: Complete HTML string with embedded CSS, JavaScript, and content sections.
+            """
             header = "<h3>Configuration Differences</h3>"
             button_html = (
                 f'<button onclick="toggleView_{self.unique_id}()"'
@@ -250,7 +299,16 @@ try:
             return html_content
 
         def get_config_download_button_html(self) -> str:
-            """Generate the HTML for the config download button."""
+            """Generate HTML for configuration file download button.
+
+            Creates an HTML anchor element with embedded base64-encoded configuration
+            file content that allows users to download their current configuration
+            as a YAML file through the browser.
+
+            :raises FileNotFoundError: When the user configuration file doesn't exist.
+            :raises UnicodeDecodeError: When the configuration file contains invalid UTF-8.
+            :return: HTML string containing download button with embedded config data.
+            """
             with open(self.user_cfg_path, "r", encoding="utf-8") as file:
                 user_cfg_content = file.read()
             user_cfg_base64 = base64.b64encode(user_cfg_content.encode()).decode()
@@ -267,7 +325,8 @@ try:
             """Create and display the difference between the user's YAML and the template YAML.
 
             This method generates an HTML representation of the differences, with added
-            syntax highlighting and comment bubbles.
+            syntax highlighting and comment bubbles. The diff is displayed in the
+            diff_widget with removed lines highlighted in red and added lines in green.
             """
             template_lines = self.template_yaml.split("\n")
             user_lines = self.user_cfg.split("\n")
@@ -300,7 +359,14 @@ try:
             self.diff_widget.value = f'<pre class="yaml-diff">{diff_html}</pre>'
 
         def show_user_config(self) -> widgets.HTML:
-            """Display only the user configuration."""
+            """Display only the user configuration with YAML syntax highlighting.
+
+            The method processes the user configuration by splitting it into lines,
+            applying YAML syntax highlighting and comment bubbles to each line,
+            then formats the result as HTML for display in Jupyter widgets.
+
+            :return: HTML widget containing the formatted user configuration.
+            """
             user_lines = self.user_cfg.split("\n")
             highlighted_lines = [
                 self.add_comment_bubble(self.highlight_yaml(line)) for line in user_lines

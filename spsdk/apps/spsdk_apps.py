@@ -5,11 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Wrapper for all spsdk applications.
+"""SPSDK unified command-line interface wrapper.
 
-Its purpose is to provide easier discoverability.
-New users may not be aware of all available apps.
+This module provides a centralized entry point for all SPSDK applications,
+offering improved discoverability and easier access to the complete toolkit
+of secure provisioning utilities across NXP MCU portfolio.
 """
+
 import sys
 import textwrap
 from typing import Any, Optional

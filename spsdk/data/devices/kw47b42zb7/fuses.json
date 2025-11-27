@@ -1,1434 +1,1434 @@
 {
-    "cpu": "KW47B42ZB7",
-    "groups": [
+  "cpu": "KW47B42ZB7",
+  "groups": [
+    {
+      "group": {
+        "name": "Locks",
+        "description": "Write/Read/Override Protection"
+      },
+      "registers": [
         {
-            "group": {
-                "name": "Locks",
-                "description": "Write/Read/Override Protection"
-            },
-            "registers": [
+          "id": "fuse5",
+          "name": "CUST_PROD_OEMFW_AUTH_PUK_LOCK",
+          "description": "Locks CUST_PROD_OEMFW_AUTH_PUK[255:0]. When blown, the operation with fuses is limited according the burnt value (xx1 - fuse writing disabled;x1x - fuse overriding disabled; 1xx - fuse reading disabled).",
+          "index_int": "0x0005",
+          "reg_width": 8,
+          "bitfields": [
+            {
+              "width": 1,
+              "id": "fuse5-bit-0",
+              "name": "WRITE_PROTECTION",
+              "description": "Write protection for CUST_PROD_OEMFW_AUTH_PUK[255:0]. When write protection is blown, it protects the fuses against writing to it.",
+              "values": [
                 {
-                    "id": "fuse5",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK_LOCK",
-                    "description": "Locks CUST_PROD_OEMFW_AUTH_PUK[255:0]. When blown, the operation with fuses is limited according the burnt value (xx1 - fuse writing disabled;x1x - fuse overriding disabled; 1xx - fuse reading disabled).",
-                    "index_int": "0x0005",
-                    "reg_width": 8,
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "fuse5-bit-0",
-                            "name": "WRITE_PROTECTION",
-                            "description": "Write protection for CUST_PROD_OEMFW_AUTH_PUK[255:0]. When write protection is blown, it protects the fuses against writing to it.",
-                            "values": [
-                                {
-                                    "name": "DISABLE",
-                                    "value": 0,
-                                    "description": "Disable write protection lock."
-                                },
-                                {
-                                    "name": "ENABLE",
-                                    "value": 1,
-                                    "description": "Enable write protection lock."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 5
-                        }
-                    ]
+                  "name": "DISABLE",
+                  "value": 0,
+                  "description": "Disable write protection lock."
                 },
                 {
-                    "id": "fuse6",
-                    "name": "CUST_PROD_OEMFW_ENC_SK_LOCK",
-                    "description": "Locks CUST_PROD_OEMFW_ENC_SK[255:0]. When blown, the operation with fuses is limited according the burnt value (xx1 - fuse writing disabled;x1x - fuse overriding disabled; 1xx - fuse reading disabled).",
-                    "index_int": "0x0006",
-                    "reg_width": 8,
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "fuse6-bit-0",
-                            "name": "WRITE_PROTECTION",
-                            "description": "Write protection for CUST_PROD_OEMFW_ENC_SK[255:0]. When write protection is blown, it protects the fuses against writing to it.",
-                            "values": [
-                                {
-                                    "name": "DISABLE",
-                                    "value": 0,
-                                    "description": "Disable write protection lock."
-                                },
-                                {
-                                    "name": "ENABLE",
-                                    "value": 1,
-                                    "description": "Enable write protection lock."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 5
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse8",
-                    "name": "DCFG_CC_SOCU_L1_LOCK",
-                    "description": "Locks DCFG_CC_SOCU_L1. When blown, the operation with fuses is limited according the burnt value (xx1 - fuse writing disabled;x1x - fuse overriding disabled; 1xx - fuse reading disabled).",
-                    "index_int": "0x0008",
-                    "reg_width": 8,
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "fuse8-bit-0",
-                            "name": "WRITE_PROTECTION",
-                            "description": "Write protection for DCFG_CC_SOCU_L1. When write protection is blown, it protects the fuses against writing to it.",
-                            "values": [
-                                {
-                                    "name": "DISABLE",
-                                    "value": 0,
-                                    "description": "Disable write protection lock."
-                                },
-                                {
-                                    "name": "ENABLE",
-                                    "value": 1,
-                                    "description": "Enable write protection lock."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 5
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse9",
-                    "name": "DCFG_CC_SOCU_L2_LOCK",
-                    "description": "Locks DCFG_CC_SOCU_L2. When blown, the operation with fuses is limited according the burnt value (xx1 - fuse writing disabled;x1x - fuse overriding disabled; 1xx - fuse reading disabled).",
-                    "index_int": "0x0009",
-                    "reg_width": 8,
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "fuse9-bit-0",
-                            "name": "WRITE_PROTECTION",
-                            "description": "Write protection for DCFG_CC_SOCU_L2. When write protection is blown, it protects the fuses against writing to it.",
-                            "values": [
-                                {
-                                    "name": "DISABLE",
-                                    "value": 0,
-                                    "description": "Disable write protection lock."
-                                },
-                                {
-                                    "name": "ENABLE",
-                                    "value": 1,
-                                    "description": "Enable write protection lock."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 1
-                        },
-                        {
-                            "width": 5
-                        }
-                    ]
+                  "name": "ENABLE",
+                  "value": 1,
+                  "description": "Enable write protection lock."
                 }
-            ]
+              ]
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 5
+            }
+          ]
         },
         {
-            "group": {
-                "name": "Config",
-                "description": "Miscellaneous security configuration"
-            },
-            "registers": [
+          "id": "fuse6",
+          "name": "CUST_PROD_OEMFW_ENC_SK_LOCK",
+          "description": "Locks CUST_PROD_OEMFW_ENC_SK[255:0]. When blown, the operation with fuses is limited according the burnt value (xx1 - fuse writing disabled;x1x - fuse overriding disabled; 1xx - fuse reading disabled).",
+          "index_int": "0x0006",
+          "reg_width": 8,
+          "bitfields": [
+            {
+              "width": 1,
+              "id": "fuse6-bit-0",
+              "name": "WRITE_PROTECTION",
+              "description": "Write protection for CUST_PROD_OEMFW_ENC_SK[255:0]. When write protection is blown, it protects the fuses against writing to it.",
+              "values": [
                 {
-                    "id": "fuse10",
-                    "name": "LIFECYCLE",
-                    "description": "Lifecycle state.",
-                    "index_int": "0x000A",
-                    "default_value_int": "0x0007",
-                    "reg_width": 8,
-                    "bitfields": [
-                        {
-                            "width": 8,
-                            "id": "fuse10-bits-0-7",
-                            "name": "LIFECYCLE",
-                            "description": "Lifecycle state.",
-                            "values": [
-                                {
-                                    "name": "BLANK",
-                                    "value": 0,
-                                    "description": "Blank"
-                                },
-                                {
-                                    "name": "OEM_OPEN",
-                                    "value": 7,
-                                    "description": "OEM Open"
-                                },
-                                {
-                                    "name": "OEM_SEC_CLOSED",
-                                    "value": 15,
-                                    "description": "OEM Secure World Closed."
-                                },
-                                {
-                                    "name": "OEM_CLOSED",
-                                    "value": 31,
-                                    "description": "OEM Closed"
-                                },
-                                {
-                                    "name": "OEM_LOCKED",
-                                    "value": 159,
-                                    "description": "OEM Locked"
-                                },
-                                {
-                                    "name": "OEM_RETURN",
-                                    "value": 63,
-                                    "description": "OEM Return"
-                                }
-                            ]
-                        }
-                    ]
+                  "name": "DISABLE",
+                  "value": 0,
+                  "description": "Disable write protection lock."
                 },
                 {
-                    "id": "fuse11",
-                    "name": "DBG_EN_LOCK",
-                    "description": "Debug Enable Lock. To increase the flexibility of the debug controller, an option to enable the debug ports via OEM software can be done by default setting of \u2018DBG_EN_LOCK\u2019 at 0. The SMSCM[DBGEN] and SMSCM[DBGEN_B] registers will not be write-locked, meaning SW can allow specified debug ports to be opened without the challenge-response scheme. It is the responsibility of the OEM\u2019s application to handle these registers carefully. Since this relies solely on OEM\u2019s SW protections it reduces the overall security of the system. If this feature is not required, it is strongly recommended to burn the \u2018DBG_EN_LOCK\u2019 to 1 which disables this feature. For production lifecycles (OEM-Closed and OEM-Locked), this feature is only available in OEM-Closed. In OEM-Locked, the debug access registers are write-locked regardless of the DBG_EN_LOCK fuse value.",
-                    "index_int": "0x000B",
-                    "reg_width": 8,
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "fuse11-bit-0",
-                            "name": "DBG_EN_LOCK",
-                            "description": "Debug Enable Lock.",
-                            "values": [
-                                {
-                                    "name": "Open",
-                                    "value": 0,
-                                    "description": "The debug access control registers remain open when jumping to customer code."
-                                },
-                                {
-                                    "name": "Locked",
-                                    "value": 1,
-                                    "description": "The debug access control registers are write-locked before jumping to customer code."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 7
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse12",
-                    "name": "DBG_AUTH_DIS",
-                    "description": "Debug Authentication Disabled.",
-                    "index_int": "0x000C",
-                    "reg_width": 8,
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "fuse12-bit-0",
-                            "name": "DBG_AUTH_DIS",
-                            "description": "Debug Authentication Disabled.",
-                            "values": [
-                                {
-                                    "name": "Enabled",
-                                    "value": 0,
-                                    "description": "Debug Authentication enabled"
-                                },
-                                {
-                                    "name": "Disabled",
-                                    "value": 1,
-                                    "description": "Debug Authentication disabled"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 7
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse13",
-                    "name": "TZM_EN",
-                    "description": "Trust Zone Mode Enable.",
-                    "index_int": "0x000D",
-                    "reg_width": 8,
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "fuse13-bit-0",
-                            "name": "TZM_EN",
-                            "description": "Trust Zone Mode Enable.",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "TZ-M is disabled by default."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "TZ-M is enabled"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 7
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse17",
-                    "name": "SERIAL_DIS",
-                    "description": "Serial Download Disabled.",
-                    "index_int": "0x0011",
-                    "reg_width": 8,
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "fuse17-bit-0",
-                            "name": "SERIAL_DIS",
-                            "description": "Serial Download Disabled.",
-                            "values": [
-                                {
-                                    "name": "Enabled",
-                                    "value": 0,
-                                    "description": "ISP path is enabled."
-                                },
-                                {
-                                    "name": "Disabled",
-                                    "value": 1,
-                                    "description": "ISP path is disabled."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 7
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse18",
-                    "name": "WAKEUP_DIS",
-                    "description": "Wakeup Disabled.",
-                    "index_int": "0x0012",
-                    "reg_width": 8,
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "fuse18-bit-0",
-                            "name": "WAKEUP_DIS",
-                            "description": "Wakeup Disabled.",
-                            "values": [
-                                {
-                                    "name": "Enabled",
-                                    "value": 0,
-                                    "description": "Boot-ROM low power wakeup is enabled."
-                                },
-                                {
-                                    "name": "Disabled",
-                                    "value": 1,
-                                    "description": "Boot-ROM low power wakeup is disabled."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 7
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse19",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK_REVOKE",
-                    "description": "Key revocation indicators of CUST_PROD_OEMFW_AUTH_PUK.",
-                    "index_int": "0x0013",
-                    "reg_width": 8,
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "fuse19-bit-0",
-                            "name": "REVOKE_ROTK_1",
-                            "description": "Revokes Root of Trust Key 1.",
-                            "values": [
-                                {
-                                    "name": "KEEP",
-                                    "value": 0,
-                                    "description": "Keep the RoTK 1."
-                                },
-                                {
-                                    "name": "REVOKE",
-                                    "value": 1,
-                                    "description": "Revoke the RoTK 1."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse19-bit-1",
-                            "name": "REVOKE_ROTK_2",
-                            "description": "Revokes Root of Trust Key 2.",
-                            "values": [
-                                {
-                                    "name": "KEEP",
-                                    "value": 0,
-                                    "description": "Keep the RoTK 2."
-                                },
-                                {
-                                    "name": "REVOKE",
-                                    "value": 1,
-                                    "description": "Revoke the RoTK 2."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse19-bit-2",
-                            "name": "REVOKE_ROTK_3",
-                            "description": "Revokes Root of Trust Key 3.",
-                            "values": [
-                                {
-                                    "name": "KEEP",
-                                    "value": 0,
-                                    "description": "Keep the RoTK 3."
-                                },
-                                {
-                                    "name": "REVOKE",
-                                    "value": 1,
-                                    "description": "Revoke the RoTK 3."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse19-bit-3",
-                            "name": "REVOKE_ROTK_4",
-                            "description": "Revokes Root of Trust Key 4.",
-                            "values": [
-                                {
-                                    "name": "KEEP",
-                                    "value": 0,
-                                    "description": "Keep the RoTK 4."
-                                },
-                                {
-                                    "name": "REVOKE",
-                                    "value": 1,
-                                    "description": "Revoke the RoTK 4."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 4
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse21",
-                    "name": "DBG_AUTH_VU",
-                    "description": "These Debug Authentication Vendor Usage fuses are used by customers to restrict debug certificates. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
-                    "index_int": "0x0015",
-                    "reg_width": 16
-                },
-                {
-                    "id": "fuse22",
-                    "name": "IMG_KEY_REVOKE",
-                    "description": "These fuses are used to revoke image signing keys separately from root keys. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
-                    "index_int": "0x0016",
-                    "reg_width": 16
+                  "name": "ENABLE",
+                  "value": 1,
+                  "description": "Enable write protection lock."
                 }
-            ]
+              ]
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 5
+            }
+          ]
         },
         {
-            "group": {
-                "name": "Keys",
-                "description": "Authentication and encryption keys"
-            },
-            "registers": [
+          "id": "fuse8",
+          "name": "DCFG_CC_SOCU_L1_LOCK",
+          "description": "Locks DCFG_CC_SOCU_L1. When blown, the operation with fuses is limited according the burnt value (xx1 - fuse writing disabled;x1x - fuse overriding disabled; 1xx - fuse reading disabled).",
+          "index_int": "0x0008",
+          "reg_width": 8,
+          "bitfields": [
+            {
+              "width": 1,
+              "id": "fuse8-bit-0",
+              "name": "WRITE_PROTECTION",
+              "description": "Write protection for DCFG_CC_SOCU_L1. When write protection is blown, it protects the fuses against writing to it.",
+              "values": [
                 {
-                    "id": "fuse31",
-                    "name": "CUST_PROD_OEMFW_AUTH_PUK",
-                    "description": "The RoTKTH for P-256 keys will be 256 bits in length, write as-is. The RoTKTH for P-384 keys will be 384 bits in length, users can truncate the value prior to writing the fuse or write it as is and will be truncated automatically.",
-                    "index_int": "0x001F",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse5",
-                        "write_lock_int": "0x0001"
-                    },
-                    "reg_width": 256
+                  "name": "DISABLE",
+                  "value": 0,
+                  "description": "Disable write protection lock."
                 },
                 {
-                    "id": "fuse32",
-                    "name": "CUST_PROD_OEMFW_ENC_SK",
-                    "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
-                    "index_int": "0x0020",
-                    "access": "WO",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse6",
-                        "write_lock_int": "0x0001"
-                    },
-                    "reg_width": 256
+                  "name": "ENABLE",
+                  "value": 1,
+                  "description": "Enable write protection lock."
                 }
-            ]
+              ]
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 1
+            },
+            {
+              "width": 5
+            }
+          ]
         },
         {
-            "group": {
-                "name": "DCFG_CC_SOCU",
-                "description": "Debug authentication configuration"
-            },
-            "registers": [
+          "id": "fuse9",
+          "name": "DCFG_CC_SOCU_L2_LOCK",
+          "description": "Locks DCFG_CC_SOCU_L2. When blown, the operation with fuses is limited according the burnt value (xx1 - fuse writing disabled;x1x - fuse overriding disabled; 1xx - fuse reading disabled).",
+          "index_int": "0x0009",
+          "reg_width": 8,
+          "bitfields": [
+            {
+              "width": 1,
+              "id": "fuse9-bit-0",
+              "name": "WRITE_PROTECTION",
+              "description": "Write protection for DCFG_CC_SOCU_L2. When write protection is blown, it protects the fuses against writing to it.",
+              "values": [
                 {
-                    "id": "fuse34",
-                    "name": "DCFG_CC_SOCU_L1",
-                    "description": "Debug authentication configuration for level 1 customer.\nCombinations of PIN and DFLT bits and resulting restriction level:\n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product.\n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate.\n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.\n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
-                    "index_int": "0x0022",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse8",
-                        "write_lock_int": "0x0001"
-                    },
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-0",
-                            "name": "PIN_NIDEN",
-                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
-                            "values": [
-                                {
-                                    "name": "DAP",
-                                    "value": 0,
-                                    "description": "Use debug authentication. DFLT bit must be zero."
-                                },
-                                {
-                                    "name": "DFLT",
-                                    "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-1",
-                            "name": "PIN_DBGEN",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
-                            "values": [
-                                {
-                                    "name": "DAP",
-                                    "value": 0,
-                                    "description": "Use debug authentication. DFLT bit must be zero."
-                                },
-                                {
-                                    "name": "DFLT",
-                                    "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-2",
-                            "name": "PIN_SPNIDEN",
-                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
-                            "values": [
-                                {
-                                    "name": "DAP",
-                                    "value": 0,
-                                    "description": "Use debug authentication. DFLT bit must be zero."
-                                },
-                                {
-                                    "name": "DFLT",
-                                    "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-3",
-                            "name": "PIN_SPIDEN",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
-                            "values": [
-                                {
-                                    "name": "DAP",
-                                    "value": 0,
-                                    "description": "Use debug authentication. DFLT bit must be zero."
-                                },
-                                {
-                                    "name": "DFLT",
-                                    "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-4",
-                            "name": "PIN_NBU_DBGEN",
-                            "description": "Controls debugging of NBU (radio) core.",
-                            "values": [
-                                {
-                                    "name": "DAP",
-                                    "value": 0,
-                                    "description": "Use debug authentication. DFLT bit must be zero."
-                                },
-                                {
-                                    "name": "DFLT",
-                                    "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-5",
-                            "name": "PIN_DSP_DBGEN",
-                            "description": "Controls debugging of DSP core.",
-                            "values": [
-                                {
-                                    "name": "DAP",
-                                    "value": 0,
-                                    "description": "Use debug authentication. DFLT bit must be zero."
-                                },
-                                {
-                                    "name": "DFLT",
-                                    "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-6",
-                            "name": "PIN_ISP_CMD_EN",
-                            "description": "Controls whether ISP boot flow DM-AP command (command code: 0x05) can be issued after authentication.",
-                            "values": [
-                                {
-                                    "name": "DAP",
-                                    "value": 0,
-                                    "description": "Use debug authentication. DFLT bit must be zero."
-                                },
-                                {
-                                    "name": "DFLT",
-                                    "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-7",
-                            "name": "PIN_FA_CMD_EN",
-                            "description": "Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued after authentication.",
-                            "values": [
-                                {
-                                    "name": "DAP",
-                                    "value": 0,
-                                    "description": "Use debug authentication. DFLT bit must be zero."
-                                },
-                                {
-                                    "name": "DFLT",
-                                    "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-8",
-                            "name": "PIN_ME_CMD_EN",
-                            "description": "Controls whether DM-AP Mass Erase command (command code: 0x03) can be issued after authentication.",
-                            "values": [
-                                {
-                                    "name": "DAP",
-                                    "value": 0,
-                                    "description": "Use debug authentication. DFLT bit must be zero."
-                                },
-                                {
-                                    "name": "DFLT",
-                                    "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-9",
-                            "name": "DFLT_NIDEN",
-                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-10",
-                            "name": "DFLT_DBGEN",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-11",
-                            "name": "DFLT_SPNIDEN",
-                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-12",
-                            "name": "DFLT_SPIDEN",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-13",
-                            "name": "DFLT_NBU_DBGEN",
-                            "description": "Controls debugging of NBU (radio) core.",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-14",
-                            "name": "DFLT_DSP_DBGEN",
-                            "description": "Controls debugging of DSP core.",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-15",
-                            "name": "DFLT_ISP_CMD_EN",
-                            "description": "Controls whether ISP boot flow DM-AP command (command code: 0x05) can be issued after authentication.",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-16",
-                            "name": "DFLT_FA_CMD_EN",
-                            "description": "Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued after authentication.",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-17",
-                            "name": "DFLT_ME_CMD_EN",
-                            "description": "Controls whether DM-AP Mass Erase command (command code: 0x03) can be issued after authentication.",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse34-bit-18",
-                            "name": "UUID_CHECK",
-                            "description": "Controls whether to enforce UUID check during Debug Credential (DC) validation. If this bit is set, then the device will only accept a Debug Credential (DC) certificate containing a UUID attribute that is an exact match to the device's UUID.",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "UUID matching not required."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "UUID matching required"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 2,
-                            "id": "fuse34-bits-19-20",
-                            "name": "FORCE_P256",
-                            "description": "Valid only for DCFG_SOCU_L1. Must be set to value 10b, when RoTK is based on P-256. All other values (00b, 01b, 11b) indicate P-384. See Protocol Version (DCFG_VER).",
-                            "values": [
-                                {
-                                    "name": "P-384",
-                                    "value": 0,
-                                    "description": "RoTK is based on P-384."
-                                },
-                                {
-                                    "name": "P-384_0",
-                                    "value": 1,
-                                    "description": "RoTK is based on P-384."
-                                },
-                                {
-                                    "name": "P-256",
-                                    "value": 2,
-                                    "description": "RoTK is based on P-256."
-                                },
-                                {
-                                    "name": "P-384_1",
-                                    "value": 3,
-                                    "description": "RoTK is based on P-384."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 11
-                        }
-                    ]
+                  "name": "DISABLE",
+                  "value": 0,
+                  "description": "Disable write protection lock."
                 },
                 {
-                    "id": "fuse35",
-                    "name": "DCFG_CC_SOCU_L2",
-                    "description": "Debug authentication configuration for level 2 customer.\nCombinations of PIN and DFLT bits and resulting restriction level:\n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product.\n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate.\n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.\n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
-                    "index_int": "0x0023",
-                    "individual_write_lock": "implicit",
-                    "lock": {
-                        "register_id": "fuse9",
-                        "write_lock_int": "0x0001"
-                    },
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-0",
-                            "name": "PIN_NIDEN",
-                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
-                            "values": [
-                                {
-                                    "name": "DAP",
-                                    "value": 0,
-                                    "description": "Use debug authentication. DFLT bit must be zero."
-                                },
-                                {
-                                    "name": "DFLT",
-                                    "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-1",
-                            "name": "PIN_DBGEN",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
-                            "values": [
-                                {
-                                    "name": "DAP",
-                                    "value": 0,
-                                    "description": "Use debug authentication. DFLT bit must be zero."
-                                },
-                                {
-                                    "name": "DFLT",
-                                    "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-2",
-                            "name": "PIN_SPNIDEN",
-                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
-                            "values": [
-                                {
-                                    "name": "DAP",
-                                    "value": 0,
-                                    "description": "Use debug authentication. DFLT bit must be zero."
-                                },
-                                {
-                                    "name": "DFLT",
-                                    "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-3",
-                            "name": "PIN_SPIDEN",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
-                            "values": [
-                                {
-                                    "name": "DAP",
-                                    "value": 0,
-                                    "description": "Use debug authentication. DFLT bit must be zero."
-                                },
-                                {
-                                    "name": "DFLT",
-                                    "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-4",
-                            "name": "PIN_NBU_DBGEN",
-                            "description": "Controls debugging of NBU (radio) core.",
-                            "values": [
-                                {
-                                    "name": "DAP",
-                                    "value": 0,
-                                    "description": "Use debug authentication. DFLT bit must be zero."
-                                },
-                                {
-                                    "name": "DFLT",
-                                    "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-5",
-                            "name": "PIN_DSP_DBGEN",
-                            "description": "Controls debugging of DSP core.",
-                            "values": [
-                                {
-                                    "name": "DAP",
-                                    "value": 0,
-                                    "description": "Use debug authentication. DFLT bit must be zero."
-                                },
-                                {
-                                    "name": "DFLT",
-                                    "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-6",
-                            "name": "PIN_ISP_CMD_EN",
-                            "description": "Controls whether ISP boot flow DM-AP command (command code: 0x05) can be issued after authentication.",
-                            "values": [
-                                {
-                                    "name": "DAP",
-                                    "value": 0,
-                                    "description": "Use debug authentication. DFLT bit must be zero."
-                                },
-                                {
-                                    "name": "DFLT",
-                                    "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-7",
-                            "name": "PIN_FA_CMD_EN",
-                            "description": "Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued after authentication.",
-                            "values": [
-                                {
-                                    "name": "DAP",
-                                    "value": 0,
-                                    "description": "Use debug authentication. DFLT bit must be zero."
-                                },
-                                {
-                                    "name": "DFLT",
-                                    "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-8",
-                            "name": "PIN_ME_CMD_EN",
-                            "description": "Controls whether DM-AP Mass Erase command (command code: 0x03) can be issued after authentication.",
-                            "values": [
-                                {
-                                    "name": "DAP",
-                                    "value": 0,
-                                    "description": "Use debug authentication. DFLT bit must be zero."
-                                },
-                                {
-                                    "name": "DFLT",
-                                    "value": 1,
-                                    "description": "Behaviour is defined by DFLT bit."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-9",
-                            "name": "DFLT_NIDEN",
-                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-10",
-                            "name": "DFLT_DBGEN",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-11",
-                            "name": "DFLT_SPNIDEN",
-                            "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-12",
-                            "name": "DFLT_SPIDEN",
-                            "description": "Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-13",
-                            "name": "DFLT_NBU_DBGEN",
-                            "description": "Controls debugging of NBU (radio) core.",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-14",
-                            "name": "DFLT_DSP_DBGEN",
-                            "description": "Controls debugging of DSP core.",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-15",
-                            "name": "DFLT_ISP_CMD_EN",
-                            "description": "Controls whether ISP boot flow DM-AP command (command code: 0x05) can be issued after authentication.",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-16",
-                            "name": "DFLT_FA_CMD_EN",
-                            "description": "Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued after authentication.",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-17",
-                            "name": "DFLT_ME_CMD_EN",
-                            "description": "Controls whether DM-AP Mass Erase command (command code: 0x03) can be issued after authentication.",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
-                                }
-                            ]
-                        },
-                        {
-                            "width": 1,
-                            "id": "fuse35-bit-18",
-                            "name": "UUID_CHECK",
-                            "description": "Controls whether to enforce UUID check during Debug Credential (DC) validation. If this bit is set, then the device will only accept a Debug Credential (DC) certificate containing a UUID attribute that is an exact match to the device's UUID.",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "UUID matching not required."
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "UUID matching required"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 13
-                        }
-                    ]
+                  "name": "ENABLE",
+                  "value": 1,
+                  "description": "Enable write protection lock."
                 }
-            ]
-        },
-        {
-            "group": {
-                "name": "Versions",
-                "description": "Version counters for various software components in SoC"
+              ]
             },
-            "registers": [
-                {
-                    "id": "fuse37",
-                    "name": "CM33_S_VER_CNT",
-                    "description": "Monotonic counter indicating the minimum secure OEM CM33 firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
-                    "index_int": "0x0025",
-                    "reg_width": 64
-                },
-                {
-                    "id": "fuse38",
-                    "name": "CM33_NS_VER_CNT",
-                    "description": "Monotonic counter indicating the minimum non-secure OEM CM33 firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
-                    "index_int": "0x0026",
-                    "reg_width": 256
-                },
-                {
-                    "id": "fuse39",
-                    "name": "RADIO_VER_CNT",
-                    "description": "Monotonic counter indicating the minimal radio firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
-                    "index_int": "0x0027",
-                    "reg_width": 128
-                },
-                {
-                    "id": "fuse40",
-                    "name": "SNT_VER_CNT",
-                    "description": "Monotonic counter indicating the minimum ELE loadable firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
-                    "index_int": "0x0028"
-                },
-                {
-                    "id": "fuse41",
-                    "name": "CM33_BOOTLOADER_VER_CNT",
-                    "description": "Monotonic counter indicating the minimal CM33 bootloader version. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
-                    "index_int": "0x0029",
-                    "reg_width": 16
-                },
-                {
-                    "id": "fuse42",
-                    "name": "CM33_S_VER_CNT_VIRTUAL",
-                    "description": "Virtual counter indicating the secure OEM CM33 firmware version. The integer value of this field indicates the number of set bits in CM33_S_VER_CNT and that number equals the version number. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc.",
-                    "index_int": "0x002A",
-                    "calculated": {
-                        "method": "virtual_counter",
-                        "src_register_id": "fuse37"
-                    },
-                    "reg_width": 8
-                },
-                {
-                    "id": "fuse43",
-                    "name": "CM33_NS_VER_CNT_VIRTUAL",
-                    "description": "Virtual counter indicating the non-secure OEM CM33 firmware version. The integer value of this field indicates the number of set bits in CM33_NS_VER_CNT and that number equals the version number. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc.",
-                    "index_int": "0x002B",
-                    "calculated": {
-                        "method": "virtual_counter",
-                        "src_register_id": "fuse38"
-                    },
-                    "reg_width": 16
-                },
-                {
-                    "id": "fuse44",
-                    "name": "RADIO_VER_CNT_VIRTUAL",
-                    "description": "Virtual counter indicating the radio firmware version. The integer value of this field indicates the number of set bits in RADIO_VER_CNT and that number equals the version number. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc.",
-                    "index_int": "0x002C",
-                    "calculated": {
-                        "method": "virtual_counter",
-                        "src_register_id": "fuse39"
-                    },
-                    "reg_width": 8
-                },
-                {
-                    "id": "fuse45",
-                    "name": "SNT_VER_CNT_VIRTUAL",
-                    "description": "Virtual counter indicating the ELE loadable firmware version. The integer value of this field indicates the number of set bits in SNT_VER_CNT and that number equals the version number. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc.",
-                    "index_int": "0x002D",
-                    "calculated": {
-                        "method": "virtual_counter",
-                        "src_register_id": "fuse40"
-                    },
-                    "reg_width": 8
-                },
-                {
-                    "id": "fuse46",
-                    "name": "CM33_BOOTLOADER_VER_CNT_VIRTUAL",
-                    "description": "Virtual counter indicating the minimal version of the CM33 bootloader. Integer value equivalent to number of set fuse bits Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc.",
-                    "index_int": "0x002E",
-                    "calculated": {
-                        "method": "virtual_counter",
-                        "src_register_id": "fuse41"
-                    },
-                    "reg_width": 8
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "SEC_BOOT_EN",
-                "description": "Secure boot enable"
+            {
+              "width": 1
             },
-            "registers": [
-                {
-                    "id": "fuse51",
-                    "name": "NBU_SEC_BOOT_EN",
-                    "description": "NBU secure boot enable fuse. NBU image must be authenticated successfully to boot if this fuse is set. See the Security Reference Manual for the value of this fuse reflected in bit 12 of SMSCM_LIFECYCLE register.",
-                    "index_int": "0x0033",
-                    "reg_width": 8,
-                    "bitfields": [
-                        {
-                            "width": 1,
-                            "id": "fuse51-bit-0",
-                            "name": "NBU_SEC_BOOT_EN",
-                            "description": "NBU secure boot enable fuse. NBU image must be authenticated successfully to boot if this fuse is set.\nSee the Security Reference Manual for the value of this fuse reflected in bit 12 of SMSCM_LIFECYCLE register.",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "NBU image doesn't need to be authenticated (default)"
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 1,
-                                    "description": "NBU image must be authenticated to boot"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 7
-                        }
-                    ]
-                },
-                {
-                    "id": "fuse53",
-                    "name": "OEM_SEC_BOOT_EN",
-                    "description": "Main core secure boot enable boot enable fuse, boot image must be authenticated successfully to boot if this fuse field is set to 0xA. See the Security Reference Manual for the value of this fuse reflected in bits 24-27 of SMSCM_LIFECYCLE register.",
-                    "index_int": "0x0035",
-                    "reg_width": 8,
-                    "bitfields": [
-                        {
-                            "width": 4,
-                            "id": "fuse53-bits-0-3",
-                            "name": "OEM_SEC_BOOT_EN",
-                            "description": "Main core secure boot enable boot enable fuse, boot image must be authenticated successfully to boot if this fuse field is set to 0xA. See the Security Reference Manual for the value of this fuse reflected in bits 24-27 of SMSCM_LIFECYCLE register.",
-                            "values": [
-                                {
-                                    "name": "Disabled",
-                                    "value": 0,
-                                    "description": "Boot image doesn't need to be authenticated to boot (default)"
-                                },
-                                {
-                                    "name": "Enabled",
-                                    "value": 10,
-                                    "description": "Boot image must be authenticated to boot"
-                                }
-                            ]
-                        },
-                        {
-                            "width": 4
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "SECURE_STORAGE_CNT",
-                "description": "Secure storage counter"
+            {
+              "width": 1
             },
-            "registers": [
-                {
-                    "id": "fuse56",
-                    "name": "SECURE_STORAGE_VER_CNT",
-                    "description": "Secure Storage Verification Counter. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
-                    "index_int": "0x0038",
-                    "reg_width": 96
-                },
-                {
-                    "id": "fuse57",
-                    "name": "SECURE_STORAGE_VER_CNT_VIRTUAL",
-                    "description": "Virtual Secure Storage Verification Counter. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc. Fuse is not accessible via ISP mode and can be read and written from application by fuse read and fuse write ELE API.",
-                    "index_int": "0x0039",
-                    "access": "none",
-                    "reg_width": 8
-                }
-            ]
+            {
+              "width": 5
+            }
+          ]
         }
-    ]
+      ]
+    },
+    {
+      "group": {
+        "name": "Config",
+        "description": "Miscellaneous security configuration"
+      },
+      "registers": [
+        {
+          "id": "fuse10",
+          "name": "LIFECYCLE",
+          "description": "Lifecycle state.",
+          "index_int": "0x000A",
+          "default_value_int": "0x0007",
+          "reg_width": 8,
+          "bitfields": [
+            {
+              "width": 8,
+              "id": "fuse10-bits-0-7",
+              "name": "LIFECYCLE",
+              "description": "Lifecycle state.",
+              "values": [
+                {
+                  "name": "BLANK",
+                  "value": 0,
+                  "description": "Blank"
+                },
+                {
+                  "name": "OEM_OPEN",
+                  "value": 7,
+                  "description": "OEM Open"
+                },
+                {
+                  "name": "OEM_SEC_CLOSED",
+                  "value": 15,
+                  "description": "OEM Secure World Closed."
+                },
+                {
+                  "name": "OEM_CLOSED",
+                  "value": 31,
+                  "description": "OEM Closed"
+                },
+                {
+                  "name": "OEM_LOCKED",
+                  "value": 159,
+                  "description": "OEM Locked"
+                },
+                {
+                  "name": "OEM_RETURN",
+                  "value": 63,
+                  "description": "OEM Return"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "fuse11",
+          "name": "DBG_EN_LOCK",
+          "description": "Debug Enable Lock. To increase the flexibility of the debug controller, an option to enable the debug ports via OEM software can be done by default setting of \u2018DBG_EN_LOCK\u2019 at 0. The SMSCM[DBGEN] and SMSCM[DBGEN_B] registers will not be write-locked, meaning SW can allow specified debug ports to be opened without the challenge-response scheme. It is the responsibility of the OEM\u2019s application to handle these registers carefully. Since this relies solely on OEM\u2019s SW protections it reduces the overall security of the system. If this feature is not required, it is strongly recommended to burn the \u2018DBG_EN_LOCK\u2019 to 1 which disables this feature. For production lifecycles (OEM-Closed and OEM-Locked), this feature is only available in OEM-Closed. In OEM-Locked, the debug access registers are write-locked regardless of the DBG_EN_LOCK fuse value.",
+          "index_int": "0x000B",
+          "reg_width": 8,
+          "bitfields": [
+            {
+              "width": 1,
+              "id": "fuse11-bit-0",
+              "name": "DBG_EN_LOCK",
+              "description": "Debug Enable Lock.",
+              "values": [
+                {
+                  "name": "Open",
+                  "value": 0,
+                  "description": "The debug access control registers remain open when jumping to customer code."
+                },
+                {
+                  "name": "Locked",
+                  "value": 1,
+                  "description": "The debug access control registers are write-locked before jumping to customer code."
+                }
+              ]
+            },
+            {
+              "width": 7
+            }
+          ]
+        },
+        {
+          "id": "fuse12",
+          "name": "DBG_AUTH_DIS",
+          "description": "Debug Authentication Disabled.",
+          "index_int": "0x000C",
+          "reg_width": 8,
+          "bitfields": [
+            {
+              "width": 1,
+              "id": "fuse12-bit-0",
+              "name": "DBG_AUTH_DIS",
+              "description": "Debug Authentication Disabled.",
+              "values": [
+                {
+                  "name": "Enabled",
+                  "value": 0,
+                  "description": "Debug Authentication enabled"
+                },
+                {
+                  "name": "Disabled",
+                  "value": 1,
+                  "description": "Debug Authentication disabled"
+                }
+              ]
+            },
+            {
+              "width": 7
+            }
+          ]
+        },
+        {
+          "id": "fuse13",
+          "name": "TZM_EN",
+          "description": "Trust Zone Mode Enable.",
+          "index_int": "0x000D",
+          "reg_width": 8,
+          "bitfields": [
+            {
+              "width": 1,
+              "id": "fuse13-bit-0",
+              "name": "TZM_EN",
+              "description": "Trust Zone Mode Enable.",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "TZ-M is disabled by default."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "TZ-M is enabled"
+                }
+              ]
+            },
+            {
+              "width": 7
+            }
+          ]
+        },
+        {
+          "id": "fuse17",
+          "name": "SERIAL_DIS",
+          "description": "Serial Download Disabled.",
+          "index_int": "0x0011",
+          "reg_width": 8,
+          "bitfields": [
+            {
+              "width": 1,
+              "id": "fuse17-bit-0",
+              "name": "SERIAL_DIS",
+              "description": "Serial Download Disabled.",
+              "values": [
+                {
+                  "name": "Enabled",
+                  "value": 0,
+                  "description": "ISP path is enabled."
+                },
+                {
+                  "name": "Disabled",
+                  "value": 1,
+                  "description": "ISP path is disabled."
+                }
+              ]
+            },
+            {
+              "width": 7
+            }
+          ]
+        },
+        {
+          "id": "fuse18",
+          "name": "WAKEUP_DIS",
+          "description": "Wakeup Disabled.",
+          "index_int": "0x0012",
+          "reg_width": 8,
+          "bitfields": [
+            {
+              "width": 1,
+              "id": "fuse18-bit-0",
+              "name": "WAKEUP_DIS",
+              "description": "Wakeup Disabled.",
+              "values": [
+                {
+                  "name": "Enabled",
+                  "value": 0,
+                  "description": "Boot-ROM low power wakeup is enabled."
+                },
+                {
+                  "name": "Disabled",
+                  "value": 1,
+                  "description": "Boot-ROM low power wakeup is disabled."
+                }
+              ]
+            },
+            {
+              "width": 7
+            }
+          ]
+        },
+        {
+          "id": "fuse19",
+          "name": "CUST_PROD_OEMFW_AUTH_PUK_REVOKE",
+          "description": "Key revocation indicators of CUST_PROD_OEMFW_AUTH_PUK.",
+          "index_int": "0x0013",
+          "reg_width": 8,
+          "bitfields": [
+            {
+              "width": 1,
+              "id": "fuse19-bit-0",
+              "name": "REVOKE_ROTK_1",
+              "description": "Revokes Root of Trust Key 1.",
+              "values": [
+                {
+                  "name": "KEEP",
+                  "value": 0,
+                  "description": "Keep the RoTK 1."
+                },
+                {
+                  "name": "REVOKE",
+                  "value": 1,
+                  "description": "Revoke the RoTK 1."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse19-bit-1",
+              "name": "REVOKE_ROTK_2",
+              "description": "Revokes Root of Trust Key 2.",
+              "values": [
+                {
+                  "name": "KEEP",
+                  "value": 0,
+                  "description": "Keep the RoTK 2."
+                },
+                {
+                  "name": "REVOKE",
+                  "value": 1,
+                  "description": "Revoke the RoTK 2."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse19-bit-2",
+              "name": "REVOKE_ROTK_3",
+              "description": "Revokes Root of Trust Key 3.",
+              "values": [
+                {
+                  "name": "KEEP",
+                  "value": 0,
+                  "description": "Keep the RoTK 3."
+                },
+                {
+                  "name": "REVOKE",
+                  "value": 1,
+                  "description": "Revoke the RoTK 3."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse19-bit-3",
+              "name": "REVOKE_ROTK_4",
+              "description": "Revokes Root of Trust Key 4.",
+              "values": [
+                {
+                  "name": "KEEP",
+                  "value": 0,
+                  "description": "Keep the RoTK 4."
+                },
+                {
+                  "name": "REVOKE",
+                  "value": 1,
+                  "description": "Revoke the RoTK 4."
+                }
+              ]
+            },
+            {
+              "width": 4
+            }
+          ]
+        },
+        {
+          "id": "fuse21",
+          "name": "DBG_AUTH_VU",
+          "description": "These Debug Authentication Vendor Usage fuses are used by customers to restrict debug certificates. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
+          "index_int": "0x0015",
+          "reg_width": 16
+        },
+        {
+          "id": "fuse22",
+          "name": "IMG_KEY_REVOKE",
+          "description": "These fuses are used to revoke image signing keys separately from root keys. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
+          "index_int": "0x0016",
+          "reg_width": 16
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "Keys",
+        "description": "Authentication and encryption keys"
+      },
+      "registers": [
+        {
+          "id": "fuse31",
+          "name": "CUST_PROD_OEMFW_AUTH_PUK",
+          "description": "The RoTKTH for P-256 keys will be 256 bits in length, write as-is. The RoTKTH for P-384 keys will be 384 bits in length, users can truncate the value prior to writing the fuse or write it as is and will be truncated automatically.",
+          "index_int": "0x001F",
+          "individual_write_lock": "implicit",
+          "lock": {
+            "register_id": "fuse5",
+            "write_lock_int": "0x0001"
+          },
+          "reg_width": 256
+        },
+        {
+          "id": "fuse32",
+          "name": "CUST_PROD_OEMFW_ENC_SK",
+          "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
+          "index_int": "0x0020",
+          "access": "WO",
+          "individual_write_lock": "implicit",
+          "lock": {
+            "register_id": "fuse6",
+            "write_lock_int": "0x0001"
+          },
+          "reg_width": 256
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "DCFG_CC_SOCU",
+        "description": "Debug authentication configuration"
+      },
+      "registers": [
+        {
+          "id": "fuse34",
+          "name": "DCFG_CC_SOCU_L1",
+          "description": "Debug authentication configuration for level 1 customer.\nCombinations of PIN and DFLT bits and resulting restriction level:\n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product.\n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate.\n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.\n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
+          "index_int": "0x0022",
+          "individual_write_lock": "implicit",
+          "lock": {
+            "register_id": "fuse8",
+            "write_lock_int": "0x0001"
+          },
+          "bitfields": [
+            {
+              "width": 1,
+              "id": "fuse34-bit-0",
+              "name": "PIN_NIDEN",
+              "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
+              "values": [
+                {
+                  "name": "DAP",
+                  "value": 0,
+                  "description": "Use debug authentication. DFLT bit must be zero."
+                },
+                {
+                  "name": "DFLT",
+                  "value": 1,
+                  "description": "Behaviour is defined by DFLT bit."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse34-bit-1",
+              "name": "PIN_DBGEN",
+              "description": "Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
+              "values": [
+                {
+                  "name": "DAP",
+                  "value": 0,
+                  "description": "Use debug authentication. DFLT bit must be zero."
+                },
+                {
+                  "name": "DFLT",
+                  "value": 1,
+                  "description": "Behaviour is defined by DFLT bit."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse34-bit-2",
+              "name": "PIN_SPNIDEN",
+              "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
+              "values": [
+                {
+                  "name": "DAP",
+                  "value": 0,
+                  "description": "Use debug authentication. DFLT bit must be zero."
+                },
+                {
+                  "name": "DFLT",
+                  "value": 1,
+                  "description": "Behaviour is defined by DFLT bit."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse34-bit-3",
+              "name": "PIN_SPIDEN",
+              "description": "Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
+              "values": [
+                {
+                  "name": "DAP",
+                  "value": 0,
+                  "description": "Use debug authentication. DFLT bit must be zero."
+                },
+                {
+                  "name": "DFLT",
+                  "value": 1,
+                  "description": "Behaviour is defined by DFLT bit."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse34-bit-4",
+              "name": "PIN_NBU_DBGEN",
+              "description": "Controls debugging of NBU (radio) core.",
+              "values": [
+                {
+                  "name": "DAP",
+                  "value": 0,
+                  "description": "Use debug authentication. DFLT bit must be zero."
+                },
+                {
+                  "name": "DFLT",
+                  "value": 1,
+                  "description": "Behaviour is defined by DFLT bit."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse34-bit-5",
+              "name": "PIN_DSP_DBGEN",
+              "description": "Controls debugging of DSP core.",
+              "values": [
+                {
+                  "name": "DAP",
+                  "value": 0,
+                  "description": "Use debug authentication. DFLT bit must be zero."
+                },
+                {
+                  "name": "DFLT",
+                  "value": 1,
+                  "description": "Behaviour is defined by DFLT bit."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse34-bit-6",
+              "name": "PIN_ISP_CMD_EN",
+              "description": "Controls whether ISP boot flow DM-AP command (command code: 0x05) can be issued after authentication.",
+              "values": [
+                {
+                  "name": "DAP",
+                  "value": 0,
+                  "description": "Use debug authentication. DFLT bit must be zero."
+                },
+                {
+                  "name": "DFLT",
+                  "value": 1,
+                  "description": "Behaviour is defined by DFLT bit."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse34-bit-7",
+              "name": "PIN_FA_CMD_EN",
+              "description": "Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued after authentication.",
+              "values": [
+                {
+                  "name": "DAP",
+                  "value": 0,
+                  "description": "Use debug authentication. DFLT bit must be zero."
+                },
+                {
+                  "name": "DFLT",
+                  "value": 1,
+                  "description": "Behaviour is defined by DFLT bit."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse34-bit-8",
+              "name": "PIN_ME_CMD_EN",
+              "description": "Controls whether DM-AP Mass Erase command (command code: 0x03) can be issued after authentication.",
+              "values": [
+                {
+                  "name": "DAP",
+                  "value": 0,
+                  "description": "Use debug authentication. DFLT bit must be zero."
+                },
+                {
+                  "name": "DFLT",
+                  "value": 1,
+                  "description": "Behaviour is defined by DFLT bit."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse34-bit-9",
+              "name": "DFLT_NIDEN",
+              "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse34-bit-10",
+              "name": "DFLT_DBGEN",
+              "description": "Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse34-bit-11",
+              "name": "DFLT_SPNIDEN",
+              "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse34-bit-12",
+              "name": "DFLT_SPIDEN",
+              "description": "Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse34-bit-13",
+              "name": "DFLT_NBU_DBGEN",
+              "description": "Controls debugging of NBU (radio) core.",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse34-bit-14",
+              "name": "DFLT_DSP_DBGEN",
+              "description": "Controls debugging of DSP core.",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse34-bit-15",
+              "name": "DFLT_ISP_CMD_EN",
+              "description": "Controls whether ISP boot flow DM-AP command (command code: 0x05) can be issued after authentication.",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse34-bit-16",
+              "name": "DFLT_FA_CMD_EN",
+              "description": "Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued after authentication.",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse34-bit-17",
+              "name": "DFLT_ME_CMD_EN",
+              "description": "Controls whether DM-AP Mass Erase command (command code: 0x03) can be issued after authentication.",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse34-bit-18",
+              "name": "UUID_CHECK",
+              "description": "Controls whether to enforce UUID check during Debug Credential (DC) validation. If this bit is set, then the device will only accept a Debug Credential (DC) certificate containing a UUID attribute that is an exact match to the device's UUID.",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "UUID matching not required."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "UUID matching required"
+                }
+              ]
+            },
+            {
+              "width": 2,
+              "id": "fuse34-bits-19-20",
+              "name": "FORCE_P256",
+              "description": "Valid only for DCFG_SOCU_L1. Must be set to value 10b, when RoTK is based on P-256. All other values (00b, 01b, 11b) indicate P-384. See Protocol Version (DCFG_VER).",
+              "values": [
+                {
+                  "name": "P-384",
+                  "value": 0,
+                  "description": "RoTK is based on P-384."
+                },
+                {
+                  "name": "P-384_0",
+                  "value": 1,
+                  "description": "RoTK is based on P-384."
+                },
+                {
+                  "name": "P-256",
+                  "value": 2,
+                  "description": "RoTK is based on P-256."
+                },
+                {
+                  "name": "P-384_1",
+                  "value": 3,
+                  "description": "RoTK is based on P-384."
+                }
+              ]
+            },
+            {
+              "width": 11
+            }
+          ]
+        },
+        {
+          "id": "fuse35",
+          "name": "DCFG_CC_SOCU_L2",
+          "description": "Debug authentication configuration for level 2 customer.\nCombinations of PIN and DFLT bits and resulting restriction level:\n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product.\n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate.\n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.\n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
+          "index_int": "0x0023",
+          "individual_write_lock": "implicit",
+          "lock": {
+            "register_id": "fuse9",
+            "write_lock_int": "0x0001"
+          },
+          "bitfields": [
+            {
+              "width": 1,
+              "id": "fuse35-bit-0",
+              "name": "PIN_NIDEN",
+              "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
+              "values": [
+                {
+                  "name": "DAP",
+                  "value": 0,
+                  "description": "Use debug authentication. DFLT bit must be zero."
+                },
+                {
+                  "name": "DFLT",
+                  "value": 1,
+                  "description": "Behaviour is defined by DFLT bit."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse35-bit-1",
+              "name": "PIN_DBGEN",
+              "description": "Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
+              "values": [
+                {
+                  "name": "DAP",
+                  "value": 0,
+                  "description": "Use debug authentication. DFLT bit must be zero."
+                },
+                {
+                  "name": "DFLT",
+                  "value": 1,
+                  "description": "Behaviour is defined by DFLT bit."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse35-bit-2",
+              "name": "PIN_SPNIDEN",
+              "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
+              "values": [
+                {
+                  "name": "DAP",
+                  "value": 0,
+                  "description": "Use debug authentication. DFLT bit must be zero."
+                },
+                {
+                  "name": "DFLT",
+                  "value": 1,
+                  "description": "Behaviour is defined by DFLT bit."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse35-bit-3",
+              "name": "PIN_SPIDEN",
+              "description": "Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
+              "values": [
+                {
+                  "name": "DAP",
+                  "value": 0,
+                  "description": "Use debug authentication. DFLT bit must be zero."
+                },
+                {
+                  "name": "DFLT",
+                  "value": 1,
+                  "description": "Behaviour is defined by DFLT bit."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse35-bit-4",
+              "name": "PIN_NBU_DBGEN",
+              "description": "Controls debugging of NBU (radio) core.",
+              "values": [
+                {
+                  "name": "DAP",
+                  "value": 0,
+                  "description": "Use debug authentication. DFLT bit must be zero."
+                },
+                {
+                  "name": "DFLT",
+                  "value": 1,
+                  "description": "Behaviour is defined by DFLT bit."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse35-bit-5",
+              "name": "PIN_DSP_DBGEN",
+              "description": "Controls debugging of DSP core.",
+              "values": [
+                {
+                  "name": "DAP",
+                  "value": 0,
+                  "description": "Use debug authentication. DFLT bit must be zero."
+                },
+                {
+                  "name": "DFLT",
+                  "value": 1,
+                  "description": "Behaviour is defined by DFLT bit."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse35-bit-6",
+              "name": "PIN_ISP_CMD_EN",
+              "description": "Controls whether ISP boot flow DM-AP command (command code: 0x05) can be issued after authentication.",
+              "values": [
+                {
+                  "name": "DAP",
+                  "value": 0,
+                  "description": "Use debug authentication. DFLT bit must be zero."
+                },
+                {
+                  "name": "DFLT",
+                  "value": 1,
+                  "description": "Behaviour is defined by DFLT bit."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse35-bit-7",
+              "name": "PIN_FA_CMD_EN",
+              "description": "Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued after authentication.",
+              "values": [
+                {
+                  "name": "DAP",
+                  "value": 0,
+                  "description": "Use debug authentication. DFLT bit must be zero."
+                },
+                {
+                  "name": "DFLT",
+                  "value": 1,
+                  "description": "Behaviour is defined by DFLT bit."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse35-bit-8",
+              "name": "PIN_ME_CMD_EN",
+              "description": "Controls whether DM-AP Mass Erase command (command code: 0x03) can be issued after authentication.",
+              "values": [
+                {
+                  "name": "DAP",
+                  "value": 0,
+                  "description": "Use debug authentication. DFLT bit must be zero."
+                },
+                {
+                  "name": "DFLT",
+                  "value": 1,
+                  "description": "Behaviour is defined by DFLT bit."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse35-bit-9",
+              "name": "DFLT_NIDEN",
+              "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse35-bit-10",
+              "name": "DFLT_DBGEN",
+              "description": "Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0 (AP0).",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse35-bit-11",
+              "name": "DFLT_SPNIDEN",
+              "description": "Controls non-invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse35-bit-12",
+              "name": "DFLT_SPIDEN",
+              "description": "Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0 (AP0).",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse35-bit-13",
+              "name": "DFLT_NBU_DBGEN",
+              "description": "Controls debugging of NBU (radio) core.",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse35-bit-14",
+              "name": "DFLT_DSP_DBGEN",
+              "description": "Controls debugging of DSP core.",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse35-bit-15",
+              "name": "DFLT_ISP_CMD_EN",
+              "description": "Controls whether ISP boot flow DM-AP command (command code: 0x05) can be issued after authentication.",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse35-bit-16",
+              "name": "DFLT_FA_CMD_EN",
+              "description": "Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued after authentication.",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse35-bit-17",
+              "name": "DFLT_ME_CMD_EN",
+              "description": "Controls whether DM-AP Mass Erase command (command code: 0x03) can be issued after authentication.",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed;\nPIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled;\nPIN=0,DFLT=1: Illegal."
+                }
+              ]
+            },
+            {
+              "width": 1,
+              "id": "fuse35-bit-18",
+              "name": "UUID_CHECK",
+              "description": "Controls whether to enforce UUID check during Debug Credential (DC) validation. If this bit is set, then the device will only accept a Debug Credential (DC) certificate containing a UUID attribute that is an exact match to the device's UUID.",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "UUID matching not required."
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "UUID matching required"
+                }
+              ]
+            },
+            {
+              "width": 13
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "Versions",
+        "description": "Version counters for various software components in SoC"
+      },
+      "registers": [
+        {
+          "id": "fuse37",
+          "name": "CM33_S_VER_CNT",
+          "description": "Monotonic counter indicating the minimum secure OEM CM33 firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
+          "index_int": "0x0025",
+          "reg_width": 64
+        },
+        {
+          "id": "fuse38",
+          "name": "CM33_NS_VER_CNT",
+          "description": "Monotonic counter indicating the minimum non-secure OEM CM33 firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
+          "index_int": "0x0026",
+          "reg_width": 256
+        },
+        {
+          "id": "fuse39",
+          "name": "RADIO_VER_CNT",
+          "description": "Monotonic counter indicating the minimal radio firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
+          "index_int": "0x0027",
+          "reg_width": 128
+        },
+        {
+          "id": "fuse40",
+          "name": "SNT_VER_CNT",
+          "description": "Monotonic counter indicating the minimum ELE loadable firmware version. The number of set bits equals the version number. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
+          "index_int": "0x0028"
+        },
+        {
+          "id": "fuse41",
+          "name": "CM33_BOOTLOADER_VER_CNT",
+          "description": "Monotonic counter indicating the minimal CM33 bootloader version. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
+          "index_int": "0x0029",
+          "reg_width": 16
+        },
+        {
+          "id": "fuse42",
+          "name": "CM33_S_VER_CNT_VIRTUAL",
+          "description": "Virtual counter indicating the secure OEM CM33 firmware version. The integer value of this field indicates the number of set bits in CM33_S_VER_CNT and that number equals the version number. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc.",
+          "index_int": "0x002A",
+          "calculated": {
+            "method": "virtual_counter",
+            "src_register_id": "fuse37"
+          },
+          "reg_width": 8
+        },
+        {
+          "id": "fuse43",
+          "name": "CM33_NS_VER_CNT_VIRTUAL",
+          "description": "Virtual counter indicating the non-secure OEM CM33 firmware version. The integer value of this field indicates the number of set bits in CM33_NS_VER_CNT and that number equals the version number. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc.",
+          "index_int": "0x002B",
+          "calculated": {
+            "method": "virtual_counter",
+            "src_register_id": "fuse38"
+          },
+          "reg_width": 16
+        },
+        {
+          "id": "fuse44",
+          "name": "RADIO_VER_CNT_VIRTUAL",
+          "description": "Virtual counter indicating the radio firmware version. The integer value of this field indicates the number of set bits in RADIO_VER_CNT and that number equals the version number. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc.",
+          "index_int": "0x002C",
+          "calculated": {
+            "method": "virtual_counter",
+            "src_register_id": "fuse39"
+          },
+          "reg_width": 8
+        },
+        {
+          "id": "fuse45",
+          "name": "SNT_VER_CNT_VIRTUAL",
+          "description": "Virtual counter indicating the ELE loadable firmware version. The integer value of this field indicates the number of set bits in SNT_VER_CNT and that number equals the version number. Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc.",
+          "index_int": "0x002D",
+          "calculated": {
+            "method": "virtual_counter",
+            "src_register_id": "fuse40"
+          },
+          "reg_width": 8
+        },
+        {
+          "id": "fuse46",
+          "name": "CM33_BOOTLOADER_VER_CNT_VIRTUAL",
+          "description": "Virtual counter indicating the minimal version of the CM33 bootloader. Integer value equivalent to number of set fuse bits Allowed values increment in form of 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, ..., etc.",
+          "index_int": "0x002E",
+          "calculated": {
+            "method": "virtual_counter",
+            "src_register_id": "fuse41"
+          },
+          "reg_width": 8
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "SEC_BOOT_EN",
+        "description": "Secure boot enable"
+      },
+      "registers": [
+        {
+          "id": "fuse51",
+          "name": "NBU_SEC_BOOT_EN",
+          "description": "NBU secure boot enable fuse. NBU image must be authenticated successfully to boot if this fuse is set. See the Security Reference Manual for the value of this fuse reflected in bit 12 of SMSCM_LIFECYCLE register.",
+          "index_int": "0x0033",
+          "reg_width": 8,
+          "bitfields": [
+            {
+              "width": 1,
+              "id": "fuse51-bit-0",
+              "name": "NBU_SEC_BOOT_EN",
+              "description": "NBU secure boot enable fuse. NBU image must be authenticated successfully to boot if this fuse is set.\nSee the Security Reference Manual for the value of this fuse reflected in bit 12 of SMSCM_LIFECYCLE register.",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "NBU image doesn't need to be authenticated (default)"
+                },
+                {
+                  "name": "Enabled",
+                  "value": 1,
+                  "description": "NBU image must be authenticated to boot"
+                }
+              ]
+            },
+            {
+              "width": 7
+            }
+          ]
+        },
+        {
+          "id": "fuse53",
+          "name": "OEM_SEC_BOOT_EN",
+          "description": "Main core secure boot enable boot enable fuse, boot image must be authenticated successfully to boot if this fuse field is set to 0xA. See the Security Reference Manual for the value of this fuse reflected in bits 24-27 of SMSCM_LIFECYCLE register.",
+          "index_int": "0x0035",
+          "reg_width": 8,
+          "bitfields": [
+            {
+              "width": 4,
+              "id": "fuse53-bits-0-3",
+              "name": "OEM_SEC_BOOT_EN",
+              "description": "Main core secure boot enable boot enable fuse, boot image must be authenticated successfully to boot if this fuse field is set to 0xA. See the Security Reference Manual for the value of this fuse reflected in bits 24-27 of SMSCM_LIFECYCLE register.",
+              "values": [
+                {
+                  "name": "Disabled",
+                  "value": 0,
+                  "description": "Boot image doesn't need to be authenticated to boot (default)"
+                },
+                {
+                  "name": "Enabled",
+                  "value": 10,
+                  "description": "Boot image must be authenticated to boot"
+                }
+              ]
+            },
+            {
+              "width": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "SECURE_STORAGE_CNT",
+        "description": "Secure storage counter"
+      },
+      "registers": [
+        {
+          "id": "fuse56",
+          "name": "SECURE_STORAGE_VER_CNT",
+          "description": "Secure Storage Verification Counter. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc.",
+          "index_int": "0x0038",
+          "reg_width": 96
+        },
+        {
+          "id": "fuse57",
+          "name": "SECURE_STORAGE_VER_CNT_VIRTUAL",
+          "description": "Virtual Secure Storage Verification Counter. Allowed values increment in form of 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, ..., etc. Fuse is not accessible via ISP mode and can be read and written from application by fuse read and fuse write ELE API.",
+          "index_int": "0x0039",
+          "access": "none",
+          "reg_width": 8
+        }
+      ]
+    }
+  ]
 }

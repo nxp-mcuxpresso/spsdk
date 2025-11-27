@@ -35,7 +35,7 @@ sw_version: 0
 # Description: Private key used for sign the container header. Header can be signed by SRK. The referenced SRK
 # must not have been revoked.
 signer: ../../_data/keys/rsa4096/srk0_rsa4096.pem
-signer_#2: ../../_data/keys/mldsa65/SRK_key0_MLDSA65.pem
+signer_#2: ../../_data/keys/mldsa65/srk0_mldsa65.pem
 
 # ================================================================================================================
 #                                      == Configuration of AHAB SRK table ==
@@ -76,7 +76,7 @@ srk_table:
     # algorithms are: Dilithium level 3. Supported hash algorithms: sha3_256, sha3_384, sha3_512. Certificate may be of
     # Certificate Authority.
     srk_array:
-      - ../../_data/keys/mldsa65/SRK_key0_MLDSA65.pub
-      - ../../_data/keys/mldsa65/SRK_key1_MLDSA65.pub
-      - ../../_data/keys/mldsa65/SRK_key2_MLDSA65.pub
-      - ../../_data/keys/mldsa65/SRK_key3_MLDSA65.pub
+      - ../../_data/keys/mldsa65/srk0_mldsa65.pub
+      - ../../_data/keys/mldsa65/srk1_mldsa65.pub
+      - ../../_data/keys/mldsa65/srk2_mldsa65.pub
+      - ../../_data/keys/mldsa65/srk3_mldsa65.pub

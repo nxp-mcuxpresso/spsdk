@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Console script for SDPS module aka SDPSHost."""
+"""SPSDK Serial Download Protocol Stream Host application.
+
+This module provides a command-line interface for communicating with NXP devices
+in Serial Download Protocol Stream (SDPS) mode, enabling device programming and debugging
+operations through various interfaces.
+"""
 
 import sys
 

@@ -1,0 +1,134 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ==================================  Secure Binary v4.0 Configuration for mcxn556s  ===================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxn556s
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ======================================================================================================================
+#                                           == Secure Binary v4.0 Settings ==
+# ======================================================================================================================
+# ----------------------------------------===== Part Common Key [Optional] =====----------------------------------------
+# Description: Path to PCK/NPK 256 or 128 bit key in plain hex string format or path to binary file or hex string.
+containerKeyBlobEncryptionKey: .\workspace\keys\userkey.txt
+# ---------------------------------------===== KDK access rights [Optional] =====---------------------------------------
+# Description: Accepted values are 0, 1, 2 and 3. Value used as key properties for key derivation process, more details
+# can be found in CSSv2 manual.
+# Possible options: <0, 1, 2, 3>
+kdkAccessRights: 0
+# ------------------------------------------===== Description [Optional] =====------------------------------------------
+# Description: Description up to 16 characters, longer will be truncated. Stored in SB4.0 manifest.
+description: Test SB4
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# -----------------------------------------===== SB4 filename [Required] =====------------------------------------------
+# Description: Generated SB4 container filename.
+containerOutputFile: .\workspace\output_images\mcxn556s\sb4_ecc521_basic.sb4
+# ======================================================================================================================
+#                                 == AHAB Container format to add to ECC + PQC sign. ==
+# ======================================================================================================================
+# ----------------------------------------===== Image version. [Optional] =====-----------------------------------------
+# Description: Image version used for rollback protection in SB4 format. While primarily designed for dual boot
+# scenarios in MBI (Master Boot Image), this field provides security through firmware version validation.
+
+# **Rollback Protection Mechanism:**
+# The image version must be equal to or greater than the version stored in fuses or PFR (Protected Flash Region) to
+# ensure proper rollback protection.
+
+# **Version Calculation (e.g., MCXN556s series):**
+# The firmware version is calculated by combining the image version with the fuse version:
+
+# fw_version = (imageVersion << 8) | fuse_version
+
+
+# **Validation Process:**
+# During rollback protection, the calculated firmware version is checked against the 'SECURE_FW_VERSION' value stored in
+# the CFPA (Customer Field Programmable Area) page. Only firmware with versions equal to or higher than the stored value
+# will be allowed to execute.
+imageVersion: 0
+# -----------------------------------===== Super Root Key (SRK) set [Required] =====------------------------------------
+# Description: Defines which set is used to authenticate the container.
+# Possible options: <oem, nxp>
+srk_set: oem
+# -------------------------------------------===== Used SRK [Required] =====--------------------------------------------
+# Description: Which key from SRK set is being used.
+used_srk_id: 0
+# -----------------------------------------===== Fuse version [Optional] =====------------------------------------------
+# Description: The value must be equal or greater than the version stored in fuses or PFR to provide proper rollback
+# protection. For example, on the MCXN556s series, the fuse version is used for rollback protection, where it is joined
+# with the image version to create a firmware version 'fw_version = (imageVersion << 8) | (fuse_version)'. During
+# rollback protection, the firmware version is checked against 'SECURE_FW_VERSION' in the CFPA page.
+fuse_version: 0
+# -------------------------------------===== AHAB container signer [Optional] =====-------------------------------------
+# Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
+# private key used for sign the container header. Header can be signed by SRK. The referenced SRK must not have been
+# revoked.
+signer: ../../_data/keys/ecc521/imgkey_ecc521.pem
+
+# ======================================================================================================================
+#                                         == Configuration of AHAB SRK table ==
+# ======================================================================================================================
+# -------------------------------------------===== SRK Table [Required] =====-------------------------------------------
+# Description: SRK (Super Root key) table definition.
+srk_table:
+  # -------------------------------------------===== CA Flag [Optional] =====-------------------------------------------
+  # Description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys
+  flag_ca: false
+  # ---------------------------------===== Super Root Key (SRK) table [Required] =====----------------------------------
+  # Description: Table containing the used SRK records. All SRKs must be of the same type. Supported signing algorithms
+  # are: RSA-PSS, ECDSA, Dilithium or SM2. Supported hash algorithms: sha256, sha384, sha512, sha3_256, sha3_384,
+  # sha3_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1, rsa2048, rsa4096, dilithium3, sm2.
+  # Certificate may be of Certificate Authority. Dilithium algorithms are supported just in new type of AHAB container
+  srk_array:
+    - ../../_data/keys/ecc521/srk0_ecc521.pub
+    - ../../_data/keys/ecc521/srk1_ecc521.pub
+    - ../../_data/keys/ecc521/srk2_ecc521.pub
+    - ../../_data/keys/ecc521/srk3_ecc521.pub
+# ======================================================================================================================
+#                                   == Secure Binary v3.1 / v4.0 Commands Settings ==
+# ======================================================================================================================
+# ----------------------------------------===== SB3.1 Commands [Required] =====-----------------------------------------
+# Description: Secure Binary v3.1 commands block, list of all possible options - Modify it according to your application
+commands:
+  -
+    # -------------------------------------------===== Load [Required] =====--------------------------------------------
+    # Description: If set, then the data to write immediately follows the range header. The length field contains the
+    # actual data length
+    load:
+      # -----------------------------------------===== Address [Required] =====-----------------------------------------
+      # Description: Address of memory block to be loaded.
+      address: '0x20000000'
+      # ----------------------------------------===== Memory ID [Optional] =====----------------------------------------
+      # Description: ID of memory block to be loaded.
+      memoryId: 0
+      # -----------------------------===== Data to be loaded [Conditionally required] =====-----------------------------
+      # Description: The data to be loaded, it could be defined in following formats:
+      #   - 32-bit value. Value will be converted to binary in little endian format. Example: '0xB38AA899' or '0b111000'
+      #   - Array of 32-bit binary values delimited by comma to be loaded. Individual 32-bit values will be stored in
+      # little endian format. Example: 0x1234, 0x5678, 0, 12345678
+      #   - List of integers passed as an array.
+      #   - Path to binary file. Example: my_binary.bin
+      data: .\workspace\input_images\test1.bin
+  -
+    # ------------------------------------------===== Execute [Required] =====------------------------------------------
+    # Description: Address is the jump-to address. No further processing of SB after jump, ROM do not expect to return.
+    execute:
+      # -----------------------------------------===== Address [Required] =====-----------------------------------------
+      # Description: Jump-to address to start execute code.
+      address: '0x20000000'
+
+
+# ----------------------------------------------------------------------------------------------------
+#                              == Secure Binary v4.0 Testing Settings ==
+# ----------------------------------------------------------------------------------------------------
+timestamp: '0x123456' # [Optional], SB4 file force timestamp; For testing purposes. This option can override real timestamp of SB4 file.

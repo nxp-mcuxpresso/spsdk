@@ -5,23 +5,15 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""EdgeLock Enclave (ELE) Message Handler.
+"""EdgeLock Enclave (ELE) communication interface.
 
 This module provides functionality for handling communication with the EdgeLock Enclave (ELE),
 a hardware security module present in certain NXP microcontrollers. It includes classes and
-methods for constructing, sending, and receiving ELE messages, as well as managing the
-communication interface with different types of devices.
-
-The module supports various communication protocols, including MCUBoot, U-Boot serial console,
-and U-Boot fastboot, allowing for flexible integration with different development and production
-environments.
-
-Key components:
-- EleDevice: An enumeration of supported ELE-capable devices and communication interfaces.
-- EleMessageHandler: A base class for handling ELE message construction and communication.
-
-This module is part of the SPSDK (Secure Provisioning SDK) and is designed to facilitate
-secure operations and provisioning tasks on NXP microcontrollers featuring the EdgeLock Enclave.
+methods for constructing, sending, and receiving ELE messages through various communication
+protocols including MCUBoot, U-Boot serial console, and U-Boot fastboot.
+The module supports flexible integration with different development and production environments
+by providing abstract message handling capabilities and device-specific implementations for
+ELE-capable NXP microcontrollers.
 """
 
 import logging
@@ -46,7 +38,11 @@ logger = logging.getLogger(__name__)
 
 
 class EleDevice(SpsdkEnum):
-    """Enum containing supported ELE devices."""
+    """ELE device communication interface enumeration.
+
+    This enumeration defines the supported communication interfaces for EdgeLock Enclave (ELE)
+    devices, including different boot modes and communication protocols.
+    """
 
     MBOOT = (0, "mboot", "ELE over mboot")
     UBOOT_SERIAL = (1, "uboot_serial", "ELE over U-Boot serial console")
@@ -54,7 +50,16 @@ class EleDevice(SpsdkEnum):
 
 
 class EleMessageHandler:
-    """Base class for ELE message handling."""
+    """ELE Message Handler for NXP MCU communication.
+
+    This class provides a unified interface for handling EdgeLock Enclave (ELE)
+    message communication across supported NXP MCU families. It manages the
+    communication buffer configuration, device interaction, and message processing
+    for secure provisioning operations.
+    The handler supports multiple communication interfaces including McuBoot,
+    U-Boot Serial, and U-Boot Fastboot protocols, providing a consistent API
+    for ELE operations regardless of the underlying transport mechanism.
+    """
 
     def __init__(
         self,
@@ -63,12 +68,15 @@ class EleMessageHandler:
         buffer_address: Optional[int] = None,
         buffer_size: Optional[int] = None,
     ) -> None:
-        """Class object initialized.
+        """Initialize ELE communication interface.
 
-        :param device: Communication interface.
-        :param family: Target family name.
-        :param buffer_address: Override default buffer address for ELE.
-        :param buffer_size: Override default buffer size for ELE.
+        Sets up communication with EdgeLock Enclave (ELE) using the specified device
+        and configures buffer parameters for data exchange.
+
+        :param device: Communication interface for device interaction.
+        :param family: Target MCU family and revision information.
+        :param buffer_address: Override default buffer address for ELE communication.
+        :param buffer_size: Override default buffer size for ELE communication.
         """
         self.device = device
         self.database = get_db(family=family)
@@ -87,26 +95,32 @@ class EleMessageHandler:
 
     @staticmethod
     def get_supported_families() -> list[FamilyRevision]:
-        """Get list of supported target families.
+        """Get list of supported target families for ELE.
 
-        :return: List of supported families.
+        The method retrieves all families supported by the ELE (EdgeLock Enclave) database
+        manager from the SPSDK database.
+
+        :return: List of supported families with their revisions.
         """
         return get_families(DatabaseManager.ELE)
 
     @staticmethod
     def get_supported_ele_devices() -> list[str]:
-        """Get list of supported target families.
+        """Get list of supported ELE device families.
 
-        :return: List of supported families.
+        :return: List of supported ELE device family names.
         """
         return EleDevice.labels()
 
     @staticmethod
     def get_ele_device(family: FamilyRevision) -> EleDevice:
-        """Get default ELE device from DB.
+        """Get default ELE device from database.
 
-        :param family: Device name.
-        :return: EleDevice instance.
+        Retrieves the default EdgeLock Enclave (ELE) device configuration for the specified
+        device family from the database.
+
+        :param family: Device family and revision information.
+        :return: EleDevice instance with default configuration for the specified family.
         """
         return EleDevice.from_label(get_db(family).get_str(DatabaseManager.ELE, "ele_device"))
 
@@ -114,11 +128,12 @@ class EleMessageHandler:
     def send_message(self, msg: EleMessage) -> None:
         """Send message and receive response.
 
-        :param msg: EdgeLock Enclave message.
+        :param msg: EdgeLock Enclave message to be sent.
+        :raises SPSDKError: If message sending or response receiving fails.
         """
 
     def __enter__(self) -> None:
-        """Enter function of ELE handler.
+        """Enter the ELE handler context manager.
 
         Opens the device if it's not already opened.
         """
@@ -133,7 +148,8 @@ class EleMessageHandler:
     ) -> None:
         """Close function of ELE handler.
 
-        Closes the device if it's opened.
+        Closes the device if it's opened. This method is called automatically when
+        exiting the context manager.
 
         :param exception_type: Type of the exception if one was raised.
         :param exception_value: Exception instance if one was raised.
@@ -157,7 +173,26 @@ class EleMessageHandler:
         lpcusbsio: Optional[str] = None,
         timeout: int = 5000,
     ) -> "EleMessageHandler":
-        """Get Ele message handler."""
+        """Get ELE message handler for specified device and family.
+
+        Creates and configures an appropriate ELE message handler based on the device type
+        and family. Supports U-Boot (FastBoot and Serial) and MBoot interfaces with
+        configurable communication parameters.
+
+        :param family: Target MCU family and revision information.
+        :param device: Device type to use, defaults to family-specific device if None.
+        :param fb_addr: FastBoot buffer address, uses database default if None.
+        :param fb_size: FastBoot buffer size, uses database default if None.
+        :param buffer_addr: Communication buffer address override.
+        :param buffer_size: Communication buffer size override.
+        :param port: Serial port identifier for serial communication.
+        :param usb: USB device identifier for USB communication.
+        :param buspal: BusPal interface configuration.
+        :param lpcusbsio: LPCUSBSIO interface configuration.
+        :param timeout: Communication timeout in milliseconds.
+        :raises SPSDKError: When port is not specified for U-Boot serial device.
+        :return: Configured ELE message handler instance.
+        """
         default_device = device or EleMessageHandler.get_ele_device(family)
         if default_device == EleDevice.UBOOT_FASTBOOT:
             db = get_db(family)
@@ -199,7 +234,9 @@ class EleMessageHandler:
 class EleMessageHandlerMBoot(EleMessageHandler):
     """EdgeLock Enclave Message Handler over MCUBoot.
 
-    This class can send the ELE message into target over mBoot and decode the response.
+    This class provides communication interface for sending EdgeLock Enclave messages to target
+    devices through MCUBoot protocol. It handles the complete message lifecycle including
+    command preparation, execution, response processing, and data transfer operations.
     """
 
     def __init__(
@@ -209,12 +246,13 @@ class EleMessageHandlerMBoot(EleMessageHandler):
         comm_buffer_address_override: Optional[int] = None,
         comm_buffer_size_override: Optional[int] = None,
     ) -> None:
-        """Class object initialized.
+        """Initialize ELE communication interface.
 
-        :param device: mBoot device.
-        :param family: Target family name.
-        :param comm_buffer_address_override: Override default buffer address for ELE.
-        :param comm_buffer_size_override: Override default buffer size for ELE.
+        :param device: McuBoot device instance for communication.
+        :param family: Target family revision specification.
+        :param comm_buffer_address_override: Override default communication buffer address for ELE.
+        :param comm_buffer_size_override: Override default communication buffer size for ELE.
+        :raises SPSDKError: Invalid device instance provided, must be McuBoot.
         """
         if not isinstance(device, McuBoot):
             raise SPSDKError("Wrong instance of device, must be MCUBoot")
@@ -290,11 +328,12 @@ class EleMessageHandlerMBoot(EleMessageHandler):
 
 
 class EleMessageHandlerUBoot(EleMessageHandler):
-    """EdgeLock Enclave Message Handler over uBoot.
+    """EdgeLock Enclave Message Handler for U-Boot communication.
 
-    This class implements functionality to send ELE messages to the target device over UBoot
+    This class implements functionality to send ELE messages to target devices over U-Boot
     and decode the responses. It provides an interface for communication with the EdgeLock
-    Enclave using the UBoot protocol.
+    Enclave using the U-Boot protocol, supporting both serial and fastboot communication
+    methods.
     """
 
     def __init__(
@@ -304,14 +343,16 @@ class EleMessageHandlerUBoot(EleMessageHandler):
         comm_buffer_address_override: Optional[int] = None,
         comm_buffer_size_override: Optional[int] = None,
     ) -> None:
-        """This method initializes the EleMessageHandlerUBoot class.
+        """Initialize ELE message handler for U-Boot communication.
 
-        :param device: UBoot device.
-        :param family: Target family name.
-        :param comm_buffer_address_override: Override default buffer address for ELE.
-        :param comm_buffer_size_override: Override default buffer size for ELE.
+        Creates an ELE message handler instance that communicates with EdgeLock Enclave
+        through U-Boot interface using either serial or fastboot protocol.
 
-        :raises SPSDKError: If the device is not an instance of UbootSerial or UbootFastboot.
+        :param device: U-Boot communication device instance.
+        :param family: Target chip family and revision information.
+        :param comm_buffer_address_override: Custom communication buffer address for ELE.
+        :param comm_buffer_size_override: Custom communication buffer size for ELE.
+        :raises SPSDKError: If device is not UbootSerial or UbootFastboot instance.
         """
         if not isinstance(device, UbootSerial) and not isinstance(device, UbootFastboot):
             raise SPSDKError("Wrong instance of device, must be UBoot")
@@ -323,14 +364,13 @@ class EleMessageHandlerUBoot(EleMessageHandler):
         )
 
     def extract_error_values(self, error_message: str) -> tuple[int, int, int]:
-        """Extract error values from error_message.
+        """Extract error values from error message.
 
-        This method parses the error message to extract abort_code, status, and indication values.
-        It uses regular expressions to find and extract the relevant information.
+        This method parses the error message to extract abort_code, status, and indication values
+        using regular expressions to find hexadecimal values in the message format.
 
-        :param error_message: Error message containing ret and response
-        :return: A tuple containing (abort_code, status, indication)
-        :raises: No exceptions are raised, but errors are logged if parsing fails
+        :param error_message: Error message containing ret and response hexadecimal values.
+        :return: A tuple containing (abort_code, status, indication) as integers.
         """
         # Define regular expressions to extract values
         ret_pattern = re.compile(r"ret (0x[0-9a-fA-F]+),")
@@ -365,9 +405,9 @@ class EleMessageHandlerUBoot(EleMessageHandler):
         5. Checks the response status.
         6. Reads back the response data from target memory if required.
 
-        :param msg: EdgeLock Enclave message to be sent
-        :raises SPSDKError: If an invalid response status is detected or if communication fails
-        :raises SPSDKLengthError: If an invalid read back length is detected
+        :param msg: EdgeLock Enclave message to be sent.
+        :raises SPSDKError: If an invalid response status is detected or if communication fails.
+        :raises SPSDKLengthError: If an invalid read back length is detected.
         """
         if not isinstance(self.device, UbootSerial) and not isinstance(self.device, UbootFastboot):
             raise SPSDKError("Wrong instance of device, must be UBoot")

@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Master Boot Image."""
+"""SPSDK Master Boot Image mixin classes and utilities.
+
+This module provides a comprehensive set of mixin classes for building and exporting
+Master Boot Images (MBI) across different NXP MCU families. It includes mixins for
+handling various MBI components like TrustZone, certificates, encryption, signing,
+and hardware-specific features.
+"""
 
 # pylint: disable=too-many-public-methods,too-many-lines
 
@@ -70,8 +76,7 @@ def get_all_mbi_mixins() -> dict[str, Type]:
     inherit from these base classes. Only processes modules in the same
     directory as this module.
 
-    Returns:
-        list: List of all mixin classes
+    :return: Dictionary mapping class qualified names to class types of all mixin classes.
     """
     # Base mixin classes to search for
     base_mixins = [Mbi_Mixin, Mbi_ExportMixin]
@@ -103,7 +108,17 @@ def get_all_mbi_mixins() -> dict[str, Type]:
 
 # pylint: disable=invalid-name
 class Mbi_Mixin:
-    """Base class for Master Boot Image Mixin classes."""
+    """Base class for Master Boot Image Mixin classes.
+
+    This class provides the foundation for implementing modular components that can be
+    mixed into Master Boot Image configurations. Each mixin represents a specific
+    functionality or data section that contributes to the final boot image structure.
+
+    :cvar VALIDATION_SCHEMAS: List of schema names used for configuration validation.
+    :cvar NEEDED_MEMBERS: Dictionary of required member variables for the mixin.
+    :cvar PRE_PARSED: List of pre-parsed configuration fields.
+    :cvar COUNT_IN_LEGACY_CERT_BLOCK_LEN: Flag indicating if mixin counts in legacy certificate block length.
+    """
 
     VALIDATION_SCHEMAS: list[str] = []
     NEEDED_MEMBERS: dict[str, Any] = {}
@@ -113,19 +128,26 @@ class Mbi_Mixin:
     family: FamilyRevision
 
     def mix_init(self) -> None:
-        """Initialize mixin."""
+        """Initialize the mixin component.
+
+        This method sets up the initial state and configuration for the mixin
+        functionality within the MBI (Master Boot Image) context.
+        """
 
     def mix_len(self) -> int:  # pylint: disable=no-self-use
         """Compute length of individual mixin.
 
-        :return: Length of atomic Mixin.
+        :return: Length of atomic Mixin in bytes.
         """
         return 0
 
     def mix_app_len(self) -> int:  # pylint: disable=no-self-use
         """Compute application data length of individual mixin.
 
-        :return: Application data length of atomic Mixin.
+        This method returns the default application data length for an atomic mixin,
+        which is zero for the base implementation.
+
+        :return: Application data length of atomic Mixin in bytes.
         """
         return 0
 
@@ -133,8 +155,11 @@ class Mbi_Mixin:
     def mix_get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Get validation schemas from mixin.
 
-        :param family: Family revision to get schemas
-        :return: List of validation schemas.
+        The method retrieves validation schemas for MBI (Master Boot Image) configuration
+        based on the class's VALIDATION_SCHEMAS attribute.
+
+        :param family: Family revision to get schemas for.
+        :return: List of validation schema dictionaries.
         """
         schema_cfg = get_schema_file(DatabaseManager.MBI)
         return [schema_cfg[x] for x in cls.VALIDATION_SCHEMAS]
@@ -146,24 +171,43 @@ class Mbi_Mixin:
         """
 
     def mix_validate(self) -> None:
-        """Validate the setting of image."""
+        """Validate the setting of image.
+
+        Performs validation checks on the current image configuration to ensure
+        all settings are properly configured and consistent.
+
+        :raises SPSDKError: Invalid image configuration or settings.
+        """
 
     def mix_parse(self, data: bytes) -> None:
-        """Parse the binary to individual fields.
+        """Parse the binary data to individual fields.
 
-        :param data: Final Image in bytes.
+        This method takes binary data representing a final image and parses it into
+        the individual fields of the MBI (Master Boot Image) structure.
+
+        :param data: Final Image in bytes to be parsed.
         """
 
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
         """Get the configuration of the mixin.
 
         :param output_folder: Output folder to store files.
+        :return: Dictionary containing mixin configuration data.
         """
         return {}
 
 
 class Mbi_MixinApp(Mbi_Mixin):
-    """Master Boot Image App class."""
+    """Master Boot Image Application Mixin.
+
+    This mixin class handles application binary data within Master Boot Image (MBI) structures,
+    providing functionality to load, validate, and manage application images for secure boot
+    processes across NXP MCU portfolio.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schema names for configuration validation.
+    :cvar NEEDED_MEMBERS: Required class members with their default values for proper mixin
+        initialization.
+    """
 
     VALIDATION_SCHEMAS: list[str] = ["app"]
     NEEDED_MEMBERS: dict[str, Any] = {"_app": bytes(), "app_ext_memory_align": 0x1000}
@@ -173,18 +217,26 @@ class Mbi_MixinApp(Mbi_Mixin):
 
     @property
     def app(self) -> bytes:
-        """Application data."""
+        """Get application data.
+
+        :return: Raw application data as bytes.
+        """
         return self._app
 
     @app.setter
     def app(self, app: bytes) -> None:
-        """Application data."""
+        """Set application data.
+
+        The method sets the application data and aligns it to proper block boundaries.
+
+        :param app: Raw application data bytes to be set.
+        """
         self._app = align_block(app)
 
     def mix_len(self) -> int:
         """Get size of plain input application image.
 
-        :return: Length of application.
+        :return: Length of application in bytes.
         """
         return len(self._app)
 
@@ -198,14 +250,19 @@ class Mbi_MixinApp(Mbi_Mixin):
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
+        :param config: Configuration object containing input file settings.
+        :raises SPSDKError: If the input image file cannot be loaded or is invalid.
         """
         self.load_binary_image_file(config.get_input_file_name("inputImageFile"))
 
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
         """Get the configuration of the mixin.
 
-        :param output_folder: Output folder to store files.
+        The method extracts configuration data from the mixin and optionally writes the application
+        binary to the specified output folder if present.
+
+        :param output_folder: Output folder to store the application binary file.
+        :return: Dictionary containing the mixin configuration with input image file reference.
         """
         config: dict[str, Any] = {}
         if self.app:
@@ -215,10 +272,14 @@ class Mbi_MixinApp(Mbi_Mixin):
         return config
 
     def load_binary_image_file(self, path: str) -> None:
-        """Load binary image from file (S19,HEX,BIN).
+        """Load binary image from file (S19, HEX, BIN).
 
-        :param path: File path
-        :raises SPSDKError: If invalid data file is detected.
+        The method loads a binary image from the specified file and validates alignment
+        requirements if app_ext_memory_align is configured. The loaded image data is
+        stored in the app attribute.
+
+        :param path: Path to the binary image file to load.
+        :raises SPSDKError: If invalid data file is detected or alignment requirements are not met.
         """
         app_align = self.app_ext_memory_align if hasattr(self, "app_ext_memory_align") else 0
         image = BinaryImage.load_binary_image(path)
@@ -229,9 +290,15 @@ class Mbi_MixinApp(Mbi_Mixin):
         self.app = image.export()
 
     def mix_validate(self) -> None:
-        """Validate the app.
+        """Validate the application format and interrupt vector table.
 
-        :raises SPSDKError: The application format is invalid.
+        Performs validation checks on the application binary to ensure it meets
+        minimum size requirements and has valid interrupt vector table entries.
+        The method verifies that the stack pointer, program counter, and DSC
+        illegal operation vectors are not identical.
+
+        :raises SPSDKError: The application format is invalid or minimum size
+            requirements are not met.
         """
         if len(self.app) < 0x38:
             raise SPSDKError("The application minimal size is 0x38, this input has lower size.")
@@ -244,7 +311,16 @@ class Mbi_MixinApp(Mbi_Mixin):
 
 
 class Mbi_MixinTrustZone(Mbi_Mixin):
-    """Master Boot Image Trust Zone class."""
+    """Master Boot Image TrustZone mixin class.
+
+    This mixin provides TrustZone functionality for Master Boot Images, managing
+    TrustZone configuration, validation, and integration with certificate blocks.
+    The class handles both preset and custom TrustZone configurations.
+
+    :cvar VALIDATION_SCHEMAS: Configuration validation schemas for TrustZone.
+    :cvar NEEDED_MEMBERS: Required class members for TrustZone functionality.
+    :cvar PRE_PARSED: List of pre-parsed configuration elements.
+    """
 
     VALIDATION_SCHEMAS: list[str] = ["trust_zone"]
     NEEDED_MEMBERS: dict[str, Any] = {
@@ -260,7 +336,14 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
 
     @property
     def tz_type(self) -> TrustZoneType:
-        """Trustzone type."""
+        """Get the TrustZone configuration type for this MBI.
+
+        Determines the TrustZone type based on the current trust_zone configuration.
+        Returns DISABLED if no TrustZone is configured, CUSTOM if a customized
+        configuration exists, or ENABLED for standard TrustZone configuration.
+
+        :return: The TrustZone type indicating current configuration state.
+        """
         if self.trust_zone is None:
             return TrustZoneType.DISABLED
         if self.trust_zone.is_customized:
@@ -270,13 +353,24 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
     def mix_len(self) -> int:
         """Get length of TrustZone array.
 
-        :return: Length of TrustZone.
+        The method returns the length of the TrustZone array if it exists and the type is CUSTOM,
+        otherwise returns 0.
+
+        :return: Length of TrustZone array, or 0 if not applicable.
         """
         return (
             len(self.trust_zone) if self.trust_zone and self.tz_type == TrustZoneType.CUSTOM else 0
         )
 
     def _load_preset_file(self, preset_file: str) -> None:
+        """Load preset file for TrustZone configuration.
+
+        Attempts to load the preset file as a configuration file first. If that fails,
+        falls back to loading it as a binary TrustZone file and parses it directly.
+
+        :param preset_file: Path to the preset file (config or binary format).
+        :raises SPSDKError: When binary file cannot be loaded or parsed as TrustZone.
+        """
         try:
             cfg = Config.create_from_file(preset_file)
         except SPSDKError:
@@ -287,7 +381,10 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
+        Loads TrustZone configuration settings from the provided configuration dictionary.
+        If TrustZone is enabled, either loads preset file or creates default TrustZone instance.
+
+        :param config: Configuration dictionary containing TrustZone settings.
         """
         self.trust_zone = None
         if config.get("enableTrustZone", False):
@@ -303,7 +400,12 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
         """Get the configuration of the mixin.
 
-        :param output_folder: Output folder to store files.
+        This method generates configuration data for the mixin, including TrustZone settings.
+        If a custom TrustZone configuration is present, it exports the configuration to a binary
+        file in the specified output folder.
+
+        :param output_folder: Output folder to store generated configuration files.
+        :return: Dictionary containing the mixin configuration with TrustZone settings.
         """
         config: dict[str, Any] = {}
         config["enableTrustZone"] = bool(self.trust_zone)
@@ -315,9 +417,13 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
         return config
 
     def mix_parse(self, data: bytes) -> None:
-        """Parse the binary to individual fields.
+        """Parse the binary data to extract and initialize TrustZone configuration.
 
-        :param data: Final Image in bytes.
+        The method analyzes the TrustZone type from the IVT table and initializes the appropriate
+        TrustZone object based on the detected type (enabled, custom, or none).
+
+        :param data: Final Image in bytes containing the binary data to parse.
+        :raises SPSDKParsingError: Invalid TrustZone type detected in the binary data.
         """
         tz_type = self.ivt_table.get_tz_type(data)
         if tz_type not in TrustZoneType.tags():
@@ -344,21 +450,36 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
 
 
 class Mbi_MixinTrustZoneMandatory(Mbi_MixinTrustZone):
-    """Master Boot Image Trust Zone class for devices where is Trustzone mandatory."""
+    """Master Boot Image Trust Zone mixin for devices where TrustZone is mandatory.
+
+    This mixin extends the base TrustZone functionality to enforce TrustZone configuration
+    for devices that require it. It automatically initializes TrustZone settings and
+    validates that TrustZone configuration is present during image creation.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schemas used for configuration validation.
+    """
 
     VALIDATION_SCHEMAS: list[str] = ["trust_zone_mandatory"]
     trust_zone: Optional[TrustZone]
     family: FamilyRevision
 
     def mix_init(self) -> None:
-        """Initialize mixin."""
+        """Initialize the mixin component.
+
+        Sets up the TrustZone configuration if it hasn't been initialized yet. Creates a new
+        TrustZone instance using the current family setting when trust_zone is None.
+        """
         if self.trust_zone is None:
             self.trust_zone = TrustZone(family=self.family)
 
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
+        This method processes the configuration to set up TrustZone settings. If a TrustZone
+        preset file is specified, it loads the preset and warns if default values are used.
+        Otherwise, it initializes a default TrustZone configuration for the family.
+
+        :param config: Configuration object containing TrustZone setup parameters.
         """
         if config.get("trustZonePresetFile"):
             self._load_preset_file(config.get_input_file_name("trustZonePresetFile"))
@@ -380,7 +501,11 @@ class Mbi_MixinTrustZoneMandatory(Mbi_MixinTrustZone):
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
         """Get the configuration of the mixin.
 
-        :param output_folder: Output folder to store files.
+        The method exports trust zone configuration to a binary file if customized and returns
+        the configuration dictionary with the file reference.
+
+        :param output_folder: Output folder to store the trust zone binary file.
+        :return: Configuration dictionary containing trust zone preset file reference if applicable.
         """
         config: dict[str, Any] = {}
         if self.trust_zone and self.trust_zone.is_customized == TrustZoneType.CUSTOM:
@@ -392,7 +517,15 @@ class Mbi_MixinTrustZoneMandatory(Mbi_MixinTrustZone):
 
 
 class Mbi_MixinTrustZoneV2(Mbi_Mixin):
-    """Master Boot Image TrustZone version 2 class."""
+    """Master Boot Image TrustZone version 2 mixin class.
+
+    This mixin provides TrustZone version 2 functionality for Master Boot Images,
+    handling configuration, validation, and management of TrustZone security settings
+    for NXP MCU devices.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schema names for TrustZone v2.
+    :cvar NEEDED_MEMBERS: Required member variables and their default values.
+    """
 
     VALIDATION_SCHEMAS: list[str] = ["trust_zone_2"]
     NEEDED_MEMBERS: dict[str, Any] = {
@@ -406,7 +539,13 @@ class Mbi_MixinTrustZoneV2(Mbi_Mixin):
 
     @property
     def tz_type(self) -> TrustZoneType:
-        """Trustzone type."""
+        """Get the TrustZone type for this MBI.
+
+        Determines whether TrustZone is enabled with custom configuration or just enabled
+        with default settings.
+
+        :return: TrustZone type indicating custom or enabled configuration.
+        """
         if self.trust_zone and self.trust_zone.is_customized:
             return TrustZoneType.CUSTOM
         return TrustZoneType.ENABLED
@@ -414,14 +553,19 @@ class Mbi_MixinTrustZoneV2(Mbi_Mixin):
     def mix_len(self) -> int:
         """Get length of TrustZone array.
 
-        :return: Length of TrustZone.
+        :return: Length of TrustZone array, or 0 if TrustZone is not set.
         """
         return len(self.trust_zone) if self.trust_zone else 0
 
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
+        Loads trust zone configuration from the provided config dictionary. If a trust zone
+        preset file is specified, it attempts to load it first as a config file, then falls
+        back to parsing it as a binary file if that fails.
+
         :param config: Dictionary with configuration fields.
+        :raises SPSDKError: When trust zone configuration cannot be loaded from preset file.
         """
         self.trust_zone = None
         if config.get("trustZonePresetFile"):
@@ -434,7 +578,11 @@ class Mbi_MixinTrustZoneV2(Mbi_Mixin):
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
         """Get the configuration of the mixin.
 
-        :param output_folder: Output folder to store files.
+        Exports trust zone configuration to files and returns configuration dictionary with
+        references to the exported files.
+
+        :param output_folder: Output folder to store the exported trust zone files.
+        :return: Configuration dictionary containing trust zone preset file reference.
         """
         config: dict[str, Any] = {}
         if self.trust_zone:
@@ -453,7 +601,11 @@ class Mbi_MixinTrustZoneV2(Mbi_Mixin):
     def mix_parse(self, data: bytes) -> None:
         """Parse the binary to individual fields.
 
+        This method extracts and validates TrustZone configuration from the binary data,
+        setting up the trust_zone attribute based on the detected TrustZone type.
+
         :param data: Final Image in bytes.
+        :raises SPSDKParsingError: Invalid TrustZone type or Trust Zone block not found.
         """
         tz_type = self.ivt_table.get_tz_type(data)
         if tz_type not in TrustZoneType.tags():
@@ -469,7 +621,14 @@ class Mbi_MixinTrustZoneV2(Mbi_Mixin):
 
 
 class Mbi_MixinLoadAddress(Mbi_Mixin):
-    """Master Boot Image load address class."""
+    """Master Boot Image load address mixin.
+
+    This mixin handles the management of load addresses for Master Boot Images,
+    providing functionality to load, configure, and parse execution addresses
+    from configuration data and binary image data.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schema names for load address configuration.
+    """
 
     VALIDATION_SCHEMAS: list[str] = ["load_addr"]
 
@@ -479,14 +638,22 @@ class Mbi_MixinLoadAddress(Mbi_Mixin):
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
+        The method extracts the output image execution address from the provided
+        configuration and sets the load_address attribute.
+
+        :param config: Configuration object containing MBI settings.
         """
         self.load_address = config.get_int("outputImageExecutionAddress", 0)
 
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
         """Get the configuration of the mixin.
 
+        The method retrieves configuration data including the output image execution address
+        based on the load address. The load address must be defined before calling this method.
+
         :param output_folder: Output folder to store files.
+        :raises SPSDKError: The load address is not defined.
+        :return: Dictionary containing mixin configuration with execution address.
         """
         config: dict[str, Any] = {}
         if self.load_address is None:
@@ -497,13 +664,23 @@ class Mbi_MixinLoadAddress(Mbi_Mixin):
     def mix_parse(self, data: bytes) -> None:
         """Parse the binary to individual fields.
 
-        :param data: Final Image in bytes.
+        This method extracts the load address from the provided binary data using the IVT table
+        and stores it in the load_address attribute.
+
+        :param data: Final Image in bytes containing the binary data to be parsed.
         """
         self.load_address = self.ivt_table.get_load_address_from_data(data)
 
 
 class Mbi_MixinFwVersion(Mbi_Mixin):
-    """Master Boot Image FirmWare Version class."""
+    """Master Boot Image Firmware Version Mixin.
+
+    This mixin class provides firmware version management functionality for Master Boot Images,
+    handling configuration loading and retrieval of firmware version information.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schemas used for firmware version validation.
+    :cvar NEEDED_MEMBERS: Dictionary defining required members for the mixin functionality.
+    """
 
     VALIDATION_SCHEMAS: list[str] = ["firmware_version"]
     NEEDED_MEMBERS: dict[str, Any] = {"manifest": None}
@@ -521,6 +698,7 @@ class Mbi_MixinFwVersion(Mbi_Mixin):
         """Get the configuration of the mixin.
 
         :param output_folder: Output folder to store files.
+        :return: Dictionary containing mixin configuration with firmware version.
         """
         config: dict[str, Any] = {}
         config["firmwareVersion"] = self.firmware_version
@@ -528,7 +706,16 @@ class Mbi_MixinFwVersion(Mbi_Mixin):
 
 
 class Mbi_MixinImageVersion(Mbi_Mixin):
-    """Master Boot Image Image Version class."""
+    """Master Boot Image version management mixin.
+
+    This mixin provides functionality for handling image version information in Master Boot Images,
+    including loading version data from configuration, parsing version from binary data, and
+    managing version-related operations through the IVT table.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schemas used for image version validation.
+    :cvar NEEDED_MEMBERS: Dictionary defining required members with default values.
+    :cvar image_version_to_image_type: Flag indicating if image version maps to image type.
+    """
 
     VALIDATION_SCHEMAS: list[str] = ["image_version"]
     NEEDED_MEMBERS: dict[str, Any] = {"image_version": 0}
@@ -548,30 +735,51 @@ class Mbi_MixinImageVersion(Mbi_Mixin):
         """Get the configuration of the mixin.
 
         :param output_folder: Output folder to store files.
+        :return: Dictionary containing mixin configuration with image version.
         """
         config: dict[str, Any] = {}
         config["imageVersion"] = self.image_version
         return config
 
     def mix_parse(self, data: bytes) -> None:
-        """Parse the binary to individual fields.
+        """Parse the binary data to extract and set individual image fields.
 
-        :param data: Final Image in bytes.
+        This method extracts the image version from the provided binary data using
+        the IVT (Interrupt Vector Table) and stores it in the image_version attribute.
+
+        :param data: Complete binary image data to be parsed.
         """
         self.image_version = self.ivt_table.get_image_version(data)
 
 
 class Mbi_MixinImageSubType(Mbi_Mixin):
-    """Master Boot Image SubType class."""
+    """Master Boot Image SubType mixin class.
+
+    This mixin provides functionality for managing image subtypes in Master Boot Images,
+    supporting different subtype configurations for various NXP MCU families including
+    KW45xx, K32W1xx, and MCXN9xx series.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schema names for image subtype.
+    :cvar NEEDED_MEMBERS: Dictionary defining required members with default values.
+    """
 
     class Mbi_ImageSubTypeKw45xx(SpsdkEnum):
-        """Supported MAIN and NBU subtypes for KW45xx and K32W1xx."""
+        """MBI image subtype enumeration for KW45xx and K32W1xx MCU families.
+
+        This enumeration defines the supported image subtypes for Master Boot Image (MBI)
+        format used in KW45xx and K32W1xx microcontrollers, including main application
+        and NBU (Narrowband Unit) image types.
+        """
 
         MAIN = (0x00, "MAIN", "Default (main) application image")
         NBU = (0x01, "NBU", "NBU (Narrowband Unit) image")
 
     class Mbi_ImageSubTypeMcxn9xx(SpsdkEnum):
-        """Supported MAIN and NBU subtypes for MCXN9xx."""
+        """MBI image subtype enumeration for MCXN9xx devices.
+
+        This enumeration defines the supported image subtypes for MCXN9xx series
+        microcontrollers, including main application and recovery image types.
+        """
 
         MAIN = (0x00, "MAIN", "Default (main) application image")
         RECOVERY = (0x01, "RECOVERY", "Recovery image")
@@ -585,14 +793,19 @@ class Mbi_MixinImageSubType(Mbi_Mixin):
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
+        The method loads the output image subtype from the provided configuration,
+        defaulting to "main" if not specified.
+
+        :param config: Configuration object containing the settings to load.
         """
         self.set_image_subtype(config.get_str("outputImageSubtype", "main"))
 
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
         """Get the configuration of the mixin.
 
-        :param output_folder: Output folder to store files.mb_xip_384_384_recovery_crctest
+        :param output_folder: Output folder to store files.
+        :raises SPSDKError: When the image subtype is not defined.
+        :return: Dictionary containing the mixin configuration with output image subtype.
         """
         config: dict[str, Any] = {}
         if self.image_subtype is None:
@@ -603,7 +816,13 @@ class Mbi_MixinImageSubType(Mbi_Mixin):
         return config
 
     def set_image_subtype(self, image_subtype: Optional[Union[str, int]]) -> None:
-        """Convert string value to int by enum table and store to class."""
+        """Set image subtype for MBI mixin.
+
+        Converts string representation of image subtype to integer value using appropriate
+        enum table based on the target MCU family and stores it in the class instance.
+
+        :param image_subtype: Image subtype as string name, integer value, or None for default.
+        """
         if image_subtype is None:
             image_subtype_int = (
                 Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx.MAIN.tag
@@ -622,13 +841,26 @@ class Mbi_MixinImageSubType(Mbi_Mixin):
     def mix_parse(self, data: bytes) -> None:
         """Parse the binary to individual fields.
 
-        :param data: Final Image in bytes.
+        This method extracts the image subtype from the provided binary data using
+        the IVT (Interrupt Vector Table) and stores it in the image_subtype attribute.
+
+        :param data: Final Image in bytes to be parsed.
         """
         self.image_subtype = self.ivt_table.get_sub_type(data)
 
 
 class Mbi_MixinIvt(Mbi_Mixin):
-    """Master Boot Image Interrupt Vector table class."""
+    """Master Boot Image Interrupt Vector Table mixin class.
+
+    This mixin provides functionality for handling IVT (Interrupt Vector Table) operations
+    in Master Boot Images, including flag management, offset definitions, and IVT table
+    manipulation for NXP MCU boot images.
+
+    :cvar IVT_IMAGE_LENGTH_OFFSET: Offset for image length field in IVT table.
+    :cvar IVT_IMAGE_FLAGS_OFFSET: Offset for image flags field in IVT table.
+    :cvar IVT_CRC_CERTIFICATE_OFFSET: Offset for CRC certificate field in IVT table.
+    :cvar IVT_LOAD_ADDR_OFFSET: Offset for load address field in IVT table.
+    """
 
     # IVT table offsets
     IVT_IMAGE_LENGTH_OFFSET = 0x20
@@ -667,7 +899,9 @@ class Mbi_MixinIvt(Mbi_Mixin):
 
     @property
     def ivt_table(self) -> Self:
-        """Get ivt table itself.
+        """Get IVT table itself.
+
+        Returns the current mixin IVT object instance for method chaining or direct access.
 
         :return: Current mixin IVT object.
         """
@@ -676,7 +910,12 @@ class Mbi_MixinIvt(Mbi_Mixin):
     def create_flags(self) -> int:
         """Create flags of image.
 
-        :return: Image type flags
+        Constructs image type flags by combining base image type with optional features
+        like TrustZone type, image subtype, hardware key enablement, key store presence,
+        relocation table, and boot image version.
+
+        :raises SPSDKError: When image subtype is not defined but required.
+        :return: Combined image type flags as integer value.
         """
         flags = int(self.IMAGE_TYPE.tag)
 
@@ -716,10 +955,13 @@ class Mbi_MixinIvt(Mbi_Mixin):
     ) -> bytes:
         """Update IVT table in application image.
 
+        The method modifies the Interrupt Vector Table (IVT) fields including image flags,
+        load address, image length, and CRC/certificate offset in the provided application data.
+
         :param app_data: Application data that should be modified.
-        :param total_len: Total length of bootable image
-        :param crc_val_cert_offset: CRC value or Certification block offset
-        :return: Updated whole application image
+        :param total_len: Total length of bootable image.
+        :param crc_val_cert_offset: CRC value or Certification block offset.
+        :return: Updated whole application image.
         """
         data = bytearray(app_data)
         # flags
@@ -747,8 +989,11 @@ class Mbi_MixinIvt(Mbi_Mixin):
     def clean_ivt(self, app_data: bytes) -> bytes:
         """Clean IVT table from added information.
 
+        The method removes specific fields from the IVT (Interrupt Vector Table) by zeroing out
+        the image length, flags, CRC/certificate offset, and execution address fields.
+
         :param app_data: Application data that should be cleaned.
-        :return: Cleaned application image
+        :return: Cleaned application image with zeroed IVT fields.
         """
         data = bytearray(app_data)
         # Total length of image
@@ -763,11 +1008,14 @@ class Mbi_MixinIvt(Mbi_Mixin):
         return bytes(data)
 
     def update_crc_val_cert_offset(self, app_data: bytes, crc_val_cert_offset: int) -> bytes:
-        """Update value just of CRC/Certificate offset field.
+        """Update CRC/Certificate offset field value in binary data.
 
-        :param app_data: Input binary array.
-        :param crc_val_cert_offset: CRC/Certificate offset value.
-        :return: Updated binary array.
+        This method modifies the CRC/Certificate offset field at a specific position
+        in the provided binary data using little-endian byte order.
+
+        :param app_data: Input binary array to be modified.
+        :param crc_val_cert_offset: New CRC/Certificate offset value to set.
+        :return: Updated binary array with modified CRC/Certificate offset field.
         """
         data = bytearray(app_data)
         data[self.IVT_CRC_CERTIFICATE_OFFSET : self.IVT_CRC_CERTIFICATE_OFFSET + 4] = struct.pack(
@@ -776,7 +1024,15 @@ class Mbi_MixinIvt(Mbi_Mixin):
         return data
 
     def update_total_length(self, app_data: bytes, total_length: int) -> bytes:
-        """Update total length field in the IVT table."""
+        """Update total length field in the IVT table.
+
+        This method modifies the application data by updating the image length field
+        in the Interrupt Vector Table (IVT) at the predefined offset.
+
+        :param app_data: Application data containing the IVT table to be modified.
+        :param total_length: New total length value to be written to the IVT.
+        :return: Modified application data with updated total length field.
+        """
         data = bytearray(app_data)
         data[self.IVT_IMAGE_LENGTH_OFFSET : self.IVT_IMAGE_LENGTH_OFFSET + 4] = struct.pack(
             "<I", total_length
@@ -785,9 +1041,12 @@ class Mbi_MixinIvt(Mbi_Mixin):
 
     @classmethod
     def check_total_length(cls, data: bytes) -> None:
-        """Check total length field from raw data.
+        """Check total length field from raw MBI image data.
 
-        :param data: Raw MBI image data.
+        Validates that the input data contains sufficient bytes for a valid MBI image by checking
+        both the minimum IVT table size and comparing the declared image length with actual data size.
+
+        :param data: Raw MBI image data to validate.
         :raises SPSDKParsingError: Insufficient length of image has been detected.
         """
         if len(data) < 0x38:  # Minimum size of IVT table
@@ -804,10 +1063,12 @@ class Mbi_MixinIvt(Mbi_Mixin):
     def get_flags(cls, data: bytes) -> int:
         """Get the Image flags from raw data.
 
-        During getting of flags, the length is also validated.
+        The method extracts flags from MBI image data and validates the total length
+        during the process.
 
         :param data: Raw MBI image data.
-        :return: Image Flags
+        :raises SPSDKError: Invalid data length or format.
+        :return: Image flags value.
         """
         cls.check_total_length(data)
         return cls.get_flags_from_data(data)
@@ -816,8 +1077,10 @@ class Mbi_MixinIvt(Mbi_Mixin):
     def get_flags_from_data(cls, data: bytes) -> int:
         """Get the Image flags from raw data.
 
-        :param data: Raw MBI image data.
-        :return: Image Flags
+        Extracts the image flags from the specified offset in the MBI image data using little-endian byte order.
+
+        :param data: Raw MBI image data as bytes.
+        :return: Image flags as integer value.
         """
         return int.from_bytes(
             data[cls.IVT_IMAGE_FLAGS_OFFSET : cls.IVT_IMAGE_FLAGS_OFFSET + 4],
@@ -828,20 +1091,24 @@ class Mbi_MixinIvt(Mbi_Mixin):
     def get_cert_block_offset(cls, data: bytes) -> int:
         """Get the certificate block offset from raw data.
 
-        During getting of cert block offset, the length is also validated.
+        The method validates the total length of the data and extracts the certificate
+        block offset from the MBI image data.
 
-        :param data: Raw MBI image data.
-        :return: Certificate block offset
+        :param data: Raw MBI image data to extract certificate block offset from.
+        :return: Certificate block offset value.
         """
         cls.check_total_length(data)
         return cls.get_cert_block_offset_from_data(data)
 
     @classmethod
     def get_cert_block_offset_from_data(cls, data: bytes) -> int:
-        """Get the certificate block offset from raw data.
+        """Get the certificate block offset from raw MBI image data.
 
-        :param data: Raw MBI image data.
-        :return: Certificate block offset
+        This method extracts the certificate block offset from the IVT (Interrupt Vector Table)
+        section of the MBI image data using little-endian byte order.
+
+        :param data: Raw MBI image data containing the IVT structure.
+        :return: Certificate block offset as integer value.
         """
         return int.from_bytes(
             data[cls.IVT_CRC_CERTIFICATE_OFFSET : cls.IVT_CRC_CERTIFICATE_OFFSET + 4],
@@ -850,12 +1117,12 @@ class Mbi_MixinIvt(Mbi_Mixin):
 
     @classmethod
     def get_load_address(cls, data: bytes) -> int:
-        """Get the load address from raw data.
+        """Get the load address from raw MBI image data.
 
-        During getting of flags, the length is also validated.
+        The method validates the total length of the data before extracting the load address.
 
-        :param data: Raw MBI image data.
-        :return: Load address
+        :param data: Raw MBI image data to extract load address from.
+        :return: Load address value extracted from the MBI image data.
         """
         cls.check_total_length(data)
 
@@ -863,10 +1130,13 @@ class Mbi_MixinIvt(Mbi_Mixin):
 
     @classmethod
     def get_load_address_from_data(cls, data: bytes) -> int:
-        """Get the load address from raw data.
+        """Get the load address from raw MBI image data.
 
-        :param data: Raw MBI image data.
-        :return: Load address
+        Extracts the load address from the Interrupt Vector Table (IVT) at the predefined offset
+        within the provided raw MBI image data.
+
+        :param data: Raw MBI image data containing the IVT structure.
+        :return: Load address as integer value extracted from the IVT.
         """
         return int.from_bytes(
             data[cls.IVT_LOAD_ADDR_OFFSET : cls.IVT_LOAD_ADDR_OFFSET + 4],
@@ -877,8 +1147,10 @@ class Mbi_MixinIvt(Mbi_Mixin):
     def get_image_type(cls, data: bytes) -> int:
         """Get the Image type from raw data.
 
-        :param data: Raw MBI image data.
-        :return: Image type
+        Extracts the image type by applying the image type mask to the flags obtained from the raw MBI data.
+
+        :param data: Raw MBI image data as bytes.
+        :return: Image type as integer value.
         """
         return cls.get_flags_from_data(data) & cls.IVT_IMAGE_FLAGS_IMAGE_TYPE_MASK
 
@@ -896,8 +1168,11 @@ class Mbi_MixinIvt(Mbi_Mixin):
     def get_image_version(cls, data: bytes) -> int:
         """Get the Image firmware version from raw data.
 
-        :param data: Raw MBI image data.
-        :return: Firmware version.
+        Extracts the firmware version from the MBI image flags by checking the version flag
+        and applying appropriate bit shifts and masks to retrieve the version value.
+
+        :param data: Raw MBI image data as bytes.
+        :return: Firmware version as integer, returns 0 if version flag is not set.
         """
         flags = cls.get_flags_from_data(data)
         if flags & cls._BOOT_IMAGE_VERSION_FLAG == 0:
@@ -909,8 +1184,11 @@ class Mbi_MixinIvt(Mbi_Mixin):
     def get_sub_type(cls, data: bytes) -> int:
         """Get the Image sub type from raw data.
 
+        Extracts the sub type information from the image flags field in the raw MBI data
+        by applying appropriate bit shifting and masking operations.
+
         :param data: Raw MBI image data.
-        :return: Image sub type.
+        :return: Image sub type as integer value.
         """
         flags = cls.get_flags_from_data(data)
 
@@ -920,8 +1198,11 @@ class Mbi_MixinIvt(Mbi_Mixin):
     def get_hw_key_enabled(cls, data: bytes) -> bool:
         """Get the HW key enabled setting from raw data.
 
-        :param data: Raw MBI image data.
-        :return: HW key enabled or not.
+        This method extracts and checks the hardware key enablement flag from the
+        provided MBI image data by analyzing the flags field.
+
+        :param data: Raw MBI image data as bytes.
+        :return: True if hardware key is enabled, False otherwise.
         """
         flags = cls.get_flags_from_data(data)
 
@@ -932,7 +1213,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
         """Get the KeyStore present flag from raw data.
 
         :param data: Raw MBI image data.
-        :return: KeyStore is included or not.
+        :return: True if KeyStore is included, False otherwise.
         """
         flags = cls.get_flags_from_data(data)
 
@@ -943,7 +1224,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
         """Get the Multiple Application table present flag from raw data.
 
         :param data: Raw MBI image data.
-        :return: Multiple Application table is included or not.
+        :return: True if Multiple Application table is included, False otherwise.
         """
         flags = cls.get_flags_from_data(data)
 
@@ -951,7 +1232,13 @@ class Mbi_MixinIvt(Mbi_Mixin):
 
 
 class Mbi_MixinIvtZeroTotalLength(Mbi_MixinIvt):
-    """Master Boot Image Interrupt Vector table class for XIP image."""
+    """Master Boot Image Interrupt Vector table mixin for XIP images with zero total length.
+
+    This mixin class extends the base IVT functionality to handle XIP (Execute In Place) images
+    that require the total length field in the IVT to be set to zero, regardless of the actual
+    image size. It provides specialized handling for images that don't need length validation
+    during boot process.
+    """
 
     def update_ivt(
         self,
@@ -961,10 +1248,13 @@ class Mbi_MixinIvtZeroTotalLength(Mbi_MixinIvt):
     ) -> bytes:
         """Update IVT table in application image.
 
+        This method overrides the parent implementation by setting the total length to 0,
+        effectively ignoring the provided total_len parameter as indicated by the debug log.
+
         :param app_data: Application data that should be modified.
-        :param total_len: Total length of bootable image
-        :param crc_val_cert_offset: CRC value or Certification block offset
-        :return: Updated whole application image
+        :param total_len: Total length of bootable image (will be ignored and set to 0).
+        :param crc_val_cert_offset: CRC value or Certification block offset.
+        :return: Updated whole application image with modified IVT table.
         """
         logger.debug(f"Setting total length to 0. Ignoring {total_len}")
         return super().update_ivt(
@@ -975,7 +1265,10 @@ class Mbi_MixinIvtZeroTotalLength(Mbi_MixinIvt):
     def check_total_length(cls, data: bytes) -> None:
         """Check total length field from raw data.
 
-        :param data: Raw MBI image data.
+        Validates that the total length field in the MBI image header matches or is compatible
+        with the actual data length provided.
+
+        :param data: Raw MBI image data to validate.
         :raises SPSDKParsingError: Insufficient length of image has been detected.
         """
         total_len = int.from_bytes(
@@ -987,7 +1280,16 @@ class Mbi_MixinIvtZeroTotalLength(Mbi_MixinIvt):
 
 
 class Mbi_MixinRelocTable(Mbi_Mixin):
-    """Master Boot Image Relocation table class."""
+    """Master Boot Image Relocation Table Mixin.
+
+    This mixin handles relocation table functionality for Master Boot Images, managing
+    multiple image entries with their destination addresses and load flags. It provides
+    configuration loading, validation, and export capabilities for application tables
+    containing relocatable image data.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schema names for this mixin.
+    :cvar NEEDED_MEMBERS: Dictionary of required member variables and their defaults.
+    """
 
     VALIDATION_SCHEMAS: list[str] = ["app_table"]
     NEEDED_MEMBERS: dict[str, Any] = {"app_table": None, "_app": None}
@@ -998,21 +1300,32 @@ class Mbi_MixinRelocTable(Mbi_Mixin):
     def mix_len(self) -> int:
         """Get length of additional binaries block.
 
-        :return: Length of additional binaries block.
+        The method calculates the length by exporting the application table if it exists,
+        otherwise returns 0 for cases where no application table is present.
+
+        :return: Length of additional binaries block in bytes.
         """
         return len(self.app_table.export(0)) if self.app_table else 0
 
     def mix_app_len(self) -> int:
         """Compute application data length of individual mixin.
 
-        :return: Application data length of atomic Mixin.
+        The method calculates the length of exported application table data if the table exists,
+        otherwise returns 0.
+
+        :return: Application data length of atomic Mixin in bytes.
         """
         return len(self.app_table.export(0)) if self.app_table else 0
 
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
+        The method processes the applicationTable configuration section to create
+        a MultipleImageTable with image entries. Each entry contains binary data,
+        destination address, and load type information.
+
+        :param config: Configuration object containing applicationTable section.
+        :raises SPSDKError: Invalid configuration or missing binary files.
         """
         if "applicationTable" not in config:
             return
@@ -1032,7 +1345,11 @@ class Mbi_MixinRelocTable(Mbi_Mixin):
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
         """Get the configuration of the mixin.
 
-        :param output_folder: Output folder to store files.
+        Extracts configuration data from the application table and writes binary files
+        to the specified output folder for each table entry.
+
+        :param output_folder: Output folder to store the generated binary files.
+        :return: Dictionary containing the mixin configuration with application table data.
         """
         config: dict[str, Any] = {}
         if self.app_table:
@@ -1051,15 +1368,23 @@ class Mbi_MixinRelocTable(Mbi_Mixin):
     def mix_validate(self) -> None:
         """Validate the setting of image.
 
-        :raises SPSDKError: Application table configuration is invalid.
+        This method checks if the application table configuration is valid by ensuring
+        that when an application table exists, it contains at least one entry.
+
+        :raises SPSDKError: Application table configuration is invalid - the application
+            relocation table must have at least one record when present.
         """
         if self.app_table and len(self.app_table.entries) == 0:
             raise SPSDKError("The application relocation table MUST has at least one record.")
 
     def disassembly_app_data(self, data: bytes) -> bytes:
-        """Disassembly Application data to application and optionally Multiple Application Table.
+        """Disassemble application data to extract application and Multiple Application Table.
 
-        :return: Application data without Multiple Application Table which will be stored in class.
+        The method parses the input data to extract a Multiple Application Table if present,
+        and returns the application data portion while storing the table in the class instance.
+
+        :param data: Raw application data bytes that may contain Multiple Application Table.
+        :return: Application data without Multiple Application Table portion.
         """
         self.app_table = MultipleImageTable.parse(data)
         if self.app_table:
@@ -1069,7 +1394,17 @@ class Mbi_MixinRelocTable(Mbi_Mixin):
 
 
 class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
-    """Master Boot Image Manifest class."""
+    """Master Boot Image Manifest mixin class.
+
+    This mixin provides manifest management functionality for Master Boot Images,
+    including manifest creation, validation, and binary parsing capabilities.
+    It extends trust zone mandatory functionality with firmware versioning
+    and certificate block handling.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schemas required for this mixin.
+    :cvar NEEDED_MEMBERS: Dictionary of required member variables and their defaults.
+    :cvar PRE_PARSED: List of members that need pre-parsing during configuration.
+    """
 
     manifest_class = MasterBootImageManifest
     manifest: Optional[MasterBootImageManifest]
@@ -1091,6 +1426,7 @@ class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
     def mix_len(self) -> int:
         """Get length of Manifest block.
 
+        :raises SPSDKError: The Image manifest must exist.
         :return: Length of Manifest block.
         """
         if not self.manifest:
@@ -1098,9 +1434,12 @@ class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
         return self.manifest.total_length
 
     def mix_validate(self) -> None:
-        """Validate the setting of image.
+        """Validate the settings of the MBI image.
 
-        :raises SPSDKError: The manifest configuration is invalid.
+        This method performs validation checks on the image configuration, ensuring
+        that all required components are properly set, including the mandatory manifest.
+
+        :raises SPSDKError: The image manifest is missing or the configuration is invalid.
         """
         super().mix_validate()
         if not self.manifest:
@@ -1109,7 +1448,12 @@ class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
+        This method loads configuration settings from the provided config object,
+        sets the firmware version, and initializes the manifest with the current
+        firmware version and trust zone settings.
+
+        :param config: Configuration object containing the settings to load.
+        :raises SPSDKValueError: If configuration contains invalid values.
         """
         super().mix_load_from_config(config)
         self.firmware_version = config.get_int("firmwareVersion", 0)
@@ -1117,9 +1461,14 @@ class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
         self.manifest = self.manifest_class(self.firmware_version, self.trust_zone)
 
     def mix_parse(self, data: bytes) -> None:
-        """Parse the binary to individual fields.
+        """Parse the binary data to extract and initialize individual MBI fields.
 
-        :param data: Final Image in bytes.
+        The method extracts the manifest from the binary data using the certificate block
+        and IVT table offsets, then initializes firmware version and trust zone properties
+        from the parsed manifest data.
+
+        :param data: Complete MBI binary image data to be parsed.
+        :raises AssertionError: If cert_block is not an instance of CertBlockV21.
         """
         assert isinstance(self.cert_block, CertBlockV21)
         manifest_offset = self.ivt_table.get_cert_block_offset(data) + self.cert_block.expected_size
@@ -1129,7 +1478,14 @@ class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
 
 
 class Mbi_MixinManifestCrc(Mbi_MixinManifest):
-    """Master Boot Image Manifest class with CRC."""
+    """Master Boot Image Manifest mixin with CRC support.
+
+    This mixin extends the base manifest functionality to include CRC-based
+    Master Boot Image manifest handling, providing firmware version management
+    and trust zone configuration.
+
+    :cvar manifest_class: Reference to MasterBootImageManifestCrc class.
+    """
 
     manifest_class = MasterBootImageManifestCrc
     manifest: Optional[MasterBootImageManifestCrc]
@@ -1137,7 +1493,11 @@ class Mbi_MixinManifestCrc(Mbi_MixinManifest):
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
+        Loads the firmware version from configuration and initializes the manifest
+        with the specified firmware version and trust zone settings.
+
+        :param config: Configuration object containing the settings to load.
+        :raises SPSDKValueError: If configuration contains invalid values.
         """
         super().mix_load_from_config(config)
         self.firmware_version = config.get_int("firmwareVersion", 0)
@@ -1149,7 +1509,14 @@ class Mbi_MixinManifestCrc(Mbi_MixinManifest):
 
 
 class Mbi_MixinManifestDigest(Mbi_MixinManifest):
-    """Master Boot Image Manifest class for devices supporting ImageDigest functionality."""
+    """Master Boot Image Manifest mixin for devices supporting ImageDigest functionality.
+
+    This mixin extends the base manifest functionality to handle image digest operations
+    for Master Boot Images on devices that support digest validation. It manages manifest
+    creation with configurable hash algorithms and provides digest-aware length calculations.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schema names required for this manifest type.
+    """
 
     manifest_class = MasterBootImageManifestDigest
     manifest: Optional[MasterBootImageManifestDigest]
@@ -1162,7 +1529,11 @@ class Mbi_MixinManifestDigest(Mbi_MixinManifest):
     def mix_len(self) -> int:
         """Get length of Manifest block.
 
-        :return: Length of Manifest block.
+        Calculates the total length of the manifest block including the manifest itself
+        and optional hash digest if present based on the manifest flags.
+
+        :raises SPSDKError: If the image manifest does not exist.
+        :return: Total length of manifest block in bytes including optional hash.
         """
         if not self.manifest:
             raise SPSDKError("The Image manifest must exists.")
@@ -1180,7 +1551,10 @@ class Mbi_MixinManifestDigest(Mbi_MixinManifest):
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
+        Loads configuration settings and initializes the manifest with firmware version,
+        trust zone settings, and appropriate hash algorithm based on certificate block.
+
+        :param config: Configuration object containing firmware settings and parameters.
         """
         super().mix_load_from_config(config)
         self.firmware_version = config.get_int("firmwareVersion", 0)
@@ -1198,7 +1572,12 @@ class Mbi_MixinManifestDigest(Mbi_MixinManifest):
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
         """Get the configuration of the mixin.
 
+        The method retrieves the mixin configuration including firmware version and validates
+        that the image manifest exists before processing.
+
         :param output_folder: Output folder to store files.
+        :raises SPSDKError: The Image manifest must exist.
+        :return: Dictionary containing the mixin configuration with firmware version.
         """
         if not self.manifest:
             raise SPSDKError("The Image manifest must exists.")
@@ -1209,7 +1588,15 @@ class Mbi_MixinManifestDigest(Mbi_MixinManifest):
 
 
 class Mbi_MixinCertBlockV1(Mbi_Mixin):
-    """Master Boot Image certification block V1 class."""
+    """Master Boot Image certification block V1 mixin.
+
+    This mixin provides functionality for handling Certificate Block V1 operations
+    in Master Boot Images, including configuration loading, validation, and export
+    capabilities for secure boot implementations.
+
+    :cvar VALIDATION_SCHEMAS: Configuration validation schema names.
+    :cvar NEEDED_MEMBERS: Required member variables for mixin functionality.
+    """
 
     VALIDATION_SCHEMAS: list[str] = ["cert_block_v1", "signer"]
     NEEDED_MEMBERS: dict[str, Any] = {"cert_block": None, "signature_provider": None}
@@ -1225,14 +1612,16 @@ class Mbi_MixinCertBlockV1(Mbi_Mixin):
     def mix_len(self) -> int:
         """Get length of Certificate Block V1.
 
-        :return: Length of Certificate Block V1.
+        :return: Length of Certificate Block V1 in bytes, or 0 if no certificate block exists.
         """
         return len(self.cert_block.export()) if self.cert_block else 0
 
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
+        Loads certificate block and signature provider from the provided configuration.
+
+        :param config: Configuration dictionary containing certificate block and signature provider settings.
         """
         self.cert_block = CertBlockV1.load_from_config(config)
         self.signature_provider = get_signature_provider(config)
@@ -1240,7 +1629,12 @@ class Mbi_MixinCertBlockV1(Mbi_Mixin):
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
         """Get the configuration of the mixin.
 
-        :param output_folder: Output folder to store files.
+        The method generates a YAML configuration file for the certificate block and returns
+        a configuration dictionary containing the certificate block filename and signer information.
+
+        :param output_folder: Output folder to store the generated configuration files.
+        :raises SPSDKError: Certificate block is missing.
+        :return: Configuration dictionary with certificate block filename and signer details.
         """
         if not self.cert_block:
             raise SPSDKError("Certificate block is missing")
@@ -1256,7 +1650,12 @@ class Mbi_MixinCertBlockV1(Mbi_Mixin):
     def mix_validate(self) -> None:
         """Validate the setting of image.
 
-        :raises SPSDKError: Configuration of Certificate block v1 is invalid.
+        This method checks that the certificate block is present and is of type CertBlockV1,
+        verifies that a signature provider is defined, and validates that the signature
+        provider can work with the public key from the last certificate in the chain.
+
+        :raises SPSDKError: Certificate block is missing, not CertBlockV1 type, or signature
+            provider is not defined.
         """
         if not self.cert_block or not isinstance(self.cert_block, CertBlockV1):
             raise SPSDKError("Certificate block is missing")
@@ -1267,9 +1666,14 @@ class Mbi_MixinCertBlockV1(Mbi_Mixin):
         self.signature_provider.try_to_verify_public_key(public_key)
 
     def mix_parse(self, data: bytes) -> None:
-        """Parse the binary to individual fields.
+        """Parse the binary data to extract and initialize individual MBI fields.
 
-        :param data: Final Image in bytes.
+        This method parses the provided binary data to extract certificate block information,
+        calculates the appropriate offset based on HMAC and key store presence, and initializes
+        the certificate block and signature provider fields.
+
+        :param data: Complete MBI binary image data to be parsed.
+        :raises SPSDKError: If the certificate block parsing fails.
         """
         offset = self.ivt_table.get_cert_block_offset(data)
         if hasattr(self, "hmac_key"):
@@ -1283,7 +1687,15 @@ class Mbi_MixinCertBlockV1(Mbi_Mixin):
 
 
 class Mbi_MixinCertBlockV21(Mbi_Mixin):
-    """Master Boot Image certification block V3.1 class."""
+    """Master Boot Image certification block V2.1 mixin class.
+
+    This mixin provides functionality for handling certification blocks version 2.1
+    in Master Boot Images, including configuration management, validation, and
+    signature provider integration.
+
+    :cvar VALIDATION_SCHEMAS: Configuration validation schema names.
+    :cvar NEEDED_MEMBERS: Required member variables for mixin functionality.
+    """
 
     VALIDATION_SCHEMAS: list[str] = ["cert_block_v21", "signer"]
     NEEDED_MEMBERS: dict[str, Any] = {"cert_block": None, "signature_provider": None}
@@ -1295,6 +1707,10 @@ class Mbi_MixinCertBlockV21(Mbi_Mixin):
     def mix_len(self) -> int:
         """Get length of Certificate Block V2.1.
 
+        The method calculates the total length by combining the expected size of the
+        certificate block and the signature length from the signature provider.
+
+        :raises SPSDKError: When certification block or signature provider is missing.
         :return: Length of Certificate Block V2.1.
         """
         if not (self.cert_block and self.signature_provider):
@@ -1304,7 +1720,11 @@ class Mbi_MixinCertBlockV21(Mbi_Mixin):
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
+        The method initializes certificate block and signature provider from the provided
+        configuration data.
+
         :param config: Dictionary with configuration fields.
+        :raises SPSDKError: Invalid configuration data or missing required fields.
         """
         self.cert_block = CertBlockV21.load_from_config(config)
         self.signature_provider = get_signature_provider(config)
@@ -1312,7 +1732,12 @@ class Mbi_MixinCertBlockV21(Mbi_Mixin):
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
         """Get the configuration of the mixin.
 
-        :param output_folder: Output folder to store files.
+        The method generates a YAML configuration file for the certificate block and returns
+        a configuration dictionary with the certificate block filename and signer information.
+
+        :param output_folder: Output folder to store the generated configuration files.
+        :raises SPSDKError: Certificate block is missing.
+        :return: Configuration dictionary containing certificate block filename and signer info.
         """
         if not self.cert_block:
             raise SPSDKError("Certificate block is missing")
@@ -1326,9 +1751,14 @@ class Mbi_MixinCertBlockV21(Mbi_Mixin):
         return config
 
     def mix_validate(self) -> None:
-        """Validate the setting of image.
+        """Validate the settings of the MBI image.
 
-        :raises SPSDKError: The configuration of Certificate v3.1 is invalid.
+        This method verifies that the certification block and signature provider are properly
+        configured, and ensures that the signature provider's public key matches the key
+        from either the ISK certificate or the root key record.
+
+        :raises SPSDKError: When certification block is missing, signature provider is missing,
+                           or when the signature provider's public key verification fails.
         """
         if not self.cert_block:
             raise SPSDKError("Certification block is missing")
@@ -1343,9 +1773,13 @@ class Mbi_MixinCertBlockV21(Mbi_Mixin):
         self.signature_provider.try_to_verify_public_key(public_key)
 
     def mix_parse(self, data: bytes) -> None:
-        """Parse the binary to individual fields.
+        """Parse the binary data to extract and initialize individual certificate fields.
 
-        :param data: Final Image in bytes.
+        This method extracts the certificate block from the provided binary data using
+        the IVT table offset and initializes the signature provider to None.
+
+        :param data: Complete binary image data containing certificate information.
+        :raises SPSDKError: If certificate block parsing fails or data is invalid.
         """
         self.cert_block = CertBlockV21.parse(
             data[self.ivt_table.get_cert_block_offset(data) :], self.family
@@ -1354,11 +1788,18 @@ class Mbi_MixinCertBlockV21(Mbi_Mixin):
 
 
 class Mbi_MixinAhab(Mbi_Mixin):
-    """Master Boot Image certificate AHAB class."""
+    """Master Boot Image AHAB mixin class.
+
+    This mixin provides AHAB (Advanced High-Assurance Boot) container support for Master Boot Images,
+    including validation schemas, configuration management, and CRC check functionality for secure
+    boot operations across NXP MCU portfolio.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schema names for AHAB configuration.
+    :cvar NEEDED_MEMBERS: Required member dictionary specifying AHAB container dependency.
+    """
 
     VALIDATION_SCHEMAS: list[str] = [
         "ahab_sign_support",
-        "ahab_sign_support_add_crc",
         "ahab_sign_support_add_image_hash_type",
         "ahab_sign_support_add_core_id",
     ]
@@ -1369,6 +1810,7 @@ class Mbi_MixinAhab(Mbi_Mixin):
     ahab: AHABContainerV2
     ivt_table: Mbi_MixinIvt
     app: bytes
+    app_crc: bool
     trust_zone: Optional[TrustZone]
     tz_type: TrustZoneType
     load_address: int
@@ -1378,8 +1820,11 @@ class Mbi_MixinAhab(Mbi_Mixin):
     def mix_get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Get validation schemas from mixin.
 
-        :param family: Family revision to get schemas
-        :return: List of validation schemas.
+        This method retrieves validation schemas for MBI (Master Boot Image) AHAB
+        (Advanced High Assurance Boot) configuration based on the specified family revision.
+
+        :param family: Family revision to get schemas for.
+        :return: List of validation schemas dictionaries.
         """
         schema_cfg = get_mbi_ahab_validation_schemas(
             create_chip_config(family, feature=DatabaseManager.MBI, base_key=["ahab"])
@@ -1390,13 +1835,11 @@ class Mbi_MixinAhab(Mbi_Mixin):
     def crc_check_record(self) -> Optional[ImageArrayEntryV2]:
         """Check if CRC is included in AHAB container.
 
-        This property examines the AHAB (Advanced High-Assurance Boot) container
-        to determine if it contains a CRC check record as its last image array entry.
-        The CRC record is used to verify data integrity of the boot image.
+        This method examines the AHAB (Advanced High-Assurance Boot) container to determine if it
+        contains a CRC check record as its last image array entry. The CRC record is used to verify
+        data integrity of the boot image.
 
-        Returns:
-            Optional[ImageArrayEntryV2]: The CRC check image array entry if present,
-                otherwise None.
+        :return: The CRC check image array entry if present, otherwise None.
         """
         # Verify AHAB container exists and has an image array
         if not hasattr(self, "ahab") or not self.ahab or not self.ahab.image_array:
@@ -1412,6 +1855,7 @@ class Mbi_MixinAhab(Mbi_Mixin):
     def mix_len(self) -> int:
         """Get length of Certificate Block V2.1.
 
+        :raises SPSDKError: When certification block or signature provider is missing.
         :return: Length of Certificate Block V2.1.
         """
         if not self.ahab:
@@ -1419,9 +1863,12 @@ class Mbi_MixinAhab(Mbi_Mixin):
         return len(self.ahab)
 
     def mix_load_from_config(self, config: Config) -> None:
-        """Load configuration from dictionary.
+        """Load configuration from dictionary and initialize AHAB container with image entries.
 
-        :param config: Dictionary with configuration fields.
+        The method creates an AHAB container with the main application image and optionally
+        adds TrustZone and CRC check images based on configuration settings.
+
+        :param config: Configuration dictionary containing AHAB settings, core ID, and hash type.
         """
         chip_config = create_chip_config(self.family, feature=self.FEATURE, base_key=["ahab"])
         self.ahab = AHABContainerV2(chip_config)
@@ -1467,8 +1914,7 @@ class Mbi_MixinAhab(Mbi_Mixin):
             )
             self.ahab.image_array.append(tz_image)
 
-        if config.get_bool("add_crc_check", False):
-
+        if self.app_crc:
             crc_iae_flags = ImageArrayEntryV2.create_flags(
                 image_type=ImageArrayEntryV2.get_image_types(self.ahab.chip_config, core_id.tag)
                 .from_label("crc_check")
@@ -1490,7 +1936,12 @@ class Mbi_MixinAhab(Mbi_Mixin):
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
         """Get the configuration of the mixin.
 
+        Creates a configuration dictionary for the AHAB container with image hash type
+        and core ID settings when multiple options are available.
+
         :param output_folder: Output folder to store files.
+        :raises SPSDKError: When AHAB container is missing.
+        :return: Configuration dictionary with AHAB container settings.
         """
         if not self.ahab:
             raise SPSDKError("Ahab container is missing")
@@ -1509,15 +1960,23 @@ class Mbi_MixinAhab(Mbi_Mixin):
     def mix_validate(self) -> None:
         """Validate the setting of image.
 
-        :raises SPSDKError: The configuration of Certificate v3.1 is invalid.
+        Checks if the AHAB container is present in the image configuration.
+
+        :raises SPSDKError: When AHAB container is missing from the image.
         """
         if not self.ahab:
             raise SPSDKError("Ahab container is missing")
 
     def mix_parse(self, data: bytes) -> None:
-        """Parse the binary to individual fields.
+        """Parse the binary data to extract and initialize individual fields.
 
-        :param data: Final Image in bytes.
+        The method extracts the AHAB container from the binary data at the calculated
+        offset and parses it using the chip configuration. If the instance has an
+        image_version attribute, it updates it with the software version from AHAB.
+
+        :param data: Final Image in bytes to be parsed.
+        :raises SPSDKError: If AHAB container parsing fails.
+        :raises SPSDKValueError: If the data format is invalid or corrupted.
         """
         ahab_offset = Mbi_MixinIvt.get_cert_block_offset_from_data(data)
         self.ahab = AHABContainerV2.parse(
@@ -1530,23 +1989,67 @@ class Mbi_MixinAhab(Mbi_Mixin):
 
 
 class Mbi_MixinAppCrc(Mbi_Mixin):
-    """Master Boot Image certificate AHAB class."""
+    """Master Boot Image mixin for CRC application support.
 
-    VALIDATION_SCHEMAS: list[str] = []
-    NEEDED_MEMBERS: dict[str, Any] = {"app_crc": 0}
-    app: bytes
-    trust_zone: Optional[TrustZone]
+    This mixin provides functionality for adding CRC check records to Master Boot Images,
+    enabling application integrity verification during boot process. It manages CRC
+    configuration and validation schemas for AHAB signing operations.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schemas for CRC support.
+    :cvar NEEDED_MEMBERS: Dictionary defining required member variables and defaults.
+    """
+
+    VALIDATION_SCHEMAS: list[str] = ["ahab_sign_support_add_crc"]
+    NEEDED_MEMBERS: dict[str, Any] = {"app_crc": False}
+    app_crc: bool
+    crc_check_record: Optional[ImageArrayEntryV2]
 
     def mix_len(self) -> int:
-        """Get length of Certificate Block V2.1.
+        """Get length of mix-in data.
 
-        :return: Length of Certificate Block V2.1.
+        The method returns the length of additional data that needs to be included
+        in the image based on whether application CRC is enabled.
+
+        :return: Length of mix-in data in bytes (4 if app_crc is enabled, 0 otherwise).
         """
-        return 4
+        if self.app_crc:
+            return 4
+
+        return 0
+
+    def mix_load_from_config(self, config: Config) -> None:
+        """Load configuration from dictionary.
+
+        The method loads the CRC check configuration setting from the provided
+        configuration dictionary and sets the app_crc attribute accordingly.
+
+        :param config: Configuration dictionary containing MBI settings.
+        """
+        self.app_crc = config.get_bool("add_crc_check", False)
+
+    def mix_get_config(self, output_folder: str) -> dict[str, Any]:
+        """Get the configuration of the mixin.
+
+        :param output_folder: Output folder to store files.
+        :return: Dictionary containing mixin configuration with CRC check settings.
+        """
+        config = {}
+        config["add_crc_check"] = bool(self.crc_check_record is not None)
+
+        return config
 
 
 class Mbi_MixinCertBlockVx(Mbi_Mixin):
-    """Master Boot Image certification block for MC55xx class."""
+    """Master Boot Image certification block mixin for MC55xx family devices.
+
+    This mixin provides certification block functionality for Master Boot Images,
+    including configuration loading, validation, and binary parsing capabilities.
+    It manages certificate blocks, signature providers, and related settings for
+    secure boot operations on MC55xx devices.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schema names for configuration.
+    :cvar NEEDED_MEMBERS: Dictionary defining required member attributes.
+    """
 
     VALIDATION_SCHEMAS: list[str] = ["cert_block_vX", "signer", "just_header"]
     NEEDED_MEMBERS: dict[str, Any] = {"cert_block": None, "signature_provider": None}
@@ -1560,7 +2063,11 @@ class Mbi_MixinCertBlockVx(Mbi_Mixin):
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
+        This method initializes the MBI mixin with configuration data including
+        certificate block, signature provider, and various flags.
+
+        :param config: Dictionary with configuration fields containing certificate
+            block data, signature provider settings, addCertHash flag, and justHeader flag.
         """
         self.cert_block = CertBlockVx.load_from_config(config)
 
@@ -1571,22 +2078,33 @@ class Mbi_MixinCertBlockVx(Mbi_Mixin):
     def mix_validate(self) -> None:
         """Validate the setting of image.
 
-        :raises SPSDKError: The configuration of certificate block is invalid.
+        :raises SPSDKError: Signature provider is missing.
         """
         if not self.signature_provider:
             raise SPSDKError("Signature provider is missing")
 
     def mix_parse(self, data: bytes) -> None:
-        """Parse the binary to individual fields.
+        """Parse the binary data to extract and initialize individual MBI fields.
 
-        :param data: Final Image in bytes.
+        This method extracts the certificate block from the provided binary data
+        and resets the signature provider to prepare for further processing.
+
+        :param data: Complete MBI binary image data in bytes format.
         """
         self.cert_block = CertBlockVx.parse(data[self.IMG_ISK_OFFSET :], self.family)
         self.signature_provider = None
 
 
 class Mbi_MixinBca(Mbi_Mixin):
-    """Master Boot Image BCA class."""
+    """Master Boot Image BCA mixin class.
+
+    This mixin provides Boot Configuration Area (BCA) functionality for Master Boot Images,
+    handling BCA parsing, configuration loading, and validation operations.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schemas required for BCA operations.
+    :cvar NEEDED_MEMBERS: Dictionary defining required member variables for the mixin.
+    :cvar BCA_OFFSET: Memory offset where BCA data is located in the image.
+    """
 
     VALIDATION_SCHEMAS: list[str] = ["bca"]
     NEEDED_MEMBERS: dict[str, Any] = {"bca": None}
@@ -1600,14 +2118,20 @@ class Mbi_MixinBca(Mbi_Mixin):
     def mix_len(self) -> int:
         """Get length of BCA.
 
-        :return: Length of BCA.
+        :return: Length of BCA in bytes, or 0 if BCA is not present.
         """
         return self.bca.SIZE if self.bca else 0
 
     def mix_load_from_config(self, config: Config) -> None:
-        """Load configuration from dictionary.
+        """Load configuration from dictionary and update BCA settings.
 
-        :param config: Dictionary with configuration fields.
+        The method loads default BCA configuration from the application and then
+        updates it based on the provided configuration. It supports three formats:
+        direct dictionary configuration, YAML sub-configuration, or binary file.
+
+        :param config: Configuration object containing BCA settings in various formats.
+        :raises SPSDKError: When BCA binary file has invalid size.
+        :raises SPSDKTypeError: When configuration format is invalid.
         """
         logger.debug("Load default BCA configuration from application")
         Mbi_MixinBca.mix_parse(self, self.app)
@@ -1649,7 +2173,12 @@ class Mbi_MixinBca(Mbi_Mixin):
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
         """Get the configuration of the mixin.
 
-        :param output_folder: Output folder to store files.
+        The method generates configuration data for the mixin, including BCA (Boot Configuration Area)
+        settings if present. When BCA is configured, it writes the BCA configuration to a YAML file
+        in the specified output folder.
+
+        :param output_folder: Output folder to store configuration files.
+        :return: Dictionary containing configuration data with file references.
         """
         config = {}
         if self.bca:
@@ -1660,7 +2189,11 @@ class Mbi_MixinBca(Mbi_Mixin):
         return config
 
     def mix_validate(self) -> None:
-        """Validate the setting of image.
+        """Validate the settings of the MBI image.
+
+        This method performs validation checks on the image configuration,
+        specifically verifying that the BCA (Boot Configuration Area) is properly
+        formatted if present.
 
         :raises SPSDKError: Configuration of BCA is invalid.
         """
@@ -1668,9 +2201,13 @@ class Mbi_MixinBca(Mbi_Mixin):
             raise SPSDKError("Validation failed: BCA is invalid format")
 
     def mix_parse(self, data: bytes) -> None:
-        """Parse the binary to individual fields.
+        """Parse the binary data to extract and initialize individual MBI fields.
 
-        :param data: Final Image in bytes.
+        The method attempts to parse the Boot Configuration Area (BCA) from the provided
+        binary data at the predefined offset. If parsing fails, the BCA field is set to None.
+
+        :param data: Binary data containing the Master Boot Image to be parsed.
+        :raises SPSDKError: When BCA parsing fails due to invalid or corrupted data.
         """
         try:
             self.bca = BCA.parse(data[self.BCA_OFFSET :], family=self.family)
@@ -1681,7 +2218,12 @@ class Mbi_MixinBca(Mbi_Mixin):
     def mix_get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Get validation schemas from BCA mixin.
 
-        :param family: Family revision to get schemas
+        Creates validation schemas for Boot Configuration Array (BCA) settings that can be used
+        in configuration files. The schemas support three input formats: nested dictionary,
+        YAML file path, or binary file path.
+
+        :param family: Family revision to get schemas for.
+        :return: List containing validation schema dictionary for BCA configuration.
         """
         bca_dict = BCA.get_validation_schemas(family)[1]["properties"]["bca"]
         bca_dict["skip_in_template"] = True
@@ -1713,7 +2255,16 @@ class Mbi_MixinBca(Mbi_Mixin):
 
 
 class Mbi_MixinFcf(Mbi_Mixin):
-    """Master Boot Image FCF class."""
+    """Master Boot Image FCF mixin class.
+
+    This mixin class provides FCF (Flash Configuration Field) functionality for Master Boot Images,
+    handling FCF data parsing, configuration loading, and validation. The FCF contains critical
+    flash configuration settings that must be properly configured for device operation.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schemas used for FCF configuration.
+    :cvar NEEDED_MEMBERS: Dictionary defining required FCF member attributes.
+    :cvar FCF_OFFSET: Standard offset position for FCF data in flash memory.
+    """
 
     VALIDATION_SCHEMAS: list[str] = ["fcf"]
     NEEDED_MEMBERS: dict[str, Any] = {"fcf": None}
@@ -1727,14 +2278,22 @@ class Mbi_MixinFcf(Mbi_Mixin):
     def mix_len(self) -> int:
         """Get length of FCF.
 
-        :return: Length of FCF.
+        :return: Length of FCF in bytes, or 0 if FCF is not present.
         """
         return self.fcf.SIZE if self.fcf else 0
 
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
+        The method loads FCF (Flash Configuration Field) configuration from various sources:
+        - Direct dictionary configuration
+        - YAML configuration file
+        - Binary FCF file
+        First loads default FCF from application, then updates with provided configuration.
+
+        :param config: Configuration object with FCF fields and search paths.
+        :raises SPSDKError: Invalid FCF binary file size or configuration errors.
+        :raises SPSDKTypeError: Type mismatch in configuration data.
         """
         logger.debug("Load default FCF configuration from application")
         Mbi_MixinFcf.mix_parse(self, self.app)
@@ -1776,7 +2335,12 @@ class Mbi_MixinFcf(Mbi_Mixin):
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
         """Get the configuration of the mixin.
 
-        :param output_folder: Output folder to store files.
+        This method extracts the FCF (Flash Configuration Field) configuration,
+        writes it to a YAML file in the specified output folder, and returns
+        a configuration dictionary containing the filename reference.
+
+        :param output_folder: Output folder path where the FCF YAML file will be stored.
+        :return: Configuration dictionary with FCF filename reference.
         """
         assert self.fcf
         fcf_cfg = self.fcf.get_config_yaml()
@@ -1795,9 +2359,13 @@ class Mbi_MixinFcf(Mbi_Mixin):
             raise SPSDKError("Validation failed: FCF is missing")
 
     def mix_parse(self, data: bytes) -> None:
-        """Parse the binary to individual fields.
+        """Parse the binary data to individual fields.
 
-        :param data: Final Image in bytes.
+        This method extracts and parses the FCF (Flash Configuration Field) from the
+        provided binary data at the predefined offset.
+
+        :param data: Final image binary data to be parsed.
+        :raises SPSDKError: If FCF parsing fails or data is invalid.
         """
         self.fcf = FCF.parse(data[self.FCF_OFFSET :], family=self.family)
 
@@ -1805,7 +2373,11 @@ class Mbi_MixinFcf(Mbi_Mixin):
     def mix_get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
         """Get validation schemas from FCF mixin.
 
-        :param family: Family revision to get schemas
+        This method constructs validation schemas for Flash Configuration Field (FCF) settings,
+        supporting multiple input formats including nested dictionaries, YAML files, and binary files.
+
+        :param family: Family revision to get schemas for.
+        :return: List containing validation schema dictionary for FCF configuration.
         """
         fcf_dict = FCF.get_validation_schemas(family)[1]["properties"]["fcf"]
         fcf_dict["skip_in_template"] = True
@@ -1836,7 +2408,15 @@ class Mbi_MixinFcf(Mbi_Mixin):
 
 
 class Mbi_MixinHwKey(Mbi_Mixin):
-    """Master Boot Image HW key user modes enable class."""
+    """Master Boot Image hardware key user mode enablement mixin.
+
+    This mixin provides functionality for managing hardware key user mode settings
+    in Master Boot Images, including configuration loading, validation, and binary
+    parsing of hardware key enablement flags.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schema names for this mixin.
+    :cvar NEEDED_MEMBERS: Default values for required mixin members.
+    """
 
     VALIDATION_SCHEMAS: list[str] = ["hw_key"]
     NEEDED_MEMBERS: dict[str, Any] = {"user_hw_key_enabled": False}
@@ -1847,6 +2427,9 @@ class Mbi_MixinHwKey(Mbi_Mixin):
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
+        The method loads hardware user mode keys enablement setting from the provided
+        configuration dictionary.
+
         :param config: Dictionary with configuration fields.
         """
         self.user_hw_key_enabled = config.get("enableHwUserModeKeys", False)
@@ -1855,6 +2438,7 @@ class Mbi_MixinHwKey(Mbi_Mixin):
         """Get the configuration of the mixin.
 
         :param output_folder: Output folder to store files.
+        :return: Dictionary containing mixin configuration with hardware user mode keys setting.
         """
         config: dict[str, Any] = {}
         config["enableHwUserModeKeys"] = bool(self.user_hw_key_enabled)
@@ -1863,7 +2447,7 @@ class Mbi_MixinHwKey(Mbi_Mixin):
     def mix_validate(self) -> None:
         """Validate the setting of image.
 
-        raise SPSDKError: Invalid HW key enabled member type.
+        :raises SPSDKError: Invalid HW key enabled member type.
         """
         if not isinstance(self.user_hw_key_enabled, bool):
             raise SPSDKError("User HW Key is not Boolean type.")
@@ -1871,13 +2455,26 @@ class Mbi_MixinHwKey(Mbi_Mixin):
     def mix_parse(self, data: bytes) -> None:
         """Parse the binary to individual fields.
 
+        This method extracts hardware key enablement information from the provided
+        binary data using the IVT table.
+
         :param data: Final Image in bytes.
         """
         self.user_hw_key_enabled = self.ivt_table.get_hw_key_enabled(data)
 
 
 class Mbi_MixinKeyStore(Mbi_Mixin):
-    """Master Boot Image KeyStore class."""
+    """Master Boot Image KeyStore mixin class.
+
+    This mixin provides KeyStore functionality for Master Boot Image operations,
+    handling keystore file loading, configuration management, and validation
+    for secure boot processes.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schemas used for keystore validation.
+    :cvar NEEDED_MEMBERS: Dictionary defining required member variables for the mixin.
+    :cvar COUNT_IN_LEGACY_CERT_BLOCK_LEN: Flag indicating if keystore counts in legacy
+        certificate block length calculation.
+    """
 
     VALIDATION_SCHEMAS: list[str] = ["key_store"]
     NEEDED_MEMBERS: dict[str, Any] = {"key_store": None, "_hmac_key": None}
@@ -1892,7 +2489,10 @@ class Mbi_MixinKeyStore(Mbi_Mixin):
     def mix_len(self) -> int:
         """Get length of KeyStore block.
 
-        :return: Length of KeyStore block.
+        The method calculates the length of the exported KeyStore data if a KeyStore
+        is present and configured with KEYSTORE source type, otherwise returns 0.
+
+        :return: Length of KeyStore block in bytes, or 0 if no KeyStore or different source type.
         """
         return (
             len(self.key_store.export())
@@ -1903,7 +2503,11 @@ class Mbi_MixinKeyStore(Mbi_Mixin):
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
+        This method initializes the key store from the configuration if a keyStoreFile
+        is specified in the config.
+
+        :param config: Configuration object containing setup fields including optional keyStoreFile.
+        :raises SPSDKError: If the keystore file cannot be loaded or is invalid.
         """
         self.key_store = None
         if "keyStoreFile" in config:
@@ -1914,7 +2518,11 @@ class Mbi_MixinKeyStore(Mbi_Mixin):
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
         """Get the configuration of the mixin.
 
-        :param output_folder: Output folder to store files.
+        The method exports key store data to a binary file in the specified output folder
+        and returns configuration dictionary with the file reference.
+
+        :param output_folder: Output folder to store the key store file.
+        :return: Configuration dictionary containing keyStoreFile path or None if no key store exists.
         """
         config: dict[str, Any] = {}
         file_name = None
@@ -1928,15 +2536,19 @@ class Mbi_MixinKeyStore(Mbi_Mixin):
     def mix_validate(self) -> None:
         """Validate the setting of image.
 
-        raise SPSDKError: Invalid HW key enabled member type.
+        :raises SPSDKError: When KeyStore is used but HMAC key is not provided.
         """
         if self.key_store and not self.hmac_key:  # pylint: disable=no-member
             raise SPSDKError("When is used KeyStore, the HMAC key MUST by also used.")
 
     def mix_parse(self, data: bytes) -> None:
-        """Parse the binary to individual fields.
+        """Parse the binary data to extract and initialize individual MBI fields.
 
-        :param data: Final Image in bytes.
+        The method examines the binary data to determine if a key store is present
+        and initializes the key_store attribute accordingly. If a key store is found,
+        it extracts the key store data from the appropriate offset in the binary.
+
+        :param data: Complete MBI binary image data to be parsed.
         """
         key_store_present = self.ivt_table.get_key_store_presented(data)
         self.key_store = None
@@ -1949,7 +2561,15 @@ class Mbi_MixinKeyStore(Mbi_Mixin):
 
 
 class Mbi_MixinHmac(Mbi_Mixin):
-    """Master Boot Image HMAC class."""
+    """Master Boot Image HMAC mixin class.
+
+    This mixin provides HMAC (Hash-based Message Authentication Code) functionality for Master Boot
+    Images, enabling secure authentication and integrity verification of boot images.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schemas supported by this mixin.
+    :cvar HMAC_OFFSET: Offset in the image where the HMAC table is located.
+    :cvar HMAC_SIZE: Size of HMAC table in bytes.
+    """
 
     VALIDATION_SCHEMAS: list[str] = ["hmac"]
     NEEDED_MEMBERS: dict[str, Any] = {"_hmac_key": None}
@@ -1967,25 +2587,40 @@ class Mbi_MixinHmac(Mbi_Mixin):
 
     @property
     def hmac_key(self) -> Optional[bytes]:
-        """HMAC key in bytes."""
+        """Get HMAC key in bytes.
+
+        :return: HMAC key as bytes if available, None otherwise.
+        """
         return self._hmac_key
 
     @hmac_key.setter
     def hmac_key(self, hmac_key: Optional[Union[bytes, str]]) -> None:
-        """HMAC key in bytes."""
+        """Set HMAC key for authentication.
+
+        Converts string representation of HMAC key to bytes if needed, or stores the provided bytes directly.
+
+        :param hmac_key: HMAC key as hexadecimal string or raw bytes, None to clear the key.
+        """
         self._hmac_key = bytes.fromhex(hmac_key) if isinstance(hmac_key, str) else hmac_key
 
     def mix_len(self) -> int:
         """Get length of HMAC block.
 
-        :return: Length of HMAC block.
+        The method returns the HMAC block size if an HMAC key is present, otherwise returns 0.
+
+        :return: Length of HMAC block in bytes, or 0 if no HMAC key is configured.
         """
         return self.HMAC_SIZE if self.hmac_key else 0
 
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
+        This method initializes the HMAC key from the configuration. If an output image
+        encryption key file is specified in the config, it loads the symmetric key with
+        the expected HMAC size.
+
+        :param config: Configuration object containing fields for MBI setup.
+        :raises SPSDKError: If the encryption key file cannot be loaded or has invalid size.
         """
         self.hmac_key = None
         if "outputImageEncryptionKeyFile" in config:
@@ -1997,6 +2632,7 @@ class Mbi_MixinHmac(Mbi_Mixin):
         """Get the configuration of the mixin.
 
         :param output_folder: Output folder to store files.
+        :return: Dictionary containing mixin configuration with encryption key information.
         """
         config: dict[str, Any] = {}
         config["outputImageEncryptionKeyFile"] = "The HMAC key cannot be restored"
@@ -2005,7 +2641,9 @@ class Mbi_MixinHmac(Mbi_Mixin):
     def mix_validate(self) -> None:
         """Validate the setting of image.
 
-        raise SPSDKError: Invalid HW key enabled member type.
+        Validates that the HMAC key, if present, has the correct length of 32 bytes.
+
+        :raises SPSDKError: Invalid HMAC key length.
         """
         if self.hmac_key:
             length = len(self.hmac_key)
@@ -2013,10 +2651,14 @@ class Mbi_MixinHmac(Mbi_Mixin):
                 raise SPSDKError(f"Invalid size of HMAC key 32 != {length}.")
 
     def compute_hmac(self, data: bytes) -> bytes:
-        """Compute HMAC hash.
+        """Compute HMAC hash for the provided data.
+
+        The method uses the stored HMAC key to generate a hash-based message authentication code.
+        If no HMAC key is available, returns empty bytes.
 
         :param data: Data to be hashed.
-        :return: Result HMAC hash of input data.
+        :raises SPSDKError: Invalid size of HMAC result.
+        :return: Result HMAC hash of input data, or empty bytes if no HMAC key is set.
         """
         if not self.hmac_key:
             return bytes()
@@ -2028,7 +2670,9 @@ class Mbi_MixinHmac(Mbi_Mixin):
         return result
 
     def mix_parse(self, data: bytes) -> None:
-        """Parse the binary to individual fields.
+        """Parse the binary data to individual fields.
+
+        The method extracts and processes HMAC key from DEK if available.
 
         :param data: Final Image in bytes.
         """
@@ -2037,14 +2681,23 @@ class Mbi_MixinHmac(Mbi_Mixin):
 
 
 class Mbi_MixinHmacMandatory(Mbi_MixinHmac):
-    """Master Boot Image HMAC class (Mandatory use)."""
+    """Master Boot Image HMAC mixin with mandatory key validation.
+
+    This mixin extends the base HMAC functionality by enforcing that an HMAC key
+    must be present during validation. It provides stricter validation rules
+    for scenarios where HMAC authentication is required rather than optional.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schema names for mandatory HMAC.
+    """
 
     VALIDATION_SCHEMAS: list[str] = ["hmac_mandatory"]
 
     def mix_validate(self) -> None:
         """Validate the setting of image.
 
-        raise SPSDKError: Invalid HW key enabled member type.
+        Checks if HMAC key exists and performs additional validation through parent class.
+
+        :raises SPSDKError: If HMAC key is missing or other validation errors occur.
         """
         if not self.hmac_key:  # pylint: disable=no-member
             raise SPSDKError("HMAC Key MUST exists.")
@@ -2052,7 +2705,17 @@ class Mbi_MixinHmacMandatory(Mbi_MixinHmac):
 
 
 class Mbi_MixinCtrInitVector(Mbi_Mixin):
-    """Master Boot Image initial vector for encryption counter."""
+    """Master Boot Image mixin for encryption counter initialization vector management.
+
+    This mixin provides functionality for handling counter initialization vectors
+    used in encryption operations within Master Boot Images. It manages the
+    generation, validation, and configuration of counter initial vectors with
+    support for both user-specified and randomly generated values.
+
+    :cvar VALIDATION_SCHEMAS: List of validation schemas for this mixin.
+    :cvar NEEDED_MEMBERS: Required member variables with default values.
+    :cvar PRE_PARSED: List of pre-parsed configuration elements.
+    """
 
     VALIDATION_SCHEMAS: list[str] = ["ctr_init_vector"]
     NEEDED_MEMBERS: dict[str, Any] = {"_ctr_init_vector": random_bytes(16)}
@@ -2067,14 +2730,20 @@ class Mbi_MixinCtrInitVector(Mbi_Mixin):
 
     @property
     def ctr_init_vector(self) -> Optional[bytes]:
-        """Counter init vector."""
+        """Get counter initialization vector.
+
+        :return: Counter initialization vector bytes if set, None otherwise.
+        """
         return self._ctr_init_vector
 
     @ctr_init_vector.setter
     def ctr_init_vector(self, ctr_iv: Optional[bytes]) -> None:
-        """Stores the Counter init vector, if not specified the random value is used.
+        """Set Counter initialization vector for encryption.
 
-        param ctr_iv: Counter Initial Vector.
+        If no vector is provided, a random vector of appropriate size is generated
+        and used instead.
+
+        :param ctr_iv: Counter Initial Vector bytes, if None random vector is generated.
         """
         if ctr_iv and isinstance(ctr_iv, bytes):
             self._ctr_init_vector = ctr_iv
@@ -2084,7 +2753,11 @@ class Mbi_MixinCtrInitVector(Mbi_Mixin):
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
-        :param config: Dictionary with configuration fields.
+        The method initializes the CTR initialization vector from the provided configuration.
+        If 'CtrInitVector' is present in config, it loads the symmetric key with the required size.
+
+        :param config: Configuration object containing fields for MBI setup.
+        :raises SPSDKError: If the CTR initialization vector cannot be loaded properly.
         """
         self.ctr_init_vector = None
 
@@ -2097,6 +2770,8 @@ class Mbi_MixinCtrInitVector(Mbi_Mixin):
         """Get the configuration of the mixin.
 
         :param output_folder: Output folder to store files.
+        :raises AssertionError: When CTR initialization vector is not bytes type.
+        :return: Dictionary containing mixin configuration with CTR initialization vector.
         """
         config: dict[str, Any] = {}
         self.mix_validate()
@@ -2107,7 +2782,10 @@ class Mbi_MixinCtrInitVector(Mbi_Mixin):
     def mix_validate(self) -> None:
         """Validate the setting of image.
 
-        raise SPSDKError: Invalid HW key enabled member type.
+        The method validates that the counter initialization vector exists and has the correct size
+        for encryption counter operations.
+
+        :raises SPSDKError: Initial vector for encryption counter doesn't exist or has invalid size.
         """
         if not self.ctr_init_vector:
             raise SPSDKError("Initial vector for encryption counter MUST exist.")
@@ -2115,9 +2793,13 @@ class Mbi_MixinCtrInitVector(Mbi_Mixin):
             raise SPSDKError("Invalid size of Initial vector for encryption counter.")
 
     def mix_parse(self, data: bytes) -> None:
-        """Parse the binary to individual fields.
+        """Parse the binary data to extract and populate individual MBI fields.
 
-        :param data: Final Image in bytes.
+        This method extracts the CTR initialization vector from the binary data by calculating
+        its offset based on certificate block, HMAC, and key store positions within the image.
+
+        :param data: Complete MBI binary image data to parse.
+        :raises AssertionError: If cert_block is not an instance of CertBlockV1.
         """
         assert isinstance(self.cert_block, CertBlockV1)
         iv_offset = self.ivt_table.get_cert_block_offset(data) + self.cert_block.expected_size + 56
@@ -2134,21 +2816,34 @@ class Mbi_MixinCtrInitVector(Mbi_Mixin):
 
 
 class Mbi_ExportMixin:
-    """Base MBI Export Mixin class."""
+    """MBI Export Mixin for Master Boot Image processing.
+
+    This mixin class provides the core functionality for exporting and processing Master Boot Images
+    (MBI) across different NXP MCU families. It defines the standard workflow for image creation
+    including data collection, encryption, signing, and disassembly operations.
+
+    :cvar family: Target MCU family and revision for the MBI operations.
+    """
 
     family: FamilyRevision
 
     def collect_data(self) -> BinaryImage:  # pylint: disable=no-self-use
         """Collect basic data to create image.
 
-        :return: Collected raw image.
+        This method creates a basic binary image with a general name as a foundation
+        for image creation in the MBI (Master Boot Image) context.
+
+        :return: Collected raw binary image with default configuration.
         """
         return BinaryImage(name="General")
 
     def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
         """Disassemble image to individual parts from image.
 
-        :param image: Image.
+        This method parses the provided image bytes and extracts its constituent
+        components for further processing or analysis.
+
+        :param image: Raw image data to be disassembled into individual parts.
         """
 
     def encrypt(
@@ -2156,31 +2851,43 @@ class Mbi_ExportMixin:
     ) -> BinaryImage:  # pylint: disable=no-self-use
         """Encrypt image if needed.
 
+        This method provides a base implementation for image encryption. In the base class,
+        it returns the image unchanged. Subclasses should override this method to implement
+        actual encryption functionality.
+
         :param image: Input raw image to encrypt.
         :param revert: Revert the operation if possible.
-        :return: Encrypted image.
+        :return: Encrypted image or original image if no encryption is applied.
         """
         return image
 
     def post_encrypt(
         self, image: BinaryImage, revert: bool = False
     ) -> BinaryImage:  # pylint: disable=no-self-use
-        """Optionally do some post encrypt image updates.
+        """Perform optional post-encryption image modifications.
 
-        :param image: Encrypted image.
-        :param revert: Revert the operation if possible.
-        :return: Updated encrypted image.
+        This method allows for additional processing of the encrypted image data
+        after the main encryption operation has been completed. By default, it
+        returns the image unchanged, but can be overridden in subclasses.
+
+        :param image: The encrypted binary image to be processed.
+        :param revert: If True, attempt to revert previous post-encryption operations.
+        :return: The processed binary image, potentially modified.
         """
         return image
 
     def sign(
         self, image: BinaryImage, revert: bool = False
     ) -> BinaryImage:  # pylint: disable=no-self-use
-        """Sign image (by signature or CRC).
+        """Sign image using signature or CRC verification.
 
-        :param image: Image to sign.
-        :param revert: Revert the operation if possible.
-        :return: Optionally signed image.
+        This method provides a unified interface for signing binary images across different
+        MBI (Master Boot Image) implementations. The actual signing behavior depends on the
+        specific MBI type and configuration.
+
+        :param image: Binary image data to be signed.
+        :param revert: If True, attempts to revert the signing operation when supported.
+        :return: Binary image with applied signature or CRC, or unchanged if no signing required.
         """
         return image
 
@@ -2189,17 +2896,27 @@ class Mbi_ExportMixin:
     ) -> BinaryImage:  # pylint: disable=no-self-use
         """Finalize the image for export.
 
-        This part could add HMAC/KeyStore etc.
+        This method performs final processing steps on the image before export,
+        which may include adding HMAC authentication, KeyStore data, or other
+        security-related components.
 
-        :param image: Input image.
-        :param revert: Revert the operation if possible.
-        :return: Finalized image suitable for export.
+        :param image: Input binary image to be finalized.
+        :param revert: Flag to revert the finalization operation if supported.
+        :return: Finalized binary image ready for export.
         """
         return image
 
 
 class Mbi_ExportMixinApp(Mbi_ExportMixin):
-    """Export Mixin to handle simple application data."""
+    """MBI Export Mixin for application data handling.
+
+    This mixin class provides functionality for collecting and processing application data
+    in Master Boot Image (MBI) format, including support for Boot Configuration Area (BCA)
+    and Flash Configuration Field (FCF) components.
+
+    :cvar APP_BLOCK_NAME: Name identifier for the application block.
+    :cvar APP_IMAGE_NAME: Name identifier for the application image.
+    """
 
     APP_BLOCK_NAME = "Application Block"
     APP_IMAGE_NAME = "Application"
@@ -2216,9 +2933,14 @@ class Mbi_ExportMixinApp(Mbi_ExportMixin):
     total_len: int
 
     def collect_data(self) -> BinaryImage:
-        """Collect application data including update of bca and fcf.
+        """Collect application data including update of BCA and FCF.
 
-        :return: Image with updated bca and fcf.
+        The method processes application binary data and integrates Boot Configuration Area (BCA)
+        and Flash Configuration Field (FCF) if present. It handles IVT table updates and creates
+        a structured binary image with proper component separation.
+
+        :raises SPSDKError: Application data is missing.
+        :return: Binary image with updated BCA and FCF components properly positioned.
         """
         if not self.app:
             raise SPSDKError("Application data is missing")
@@ -2260,9 +2982,12 @@ class Mbi_ExportMixinApp(Mbi_ExportMixin):
         return ret
 
     def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
-        """Disassemble image to individual parts from image.
+        """Disassemble image into individual parts.
 
-        :param image: Image.
+        The method extracts application data and cleans the IVT (Interrupt Vector Table)
+        if the respective methods are available in the class implementation.
+
+        :param image: Raw binary image data to be disassembled.
         """
         if hasattr(self, "disassembly_app_data"):
             image = self.disassembly_app_data(image)
@@ -2271,7 +2996,13 @@ class Mbi_ExportMixinApp(Mbi_ExportMixin):
 
 
 class Mbi_ExportMixinAppTrustZone(Mbi_ExportMixinApp):
-    """Export Mixin to handle simple application data and TrustZone."""
+    """MBI Export Mixin for application data with TrustZone support.
+
+    This mixin extends the basic application export functionality to handle
+    TrustZone configuration and data processing for NXP MCU images.
+
+    :cvar TRUST_ZONE_IMAGE_NAME: Default name for TrustZone preset data section.
+    """
 
     trust_zone: Optional[TrustZone]
     tz_type: TrustZoneType
@@ -2281,7 +3012,11 @@ class Mbi_ExportMixinAppTrustZone(Mbi_ExportMixinApp):
     def collect_data(self) -> BinaryImage:
         """Collect application data and TrustZone including update IVT.
 
-        :return: Image with updated IVT and added TrustZone.
+        The method extends the parent's collect_data functionality by appending custom TrustZone
+        data when configured. If TrustZone is set to CUSTOM type, the exported TrustZone binary
+        is added to the collected image data.
+
+        :return: Image with updated IVT and added TrustZone data if applicable.
         """
         ret = super().collect_data()
         if self.trust_zone:
@@ -2295,9 +3030,13 @@ class Mbi_ExportMixinAppTrustZone(Mbi_ExportMixinApp):
         return ret
 
     def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
-        """Disassemble image to individual parts from image.
+        """Disassemble image to individual parts and extract TrustZone configuration.
 
-        :param image: Image.
+        The method analyzes the image to determine TrustZone type and extracts the TrustZone
+        configuration if present. It handles enabled, custom, and disabled TrustZone types
+        appropriately before calling the parent disassemble method.
+
+        :param image: Binary image data to be disassembled.
         """
         tz_type = TrustZoneType.from_tag(self.ivt_table.get_tz_type(image))
         self.trust_zone = None
@@ -2311,13 +3050,27 @@ class Mbi_ExportMixinAppTrustZone(Mbi_ExportMixinApp):
 
 
 class Mbi_ExportMixinAppTrustZoneV2(Mbi_ExportMixinAppTrustZone):
-    """Export Mixin to handle simple application data and TrustZone version 2."""
+    """Export Mixin for handling application data with TrustZone version 2 support.
+
+    This class extends the base TrustZone mixin to specifically handle TrustZone V2
+    format, providing enhanced data collection and image disassembly capabilities
+    with proper 4-byte alignment requirements for TrustZone V2 operations.
+    """
 
     # Override the type annotation for trust_zone
     trust_zone: Optional[TrustZoneV2]  # type: ignore
 
     def collect_data(self) -> BinaryImage:
-        """Collect application data and TrustZone."""
+        """Collect application data and TrustZone configuration into a binary image.
+
+        This method gathers the application and TrustZone data, ensures proper 4-byte alignment
+        for TrustZone V2, and updates the IVT table with correct offsets when TrustZone is
+        enabled. The TrustZone offset is stored in the application's CRC location.
+
+        :raises SPSDKError: When TrustZone image is not found but trust_zone is enabled.
+        :raises SPSDKError: When Application image is not found but trust_zone is enabled.
+        :return: Binary image containing collected application and TrustZone data.
+        """
         ret = super().collect_data()
         ret.alignment = 4  # Ensure 4-byte alignment for TrustZone V2
         if self.trust_zone:
@@ -2337,9 +3090,14 @@ class Mbi_ExportMixinAppTrustZoneV2(Mbi_ExportMixinAppTrustZone):
         return ret
 
     def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
-        """Disassemble image to individual parts from image.
+        """Disassemble image into individual parts and extract TrustZone configuration.
 
-        :param image: Image.
+        The method parses the image to identify TrustZone type from IVT table and extracts
+        TrustZone block if present. For custom TrustZone type, it locates and parses the
+        TrustZone block, then continues with standard image disassembly.
+
+        :param image: Binary image data to be disassembled.
+        :raises SPSDKError: Cannot find TrustZone block when custom TrustZone type is detected.
         """
         tz_type = TrustZoneType.from_tag(self.ivt_table.get_tz_type(image))
         self.trust_zone = None
@@ -2355,7 +3113,13 @@ class Mbi_ExportMixinAppTrustZoneV2(Mbi_ExportMixinAppTrustZone):
 
 
 class Mbi_ExportMixinAppTrustZoneCertBlock(Mbi_ExportMixin):
-    """Export Mixin to handle simple application data, TrustZone and Certification block."""
+    """MBI Export Mixin for application data with TrustZone and certification block support.
+
+    This mixin class handles the export and assembly of Master Boot Image (MBI) components
+    including application data, TrustZone settings, and certification blocks. It manages
+    the collection and organization of these components into a complete binary image with
+    proper IVT updates and alignment requirements.
+    """
 
     app: Optional[bytes]
     family: FamilyRevision
@@ -2372,7 +3136,14 @@ class Mbi_ExportMixinAppTrustZoneCertBlock(Mbi_ExportMixin):
     def collect_data(self) -> BinaryImage:
         """Collect application data and TrustZone including update IVT.
 
-        :return: Image with updated IVT and added TrustZone.
+        The method assembles the complete Master Boot Image by combining the application data,
+        certificate block, optional relocation table, and TrustZone settings. It updates the
+        IVT (Interrupt Vector Table) with proper addresses and lengths before creating the final
+        binary image structure.
+
+        :raises SPSDKError: Application data or Certificate block is missing.
+        :raises SPSDKError: Unsupported certificate block type (only CertBlockV1 supported).
+        :return: Complete binary image with updated IVT and all required components.
         """
         if not (self.app and self.cert_block):
             raise SPSDKError("Application data or Certificate block is missing")
@@ -2401,9 +3172,13 @@ class Mbi_ExportMixinAppTrustZoneCertBlock(Mbi_ExportMixin):
         return ret
 
     def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
-        """Disassemble image to individual parts from image.
+        """Disassemble image into individual components.
 
-        :param image: Image.
+        Parses the input image and extracts its components including TrustZone configuration,
+        certificate blocks, and application data. Updates the object's trust_zone and app
+        attributes based on the parsed data.
+
+        :param image: Binary image data to be disassembled.
         """
         # Re -parse TZ if needed
         tz_type = TrustZoneType.from_tag(self.ivt_table.get_tz_type(image))
@@ -2421,7 +3196,14 @@ class Mbi_ExportMixinAppTrustZoneCertBlock(Mbi_ExportMixin):
 
 
 class Mbi_ExportMixinAppTrustZoneCertBlockV2(Mbi_ExportMixin):
-    """Export Mixin to handle simple application data, TrustZone and Certification block V21."""
+    """Export Mixin for MBI images with application data, TrustZone and Certification Block V21.
+
+    This mixin provides functionality to collect and disassemble MBI (Master Boot Image)
+    components including application data, TrustZone configuration, and Certification
+    Block V21. It handles the assembly of these components into a complete binary image
+    with proper IVT (Interrupt Vector Table) updates and supports disassembly of
+    existing images back into individual components.
+    """
 
     app: Optional[bytes]
     app_len: int
@@ -2436,8 +3218,13 @@ class Mbi_ExportMixinAppTrustZoneCertBlockV2(Mbi_ExportMixin):
     def collect_data(self) -> BinaryImage:
         """Collect application data, Certification Block and Manifest including update IVT.
 
-        :raises SPSDKError: When either application data or certification block or manifest is missing
-        :return: Image with updated IVT and added Certification Block with Manifest.
+        The method combines application data with certification block and optional trust zone data
+        into a single binary image. The IVT (Interrupt Vector Table) is updated with proper
+        lengths and addresses before creating the final image structure.
+
+        :raises SPSDKError: When either application data or certification block is missing.
+        :return: Binary image containing updated IVT, application data, certification block,
+            and optional trust zone data.
         """
         if not (self.app and self.cert_block):
             raise SPSDKError("Either application data or certification block is missing")
@@ -2454,9 +3241,14 @@ class Mbi_ExportMixinAppTrustZoneCertBlockV2(Mbi_ExportMixin):
         return ret
 
     def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
-        """Disassemble image to individual parts from image.
+        """Disassemble image into individual parts.
 
-        :param image: Image.
+        The method extracts application data from the image by removing certificate block
+        if present and cleaning the IVT table. It also processes application data through
+        disassembly if the method is available.
+
+        :param image: Binary image data to be disassembled.
+        :raises SPSDKError: If image disassembly fails or image format is invalid.
         """
         if self.cert_block:
             image = image[: self.ivt_table.get_cert_block_offset_from_data(image)]
@@ -2466,7 +3258,13 @@ class Mbi_ExportMixinAppTrustZoneCertBlockV2(Mbi_ExportMixin):
 
 
 class Mbi_ExportMixinAppCertBlockManifest(Mbi_ExportMixin):
-    """Export Mixin to handle simple application data, Certification block and Manifest."""
+    """MBI Export Mixin for application data with certification block and manifest.
+
+    This mixin handles the collection and assembly of Master Boot Image components including
+    application data, certification blocks, and manifests. It provides functionality to
+    validate component integrity, update IVT tables, and export complete binary images
+    with proper structure for NXP MCU boot processes.
+    """
 
     app: Optional[bytes]
     app_len: int
@@ -2480,8 +3278,15 @@ class Mbi_ExportMixinAppCertBlockManifest(Mbi_ExportMixin):
     def collect_data(self) -> BinaryImage:
         """Collect application data, Certification Block and Manifest including update IVT.
 
-        :raises SPSDKError: When either application data or certification block or manifest is missing
-        :return: Image with updated IVT and added Certification Block with Manifest.
+        The method validates that all required components (application data, certification block,
+        and manifest) are present, checks manifest length validity, and verifies hash algorithm
+        consistency between manifest and certificate block. It then creates a binary image with
+        updated IVT, application data, certification block, and manifest. For CRC manifests,
+        the CRC is computed and updated.
+
+        :raises SPSDKError: When application data, certification block, or manifest is missing.
+        :raises SPSDKError: When manifest length is invalid.
+        :return: Binary image with updated IVT and added Certification Block with Manifest.
         """
         if not (self.app and self.manifest and self.cert_block):
             raise SPSDKError(
@@ -2515,9 +3320,14 @@ class Mbi_ExportMixinAppCertBlockManifest(Mbi_ExportMixin):
         return ret
 
     def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
-        """Disassemble image to individual parts from image.
+        """Disassemble image into individual parts.
 
-        :param image: Image.
+        The method extracts application data from the image by removing certificate block
+        if present and cleaning the IVT table. It also processes application data through
+        disassembly if the method is available.
+
+        :param image: Binary image data to be disassembled.
+        :raises SPSDKError: If image disassembly fails due to invalid format.
         """
         if self.cert_block:
             image = image[: self.ivt_table.get_cert_block_offset_from_data(image)]
@@ -2526,11 +3336,15 @@ class Mbi_ExportMixinAppCertBlockManifest(Mbi_ExportMixin):
         self.app = self.ivt_table.clean_ivt(image)
 
     def finalize(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
-        """Finalize the image for export by adding HMAC a optionally KeyStore.
+        """Finalize the image for export by adding manifest hash.
 
-        :param image: Input image.
-        :param revert: Revert the operation if possible.
-        :return: Finalized image suitable for export.
+        The method adds a calculated hash to the image based on the manifest's digest
+        hash algorithm when the digest present flag is set. The operation can be
+        reverted by removing the hash from the end of the image.
+
+        :param image: Input binary image to be finalized.
+        :param revert: If True, removes the hash from the image instead of adding it.
+        :return: Finalized binary image with hash appended or removed.
         """
         if (
             self.manifest
@@ -2555,17 +3369,30 @@ class Mbi_ExportMixinAppCertBlockManifest(Mbi_ExportMixin):
 
 
 class Mbi_ExportMixinCrcSign(Mbi_ExportMixin):
-    """Export Mixin to handle sign by CRC."""
+    """MBI Export Mixin for CRC-based signing operations.
+
+    This mixin class provides CRC-based signing functionality for Master Boot Image (MBI) export
+    operations. It implements MPEG2 CRC32 calculation over image data and updates the IVT table
+    with the computed CRC value for image integrity verification.
+
+    :cvar IVT_CRC_CERTIFICATE_OFFSET: Offset in IVT table where CRC value is stored.
+    :cvar update_crc_val_cert_offset: Callable to update CRC value at certificate offset.
+    """
 
     IVT_CRC_CERTIFICATE_OFFSET: int
     update_crc_val_cert_offset: Callable[[bytes, int], bytes]
 
     def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
-        """Do simple calculation of CRC and return updated image with it.
+        """Sign binary image with CRC32 checksum.
 
-        :param image: Input raw image.
-        :param revert: Revert the operation if possible.
-        :return: Image enriched by CRC in IVT table.
+        Calculates CRC32 using MPEG2 specification over the entire image data except
+        for the 4-byte CRC field at the certificate offset in the IVT table, then
+        updates the image with the calculated CRC value.
+
+        :param image: Input binary image to be signed with CRC.
+        :param revert: If True, returns original image without CRC calculation.
+        :return: Binary image with updated CRC32 checksum in IVT table.
+        :raises SPSDKError: Invalid CRC offset in the image.
         """
         if revert:
             return image
@@ -2586,12 +3413,27 @@ class Mbi_ExportMixinCrcSign(Mbi_ExportMixin):
 
 
 class Mbi_ExportMixinCrcSignEnd(Mbi_ExportMixin):
-    """Export Mixin to handle sign by CRC at the end of image."""
+    """MBI Export Mixin for CRC signature handling at image end.
+
+    This mixin provides functionality to sign Master Boot Images by calculating
+    and appending a CRC32 checksum at the end of the image data. It handles both
+    signing operations and revert operations for CRC-based image authentication.
+    """
 
     ivt_table: Mbi_MixinIvt
 
     def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
-        """Do simple calculation of CRC and return image with appended CRC."""
+        """Sign binary image with CRC32 checksum.
+
+        Calculates CRC32-MPEG checksum for the binary image data and appends it to the image.
+        Updates the IVT table total length to include the CRC. Can also revert the signing
+        process by removing the last 4 bytes (CRC) from the image.
+
+        :param image: Binary image to be signed with CRC checksum.
+        :param revert: If True, removes the CRC from image instead of adding it.
+        :raises SPSDKError: Application image not found in the binary image.
+        :return: Binary image with appended CRC checksum or with CRC removed if revert is True.
+        """
         if revert and image.binary:
             image.binary = image.binary[:-4]
             return image
@@ -2618,17 +3460,28 @@ class Mbi_ExportMixinCrcSignEnd(Mbi_ExportMixin):
 
 
 class Mbi_ExportMixinRsaSign(Mbi_ExportMixin):
-    """Export Mixin to handle sign by RSA."""
+    """MBI Export Mixin for RSA signature operations.
+
+    This mixin provides RSA signature functionality for Master Boot Image (MBI) export operations,
+    including signature generation and verification capabilities with support for different
+    certificate block versions.
+    """
 
     signature_provider: Optional[SignatureProvider]
     cert_block: Optional[Union[CertBlockV21, CertBlockV1]]
 
     def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
-        """Do calculation of RSA signature and return updated image with it.
+        """Calculate RSA signature and return updated image with signature.
 
-        :param image: Input raw image.
-        :param revert: Revert the operation if possible.
-        :return: Image enriched by RSA signature at end of image.
+        The method either adds an RSA signature to the end of the image or reverts
+        the operation by removing the signature from the image.
+
+        :param image: Input raw image to be signed or unsigned.
+        :param revert: Revert the operation by removing signature if True.
+        :raises SPSDKError: Certificate block or image is missing for revert operation.
+        :raises SPSDKError: Only CertBlockV1 is supported for revert operation.
+        :raises SPSDKError: Signature provider is missing for signing operation.
+        :return: Image with RSA signature appended or signature removed.
         """
         if revert:
             if not (self.cert_block and image.binary):
@@ -2645,18 +3498,30 @@ class Mbi_ExportMixinRsaSign(Mbi_ExportMixin):
 
 
 class Mbi_ExportMixinEccSign(Mbi_ExportMixin):
-    """Export Mixin to handle sign by ECC."""
+    """Export Mixin for ECC signature operations in MBI images.
+
+    This mixin provides functionality to add and remove ECC signatures from MBI
+    (Master Boot Image) binary images. It handles the signature calculation process
+    using configurable signature providers and certificate blocks, supporting both
+    signing operations and signature reversion for testing purposes.
+    """
 
     signature_provider: Optional[SignatureProvider]
     cert_block: Optional[Union[CertBlockV21, CertBlockV1]]
     data_to_sign: Optional[bytes]
 
     def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
-        """Do calculation of ECC signature and return updated image with it.
+        """Calculate ECC signature and return updated image with signature.
 
-        :param image: Input raw image.
-        :param revert: Revert the operation if possible.
-        :return: Image enriched by ECC signature at end of image.
+        The method either adds an ECC signature to the end of the image or reverts
+        the operation by removing the signature from the image.
+
+        :param image: Input raw binary image to be signed or unsigned.
+        :param revert: If True, removes signature from image; if False, adds signature.
+        :raises SPSDKError: Certificate block or image is missing for revert operation.
+        :raises SPSDKError: Unsupported certificate block type (only CertBlockV21 supported).
+        :raises SPSDKError: Signature provider is missing for signing operation.
+        :return: Image with ECC signature appended or signature removed.
         """
         if revert:
             if not (self.cert_block and image.binary):
@@ -2674,7 +3539,13 @@ class Mbi_ExportMixinEccSign(Mbi_ExportMixin):
 
 
 class Mbi_ExportMixinHmacKeyStoreFinalize(Mbi_ExportMixin):
-    """Export Mixin to handle finalize by HMAC and optionally KeyStore."""
+    """MBI Export Mixin for HMAC and KeyStore finalization.
+
+    This mixin provides functionality to finalize Master Boot Image (MBI) exports by computing
+    and embedding HMAC authentication values and optionally including KeyStore data. It handles
+    both standard finalization and revert operations, managing binary image structure including
+    sub-image splitting when HMAC data needs to be inserted at specific offsets.
+    """
 
     compute_hmac: Callable[[bytes], bytes]
     HMAC_OFFSET: int
@@ -2683,11 +3554,17 @@ class Mbi_ExportMixinHmacKeyStoreFinalize(Mbi_ExportMixin):
     ivt_table: Mbi_MixinIvt
 
     def finalize(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
-        """Finalize the image for export by adding HMAC a optionally KeyStore.
+        """Finalize the image for export by adding HMAC and optionally KeyStore.
 
-        :param image: Input image.
-        :param revert: Revert the operation if possible.
-        :return: Finalized image suitable for export.
+        The method processes the input image to add HMAC authentication and optional KeyStore data.
+        When reverting, it removes previously added HMAC and KeyStore sections. During normal operation,
+        it computes HMAC for the image data and inserts it at the designated offset, splitting existing
+        sub-images if necessary.
+
+        :param image: Input binary image to be finalized.
+        :param revert: If True, removes HMAC and KeyStore from the image instead of adding them.
+        :raises SPSDKError: Invalid image structure when splitting sub-images.
+        :return: Finalized binary image with HMAC and optional KeyStore added or removed.
         """
         raw_image = image.export()
         if revert:
@@ -2736,7 +3613,24 @@ class Mbi_ExportMixinHmacKeyStoreFinalize(Mbi_ExportMixin):
 
 
 class Mbi_ExportMixinAppBcaFcf(Mbi_ExportMixin):
-    """Export Mixin to handle application data with optional BCA and FCF."""
+    """MBI Export Mixin for application data with BCA and FCF components.
+
+    This mixin class handles the export functionality for Master Boot Image (MBI) files that contain
+    application data along with Boot Configuration Area (BCA) and Flash Configuration Field (FCF)
+    components. It provides image layout management, validation, and data assembly for Vx chip
+    boot images with predefined memory offsets and structure.
+
+    :cvar IMG_DIGEST_OFFSET: Offset for image digest in boot image layout (0x360).
+    :cvar IMG_SIGNATURE_OFFSET: Offset for image signature in boot image layout (0x380).
+    :cvar IMG_BCA_OFFSET: Offset for Boot Configuration Area in boot image layout (0x3C0).
+    :cvar IMG_FCF_OFFSET: Offset for Flash Configuration Field in boot image layout (0x400).
+    :cvar IMG_ISK_OFFSET: Offset for Image Signing Key in boot image layout (0x410).
+    :cvar IMG_ISK_HASH_OFFSET: Offset for ISK hash in boot image layout (0x4A0).
+    :cvar IMG_WPC_ROOT_CA_CERT_HASH_OFFSET: Offset for WPC root CA certificate hash (0x5E0).
+    :cvar IMG_WPC_MFG_CA_CERT_OFFSET: Offset for WPC manufacturing CA certificate (0x600).
+    :cvar IMG_DUK_BLOCK_OFFSET: Offset for Device Unique Key block in boot image layout (0x800).
+    :cvar IMG_DATA_START: Starting offset for application data in boot image layout (0xC00).
+    """
 
     app: bytes
     bca: BCA
@@ -2759,7 +3653,14 @@ class Mbi_ExportMixinAppBcaFcf(Mbi_ExportMixin):
 
     @property
     def image_size(self) -> int:
-        """Image size used in BCA."""
+        """Calculate the total image size used in Boot Configuration Area (BCA).
+
+        The method computes the image size by combining the BCA size (calculated from
+        FCF and BCA offsets) with the application length (from data start to end) and
+        adding the digest offset.
+
+        :return: Total image size in bytes including BCA, application data and digest.
+        """
         bca_size = self.IMG_FCF_OFFSET - self.IMG_BCA_OFFSET
         app_len = len(self.app) - self.IMG_DATA_START
         return self.IMG_DIGEST_OFFSET + bca_size + app_len
@@ -2776,8 +3677,8 @@ class Mbi_ExportMixinAppBcaFcf(Mbi_ExportMixin):
         The FCF (Flash Configuration Field) is a critical security component where typically
         only the lifecycle value should be changed.
 
-        :raises SPSDKError: If the lifecycle value is not supported or if any other FCF register
-            has been modified from its reset value
+        :raises SPSDKError: If the lifecycle value is not supported or if any other FCF
+            register has been modified from its reset value.
         """
         # Get lifecycle register and its valid enum values from FCF object
         lifecycle_reg = self.fcf.registers.find_reg("LIFECYCLE")
@@ -2801,7 +3702,15 @@ class Mbi_ExportMixinAppBcaFcf(Mbi_ExportMixin):
     def collect_data(self) -> BinaryImage:
         """Collect application data and update BCA (if present) and FCF.
 
-        :return: Binary Image with updated BCA (if present) and FCF.
+        The method assembles a complete binary image by extracting and organizing various
+        components from the application data including vector table, image hash, ECC signature,
+        Boot Config Area, Flash Config Field, certificates, and application image. If BCA or
+        FCF objects are available, their exported data is used; otherwise, the original
+        binary data is preserved.
+
+        :raises SPSDKError: Application data is missing.
+        :return: Binary Image with updated BCA (if present) and FCF containing all
+                 application components.
         """
         if not self.app:
             raise SPSDKError("Application data is missing")
@@ -2876,15 +3785,23 @@ class Mbi_ExportMixinAppBcaFcf(Mbi_ExportMixin):
         return ret
 
     def disassemble_image(self, image: bytes) -> None:
-        """Disassemble image to individual parts from image.
+        """Disassemble image into individual parts.
 
-        :param image: Image.
+        The method extracts and stores the application data from the provided image bytes.
+
+        :param image: Raw image data to be disassembled into components.
         """
         self.app = image
 
 
 class Mbi_ExportMixinCrcSignBca(Mbi_ExportMixin):
-    """Export Mixin to handle sign by CRC in BCA."""
+    """MBI Export Mixin for CRC-based signing in Boot Configuration Area.
+
+    This mixin provides functionality to sign Master Boot Images using CRC32 checksum
+    calculation and embedding the signature information into the Boot Configuration Area (BCA).
+    The mixin calculates CRC32-MPEG checksum of the application data and updates the BCA
+    registers with CRC parameters including start address, byte count, and expected value.
+    """
 
     app: bytes
     bca: BCA
@@ -2892,11 +3809,15 @@ class Mbi_ExportMixinCrcSignBca(Mbi_ExportMixin):
     IMG_DATA_START: int
 
     def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
-        """Do simple calculation of CRC and return updated image with it.
+        """Calculate CRC32 for image data and update Boot Config Area.
 
-        :param image: Input raw image.
-        :param revert: Revert the operation if possible.
-        :return: Image enriched by CRC of application.
+        The method computes CRC32-MPEG checksum for the image data starting from IMG_DATA_START
+        offset and updates the Boot Config Area registers with CRC parameters and expected value.
+
+        :param image: Input binary image to be signed with CRC.
+        :param revert: If True, returns original image without CRC calculation.
+        :raises SPSDKError: When Boot Config Area is not initialized.
+        :return: Binary image with updated Boot Config Area containing CRC information.
         """
         if revert:
             return image
@@ -2920,7 +3841,17 @@ class Mbi_ExportMixinCrcSignBca(Mbi_ExportMixin):
 
 
 class Mbi_ExportMixinEccSignVx(Mbi_ExportMixin):
-    """Export Mixin to handle sign by ECC."""
+    """MBI Export Mixin for ECC signature handling.
+
+    This mixin provides ECC signature functionality for Master Boot Image (MBI) export operations.
+    It handles the complete signing process including image digest calculation, ECC signature
+    generation, and certificate block integration for secure boot images.
+
+    :cvar IMG_DIGEST_OFFSET: Offset position for image digest in the binary layout.
+    :cvar IMG_BCA_OFFSET: Offset position for Boot Configuration Area in the binary layout.
+    :cvar IMG_FCF_OFFSET: Offset position for Flash Configuration Field in the binary layout.
+    :cvar IMG_DATA_START: Starting position of image data in the binary layout.
+    """
 
     app: Optional[bytes]
     signature_provider: Optional[SignatureProvider]
@@ -2935,11 +3866,16 @@ class Mbi_ExportMixinEccSignVx(Mbi_ExportMixin):
     IMG_DATA_START: int
 
     def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
-        """Do calculation of ECC signature and digest and return updated image with it.
+        """Calculate ECC signature and digest for the image.
 
-        :param image: Input raw image.
-        :param revert: Revert the operation if possible.
-        :return: Image enriched by ECC signature and SHA256 digest.
+        The method updates the Boot Config Area with image size, calculates hash from
+        specific image sections, generates ECC signature, and enriches the image with
+        signature data and certificates.
+
+        :param image: Input raw binary image to be signed.
+        :param revert: If True, returns original image without signing.
+        :return: Image enriched by ECC signature, SHA256 digest and certificates.
+        :raises SPSDKError: When signature provider is missing or unable to get signature.
         """
         if revert:
             return image  # return the image as is, because signature is not extending image
@@ -2972,7 +3908,16 @@ class Mbi_ExportMixinEccSignVx(Mbi_ExportMixin):
 
 
 class Mbi_ExportMixinAppTzCrcAhab(Mbi_ExportMixin):
-    """Export mixin for simple data image, optional trustzone, CRC checksum and AHAB container for sign."""
+    """MBI export mixin for application data with TrustZone, CRC checksum and AHAB container.
+
+    This mixin handles the collection and organization of Master Boot Image (MBI) data that includes
+    application binary, optional TrustZone configuration, CRC-32 checksum validation, and AHAB
+    (Advanced High Assurance Boot) container for secure boot operations. It manages the proper
+    layout and offset calculations for all components within the final boot image.
+
+    :cvar CRC_IMAGE_NAME: Name identifier for CRC checksum section in the image.
+    :cvar AHAB_IMAGE_NAME: Name identifier for AHAB container section in the image.
+    """
 
     app: bytes
     trust_zone: TrustZoneV2
@@ -2986,7 +3931,16 @@ class Mbi_ExportMixinAppTzCrcAhab(Mbi_ExportMixin):
     AHAB_IMAGE_NAME = "AHAB Container"
 
     def collect_data(self) -> BinaryImage:
-        """Collect application data and TrustZone including update IVT."""
+        """Collect application data and TrustZone including update IVT.
+
+        This method assembles a complete MBI (Master Boot Image) by collecting application data,
+        TrustZone configuration, CRC records, and AHAB container. It updates the IVT table with
+        proper offsets and configures the AHAB image array entries with relative offsets to the
+        AHAB container.
+
+        :return: Binary image containing the complete MBI structure with all components properly
+            aligned and configured.
+        """
         ret = BinaryImage("MBI - App/TZ/CRC/AHAB", alignment=4)
 
         # Get application data
@@ -3060,19 +4014,27 @@ class Mbi_ExportMixinAppTzCrcAhab(Mbi_ExportMixin):
         return ret
 
     def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
-        """Disassemble image to individual parts from image.
+        """Disassemble image into individual components.
 
-        :param image: Image.
+        This method parses the provided image and extracts its constituent parts
+        using both AHAB export functionality and TrustZone v2 mixing capabilities.
+
+        :param image: Binary image data to be disassembled.
         """
         Mbi_ExportMixinApp.disassemble_image(self, self.ahab.image_array[0].image)  # type: ignore
         Mbi_MixinTrustZoneV2.mix_parse(self, image)  # type: ignore
 
     def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
-        """Do simple calculation of CRC and return updated image with it.
+        """Sign the image with CRC calculation and AHAB signature.
 
-        :param image: Input raw image.
-        :param revert: Revert the operation if possible.
-        :return: Image enriched by CRC in IVT table.
+        Performs CRC32-MPEG calculation over the image data (excluding the CRC block itself)
+        and updates the AHAB (Advanced High Assurance Boot) container with proper signatures
+        and hash values. The method also logs SRK (Super Root Key) hash information for
+        verification purposes.
+
+        :param image: Input binary image to be signed.
+        :param revert: If True, returns the original image without modifications.
+        :return: Signed binary image with updated CRC and AHAB signature block.
         """
         if revert:
             return image
@@ -3117,7 +4079,15 @@ class Mbi_ExportMixinAppTzCrcAhab(Mbi_ExportMixin):
 
 
 class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
-    """Export Mixin to handle simple application data, TrustZone and Certification block."""
+    """MBI Export Mixin for encrypted application data with TrustZone and certification block support.
+
+    This mixin extends the base MBI export functionality to handle encrypted application images
+    that include TrustZone configurations and certification blocks. It manages the collection,
+    encryption, and disassembly of MBI images with CertBlockV1 support and various TrustZone
+    types including custom configurations.
+
+    :cvar HMAC_OFFSET: Offset for HMAC calculation in the image structure.
+    """
 
     app: Optional[bytes]
     trust_zone: Optional[TrustZone]
@@ -3136,7 +4106,12 @@ class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
     def collect_data(self) -> BinaryImage:
         """Collect application data and TrustZone including update IVT.
 
-        :return: Image with updated IVT and added TrustZone.
+        The method assembles the final binary image by updating the IVT table with application data,
+        optionally adding relocation table and TrustZone settings based on configuration.
+
+        :raises SPSDKError: Application data or Certificate block is missing.
+        :raises SPSDKError: Certificate block is not CertBlockV1 type.
+        :return: Binary image with updated IVT and optionally added TrustZone settings.
         """
         if not (self.app and self.cert_block):
             raise SPSDKError("Application data or Certificate block is missing")
@@ -3160,9 +4135,13 @@ class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
         return ret
 
     def disassemble_image(self, image: bytes) -> None:
-        """Disassemble image to individual parts from image.
+        """Disassemble image into individual components.
 
-        :param image: Image.
+        The method parses the image to extract TrustZone configuration, application data,
+        and other components. It handles different TrustZone types (enabled, custom) and
+        processes the image accordingly by removing TrustZone data and cleaning the IVT.
+
+        :param image: Binary image data to be disassembled.
         """
         # Re -parse decrypted TZ if needed
         tz_type = TrustZoneType.from_tag(self.ivt_table.get_tz_type(image))
@@ -3181,18 +4160,30 @@ class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
 
     @property
     def img_len(self) -> int:
-        """Image length of encrypted legacy image."""
+        """Get image length of encrypted legacy image.
+
+        Calculates the total length including the base image, certificate block signature,
+        encrypted IVT, and initialization vector.
+
+        :raises SPSDKError: When certification block is missing.
+        :return: Total image length in bytes including all components.
+        """
         if not self.cert_block:
             raise SPSDKError("Certification block is missing")
         # Encrypted IVT + IV
         return self.total_len + self.cert_block.signature_size + 56 + 16
 
     def encrypt(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
-        """Encrypt image if needed.
+        """Encrypt or decrypt image data using AES-CTR algorithm.
 
-        :param image: Input raw image to encrypt.
-        :param revert: Revert the operation if possible.
-        :return: Encrypted image.
+        The method performs AES-CTR encryption/decryption on the provided image data using
+        HMAC key and initialization vector. When revert is True, it decrypts the image.
+        The encryption key may be derived from the HMAC key depending on key store configuration.
+
+        :param image: Input binary image to encrypt or decrypt.
+        :param revert: If True, decrypt the image instead of encrypting it.
+        :raises SPSDKError: When HMAC key or initialization vector is missing.
+        :return: New BinaryImage containing encrypted or decrypted data.
         """
         if revert and not (self.hmac_key and self.ctr_init_vector):
             logger.warning("Cannot parse the encrypted image without decrypting key!")
@@ -3221,11 +4212,17 @@ class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
         )
 
     def post_encrypt(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
-        """Optionally do some post encrypt image updates.
+        """Perform post-encryption image updates and restructuring.
 
-        :param image: Encrypted image.
-        :param revert: Revert the operation if possible.
-        :return: Updated encrypted image.
+        This method reorganizes the encrypted image by updating the IVT table with new offsets
+        and lengths, then reconstructs the image with proper block ordering including the
+        certification block and initialization vector. Can also revert the operation to
+        restore the original encrypted image structure.
+
+        :param image: The encrypted binary image to be processed.
+        :param revert: If True, reverts the post-encryption changes to restore original structure.
+        :raises SPSDKError: If certification block is missing or not CertBlockV1 type.
+        :return: Restructured encrypted image with updated layout and blocks.
         """
         if not self.cert_block:
             raise SPSDKError("Certification block is missing")

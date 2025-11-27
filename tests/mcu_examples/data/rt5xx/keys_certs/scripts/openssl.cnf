@@ -39,7 +39,7 @@ default_md				= sha256		# message digest algorithm
 string_mask				= nombstr		# permitted characters
 distinguished_name			= req_distinguished_name
 #req_extensions				= v3_req                # omit - openssl doesn't copy req extension
-x509_extensions	                        = v3_ca                 # The extentions to add to the self signed cert
+x509_extensions	                        = v3_ca                 # The extensions to add to the self signed cert
 
 # Passwords for private keys if not present they will be prompted for
 # input_password = secret

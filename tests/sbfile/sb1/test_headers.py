@@ -5,6 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""SPSDK SB1 headers unit tests.
+
+This module contains comprehensive unit tests for SB1 (Secure Binary version 1)
+header classes and their functionality. Tests cover header creation, serialization,
+deserialization, property validation, and error handling scenarios.
+"""
+
 import pytest
 
 from spsdk.exceptions import SPSDKError
@@ -17,7 +24,16 @@ from spsdk.sbfile.sb1.headers import (
 )
 
 
-def test_secure_boot_header_v1():
+def test_secure_boot_header_v1() -> None:
+    """Test SecureBootHeaderV1 class functionality.
+
+    Tests the parsing, creation, property setting, serialization, and comparison
+    of SecureBootHeaderV1 objects. Verifies error handling for insufficient data,
+    default parameter values, property modifications, data export/import cycle,
+    and object equality after round-trip serialization.
+
+    :raises SPSDKError: When parsing data with insufficient size.
+    """
     # insufficient size
     with pytest.raises(SPSDKError):
         SecureBootHeaderV1.parse(b"\x00")
@@ -60,7 +76,14 @@ def test_secure_boot_header_v1():
     assert header == header_parsed
 
 
-def test_section_header_item():
+def test_section_header_item() -> None:
+    """Test SectionHeaderItemV1 class functionality.
+
+    Validates the default initialization values, data export/import operations,
+    parsing functionality, and string representation of SectionHeaderItemV1.
+    Tests include verification of default attribute values, export data length
+    consistency, round-trip parsing validation, and string conversion.
+    """
     header = SectionHeaderItemV1()
     assert header.identifier == 0
     assert header.offset == 0
@@ -76,11 +99,25 @@ def test_section_header_item():
     assert str(header)
 
 
-def test_insufficient_size():
+def test_insufficient_size() -> None:
+    """Test parsing SectionHeaderItemV1 with insufficient data size.
+
+    Verifies that SPSDKError is raised when attempting to parse a SectionHeaderItemV1
+    with data that is too small to contain a valid header structure.
+
+    :raises SPSDKError: When the provided data is insufficient for parsing.
+    """
     with pytest.raises(SPSDKError):
-        SectionHeaderItemV1.parse("\x00")
+        SectionHeaderItemV1.parse(b"\x00")
 
 
-def test_secure_boot_header_v1_invalid():
+def test_secure_boot_header_v1_invalid() -> None:
+    """Test SecureBootHeaderV1 with invalid version parameter.
+
+    Verifies that SecureBootHeaderV1 constructor raises SPSDKError when
+    provided with an invalid version string that doesn't match expected format.
+
+    :raises SPSDKError: When invalid header version is provided to constructor.
+    """
     with pytest.raises(SPSDKError, match="Invalid header version"):
         SecureBootHeaderV1(version="2.0")

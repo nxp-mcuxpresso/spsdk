@@ -4,10 +4,18 @@
 # Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Test that help message for all registered CLI apps works."""
+"""SPSDK CLI applications help functionality testing module.
+
+This module provides comprehensive testing for help messages and command-line
+interface functionality across all registered SPSDK applications. It ensures
+that help text is properly displayed and accessible for all commands and
+subcommands.
+"""
+
 import logging
 import os
 import sys
+from typing import Any
 from unittest.mock import patch
 
 from spsdk import SPSDK_DATA_FOLDER
@@ -18,16 +26,26 @@ from spsdk.utils.misc import load_text
 from tests.cli_runner import CliRunner
 
 try:
-    import ftd2xx
-    import pyftdi
-    import pylibftdi
+    # ruff: noqa: F401
+    import ftd2xx  # pylint: disable=unused-import
+    import pyftdi  # pylint: disable=unused-import
+    import pylibftdi  # pylint: disable=unused-import
 
     DK6_SUPPORT_INSTALLED = True
 except (ImportError, OSError):
     DK6_SUPPORT_INSTALLED = False
 
 
-def run_help(cli_runner: CliRunner, command_group, help_option):
+def run_help(cli_runner: CliRunner, command_group: Any, help_option: bool) -> None:
+    """Run help command test for CLI applications.
+
+    This function tests the help functionality of CLI commands by invoking them with
+    or without the --help flag and verifying that the expected help message is displayed.
+
+    :param cli_runner: CLI test runner instance for executing commands.
+    :param command_group: The CLI command group or command to test help functionality for.
+    :param help_option: Flag indicating whether to use --help option or trigger help via other means.
+    """
     expected_code = cli_runner.get_help_error_code(use_help_flag=help_option)
 
     result = cli_runner.invoke(
@@ -36,12 +54,28 @@ def run_help(cli_runner: CliRunner, command_group, help_option):
     assert "Show this message and exit." in result.output
 
 
-def test_spsdk_apps_help(cli_runner: CliRunner):
+def test_spsdk_apps_help(cli_runner: CliRunner) -> None:
+    """Test SPSDK applications help functionality.
+
+    This test verifies that the main SPSDK applications entry point properly
+    displays help information both when explicitly requested with help option
+    and when called without arguments.
+
+    :param cli_runner: Click CLI runner instance for testing command line interfaces.
+    """
     run_help(cli_runner, spsdk_apps.main, help_option=True)
     run_help(cli_runner, spsdk_apps.main, help_option=False)
 
 
-def test_spsdk_apps_subcommands_help_without_help_option(cli_runner: CliRunner):
+def test_spsdk_apps_subcommands_help_without_help_option(cli_runner: CliRunner) -> None:
+    """Test SPSDK applications subcommands help functionality without help option.
+
+    This test verifies that all SPSDK application subcommands can display help
+    information when invoked without the explicit help option. It excludes certain
+    utility commands and tests the help display mechanism for all other commands.
+
+    :param cli_runner: Click CLI runner instance for testing command-line interfaces.
+    """
     devscan = spsdk_apps.main.commands.pop("nxpdevscan")
     run_help(cli_runner, devscan, help_option=True)
     for name, command in spsdk_apps.main.commands.items():
@@ -51,10 +85,27 @@ def test_spsdk_apps_subcommands_help_without_help_option(cli_runner: CliRunner):
         run_help(cli_runner, command, help_option=False)
 
 
-def test_spsdk_apps_subcommands_help_with_help_option(cli_runner: CliRunner, caplog):
+def test_spsdk_apps_subcommands_help_with_help_option(cli_runner: CliRunner, caplog: Any) -> None:
+    """Test SPSDK applications subcommands help functionality with help option.
+
+    This test verifies that all SPSDK application commands and subcommands properly
+    display help messages when invoked with the --help option. It recursively tests
+    all command groups in the SPSDK applications tree structure.
+
+    :param cli_runner: Click CLI runner for testing command line interfaces.
+    :param caplog: Pytest fixture for capturing log messages during test execution.
+    """
     caplog.set_level(100_000)
 
-    def test_tree_group(group: CommandsTreeGroup):
+    def test_tree_group(group: CommandsTreeGroup) -> None:
+        """Test command tree group recursively for help message functionality.
+
+        This method recursively tests all commands and subcommands in a command tree group
+        to ensure they properly display help messages. It verifies that each command shows
+        the standard help exit message and handles special cases like optional DK6 support.
+
+        :param group: The command tree group to test recursively.
+        """
         for name, cmd in group.commands.items():
             cmd_args = [name, "--help"]
             with patch.object(sys, "argv", cmd_args):
@@ -69,8 +120,16 @@ def test_spsdk_apps_subcommands_help_with_help_option(cli_runner: CliRunner, cap
     test_tree_group(spsdk_apps.main)
 
 
-def test_apps_spec():
-    """Test if all applications are in apps.spec."""
+def test_apps_spec() -> None:
+    """Test if all SPSDK applications are properly configured in apps.spec file.
+
+    Validates that each SPSDK application command has corresponding entries in the
+    PyInstaller apps.spec configuration file, including analyze, executable, and
+    merge steps. Also verifies that version info files exist for each application.
+
+    :raises AssertionError: When an application is missing from apps.spec or version info file doesn't exist.
+    :raises FileNotFoundError: When apps.spec file or version info files cannot be found.
+    """
 
     commands = spsdk_main.commands
     commands.pop("utils")  # remove utils group commands
@@ -90,7 +149,7 @@ def test_apps_spec():
             continue
         # Check apps collection
         assert f"exe_{app_name},"
-        assert f"a_{app_name}.datas,"
+        assert f"a_{app_name}.datas,"  # cspell:disable-line
         assert f"a_{app_name}.binaries,"
         assert f"a_{app_name}.zipfiles,"
         # Check merge step

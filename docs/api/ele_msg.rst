@@ -1,7 +1,6 @@
 ELE message support API
 ====================================
-
-This module contains support for EdgeLock Enclave messages system.
+.. automodule:: spsdk.ele
 
 Module with the EdgeLock Enclave messages
 ----------------------------------------------------------

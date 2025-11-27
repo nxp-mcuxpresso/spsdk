@@ -4,11 +4,18 @@
 # Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+"""SPSDK documentation table generation utilities.
+
+This module provides functionality for automatically generating various tables
+and documentation content for SPSDK documentation. It creates tables for
+device support, features, MBI configurations, and other documentation assets.
+"""
+
 # Script for generation of table
 import itertools
 import os
 from functools import lru_cache
-from typing import Dict, List, Optional
+from typing import Any, Optional, Union
 
 import nbformat
 import requests
@@ -83,7 +90,16 @@ UNSUPPORTED_CHAR = "\u274c"
 
 
 def get_link(name: str, url: str, use_markdown: bool = False) -> str:
-    """Get link to the device."""
+    """Get link formatted for documentation.
+
+    Creates a formatted link string that can be used in either Markdown or
+    reStructuredText format depending on the specified format preference.
+
+    :param name: Display text for the link.
+    :param url: Target URL for the link.
+    :param use_markdown: Whether to format as Markdown link, defaults to reStructuredText format.
+    :return: Formatted link string in the requested format.
+    """
     if use_markdown:
         return f"[{name}]({url})"
     return f"`{name} <{url}>`_"
@@ -91,7 +107,15 @@ def get_link(name: str, url: str, use_markdown: bool = False) -> str:
 
 @lru_cache
 def is_link_accessible(url: str) -> bool:
-    """Check if the link is accessible."""
+    """Check if a URL is accessible by sending a HEAD request.
+
+    This method verifies URL accessibility by sending a HEAD request and checking
+    for successful HTTP status codes (200, 301, 302). If the link is not accessible,
+    an error message is printed to the console.
+
+    :param url: The URL to check for accessibility.
+    :return: True if the URL is accessible (status codes 200, 301, or 302), False otherwise.
+    """
     works = False
     try:
         response = requests.head(url, timeout=5)
@@ -105,28 +129,49 @@ def is_link_accessible(url: str) -> bool:
 
 
 def create_internal_reference(reference_name: str, use_markdown: bool = False) -> str:
-    """Create internal reference to the documentation."""
+    """Create internal reference to the documentation.
+
+    Generates either a Markdown-style link or Sphinx reference syntax
+    depending on the output format requirement.
+
+    :param reference_name: Name of the reference target to link to.
+    :param use_markdown: If True, creates Markdown link format; if False, creates Sphinx reference format.
+    :return: Formatted reference string in either Markdown or Sphinx syntax.
+    """
     if use_markdown:
         return f"[{reference_name}]({reference_name})"
-    else:
-        return f":ref:`{reference_name}`"
+
+    return f":ref:`{reference_name}`"
 
 
 def create_internal_reference_link_text(
     reference_name: str, link_text: str, use_markdown: bool = False
 ) -> str:
-    """Create internal reference to the documentation."""
+    """Create internal reference link text for documentation.
+
+    Generates either Markdown or reStructuredText format internal reference links
+    depending on the specified format preference.
+
+    :param reference_name: The internal reference identifier/anchor name.
+    :param link_text: The display text for the link.
+    :param use_markdown: Whether to use Markdown format instead of reStructuredText.
+    :return: Formatted internal reference link string.
+    """
     if use_markdown:
         return f"[{link_text}](#{reference_name})"
-    else:
-        return f":ref:`{link_text} <{reference_name}>`"
+
+    return f":ref:`{link_text} <{reference_name}>`"
 
 
 def is_nxpimage_subcommand(subcommand: str) -> bool:
-    """Return true if subcommand is nxpimage subcommand.
+    """Check if a subcommand belongs to nxpimage tool.
 
-    :param subcommand: subcommand str
-    :return: True if nxpimage subcommand
+    This method verifies whether the given subcommand is a valid nxpimage command
+    by checking against extra commands and registered nxpimage commands with
+    underscore-to-hyphen normalization.
+
+    :param subcommand: The subcommand string to validate.
+    :return: True if the subcommand is a valid nxpimage command, False otherwise.
     """
     EXTRAS = ["fcb", "xmcd"]
     if subcommand in EXTRAS:
@@ -138,10 +183,10 @@ def is_nxpimage_subcommand(subcommand: str) -> bool:
     return False
 
 
-def get_targets() -> List[str]:
-    """Get list of all targets from device database
+def get_targets() -> list[str]:
+    """Get list of all targets from device database.
 
-    :return: list with all targets
+    :return: List of all available target names from the device database.
     """
     targets = []
     for _, val in MAP_IMAGE_TARGETS["targets"].items():
@@ -149,10 +194,10 @@ def get_targets() -> List[str]:
     return targets
 
 
-def get_authentications() -> List[str]:
-    """Get all authentication types from the device database
+def get_authentications() -> list[str]:
+    """Get all authentication types from the device database.
 
-    :return: list of all authentication types
+    :return: List of all authentication types available in the system.
     """
     authentications = []
     for _, val in MAP_AUTHENTICATIONS.items():
@@ -160,11 +205,14 @@ def get_authentications() -> List[str]:
     return authentications
 
 
-def get_table_header(combinations: List[tuple]) -> List[str]:
-    """Create header for the table
+def get_table_header(combinations: list[tuple]) -> list[str]:
+    """Create header for the table.
 
-    :param combinations: combinations of targets x authentication type
-    :return: list of header to be used with pytablewriter
+    Generates a table header by extracting target names from combinations
+    and prepending "Targets" as the first column header.
+
+    :param combinations: List of tuples containing combinations of targets and authentication types.
+    :return: List of header strings to be used with pytablewriter, with "Targets" as first element.
     """
     header = [i[TARGET] for i in combinations]
     header.insert(0, "Targets")
@@ -173,18 +221,23 @@ def get_table_header(combinations: List[tuple]) -> List[str]:
 
 
 def generate_table(
-    header: List[str],
-    values: List[List[str]],
+    header: list[str],
+    values: list[list[str]],
     title: str,
     use_markdown: bool = False,
 ) -> str:
-    """Generate RST/MD table to file using pytablewriter
+    """Generate RST/MD table using pytablewriter.
 
-    :param header: table header
-    :param values: values to be written
-    :param title: table title
-    :param use_markdown: use markdown format
+    Creates a formatted table in either reStructuredText or Markdown format
+    based on the provided header, data values, and formatting preference.
+
+    :param header: List of column headers for the table.
+    :param values: Matrix of string values representing table rows and columns.
+    :param title: Title to be displayed with the table.
+    :param use_markdown: Whether to generate Markdown format instead of RST format.
+    :return: Formatted table as a string in the specified format.
     """
+    writer: Union[MarkdownTableWriter, RstGridTableWriter]
     if use_markdown:
         writer = MarkdownTableWriter(
             table_name=title,
@@ -201,19 +254,22 @@ def generate_table(
 
 
 def write_table(
-    header: List[str],
-    values: List[List[str]],
+    header: list[str],
+    values: list[list[str]],
     title: str,
     file_name: str,
     use_markdown: bool = False,
-):
-    """Write RST table to file using pytablewriter
+) -> None:
+    """Write table to file using pytablewriter.
 
-    :param header: table header
-    :param values: values to be written
-    :param title: table title
-    :param file_name: file name of the file with table
-    :param use_markdown: use markdown format
+    The method generates a table from provided header and values, then writes it to the specified file.
+    Creates the target directory if it doesn't exist.
+
+    :param header: List of column headers for the table.
+    :param values: List of rows, where each row is a list of string values.
+    :param title: Title to be displayed above the table.
+    :param file_name: Path to the output file where the table will be written.
+    :param use_markdown: Whether to use Markdown format instead of RST format.
     """
     table = generate_table(header, values, title, use_markdown)
     if not os.path.exists(os.path.dirname(file_name)):
@@ -225,10 +281,15 @@ def write_table(
     print(f"Table {file_name} has been written")
 
 
-def generate_mbi_table():
-    """Create table with matrix of supported devices
-    vs image target and authentication types for the
-    purpose of documentation.
+def generate_mbi_table() -> None:
+    """Generate MBI table with matrix of supported devices vs image target and authentication types.
+
+    Creates a comprehensive table showing which combinations of image targets and authentication
+    types are supported for each device family in the MBI (Master Boot Image) context. The table
+    is written to a file for documentation purposes.
+
+    :raises KeyError: When device features or configuration keys are not found in database.
+    :raises SPSDKValueError: When invalid values are encountered during processing.
     """
     targets = get_targets()
     authentications = get_authentications()
@@ -244,7 +305,7 @@ def generate_mbi_table():
     value_matrix = []
     for family in families:
         submatrix = []
-        submatrix.append(family)
+        submatrix.append(family.name)
         for c in combinations:
             try:
                 target = get_key_by_val(c[TARGET], MAP_IMAGE_TARGETS["targets"])
@@ -271,29 +332,24 @@ def generate_mbi_table():
 
 def generate_feature_table(
     device: Device,
-    features: List[str],
+    features: list[str],
     heading: str,
-    features_mapping: Dict[str, str],
-    ignored_features: Optional[List[str]] = None,
+    features_mapping: dict[str, str],
     use_markdown: bool = False,
 ) -> str:
-    """Generate table for features.
+    """Generate table for features supported by a device.
 
-    :param device: device object to be used.
-    :param features: list of features.
-    :param heading: table heading.
-    :param features_mapping: features mapping for translation
-    :param ignored_features: list for features
-    :param use_markdown: use MD
+    Creates a formatted table showing which features are supported by the specified device,
+    with proper feature name mapping and filtering of ignored features.
+
+    :param device: Device object containing feature information.
+    :param features: List of feature names to include in the table.
+    :param heading: Table heading text.
+    :param features_mapping: Dictionary mapping feature names to display names for translation.
+    :param use_markdown: Whether to generate table in Markdown format instead of reStructuredText.
+    :return: Formatted table string showing feature support status.
     """
-    if not ignored_features:
-        ignored_features = []
-
-    feature_list = [
-        feature
-        for feature in features
-        if feature not in IGNORED_FEATURES and feature not in ignored_features
-    ]
+    feature_list = [feature for feature in features if feature not in IGNORED_FEATURES]
 
     value_matrix = []
     db = get_db(FamilyRevision(device.name))
@@ -321,19 +377,22 @@ def generate_feature_table(
 
 
 def generate_features_table(
-    features: List[str],
+    features: list[str],
     heading: str,
-    features_mapping: Dict[str, str],
+    features_mapping: dict[str, str],
     table_file: str,
-    ignored_features: Optional[List[str]] = None,
-):
-    """Generate table for features.
+    ignored_features: Optional[list[str]] = None,
+) -> None:
+    """Generate table for features with device compatibility matrix.
 
-    :param features: list of features.
-    :param heading: table heading.
-    :param features_mapping: features mapping for translation
-    :param table_file: table file string
-    :param ignored_features: ignore list for features
+    Creates a table showing which features are supported by different device families.
+    The table includes all devices marked for documentation use and filters out ignored features.
+    Special handling is provided for certificate block features to show ROT type information.
+
+    :param features: List of feature names to include in the table.
+    :param heading: Title text for the generated table.
+    :param features_mapping: Dictionary mapping feature names to display names for translation.
+    :param table_file: Output file path where the table will be written.
     """
     print("Processing Features table")
     if not ignored_features:
@@ -348,7 +407,8 @@ def generate_features_table(
         [
             family
             for family in DatabaseManager().quick_info.devices.devices
-            if DatabaseManager().quick_info.devices.devices.get(family).info.use_in_doc
+            if DatabaseManager().quick_info.devices.devices.get(family) is not None
+            and DatabaseManager().quick_info.devices.devices.get(family).info.use_in_doc  # type: ignore
         ]
     )
 
@@ -356,7 +416,8 @@ def generate_features_table(
         submatrix = []
         submatrix.append(device)
         for feature in feature_list:
-            if feature in DatabaseManager().quick_info.devices.devices.get(device).get_features():
+            device_info = DatabaseManager().quick_info.devices.devices.get(device)
+            if device_info is not None and feature in device_info.get_features():
                 if feature == DatabaseManager.CERT_BLOCK:
                     db = get_db(FamilyRevision(device))
                     rot_type = db.get_str(DatabaseManager.CERT_BLOCK, "rot_type")
@@ -381,13 +442,17 @@ def generate_devices_table(
     table_file: str,
     use_markdown: bool = False,
     add_internal_links: bool = True,
-):
+) -> None:
     """Generate table containing all supported devices and check the links.
 
-    :param heading: table heading.
-    :param table_file: table file string
-    :param use_markdown: use markdown format
-    :param add_internal_links: add internal links
+    This method creates a formatted table (RST or Markdown) with information about
+    all supported devices from the SPSDK database, including device names, categories,
+    web links, and latest revisions. It also validates web link accessibility.
+
+    :param heading: Table heading text to be displayed above the generated table.
+    :param table_file: Output file path where the generated table will be written.
+    :param use_markdown: Whether to generate table in Markdown format instead of RST format.
+    :param add_internal_links: Whether to add internal documentation links for device names.
     """
     print("Processing Devices table and checking links")
     header = ["SPSDK name", "Category", "Weblink", "Latest Revision"]
@@ -396,7 +461,8 @@ def generate_devices_table(
         [
             family
             for family in DatabaseManager().quick_info.devices.devices
-            if DatabaseManager().quick_info.devices.devices.get(family).info.use_in_doc
+            if DatabaseManager().quick_info.devices.devices.get(family) is not None
+            and DatabaseManager().quick_info.devices.devices.get(family).info.use_in_doc  # type: ignore
         ]
     )
 
@@ -406,7 +472,7 @@ def generate_devices_table(
             submatrix.append(device)
         else:
             submatrix.append(create_internal_reference(device, use_markdown))
-        info = DatabaseManager().quick_info.devices.devices.get(device).info
+        info = DatabaseManager().quick_info.devices.devices.get(device).info  # type: ignore
         submatrix.append(info.purpose)
         if is_link_accessible(info.web):
             submatrix.append(get_link("Link to nxp.com", info.web, use_markdown))
@@ -423,8 +489,13 @@ def generate_devices_table(
 def get_notebook_header(notebook_path: str) -> str:
     """Extract the header from a Jupyter notebook.
 
+    The method reads the notebook file and searches for the first markdown cell
+    to extract its header. If no markdown header is found, returns the notebook filename.
+
     :param notebook_path: Path to the Jupyter notebook file.
-    :return: The header of the notebook.
+    :raises FileNotFoundError: When the notebook file does not exist.
+    :raises nbformat.ValidationError: When the notebook format is invalid.
+    :return: The header text from the first markdown cell or notebook filename as fallback.
     """
     with open(notebook_path, "r", encoding="utf-8") as f:
         notebook = nbformat.read(f, as_version=4)
@@ -438,12 +509,15 @@ def get_notebook_header(notebook_path: str) -> str:
 
 def get_jupyters_for_device(
     device: str, alternative_device_name: Optional[str] = None
-) -> List[str]:
-    """Get list of jupyter notebooks for the device.
+) -> list[str]:
+    """Get list of Jupyter notebooks for the specified device.
 
-    :param device: device name
-    :param alternative_device_name: alternative device name
-    :return: list of jupyter notebooks
+    Searches through the examples directory to find all Jupyter notebook files
+    that contain the device name or alternative device name in their path.
+
+    :param device: Device name to search for in notebook paths
+    :param alternative_device_name: Optional alternative device name to search for
+    :return: List of relative paths to Jupyter notebooks matching the device criteria
     """
     jupyters = []
     for root, _, files in os.walk(os.path.join(DOC_PATH, "examples")):
@@ -458,11 +532,14 @@ def get_jupyters_for_device(
     return jupyters
 
 
-def get_jupyters_for_feature(feature: str) -> List[str]:
-    """Get list of jupyter notebooks for the feature.
+def get_jupyters_for_feature(feature: str) -> list[str]:
+    """Get list of Jupyter notebooks for the specified feature.
 
-    :param feature: feature name
-    :return: list of jupyter notebooks
+    Searches through the examples directory to find all Jupyter notebook files
+    that are located in subdirectories matching the given feature name.
+
+    :param feature: Name of the feature to search notebooks for.
+    :return: List of relative paths to Jupyter notebooks associated with the feature.
     """
     jupyters = []
     for root, _, files in os.walk(os.path.join(DOC_PATH, "examples")):
@@ -473,11 +550,14 @@ def get_jupyters_for_feature(feature: str) -> List[str]:
     return jupyters
 
 
-def get_filtered_features(device: Device) -> List[str]:
-    """Get list of features for the device.
+def get_filtered_features(device: Device) -> list[str]:
+    """Get filtered list of supported features for the specified device.
 
-    :param device: Device
-    :return: list of features
+    The method filters device features and includes AHAB only if it supports
+    ahab_image sub-feature. Results are returned in sorted order.
+
+    :param device: Device object containing revision and feature information
+    :return: Sorted list of supported feature names for the device
     """
     result = []
     features: dict = device.revisions.get().features
@@ -490,23 +570,26 @@ def get_filtered_features(device: Device) -> List[str]:
     return sorted(result)
 
 
-def generate_devices_list(
-    output_file: str,
-):
-    """Generate markdown containing all supported devices.
+def generate_devices_list(output_file: str) -> None:
+    """Generate markdown file containing all supported devices organized by category.
 
-    :param output_file: output file string
+    The method retrieves all devices from the DatabaseManager that are marked for documentation use,
+    sorts them by purpose/category, and generates a comprehensive markdown file with device details,
+    features, and related examples.
+
+    :param output_file: Path to the output markdown file where the device list will be written
+    :raises IOError: If the output file cannot be written to
+    :raises SPSDKError: If database access fails or device information is corrupted
     """
-
     print("Processing list of devices")
 
     devices = sorted(
         [
             family
             for family in DatabaseManager().quick_info.devices.devices
-            if DatabaseManager().quick_info.devices.devices.get(family).info.use_in_doc
+            if DatabaseManager().quick_info.devices.devices.get(family).info.use_in_doc  # type: ignore
         ],
-        key=lambda x: DatabaseManager().quick_info.devices.devices.get(x).info.purpose,
+        key=lambda x: DatabaseManager().quick_info.devices.devices.get(x).info.purpose,  # type: ignore
     )
 
     lines = [
@@ -515,8 +598,8 @@ def generate_devices_list(
         "============================\n",
     ]
 
-    for category, devices in itertools.groupby(
-        devices, key=lambda x: DatabaseManager().quick_info.devices.devices.get(x).info.purpose
+    for category, devices in itertools.groupby(  # type: ignore
+        devices, key=lambda x: DatabaseManager().quick_info.devices.devices.get(x).info.purpose  # type: ignore
     ):
         lines.append("\n")
         lines.extend(
@@ -563,7 +646,7 @@ def generate_devices_list(
                 lines.append("\n")
 
             # Jupyters for alias
-            jupyters = None
+            jupyters = []
             if device_full.device_alias:
                 jupyters = get_jupyters_for_device(
                     device_full.device_alias.name,
@@ -572,7 +655,8 @@ def generate_devices_list(
 
             if jupyters:
                 lines.append("\n")
-                lines.append(f"Similar examples for {device_full.device_alias.name}\n")
+                if device_full.device_alias:
+                    lines.append(f"Similar examples for {device_full.device_alias.name}\n")
                 lines.append("\n")
                 for jupyter in jupyters:
                     header = get_notebook_header(jupyter)
@@ -599,10 +683,18 @@ def generate_devices_list(
 
 
 def generate_nxpele_commands_table() -> None:
-    """Generate table with nxpele commands."""
+    """Generate table with nxpele commands.
+
+    This method extracts all available commands from the nxpele main module
+    and creates a documentation table containing command names and their
+    descriptions. The table is written to a file for documentation purposes.
+
+    :raises SPSDKError: If table generation or file writing fails.
+    """
     commands = nxpele_main.commands.keys()
     value_matrix = [
-        [command, nxpele_main.commands[command].__doc__.split("\n")[0]] for command in commands
+        [command, nxpele_main.commands[command].__doc__.split("\n")[0]]  # type:ignore
+        for command in commands
     ]
     write_table(
         ["Command", "Description"],
@@ -613,18 +705,31 @@ def generate_nxpele_commands_table() -> None:
     )
 
 
-def generate_mboot_error_codes():
-    """Generate table with mboot error codes."""
+def generate_mboot_error_codes() -> None:
+    """Generate table with mboot error codes.
+
+    This function processes all StatusCode enumeration values and creates a formatted
+    table containing error codes, names, and descriptions. The generated table is
+    written to a file for documentation purposes.
+
+    :raises SPSDKError: When table generation or file writing fails.
+    """
     print("Processing Mboot error codes")
     header = ["Error code", "Name", "Description"]
     value_matrix = []
     for code in StatusCode:
-        value_matrix.append([code.tag, code.name, code.description])
+        value_matrix.append([str(code.tag), code.name, str(code.description)])
 
     write_table(header, value_matrix, "Mboot error codes", MBOOT_ERROR_CODES, use_markdown=False)
 
 
-def main():
+def main() -> None:
+    """Generate documentation tables for SPSDK project.
+
+    This function generates various documentation tables including MBI table,
+    devices table for different formats, supported devices list, NXP ELE
+    commands table, and MBoot error codes table.
+    """
     generate_mbi_table()
 
     # TODO: Optimize features table or delete it
@@ -660,7 +765,14 @@ def main():
     generate_mboot_error_codes()
 
 
-def setup(app):
+def setup(app: Any) -> None:
+    """Setup Sphinx extension for table generation.
+
+    This function registers the table generation extension with the Sphinx application
+    and executes the main table generation process.
+
+    :param app: Sphinx application instance used for documentation building.
+    """
     main()
 
 

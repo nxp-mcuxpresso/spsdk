@@ -1,9 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
+"""SPSDK interface helper testing utilities.
+
+This module contains unit tests for the interface helper functionality,
+specifically testing the loading and validation of interface configurations
+used across SPSDK applications.
+"""
+
+from typing import Any, Optional
+
 import pytest
 
 from spsdk.apps.utils.interface_helper import load_interface_config
@@ -120,7 +130,20 @@ from spsdk.apps.utils.utils import SPSDKAppError
         ),
     ],
 )
-def test_load_interface_config(cli_params, interface, params, extra_params):
+def test_load_interface_config(
+    cli_params: dict[str, Any], interface: str, params: str, extra_params: Optional[str]
+) -> None:
+    """Test loading interface configuration with given parameters.
+
+    Validates that the load_interface_config function correctly processes CLI parameters
+    and returns an interface configuration object with expected identifier, parameters,
+    and extra parameters.
+
+    :param cli_params: Dictionary containing command line interface parameters
+    :param interface: Expected interface identifier string
+    :param params: Expected parameters string
+    :param extra_params: Expected extra parameters string, may be None
+    """
     iface_config = load_interface_config(cli_params)
     assert iface_config.IDENTIFIER == interface
     assert iface_config.params == params
@@ -156,6 +179,14 @@ def test_load_interface_config(cli_params, interface, params, extra_params):
         },
     ],
 )
-def test_load_interface_config_no_interface(cli_params):
+def test_load_interface_config_no_interface(cli_params: dict[str, Any]) -> None:
+    """Test loading interface configuration when no interface is specified.
+
+    Verifies that SPSDKAppError is raised when attempting to load interface
+    configuration from CLI parameters that don't contain interface information.
+
+    :param cli_params: Dictionary containing CLI parameters without interface specification.
+    :raises SPSDKAppError: When no interface is specified in the parameters.
+    """
     with pytest.raises(SPSDKAppError):
         load_interface_config(cli_params)

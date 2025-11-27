@@ -30,7 +30,6 @@ info:
         vid: 0x1FC9
         pid: 0x014F
 
-
 features:
   # ======== Blhost section ========
   blhost: {}
@@ -56,7 +55,6 @@ features:
       CORTEX_M33: [1, "cortex-m33", "Cortex M33 - Boot core"]
 
     valid_offset_minimal_alignment: 4
-    container_image_size_alignment: 1
     extra_containers: []
     image_hash_types: [sha384] # Supported image hash types
     iae_has_signed_offsets: True # There is a special cases when the Container is after images
@@ -84,6 +82,36 @@ features:
       hybrid_puk_address: 0x3002_2100 # Address for Hybrid PUK
       hybrid_puk_size: 0xA80 # Size for Hybrid PUK (2688 bytes)
     ahab: *ahab_common_config
+
+  # ======== Fuses description section ========
+  fuses:
+    grouped_registers:
+      - uid: rkth
+        name: RKTH
+        width: 384
+        config_as_hexstring: true
+        reversed: true
+        alternative_widths: [256]
+        description:
+          ROTKH field is compounded by 12 32-bit fields and contains Root key
+          table hash. For ECC P-256 keys RKTH is a 32-byte SHA-256 digest of four
+          SHA-256 digests computed over four OEM public keys (OEM has four
+          private-public key pairs in case one of its private keys becomes
+          compromised) or in case that ECC P-384 keys are used, RKTH is 48-byte
+          SHA-384 digest.
+        sub_regs:
+          - fuse11
+          - fuse12
+          - fuse13
+          - fuse14
+          - fuse15
+          - fuse16
+          - fuse17
+          - fuse18
+          - fuse19
+          - fuse20
+          - fuse21
+          - fuse22
 
   # ======== MBI section ========
   mbi:
@@ -198,6 +226,7 @@ features:
     buffer_address: 0x2000_2000
     buffer_size: 0x1000
     rkth_length: 64
+    rkth_truncated_length: 48
 
   # ======== Device Hardware Security Module (HSM) section ========
   devhsm:
@@ -221,7 +250,7 @@ features:
       - checkFwVersion
       - reset
 
- # ======== PFR section ========
+  # ======== PFR section ========
   pfr:
     sub_features: [ifr, cmpa, cfpa]
     ifr:

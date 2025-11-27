@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""General verifier module."""
+"""SPSDK verification and validation utilities.
+
+This module provides a comprehensive framework for performing verification
+and validation operations across SPSDK components. It includes result tracking,
+record management, and formatted output capabilities for verification processes.
+"""
 
 import textwrap
 from dataclasses import dataclass
@@ -20,7 +25,15 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 class VerifierResult(SpsdkEnum):
-    """Verifier result enumeration."""
+    """Verifier result enumeration for SPSDK validation operations.
+
+    This enumeration defines the possible outcomes of verification processes with
+    associated color codes for console output formatting.
+
+    :cvar SUCCEEDED: Verification completed successfully (green).
+    :cvar WARNING: Verification completed with warnings (yellow).
+    :cvar ERROR: Verification failed with errors (red).
+    """
 
     SUCCEEDED = (0, "Succeeded", colorama.Fore.GREEN)
     WARNING = (1, "Warning", colorama.Fore.YELLOW)
@@ -28,10 +41,14 @@ class VerifierResult(SpsdkEnum):
 
     @classmethod
     def draw(cls, res: "VerifierResult", colorize: bool = True) -> str:
-        """Get string also with colors.
+        """Get string representation with optional color formatting.
 
-        :param res: Verifier result
-        :param colorize: Make the text colored with ANSI escape characters
+        Formats the verifier result as a string, optionally adding ANSI color codes for enhanced
+        visual output in terminals that support colored text.
+
+        :param res: Verifier result object containing label and description.
+        :param colorize: Whether to add ANSI escape characters for colored output.
+        :return: Formatted string representation of the verifier result.
         """
         if not res.description or not colorize:
             return res.label
@@ -40,7 +57,13 @@ class VerifierResult(SpsdkEnum):
 
 @dataclass
 class VerifierRecord:
-    """Record of verification process."""
+    """SPSDK verification record for storing verification results.
+
+    This class represents a single record in the verification process, containing
+    the verification name, result status, optional value, and formatting options.
+    Each record captures the outcome of a specific verification step and provides
+    control over how the result is displayed in verification reports.
+    """
 
     # Name of the verification
     name: str
@@ -58,7 +81,14 @@ class VerifierRecord:
 # Class data general verifier info class.
 ########################################################################################################################
 class Verifier:
-    """Class data general verifier info class."""
+    """SPSDK data verification and formatting utility.
+
+    This class provides structured verification reporting with hierarchical organization,
+    colorized output, and flexible formatting options for SPSDK operations.
+
+    :cvar MAX_LINE_LENGTH: Maximum line length for formatted output.
+    :cvar TITLE_FG_COLOR: Default foreground color for title blocks.
+    """
 
     MAX_LINE_LENGTH = 120
     TITLE_FG_COLOR = colorama.Fore.CYAN
@@ -71,13 +101,16 @@ class Verifier:
         important: bool = True,
         raw: bool = False,
     ) -> None:
-        """General verifier class.
+        """Initialize a general verifier instance.
 
-        :param name: name of verifier
-        :param indent: Indent of the nested verifying blocks, defaults to 2
-        :param description: Description of verifier, defaults to None
-        :param important: Mark of important verifier, defaults to True
-        :param raw: Raw verifier without any formatting
+        Creates a new verifier object for validation and verification operations
+        with configurable formatting and importance settings.
+
+        :param name: Name of the verifier instance.
+        :param indent: Indentation level for nested verifying blocks, defaults to 2.
+        :param description: Optional description of the verifier's purpose, defaults to None.
+        :param important: Flag indicating if this is an important verifier, defaults to True.
+        :param raw: Flag for raw verifier output without formatting, defaults to False.
         """
         self.name = name
         self.records: list[Union[VerifierRecord, "Verifier"]] = []
@@ -89,22 +122,41 @@ class Verifier:
 
     @property
     def max_line(self) -> int:
-        """Maximal line with current indent."""
+        """Get maximal line length with current indentation level.
+
+        Calculates the maximum allowed line length by subtracting the current
+        indentation from the base maximum line length.
+
+        :return: Maximum line length adjusted for current indentation level.
+        """
         return self.MAX_LINE_LENGTH - self.indent * self.level
 
     def __repr__(self) -> str:
-        """Object representation in string format."""
+        """Get string representation of the verifier object.
+
+        :return: String representation containing the verifier name and type.
+        """
         return f"{self.name} verifier object"
 
     def __str__(self) -> str:
-        """Verifier output in string format."""
+        """Get string representation of verifier output.
+
+        Returns the verifier output in a non-colorized string format by calling the draw method
+        with colorization disabled.
+
+        :return: String representation of the verifier output without color formatting.
+        """
         return self.draw(colorize=False)
 
     def _get_title_block(self, colorize: bool = True) -> str:
-        """Get unified title blob.
+        """Get unified title block for verification result display.
 
-        :param colorize: Make the text colored with ANSI escape characters
-        :return: ASCII art block
+        Creates a formatted ASCII art title block with the verifier name, result status,
+        and optional description. The block includes decorative borders and proper spacing
+        for consistent display formatting.
+
+        :param colorize: Enable ANSI color escape sequences for colored output.
+        :return: Formatted ASCII art title block string.
         """
         fg_color = self.TITLE_FG_COLOR if colorize else ""
         rst_color = colorama.Fore.RESET if colorize else ""
@@ -125,14 +177,25 @@ class Verifier:
         return ret
 
     def draw(self, results: Optional[list[VerifierResult]] = None, colorize: bool = True) -> str:
-        """Draw the results.
+        """Draw the results of the verifier with optional formatting and filtering.
 
-        :param colorize: Make the text colored with ANSI escape characters
-        :param results: Filter for selected results, default is None
-        :return: Stringified output of whole verifier object
+        The method generates a formatted string representation of the verifier results,
+        with support for colorized output and selective result filtering. For successful
+        results, it may provide a shortened overview when appropriate.
+
+        :param results: Filter for selected results to display, defaults to None for all results.
+        :param colorize: Enable colored text output using ANSI escape characters.
+        :return: Formatted string representation of the verifier results.
         """
 
         def could_shorten_to() -> Optional[VerifierRecord]:
+            """Check if this verifier could be shortened to a single record.
+
+            A verifier can be shortened if it has no description and contains at most one
+            important record, with no nested Verifier instances.
+
+            :return: The single important record if shortening is possible, None otherwise.
+            """
             if self.description is not None:
                 return None
             ret = None
@@ -182,11 +245,14 @@ class Verifier:
         return ret
 
     def _draw_record(self, record: VerifierRecord, colorize: bool = True) -> str:
-        """Draw one record in string.
+        """Draw one record in string format.
 
-        :param colorize: Make the text colored with ANSI escape characters
-        :param record: Record to be rewritten to string.
-        :return: Stringified record
+        The method formats a verification record into a human-readable string representation,
+        with optional ANSI color coding and proper text wrapping.
+
+        :param record: Record to be converted to string format.
+        :param colorize: Make the text colored with ANSI escape characters.
+        :return: Formatted string representation of the record.
         """
         ret = f"{record.name}({VerifierResult.draw(record.result, colorize)}): "
         if record.value is not None:
@@ -211,12 +277,15 @@ class Verifier:
     ) -> None:
         """Add one verifying record to verifier.
 
-        :param name: Name of verifying condition/expression
-        :param result: Result of verifying condition/expression,
-            it could be also used boolean type as assert (True == SUCCEEDED, False == ERROR)
-        :param value: Result of verifying condition/expression
-        :param important: Mark of important record
-        :param raw: Raw record without any formatting
+        Creates a new verification record with the specified parameters and appends it to the
+        internal records list. Boolean results are automatically converted to VerifierResult enum values.
+
+        :param name: Name of verifying condition/expression.
+        :param result: Result of verifying condition/expression, boolean values are converted
+            (True == SUCCEEDED, False == ERROR).
+        :param value: Optional value associated with the verification result.
+        :param important: Flag indicating if this record should be marked as important.
+        :param raw: Flag indicating if record should be stored without formatting.
         """
         if isinstance(result, bool):
             result = VerifierResult.SUCCEEDED if result else VerifierResult.ERROR
@@ -226,12 +295,15 @@ class Verifier:
     def add_record_bit_range(
         self, name: str, value: Optional[int], bit_range: int = 32, important: bool = True
     ) -> None:
-        """Add to verifier check of the bit range record.
+        """Add verifier check for bit range validation of a record.
 
-        :param name: Name of record
-        :param value: Integer value to be checked
-        :param bit_range: BIt range to the value should fit, defaults to 32
-        :param important: Mark of important record
+        Validates that the provided integer value fits within the specified bit range
+        and adds the verification result to the verifier.
+
+        :param name: Name of the record to be verified.
+        :param value: Integer value to be checked for bit range compliance.
+        :param bit_range: Maximum bit range the value should fit within, defaults to 32.
+        :param important: Flag indicating if this is an important record for verification.
         """
         if value is None:
             self.add_record(name, VerifierResult.ERROR, "Doesn't exists")
@@ -252,12 +324,15 @@ class Verifier:
         min_val: int = 0,
         max_val: int = (1 << 32) - 1,
     ) -> None:
-        """Add to verifier check of the range record.
+        """Add range validation record to verifier.
 
-        :param name: Name of record
-        :param value: Integer value or hex string to be checked
-        :param min_val: Minimal allowed value, defaults to 0
-        :param max_val: Maximal allowed value, defaults to full 32 bit variable
+        Validates that the provided value falls within the specified range and adds
+        the verification result to the verifier records.
+
+        :param name: Name of the record for identification.
+        :param value: Integer value or hex string to be validated, None if record doesn't exist.
+        :param min_val: Minimal allowed value, defaults to 0.
+        :param max_val: Maximal allowed value, defaults to full 32-bit range.
         """
         if value is None:
             self.add_record(name, VerifierResult.ERROR, "Doesn't exists")
@@ -290,9 +365,14 @@ class Verifier:
     def add_record_contains(self, name: str, value: Optional[Any], collection: Iterable) -> None:
         """Add to verifier check the presence of item in collection.
 
-        :param name: Name of record
-        :param value: Item to be checked
-        :param collection: Collection of items
+        The method validates whether a given value exists within the specified collection.
+        If the value is None, it records an error indicating the item doesn't exist.
+        If the value is not found in the collection, it records an error with details.
+        Otherwise, it records a successful verification.
+
+        :param name: Name of the verification record.
+        :param value: Item to be checked for presence in collection.
+        :param collection: Collection of items to search within.
         """
         if value is None:
             self.add_record(name, VerifierResult.ERROR, "Doesn't exists")
@@ -316,12 +396,15 @@ class Verifier:
         min_length: int = 0,
         max_length: Optional[int] = None,
     ) -> None:
-        """Add to verifier check of the bytes record.
+        """Add bytes record validation to verifier.
 
-        :param name: Name of record
-        :param value: Bytes value to be checked
-        :param min_length: Minimal allowed value length, defaults to 0
-        :param max_length: Optional Maximal allowed value length, defaults to not tested
+        Validates a bytes value against specified length constraints and adds
+        the verification result to the verifier records.
+
+        :param name: Name of the record to be verified.
+        :param value: Bytes value to be validated, None if record doesn't exist.
+        :param min_length: Minimal allowed value length, defaults to 0.
+        :param max_length: Maximal allowed value length, defaults to None (no limit).
         """
         if value is None:
             self.add_record(name, VerifierResult.ERROR, "Doesn't exists")
@@ -347,9 +430,14 @@ class Verifier:
     ) -> None:
         """Add to verifier check of the value into enum record.
 
-        :param name: Name of record
-        :param value: Integer value to be checked
-        :param enum: Type of the enumeration class to verify
+        The method validates if a given value belongs to a specified enumeration type and adds
+        the verification result to the verifier. It handles different input types including
+        SpsdkEnum instances, integers, and strings.
+
+        :param name: Name of the verification record.
+        :param value: Value to be checked against the enumeration (can be SpsdkEnum, int, str, or None).
+        :param enum: Type of the enumeration class to verify against.
+        :raises SPSDKError: When value cannot be converted to the specified enumeration type.
         """
         if value is None:
             self.add_record(name, VerifierResult.ERROR, "Doesn't exists")
@@ -381,10 +469,13 @@ class Verifier:
         )
 
     def add_child(self, child: "Verifier", prefix_name: Optional[str] = None) -> None:
-        """Add children Verifier object.
+        """Add child Verifier object to this verifier.
 
-        :param child: Children verifier object
-        :param prefix_name: Optional addition prefix to child name.
+        The child verifier will be appended to the records list and optionally
+        prefixed with a custom name.
+
+        :param child: Child verifier object to be added.
+        :param prefix_name: Optional prefix to prepend to the child's name.
         """
         if prefix_name:
             child.name = f"{prefix_name}: {child.name}"
@@ -393,8 +484,11 @@ class Verifier:
     def get_count(self, results: Optional[list[VerifierResult]] = None) -> int:
         """Get count of records of requested result state.
 
+        The method recursively counts verification records that match the specified result types.
+        For nested Verifier objects, it calls get_count recursively to include their records.
+
         :param results: List of types of result to count, defaults to None (get all)
-        :return: Count of records.
+        :return: Count of records matching the specified result types.
         """
         ret = 0
         for record in self.records:
@@ -408,12 +502,21 @@ class Verifier:
 
     @property
     def has_errors(self) -> bool:
-        """Check if the verifier contains any error."""
+        """Check if the verifier contains any error.
+
+        :return: True if verifier contains at least one error, False otherwise.
+        """
         return bool(self.get_count([VerifierResult.ERROR]))
 
     @property
     def result(self) -> VerifierResult:
-        """Overall verifier result."""
+        """Get the overall verification result from all records.
+
+        Iterates through all verification records and sub-verifiers to determine the highest
+        severity result. Returns immediately if an ERROR is encountered.
+
+        :return: The most severe verification result found across all records.
+        """
         ret = VerifierResult.SUCCEEDED
         for record in self.records:
             if isinstance(record, VerifierRecord):
@@ -428,10 +531,13 @@ class Verifier:
         return ret
 
     def validate(self, colorize: bool = False) -> None:
-        """Check the errors in the object.
+        """Validate the object for errors.
 
-        :param colorize: Make the text colored with ANSI escape characters
-        :raises SPSDKVerificationError: In case of any error it raises Whole source of errors.
+        Checks if the verification result contains any errors and raises an exception
+        if errors are found.
+
+        :param colorize: Make the text colored with ANSI escape characters.
+        :raises SPSDKVerificationError: If validation errors are found in the object.
         """
         if self.result is VerifierResult.ERROR:
             raise SPSDKVerificationError(
@@ -439,10 +545,13 @@ class Verifier:
             )
 
     def get_summary_table(self, colorize: bool = True) -> str:
-        """Get the summary table with verify results.
+        """Get the summary table with verification results.
 
-        :param colorize: Make the text colored with ANSI escape characters
-        :return: String table with summary results.
+        Creates a formatted table displaying counts for each verification result type,
+        with optional colorization using ANSI escape characters for better readability.
+
+        :param colorize: Enable colored text output using ANSI escape characters, defaults to True
+        :return: Formatted string table containing summary of verification results
         """
         header: list[str] = []
         row: list[int] = []

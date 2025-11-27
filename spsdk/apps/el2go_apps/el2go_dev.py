@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Sub-set of EL2GO-HOST commands related to Device-Based (Device-Unique) Provisioning."""
+"""SPSDK EL2GO device-based provisioning utilities.
+
+This module provides functionality for device-unique provisioning operations
+using the EL2GO (EdgeLock 2GO) service. It includes commands for device
+preparation, secure object provisioning, UUID management, and bulk operations
+for production deployment scenarios.
+"""
 
 
 import json
@@ -274,6 +280,12 @@ def get_uuid(interface: EL2GOInterfaceHandler, database: str, remote_database: s
     help="URL to the remote database",
 )
 @click.option(
+    "-w",
+    "--workspace",
+    type=click.Path(file_okay=False),
+    help="Path to a folder for storing data used during provisioning for debugging purposes.",
+)
+@click.option(
     "--clean",
     is_flag=True,
     default=False,
@@ -285,6 +297,7 @@ def prepare_device_command(
     secure_objects_file: str,
     database: str,
     remote_database: str,
+    workspace: str,
     clean: bool,
 ) -> None:
     """Prepare device for Trust Provisioning.
@@ -306,6 +319,7 @@ def prepare_device_command(
         secure_objects_file=secure_objects_file,
         database=database,
         remote_database=remote_database,
+        workspace=workspace,
         clean=clean,
     )
 
@@ -316,6 +330,7 @@ def prepare_device(
     secure_objects_file: Optional[str] = None,
     database: Optional[str] = None,
     remote_database: Optional[str] = None,
+    workspace: Optional[str] = None,
     clean: bool = False,
 ) -> None:
     """Prepare device for Trust Provisioning."""
@@ -328,7 +343,9 @@ def prepare_device(
         secure_objects_file=secure_objects_file,
     )
 
-    interface.write_secure_objects(client=client, secure_objects=prov_data, clean=clean)
+    interface.write_secure_objects(
+        client=client, secure_objects=prov_data, clean=clean, workspace=workspace
+    )
 
 
 @dev_group.command(name="provision-objects", no_args_is_help=True)

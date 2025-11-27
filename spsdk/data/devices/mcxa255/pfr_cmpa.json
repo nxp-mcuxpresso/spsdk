@@ -129,14 +129,14 @@
               "description": "Disable ISP mode entry through pin assertion",
               "values": [
                 {
-                  "name": "DISABLED_0b01",
-                  "value": 1,
-                  "description": "ISP entry disabled"
-                },
-                {
                   "name": "ALLOWED_0b00",
                   "value": 0,
                   "description": "ISP entry allowed"
+                },
+                {
+                  "name": "DISABLED_0b01",
+                  "value": 1,
+                  "description": "ISP entry disabled"
                 },
                 {
                   "name": "ALLOWED_0b10",
@@ -157,14 +157,14 @@
               "description": "Disable ISP mode entry through debug mailbox command",
               "values": [
                 {
-                  "name": "DISABLED_0b01",
-                  "value": 1,
-                  "description": "ISP entry disabled"
-                },
-                {
                   "name": "ALLOWED_0b00",
                   "value": 0,
                   "description": "ISP entry allowed"
+                },
+                {
+                  "name": "DISABLED_0b01",
+                  "value": 1,
+                  "description": "ISP entry disabled"
                 },
                 {
                   "name": "ALLOWED_0b10",
@@ -185,14 +185,14 @@
               "description": "Disable ISP mode entry through ROM API call. ISP mode can be entered through ROM API invocation",
               "values": [
                 {
-                  "name": "DISABLED_0b01",
-                  "value": 1,
-                  "description": "ISP entry disabled"
-                },
-                {
                   "name": "ALLOWED_0b00",
                   "value": 0,
                   "description": "ISP entry allowed"
+                },
+                {
+                  "name": "DISABLED_0b01",
+                  "value": 1,
+                  "description": "ISP entry disabled"
                 },
                 {
                   "name": "ALLOWED_0b10",
@@ -545,13 +545,13 @@
             {
               "width": 16,
               "id": "field024-bits0-15",
-              "name": "USB_VENDOR_ID",
+              "name": "USB_Vendor_ID",
               "description": "USB Vendor ID"
             },
             {
               "width": 16,
               "id": "field024-bits16-31",
-              "name": "USB_PRODUCT_ID",
+              "name": "USB_Product_ID",
               "description": "USB Product ID"
             }
           ]
@@ -566,13 +566,13 @@
             {
               "width": 8,
               "id": "field028-bits0-7",
-              "name": "USBX_VBUS_PIN",
+              "name": "USBx_VBUS_PIN",
               "description": "Override default USB0_VBUS_DETECT ISP pin. Identifies the pin to be used as USB0_VBUS detect pin. [4:0] GPIO Pin number [7:5] GPIO port number"
             },
             {
               "width": 4,
               "id": "field028-bits8-11",
-              "name": "USBX_VBUS_FUNC_SLOT",
+              "name": "USBx_VBUS_FUNC_SLOT",
               "description": "Identifies the pin mux function slot"
             },
             {

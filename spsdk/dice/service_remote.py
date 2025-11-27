@@ -1,10 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Module for communicating with a remote DICE attestation service."""
+
+"""SPSDK remote DICE attestation service communication utilities.
+
+This module provides functionality for communicating with remote DICE (Device
+Identifier Composition Engine) attestation services over network protocols.
+The main component is RemoteDICEVerificationService class that implements
+the DICEVerificationService interface for remote attestation operations.
+"""
 
 import logging
 from typing import Optional
@@ -17,7 +24,13 @@ logger = logging.getLogger(__name__)
 
 
 class RemoteDICEVerificationService(DICEVerificationService):
-    """DICE Verification adapter for communicating with remote verification service."""
+    """Remote DICE Verification Service adapter.
+
+    This class provides an interface for communicating with remote DICE verification
+    services over HTTP REST API. It handles registration of DICE CA public keys,
+    firmware versions, and verification operations by translating local method calls
+    into appropriate HTTP requests to the remote service endpoint.
+    """
 
     def __init__(self, base_url: str) -> None:
         """Initialize the Remote DICE verification communication adapter.
@@ -30,6 +43,9 @@ class RemoteDICEVerificationService(DICEVerificationService):
         self, method: str, url: str, payload: Optional[dict[str, str]] = None
     ) -> APIResponse:
         """Handle REST API call.
+
+        The method sends HTTP request to the remote service endpoint and processes
+        the response into standardized APIResponse format.
 
         :param method: HTTP method to use (e.g.: GET, POST, etc.)
         :param url: URL of the REST API (e.g.: /api/v1/verify)
@@ -54,7 +70,14 @@ class RemoteDICEVerificationService(DICEVerificationService):
         return api_response
 
     def register_dice_ca_puk(self, key_data: bytes) -> APIResponse:
-        """Register DICE CA PUK in the service."""
+        """Register DICE CA PUK in the service.
+
+        This method sends a POST request to register a DICE Certificate Authority
+        Public Key with the remote service.
+
+        :param key_data: The DICE CA public key data as raw bytes.
+        :return: API response containing the registration result.
+        """
         logger.info("Registering DICE CA PUK")
         response = self._handle_request(
             method="post",
@@ -64,7 +87,14 @@ class RemoteDICEVerificationService(DICEVerificationService):
         return response
 
     def register_version(self, data: bytes) -> APIResponse:
-        """Register new version of FW, RTF, and HAD."""
+        """Register new version of FW, RTF, and HAD.
+
+        This method sends firmware, RTF (Runtime Firmware), and HAD (Hardware Attestation Data)
+        version information to the remote DICE service for registration.
+
+        :param data: Binary data containing the version information to be registered.
+        :return: API response object containing the registration result.
+        """
         logger.info("Registering new version of FW, RTF, and HAD")
         response = self._handle_request(
             method="post",
@@ -74,7 +104,14 @@ class RemoteDICEVerificationService(DICEVerificationService):
         return response
 
     def get_challenge(self, pre_set: Optional[str] = None) -> bytes:
-        """Get challenge vector from the service."""
+        """Get challenge vector from the service.
+
+        Retrieves a challenge vector from the remote DICE service for authentication purposes.
+
+        :param pre_set: Pre-set challenge string (not supported by remote service).
+        :raises NotImplementedError: When pre_set parameter is provided.
+        :return: Challenge vector as bytes.
+        """
         logger.info("Retrieving DICE challenge")
         if pre_set:
             raise NotImplementedError("Remote service doesn't support pre-set challenges.")
@@ -86,7 +123,15 @@ class RemoteDICEVerificationService(DICEVerificationService):
         return bytes.fromhex(challenge)
 
     def verify(self, data: bytes, reset_challenge: bool = False) -> APIResponse:
-        """Submit DICE response for verification."""
+        """Submit DICE response for verification.
+
+        Sends the DICE response data to the remote service for verification and
+        optionally resets the challenge state.
+
+        :param data: DICE response data to be verified.
+        :param reset_challenge: Whether to reset the challenge after verification.
+        :return: API response containing verification results.
+        """
         logger.info("Submitting DICE Response for verification")
         response = self._handle_request(
             method="post",

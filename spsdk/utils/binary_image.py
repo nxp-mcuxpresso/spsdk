@@ -4,7 +4,12 @@
 # Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Module to keep additional utilities for binary images."""
+"""SPSDK binary image utilities and visualization tools.
+
+This module provides functionality for handling binary images, including
+color picking utilities and binary image processing capabilities for SPSDK
+applications.
+"""
 
 import logging
 import math
@@ -36,7 +41,14 @@ logger = logging.getLogger(__name__)
 
 
 class ColorPicker:
-    """Simple class to get each time when ask different color from list."""
+    """Color picker utility for cycling through predefined terminal colors.
+
+    This class provides a simple mechanism to sequentially select different
+    colors from a predefined list, useful for colorizing terminal output
+    with distinct colors for different elements.
+
+    :cvar COLORS: List of available colorama foreground colors for selection.
+    """
 
     COLORS = [
         colorama.Fore.LIGHTBLACK_EX,
@@ -55,14 +67,21 @@ class ColorPicker:
     ]
 
     def __init__(self) -> None:
-        """Constructor of ColorPicker."""
+        """Initialize ColorPicker with default settings.
+
+        Sets the color index to the total number of available colors in the COLORS collection.
+        """
         self.index = len(self.COLORS)
 
     def get_color(self, unwanted_color: Optional[str] = None) -> str:
-        """Get new color from list.
+        """Get next color from the color list.
 
-        :param unwanted_color: Color that should be omitted.
-        :return: Color
+        The method cycles through available colors and skips any unwanted color
+        if specified. When reaching the end of the color list, it wraps around
+        to the beginning.
+
+        :param unwanted_color: Color that should be omitted from selection.
+        :return: Selected color string.
         """
         self.index += 1
         if self.index >= len(ColorPicker.COLORS):
@@ -73,7 +92,15 @@ class ColorPicker:
 
 
 class BinaryImage:
-    """Binary Image class."""
+    """Binary image representation and manipulation utility.
+
+    This class provides functionality for creating, managing, and manipulating binary images
+    with support for hierarchical sub-images, alignment, patterns, and memory layout operations.
+    It serves as a foundation for building complex binary structures used in embedded systems
+    and firmware development.
+
+    :cvar MINIMAL_DRAW_WIDTH: Minimum width for image visualization output.
+    """
 
     MINIMAL_DRAW_WIDTH = 30
 
@@ -89,17 +116,20 @@ class BinaryImage:
         parent: Optional["BinaryImage"] = None,
         execution_start_address: Optional[int] = None,
     ) -> None:
-        """Binary Image class constructor.
+        """Initialize a new BinaryImage instance.
 
-        :param name: Name of Image.
-        :param size: Image size.
-        :param offset: Image offset in parent image, defaults to 0
-        :param description: Text description of image, defaults to None
-        :param binary: Optional binary content.
-        :param pattern: Optional binary pattern.
-        :param alignment: Optional alignment of result image
-        :param parent: Handle to parent object, defaults to None
-        :param execution_start_address: Execution start address, defaults to None
+        Creates a binary image object that can contain binary data, patterns, or sub-images.
+        The image can be part of a hierarchical structure with parent-child relationships.
+
+        :param name: Name identifier for the image.
+        :param size: Size of the image in bytes, will be aligned according to alignment parameter.
+        :param offset: Byte offset position within the parent image.
+        :param description: Human-readable description of the image purpose.
+        :param binary: Raw binary data content for the image.
+        :param pattern: Binary pattern to fill the image with.
+        :param alignment: Byte alignment requirement for the image size.
+        :param parent: Parent BinaryImage object in the hierarchy.
+        :param execution_start_address: Memory address where execution should start.
         """
         self.name = name
         self.description = description
@@ -117,18 +147,30 @@ class BinaryImage:
 
     @property
     def size(self) -> int:
-        """Size property."""
+        """Get the size of the binary image.
+
+        :return: Size of the binary image in bytes.
+        """
         return len(self)
 
     @size.setter
     def size(self, value: int) -> None:
-        """Size property setter."""
+        """Set the size property value.
+
+        The size value is automatically aligned to the object's alignment requirements.
+
+        :param value: The size value to set in bytes.
+        """
         self._size = align(value, self.alignment)
 
     def add_image(self, image: "BinaryImage") -> None:
-        """Add new sub image information.
+        """Add new sub image to the binary image container.
 
-        :param image: Image object.
+        The method inserts the sub-image at the correct position based on its offset,
+        maintaining the sorted order of sub-images within the container. The added
+        image's parent reference is automatically set to this container.
+
+        :param image: Binary image object to be added as a sub-image.
         """
         image.parent = self
         for i, child in enumerate(self.sub_images):
@@ -140,9 +182,9 @@ class BinaryImage:
     def append_image(self, image: "BinaryImage") -> None:
         """Append new sub image at the end of the parent.
 
-        This function use the size of the parent as a offset for new appended image.
+        This function uses the size of the parent as an offset for the new appended image.
 
-        :param image: Image object.
+        :param image: Binary image object to append.
         """
         image.offset = len(self)
         self.add_image(image)
@@ -150,9 +192,9 @@ class BinaryImage:
     def find_sub_image(self, name: str) -> "BinaryImage":
         """Find sub image by its name.
 
-        :param name: Name of sub image
-        :raises SPSDKValueError: The sub image with requested name doesn't exists
-        :return: Sub Image object
+        :param name: Name of sub image to search for.
+        :raises SPSDKValueError: The sub image with requested name doesn't exist.
+        :return: Sub Image object with the specified name.
         """
         for sub_image in self.sub_images:
             if name == sub_image.name:
@@ -160,16 +202,24 @@ class BinaryImage:
         raise SPSDKValueError(f"Sub image {name} in {self.name} doesn't exists")
 
     def join_images(self) -> None:
-        """Join all sub images into main binary block."""
+        """Join all sub images into main binary block.
+
+        This method exports all sub-images into a single binary representation,
+        clears the sub-images collection, and updates the main binary data with
+        the consolidated result.
+        """
         binary = self.export()
         self.sub_images.clear()
         self.binary = binary
 
     @property
     def image_name(self) -> str:
-        """Image name including all parents.
+        """Get image name including all parent names.
 
-        :return: Full Image name
+        The method constructs a hierarchical path by concatenating parent image names
+        with the current image name using '=>' as separator.
+
+        :return: Full hierarchical image name with parent chain.
         """
         if self.parent:
             return self.parent.image_name + "=>" + self.name
@@ -177,19 +227,25 @@ class BinaryImage:
 
     @property
     def absolute_address(self) -> int:
-        """Image absolute address relative to base parent.
+        """Get image absolute address relative to base parent.
 
-        :return: Absolute address relative to base parent
+        Calculates the absolute address by traversing up the parent hierarchy
+        and accumulating offsets from the base parent.
+
+        :return: Absolute address relative to base parent.
         """
         if self.parent:
             return self.parent.absolute_address + self.offset
         return self.offset
 
     def aligned_start(self, alignment: int = 4) -> int:
-        """Returns aligned start address.
+        """Calculate aligned start address based on specified alignment.
 
-        :param alignment: The alignment value, defaults to 4.
-        :return: Floor alignment address.
+        The method performs floor division to align the absolute address to the nearest
+        lower boundary that is divisible by the alignment value.
+
+        :param alignment: The alignment value in bytes, defaults to 4.
+        :return: Floor-aligned absolute address.
         """
         return math.floor(self.absolute_address / alignment) * alignment
 
@@ -213,10 +269,13 @@ class BinaryImage:
         return self
 
     def aligned_length(self, alignment: int = 4) -> int:
-        """Returns aligned length for erasing purposes.
+        """Calculate aligned length for memory erasing operations.
 
-        :param alignment: The alignment value, defaults to 4.
-        :return: Ceil alignment length.
+        The method computes the total length needed when considering alignment requirements
+        for both start and end addresses, typically used for flash memory operations.
+
+        :param alignment: Memory alignment boundary in bytes, defaults to 4
+        :return: Total aligned length in bytes from aligned start to aligned end
         """
         end_address = self.absolute_address + len(self)
         aligned_end = math.ceil(end_address / alignment) * alignment
@@ -224,9 +283,12 @@ class BinaryImage:
         return aligned_len
 
     def __str__(self) -> str:
-        """Provides information about image.
+        """Get string representation of the binary image.
 
-        :return: String information about Image.
+        Provides detailed information about the binary image including name, memory
+        addresses, size, alignment, execution start address, pattern, and description.
+
+        :return: Formatted string with comprehensive image information.
         """
         size = len(self)
         execution_start_address = (
@@ -248,10 +310,28 @@ class BinaryImage:
         return ret
 
     def __repr__(self) -> str:
+        """Return string representation of the BinaryImage object.
+
+        Provides a formatted string containing the image name, size in bytes, and absolute address
+        in hexadecimal format for debugging and logging purposes.
+
+        :return: String representation in format "<BinaryImage name (size B) at 0x(address)>".
+        """
         return f"<BinaryImage {self.name} ({len(self)} B) at 0x{self.absolute_address:08X}>"
 
     def validate(self) -> None:
-        """Validate if the images doesn't overlaps each other."""
+        """Validate binary image structure and detect overlaps.
+
+        Performs comprehensive validation of the binary image including:
+        - Checks that image offset is non-negative
+        - Verifies that image size is non-negative
+        - Recursively validates all sub-images
+        - Ensures sub-images fit within parent image boundaries
+        - Detects overlapping sub-images at the same level
+
+        :raises SPSDKValueError: When image offset or size is negative.
+        :raises SPSDKOverlapError: When sub-image exceeds parent boundaries or overlaps with sibling.
+        """
         if self.offset < 0:
             raise SPSDKValueError(
                 f"Image offset of {self.image_name} cannot be in negative numbers."
@@ -283,10 +363,13 @@ class BinaryImage:
                     )
 
     def _get_size_line(self, size: int) -> str:
-        """Get string of size line.
+        """Get string of formatted size line.
 
-        :param size: Size in bytes
-        :return: Formatted size line.
+        The method formats the size into a human-readable string. For sizes >= 1024 bytes,
+        it includes both formatted size and comma-separated byte count.
+
+        :param size: Size in bytes to format.
+        :return: Formatted size line string.
         """
         if size >= 1024:
             real_size = ",".join(re.findall(".{1,3}", (str(len(self)))[::-1]))[::-1]
@@ -297,7 +380,11 @@ class BinaryImage:
     def get_min_draw_width(self, include_sub_images: bool = True) -> int:
         """Get minimal width of table for draw function.
 
-        :param include_sub_images: Include also sub images into, defaults to True
+        The method calculates the minimum character width needed to properly display
+        the binary image table, considering the image name, size information, and
+        optionally any sub-images with their borders.
+
+        :param include_sub_images: Include sub-images in width calculation, defaults to True
         :return: Minimal width in characters.
         """
         widths = [
@@ -318,15 +405,19 @@ class BinaryImage:
         no_color: bool = False,
         use_unicode: bool = True,
     ) -> str:
-        """Draw the image into the ASCII/Unicode graphics.
+        """Draw the image into ASCII/Unicode graphics representation.
 
-        :param include_sub_images: Include also sub images into, defaults to True
-        :param width: Fixed width of table, 0 means autosize.
-        :param color: Color of this block, None means automatic color.
-        :param no_color: Disable adding colors into output.
+        Creates a visual representation of the binary image with address information,
+        size details, description, and optionally includes sub-images in a structured
+        box-drawing format.
+
+        :param include_sub_images: Include also sub images into output, defaults to True
+        :param width: Fixed width of table, 0 means autosize
+        :param color: Color of this block, empty string means automatic color
+        :param no_color: Disable adding colors into output
         :param use_unicode: Use Unicode box drawing characters instead of ASCII, defaults to True
-        :raises SPSDKValueError: In case of invalid width.
-        :return: ASCII/Unicode art representation of image.
+        :raises SPSDKValueError: In case of invalid width or text longer than specified width
+        :return: ASCII/Unicode art representation of binary image
         """
         use_unicode &= os.name != "nt" or (sys.stdout.isatty() and sys.stderr.isatty())
         if use_unicode:
@@ -344,6 +435,15 @@ class BinaryImage:
             vertical = "|"
 
         def _get_centered_line(text: str) -> str:
+            """Get centered line with text formatted for binary image display.
+
+            Creates a formatted line with the given text centered between vertical borders,
+            padded with spaces to match the specified width.
+
+            :param text: Text to be centered in the line.
+            :raises SPSDKValueError: Text is longer than the available width.
+            :return: Formatted string with centered text and vertical borders.
+            """
             text_len = len(text)
             spaces = width - text_len - 2
             if spaces < 0:
@@ -355,6 +455,14 @@ class BinaryImage:
             return color + f"{vertical}{' '*padding_l}{text}{' '*padding_r}{vertical}\n"
 
         def wrap_block(inner: str) -> str:
+            """Wrap text block with colored vertical borders.
+
+            Adds colored vertical border characters to the beginning and end of each line
+            in the input text block, creating a bordered text display.
+
+            :param inner: Input text block to be wrapped with borders.
+            :return: Text block with colored vertical borders added to each line.
+            """
             wrapped_block = ""
             lines = inner.splitlines(keepends=False)
             for line in lines:
@@ -424,7 +532,13 @@ class BinaryImage:
         return block
 
     def update_offsets(self) -> None:
-        """Update offsets from the sub images into main offset value begin offsets."""
+        """Update offsets from the sub images into main offset value begin offsets.
+
+        This method normalizes the offset values by adjusting all sub-image offsets relative to the
+        minimum offset found among them, and updates the main image offset accordingly. The minimum
+        offset among sub-images becomes the new base (0), and the main offset is increased by this
+        minimum value.
+        """
         min_offset = self.min_offset
         for image in self.sub_images:
             image.offset -= min_offset
@@ -432,7 +546,13 @@ class BinaryImage:
 
     @property
     def min_offset(self) -> int:
-        """Offset of first subimage."""
+        """Get the offset of the first subimage in the binary image.
+
+        Calculates the minimum offset among all sub images. If no sub images exist,
+        returns 0 as the default offset.
+
+        :return: Minimum offset value from all sub images, or 0 if no sub images exist.
+        """
         offsets = []
         for image in self.sub_images:
             offsets.append(image.offset)
@@ -441,8 +561,10 @@ class BinaryImage:
     def __len__(self) -> int:
         """Get length of image.
 
-        If internal member size is not set(is zero) the size is computed from sub images.
-        :return: Size of image.
+        If internal member size is not set (is zero), the size is computed from sub-images.
+        The final size is aligned according to the image alignment requirements.
+
+        :return: Size of image in bytes.
         """
         if self._size:
             return self._size
@@ -453,9 +575,16 @@ class BinaryImage:
         return align(max_size, self.alignment)
 
     def export(self) -> bytes:
-        """Export represented binary image.
+        """Export the binary image as a byte array.
 
-        :return: Byte array of binary image.
+        The method handles various scenarios including direct binary export, empty images,
+        pattern-filled images, and recursive export of sub-images. Sub-images are merged
+        into the parent image at their specified offsets with proper alignment.
+
+        :raises SPSDKValueError: When sub-image cannot be merged into parent image due to
+            size or offset conflicts.
+        :return: Byte array representation of the complete binary image with all
+            sub-images merged and proper alignment applied.
         """
         if self.binary and len(self) == len(self.binary) and len(self.sub_images) == 0:
             return self.binary
@@ -489,7 +618,11 @@ class BinaryImage:
     def post_export(self, output_path: str) -> list[str]:
         """Perform post export steps like saving the script files.
 
-        :param output_path: Path to the output directory
+        The method iterates through all sub-images and calls their post_export methods
+        if available, collecting all generated files from the export process.
+
+        :param output_path: Path to the output directory where files will be saved.
+        :return: List of paths to all generated files during the post-export process.
         """
         generated_files = []
 
@@ -504,16 +637,21 @@ class BinaryImage:
     def get_validation_schemas() -> list[dict[str, Any]]:
         """Get validation schemas list to check a supported configuration.
 
-        :return: Validation schemas.
+        :return: List of validation schema dictionaries for binary image configuration.
         """
         return [get_schema_file("binary")]
 
     @classmethod
     def load_from_config(cls, config: Config) -> Self:
-        """Converts the configuration option into an Binary Image object.
+        """Create Binary Image object from configuration data.
 
-        :param config: Description of binary image.
-        :return: Initialized Binary Image.
+        The method processes configuration options to initialize a Binary Image with
+        specified name, size, pattern, and alignment. It also handles optional regions
+        containing binary files or binary blocks that are added as sub-images.
+
+        :param config: Configuration object containing binary image description with
+                       optional regions for binary files and blocks.
+        :return: Initialized Binary Image object with all configured sub-images.
         """
         name = config.get_str("name", "Base Image")
         size = config.get_int("size", 0)
@@ -553,7 +691,11 @@ class BinaryImage:
     ) -> None:
         """Save binary data file.
 
-        :param path: Path to the file.
+        The method supports multiple output formats including binary, Intel HEX, and Motorola S-record
+        formats. For non-binary formats, it handles empty binaries and uses execution start address
+        if available.
+
+        :param path: Path to the output file.
         :param file_format: Format of saved file ('BIN', 'HEX', 'S19', 'SREC'), defaults to 'BIN'.
         :raises SPSDKValueError: The file format is invalid.
         """
@@ -589,6 +731,14 @@ class BinaryImage:
                 pass  # Continue with the conversion process
 
         def add_into_binary(bin_image: BinaryImage) -> None:
+            """Add binary image data into the binary file.
+
+            Recursively processes the binary image and its sub-images, adding their content
+            to the binary file at the specified addresses. Handles both direct binary data
+            and pattern-generated data.
+
+            :param bin_image: Binary image object containing data to be added.
+            """
             address = bin_image.absolute_address
             if bin_image.binary:
                 bin_file.add_binary(bin_image.binary, address=address, overwrite=True)
@@ -619,9 +769,12 @@ class BinaryImage:
 
     @staticmethod
     def get_config_template() -> str:
-        """Generate configuration template.
+        """Generate configuration template for binary image.
 
-        :return: Template to create binary merge.
+        The method creates a template configuration that can be used to define
+        binary merge operations with proper validation schemas.
+
+        :return: Template string to create binary merge configuration.
         """
         return CommentedConfig(
             "Binary Image Configuration template.", BinaryImage.get_validation_schemas()
@@ -640,23 +793,24 @@ class BinaryImage:
         load_bin: bool = True,
         parent_image: Optional["BinaryImage"] = None,
     ) -> "BinaryImage":
-        # pylint: disable=missing-param-doc
-        r"""Load binary data file.
+        """Load binary data file into BinaryImage object.
 
-        Supported formats are ELF, HEX, SREC and plain binary
+        Supported formats are ELF, HEX, SREC and plain binary. The method automatically
+        detects the file format and loads it accordingly. If format detection fails,
+        it can fallback to binary loading if enabled.
 
-        :param path: Path to the file.
-        :param name: Name of Image, defaults to file name.
-        :param size: Image size, defaults to 0.
-        :param offset: Additional image offset in parent image, defaults to None
-        :param description: Text description of image, defaults to None
-        :param pattern: Optional binary pattern.
-        :param search_paths: List of paths where to search for the file, defaults to None
-        :param alignment: Optional alignment of result image
-        :param load_bin: Load as binary in case of every other format load fails
-        :param parent_image: Optional parent image reference, it will be used to compute optional offset
-        :raises SPSDKError: The binary file cannot be loaded.
-        :return: Binary data represented in BinaryImage class.
+        :param path: Path to the binary file to load.
+        :param name: Name of the image, defaults to file name if not provided.
+        :param size: Expected image size in bytes, defaults to 0 for auto-detection.
+        :param offset: Additional image offset in parent image, defaults to None.
+        :param description: Text description of the image, defaults to auto-generated.
+        :param pattern: Optional binary pattern to apply to the image.
+        :param search_paths: List of paths where to search for the file.
+        :param alignment: Alignment requirement for the result image in bytes.
+        :param load_bin: Load as binary if other format loading fails.
+        :param parent_image: Optional parent image reference for offset computation.
+        :raises SPSDKError: The binary file cannot be loaded or accessed.
+        :return: Binary data represented as BinaryImage object.
         """
         path = find_file(path, search_paths=search_paths)
         try:

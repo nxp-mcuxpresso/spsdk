@@ -300,7 +300,7 @@ features:
     spl_load_address: 0x20480000
     spl_core_id: cortex-a55
     spl_meta_data_start_cpu_id: 2
-    spl_image_size_alignment: 0x400
+    spl_ddr_image_size_alignment: 0x400
 
     atf_load_address: 0x8a200000
     atf_core_id: cortex-a55
@@ -321,12 +321,14 @@ features:
     kernel_core_id: cortex-a55
     kernel_meta_data_start_cpu_id: 2
     kernel_chunk_size: 0x700000
+    kernel_image_size_alignment: 0x400
 
     dtb_load_address: 0x93000000
     dtb_core_id: cortex-a55
     dtb_meta_data_start_cpu_id: 0
     dtb_entry_point: 0x0
     dtb_image_type: data
+    dtb_image_size_alignment: 0x400
 
     extra_images:
       [

@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Tests for 'pfr' application."""
+"""SPSDK PFR CLI application test suite.
+
+This module contains comprehensive tests for the PFR (Protected Flash Region)
+command-line interface functionality, covering configuration generation,
+validation, and export operations for NXP MCU secure provisioning.
+"""
+
 import filecmp
 import logging
 import os
@@ -20,8 +26,14 @@ from spsdk.utils.misc import load_binary, load_configuration, use_working_direct
 from tests.cli_runner import CliRunner
 
 
-def test_command_line_interface(cli_runner: CliRunner):
-    """Test the CLI."""
+def test_command_line_interface(cli_runner: CliRunner) -> None:
+    """Test the CLI main command help functionality.
+
+    Validates that the CLI main command responds correctly to the --help flag
+    and displays the expected help message content.
+
+    :param cli_runner: Click CLI test runner for invoking CLI commands.
+    """
     result = cli_runner.invoke(cli.main, ["--help"])
     assert "Show this message and exit." in result.output
 
@@ -52,8 +64,21 @@ def test_command_line_interface(cli_runner: CliRunner):
         ("mcxl255", "cmpa"),
     ],
 )
-def test_generate_all(cli_runner: CliRunner, data_dir, tmpdir, name, type):
-    """Test PFR CLI - Generation CMPA binary for all interesting parts."""
+def test_generate_all(
+    cli_runner: CliRunner, data_dir: str, tmpdir: str, name: str, type: str
+) -> None:
+    """Test PFR CLI export command for generating CMPA binary files.
+
+    Validates that the PFR CLI export command correctly generates binary files
+    for all supported device types by comparing generated output with expected
+    reference files.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param data_dir: Base directory containing test data files.
+    :param tmpdir: Temporary directory for output files.
+    :param name: Device name identifier for test files.
+    :param type: Device type identifier for test files.
+    """
     test_data_dir = os.path.join(data_dir, "yaml_bin")
 
     cmd = [
@@ -67,11 +92,22 @@ def test_generate_all(cli_runner: CliRunner, data_dir, tmpdir, name, type):
     logging.debug(cmd)
     cli_runner.invoke(cli.main, cmd)
     new_data = load_binary(f"{tmpdir}/{name}_{type}.bin")
-    expected = load_binary(f"{test_data_dir}/{name}_{type}.bin", "rb")
+    expected = load_binary(f"{test_data_dir}/{name}_{type}.bin")
     assert new_data == expected
 
 
-def test_generate_cmpa_validate_export(cli_runner: CliRunner, data_dir, tmpdir):
+def test_generate_cmpa_validate_export(cli_runner: CliRunner, data_dir: str, tmpdir: str) -> None:
+    """Test CMPA export command with different configuration combinations.
+
+    This test validates that the CMPA export command produces identical binary output
+    when using different configuration approaches: basic config, cert block config,
+    MBI config, and secret file config. It ensures consistency across different
+    configuration methods for the same target device.
+
+    :param cli_runner: CLI test runner for invoking commands.
+    :param data_dir: Directory containing test data files and configurations.
+    :param tmpdir: Temporary directory for output files.
+    """
     out_file = os.path.join(tmpdir, "cmpa_mcxn9xx.bin")
     cmd_cmpa_config = [
         "export",
@@ -89,13 +125,13 @@ def test_generate_cmpa_validate_export(cli_runner: CliRunner, data_dir, tmpdir):
         os.path.join(data_dir, "mbi_config_mcxn9xx.yaml"),
     ]
     cmd_secret_file = cmd_cmpa_config + [
-        f"--secret-file",
+        "--secret-file",
         os.path.join(data_dir, "keys", "ROT1_p384.pem"),
-        f"--secret-file",
+        "--secret-file",
         os.path.join(data_dir, "keys", "ROT2_p384.pem"),
-        f"--secret-file",
+        "--secret-file",
         os.path.join(data_dir, "keys", "ROT3_p384.pem"),
-        f"--secret-file",
+        "--secret-file",
         os.path.join(data_dir, "keys", "ROT4_p384.pem"),
     ]
 
@@ -109,8 +145,17 @@ def test_generate_cmpa_validate_export(cli_runner: CliRunner, data_dir, tmpdir):
         assert reference_binary == load_binary(out_file)
 
 
-def test_generate_cmpa(cli_runner: CliRunner, data_dir, tmpdir):
-    """Test PFR CLI - Generation CMPA binary."""
+def test_generate_cmpa(cli_runner: CliRunner, data_dir: str, tmpdir: str) -> None:
+    """Test PFR CLI command for generating CMPA binary output.
+
+    Validates that the PFR export command correctly generates a CMPA (Customer Manufacturing Programming Area)
+    binary file by comparing the generated output against expected reference data. The test uses a 96MHz
+    configuration with RSA2048 private key for signing.
+
+    :param cli_runner: Click CLI test runner for invoking commands
+    :param data_dir: Directory path containing test input files and expected outputs
+    :param tmpdir: Temporary directory path for generated test outputs
+    """
     cmd = [
         "export",
         "--output",
@@ -127,8 +172,18 @@ def test_generate_cmpa(cli_runner: CliRunner, data_dir, tmpdir):
     assert new_data == expected
 
 
-def test_generate_cmpa_with_elf2sb(cli_runner: CliRunner, data_dir, tmpdir):
-    """Test PFR CLI - Generation CMPA binary with elf2sb."""
+def test_generate_cmpa_with_elf2sb(cli_runner: CliRunner, data_dir: str, tmpdir: str) -> None:
+    """Test PFR CLI generation of CMPA binary with elf2sb configuration.
+
+    This test verifies that the PFR CLI can generate CMPA binaries using different
+    methods: direct key specification via command line and key specification through
+    elf2sb configuration files. It ensures that both approaches produce identical
+    results and validates error handling for invalid configurations.
+
+    :param cli_runner: CLI test runner for invoking command-line interface.
+    :param data_dir: Directory path containing test data files and configurations.
+    :param tmpdir: Temporary directory path for output file generation.
+    """
     org_file = f"{tmpdir}/org.bin"
     new_file = f"{tmpdir}/new.bin"
     big_file = f"{tmpdir}/big.bin"
@@ -150,8 +205,18 @@ def test_generate_cmpa_with_elf2sb(cli_runner: CliRunner, data_dir, tmpdir):
     assert filecmp.cmp(org_file, new_file)
 
 
-def test_generate_cmpa_with_elf2sb_lpc55s3x(data_dir, tmpdir):
-    """Test PFR CLI - Generation CMPA binary with elf2sb."""
+def test_generate_cmpa_with_elf2sb_lpc55s3x(data_dir: str, tmpdir: str) -> None:
+    """Test PFR CLI command for generating CMPA binary with elf2sb configuration.
+
+    This test verifies that the PFR export command can successfully generate a CMPA
+    (Customer Manufacturing Programming Area) binary file using elf2sb configuration
+    for LPC55S3x devices. The test compares the generated output with a reference file
+    to ensure correctness.
+
+    :param data_dir: Directory path containing test data files including configuration files and reference binary
+    :param tmpdir: Temporary directory path where the generated output file will be created
+    :raises AssertionError: If the CLI command fails or generated file doesn't match reference file
+    """
     new = f"{tmpdir}/new.bin"
     org = "cmpa_lpc55s3x.bin"
     cmd = f"export --config cmpa_lpc55s3x.json -e mbi_config_lpc55s3x.yaml -o {new}"
@@ -162,8 +227,16 @@ def test_generate_cmpa_with_elf2sb_lpc55s3x(data_dir, tmpdir):
         assert filecmp.cmp(org, new)
 
 
-def test_generate_cmpa_raw(cli_runner: CliRunner, data_dir, tmpdir):
-    """Test PFR CLI - Generation CMPA binary."""
+def test_generate_cmpa_raw(cli_runner: CliRunner, data_dir: str, tmpdir: str) -> None:
+    """Test PFR CLI export command for CMPA binary generation.
+
+    Verifies that the PFR CLI export command correctly generates a CMPA binary file
+    from a YAML configuration file by comparing the output with expected binary data.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param data_dir: Path to directory containing test data files.
+    :param tmpdir: Path to temporary directory for output files.
+    """
     cmd = [
         "export",
         "--output",
@@ -177,8 +250,16 @@ def test_generate_cmpa_raw(cli_runner: CliRunner, data_dir, tmpdir):
     assert new_data == expected
 
 
-def test_parse(cli_runner: CliRunner, data_dir, tmpdir):
-    """Test PFR CLI - Parsing CMPA binary to get config."""
+def test_parse(cli_runner: CliRunner, data_dir: str, tmpdir: str) -> None:
+    """Test PFR CLI parsing functionality for CMPA binary files.
+
+    Validates that the PFR CLI can successfully parse a CMPA binary file and generate
+    a configuration file that produces equivalent CMPA data when loaded back.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param data_dir: Path to directory containing test data files.
+    :param tmpdir: Temporary directory path for output files.
+    """
     cmd = [
         "parse",
         "--family",
@@ -262,8 +343,18 @@ def test_parse(cli_runner: CliRunner, data_dir, tmpdir):
         ("nhs52s04", "cmpa"),
     ],
 )
-def test_user_config(cli_runner: CliRunner, tmpdir, family, type):
-    """Test PFR CLI - Generation CMPA user config."""
+def test_user_config(cli_runner: CliRunner, tmpdir: str, family: str, type: str) -> None:
+    """Test PFR CLI generation of CMPA user configuration template.
+
+    This test verifies that the PFR CLI can successfully generate a user configuration
+    template file and that the generated configuration contains the expected family
+    and type values.
+
+    :param cli_runner: Click CLI test runner for invoking CLI commands
+    :param tmpdir: Temporary directory path for output files
+    :param family: Target MCU family name for PFR configuration
+    :param type: PFR configuration type (e.g., CMPA, CFPA)
+    """
     cmd = [
         "get-template",
         "--family",
@@ -285,7 +376,7 @@ def test_user_config(cli_runner: CliRunner, tmpdir, family, type):
     "test_pass,dfl_niden,dfl_inverse,ignore",
     [
         (True, 0x0, 0xFFFF, False),  # OK
-        (True, 0x0, 0xFFFE, False),  # breaking rule 1.4
+        (False, 0x0, 0xFFFE, False),  # breaking rule 1.4
         (True, 0x0, 0xFFFE, True),  # breaking rule 1.4
         (True, 0x1, 0xFFFE, True),  # breaking rule 1.7
         (False, 0x1, 0xFFFE, False),  # breaking rule 1.7
@@ -293,17 +384,31 @@ def test_user_config(cli_runner: CliRunner, tmpdir, family, type):
 )
 def test_pfrc_integration_1(
     cli_runner: CliRunner,
-    tmp_path,
-    data_dir,
-    test_pass,
-    dfl_niden,
-    dfl_inverse,
-    ignore,
-):
+    tmp_path: str,
+    data_dir: str,
+    test_pass: bool,
+    dfl_niden: int,
+    dfl_inverse: int,
+    ignore: bool,
+) -> None:
+    """Test PFRC integration with configurable NIDEN and INVERSE_VALUE settings.
+
+    This test creates a CMPA configuration file with specified NIDEN and INVERSE_VALUE
+    bitfield settings, then runs the pfrc export command to verify proper handling
+    of these security configurations.
+
+    :param cli_runner: Click CLI test runner for command execution.
+    :param tmp_path: Temporary directory path for test files.
+    :param data_dir: Directory containing test data files.
+    :param test_pass: Expected test outcome - True for success, False for failure.
+    :param dfl_niden: NIDEN bitfield value to set in DCFG_CC_SOCU_DFLT.
+    :param dfl_inverse: INVERSE_VALUE bitfield value to set in DCFG_CC_SOCU_DFLT.
+    :param ignore: Whether to add --ignore flag to the export command.
+    """
     cmpa_config_template = os.path.join(data_dir, "cmpa_lpc55s3x_default.yaml")
     config = load_configuration(cmpa_config_template)
     config["settings"]["DCFG_CC_SOCU_DFLT"]["bitfields"]["NIDEN"] = dfl_niden
-    config["settings"]["DCFG_CC_SOCU_DFLT"]["bitfields"]["INVERSE_VALUE"] = dfl_inverse
+    config["settings"]["DCFG_CC_SOCU_DFLT"]["bitfields"]["Inverse_value"] = dfl_inverse
     cmpa_config_path = os.path.join(tmp_path, "output.yaml")
     output_bin = os.path.join(tmp_path, "pfr.bin")
     with open(cmpa_config_path, "w") as fp:
@@ -326,8 +431,20 @@ def test_pfrc_integration_1(
         ("cert_block_v21.bin"),
     ],
 )
-def test_generate_cmpa_certblock_lpc55s3x(cli_runner: CliRunner, data_dir, tmpdir, secret):
-    """Test PFR CLI - Generation CMPA binary with elf2sb."""
+def test_generate_cmpa_certblock_lpc55s3x(
+    cli_runner: CliRunner, data_dir: str, tmpdir: str, secret: str
+) -> None:
+    """Test PFR CLI - Generation CMPA binary with elf2sb.
+
+    Test the PFR CLI export command for generating CMPA (Customer Manufacturing Programming Area)
+    binary file for LPC55S3x device using elf2sb tool. Verifies that the generated binary matches
+    the expected reference file.
+
+    :param cli_runner: Click CLI test runner for invoking commands
+    :param data_dir: Directory path containing test data files
+    :param tmpdir: Temporary directory path for output files
+    :param secret: Secret/password string for encryption
+    """
     new = f"{tmpdir}/new.bin"
     org = "cmpa_lpc55s3x.bin"
     cmd = f"export --config cmpa_lpc55s3x.json -e {secret} -o {new}"
