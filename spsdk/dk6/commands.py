@@ -5,7 +5,14 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""DK6 Device Commands."""
+"""DK6 device communication commands and responses.
+
+This module provides command and response structures for communicating with DK6 devices,
+including memory operations, device identification, and status management. It defines
+command packets, response parsing, and various memory access utilities for the DK6
+protocol implementation.
+"""
+
 from struct import unpack_from
 from typing import Optional, Type, Union
 
@@ -13,7 +20,12 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 class StatusCode(SpsdkEnum):
-    """DK6 Command Status Codes."""
+    """DK6 Command Status Codes enumeration.
+
+    This enumeration defines all possible status codes returned by DK6 commands,
+    including success status and various error conditions for memory operations,
+    authentication, and communication failures.
+    """
 
     OK = (0x00, "OK", "Success")
     MEMORY_INVALID_MODE = (0xEF, "MEMORY_INVALID_MODE", "Memory invalid mode")
@@ -36,7 +48,12 @@ class StatusCode(SpsdkEnum):
 
 
 class ResponseTag(SpsdkEnum):
-    """DK6 Responses to Commands."""
+    """DK6 Response Tag Enumeration.
+
+    Enumeration of response tags used in DK6 protocol communication to identify
+    different types of responses from the target device including memory operations,
+    chip identification, and ISP unlock responses.
+    """
 
     RESET = (0x15, "ResetResponse", "Reset Response")
     EXECUTE = (0x22, "ExecuteResponse", "Execute Response")
@@ -53,7 +70,12 @@ class ResponseTag(SpsdkEnum):
 
 
 class CommandTag(SpsdkEnum):
-    """DK6 Commands."""
+    """DK6 command enumeration for device communication protocol.
+
+    This enumeration defines all supported commands for DK6 device communication,
+    including memory operations, device control, and ISP functionality. Each command
+    contains the command code, internal name, and human-readable description.
+    """
 
     RESET = (0x14, "ResetCommand", "Reset Command")
     EXECUTE = (0x21, "ExecuteCommand", "Execute Command")
@@ -70,7 +92,12 @@ class CommandTag(SpsdkEnum):
 
 
 class MemoryId(SpsdkEnum):
-    """DK6 Memory IDs."""
+    """DK6 Memory ID enumeration.
+
+    This enumeration defines the available memory types and their corresponding
+    identifiers for DK6 device operations including flash programming, configuration
+    access, and memory management operations.
+    """
 
     FLASH = (0x00, "FLASH")
     PSECT = (0x01, "PSECT")
@@ -83,7 +110,12 @@ class MemoryId(SpsdkEnum):
 
 
 class MemoryType(SpsdkEnum):
-    """DK6 Memory Types."""
+    """DK6 Memory Types enumeration.
+
+    This enumeration defines the available memory types for DK6 operations,
+    including ROM, FLASH, RAM, and EFUSE memory types with their corresponding
+    identifiers and descriptions.
+    """
 
     ROM = (0x00, "ROM", "Read only memory")
     FLASH = (0x01, "FLASH", "FLASH memory")
@@ -92,7 +124,12 @@ class MemoryType(SpsdkEnum):
 
 
 class MemoryAccessValues(SpsdkEnum):
-    """DK6 Memory Access Values."""
+    """DK6 Memory Access Permission Values.
+
+    Enumeration defining memory access permission values for DK6 operations.
+    Each value represents a specific type of memory access that can be enabled
+    or disabled for security and operational control.
+    """
 
     READ = (0x00, "Read Enabled")
     WRITE = (0x01, "Write Enabled")
@@ -103,46 +140,85 @@ class MemoryAccessValues(SpsdkEnum):
 
 
 class CmdPacket:
-    """DK6 command packet format class."""
+    """DK6 command packet representation.
+
+    This class encapsulates command data for DK6 operations, providing methods
+    for packet creation, comparison, serialization, and debugging information.
+    """
 
     def __init__(self, data: bytes) -> None:
         """Initialize the Command Packet object.
 
-        :param data: Command data, defaults to None
+        :param data: Command data bytes to be stored in the packet.
         """
         self.data = data
 
     def __eq__(self, obj: object) -> bool:
+        """Check equality between two CmdPacket objects.
+
+        Compares this CmdPacket instance with another object by checking if the other object
+        is also a CmdPacket instance and has identical attributes.
+
+        :param obj: Object to compare with this CmdPacket instance.
+        :return: True if objects are equal CmdPacket instances with same attributes, False otherwise.
+        """
         return isinstance(obj, CmdPacket) and vars(obj) == vars(self)
 
     def __ne__(self, obj: object) -> bool:
+        """Check if two objects are not equal.
+
+        This method implements the inequality comparison by negating the equality comparison.
+
+        :param obj: Object to compare with this instance.
+        :return: True if objects are not equal, False if they are equal.
+        """
         return not self.__eq__(obj)
 
     def __str__(self) -> str:
+        """Return string representation of the object.
+
+        The method provides a formatted string representation by wrapping the info() method
+        output in angle brackets for better readability.
+
+        :return: String representation in format "<info_content>".
+        """
         return "<" + self.info() + ">"
 
     def info(self) -> str:
-        """Get object info."""
+        """Get object info.
+
+        Returns a string representation of the CMDPacket object showing its data bytes in hexadecimal format.
+
+        :return: String representation in format "CMDPacket[XX, XX, ...]" where XX are hex bytes.
+        """
         return "CMDPacket[" + ", ".join(f"{b:02X}" for b in self.data) + "]"
 
     def export(self) -> Optional[bytes]:
         """Export CmdPacket into bytes.
 
-        :return: Exported object into bytes
+        :return: Exported object data as bytes, or None if no data is available.
         """
         return self.data
 
 
 class CmdResponse:
-    """DK6 response base format class."""
+    """DK6 command response handler.
+
+    This class represents and manages DK6 command responses, providing parsing
+    and formatting capabilities for response data including status codes and
+    raw message content.
+
+    :cvar MSG_OFFSET: Offset position for message data in response buffer.
+    """
 
     MSG_OFFSET = 1
 
     def __init__(self, cmd_type: int, raw_data: bytes) -> None:
         """Initialize the Command Response object.
 
-        :param header: Header for the response
-        :param raw_data: Response data
+        :param cmd_type: Command type identifier
+        :param raw_data: Raw response data as bytes
+        :raises AssertionError: If raw_data is not bytes or bytearray type
         """
         assert isinstance(raw_data, (bytes, bytearray))
         self.type = cmd_type
@@ -150,16 +226,41 @@ class CmdResponse:
         self.raw_data = raw_data
 
     def __eq__(self, obj: object) -> bool:
+        """Check equality of two CmdResponse objects.
+
+        Compares this CmdResponse instance with another object by checking if the other object
+        is also a CmdResponse instance and has identical attributes.
+
+        :param obj: Object to compare with this CmdResponse instance.
+        :return: True if objects are equal CmdResponse instances with same attributes, False otherwise.
+        """
         return isinstance(obj, CmdResponse) and vars(obj) == vars(self)
 
     def __ne__(self, obj: object) -> bool:
+        """Check if this object is not equal to another object.
+
+        This method implements the inequality comparison operator by negating the equality check.
+
+        :param obj: Object to compare with this instance.
+        :return: True if objects are not equal, False if they are equal.
+        """
         return not self.__eq__(obj)
 
     def __str__(self) -> str:
+        """Return string representation of the object.
+
+        :return: String representation in format "<info()>".
+        """
         return "<" + self.info() + ">"
 
     def info(self) -> str:
-        """Get object info."""
+        """Get object info.
+
+        Returns a formatted string containing the object's status, type, and raw data
+        in hexadecimal format.
+
+        :return: Formatted string with status, type and raw data in hex format.
+        """
         return (
             f"Status=0x{self.status:02X}"
             + f"Type=0x{self.type:02X}"
@@ -169,6 +270,14 @@ class CmdResponse:
         )
 
     def _get_status_label(self) -> str:
+        """Get human-readable label for the status code.
+
+        Converts the status code to a readable string representation. If the status code
+        is recognized by StatusCode enum, returns its label. Otherwise, returns a formatted
+        string with the hexadecimal value.
+
+        :return: Human-readable status label or formatted unknown status string.
+        """
         return (
             StatusCode.get_label(self.status)
             if StatusCode.contains(self.status)
@@ -177,51 +286,85 @@ class CmdResponse:
 
 
 class GenericResponse(CmdResponse):
-    """DK6 generic response format class."""
+    """DK6 generic response format class.
+
+    This class represents a standard response format for DK6 commands, providing
+    a generic structure for handling command responses with status information
+    and formatted output capabilities.
+    """
 
     def info(self) -> str:
-        """Get object info."""
+        """Get object info.
+
+        Returns a formatted string containing the object's tag and status information.
+
+        :return: Formatted string with tag and status details.
+        """
         tag = ResponseTag.get_label(self.type)
         status = self._get_status_label()
         return f"Tag={tag}, Status={status}"
 
 
 class IspUnlockResponse(CmdResponse):
-    """ISP Unlock response format class."""
+    """ISP Unlock response format class.
+
+    This class represents the response received from an ISP (In-System Programming) unlock command,
+    providing authentication status and response details for secure provisioning operations.
+    """
 
     def __init__(self, cmd_type: int, raw_data: bytes) -> None:
         """Initialize the Command Response object.
 
-        :param header: Header for the response
+        :param cmd_type: Type of the command
         :param raw_data: Response data
         """
         super().__init__(cmd_type, raw_data)
         self.authenticated = self.status == StatusCode.OK
 
     def info(self) -> str:
-        """Get object info."""
+        """Get object info.
+
+        Returns a formatted string containing the object's tag, status, and authentication state.
+
+        :return: Formatted string with tag, status, and authenticated information.
+        """
         tag = ResponseTag.get_label(self.type)
         status = self._get_status_label()
         return f"Tag={tag}, Status={status}, Authenticated={self.authenticated}"
 
 
 class GetChipIdResponse(CmdResponse):
-    """Chip get info response format class."""
+    """DK6 command response for chip identification operations.
+
+    This class handles the response data from chip ID retrieval commands,
+    parsing the chip ID and version information from the raw response data.
+
+    :cvar FORMAT: Binary format string for unpacking chip ID and version data.
+    """
 
     FORMAT = "<II"
 
     def __init__(self, cmd_type: int, raw_data: bytes) -> None:
         """Initialize the Flash-Read-Once response object.
 
-        :param header: Header for the response
-        :param raw_data: Response data
+        Creates a response object for Flash-Read-Once command with chip identification data.
+        When status is OK, extracts chip ID and version from the raw response data.
+
+        :param cmd_type: Command type identifier for the response
+        :param raw_data: Raw response data containing chip information
         """
         super().__init__(cmd_type, raw_data)
         if self.status == StatusCode.OK:
             (self.chip_id, self.chip_version) = unpack_from(self.FORMAT, raw_data, self.MSG_OFFSET)
 
     def info(self) -> str:
-        """Get object info."""
+        """Get object information as formatted string.
+
+        Returns a formatted string containing the response tag, status, and optionally
+        chip ID and version information when the status is OK.
+
+        :return: Formatted string with object information including tag, status, and chip details.
+        """
         tag = ResponseTag.get_label(self.type)
         status = self._get_status_label()
         if self.status == StatusCode.OK:
@@ -230,7 +373,15 @@ class GetChipIdResponse(CmdResponse):
 
 
 class MemGetInfoResponse(CmdResponse):
-    """Memory get info response format class."""
+    """Memory get info response handler for DK6 bootloader commands.
+
+    This class processes and parses responses from memory get info commands,
+    extracting memory properties such as base address, length, sector size,
+    memory type, and access permissions when the command executes successfully.
+
+    :cvar FORMAT: Binary format string for unpacking response data.
+    :cvar MEM_NAME_OFFSET: Byte offset where memory name starts in response.
+    """
 
     FORMAT = "<BIIIBB"
     MEM_NAME_OFFSET = 15
@@ -238,8 +389,12 @@ class MemGetInfoResponse(CmdResponse):
     def __init__(self, cmd_type: int, raw_data: bytes) -> None:
         """Initialize the Flash-Read-Once response object.
 
-        :param header: Header for the response
-        :param raw_data: Response data
+        Parses the raw response data to extract memory information including
+        memory name, ID, base address, length, sector size, type, and access permissions.
+
+        :param cmd_type: Command type identifier for the response
+        :param raw_data: Raw response data containing memory information
+        :raises SPSDKError: If response parsing fails or data is corrupted
         """
         super().__init__(cmd_type, raw_data)
         if self.status == StatusCode.OK:
@@ -254,7 +409,14 @@ class MemGetInfoResponse(CmdResponse):
             ) = unpack_from(self.FORMAT, raw_data, self.MSG_OFFSET)
 
     def info(self) -> str:
-        """Get object info."""
+        """Get object information as formatted string.
+
+        Returns detailed memory information including tag, status, memory name, ID, base address,
+        length, sector size, memory type, and access permissions when status is OK. For non-OK
+        status, returns only tag and status information.
+
+        :return: Formatted string containing object information details.
+        """
         tag = ResponseTag.get_label(self.type)
         status = self._get_status_label()
         if self.status == StatusCode.OK:
@@ -271,22 +433,36 @@ class MemGetInfoResponse(CmdResponse):
 
 
 class MemOpenResponse(CmdResponse):
-    """Memory open response format class."""
+    """Memory open response handler for DK6 commands.
+
+    This class processes and parses responses from memory open operations,
+    extracting the memory handle when the operation is successful and providing
+    formatted information about the response status.
+
+    :cvar FORMAT: Binary format string for unpacking response data.
+    """
 
     FORMAT = "<B"
 
     def __init__(self, cmd_type: int, raw_data: bytes) -> None:
         """Initialize the Command Response object.
 
-        :param header: Header for the response
+        :param cmd_type: Type of the command
         :param raw_data: Response data
+        :raises SPSDKError: If command processing fails
         """
         super().__init__(cmd_type, raw_data)
         if self.status == StatusCode.OK:
             self.handle = unpack_from(self.FORMAT, raw_data, self.MSG_OFFSET)
 
     def info(self) -> str:
-        """Get object info."""
+        """Get object information as formatted string.
+
+        Returns a formatted string containing the response tag, status, and optionally
+        the handle if the status is OK.
+
+        :return: Formatted string with object information including tag, status and handle.
+        """
         tag = ResponseTag.get_label(self.type)
         status = self._get_status_label()
         if self.status == StatusCode.OK:
@@ -295,13 +471,18 @@ class MemOpenResponse(CmdResponse):
 
 
 class MemReadResponse(CmdResponse):
-    """Memory open response format class."""
+    """Memory read response handler for DK6 commands.
+
+    This class processes and manages response data from memory read operations,
+    parsing the raw response data and extracting the actual memory content
+    when the operation is successful.
+    """
 
     def __init__(self, cmd_type: int, raw_data: bytes) -> None:
         """Initialize the Command Response object.
 
-        :param header: Header for the response
-        :param raw_data: Response data
+        :param cmd_type: Command type identifier
+        :param raw_data: Raw response data bytes
         """
         super().__init__(cmd_type, raw_data)
         self.data = b""
@@ -309,7 +490,13 @@ class MemReadResponse(CmdResponse):
             self.data = self.raw_data[self.MSG_OFFSET :]
 
     def info(self) -> str:
-        """Get object info."""
+        """Get object info.
+
+        Returns a formatted string containing the response tag, status, and data bytes
+        in hexadecimal format for debugging and logging purposes.
+
+        :return: Formatted string with tag label, status label, and hex data.
+        """
         tag = ResponseTag.get_label(self.type)
         status = self._get_status_label()
         data = ", ".join(f"{b:02X}" for b in self.data)
@@ -317,40 +504,77 @@ class MemReadResponse(CmdResponse):
 
 
 class MemWriteResponse(CmdResponse):
-    """Memory open response format class."""
+    """Memory write response format class.
+
+    This class represents the response format for memory write operations in DK6 protocol,
+    providing structured access to response data and status information.
+    """
 
     def info(self) -> str:
-        """Get object info."""
+        """Get object info.
+
+        Returns formatted string containing tag and status information for the object.
+
+        :return: Formatted string with tag and status details.
+        """
         tag = ResponseTag.get_label(self.type)
         status = self._get_status_label()
         return f"Tag={tag}, Status={status}"
 
 
 class MemEraseResponse(CmdResponse):
-    """Memory open response format class."""
+    """Memory erase response format class.
+
+    This class represents the response format for memory erase operations in DK6 protocol,
+    providing structured access to response data and status information.
+    """
 
     def info(self) -> str:
-        """Get object info."""
+        """Get object info.
+
+        Returns formatted string containing tag and status information for the object.
+
+        :return: Formatted string with tag and status labels.
+        """
         tag = ResponseTag.get_label(self.type)
         status = self._get_status_label()
         return f"Tag={tag}, Status={status}"
 
 
 class MemBlankCheckResponse(CmdResponse):
-    """Memory open response format class."""
+    """Memory blank check response format class.
+
+    This class represents the response format for memory blank check operations
+    in DK6 protocol, providing structured access to the response data and status
+    information.
+    """
 
     def info(self) -> str:
-        """Get object info."""
+        """Get object info.
+
+        Returns formatted string containing tag and status information for the object.
+
+        :return: Formatted string with tag and status details.
+        """
         tag = ResponseTag.get_label(self.type)
         status = self._get_status_label()
         return f"Tag={tag}, Status={status}"
 
 
 class MemCloseResponse(CmdResponse):
-    """DK6 memory close response format class."""
+    """DK6 memory close response format class.
+
+    This class represents the response format for DK6 memory close operations,
+    providing structured access to response data and status information.
+    """
 
     def info(self) -> str:
-        """Get object info."""
+        """Get object info.
+
+        Returns formatted string containing tag and status information for the object.
+
+        :return: Formatted string with tag and status details.
+        """
         tag = ResponseTag.get_label(self.type)
         status = self._get_status_label()
         return f"Tag={tag}, Status={status}"
@@ -369,11 +593,16 @@ def parse_cmd_response(data: bytes, frame_type: int) -> Union[
     MemGetInfoResponse,
     IspUnlockResponse,
 ]:
-    """Parse command response.
+    """Parse command response based on frame type.
 
-    :param data: Input data in bytes
-    :param frame_type: Frame Type
-    :return: Parsed object from data
+    This method analyzes the frame type and returns the appropriate response object
+    for the given command. It supports various DK6 protocol responses including
+    memory operations, chip identification, and ISP unlock commands.
+
+    :param data: Raw response data received from the device.
+    :param frame_type: Frame type identifier that determines response format.
+    :return: Parsed response object specific to the command type, or generic
+             CmdResponse if frame type is unknown.
     """
     known_response: dict[ResponseTag, Type[CmdResponse]] = {
         ResponseTag.RESET: GenericResponse,

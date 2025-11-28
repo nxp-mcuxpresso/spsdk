@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Sub-set of EL2GO-HOST commands related to Product-Based Provisioning."""
+"""SPSDK EL2GO production provisioning commands and utilities.
+
+This module provides command-line interface and functionality for product-based
+provisioning operations using EdgeLock 2GO services. It includes commands for
+device preparation, secure object management, provisioning execution, and
+database operations in production environments.
+"""
 
 import time
 from typing import Optional
@@ -113,7 +119,7 @@ def prod_get_next_so_command(database: str, remote_database: str, output: str) -
     type=click.Path(exists=True),
     help="Path to existing database with secure objects",
 )
-@optgroup.option(  # type: ignore[arg-type]
+@optgroup.option(
     "-rdb",
     "--remote-database",
     help="URL to remote database with secure objects",
@@ -153,7 +159,23 @@ def prod_store_report_command(database: str, remote_database: str, report: str) 
     help="Path to file with secure object file for provisioning",
 )
 @spsdk_config_option()
-@click.option("--dry-run", is_flag=True, help="Perform a dry run without actual provisioning")
+@click.option(
+    "-w",
+    "--workspace",
+    type=click.Path(file_okay=False),
+    help="Path to a folder for storing data used during provisioning for debugging purposes.",
+)
+@click.option(
+    "--clean",
+    is_flag=True,
+    default=False,
+    help="Clean deployed Secure objects from last run (if applicable for given device).",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Perform a dry run without actual provisioning",
+)
 @spsdk_output_option(required=False, help="Optional output path for provisioning report")
 def prod_provision_device_command(
     interface: EL2GOInterfaceHandler,
@@ -162,6 +184,8 @@ def prod_provision_device_command(
     remote_database: str,
     secure_objects_file: str,
     output: str,
+    workspace: str,
+    clean: bool,
     dry_run: bool = False,
 ) -> None:
     """Execute EdgeLock 2GO product provisioning process.
@@ -173,27 +197,36 @@ def prod_provision_device_command(
         4) Store the provisioning report
     """
     prod_provision_device(
-        interface, config, database, remote_database, secure_objects_file, output, dry_run
+        interface,
+        config,
+        database,
+        remote_database,
+        secure_objects_file,
+        output,
+        workspace,
+        clean,
+        dry_run,
     )
 
 
 def prod_provision_device(
     interface: EL2GOInterfaceHandler,
     config: Config,
-    database: Optional[str],
-    remote_database: Optional[str],
-    secure_objects_file: Optional[str],
-    output: Optional[str],
+    database: Optional[str] = None,
+    remote_database: Optional[str] = None,
+    secure_objects_file: Optional[str] = None,
+    output: Optional[str] = None,
+    workspace: Optional[str] = None,
+    clean: bool = False,
     dry_run: bool = False,
 ) -> None:
     """Execute EdgeLock 2GO product-based provisioning process."""
     client = EL2GOTPClient.load_from_config(config)
     secure_object = _retrieve_secure_objects(database, remote_database, secure_objects_file)
-    interface.write_secure_objects_prod(client=client, secure_objects=secure_object)
-    report = interface.run_batch_provisioning(
-        client=client,
-        dry_run=dry_run,
+    interface.write_secure_objects_prod(
+        client=client, secure_objects=secure_object, workspace=workspace, clean=clean
     )
+    report = interface.run_batch_provisioning(client=client, dry_run=dry_run)
     if not report:
         click.echo("No provisioning report available.")
         return
@@ -229,6 +262,18 @@ def prod_provision_device(
     is_flag=True,
     help="Perform check after reset to validate Provisioning FW is running",
 )
+@click.option(
+    "-w",
+    "--workspace",
+    type=click.Path(file_okay=False),
+    help="Path to a folder for storing data used during provisioning for debugging purposes.",
+)
+@click.option(
+    "--clean",
+    is_flag=True,
+    default=False,
+    help="Clean deployed Secure objects from last run (if applicable for given device).",
+)
 def prod_prepare_device_command(
     interface: EL2GOInterfaceHandler,
     config: Config,
@@ -236,6 +281,8 @@ def prod_prepare_device_command(
     remote_database: str,
     secure_objects_file: str,
     check_fw: bool,
+    workspace: str,
+    clean: bool,
 ) -> None:
     """Prepare device for EdgeLock 2GO provisioning process.
 
@@ -251,6 +298,8 @@ def prod_prepare_device_command(
         remote_database=remote_database,
         secure_objects_file=secure_objects_file,
         check_fw=check_fw,
+        workspace=workspace,
+        clean=clean,
     )
 
 
@@ -261,6 +310,8 @@ def prod_prepare_device(
     remote_database: str,
     secure_objects_file: str,
     check_fw: bool = False,
+    workspace: Optional[str] = None,
+    clean: bool = False,
 ) -> None:
     """Prepare device for EdgeLock 2GO provisioning process.
 
@@ -269,10 +320,16 @@ def prod_prepare_device(
     Reset the interface and optionally check firmware version
     """
     client = EL2GOTPClient.load_from_config(config)
+    if client.use_oem_app:
+        interface.prepare(client.loader)
+        click.echo("Bootloader has been loaded")
+        return
     if not client.use_dispatch_fw:
         raise SPSDKAppError("This command is viable only for devices with dispatch firmware")
     secure_object = _retrieve_secure_objects(database, remote_database, secure_objects_file)
-    interface.prepare_dispatch(secure_objects=secure_object, client=client)
+    interface.write_secure_objects_prod(
+        client=client, secure_objects=secure_object, workspace=workspace, clean=clean
+    )
     if check_fw:
         time.sleep(0.5)  # Allow a short delay for firmware initialization
         version = interface.get_version()
@@ -280,7 +337,7 @@ def prod_prepare_device(
     click.echo("Device is ready for provisioning")
 
 
-@prod_group.command(name="run-provisioning")
+@prod_group.command(name="run-provisioning", no_args_is_help=True)
 @el2go_fw_interface
 @spsdk_config_option()
 @click.option("--dry-run", is_flag=True, help="Perform a dry run without actual provisioning")
@@ -324,7 +381,7 @@ def prod_run_provisioning(
     type=click.Path(exists=True),
     help="Path to database file with reports",
 )
-@optgroup.option(  # type: ignore[arg-type]
+@optgroup.option(
     "-rdb",
     "--remote-database",
     help="URL to remote database with reports",
@@ -342,7 +399,7 @@ def prod_validate_reports_command(database: str, remote_database: str) -> None:
     type=click.Path(exists=True),
     help="Path to database file with reports",
 )
-@optgroup.option(  # type: ignore[arg-type]
+@optgroup.option(
     "-rdb",
     "--remote-database",
     help="URL to remote database with reports",

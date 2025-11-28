@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""LPCProg Error codes."""
+
+"""LPCProg error codes and status definitions.
+
+This module defines error codes and status values used throughout the LPCProg
+functionality for NXP LPC microcontrollers programming and communication.
+"""
+
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 ########################################################################################################################
@@ -15,7 +21,12 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 class StatusCode(SpsdkEnum):
-    """LPCProg status codes."""
+    """LPCProg status codes enumeration.
+
+    This enumeration defines all possible status codes returned by LPCProg operations,
+    including success states, various error conditions, and hardware-specific errors
+    for NXP LPC microcontrollers during programming and configuration operations.
+    """
 
     SUCCESS = (0x0, "Success", "Success")
     INVALID_COMMAND = (0x1, "InvalidCommand", "Invalid Command Error")

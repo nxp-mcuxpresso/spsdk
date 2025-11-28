@@ -1,7 +1,6 @@
 Image Module API
 ================
-
-Module implementing functionality of srktool, dcdgen, mkimage and other similar tools.
+.. automodule:: spsdk.image
 
 
 Image Segments

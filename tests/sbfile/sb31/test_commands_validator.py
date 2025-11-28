@@ -4,28 +4,38 @@
 # Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Test of command validators."""
+"""SPSDK SB3.1 command validators test suite.
+
+This module contains comprehensive tests for the SB3.1 command validation system,
+including rule validators that ensure proper command sequencing and constraints
+in Secure Binary files.
+"""
+
+from typing import cast
 
 import pytest
 
-from spsdk.sbfile.sb31.commands import (
-    CmdErase,
-    CmdExecute,
-    CmdLoad,
-)
+from spsdk.sbfile.sb31.commands import BaseCmd, CmdErase, CmdExecute, CmdLoad
 from spsdk.sbfile.sb31.commands_validator import (
+    COMMAND_VALIDATORS_MAP,
     BaseRuleValidator,
+    MaxOccurrencesValidator,
     MustAppearAfterValidator,
     MustFollowValidator,
-    MaxOccurrencesValidator,
-    COMMAND_VALIDATORS_MAP,
     ResultType,
     SPSDKValidationError,
 )
 
 
-def test_command_rule_validator_base():
-    """Test the base CommandRuleValidator class."""
+def test_command_rule_validator_base() -> None:
+    """Test the base CommandRuleValidator class functionality.
+
+    This test validates the BaseRuleValidator class methods including command class
+    retrieval, command tag extraction, command name extraction, and ensures that
+    the validate method raises NotImplementedError as expected for the base class.
+
+    :raises NotImplementedError: When validate method is called on base class.
+    """
     rule = {"command": "load"}
     validator = BaseRuleValidator(rule)
 
@@ -52,8 +62,14 @@ def test_command_rule_validator_base():
         validator.validate([])
 
 
-def test_must_follow_validator():
-    """Test the MustFollowValidator class."""
+def test_must_follow_validator() -> None:
+    """Test the MustFollowValidator class functionality.
+
+    This test validates the MustFollowValidator behavior with various command sequences
+    and rule configurations. It tests valid sequences where commands follow the required
+    order, invalid sequences that violate the rules, unknown commands that should be
+    skipped, and incomplete rule configurations.
+    """
     # Test with valid command sequence
     rule = {"command": "erase", "following_cmd": "load"}
     validator = MustFollowValidator(rule)
@@ -96,8 +112,14 @@ def test_must_follow_validator():
     assert result.result == ResultType.SKIPPED
 
 
-def test_max_occurrences_validator():
-    """Test the MaxOccurrencesValidator class."""
+def test_max_occurrences_validator() -> None:
+    """Test the MaxOccurrencesValidator class functionality.
+
+    Validates that the MaxOccurrencesValidator correctly enforces command occurrence limits
+    in SB3.1 command sequences. Tests include default single occurrence validation,
+    custom count validation, error handling for exceeded limits, and proper handling
+    of unknown commands and incomplete rules.
+    """
     rule = {"command": "execute"}
     validator = MaxOccurrencesValidator(rule)
 
@@ -112,14 +134,14 @@ def test_max_occurrences_validator():
 
     invalid_commands = [CmdExecute(address=0x1000), CmdExecute(address=0x2000)]
 
-    result = validator.validate(invalid_commands)
+    result = validator.validate(cast(list[BaseCmd], invalid_commands))
     assert result.result == ResultType.FAILED
     with pytest.raises(SPSDKValidationError, match="execute command can only be used 1 time"):
         result.check()
 
     custom_rule = {"command": "load", "count": 2}
     custom_validator = MaxOccurrencesValidator(custom_rule)
-    valid_custom_commands = [
+    valid_custom_commands: list[BaseCmd] = [
         CmdLoad(address=0, data=b"test1"),
         CmdLoad(address=0x1000, data=b"test2"),
     ]
@@ -132,7 +154,7 @@ def test_max_occurrences_validator():
         CmdLoad(address=0x1000, data=b"test2"),
         CmdLoad(address=0x2000, data=b"test3"),
     ]
-    result = custom_validator.validate(invalid_custom_commands)
+    result = custom_validator.validate(cast(list[BaseCmd], invalid_custom_commands))
     assert result.result == ResultType.FAILED
     with pytest.raises(SPSDKValidationError, match="load command can only be used 2 time"):
         result.check()
@@ -148,8 +170,13 @@ def test_max_occurrences_validator():
     assert result.result == ResultType.SKIPPED
 
 
-def test_must_appear_after_validator():
-    """Test the MustAppearAfterValidator class."""
+def test_must_appear_after_validator() -> None:
+    """Test the MustAppearAfterValidator class functionality.
+
+    Validates command sequence ordering rules where one command must appear after another.
+    Tests include valid sequences, invalid sequences, multiple command occurrences,
+    unknown commands, and incomplete validation rules.
+    """
     # Test with valid command sequence
     rule = {"command": "erase", "target_command": "load"}
     validator = MustAppearAfterValidator(rule)
@@ -228,8 +255,13 @@ def test_must_appear_after_validator():
     assert result.result == ResultType.WARNING
 
 
-def test_command_validators_map():
-    """Test the COMMAND_VALIDATORS_MAP dictionary."""
+def test_command_validators_map() -> None:
+    """Test the COMMAND_VALIDATORS_MAP dictionary.
+
+    Validates that the command validators mapping dictionary contains all expected
+    validator keys and that each key maps to the correct validator class. This ensures
+    the validator registry is properly configured for SB3.1 command validation.
+    """
     assert "must_follow" in COMMAND_VALIDATORS_MAP
     assert "max_occurrences" in COMMAND_VALIDATORS_MAP
     assert "must_appear_after" in COMMAND_VALIDATORS_MAP

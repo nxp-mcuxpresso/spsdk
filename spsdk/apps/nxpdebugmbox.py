@@ -5,7 +5,14 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Main Debug Authentication Tool application."""
+"""SPSDK Debug Mailbox Tool application.
+
+This module provides a comprehensive command-line interface for debug authentication
+and mailbox operations on NXP MCUs. It supports debug probe communication, flash
+operations, certificate management, and various debug authentication protocols.
+Main functionality includes debug session management, flash memory operations,
+fault analysis mode, ISP mode control, and debug authentication certificate handling.
+"""
 
 import contextlib
 import logging
@@ -72,7 +79,12 @@ def get_debug_probe_options_help() -> str:
 
 @dataclass
 class DebugProbeParams:
-    """Debug probe related parameters."""
+    """Debug probe configuration container for SPSDK operations.
+
+    This class holds configuration parameters for debug probe connections including
+    interface settings, serial number identification, and device-specific parameters
+    for NXP MCU debugging and provisioning operations.
+    """
 
     interface: str
     serial_no: str
@@ -98,7 +110,11 @@ class DebugProbeParams:
 
 @dataclass
 class DebugMailboxParams:
-    """Debug mailbox related parameters."""
+    """Debug mailbox configuration parameters container.
+
+    This class holds configuration parameters that control debug mailbox
+    operations including reset behavior, timing delays, and timeout settings.
+    """
 
     reset: bool
     more_delay: float
@@ -1426,9 +1442,7 @@ def read_memory(
 @optgroup.option(
     "--file", type=click.Path(exists=True, dir_okay=False), help="Path to file to write"
 )
-@optgroup.option(  # type: ignore[arg-type]
-    "-h", "--hex-string", type=str, help="String of hex values. e.g. '1234', '12 34'"
-)
+@optgroup.option("-h", "--hex-string", type=str, help="String of hex values. e.g. '1234', '12 34'")
 @click.option("-c", "--count", type=INT(), required=False, help="Number of bytes to write")
 @click.pass_obj
 def write_memory_command(

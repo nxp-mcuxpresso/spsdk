@@ -4,7 +4,12 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Sub-set of EL2GO-HOST utilities commands."""
+"""SPSDK EL2GO utility commands for device provisioning and management.
+
+This module provides command-line utilities for interacting with EL2GO (EdgeLock 2GO)
+services, including connection testing, version retrieval, and OTP binary generation
+for secure device provisioning.
+"""
 
 import click
 

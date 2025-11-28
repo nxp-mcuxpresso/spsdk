@@ -4,11 +4,12 @@
 # Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Module to manage and interact with databases used in SPSDK.
+"""SPSDK database management and device information utilities.
 
-This module provides utilities and classes for handling various databases
-used throughout the Secure Provisioning SDK (SPSDK). It includes functionality
-for loading, caching, and accessing device-specific data, features, and revisions.
+This module provides comprehensive functionality for managing SPSDK databases
+containing device-specific information, features, revisions, and configurations.
+It handles database loading, caching, validation, and provides unified access
+to device data across the NXP MCU portfolio.
 """
 
 import logging
@@ -57,11 +58,8 @@ def get_spsdk_cache_dirname() -> str:
     Returns the path specified by SPSDK_CACHE_FOLDER if set and valid.
     Otherwise, returns the default user cache directory for SPSDK.
 
-    Raises:
-        SPSDKValueError: If SPSDK_CACHE_FOLDER is set but not a valid absolute path.
-
-    Returns:
-        str: The path to the SPSDK cache directory.
+    :raises SPSDKValueError: If SPSDK_CACHE_FOLDER is set but not a valid absolute path.
+    :return: The path to the SPSDK cache directory.
     """
     if SPSDK_CACHE_FOLDER:
         if not os.path.isabs(SPSDK_CACHE_FOLDER):
@@ -72,7 +70,12 @@ def get_spsdk_cache_dirname() -> str:
 
 
 class SPSDKErrorMissingDevice(SPSDKError):
-    """Exception raised when a device is missing from the database."""
+    """SPSDK exception for missing device in database operations.
+
+    This exception is raised when attempting to access or reference a device
+    that is not found in the SPSDK device database, providing specific error
+    context about the missing device.
+    """
 
     def __init__(
         self, desc: Optional[str] = None, missing_device_name: Optional[str] = None
@@ -88,7 +91,13 @@ class SPSDKErrorMissingDevice(SPSDKError):
 
 
 class Features:
-    """Represents a single device revision with its features."""
+    """Device revision feature container for SPSDK database operations.
+
+    This class encapsulates feature data for a specific device revision, providing
+    methods to query and retrieve feature values with type safety and validation.
+    It serves as the primary interface for accessing device-specific capabilities
+    and configuration options within the SPSDK database system.
+    """
 
     def __init__(
         self, name: str, is_latest: bool, device: "Device", features: dict[str, dict[str, Any]]
@@ -106,13 +115,16 @@ class Features:
         self.features = features
 
     def __str__(self) -> str:
-        """Return a human-readable string representation of the Features object."""
+        """Return a human-readable string representation of the Features object.
+
+        :return: String containing the name, is_latest flag, and device information.
+        """
         return f"Features(name='{self.name}', is_latest={self.is_latest}, device={self.device})"
 
     def __repr__(self) -> str:
         """Return a string representation of the Features object.
 
-        :return: String representation including name, latest status, and device.
+        :return: String representation in format 'Features(device_name[feature_name])'.
         """
         return f"Features({self.device.name}[{self.name}])"
 
@@ -142,7 +154,10 @@ class Features:
     def get_value(self, feature: str, key: Union[list[str], str], default: Any = None) -> Any:
         """Get a value from the feature dictionary.
 
-        :param feature: Feature name.
+        The method supports both simple keys and nested key paths for accessing hierarchical data
+        structures within feature dictionaries.
+
+        :param feature: Feature name to access in the database.
         :param key: Item key or key path as a list (e.g., ['grp1', 'grp2', 'key']).
         :param default: Default value if the key is missing.
         :raises SPSDKValueError: If the feature is unsupported or the item is unavailable.
@@ -200,7 +215,10 @@ class Features:
     ) -> str:
         """Get a string value from the feature dictionary.
 
-        :param feature: Feature name.
+        Retrieves a string value from the specified feature using the provided key or key path.
+        The method ensures type safety by asserting the returned value is a string.
+
+        :param feature: Feature name to search in.
         :param key: Item key or key path as a list (e.g., ['grp1', 'grp2', 'key']).
         :param default: Default value if the key is missing.
         :return: String value from the feature dictionary.
@@ -214,7 +232,10 @@ class Features:
     ) -> list[Any]:
         """Get a list value from the feature dictionary.
 
-        :param feature: Feature name.
+        This method retrieves a value from the specified feature and ensures it is a list type.
+        If the retrieved value is not a list, an assertion error will be raised.
+
+        :param feature: Feature name to look up in the database.
         :param key: Item key or key path as a list (e.g., ['grp1', 'grp2', 'key']).
         :param default: Default value if the key is missing.
         :return: List value from the feature dictionary.
@@ -228,9 +249,13 @@ class Features:
     ) -> dict:
         """Get a dictionary value from the feature dictionary.
 
-        :param feature: Feature name.
+        Retrieves a dictionary value from the specified feature using the provided key or key path.
+        The method ensures the returned value is a dictionary type through assertion.
+
+        :param feature: Feature name to search in.
         :param key: Item key or key path as a list (e.g., ['grp1', 'grp2', 'key']).
         :param default: Default value if the key is missing.
+        :raises AssertionError: If the retrieved value is not a dictionary.
         :return: Dictionary value from the feature dictionary.
         """
         val = self.get_value(feature, key, default)
@@ -246,20 +271,25 @@ class Features:
     ) -> str:
         """Get a file path value from the feature dictionary.
 
-        :param feature: Feature name.
+        The method retrieves a string value from the feature dictionary and converts it to an
+        absolute file path using the device's file path creation method.
+
+        :param feature: Feature name to look up in the database.
         :param key: Item key or key path as a list (e.g., ['grp1', 'grp2', 'key']).
         :param default: Default value if the key is missing.
         :param just_standard_lib: Use only standard library files (no restricted data or addons).
-        :return: File path value for the device.
+        :return: Absolute file path for the device.
         """
         file_name = self.get_str(feature, key, default)
         return self.device.create_file_path(file_name, just_standard_lib)
 
 
 class Revisions(list[Features]):
-    """List of device revisions.
+    """Device revision collection for SPSDK operations.
 
-    This class extends the built-in list to store and manage device revision Features.
+    This class extends the built-in list to store and manage Features objects
+    representing different device revisions, providing convenient access methods
+    for retrieving revisions by name or getting the latest available revision.
     """
 
     def revision_names(self, append_latest: bool = False) -> list[str]:
@@ -292,13 +322,19 @@ class Revisions(list[Features]):
 
 
 class UsbId:
-    """USB identifier for a given device."""
+    """USB identifier for device communication.
+
+    This class represents a USB device identifier consisting of Vendor ID (VID)
+    and Product ID (PID) values. It provides functionality for creating, updating,
+    validating, and comparing USB identifiers used in device communication and
+    configuration management.
+    """
 
     def __init__(self, vid: Optional[int] = None, pid: Optional[int] = None) -> None:
         """Initialize a USB ID instance.
 
-        :param vid: USB Vendor ID
-        :param pid: USB Product ID
+        :param vid: USB Vendor ID (optional).
+        :param pid: USB Product ID (optional).
         """
         self.vid = vid
         self.pid = pid
@@ -306,22 +342,22 @@ class UsbId:
     def __str__(self) -> str:
         """Return a string representation of the USB ID.
 
-        :return: String in the format '[0xPID:0xVID]'
+        :return: String in the format '[0xPID:0xVID]'.
         """
         return f"[0x{self.pid:04X}:0x{self.vid:04X}]"
 
     def __eq__(self, obj: Any) -> bool:
         """Check equality with another object.
 
-        :param obj: Object to compare with
-        :return: True if obj is a UsbId instance with matching vid and pid, False otherwise
+        :param obj: Object to compare with.
+        :return: True if obj is a UsbId instance with matching vid and pid, False otherwise.
         """
         return isinstance(obj, self.__class__) and self.vid == obj.vid and self.pid == obj.pid
 
     def update(self, usb_config: dict) -> None:
         """Update the USB ID from a configuration dictionary.
 
-        :param usb_config: Dictionary containing 'vid' and/or 'pid' keys
+        :param usb_config: Dictionary containing 'vid' and/or 'pid' keys with USB vendor and product IDs.
         """
         self.vid = usb_config.get("vid", self.vid)
         self.pid = usb_config.get("pid", self.pid)
@@ -330,21 +366,33 @@ class UsbId:
     def load(cls, usb_config: dict) -> Self:
         """Create a UsbId instance from a configuration dictionary.
 
-        :param usb_config: Dictionary containing 'vid' and/or 'pid' keys
-        :return: New UsbId instance
+        The method extracts vendor ID and product ID from the provided configuration
+        dictionary and creates a new UsbId instance with these values.
+
+        :param usb_config: Dictionary containing 'vid' and/or 'pid' keys with USB identifiers.
+        :return: New UsbId instance with configured vendor and product IDs.
         """
         return cls(vid=usb_config.get("vid", None), pid=usb_config.get("pid", None))
 
     def is_valid(self) -> bool:
         """Check if the USB ID is valid.
 
-        :return: True if both vid and pid are set, False otherwise
+        The method validates that both vendor ID and product ID are properly set
+        and not None values.
+
+        :return: True if both vid and pid are set, False otherwise.
         """
         return self.vid is not None and self.pid is not None
 
 
 class Bootloader:
-    """Represents a bootloader with its protocol and interface details."""
+    """SPSDK Bootloader representation.
+
+    This class encapsulates bootloader configuration including protocol type,
+    supported interfaces, USB identification, and protocol-specific parameters.
+    It provides functionality for loading bootloader configurations from
+    dictionaries and managing bootloader connection details across NXP MCU devices.
+    """
 
     def __init__(
         self,
@@ -371,7 +419,10 @@ class Bootloader:
     def __str__(self) -> str:
         """Return a string representation of the Bootloader.
 
-        :return: Formatted string with bootloader details
+        Creates a formatted multi-line string containing bootloader protocol information,
+        supported interfaces, and USB identification details when available.
+
+        :return: Formatted string with bootloader details including protocol, interfaces, and USB ID.
         """
         ret = ""
         ret += f"Protocol:     {self.protocol or 'Not specified'}\n"
@@ -384,8 +435,9 @@ class Bootloader:
     def load(cls, config: dict) -> Self:
         """Create a Bootloader instance from a configuration dictionary.
 
-        :param config: Dictionary containing bootloader configuration
-        :return: New Bootloader instance
+        :param config: Dictionary containing bootloader configuration with keys like 'protocol',
+            'interfaces', 'usb', and 'protocol_params'.
+        :return: New Bootloader instance configured with the provided parameters.
         """
         return cls(
             protocol=config.get("protocol", None),
@@ -397,7 +449,11 @@ class Bootloader:
     def update(self, config: dict) -> None:
         """Update the Bootloader instance from a configuration dictionary.
 
-        :param config: Dictionary containing updated bootloader configuration
+        This method updates the bootloader's protocol, interfaces, protocol parameters,
+        and USB ID configuration based on the provided configuration dictionary.
+
+        :param config: Dictionary containing updated bootloader configuration with optional
+            keys: 'protocol', 'interfaces', 'protocol_params', and 'usb'.
         """
         self.protocol = config.get("protocol", self.protocol)
         self.interfaces = config.get("interfaces", self.interfaces)
@@ -406,7 +462,17 @@ class Bootloader:
 
 
 class MemBlock:
-    """One memory block from memory map."""
+    """Memory block representation from device memory map.
+
+    This class represents a single memory block within a device's memory map,
+    providing access to memory block properties such as base address, size,
+    and external memory classification. It supports parsing of memory block
+    names including core, block type, and instance identification.
+
+    :cvar BLOCK_NAMES: List of supported memory block type names.
+    :cvar CORES: List of supported processor core identifiers.
+    :cvar SECURITY: List of supported security domain identifiers.
+    """
 
     # List of known and accepted cores
     BLOCK_NAMES = [
@@ -436,8 +502,8 @@ class MemBlock:
     def __init__(self, name: str, desc: dict[str, Any]) -> None:
         """Initialize a MemBlock instance.
 
-        :param name: Name of the memory block
-        :param desc: Dictionary containing the memory block description
+        :param name: Name of the memory block.
+        :param desc: Dictionary containing the memory block description with configuration data.
         """
         self.name = name
         self.description = desc
@@ -445,7 +511,10 @@ class MemBlock:
     def __str__(self) -> str:
         """Return a string representation of the MemBlock.
 
-        :return: Formatted string with memory block details
+        The string includes the memory block name, base address in hexadecimal format,
+        size in human-readable format, and external flag status.
+
+        :return: Formatted string with memory block details including name, base address, size, and external flag.
         """
         ret = self.name + ":\n"
         ret += f"  Base:     0x{self.base_address:08X}\n"
@@ -464,7 +533,7 @@ class MemBlock:
     def base_address(self) -> int:
         """Get the base address of the memory block.
 
-        :return: Base address as an integer
+        :return: Base address as an integer.
         """
         return value_to_int(self.description["start_int"])
 
@@ -472,7 +541,7 @@ class MemBlock:
     def size(self) -> int:
         """Get the size of the memory block.
 
-        :return: Size in bytes as an integer
+        :return: Size in bytes as an integer.
         """
         return value_to_int(self.description["size_int"])
 
@@ -480,7 +549,10 @@ class MemBlock:
     def external(self) -> bool:
         """Check if this is an external memory block.
 
-        :return: True if external, False otherwise
+        The method checks the 'external' field in the description dictionary to determine
+        if the memory block is configured as external memory.
+
+        :return: True if external, False otherwise.
         """
         return value_to_bool(self.description.get("external", False))
 
@@ -488,7 +560,11 @@ class MemBlock:
     def parse_name(cls, name: str) -> tuple[Optional[str], str, Optional[int], Optional[bool]]:
         """Parse name to base elements.
 
-        :param name: Name of the memory block.
+        Parses a memory block name string into its constituent components including
+        core name, memory name, instance index, and security access flag.
+
+        :param name: Name of the memory block to parse.
+        :raises SPSDKError: Invalid memory block name format or unknown security flag.
         :return: Tuple of:
             - Optional Core name
             - Name of memory
@@ -534,25 +610,45 @@ class MemBlock:
 
     @property
     def core(self) -> Optional[str]:
-        """Get core name if specified."""
+        """Get core name if specified.
+
+        Extracts the core name from the parsed device name using the parse_name method.
+
+        :return: Core name if present in the device name, None otherwise.
+        """
         core, _, _, _ = self.parse_name(self.name)
         return core
 
     @property
     def block_name(self) -> str:
-        """Get block name."""
+        """Get block name from the parsed name.
+
+        Extracts and returns the block name component by parsing the instance name
+        using the parse_name method.
+
+        :return: The block name component extracted from the parsed name.
+        """
         _, block_name, _, _ = self.parse_name(self.name)
         return block_name
 
     @property
     def instance(self) -> Optional[int]:
-        """Get instance if specified."""
+        """Get instance if specified.
+
+        :return: Instance number if present in the name, None otherwise.
+        """
         _, _, instance, _ = self.parse_name(self.name)
         return instance
 
     @property
     def security_access(self) -> Optional[bool]:
-        """Get security access if specified."""
+        """Get security access if specified.
+
+        The method parses the name attribute to extract security access information
+        and returns whether security access is enabled or not.
+
+        :return: True if security access is enabled, False if disabled, None if not specified.
+        """
         _, _, _, sec_acc = self.parse_name(self.name)
         return sec_acc
 
@@ -566,11 +662,16 @@ class MemBlock:
     ) -> str:
         """Create full name of memory block.
 
+        The method constructs a memory block name by combining core name, block name, instance number,
+        and secure access specification into a standardized format.
+
         :param block_name: Name of memory block
         :param core: Optional core name, defaults to None
-        :param instance: Optional instance, defaults to None
-        :param secure_access: Optional specification if block has secure or non secure access, defaults to None
-        :return: Full block name.
+        :param instance: Optional instance number, defaults to None
+        :param secure_access: Optional specification if block has secure or non secure access,
+            defaults to None
+        :raises SPSDKError: Unknown core name provided
+        :return: Full block name with optional core prefix, instance suffix, and security suffix
         """
         ret = ""
         if core:
@@ -588,23 +689,41 @@ class MemBlock:
 
 
 class MemMap:
-    """Device memory map configuration."""
+    """Device memory map configuration manager.
+
+    This class manages memory block configurations for NXP MCU devices, providing
+    functionality to load, organize, and query memory layout information. It handles
+    memory block definitions including base addresses, sizes, and access properties.
+    """
 
     def __init__(self, mem_map: dict[str, MemBlock]) -> None:
-        """Device memory map configuration.
+        """Initialize device memory map configuration.
 
-        :param mem_map_raw: Raw data of memory map loaded from database.
+        :param mem_map: Dictionary mapping memory region names to MemBlock objects.
         """
         self._mem_map = mem_map
 
     def __str__(self) -> str:
+        """Get string representation of the memory map.
+
+        The method iterates through all memory blocks in the memory map and
+        concatenates their string representations with newlines.
+
+        :return: String representation of all memory blocks in the memory map.
+        """
         ret = ""
         for block in self._mem_map.values():
             ret += str(block) + "\n"
         return ret
 
     def get_table(self) -> str:
-        """Get string table with memory map description."""
+        """Get string table with memory map description.
+
+        Creates a formatted table showing memory blocks with their index, name, base address,
+        size, and external flag. The table uses double border style for better readability.
+
+        :return: Formatted string table containing memory map information.
+        """
         table_p = prettytable.PrettyTable(["#", "Block", "Base", "Size", "External"])
         table_p.set_style(prettytable.TableStyle.DOUBLE_BORDER)
         for i, block in enumerate(self._mem_map.values()):
@@ -621,9 +740,12 @@ class MemMap:
 
     @classmethod
     def load(cls, mem_map: dict[str, dict[str, Any]]) -> Self:
-        """Loads the Memory map from configuration.
+        """Load the Memory map from configuration.
 
-        :param mem_map: Dictionary with all blocks.
+        Creates a new instance by converting dictionary configuration into MemBlock objects.
+
+        :param mem_map: Dictionary with all blocks where keys are block names and values are block configurations.
+        :return: New instance with loaded memory blocks.
         """
         ret = {}
         for k, v in mem_map.items():
@@ -637,14 +759,18 @@ class MemMap:
         instance: Optional[int] = None,
         secure: Optional[bool] = None,
     ) -> MemBlock:
-        """Get the one memory block by parameters.
+        """Get the memory block by specified parameters.
 
-        :param block_name: Core block name
-        :param core: Optional core name, defaults to None
-        :param instance: Optional instance, defaults to None
-        :param secure: optional selection of secure non secure memory access, defaults to False
-        :return: Memory block if available
-        :raises: SPSDKError in case that block is not found.
+        The method searches for a memory block using the provided parameters. If the exact
+        match is not found and secure parameter is None, it attempts to find the block
+        with secure_access set to False as a fallback.
+
+        :param block_name: Core block name to search for.
+        :param core: Optional core name, defaults to None.
+        :param instance: Optional instance number, defaults to None.
+        :param secure: Optional selection of secure/non-secure memory access, defaults to None.
+        :return: Memory block matching the specified parameters.
+        :raises SPSDKError: Block has not been found with given parameters.
         """
         # First try:
         name = MemBlock.create_name(
@@ -674,16 +800,18 @@ class MemMap:
     ) -> list[MemBlock]:
         """Find memory blocks matching the specified criteria.
 
-        All criteria are optional and combined with logical AND. If a criterion is None, it's not used for filtering.
+        All criteria are optional and combined with logical AND. If a criterion is None, it's not used
+        for filtering.
 
-        :param block_name: Exact block name to match
-        :param core: Core name to match
-        :param instance: Instance number to match
-        :param secure_access: Security access flag to match
-        :param external: External memory flag to match
-        :param name_regex: Regular expression pattern to match against the full block name
-        :param base_address_range: Tuple of (min_address, max_address) to match blocks within address range
-        :return: List of memory blocks matching all specified criteria
+        :param block_name: Exact block name to match.
+        :param core: Core name to match.
+        :param instance: Instance number to match.
+        :param secure_access: Security access flag to match.
+        :param external: External memory flag to match.
+        :param name_regex: Regular expression pattern to match against the full block name.
+        :param base_address_range: Tuple of (min_address, max_address) to match blocks within address
+            range.
+        :return: List of memory blocks matching all specified criteria.
         """
         result = []
 
@@ -724,18 +852,30 @@ class MemMap:
 
 
 class IspCfg:
-    """ISP configuration."""
+    """ISP Configuration Manager for NXP MCU bootloaders.
+
+    This class manages In-System Programming (ISP) configuration data for both ROM
+    and flashloader bootloaders, providing unified access to protocol support,
+    USB identification, and configuration management across the SPSDK framework.
+    """
 
     def __init__(self, rom: Bootloader, flashloader: Bootloader) -> None:
-        """Constructor of ISP config class.
+        """Initialize ISP configuration with ROM and flashloader instances.
 
-        :param rom: ROM object
-        :param flashloader: Flashloader object
+        :param rom: ROM bootloader instance for initial communication.
+        :param flashloader: Flashloader bootloader instance for memory operations.
         """
         self.rom = rom
         self.flashloader = flashloader
 
     def __str__(self) -> str:
+        """Return string representation of the database entry.
+
+        Provides a formatted string containing ROM and FlashLoader information
+        with proper indentation for readability.
+
+        :return: Formatted string representation of the database entry.
+        """
         ret = ""
         if self.rom:
             ret += f"ROM:\n{textwrap.indent(str(self.rom), '  ')}\n"
@@ -746,23 +886,50 @@ class IspCfg:
 
     @classmethod
     def load(cls, config: dict) -> Self:
-        """Load from configuration."""
+        """Load database configuration from dictionary.
+
+        Creates a new instance by loading ROM and flashloader bootloader configurations
+        from the provided configuration dictionary.
+
+        :param config: Configuration dictionary containing 'rom' and 'flashloader' keys.
+        :return: New instance loaded from the configuration.
+        """
         return cls(
             rom=Bootloader.load(config.get("rom", {})),
             flashloader=Bootloader.load(config.get("flashloader", {})),
         )
 
     def update(self, config: dict) -> None:
-        """Update the object from configuration."""
+        """Update the object from configuration.
+
+        This method updates both ROM and flashloader configurations from the provided
+        configuration dictionary.
+
+        :param config: Configuration dictionary containing 'rom' and/or 'flashloader' keys.
+        """
         self.rom.update(config.get("rom", {}))
         self.flashloader.update(config.get("flashloader", {}))
 
     def is_protocol_supported(self, protocol: str) -> bool:
-        """Returns true is any of interfaces supports given protocol."""
+        """Check if any interface supports the given protocol.
+
+        The method verifies whether either the ROM or flashloader interface
+        supports the specified communication protocol.
+
+        :param protocol: Protocol name to check for support.
+        :return: True if either ROM or flashloader supports the protocol, False otherwise.
+        """
         return self.rom.protocol == protocol or self.flashloader.protocol == protocol
 
     def get_usb_ids(self, protocol: str) -> list[UsbId]:
-        """Get the usb params for interfaces supporting given protocol."""
+        """Get USB parameters for interfaces supporting given protocol.
+
+        The method searches through ROM and flashloader interfaces to find
+        USB IDs that support the specified protocol.
+
+        :param protocol: Protocol name to search for in interfaces.
+        :return: List of USB IDs supporting the specified protocol.
+        """
         usb_ids = []
         if self.rom.protocol == protocol and self.rom.usb_id.is_valid():
             usb_ids.append(self.rom.usb_id)
@@ -772,7 +939,13 @@ class IspCfg:
 
 
 class DeviceInfo:
-    """Device information dataclass."""
+    """Device information container for NXP MCU devices.
+
+    This class encapsulates comprehensive device information including purpose,
+    memory mapping, ISP configuration, and web resources. It provides functionality
+    to load device configurations from dictionaries and supports dynamic updates
+    of device parameters.
+    """
 
     def __init__(
         self,
@@ -783,13 +956,14 @@ class DeviceInfo:
         memory_map: dict[str, dict[str, Any]],
         isp: IspCfg,
     ) -> None:
-        """Constructor of device information class.
+        """Initialize device information class.
 
-        :param purpose: String description of purpose of MCU (in fact the device group)
-        :param spsdk_predecessor_name: Device sub series name (usually predecessor name in SPSDK)
-        :param web: Web page with device info
-        :param memory_map: Basic memory map of device
-        :param isp: Information regarding ISP mode
+        :param use_in_doc: Flag indicating if device should be used in documentation.
+        :param purpose: String description of purpose of MCU (device group).
+        :param spsdk_predecessor_name: Device sub series name (predecessor name in SPSDK).
+        :param web: Web page with device information.
+        :param memory_map: Basic memory map of device.
+        :param isp: Information regarding ISP mode.
         """
         self.use_in_doc = use_in_doc
         self.purpose = purpose
@@ -799,15 +973,22 @@ class DeviceInfo:
         self.isp = isp
 
     def __repr__(self) -> str:
+        """Return string representation of DeviceInfo object.
+
+        :return: String representation in format 'DeviceInfo(purpose)'.
+        """
         return f"DeviceInfo({self.purpose})"
 
     @classmethod
     def load(cls, config: dict[str, Any], defaults: dict[str, Any]) -> Self:
-        """Loads the device from folder.
+        """Load device configuration from provided config and defaults.
 
-        :param config: The name of device.
-        :param defaults: Device data defaults.
-        :return: The Device object.
+        The method merges configuration data with defaults using deep update strategy
+        and creates a new device instance with the combined configuration.
+
+        :param config: Device configuration dictionary to override defaults.
+        :param defaults: Default device configuration values.
+        :return: New Device instance with merged configuration.
         """
         data = deepcopy(defaults)
         deep_update(data, config)
@@ -821,9 +1002,14 @@ class DeviceInfo:
         )
 
     def update(self, config: dict[str, Any]) -> None:
-        """Updates Device info by new configuration.
+        """Update device information with new configuration data.
 
-        :param config: The new Device Info configuration
+        This method updates the current device instance with values from the provided
+        configuration dictionary. Only specified fields in the config will be updated,
+        while unspecified fields retain their current values.
+
+        :param config: Dictionary containing device configuration parameters to update.
+        :raises SPSDKError: If memory map configuration is invalid or cannot be loaded.
         """
         self.use_in_doc = bool(config.get("use_in_doc", self.use_in_doc))
         self.purpose = config.get("purpose", self.purpose)
@@ -837,7 +1023,13 @@ class DeviceInfo:
 
 
 class Device:
-    """Device dataclass represents a single device."""
+    """SPSDK Device representation for hardware configuration management.
+
+    This class represents a single device in the SPSDK database, managing device-specific
+    information including revisions, features, and configuration data. It provides
+    functionality for device identification, feature retrieval, and configuration
+    file path resolution across different device revisions.
+    """
 
     def __init__(
         self,
@@ -848,13 +1040,17 @@ class Device:
         device_alias: Optional["Device"] = None,
         revisions: Revisions = Revisions(),
     ) -> None:
-        """Constructor of SPSDK Device.
+        """Initialize SPSDK Device instance.
 
-        :param name: Device name
-        :param db: Database parent object
-        :param latest_rev: latest revision name
-        :param device_alias: Device alias, defaults to None
-        :param revisions: Device revisions, defaults to Revisions()
+        Creates a new Device object with specified configuration including name, database reference,
+        revision information, and optional device alias.
+
+        :param name: Device name that will be converted to lowercase.
+        :param db: Parent Database object containing this device.
+        :param latest_rev: Name of the latest available revision.
+        :param info: Device information object containing device details.
+        :param device_alias: Optional alias device reference, defaults to None.
+        :param revisions: Device revisions collection, defaults to empty Revisions().
         """
         self.name = name.lower()
         self.db = db
@@ -864,10 +1060,13 @@ class Device:
         self.info = info
 
     def get_copy(self, new_name: Optional[str] = None) -> "Device":
-        """Get copy of self.
+        """Create a deep copy of the Device instance.
 
-        :param new_name: Optionally the copy could has a new name.
-        :returns: Copy of self.
+        This method creates a complete copy of the device including all its revisions,
+        features, and metadata. The copy is independent of the original instance.
+
+        :param new_name: Optional new name for the copied device, defaults to original name.
+        :return: Deep copy of the Device instance with optionally updated name.
         """
         name = new_name or self.name
         name = name.lower()
@@ -893,24 +1092,41 @@ class Device:
         return ret
 
     def __repr__(self) -> str:
+        """Return string representation of the Device object.
+
+        :return: String in format "Device(<device_name>)".
+        """
         return f"Device({self.name})"
 
     def __lt__(self, other: "Device") -> bool:
-        """Less than comparison based on name."""
+        """Less than comparison based on name.
+
+        :param other: Another Device instance to compare with.
+        :return: True if this device's name is lexicographically less than the other device's name.
+        """
         return self.name < other.name
 
     def get_features(self, revision: Optional[str] = None) -> list[str]:
-        """Get the list of device features."""
+        """Get the list of device features.
+
+        :param revision: Device revision to get features for. If None, uses default revision.
+        :return: List of feature names available for the specified device revision.
+        """
         return [str(k) for k in self.revisions.get(revision).features.keys()]
 
     @staticmethod
     def _load_alias(name: str, db: "Database", dev_cfg: dict[str, Any]) -> "Device":
-        """Loads the device from folder.
+        """Load device alias from configuration and create a copy with customizations.
 
-        :param name: The name of device.
-        :param db: Database parent object.
-        :param dev_cfg: Already loaded configuration.
-        :return: The Device object.
+        Creates a device instance based on an existing device (alias) with potential
+        modifications to features, revisions, and device information. Handles both
+        updates to existing revisions and creation of new revisions with aliases.
+
+        :param name: The name of the new device alias.
+        :param db: Database parent object containing device definitions.
+        :param dev_cfg: Device configuration dictionary with alias and customizations.
+        :raises SPSDKError: When alias key is missing for new revision definition.
+        :return: Device object configured as alias with applied customizations.
         """
         name = name.lower()
         dev_alias_name = dev_cfg["alias"]
@@ -957,11 +1173,17 @@ class Device:
 
     @staticmethod
     def load(name: str, db: "Database") -> "Device":
-        """Loads the device from folder.
+        """Load device configuration from database folder.
 
-        :param name: The name of device.
-        :param db: Base database object.
-        :return: The Device object.
+        Loads device configuration from the database folder structure, including
+        base configuration and any addon data. Handles device aliases and builds
+        complete device object with all revisions and features.
+
+        :param name: The name of device to load (case insensitive).
+        :param db: Base database object containing device data.
+        :raises SPSDKErrorMissingDevice: Device doesn't exist in database.
+        :raises SPSDKError: Latest revision not found in supported revisions.
+        :return: The Device object with loaded configuration and revisions.
         """
         name = name.lower()
         try:
@@ -1019,11 +1241,17 @@ class Device:
         return ret
 
     def create_file_path(self, file_name: str, just_standard_lib: bool = False) -> str:
-        """Create File path value for this device.
+        """Create file path for the specified device.
 
-        :param file_name: File name to be enriched by device path
-        :param just_standard_lib: Use just standard library files (no restricted data, neither addons), defaults False.
-        :return: File path value for the device
+        The method searches for the file in the device-specific directory within the database.
+        If the file is not found and a device alias exists, it attempts to find the file
+        using the alias device path as fallback.
+
+        :param file_name: File name to be enriched by device path.
+        :param just_standard_lib: Use just standard library files (no restricted data,
+            neither addons), defaults to False.
+        :raises SPSDKValueError: Non existing file in database.
+        :return: File path value for the device.
         """
         path = self.db.get_data_file_path(
             os.path.join("devices", self.name, file_name),
@@ -1039,22 +1267,33 @@ class Device:
 
 
 class Devices:
-    """List of devices."""
+    """SPSDK device collection manager.
+
+    This class manages a collection of devices from the SPSDK database, providing
+    functionality to load, store, and retrieve device configurations. It serves as
+    a container for Device objects and handles device name resolution including
+    legacy SPSDK device names.
+    """
 
     def __init__(self, db: "Database") -> None:
-        """Constructor of managed devices in database.
+        """Initialize managed devices container for database operations.
 
-        :param db: Whole database object.
+        Creates a new instance to manage device collections within the database context.
+
+        :param db: Database instance containing device configurations and metadata.
         """
         self.devices: list[Device] = []
         self.db = db
 
     def get(self, name: str) -> Device:
-        """Return database device structure.
+        """Get device configuration from database.
 
-        :param name: String Key with device name.
-        :raises SPSDKErrorMissingDevice: In case the device with given name does not exist
-        :return: Dictionary device configuration structure or None:
+        Retrieves the device structure for the specified device name. The method
+        handles device name normalization and lazy loading of device configurations.
+
+        :param name: Device name or family identifier.
+        :raises SPSDKErrorMissingDevice: If the device name is not specified or not found in database.
+        :return: Device configuration structure.
         """
         # Check device name (it could be used predecessor SPSDK name)
         if not name:
@@ -1074,13 +1313,22 @@ class Devices:
 
     @property
     def _devices_names(self) -> list[str]:
-        """Get the list of devices names."""
+        """Get the list of device names.
+
+        :return: List of device names from the database.
+        """
         return [dev.name for dev in self.devices]
 
     def feature_items(self, feature: str, key: str) -> Iterator[tuple[str, str, Any]]:
-        """Iter the whole database for the feature items.
+        """Iterate through the database to find feature items across all devices and revisions.
 
-        :return: Tuple of Device name, revision name and items value.
+        The method searches through all devices and their revisions for a specific feature,
+        then extracts the specified key value from that feature's configuration.
+
+        :param feature: Name of the feature to search for in device configurations.
+        :param key: Specific key within the feature to extract the value from.
+        :raises SPSDKValueError: When the specified key is missing in the feature configuration.
+        :return: Iterator yielding tuples of (device name, revision name, feature value).
         """
         for device in self.devices:
             for rev in device.revisions:
@@ -1092,7 +1340,15 @@ class Devices:
                 yield (device.name, rev.name, value)
 
     def _load_and_append_device(self, dev_name: str) -> None:
-        """Load and append device to the devices."""
+        """Load and append device to the devices.
+
+        The method handles device loading with duplicate prevention and recursive dependency
+        resolution. If a device is already loaded, it skips the operation. When a missing
+        device dependency is encountered, it recursively loads the required device first.
+
+        :param dev_name: Name of the device to load and append to the devices list.
+        :raises SPSDKErrorMissingDevice: When device cannot be found and no fallback available.
+        """
         # Omit already loaded devices (used for multiple calls of this method (restricted data))
         dev_name = dev_name.lower()
         if dev_name in self._devices_names:
@@ -1108,9 +1364,14 @@ class Devices:
                 raise exc
 
     def load_devices_from_path(self, devices_path: str) -> None:
-        """Loads the devices from SPSDK database path.
+        """Load devices from SPSDK database path.
 
-        :param devices_path: The devices path.
+        Scans the specified directory for device folders and attempts to load each device
+        into the database. If loading a device fails, an error is logged but the process
+        continues with remaining devices.
+
+        :param devices_path: Path to directory containing device folders to load.
+        :raises SPSDKError: When device loading fails (logged but not propagated).
         """
         for dev in os.scandir(devices_path):
             if dev.is_dir():
@@ -1123,14 +1384,21 @@ class Devices:
 
 
 class DeviceQuickInfo:
-    """Device quick and short info."""
+    """Device quick information container for SPSDK operations.
+
+    This class provides a convenient interface for accessing device features, revisions,
+    and capabilities. It manages feature availability across different device revisions
+    and enables quick lookups for supported functionality during provisioning operations.
+    """
 
     def __init__(self, features: Revisions, info: DeviceInfo, latest_rev: str) -> None:
-        """Constructor of Device quick information.
+        """Initialize Device quick information.
 
-        :param features: Device features to get information from
-        :param info: Device information
-        :param latest_rev: Latest chip revision
+        Creates a new Device instance with features organized by revision for easy access.
+
+        :param features: Device features collection containing revision-specific feature data.
+        :param info: Device information object with basic device details.
+        :param latest_rev: Latest chip revision identifier string.
         """
         self.revision_features: dict[str, dict[str, Optional[list]]] = {}
         self.info = info
@@ -1142,23 +1410,36 @@ class DeviceQuickInfo:
 
     @property
     def revisions(self) -> list[str]:
-        """List of available revisions."""
+        """Get list of available revisions.
+
+        :return: List of revision names that are available in the database.
+        """
         return list(self.revision_features.keys())
 
     def get_features(self, revision: Optional[str] = None) -> list[str]:
-        """List of all supported features of device."""
+        """Get list of all supported features of device.
+
+        Retrieves all available features for the specified device revision or the latest
+        revision if none is provided.
+
+        :param revision: Device revision to get features for, defaults to latest revision.
+        :return: List of supported feature names for the specified revision.
+        """
         revision = revision or self.latest_rev
         return list(self.revision_features[revision].keys())
 
     def is_feature_supported(
         self, feature: str, sub_feature: Optional[str] = None, revision: Optional[str] = None
     ) -> bool:
-        """Return True if the feature is supported by devices.
+        """Check if a feature is supported by the device.
 
-        :param feature: Feature name
-        :param sub_feature: Sub feature name to better granularity, defaults to None
-        :param revision: Specific device revision to check, defaults to latest revision
-        :return: True if the feature is supported by devices, False otherwise.
+        The method verifies feature availability for a specific device revision,
+        with optional sub-feature granularity checking.
+
+        :param feature: Feature name to check for support.
+        :param sub_feature: Sub feature name for more granular checking, defaults to None.
+        :param revision: Specific device revision to check, defaults to latest revision.
+        :return: True if the feature is supported by the device, False otherwise.
         """
         features = self.revision_features[revision or self.latest_rev]
         if feature in features:
@@ -1172,10 +1453,20 @@ class DeviceQuickInfo:
 
 
 class DevicesQuickInfo:
-    """List of all devices with their quick information."""
+    """SPSDK device quick information manager.
+
+    This class provides fast access to device information and features across
+    the NXP MCU portfolio. It maintains a lookup table of devices with their
+    capabilities and supports feature-based device discovery and predecessor
+    device mapping.
+    """
 
     def __init__(self) -> None:
-        """Constructor of devices quick information."""
+        """Initialize devices database for quick device information lookup.
+
+        Creates empty dictionaries for storing device information and predecessor
+        relationships used for device compatibility and feature queries.
+        """
         self.devices: dict[str, DeviceQuickInfo] = {}
         self.predecessor_lookup: dict[str, str] = {}
 
@@ -1183,7 +1474,11 @@ class DevicesQuickInfo:
     def create(devices: Devices) -> "DevicesQuickInfo":
         """Create quick info about devices.
 
-        :param devices: Full devices description.
+        Creates a DevicesQuickInfo object containing essential device information and predecessor
+        lookup mapping from the full devices description.
+
+        :param devices: Full devices description containing all device details.
+        :return: DevicesQuickInfo object with device quick info and predecessor lookup.
         """
         dqi = {}
         pl = {}
@@ -1204,13 +1499,14 @@ class DevicesQuickInfo:
         return ret
 
     def get_feature_list(self, family: str, revision: Optional[str] = None) -> list[str]:
-        """Get features list.
+        """Get features list for specified device family.
 
-        If device is not used, the whole list of SPSDK features is returned
+        If device database is empty, returns an empty list. Otherwise returns
+        the list of supported features for the given family and optional revision.
 
-        :param family: Family name
-        :param revision: Optional device revision
-        :returns: List of features.
+        :param family: Device family name to get features for.
+        :param revision: Optional device revision to filter features.
+        :return: List of supported feature names for the device.
         """
         if self.devices == {}:
             return []
@@ -1219,11 +1515,14 @@ class DevicesQuickInfo:
     def get_devices_with_feature(
         self, feature: str, sub_feature: Optional[str] = None
     ) -> dict[str, list]:
-        """Get the list of all families that supports requested feature.
+        """Get devices that support the requested feature.
 
-        :param feature: Name of feature
-        :param sub_feature: Optional sub feature to better specify the families selection
-        :returns: List of devices that supports requested feature.
+        Returns a dictionary mapping device names to lists of revisions that support
+        the specified feature and optional sub-feature.
+
+        :param feature: Name of feature to search for.
+        :param sub_feature: Optional sub feature to better specify the device selection.
+        :return: Dictionary with device names as keys and lists of supporting revisions as values.
         """
         devices: dict[str, list] = {}
         for name, info in self.devices.items():
@@ -1235,7 +1534,13 @@ class DevicesQuickInfo:
         return dict(sorted(devices.items()))
 
     def get_family_names(self) -> list[str]:
-        """Get the list of all families supported by SPSDK."""
+        """Get the list of all families supported by SPSDK.
+
+        Returns a sorted list of all device family names that are currently supported
+        by the SPSDK library.
+
+        :return: Sorted list of supported device family names.
+        """
         devices = list(self.devices.keys())
         devices.sort()
         return devices
@@ -1243,8 +1548,8 @@ class DevicesQuickInfo:
     def get_predecessors(self, families: list[str]) -> dict[str, str]:
         """Get the list of devices predecessors in previous SPSDK versions.
 
-        :param families: List of current family names
-        :returns: Dictionary mapping predecessor family names to current names
+        :param families: List of current family names to find predecessors for.
+        :return: Dictionary mapping predecessor family names to current names.
         """
         pr_names: dict[str, str] = {}
         for family in families:
@@ -1258,15 +1563,21 @@ class DevicesQuickInfo:
     def is_predecessor_name(self, family: str) -> bool:
         """Check if device name is predecessor SPSDK device name.
 
-        :param family: The CPU family name.
-        :return: True if it's SPSDK predecessor name.
+        This method verifies whether the provided family name exists in the predecessor
+        lookup table, indicating it's a legacy device name format.
+
+        :param family: The MCU/MPU family name to check.
+        :return: True if the family name is found in predecessor lookup, False otherwise.
         """
         return bool(family.lower() in self.predecessor_lookup)
 
     def get_correct_name(self, family: str) -> str:
         """Get correct(latest) device name.
 
-        :param family: The CPU family name.
+        The method normalizes device family names by converting predecessor names to their
+        current equivalents using the predecessor lookup table.
+
+        :param family: The MCU/MPU family name to normalize.
         :return: Current database device name as string.
         """
         if self.is_predecessor_name(family.lower()):
@@ -1275,18 +1586,33 @@ class DevicesQuickInfo:
 
 
 class FeaturesQuickData:
-    """General quick data for features not depends on devices."""
+    """SPSDK Features Quick Data Manager.
+
+    This class manages aggregated feature data across multiple devices in the SPSDK
+    database, providing fast access to consolidated feature information without
+    device-specific dependencies. It extracts and consolidates features like
+    memory types from all devices to enable quick lookups and feature validation.
+    """
 
     def __init__(self) -> None:
-        """Constructor, just to keep members."""
+        """Initialize the database object.
+
+        Sets up an empty features dictionary to store device and feature configurations.
+        The features dictionary uses a nested structure where the outer key represents
+        the device/family name and the inner dictionary contains feature definitions.
+        """
         self.features: dict[str, dict[str, Any]] = {}
 
     @classmethod
     def create(cls, devices: Devices) -> Self:
         """Create Quick data from the Database.
 
-        :param devices: Database devices object to pick data from
-        :return: Quick features object.
+        Extracts features from all devices in the database and consolidates them into a
+        Quick features object. For each device, uses the latest revision and merges
+        memory types while removing duplicates.
+
+        :param devices: Database devices object to pick data from.
+        :return: Quick features object with consolidated device features.
         """
         ret = cls()
         for dev in devices.devices:
@@ -1310,13 +1636,21 @@ class FeaturesQuickData:
 
     @property
     def get_all_features(self) -> list[str]:
-        """Return list of all supported features."""
+        """Get all supported features from the database.
+
+        :return: List of all feature names available in the database.
+        """
         return list(self.features.keys())
 
     def get_mem_types(self, feature: str) -> list[str]:
-        """Get supported memory types in individual features per all devices.
+        """Get supported memory types for a specific feature across all devices.
 
-        :param feature: Feature name
+        The method retrieves the list of memory types that are supported by the specified
+        feature. If the feature doesn't exist or has no memory types defined, an empty
+        list is returned.
+
+        :param feature: Name of the feature to query for supported memory types.
+        :return: List of supported memory type names, empty list if feature not found.
         """
         if feature not in self.features:
             return []
@@ -1326,15 +1660,19 @@ class FeaturesQuickData:
 
 
 class QuickDatabase:
-    """Base quick database class.
+    """SPSDK Quick Database for lightweight device information access.
 
-    This class is intend to be loaded after startup of SPSDK to
-    provides basic information to satisfy whole CLI information (like helps texts and
-    enums for choices) without loading heavy database with all data.
+    This class provides a lightweight database loaded at SPSDK startup to supply
+    basic device information for CLI operations such as help texts and enumeration
+    choices without requiring the full heavyweight database to be loaded.
     """
 
     def __init__(self) -> None:
-        """Just constructor to held the internal members."""
+        """Initialize the database with empty device and feature collections.
+
+        Sets up internal data structures for storing device information and feature data,
+        along with an empty database hash for integrity checking.
+        """
         self.devices = DevicesQuickInfo()
         self.features_data = FeaturesQuickData()
         self.db_hash = b""
@@ -1343,7 +1681,7 @@ class QuickDatabase:
     def create(cls, database: "Database") -> Self:
         """Create Quick data from the Database.
 
-        :param database: Database object to pick data from
+        :param database: Database object to pick data from.
         :return: Quick database object.
         """
         ret = cls()
@@ -1354,8 +1692,11 @@ class QuickDatabase:
     def split_devices_to_groups(self, devices: list[str]) -> dict[str, list[str]]:
         """Sort given devices to groups by their purposes.
 
-        :param devices: Input list of devices.
-        :return: Dictionary where the key is name od group and value is list of devices.
+        The method organizes devices into groups based on their purpose attribute from the
+        device database. Each group contains devices with the same purpose, sorted alphabetically.
+
+        :param devices: List of device names to be grouped.
+        :return: Dictionary where the key is group name and value is list of devices.
         """
         ret: dict[str, list[str]] = {}
         for device in devices:
@@ -1370,10 +1711,22 @@ class QuickDatabase:
 
 
 class Database:
-    """Class that helps manage used databases in SPSDK."""
+    """SPSDK database manager for device configuration and data files.
+
+    This class provides centralized access to device databases, configuration files,
+    and related data across the NXP MCU portfolio. It handles database caching,
+    loading device-specific configurations, and managing restricted or addon data
+    paths for efficient SPSDK operations.
+    """
 
     class DatabaseData:
-        """Database data intended to be cached if possible."""
+        """SPSDK Database Data Manager.
+
+        This class manages database configuration data with intelligent caching capabilities
+        to improve performance across SPSDK operations. It handles loading, validation,
+        and caching of database configurations from multiple data sources including
+        main database path, restricted data, and addon configurations.
+        """
 
         def __init__(
             self,
@@ -1382,7 +1735,18 @@ class Database:
             addons_data_path: Optional[str] = None,
             complete_load: bool = False,
         ) -> None:
-            """Constructor of Database data object."""
+            """Initialize Database data object with configuration paths and caching options.
+
+            The constructor sets up the database with primary data path and optional restricted
+            and addon data paths. It handles cache loading/validation and loads default
+            configurations from YAML files.
+
+            :param path: Primary path to database data folder.
+            :param restricted_data_path: Optional path to restricted data folder.
+            :param addons_data_path: Optional path to addons data folder.
+            :param complete_load: If True, forces complete database reload bypassing cache.
+            :raises SPSDKError: Invalid cache file type or cache loading failure.
+            """
             self.path = path
             self.restricted_data_path = restricted_data_path
             self.addons_data_path = addons_data_path
@@ -1440,7 +1804,15 @@ class Database:
             )
 
         def make_cache(self) -> None:
-            """Create cache file of itself."""
+            """Create cache file of database data.
+
+            The method creates a pickled cache file to improve performance by storing
+            processed database configurations. It handles concurrent access using file
+            locks and merges data from parallel processes when needed. The cache is
+            only created if the database hash has changed.
+
+            :raises Exception: Any exception during cache file creation or access.
+            """
             db_hash = self.hash_db_data(
                 cached_configs=list(self.cfg_cache.keys()),
                 path=self.path,
@@ -1483,9 +1855,14 @@ class Database:
 
         @staticmethod
         def get_cache_filename(path: str) -> str:
-            """Get database cache folder and file name.
+            """Get database cache filename based on path and version.
 
-            :return: Database cache file name.
+            The method generates a unique cache filename using the provided path,
+            SPSDK version, and a SHA1 hash for uniqueness. The cache file is stored
+            in the SPSDK cache directory.
+
+            :param path: Path to generate cache filename for.
+            :return: Full path to the database cache file.
             """
             data_folder = path.lower()
             cache_name = (
@@ -1505,16 +1882,28 @@ class Database:
             restricted_data_path: Optional[str] = None,
             addons_data_path: Optional[str] = None,
         ) -> bytes:
-            """Get hash of real files/data.
+            """Generate SHA1 hash of database configuration files and paths.
 
-            :param cached_configs: List of file names to be hashed
-            :param path: Path to database
-            :param restricted_data_path: Optional path to restricted data, defaults to None
-            :param addons_data_path: Optional path to addons data, defaults to None
-            :return: Hash of all inputs including defaults content
+            The method creates a hash based on file modification times, sizes, and paths
+            to detect changes in database configuration data including cached configs,
+            database path, restricted data, addons data, and default configuration.
+
+            :param cached_configs: List of configuration file paths to be hashed.
+            :param path: Base path to the database directory.
+            :param restricted_data_path: Optional path to restricted data directory.
+            :param addons_data_path: Optional path to addons data directory.
+            :return: SHA1 hash bytes of all input data and file metadata.
             """
 
             def hash_file(file: str) -> None:
+                """Update file hash with file metadata.
+
+                Updates the hash object with the file's modification time (in nanoseconds) and size
+                to create a unique fingerprint based on file metadata.
+
+                :param file: Path to the file to hash.
+                :raises OSError: If the file cannot be accessed or does not exist.
+                """
                 stat = os.stat(file)
                 hash_obj.update_int(stat.st_mtime_ns)
                 hash_obj.update_int(stat.st_size)
@@ -1541,12 +1930,15 @@ class Database:
         addons_data_path: Optional[str] = None,
         complete_load: bool = False,
     ) -> None:
-        """Register Configuration class constructor.
+        """Initialize database configuration.
 
-        :param path: The path to the base database.
-        :param restricted_data_path: The path to the restricted data database.
-        :param addons_data_path: The path to the addons data database.
-        :param complete_load: The database is fully loaded from database path without using cache.
+        Creates a new database instance with base, restricted, and addon data sources.
+        Optionally loads all device configurations immediately instead of using lazy loading.
+
+        :param path: Path to the base database directory.
+        :param restricted_data_path: Path to the restricted data database directory.
+        :param addons_data_path: Path to the addons data database directory.
+        :param complete_load: Load all database content immediately without caching.
         """
         self._data = self.DatabaseData(
             path=path,
@@ -1566,14 +1958,22 @@ class Database:
 
     @property
     def devices(self) -> Devices:
-        """Get the list of devices stored in the database."""
+        """Get the list of devices stored in the database.
+
+        :return: Collection of devices available in the database.
+        """
         return self._devices
 
     def get_defaults(self, feature: str) -> dict[str, Any]:
-        """Gets feature defaults.
+        """Get feature defaults from the database.
 
-        :param feature: Feature name
-        :return: Dictionary with feature defaults.
+        The method retrieves default configuration values for a specified feature
+        from the database's defaults section and returns a deep copy to prevent
+        accidental modifications.
+
+        :param feature: Name of the feature to get defaults for.
+        :raises SPSDKValueError: Invalid or non-existing feature name.
+        :return: Dictionary containing the feature's default configuration values.
         """
         features = self._data.defaults["features"]
         if feature not in features:
@@ -1582,12 +1982,15 @@ class Database:
         return deepcopy(features[feature])
 
     def get_device_features(self, family: str, revision: str = "latest") -> Features:
-        """Get device features database.
+        """Get device features database for specified family and revision.
 
-        :param family: The family name.
-        :param revision: The revision name.
-        :raises SPSDKValueError: Unsupported feature
-        :return: The feature data.
+        Retrieves the feature configuration data for a specific device family and revision
+        from the internal database. If revision is not specified, returns the latest available.
+
+        :param family: The device family name to look up.
+        :param revision: The device revision name, defaults to "latest".
+        :raises SPSDKValueError: Unsupported family or revision.
+        :return: The feature configuration data for the specified device.
         """
         dev = self.devices.get(family.lower())
         return dev.revisions.get(revision.lower())
@@ -1599,9 +2002,10 @@ class Database:
 
         The method counts also with restricted data source and any other addons.
 
-        :param path: Relative path in data folder
-        :param exc_enabled: Exception enabled in case of non existing file.
-        :param just_standard_lib: Use just standard library files (no restricted data, neither addons), defaults False.
+        :param path: Relative path in data folder.
+        :param exc_enabled: Exception enabled in case of non existing file, defaults to True.
+        :param just_standard_lib: Use just standard library files (no restricted data, neither
+            addons), defaults to False.
         :raises SPSDKValueError: Non existing file path.
         :return: Final absolute path to data file.
         """
@@ -1629,10 +2033,14 @@ class Database:
         return os.path.abspath(normal_path)
 
     def get_schema_file(self, feature: str) -> dict[str, Any]:
-        """Get JSON Schema file name for the requested feature.
+        """Get JSON Schema file for the requested feature.
 
-        :param feature: Requested feature.
-        :return: Loaded dictionary of JSON Schema file.
+        The method loads and returns the JSON Schema configuration file for a specific
+        feature from the database's jsonschemas directory.
+
+        :param feature: Name of the feature to get the schema for.
+        :raises SPSDKError: If the schema file cannot be found or loaded.
+        :return: Loaded dictionary containing the JSON Schema configuration.
         """
         path = self.get_data_file_path(os.path.join("jsonschemas", f"sch_{feature}.yaml"))
         return DatabaseManager().db.load_db_cfg_file(path)
@@ -1642,18 +2050,21 @@ class Database:
 
         The method counts also with restricted data source and any other addons.
 
-        :param path: Relative path in common data folder
+        :param path: Relative path in common data folder.
         :raises SPSDKValueError: Non existing file path.
         :return: Final absolute path to data file.
         """
         return self.get_data_file_path(os.path.join("common", path))
 
     def load_db_cfg_file(self, filename: str) -> dict[str, Any]:
-        """Return load database config file (JSON/YAML). Use SingleTon behavior.
+        """Load database configuration file with caching support.
 
-        :param filename: Path to config file.
-        :raises SPSDKError: Invalid config file.
-        :return: Loaded file in dictionary.
+        Loads JSON or YAML configuration files and caches them using singleton behavior
+        to avoid repeated file operations for the same file path.
+
+        :param filename: Path to the configuration file to load.
+        :raises SPSDKError: Invalid or corrupted configuration file.
+        :return: Loaded configuration data as dictionary.
         """
         abs_path = os.path.abspath(filename)
         if abs_path not in self._data.cfg_cache:
@@ -1667,14 +2078,28 @@ class Database:
         return deepcopy(self._data.cfg_cache[abs_path])
 
     def __hash__(self) -> int:
-        """Hash function of the database."""
+        """Calculate hash value for the database instance.
+
+        The hash is computed using SHA1 algorithm based on the length of the configuration cache,
+        providing a unique identifier for the current state of the database.
+
+        :return: Integer hash value representing the database state.
+        """
         hash_obj = Hash(EnumHashAlgorithm.SHA1)
         hash_obj.update_int(len(self._data.cfg_cache))
         return value_to_int(hash_obj.finalize())
 
 
 class FeaturesEnum(SpsdkEnum):
-    """Enumeration of all SPSDK database features."""
+    """Enumeration of all SPSDK database features.
+
+    This enumeration defines all supported features across the NXP MCU portfolio
+    that can be managed through SPSDK. Each feature represents a specific
+    functionality or component such as boot containers, security protocols,
+    memory configurations, and programming interfaces. The enumeration provides
+    a standardized way to identify and reference SPSDK capabilities in the
+    database system.
+    """
 
     FUSES = (0, "fuses", "One-Time Programmable fuses")
     BLHOST = (1, "blhost", "BLHOST application / mBoot In-System Programming protocol")
@@ -1717,7 +2142,21 @@ class FeaturesEnum(SpsdkEnum):
 
 
 class DatabaseManager:
-    """Main SPSDK database manager implementing singleton pattern."""
+    """SPSDK database manager implementing singleton pattern for unified data access.
+
+    This class provides centralized access to SPSDK database resources including
+    device configurations, register definitions, and restricted data. It manages
+    database initialization, caching, and ensures single instance access across
+    the application lifecycle.
+
+    :cvar FUSES: Database category for fuse-related data.
+    :cvar BLHOST: Database category for bootloader host data.
+    :cvar COMM_BUFFER: Database category for communication buffer data.
+    :cvar CERT_BLOCK: Database category for certificate block data.
+    :cvar DAT: Database category for debug authentication data.
+    :cvar MBI: Database category for master boot image data.
+    :cvar HAB: Database category for high assurance boot data.
+    """
 
     _instance = None
     _db: Optional[Database] = None
@@ -1725,7 +2164,15 @@ class DatabaseManager:
 
     @staticmethod
     def clear_cache() -> None:
-        """Clear SPSDK cache directory."""
+        """Clear SPSDK cache directory.
+
+        Removes the entire SPSDK cache directory and all its contents. If the cache
+        directory does not exist, logs an error message. If removal fails due to
+        permission or other OS-related issues, logs an error with details.
+
+        :raises PermissionError: When insufficient permissions to remove cache directory.
+        :raises OSError: When OS-level error occurs during directory removal.
+        """
         path = get_spsdk_cache_dirname()
         if not os.path.exists(path):
             logger.error(f"Cache directory '{path}' does not exist, nothing to clear.")
@@ -1739,7 +2186,10 @@ class DatabaseManager:
     def get_restricted_data() -> Optional[str]:
         """Get restricted data folder path, if applicable.
 
-        :return: Optional restricted data folder path.
+        Validates the restricted data folder by checking metadata version compatibility
+        with current SPSDK version and verifying the data folder exists.
+
+        :return: Path to restricted data folder if valid and compatible, None otherwise.
         """
         if SPSDK_RESTRICTED_DATA_FOLDER is None:
             return None
@@ -1767,7 +2217,10 @@ class DatabaseManager:
     def _get_quick_info_db_path(cls) -> str:
         """Get quick info database filename.
 
-        :return: Database cache file name.
+        The method constructs a path to the cache file that stores quick database information,
+        incorporating the current SPSDK version in the filename for version-specific caching.
+
+        :return: Absolute path to the database cache file.
         """
         cache_folder = get_spsdk_cache_dirname()
         return os.path.join(cache_folder, f"db_quick_info_{spsdk.version}.cache")
@@ -1776,7 +2229,13 @@ class DatabaseManager:
     def _get_quick_info_db(cls) -> QuickDatabase:
         """Get database and handle caching.
 
-        :return: QuickDatabase instance.
+        This method retrieves a QuickDatabase instance with intelligent caching to improve
+        performance. It checks if caching is disabled, validates cached data using hash
+        fingerprints, and creates new cache files when necessary. The method handles
+        various error conditions gracefully and falls back to creating a fresh database
+        when cache operations fail.
+
+        :return: QuickDatabase instance with current database data.
         """
         restricted_data = DatabaseManager.get_restricted_data()
 
@@ -1826,9 +2285,13 @@ class DatabaseManager:
         return quick_info
 
     def __new__(cls) -> Self:
-        """Manage SPSDK Database as a singleton class.
+        """Create singleton instance of SPSDK Database manager.
 
-        :return: SPSDK_Database object
+        This method implements the singleton pattern to ensure only one instance of the
+        DatabaseManager exists. It also configures logging based on the SPSDK_DEBUG_DB
+        environment variable.
+
+        :return: DatabaseManager singleton instance.
         """
         if cls._instance:
             return cls._instance
@@ -1843,13 +2306,25 @@ class DatabaseManager:
 
     @staticmethod
     def get_quick_info_hash(paths: list[Optional[str]]) -> bytes:
-        """Calculate the hash of the real databases.
+        """Calculate hash for quick database validation.
 
-        :param paths: List of paths to database folders.
-        :return: Calculated hash as bytes.
+        This method generates a SHA1 hash based on modification times and sizes of database files
+        to quickly detect changes in the database structure without full content comparison.
+        The hash includes common defaults and all device-specific database files.
+
+        :param paths: List of paths to database folders, None values are ignored.
+        :return: SHA1 hash of database files as bytes.
         """
 
         def hash_file(file: str) -> None:
+            """Hash file metadata for integrity verification.
+
+            Updates the hash object with file's modification time and size to create
+            a unique fingerprint for file change detection.
+
+            :param file: Path to the file to be hashed.
+            :raises OSError: If the file cannot be accessed or does not exist.
+            """
             stat = os.stat(file)
             hash_obj.update_int(stat.st_mtime_ns + stat.st_size)
 
@@ -1880,9 +2355,13 @@ class DatabaseManager:
 
     @classmethod
     def get_db(cls, complete_load: bool = False) -> Database:
-        """Get database, and handle the first time use.
+        """Get database instance with lazy initialization.
 
-        :param complete_load: If True, the database will be completely loaded.
+        Creates and initializes the database on first access using SPSDK data folders
+        and restricted data configuration.
+
+        :param complete_load: If True, the database will be completely loaded during
+            initialization, otherwise loaded on demand.
         :return: Database instance.
         """
         if cls._db is None:
@@ -1896,14 +2375,23 @@ class DatabaseManager:
 
     @property
     def db(self) -> Database:
-        """Get Database instance."""
+        """Get Database instance.
+
+        Retrieves and validates the database instance from the internal storage.
+
+        :raises AssertionError: If the retrieved object is not a Database instance.
+        :return: The Database instance.
+        """
         db = self.get_db()
         assert isinstance(db, Database)
         return db
 
     @property
     def quick_info(self) -> QuickDatabase:
-        """Get quick info Database instance."""
+        """Get quick info Database instance.
+
+        :return: Quick database instance containing essential device information.
+        """
         quick_info = type(self)._quick_info
         assert isinstance(quick_info, QuickDatabase)
         return quick_info
@@ -1950,10 +2438,10 @@ class DatabaseManager:
 
 
 def get_schema_file(feature: str) -> dict[str, Any]:
-    """Get JSON Schema file name for the requested feature.
+    """Get JSON Schema file for the requested feature.
 
-    :param feature: Requested feature.
-    :return: Loaded dictionary of JSON Schema file.
+    :param feature: Name of the feature to get schema for.
+    :return: Loaded dictionary containing the JSON Schema file content.
     """
     return DatabaseManager().db.get_schema_file(feature)
 

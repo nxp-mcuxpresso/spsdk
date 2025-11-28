@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Tests for Virtual Debug Probe."""
+"""SPSDK Virtual Debug Probe test module.
+
+This module contains comprehensive test cases for the Virtual Debug Probe functionality,
+covering basic operations, debug port access, memory operations, and error handling scenarios.
+"""
+
+
 import pytest
 
 from spsdk.debuggers.debug_probe import (
@@ -16,9 +22,14 @@ from spsdk.debuggers.debug_probe import (
 from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
 
 
-def test_virtualprobe_basic():
-    """Test of virtual Debug Probe - Basic Test."""
-    virtual_probe = DebugProbeVirtual("ID", None)
+def test_virtualprobe_basic() -> None:
+    """Test basic functionality of virtual debug probe.
+
+    Verifies that a DebugProbeVirtual instance can be created with proper
+    hardware ID assignment and that the open/close operations work correctly
+    with appropriate state tracking.
+    """
+    virtual_probe = DebugProbeVirtual("ID", {})
     assert virtual_probe is not None
     assert virtual_probe.hardware_id == "ID"
 
@@ -29,9 +40,18 @@ def test_virtualprobe_basic():
     assert not virtual_probe.opened
 
 
-def test_virtualprobe_dp():
-    """Test of virtual Debug Probe - Debug port access."""
-    virtual_probe = DebugProbeVirtual("ID", None)
+def test_virtualprobe_dp() -> None:
+    """Test virtual Debug Probe debug port access functionality.
+
+    This test verifies the virtual debug probe's coresight register read/write operations,
+    error handling for unopened probes, substitute data mechanisms, and exception scenarios
+    for debug port access.
+
+    :raises SPSDKDebugProbeNotOpenError: When attempting operations on unopened probe.
+    :raises SPSDKDebugProbeError: When substitute data triggers an exception.
+    :raises SPSDKDebugProbeTransferError: When write operations are configured to fail.
+    """
+    virtual_probe = DebugProbeVirtual("ID", {})
     with pytest.raises(SPSDKDebugProbeNotOpenError):
         virtual_probe.coresight_reg_read(False, 0)
     with pytest.raises(SPSDKDebugProbeNotOpenError):
@@ -61,9 +81,17 @@ def test_virtualprobe_dp():
         virtual_probe.coresight_reg_write(False, 0, 0)
 
 
-def test_virtualprobe_ap():
-    """Test of virtual Debug Probe - Access port control."""
-    virtual_probe = DebugProbeVirtual("ID", None)
+def test_virtualprobe_ap() -> None:
+    """Test virtual Debug Probe access port control functionality.
+
+    Validates that the virtual debug probe correctly handles access port operations
+    including error conditions when not opened, basic read/write operations,
+    and substitute data functionality with various response types.
+
+    :raises SPSDKDebugProbeNotOpenError: When attempting operations on unopened probe.
+    :raises SPSDKDebugProbeError: When substitute data triggers exception response.
+    """
+    virtual_probe = DebugProbeVirtual("ID", {})
     with pytest.raises(SPSDKDebugProbeNotOpenError):
         virtual_probe.coresight_reg_read(True, 0)
 
@@ -89,9 +117,18 @@ def test_virtualprobe_ap():
     assert virtual_probe.coresight_reg_read(True, 0) == 1
 
 
-def test_virtualprobe_memory():
-    """Test of virtual Debug Probe - Memory access tests."""
-    virtual_probe = DebugProbeVirtual("ID", None)
+def test_virtualprobe_memory() -> None:
+    """Test virtual debug probe memory access functionality.
+
+    Validates that the virtual debug probe correctly handles memory read/write operations,
+    including proper error handling when the probe is not opened, basic memory operations
+    when connected, and virtual memory substitute data functionality with various data types
+    and exception scenarios.
+
+    :raises SPSDKDebugProbeNotOpenError: When attempting memory operations on unopened probe.
+    :raises SPSDKDebugProbeError: When virtual memory substitute data contains exception markers.
+    """
+    virtual_probe = DebugProbeVirtual("ID", {})
     with pytest.raises(SPSDKDebugProbeNotOpenError):
         virtual_probe.mem_reg_read(0)
 
@@ -117,17 +154,31 @@ def test_virtualprobe_memory():
     assert virtual_probe.mem_reg_read(0) == 1
 
 
-def test_virtualprobe_reset():
-    """Test of virtual Debug Probe - Reset API."""
-    virtual_probe = DebugProbeVirtual("ID", None)
+def test_virtualprobe_reset() -> None:
+    """Test virtual Debug Probe reset functionality.
+
+    Verifies that the reset operation raises SPSDKDebugProbeNotOpenError when called
+    on a closed probe and executes successfully when called on an open probe.
+
+    :raises SPSDKDebugProbeNotOpenError: When reset is called on a closed probe.
+    """
+    virtual_probe = DebugProbeVirtual("ID", {})
     with pytest.raises(SPSDKDebugProbeNotOpenError):
         virtual_probe.reset()
     virtual_probe.open()
     virtual_probe.reset()
 
 
-def test_virtualprobe_init():
-    """Test of virtual Debug Probe - Initialization."""
+def test_virtualprobe_init() -> None:
+    """Test virtual Debug Probe initialization functionality.
+
+    Verifies that DebugProbeVirtual properly handles initialization with invalid
+    parameters (raises SPSDKDebugProbeError) and correctly processes valid
+    substitution parameters for AP, DP, and memory operations. Also tests
+    the clear functionality with different parameters.
+
+    :raises SPSDKDebugProbeError: When initialized with invalid parameters.
+    """
     with pytest.raises(SPSDKDebugProbeError):
         virtual_probe = DebugProbeVirtual("ID", {"exc": None})
 
@@ -141,15 +192,29 @@ def test_virtualprobe_init():
     virtual_probe.clear(False)
 
 
-def test_virtualprobe_init_false():
-    """Test of virtual Debug Probe - Invalid Initialization."""
+def test_virtualprobe_init_false() -> None:
+    """Test of virtual Debug Probe - Invalid Initialization.
+
+    This test verifies that DebugProbeVirtual raises SPSDKDebugProbeError
+    when initialized with invalid JSON format in the subs_ap parameter.
+
+    :raises SPSDKDebugProbeError: Expected exception when invalid JSON is provided.
+    """
     with pytest.raises(SPSDKDebugProbeError):
         DebugProbeVirtual("ID", {"subs_ap": '{"0":1,2]}'})
 
 
-def test_virtualprobe_block_memory():
-    """Test of virtual Debug Probe - Block memory access tests."""
-    virtual_probe = DebugProbeVirtual("ID", None)
+def test_virtualprobe_block_memory() -> None:
+    """Test virtual Debug Probe block memory access functionality.
+
+    Comprehensive test suite that validates the virtual debug probe's block memory
+    operations including small and large data transfers, cross-page boundary handling,
+    unaligned memory access, overlapping writes, error conditions, and uninitialized
+    memory reads.
+
+    :raises SPSDKDebugProbeError: When invalid memory addresses are accessed.
+    """
+    virtual_probe = DebugProbeVirtual("ID", {})
     virtual_probe.open()
     virtual_probe.connect()
 

@@ -31,7 +31,7 @@ sb3:
       title: Part Common Key
       description: Path to PCK/NPK 256 or 128 bit key in plain hex string format or path to binary file or hex string.
       template_value: my_pck.txt
-      format: file-or-hex-value
+      format: file-or-hex-value-or-config-string
     isNxpContainer:
       type: boolean
       title: Enable NXP Container format
@@ -452,7 +452,7 @@ sb3_commands:
                     format: file
                     template_value: my_keyblob.bin
                   plainInput:
-                    type: string
+                    type: [string, boolean] # boolean covers auto-conversion: no -> False
                     title: Key Blob as plain text
                     description: Indicates whether key is provided as plaintext or not. If it's in plaintext this option also indicates whether it's as binary or hex
                     enum: ["no", bin, hex]
@@ -535,7 +535,7 @@ sb3_commands:
                         radio,
                         snt,
                         bootloader,
-                        radio_ip,
+                        radio_lp,
                       ]
                     template_value: secure
                 required: [value, counterId]

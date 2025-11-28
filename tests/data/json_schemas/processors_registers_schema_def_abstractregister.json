@@ -57,7 +57,7 @@
       "$id": "#/properties/register/is_reserved",
       "type": "boolean",
       "default": false,
-      "title": "Whether the register is completelly reserved."
+      "title": "Whether the register is completely reserved."
     },
     "access": {
       "$id": "#/properties/register/access",
@@ -113,7 +113,7 @@
         "src_register_id": {
           "$id": "#/properties/register/calculated/register_id",
           "type": "string",
-          "title": "Reference to another register used as source for calculation. See method for info, how the reister us used."
+          "title": "Reference to another register used as source for calculation. See method for info, how the register is used."
         }
       }
     },

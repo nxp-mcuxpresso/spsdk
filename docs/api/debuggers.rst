@@ -1,8 +1,6 @@
 Debuggers API
 ===============
-
-Debuggers module provides wrappers for various types of debuggers.
-
+.. automodule:: spsdk.debuggers
 
 Module for DebugMailbox Debug probes support
 -----------------------------------------------

@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""OpenSSL implementation for symmetric key encryption."""
+"""SPSDK symmetric cryptography utilities.
+
+This module provides a comprehensive set of functions for symmetric encryption
+and decryption operations using various AES modes and SM4 algorithm. It includes
+support for key wrapping, block cipher modes (ECB, CBC, CTR, XTS), and
+authenticated encryption modes (CCM, GCM).
+"""
 
 
 # Used security modules
@@ -19,11 +25,22 @@ from spsdk.utils.misc import Endianness, align_block
 
 
 class Counter:
-    """AES counter with specified counter byte ordering and customizable increment."""
+    """AES counter with specified counter byte ordering and customizable increment.
+
+    This class manages a 16-byte counter for AES encryption operations, providing
+    control over byte ordering and counter incrementation. The counter consists of
+    a 12-byte nonce and a 4-byte counter value that can be incremented as needed.
+    """
 
     @property
     def value(self) -> bytes:
-        """Initial vector for AES encryption."""
+        """Get the initial vector for AES encryption.
+
+        Combines the nonce with the counter value to create the complete initialization vector
+        used for AES encryption operations.
+
+        :return: Complete initialization vector as bytes combining nonce and counter.
+        """
         return self._nonce + self._ctr.to_bytes(4, self._ctr_byteorder_encoding.value)
 
     def __init__(
@@ -32,12 +49,16 @@ class Counter:
         ctr_value: Optional[int] = None,
         ctr_byteorder_encoding: Endianness = Endianness.LITTLE,
     ):
-        """Constructor.
+        """Initialize AES counter mode cipher.
 
-        :param nonce: last four bytes are used as initial value for counter
-        :param ctr_value: counter initial value; it is added to counter value retrieved from nonce
-        :param ctr_byteorder_encoding: way how the counter is encoded into output value
-        :raises SPSDKError: When invalid byteorder is provided
+        Initializes the counter mode cipher with a 16-byte nonce where the last four bytes
+        serve as the initial counter value. The counter can be further adjusted with an
+        additional offset value.
+
+        :param nonce: 16-byte nonce where last four bytes are used as initial counter value
+        :param ctr_value: Optional counter offset added to the counter value from nonce
+        :param ctr_byteorder_encoding: Byte order encoding for counter value conversion
+        :raises SPSDKError: When nonce is not exactly 16 bytes long
         """
         if not (isinstance(nonce, bytes) and len(nonce) == 16):
             raise SPSDKError("nonce must be 16 bytes long")
@@ -50,27 +71,33 @@ class Counter:
     def increment(self, value: int = 1) -> None:
         """Increment counter by specified value.
 
-        :param value: to add to counter
+        :param value: Value to add to counter.
         """
         self._ctr += value
 
 
 def aes_key_wrap(kek: bytes, key_to_wrap: bytes) -> bytes:
-    """Wraps a key using a key-encrypting key (KEK).
+    """Wrap a key using AES key wrapping algorithm with a key-encrypting key (KEK).
 
-    :param kek: The key-encrypting key
-    :param key_to_wrap: Plain data
-    :return: Wrapped key
+    This function implements the AES key wrap algorithm as defined in RFC 3394,
+    which provides a secure method for encrypting cryptographic keys using another key.
+
+    :param kek: The key-encrypting key used to wrap the target key.
+    :param key_to_wrap: The cryptographic key data to be wrapped.
+    :return: The wrapped key as bytes.
     """
     return keywrap.aes_key_wrap(kek, key_to_wrap)
 
 
 def aes_key_unwrap(kek: bytes, wrapped_key: bytes) -> bytes:
-    """Unwraps a key using a key-encrypting key (KEK).
+    """Unwrap a key using AES key wrapping algorithm with key-encrypting key (KEK).
 
-    :param kek: The key-encrypting key
-    :param wrapped_key: Encrypted data
-    :return: Un-wrapped key
+    This method implements the AES key unwrapping algorithm as defined in RFC 3394
+    to securely unwrap a previously wrapped cryptographic key.
+
+    :param kek: The key-encrypting key used for unwrapping.
+    :param wrapped_key: The wrapped key data to be unwrapped.
+    :return: The unwrapped key as bytes.
     """
     return keywrap.aes_key_unwrap(kek, wrapped_key)
 
@@ -78,9 +105,9 @@ def aes_key_unwrap(kek: bytes, wrapped_key: bytes) -> bytes:
 def aes_ecb_encrypt(key: bytes, plain_data: bytes) -> bytes:
     """Encrypt plain data with AES in ECB mode.
 
-    :param key: The key for data encryption
-    :param plain_data: Input data
-    :return: Encrypted data
+    :param key: The encryption key in bytes format.
+    :param plain_data: Input data to be encrypted.
+    :return: Encrypted data in bytes format.
     """
     cipher = Cipher(algorithms.AES(key), modes.ECB())  # nosec
     enc = cipher.encryptor()
@@ -90,9 +117,9 @@ def aes_ecb_encrypt(key: bytes, plain_data: bytes) -> bytes:
 def aes_ecb_decrypt(key: bytes, encrypted_data: bytes) -> bytes:
     """Decrypt encrypted data with AES in ECB mode.
 
-    :param key: The key for data decryption
-    :param encrypted_data: Input data
-    :return: Decrypted data
+    :param key: The AES encryption key used for data decryption.
+    :param encrypted_data: The encrypted input data to be decrypted.
+    :return: Decrypted data as bytes.
     """
     cipher = Cipher(algorithms.AES(key), modes.ECB())  # nosec
     enc = cipher.decryptor()
@@ -102,11 +129,14 @@ def aes_ecb_decrypt(key: bytes, encrypted_data: bytes) -> bytes:
 def aes_cbc_encrypt(key: bytes, plain_data: bytes, iv_data: Optional[bytes] = None) -> bytes:
     """Encrypt plain data with AES in CBC mode.
 
-    :param key: The key for data encryption
-    :param plain_data: Input data
-    :param iv_data: Initialization vector data
-    :raises SPSDKError: Invalid Key or IV
-    :return: Encrypted image
+    The function performs AES encryption using Cipher Block Chaining (CBC) mode with PKCS7
+    padding. If no initialization vector is provided, a zero-filled IV is used.
+
+    :param key: AES encryption key, must be valid AES key length (128, 192, or 256 bits).
+    :param plain_data: Raw data to be encrypted.
+    :param iv_data: Initialization vector for CBC mode, defaults to zero-filled block.
+    :raises SPSDKError: Invalid key length or IV length.
+    :return: Encrypted data with PKCS7 padding applied.
     """
     if len(key) * 8 not in algorithms.AES.key_sizes:
         raise SPSDKError(
@@ -127,11 +157,14 @@ def aes_cbc_encrypt(key: bytes, plain_data: bytes, iv_data: Optional[bytes] = No
 def aes_cbc_decrypt(key: bytes, encrypted_data: bytes, iv_data: Optional[bytes] = None) -> bytes:
     """Decrypt encrypted data with AES in CBC mode.
 
-    :param key: The key for data decryption
-    :param encrypted_data: Input data
-    :param iv_data: Initialization vector data
-    :raises SPSDKError: Invalid Key or IV
-    :return: Decrypted image
+    The function performs AES decryption using Cipher Block Chaining (CBC) mode with
+    optional initialization vector. If no IV is provided, a zero-filled IV is used.
+
+    :param key: The AES key for data decryption (must be valid AES key length).
+    :param encrypted_data: The encrypted input data to be decrypted.
+    :param iv_data: Initialization vector data (optional, defaults to zero-filled).
+    :raises SPSDKError: Invalid key length or initialization vector length.
+    :return: Decrypted data as bytes.
     """
     if len(key) * 8 not in algorithms.AES.key_sizes:
         raise SPSDKError(
@@ -149,10 +182,10 @@ def aes_cbc_decrypt(key: bytes, encrypted_data: bytes, iv_data: Optional[bytes] 
 def aes_ctr_encrypt(key: bytes, plain_data: bytes, nonce: bytes) -> bytes:
     """Encrypt plain data with AES in CTR mode.
 
-    :param key: The key for data encryption
-    :param plain_data: Input data
-    :param nonce: Nonce data with counter value
-    :return: Encrypted data
+    :param key: The encryption key in bytes format.
+    :param plain_data: Input data to be encrypted.
+    :param nonce: Nonce data with counter value for CTR mode.
+    :return: Encrypted data in bytes format.
     """
     cipher = Cipher(algorithms.AES(key), modes.CTR(nonce))
     enc = cipher.encryptor()
@@ -160,12 +193,16 @@ def aes_ctr_encrypt(key: bytes, plain_data: bytes, nonce: bytes) -> bytes:
 
 
 def aes_ctr_decrypt(key: bytes, encrypted_data: bytes, nonce: bytes) -> bytes:
-    """Decrypt encrypted data with AES in CTR mode.
+    """Decrypt data using AES algorithm in CTR mode.
 
-    :param key: The key for data decryption
-    :param encrypted_data: Input data
-    :param nonce: Nonce data with counter value
-    :return: Decrypted data
+    This function performs AES decryption in Counter (CTR) mode, which is a stream cipher mode
+    that turns a block cipher into a stream cipher by repeatedly encrypting successive values
+    of a counter.
+
+    :param key: AES encryption key (must be 16, 24, or 32 bytes for AES-128/192/256).
+    :param encrypted_data: The encrypted data to be decrypted.
+    :param nonce: Nonce value with counter for CTR mode (typically 16 bytes for AES).
+    :return: Decrypted plaintext data as bytes.
     """
     cipher = Cipher(algorithms.AES(key), modes.CTR(nonce))
     enc = cipher.decryptor()
@@ -175,10 +212,13 @@ def aes_ctr_decrypt(key: bytes, encrypted_data: bytes, nonce: bytes) -> bytes:
 def aes_xts_encrypt(key: bytes, plain_data: bytes, tweak: bytes) -> bytes:
     """Encrypt plain data with AES in XTS mode.
 
-    :param key: The key for data encryption
-    :param plain_data: Input data
-    :param tweak: The tweak is a 16 byte value
-    :return: Encrypted data
+    The XTS mode is designed for encrypting data on storage devices where
+    the same plaintext might be encrypted multiple times with different tweaks.
+
+    :param key: The encryption key (must be 32 or 64 bytes for AES-128 or AES-256).
+    :param plain_data: Input data to be encrypted.
+    :param tweak: The tweak value (must be exactly 16 bytes).
+    :return: Encrypted data.
     """
     cipher = Cipher(algorithms.AES(key), modes.XTS(tweak))
     enc = cipher.encryptor()
@@ -188,10 +228,13 @@ def aes_xts_encrypt(key: bytes, plain_data: bytes, tweak: bytes) -> bytes:
 def aes_xts_decrypt(key: bytes, encrypted_data: bytes, tweak: bytes) -> bytes:
     """Decrypt encrypted data with AES in XTS mode.
 
-    :param key: The key for data decryption
-    :param encrypted_data: Input data
-    :param tweak: The tweak is a 16 byte value
-    :return: Decrypted data
+    The XTS mode is designed for encrypting data on storage devices where the same
+    plaintext is encrypted to different ciphertext based on its logical position.
+
+    :param key: The encryption key used for AES decryption.
+    :param encrypted_data: The encrypted data to be decrypted.
+    :param tweak: The 16-byte tweak value used in XTS mode for sector addressing.
+    :return: Decrypted plaintext data.
     """
     cipher = Cipher(algorithms.AES(key), modes.XTS(tweak))
     enc = cipher.decryptor()
@@ -201,14 +244,17 @@ def aes_xts_decrypt(key: bytes, encrypted_data: bytes, tweak: bytes) -> bytes:
 def aes_ccm_encrypt(
     key: bytes, plain_data: bytes, nonce: bytes, associated_data: bytes = b"", tag_len: int = 16
 ) -> bytes:
-    """Encrypt plain data with AES in CCM mode (Counter with CBC).
+    """Encrypt plain data with AES in CCM mode (Counter with CBC-MAC).
 
-    :param key: The key for data encryption
-    :param plain_data: Input data
-    :param nonce: Nonce data with counter value
-    :param associated_data: Associated data - Unencrypted but authenticated
-    :param tag_len: Length of encryption tag
-    :return: Encrypted data
+    AES-CCM provides both confidentiality and authenticity for the encrypted data.
+    The method combines the plaintext with associated data for authentication.
+
+    :param key: The encryption key for AES algorithm.
+    :param plain_data: Input data to be encrypted.
+    :param nonce: Nonce value used for counter initialization.
+    :param associated_data: Additional data for authentication (not encrypted).
+    :param tag_len: Length of the authentication tag in bytes.
+    :return: Encrypted data with authentication tag appended.
     """
     aesccm = aead.AESCCM(key, tag_length=tag_len)
     return aesccm.encrypt(nonce, plain_data, associated_data)
@@ -217,14 +263,19 @@ def aes_ccm_encrypt(
 def aes_ccm_decrypt(
     key: bytes, encrypted_data: bytes, nonce: bytes, associated_data: bytes, tag_len: int = 16
 ) -> bytes:
-    """Decrypt encrypted data with AES in CCM mode (Counter with CBC).
+    """Decrypt data using AES in CCM mode (Counter with CBC-MAC).
 
-    :param key: The key for data decryption
-    :param encrypted_data: Input data
-    :param nonce: Nonce data with counter value
-    :param associated_data: Associated data - Unencrypted but authenticated
-    :param tag_len: Length of encryption tag
-    :return: Decrypted data
+    AES-CCM provides both confidentiality and authenticity for the encrypted data.
+    The method decrypts the input data and verifies the authentication tag.
+
+    :param key: AES key for decryption (16, 24, or 32 bytes).
+    :param encrypted_data: Data to be decrypted including authentication tag.
+    :param nonce: Nonce value for CCM mode (7-13 bytes).
+    :param associated_data: Additional authenticated data (not encrypted).
+    :param tag_len: Authentication tag length in bytes (default 16).
+    :raises InvalidTag: If authentication verification fails.
+    :raises ValueError: If key, nonce, or tag length is invalid.
+    :return: Decrypted plaintext data.
     """
     aesccm = aead.AESCCM(key, tag_length=tag_len)
     return aesccm.decrypt(nonce, encrypted_data, associated_data)
@@ -233,11 +284,15 @@ def aes_ccm_decrypt(
 def sm4_cbc_encrypt(key: bytes, plain_data: bytes, iv_data: Optional[bytes] = None) -> bytes:
     """Encrypt plain data with SM4 in CBC mode.
 
-    :param key: The key for data encryption
-    :param plain_data: Input data
-    :param iv_data: Initialization vector data
-    :raises SPSDKError: Invalid Key or IV
-    :return: Encrypted image
+    The method encrypts input data using SM4 algorithm in CBC (Cipher Block Chaining) mode.
+    If no initialization vector is provided, a zero-filled IV is used. Input data is
+    automatically padded to block size alignment.
+
+    :param key: The key for SM4 encryption, must be valid SM4 key length.
+    :param plain_data: Input data to be encrypted.
+    :param iv_data: Initialization vector data, defaults to zero-filled if None.
+    :raises SPSDKError: Invalid key length or IV length.
+    :return: Encrypted data.
     """
     if len(key) * 8 not in algorithms.SM4.key_sizes:
         raise SPSDKError(
@@ -258,11 +313,11 @@ def sm4_cbc_encrypt(key: bytes, plain_data: bytes, iv_data: Optional[bytes] = No
 def sm4_cbc_decrypt(key: bytes, encrypted_data: bytes, iv_data: Optional[bytes] = None) -> bytes:
     """Decrypt encrypted data with SM4 in CBC mode.
 
-    :param key: The key for data decryption
-    :param encrypted_data: Input data
-    :param iv_data: Initialization vector data
-    :raises SPSDKError: Invalid Key or IV
-    :return: Decrypted image
+    :param key: The key for data decryption.
+    :param encrypted_data: Input data to be decrypted.
+    :param iv_data: Initialization vector data, defaults to zero-filled block if None.
+    :raises SPSDKError: Invalid key length or initialization vector length.
+    :return: Decrypted data.
     """
     if len(key) * 8 not in algorithms.SM4.key_sizes:
         raise SPSDKError(
@@ -282,12 +337,15 @@ def aes_gcm_encrypt(
 ) -> bytes:
     """Encrypt plain data with AES in GCM mode (Galois/Counter Mode).
 
-    :param key: The key for data encryption
-    :param plain_data: Input data
-    :param init_vector: Initialization vector (nonce) - typically 12 bytes
-    :param associated_data: Associated data - Unencrypted but authenticated
-    :return: Encrypted data with authentication tag appended
-    :raises SPSDKError: Invalid Key or IV
+    The method uses AES-GCM encryption which provides both confidentiality and authenticity.
+    The authentication tag is automatically appended to the encrypted data.
+
+    :param key: The AES encryption key (must be 128, 192, or 256 bits).
+    :param plain_data: Input data to be encrypted.
+    :param init_vector: Initialization vector (nonce), defaults to 12 zero bytes if None.
+    :param associated_data: Additional authenticated data that remains unencrypted.
+    :return: Encrypted data with authentication tag appended.
+    :raises SPSDKError: Invalid key length or initialization vector length.
     """
     if len(key) * 8 not in algorithms.AES.key_sizes:
         raise SPSDKError(
@@ -310,12 +368,16 @@ def aes_gcm_decrypt(
 ) -> bytes:
     """Decrypt encrypted data with AES in GCM mode (Galois/Counter Mode).
 
-    :param key: The key for data decryption
+    The method decrypts data that was encrypted using AES-GCM algorithm. The encrypted data
+    must include the authentication tag appended at the end. The method validates the key
+    length and initialization vector before performing decryption.
+
+    :param key: The key for data decryption (16, 24, or 32 bytes for AES-128/192/256)
     :param encrypted_data: Input data with authentication tag appended
-    :param init_vector: Initialization vector (nonce) - typically 12 bytes
-    :param associated_data: Associated data - Unencrypted but authenticated
-    :return: Decrypted data
-    :raises SPSDKError: Invalid Key, IV, or authentication failure
+    :param init_vector: Initialization vector (nonce) - must be exactly 12 bytes
+    :param associated_data: Associated data - unencrypted but authenticated data
+    :return: Decrypted data as bytes
+    :raises SPSDKError: Invalid key length, IV length, or authentication failure
     """
     if len(key) * 8 not in algorithms.AES.key_sizes:
         raise SPSDKError(

@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module containing various functions/modules used throughout the SPSDK."""
+"""SPSDK utilities package initialization module.
+
+This module serves as the entry point for the SPSDK utilities package,
+providing access to common utility functions, classes, and exceptions
+used throughout the SPSDK library.
+"""
 
 from spsdk.utils.exceptions import (
     SPSDKRegsError,

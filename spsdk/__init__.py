@@ -5,17 +5,25 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Secure Provisioning SDK is unified, reliable and easy to use SW library.
+"""SPSDK - Secure Provisioning SDK by NXP.
 
-It's working across NXP MCU portfolio providing strong foundation from quick customer
-prototyping up to production deployment.
-The library allows the user to
-    - connect and communicate with a device
-    - configure the device; prepare
-    - download and upload data
-    - providing security operations.
-It is delivered in a form of python library with functionality presented as CLI or GUI utilities.
+The ultimate toolkit for NXP MCU/MPU development - where security meets simplicity!
+
+WHAT YOU GET:
+    - Unified API across the entire NXP MCU/MPU portfolio
+    - Enterprise-grade security operations at your fingertips
+    - Production-ready from prototype to deployment
+
+MULTIPLE INTERFACES:
+    - Pure Python library for custom integrations
+    - Powerful CLI tools for automation and scripting
+
+Whether you're a firmware engineer prototyping the next big thing or deploying
+mission-critical production systems - SPSDK has got you covered!
+
+Ready to supercharge your NXP development experience? Let's get started!
 """
+
 import os
 import sys
 from typing import Optional, Union
@@ -25,7 +33,12 @@ from platformdirs import PlatformDirs
 
 
 class SPSDKPlatformDirs(PlatformDirs):
-    """Adjust platformdirs behavior."""
+    """SPSDK Platform Directories Manager.
+
+    This class extends platformdirs.PlatformDirs to provide unified directory structure
+    behavior across different operating systems, specifically normalizing cache directory
+    paths on Windows to align with the logs directory structure.
+    """
 
     # default platformdirs behavior on win
     # cache -> AppData/$author/$app/Cache/$version
@@ -33,7 +46,14 @@ class SPSDKPlatformDirs(PlatformDirs):
     # to unify that we change "cache" dir so it aligns to "logs" dir
     @property
     def user_cache_dir(self) -> str:
-        """Cache directory tied to the user."""
+        """Get cache directory tied to the user.
+
+        On Windows platforms, returns a subdirectory 'Cache' within the user data directory.
+        On non-Windows platforms, delegates to the parent class implementation.
+        The directory is automatically created if it doesn't exist.
+
+        :return: Absolute path to the user cache directory.
+        """
         if sys.platform != "win32":
             return super().user_cache_dir
         path = os.path.join(self.user_data_dir, "Cache")
@@ -42,7 +62,14 @@ class SPSDKPlatformDirs(PlatformDirs):
 
 
 def get_spsdk_version() -> Version:
-    """Get SPSDK's version. Either from (already generated) __version__ or dynamically via setuptools_scm."""
+    """Get SPSDK version information.
+
+    Retrieves the SPSDK version either from the pre-generated __version__ module
+    or dynamically using setuptools_scm if the version file is not available.
+
+    :raises ImportError: When both __version__ module and setuptools_scm are unavailable.
+    :return: Parsed version object containing SPSDK version information.
+    """
     try:
         from .__version__ import __version__ as spsdk_version
     except ImportError:
@@ -53,7 +80,14 @@ def get_spsdk_version() -> Version:
 
 
 def value_to_bool(value: Optional[Union[bool, int, str]]) -> bool:
-    """Function decode bool value from various formats."""
+    """Convert value to boolean from various input formats.
+
+    Supports conversion from string representations like "True", "true", "T", "1"
+    and standard Python truthy/falsy values for other types.
+
+    :param value: Value to convert to boolean (string, int, bool, or None).
+    :return: Boolean representation of the input value.
+    """
     if isinstance(value, str):
         return value in ("True", "true", "T", "1")
     return bool(value)

@@ -4,7 +4,12 @@
 # Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Main Debug Authentication Tool application."""
+"""SPSDK Shadow Registers management application.
+
+This module provides a command-line application for reading, writing, and managing
+shadow registers on NXP MCUs through debug probes. It includes functionality for
+register manipulation, configuration management, and fuse programming scripts.
+"""
 
 import contextlib
 import logging
@@ -62,7 +67,12 @@ def print_register_info(fuse_register: FuseRegister, rich: bool = False) -> None
 
 @dataclass
 class DebugProbeCfg:
-    """Debug probe configuration."""
+    """Debug probe configuration container.
+
+    This class holds configuration parameters for debug probe connections
+    including interface type, serial number, and additional probe-specific
+    parameters used for device communication and debugging operations.
+    """
 
     interface: Optional[str] = None
     serial_no: Optional[str] = None

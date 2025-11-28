@@ -5,7 +5,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Image header."""
+"""SPSDK SB2 image header management utilities.
+
+This module provides functionality for handling Secure Binary version 2 (SB2) image headers,
+including header creation, validation, and serialization for NXP MCU secure provisioning.
+"""
 
 from datetime import datetime
 from struct import calcsize, pack, unpack_from
@@ -25,7 +29,17 @@ from spsdk.utils.misc import swap16
 ########################################################################################################################
 # pylint: disable=too-many-instance-attributes
 class ImageHeaderV2(BaseClass):
-    """Image Header V2 class."""
+    """SB2 Image Header Version 2 implementation.
+
+    This class represents the header structure for Secure Binary version 2 image files,
+    managing metadata including version information, build details, cryptographic nonce,
+    and structural pointers for boot image processing.
+
+    :cvar FORMAT: Binary format string for header serialization.
+    :cvar SIZE: Total size of the header structure in bytes.
+    :cvar SIGNATURE1: Primary signature identifier 'STMP'.
+    :cvar SIGNATURE2: Secondary signature identifier 'sgtl'.
+    """
 
     FORMAT = "<16s4s4s2BH4I4H4sQ12HI4s"
     SIZE = calcsize(FORMAT)
@@ -45,14 +59,17 @@ class ImageHeaderV2(BaseClass):
     ) -> None:
         """Initialize Image Header Version 2.x.
 
+        Creates a new SB2 image header with specified version information, security parameters,
+        and optional testing configurations.
+
         :param version: The image version value (default: 2.0)
         :param product_version: The product version (default: 1.0.0)
         :param component_version: The component version (default: 1.0.0)
         :param build_number: The build number value (default: 0)
         :param flags: The flags value (default: 0x08)
-        :param nonce: The NONCE value
-        :param timestamp: value requested in the test; None to use current value
-        :param padding: header padding (8 bytes) for testing purpose; None to use random values (recommended)
+        :param nonce: The NONCE value for cryptographic operations
+        :param timestamp: Timestamp for the header; None to use current time
+        :param padding: Header padding (8 bytes) for testing; None to use random values
         """
         self.nonce = nonce
         self.version = version
@@ -76,14 +93,33 @@ class ImageHeaderV2(BaseClass):
         self.padding = padding
 
     def __repr__(self) -> str:
+        """Return string representation of the header object.
+
+        Provides a formatted string containing the version and image blocks information
+        for debugging and logging purposes.
+
+        :return: String representation in format "Header: v{version}, {image_blocks}".
+        """
         return f"Header: v{self.version}, {self.image_blocks}"
 
     def flags_desc(self) -> str:
-        """Return flag description."""
+        """Get flag description based on current flags value.
+
+        Returns a human-readable description indicating whether the flags represent
+        a signed or unsigned state.
+
+        :return: "Signed" if flags equals 0x8, otherwise "Unsigned".
+        """
         return "Signed" if self.flags == 0x8 else "Unsigned"
 
     def __str__(self) -> str:
-        """Get info of Header as string."""
+        """Get string representation of the SB2 header.
+
+        Provides a formatted string containing all header fields including version,
+        flags, block information, timestamps, and version details.
+
+        :return: Formatted string with header information.
+        """
         nfo = str()
         nfo += f" Version:              {self.version}\n"
         if self.nonce is not None:
@@ -104,13 +140,17 @@ class ImageHeaderV2(BaseClass):
         return nfo
 
     def export(self, padding: Optional[bytes] = None) -> bytes:
-        """Export object into bytes.
+        """Export SB2 header object into binary format.
 
-        :param padding: Header padding 8 bytes (for testing purposes); None to use random value
-        :return: Exported binary representation
-        :raises SPSDKError: Raised when format is incorrect
-        :raises SPSDKError: Raised when length of padding is incorrect
-        :raises SPSDKError: Raised when length of header is incorrect
+        The method serializes all header fields including nonce, version information,
+        flags, and various block offsets into a packed binary representation suitable
+        for SB2 file format.
+
+        :param padding: Header padding 8 bytes for testing purposes; None to use random value
+        :return: Binary representation of the SB2 header
+        :raises SPSDKError: When nonce format is incorrect
+        :raises SPSDKError: When padding length is not 8 bytes
+        :raises SPSDKError: When resulting header length is incorrect
         """
         if not isinstance(self.nonce, bytes) or len(self.nonce) != 16:
             raise SPSDKError("Format is incorrect")
@@ -169,11 +209,15 @@ class ImageHeaderV2(BaseClass):
     # pylint: disable=too-many-locals
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Deserialization from binary form.
+        """Parse SB2 header from binary data.
 
-        :param data: binary representation
-        :return: parsed instance of the header
-        :raises SPSDKError: Unable to parse data
+        Deserializes the SB2 header structure from its binary representation, validating
+        signatures and extracting all header fields including version information,
+        flags, and various block offsets.
+
+        :param data: Binary data containing the SB2 header structure.
+        :return: Parsed instance of the SB2 header.
+        :raises SPSDKError: If data is insufficient or header signatures don't match.
         """
         if cls.SIZE > len(data):
             raise SPSDKError("Insufficient amount of data")

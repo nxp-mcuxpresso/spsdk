@@ -4,7 +4,12 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Nxpimage Certification Block group."""
+"""SPSDK Certificate Block management commands for nxpimage application.
+
+This module provides CLI commands for working with certificate blocks in NXP images,
+including template generation, export functionality, and parsing operations for
+certificate block structures.
+"""
 
 import logging
 import os

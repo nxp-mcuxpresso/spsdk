@@ -31,3 +31,9 @@ ipython<9
 notebook<8
 pytest-notebook<1,>=0.10
 cookiecutter<3
+
+# ---------------------------------------
+# Packages needed for documentation
+# ---------------------------------------
+-r docs/requirements.txt
+

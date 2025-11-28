@@ -1,10 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""DK6 Device high level API."""
+
+"""SPSDK DK6 device management and communication interface.
+
+This module provides high-level API for interacting with DK6 devices, including
+device identification, memory operations, and communication management through
+UART interface.
+"""
+
 import logging
 from types import TracebackType
 from typing import Callable, Optional, Type, Union
@@ -36,7 +43,12 @@ DEV_LEN = 4
 
 
 class DK6ChipIdInternal(SpsdkEnum):
-    """DK6 Internal chip ID."""
+    """DK6 Internal chip ID enumeration.
+
+    This enumeration defines the internal chip identifiers used by the DK6 provisioning
+    system for supported NXP MCU devices. Each entry contains the chip ID value, short
+    name, and full device description.
+    """
 
     JN5189 = (0x88888888, "JN5189", "JN5189 ESx")
     QN9090 = (0x1240C686, "QN9090", "QN9090")
@@ -45,7 +57,12 @@ class DK6ChipIdInternal(SpsdkEnum):
 
 
 class DK6DeviceId(SpsdkEnum):
-    """DK6 Device IDs."""
+    """DK6 Device ID enumeration for supported NXP devices.
+
+    This enumeration defines the supported device identifiers for the DK6
+    (Development Kit 6) family of NXP microcontrollers, including JN51xx,
+    QN90xx, and K32W0xx series devices.
+    """
 
     JN5188 = (5188, "JN5188")
     JN5189 = (5189, "JN5189")
@@ -57,7 +74,12 @@ class DK6DeviceId(SpsdkEnum):
 
 
 class DK6Memory:
-    """Class that holds information about the DK6 devices memory."""
+    """DK6 memory region descriptor.
+
+    This class represents a memory region in DK6 devices, encapsulating all
+    properties and characteristics of a specific memory area including its
+    location, size, type, and access permissions.
+    """
 
     def __init__(
         self,
@@ -69,15 +91,15 @@ class DK6Memory:
         mem_id: MemoryId,
         access: MemoryAccessValues,
     ) -> None:
-        """DK6Memory Constructor.
+        """Initialize DK6Memory instance with memory configuration parameters.
 
-        :param base_address: Memory base address
-        :param length: Memory length
-        :param sector_size: Memory sector size
-        :param mem_type: Memory type
-        :param mem_name: Memory name
-        :param mem_id: Memory ID
-        :param access: Memory access
+        :param base_address: Base address where the memory region starts.
+        :param length: Total size of the memory region in bytes.
+        :param sector_size: Size of individual memory sector in bytes.
+        :param mem_type: Type of memory (e.g., flash, RAM).
+        :param mem_name: Human-readable name identifier for the memory.
+        :param mem_id: Unique identifier for the memory region.
+        :param access: Memory access permissions and capabilities.
         """
         self.base_address = base_address
         self.length = length
@@ -88,6 +110,13 @@ class DK6Memory:
         self.access = access
 
     def __str__(self) -> str:
+        """Get string representation of the memory region.
+
+        Provides a formatted string containing all memory region properties including
+        memory ID, base address, length, sector size, memory type, and access permissions.
+
+        :return: Formatted string representation of the memory region.
+        """
         return (
             f"\tMemoryId={self.mem_id.label}\n"
             f"\tBaseAddress={hex(self.base_address)}\n"
@@ -98,17 +127,20 @@ class DK6Memory:
         )
 
     def __repr__(self) -> str:
-        """Return obj representation.
+        """Return string representation of the DK6 device object.
 
-        :return: return obj str
+        :return: String representation of the object.
         """
         return self.__str__()
 
     @property
     def end_address(self) -> int:
-        """End address of Memory.
+        """Calculate the end address of the memory region.
 
-        :return: End address
+        The end address is computed by adding the base address and the length
+        of the memory region.
+
+        :return: The end address of the memory region.
         """
         return self.base_address + self.length
 
@@ -122,15 +154,18 @@ def check_memory(
 ) -> int:
     """Check memory range and return sanitized address value.
 
-    :param memory: DK6Memory
-    :param access: access type
-    :param length: length of data
-    :param relative: true if address is relative to base address
-    :param address: memory address
-    :raises SPSDKError: if memory ID is not supported
-    :raises SPSDKError: if access is not allowed
-    :raises SPSDKError: if the memory range is invalid
-    :return: Sanitized memory address
+    Validates memory access permissions, address ranges, and converts relative addresses to
+    absolute addresses when needed.
+
+    :param memory: DK6Memory object containing memory configuration and access permissions.
+    :param access: Memory access type to be validated against allowed operations.
+    :param length: Length of data in bytes to be accessed.
+    :param relative: True if address is relative to memory base address, False for absolute.
+    :param address: Memory address (relative or absolute based on relative parameter).
+    :raises SPSDKError: If memory ID is not supported.
+    :raises SPSDKError: If access type is not allowed for this memory.
+    :raises SPSDKError: If the memory range is invalid or out of bounds.
+    :return: Sanitized absolute memory address.
     """
     if memory is None:
         raise SPSDKError("Memory ID is not supported")
@@ -156,9 +191,12 @@ def check_memory(
 
 
 class DK6Device:
-    """Class that represents DK6 device.
+    """DK6 device communication interface.
 
-    It's a high level class that encapsulates communication interface and protocol
+    This class provides a high-level interface for communicating with DK6 devices,
+    encapsulating the underlying serial communication protocol and device management.
+    It handles device initialization, memory operations, and maintains device state
+    including chip information and MAC address.
     """
 
     def __init__(
@@ -167,8 +205,9 @@ class DK6Device:
     ) -> None:
         """DK6Device constructor.
 
-        :param device: SerialDevice that will be used for communication
-        :param baudrate: communication baudrate, defaults to 115200
+        Initialize a new DK6Device instance for communication with DK6-compatible devices.
+
+        :param device: SerialDevice that will be used for communication with the DK6 device.
         """
         self.memories: dict[int, DK6Memory] = {}
         self.chip_id: Union[GetChipIdResponse, None] = None
@@ -179,6 +218,14 @@ class DK6Device:
         self.initialized = False
 
     def __del__(self) -> None:
+        """Clean up DK6 device resources and close connection.
+
+        This destructor method ensures proper cleanup of the DK6 device connection
+        when the object is being destroyed. It handles any potential errors during
+        the closing process gracefully by logging them as debug messages.
+
+        :raises SPSDKError: When device cannot be closed properly (logged only).
+        """
         logger.info("Closing DK6 device")
         try:
             self.close()
@@ -186,6 +233,13 @@ class DK6Device:
             logger.debug(f"Device cannot be closed: {exc}")
 
     def __enter__(self) -> "DK6Device":
+        """Enter the runtime context of the DK6Device.
+
+        This method is part of the context manager protocol, allowing the DK6Device
+        to be used with 'with' statements for proper resource management.
+
+        :return: The DK6Device instance itself.
+        """
         return self
 
     def __exit__(
@@ -194,14 +248,26 @@ class DK6Device:
         exception_value: Optional[BaseException] = None,
         traceback: Optional[TracebackType] = None,
     ) -> None:
+        """Exit the context manager and close the DK6 device.
+
+        This method is called automatically when exiting a 'with' statement block.
+        It ensures proper cleanup by closing the device connection.
+
+        :param exception_type: Type of exception that caused the context to exit, if any.
+        :param exception_value: Exception instance that caused the context to exit, if any.
+        :param traceback: Traceback object associated with the exception, if any.
+        """
         logger.info("Closing DK6 device")
         self.close()
 
     def _split_data(self, data: bytes) -> list[bytes]:
-        """Split data to send if necessary.
+        """Split data into chunks if it exceeds maximum packet size.
 
-        :param data: Data to send
-        :return: List of data splices
+        The method divides input data into smaller chunks based on the protocol's
+        maximum payload size to ensure proper transmission.
+
+        :param data: Binary data to be split into transmission-ready chunks.
+        :return: List of data chunks, each within the maximum packet size limit.
         """
         max_packet_size = self.protocol.MAX_PAYLOAD_SIZE
         return [data[i : i + max_packet_size] for i in range(0, len(data), max_packet_size)]
@@ -209,7 +275,9 @@ class DK6Device:
     def close(self) -> None:
         """Close UART device.
 
-        :raises: SPSDKError: When the device cannot be closed
+        Closes the UART connection and resets the initialization state of the device.
+
+        :raises SPSDKError: When the device cannot be closed.
         """
         if self.uart:
             self.uart.close()
@@ -218,7 +286,7 @@ class DK6Device:
     def add_memory(self, memory: DK6Memory) -> None:
         """Add memory to the list of available memories.
 
-        :param memory: DK6Memory
+        :param memory: DK6Memory object to be added to the device's memory collection.
         """
         self.memories.update({memory.mem_id.tag: memory})
 
@@ -227,7 +295,7 @@ class DK6Device:
 
         :param memory_id: MemoryId of the desired memory
         :raises SPSDKError: When the memory cannot be fetched
-        :return: DK6Memory
+        :return: DK6Memory object corresponding to the specified memory ID
         """
         if self.memories:
             memory = self.memories.get(memory_id.tag)
@@ -238,16 +306,24 @@ class DK6Device:
     def get_mac_str(self) -> str:
         """Get MAC address in string format.
 
-        :return: string containing MAC address FF:FF..
+        The method formats the MAC address bytes into a colon-separated hexadecimal string
+        representation. If no MAC address is available, returns "N/A".
+
+        :return: String containing MAC address in format "XX:XX:XX:XX:XX:XX" or "N/A" if not available.
         """
         if self.mac_addr:
             return ":".join(f"{b:02X}" for b in self.mac_addr)
         return "N/A"
 
     def add_memory_from_response(self, memory_response: MemGetInfoResponse) -> None:
-        """Add memory from MemGetInfoResponse.
+        """Add memory configuration from device memory information response.
 
-        :param memory_response: MemGetInfoResponse
+        This method processes a MemGetInfoResponse and creates a DK6Memory object with the
+        provided memory configuration parameters. The memory is only added if the response
+        status indicates success.
+
+        :param memory_response: Memory information response containing device memory details.
+        :raises: No explicit exceptions raised by this method.
         """
         if memory_response.status == StatusCode.OK:
             memory = DK6Memory(
@@ -264,10 +340,12 @@ class DK6Device:
     def init(self) -> None:
         """Initialize DK6 device for communication.
 
-        1. Unlock ISP default
-        2. Get device information
-        3. Unlock ISP with default key
-        4. Get info about memories
+        This method performs the complete initialization sequence for a DK6 device including
+        ISP unlocking, device information retrieval, memory discovery, MAC address reading,
+        and device type identification. If the device is already initialized, the method
+        will skip the initialization process.
+
+        :raises SPSDKError: When device communication fails or device type cannot be determined.
         """
         if not self.initialized:
             logger.info("Initializing device... Sending UNLOCK ISP default")
@@ -316,22 +394,26 @@ class DK6Device:
     ) -> bytes:
         """Read memory from the DK6 device.
 
+        The method performs memory reading operation by validating the request, opening memory
+        in specified access mode, splitting the request into chunks based on maximum payload
+        size, reading data sequentially, and closing the memory connection.
+
         1. Make a validation of the read request
         2. Open memory in given access mode
         3. Split read request to chunks of max(MAX_PAYLOAD_SIZE, requested_len)
         4. Read data
         5. Close memory
 
-        :param memory_id: MemoryID of the memory to be used
-        :param address: start address
-        :param length: length of data
-        :param access: memory access value, defaults to MemoryAccessValues.WRITE
-        :param progress_callback: progress callback used in CLI, defaults to None
-        :param relative: True if address is relative to the memory base address
-        :raises SPSDKError: Memory ID is not supported
-        :raises SPSDKError: Access is not allowed
-        :raises SPSDKError: Invalid range
-        :return: Read data
+        :param memory_id: Memory identifier specifying which memory to access.
+        :param address: Starting address for the read operation.
+        :param length: Number of bytes to read from memory.
+        :param access: Memory access mode for the operation.
+        :param progress_callback: Optional callback function to report reading progress.
+        :param relative: Whether address is relative to memory base address.
+        :raises SPSDKError: Memory ID is not supported.
+        :raises SPSDKError: Access is not allowed.
+        :raises SPSDKError: Invalid range.
+        :return: Read data as bytes.
         """
         memory = self.get_memory(memory_id)
         address = check_memory(memory, access, length, relative, address)
@@ -372,23 +454,26 @@ class DK6Device:
     ) -> None:
         """Write memory to the DK6 device.
 
+        The method performs memory write operation by validating the request, opening memory in given
+        access mode, splitting write request to chunks, writing data, and closing memory.
+
         1. Make a validation of the read request
         2. Open memory in given access mode
         3. Split write request to chunks of max(MAX_PAYLOAD_SIZE, requested_len)
         4. Write data
         5. Close memory
 
-        :param memory_id: MemoryID of the memory to be used
-        :param address: start address
-        :param length: length of data
-        :param data: data to be written
-        :param access: memory access value, defaults to MemoryAccessValues.WRITE
-        :param progress_callback: progress callback used in CLI, defaults to None
-        :param relative: True if address is relative to the memory base address
-        :raises SPSDKError: Memory ID is not supported
-        :raises SPSDKError: Access is not allowed
-        :raises SPSDKError: Invalid range
-        :raises SPSDKError: No response from device
+        :param memory_id: Memory ID of the memory to be used.
+        :param address: Start address for writing data.
+        :param length: Length of data to be written.
+        :param data: Data bytes to be written to memory.
+        :param access: Memory access mode, defaults to MemoryAccessValues.ALL.
+        :param progress_callback: Optional callback function for progress reporting.
+        :param relative: True if address is relative to the memory base address.
+        :raises SPSDKError: Memory ID is not supported.
+        :raises SPSDKError: Access is not allowed.
+        :raises SPSDKError: Invalid range.
+        :raises SPSDKError: No response from device.
         """
         memory = self.get_memory(memory_id)
 
@@ -430,23 +515,26 @@ class DK6Device:
     ) -> None:
         """Erase memory of DK6 device.
 
-        # 1. Make a validation of the read request
-        # 2. Open memory in given access mode
-        # 4. Erase data
-        # 5. Optionally verify with blank check
-        # 6. Close memory
+        The method validates the erase request, opens memory in given access mode, erases data,
+        optionally verifies with blank check, and closes memory.
+        1. Make a validation of the read request
+        2. Open memory in given access mode
+        4. Erase data
+        5. Optionally verify with blank check
+        6. Close memory
 
-        :param memory_id: MemoryID of the memory to be used
-        :param address: start address
-        :param length: length of data
-        :param access: memory access value, defaults to MemoryAccessValues.WRITE
-        :param progress_callback: progress callback used in CLI, defaults to None
-        :param relative: True if address is relative to the memory base address
-        :param verify: True for erase verification by memory blank check
-        :raises SPSDKError: Memory ID is not supported
-        :raises SPSDKError: Access is not allowed
-        :raises SPSDKError: Invalid range
-        :raises SPSDKError: No response from device
+        :param memory_id: MemoryID of the memory to be used.
+        :param address: Start address for memory erase operation.
+        :param length: Length of data to be erased in bytes.
+        :param access: Memory access value, defaults to MemoryAccessValues.ALL.
+        :param progress_callback: Progress callback function used in CLI, defaults to None.
+        :param relative: True if address is relative to the memory base address.
+        :param verify: True for erase verification by memory blank check.
+        :raises SPSDKError: Memory ID is not supported.
+        :raises SPSDKError: Access is not allowed.
+        :raises SPSDKError: Invalid range.
+        :raises SPSDKError: Memory erase failed.
+        :raises SPSDKError: Memory blank check failed.
         """
         memory = self.get_memory(memory_id)
 
@@ -472,12 +560,21 @@ class DK6Device:
             progress_callback(4, 4)
 
     def reset(self) -> None:
-        """Resets device."""
+        """Reset the device.
+
+        This method performs a device reset operation through the protocol interface
+        and validates the operation was successful.
+
+        :raises SPSDKError: When the reset operation fails.
+        """
         result = self.protocol.reset()
 
         if result.status != StatusCode.OK:
             raise SPSDKError("Reset failed")
 
     def set_baud_rate(self, baudrate: int) -> None:
-        """Set baud rate."""
+        """Set baud rate for the DK6 device communication.
+
+        :param baudrate: The baud rate value to set for serial communication.
+        """
         self.protocol.set_baud_rate(baudrate)

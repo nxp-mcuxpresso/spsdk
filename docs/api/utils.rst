@@ -1,7 +1,6 @@
 Utils Module API
 =================
-
-Module containing various functions/modules used throughout the SPSDK.
+.. automodule:: spsdk.utils
 
 Abstract class template
 --------------------------

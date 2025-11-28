@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""CLI application to manage external memory configuration."""
+"""SPSDK CLI application for external memory configuration management.
+
+This module provides command-line interface for configuring external memory
+settings across NXP MCU portfolio. It supports memory configuration export,
+blhost script generation, and template management for various memory types.
+"""
 
 import logging
 import os

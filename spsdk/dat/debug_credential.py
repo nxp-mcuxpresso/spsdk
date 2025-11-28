@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module with DebugCredential class."""
+"""SPSDK Debug Authentication Tool (DAT) debug credential management.
+
+This module provides functionality for creating, parsing, and managing debug
+credentials used in NXP's Debug Authentication Tool. It supports various
+certificate types including RSA and ECC-based credentials, as well as
+EdgeLock Enclave specific implementations for secure debug access control.
+"""
 
 import abc
 import logging
@@ -34,7 +40,16 @@ logger = logging.getLogger(__name__)
 
 
 class DebugCredentialCertificate(FeatureBaseClass):
-    """Base class for DebugCredentialCertificate."""
+    """Debug Credential Certificate for secure device authentication.
+
+    This class manages debug credential certificates used for secure authentication
+    and authorization of debug access to NXP MCU devices. It handles the creation,
+    validation, and export of debug credentials including public keys, constraints,
+    and digital signatures.
+
+    :cvar FEATURE: Database manager feature identifier for DAT operations.
+    :cvar ROT_META_CLASS: Root of Trust metadata class reference.
+    """
 
     FEATURE = DatabaseManager.DAT
     ROT_META_CLASS = RotMeta
@@ -55,17 +70,19 @@ class DebugCredentialCertificate(FeatureBaseClass):
     ) -> None:
         """Initialize the DebugCredential object.
 
-        :param version: Protocol version
-        :param socc: The SoC Class that this credential applies to
-        :param uuid: The bytes of the unique device identifier
-        :param rot_meta: Metadata for Root of Trust
-        :param dck_pub: Internal binary representation of Debug Credential public key
-        :param cc_socu: The Credential Constraint value that the vendor has associated with this credential.
-        :param cc_vu: The Vendor Usage constraint value that the vendor has associated with this credential.
-        :param cc_beacon: The non-zero Credential Beacon value, which is bound to a DC
-        :param rot_pub: Internal binary representation of RoT public key
-        :param signature: Debug Credential signature
-        :param signature_provider: external signature provider
+        Creates a new DebugCredential instance with the specified parameters for secure debug access.
+
+        :param family: Target MCU family and revision information.
+        :param version: Protocol version for the debug credential.
+        :param uuid: Unique device identifier bytes.
+        :param rot_meta: Metadata for Root of Trust configuration.
+        :param dck_pub: Debug Credential public key for authentication.
+        :param cc_socu: SoC Usage credential constraint value.
+        :param cc_vu: Vendor Usage credential constraint value.
+        :param cc_beacon: Credential Beacon value bound to this debug credential.
+        :param rot_pub: Root of Trust public key for verification.
+        :param signature: Optional pre-computed debug credential signature.
+        :param signature_provider: Optional external signature provider for signing.
         """
         self.family = family
         self.version = version
@@ -86,11 +103,23 @@ class DebugCredentialCertificate(FeatureBaseClass):
 
     @property
     def socc(self) -> int:
-        """The SoC Class."""
+        """Get the SoC Class value for the current family.
+
+        Retrieves the SoC Class (System on Chip Class) identifier from the database
+        for the configured MCU family.
+
+        :return: SoC Class identifier as integer value.
+        """
         return get_db(self.family).get_int(DatabaseManager.DAT, "socc")
 
     def __str__(self) -> str:
-        """String representation of DebugCredential."""
+        """String representation of DebugCredential.
+
+        Creates a formatted string containing all debug credential information including
+        version, SOCC, UUID, control codes, beacon status, and root of trust metadata.
+
+        :return: Formatted string representation of the debug credential.
+        """
         msg = f"Version : {self.version}\n"
         msg += f"SOCC    : 0x{self.socc:08X}\n"
         msg += f"UUID    : {self.uuid.hex().upper()}\n"
@@ -101,42 +130,68 @@ class DebugCredentialCertificate(FeatureBaseClass):
         return msg
 
     def __repr__(self) -> str:
+        """Return string representation of Debug Credential object.
+
+        Provides a concise string representation showing the version and SOCC value
+        in hexadecimal format for debugging and logging purposes.
+
+        :return: String representation in format "DC {version}, 0x{socc:08X}".
+        """
         return f"DC {self.version}, 0x{self.socc:08X}"
 
     @property
     def rot_hash_length(self) -> int:
-        """Root of Trust debug credential hash length."""
+        """Get Root of Trust debug credential hash length.
+
+        :return: Hash length in bytes (always 32).
+        """
         return 32
 
     @property
     def srk_count(self) -> int:
-        """Get the number of Super Root Keys (SRK)."""
+        """Get the number of Super Root Keys (SRK).
+
+        :return: Number of Super Root Keys, always returns 1.
+        """
         return 1
 
     @abc.abstractmethod
     def calculate_hash(self) -> bytes:
-        """Calculate the RoT hash."""
+        """Calculate the RoT hash.
+
+        :return: The calculated RoT (Root of Trust) hash as bytes.
+        """
 
     @abc.abstractmethod
     def export_rot_pub(self) -> bytes:
         """Export RoT public key as bytes.
 
-        :return: binary representing the RoT key
+        :return: Binary representing the RoT key.
         """
 
     @abc.abstractmethod
     def export_dck_pub(self) -> bytes:
         """Export Debugger public key (DCK) as bytes.
 
-        :return: binary representing the DCK key
+        :return: Binary representing the DCK key.
         """
 
     @abc.abstractmethod
     def _get_data_to_sign(self) -> bytes:
-        """Get data to be signed."""
+        """Get data to be signed.
+
+        :return: Raw bytes data that needs to be signed for the debug credential.
+        """
 
     def sign(self) -> None:
-        """Sign the DC data using SignatureProvider."""
+        """Sign the DC data using SignatureProvider.
+
+        This method validates that a signature provider is configured, verifies the public key
+        against the root of trust, generates a signature for the debug credential data, and
+        stores the resulting signature.
+
+        :raises SPSDKError: If signature provider is not set or fails to return a signature.
+        """
         if not self.signature_provider:
             raise SPSDKError("Debug Credential Signature provider is not set")
         self.signature_provider.try_to_verify_public_key(self.rot_pub)
@@ -146,6 +201,13 @@ class DebugCredentialCertificate(FeatureBaseClass):
         self.signature = signature
 
     def _vars(self) -> dict[str, Any]:
+        """Get instance variables dictionary without signature provider.
+
+        Creates a copy of the instance's __dict__ and removes the signature_provider
+        attribute to avoid exposing sensitive signing functionality in variable dumps.
+
+        :return: Dictionary of instance variables excluding signature_provider.
+        """
         v = vars(self).copy()
         del v["signature_provider"]
         return v
@@ -154,8 +216,8 @@ class DebugCredentialCertificate(FeatureBaseClass):
     def dat_based_on_ele(family: FamilyRevision) -> bool:
         """Get information if the DAT is based on EdgeLock Enclave hardware.
 
-        :param family: The chip family name
-        :return: True if the ELE is target HW, False otherwise
+        :param family: The chip family and revision information.
+        :return: True if the ELE is target HW, False otherwise.
         """
         return get_db(family).get_bool(DatabaseManager.DAT, "based_on_ele", False)
 
@@ -163,6 +225,18 @@ class DebugCredentialCertificate(FeatureBaseClass):
     def _get_class(
         cls, family: FamilyRevision, version: Optional[ProtocolVersion] = None
     ) -> Type[Self]:
+        """Get the appropriate debug credential class for the given family and protocol version.
+
+        This method determines which debug credential implementation to use based on the
+        device family configuration and protocol version. It handles EdgeLock Enclave
+        based devices as well as RSA and ECC certificate-based implementations.
+
+        :param family: Target device family and revision.
+        :param version: Protocol version to determine credential type, optional for ELE-based devices.
+        :raises SPSDKValueError: When ELE container version is unsupported or protocol version
+            is required but not provided.
+        :return: Debug credential class type appropriate for the given parameters.
+        """
         db = get_db(family)
         if db.get_bool(DatabaseManager.DAT, "based_on_ele", False):
             cnt_ver = db.get_int(DatabaseManager.DAT, "ele_cnt_version", 1)
@@ -186,6 +260,16 @@ class DebugCredentialCertificate(FeatureBaseClass):
 
     @classmethod
     def _get_class_from_cfg(cls, config: Config) -> Type[Self]:
+        """Get the appropriate class type based on configuration settings.
+
+        Determines the correct debug credential class by analyzing the family configuration
+        and protocol version. For ELE-based families, uses the container version from database.
+        For other families, extracts the protocol version from the public key.
+
+        :param config: Configuration object containing family and key information.
+        :raises SPSDKValueError: When unsupported ELE container version is encountered.
+        :return: Class type appropriate for the specified family and protocol version.
+        """
         family = FamilyRevision.load_from_config(config)
         db = get_db(family)
 
@@ -208,11 +292,14 @@ class DebugCredentialCertificate(FeatureBaseClass):
 
     @classmethod
     def load_from_config(cls, config: Config) -> Self:
-        """Create a debug credential object out of yaml configuration.
+        """Create a debug credential object from YAML configuration.
 
-        :param config: Debug credential file configuration.
+        This method processes the configuration to extract family information, ROT metadata,
+        certificates, and signing parameters to construct a complete debug credential object.
 
-        :return: DebugCredential object
+        :param config: Debug credential file configuration containing all necessary parameters.
+        :raises SPSDKError: Invalid configuration or missing required files.
+        :return: DebugCredential object configured according to the provided settings.
         """
         family = FamilyRevision.load_from_config(config)
         rot_config_file = config.get("rot_config")
@@ -268,6 +355,10 @@ class DebugCredentialCertificate(FeatureBaseClass):
     def load_cert_block(cls, rot_config_file: str, family: FamilyRevision) -> CertBlock:
         """Load certificate block from a file.
 
+        The method supports loading from both Root of Trust configuration files and binary
+        certificate block files. It first attempts to parse as a configuration file, and if
+        that fails, tries to parse as a binary certificate block.
+
         :param rot_config_file: Path to Root of Trust configuration file or binary certificate block
         :param family: Family revision for the certificate block
         :return: Loaded certificate block object
@@ -290,16 +381,25 @@ class DebugCredentialCertificate(FeatureBaseClass):
                 ) from exc
 
     def get_config(self, data_path: str = "./") -> Config:
-        """Get configuration."""
+        """Get configuration for debug credential.
+
+        :param data_path: Path to directory containing configuration data files.
+        :raises SPSDKNotImplementedError: Method is not implemented yet.
+        """
         raise SPSDKNotImplementedError
 
     @classmethod
     def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
-        """Parse the debug credential.
+        """Parse the debug credential from raw binary data.
 
-        :param data: Raw data as bytes
-        :param family: Mandatory family name.
-        :return: DebugCredential object
+        The method first attempts to parse as EdgeLock Enclave V2 format, and if that fails,
+        falls back to standard debug credential parsing based on the protocol version found
+        in the data header.
+
+        :param data: Raw binary data containing the debug credential.
+        :param family: Target MCU family revision for credential validation.
+        :raises SPSDKError: When data cannot be parsed as any supported debug credential format.
+        :return: Parsed DebugCredential object of the appropriate subclass.
         """
         # The  ELE V2 is totally different to standard DC - try it first and if fail let do the standard process
         try:
@@ -316,12 +416,16 @@ class DebugCredentialCertificate(FeatureBaseClass):
 
     @classmethod
     def get_validation_schemas_from_cfg(cls, config: Config) -> list[dict[str, Any]]:
-        """Get validation schema based on configuration.
+        """Get validation schemas based on configuration.
 
-        If the class doesn't behave generally, just override this implementation.
+        Retrieves the appropriate validation schemas for the debug credential class
+        by first validating the provided configuration against basic schemas, then
+        determining the specific class implementation and returning its validation
+        schemas for the target family.
 
-        :param config: Valid configuration
-        :return: Validation schemas
+        :param config: Configuration object containing debug credential settings
+        :return: List of validation schema dictionaries for the determined class
+        :raises SPSDKError: Invalid configuration or unsupported family
         """
         config.check(cls.get_validation_schemas_basic())
         family = FamilyRevision.load_from_config(config)
@@ -329,10 +433,15 @@ class DebugCredentialCertificate(FeatureBaseClass):
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Get list of validation schemas.
+        """Get list of validation schemas for debug credential configuration.
 
-        :param family: Family for what will be json schema generated.
-        :return: Validation list of schemas.
+        Retrieves and configures JSON validation schemas specific to the given family,
+        including family-specific properties, SOCC values, and conditional schemas
+        based on ELE (EdgeLock Enclave) support.
+
+        :param family: Family revision for which the JSON schemas will be generated.
+        :return: List of validation schemas including family schema, content schema,
+                 and optionally SRK CA flag schema for ELE-based families.
         """
         schema = get_schema_file(DatabaseManager.DAT)
         sch_family: dict[str, Any] = get_schema_file("general")["family"]
@@ -354,26 +463,46 @@ class DebugCredentialCertificate(FeatureBaseClass):
 
 
 class DebugCredentialCertificateRsa(DebugCredentialCertificate):
-    """Class for RSA specific of DebugCredentialCertificate."""
+    """RSA-specific implementation of Debug Credential Certificate.
+
+    This class provides RSA cryptographic operations for debug credential certificates,
+    including RSA key handling, hash calculations, and RSA-specific data export formats.
+
+    :cvar ROT_META_CLASS: RSA-specific Root of Trust metadata class type.
+    """
 
     ROT_META_CLASS: TypeAlias = RotMetaRSA
 
     def __str__(self) -> str:
+        """Get string representation of the debug credential.
+
+        The method extends the parent class string representation by adding
+        the Root of Trust Key Hash (RoTKH) calculated from the credential data.
+
+        :return: String representation including RoTKH hash in hexadecimal format.
+        """
         msg = super().__str__()
         msg += f"RoTKH   : {self.calculate_hash().hex()}\n"
         return msg
 
     def calculate_hash(self) -> bytes:
-        """Get Root Of Trust Keys Hash.
+        """Calculate Root Of Trust Keys Hash.
 
-        :return: RoTKH in bytes
+        This method computes the hash of the Root of Trust keys using the associated
+        rotation metadata.
+
+        :return: Root Of Trust Keys Hash (RoTKH) as bytes.
         """
         return self.rot_meta.calculate_hash()
 
     def export_rot_pub(self) -> bytes:
         """Export RoT public key as bytes.
 
-        :return: binary representing the RoT key
+        The method exports the Root of Trust (RoT) public key in binary format
+        with a 4-byte exponent length.
+
+        :raises AssertionError: If the RoT public key is not an RSA public key.
+        :return: Binary representation of the RoT public key.
         """
         assert isinstance(self.rot_pub, PublicKeyRsa)
         return self.rot_pub.export(exp_length=4)
@@ -381,14 +510,26 @@ class DebugCredentialCertificateRsa(DebugCredentialCertificate):
     def export_dck_pub(self) -> bytes:
         """Export Debugger public key (DCK) as bytes.
 
-        :return: binary representing the DCK key
+        The method exports the Debug Credential Key (DCK) public key component
+        in binary format with a 4-byte exponent length.
+
+        :raises AssertionError: If the DCK public key is not an RSA key instance.
+        :return: Binary representation of the DCK public key.
         """
         assert isinstance(self.dck_pub, PublicKeyRsa)
         return self.dck_pub.export(exp_length=4)
 
     @classmethod
     def get_data_format(cls, version: ProtocolVersion, include_signature: bool = True) -> str:
-        """Get the format of exported binary data."""
+        """Get the format of exported binary data.
+
+        Constructs a struct format string for packing/unpacking debug credential binary data
+        based on the protocol version and signature inclusion requirements.
+
+        :param version: Protocol version that determines key and signature sizes.
+        :param include_signature: Whether to include signature field in the format.
+        :return: Struct format string for binary data packing/unpacking.
+        """
         key_size = {0: 260, 1: 516}[version.minor]
         data_format = (
             "<"
@@ -408,10 +549,13 @@ class DebugCredentialCertificateRsa(DebugCredentialCertificate):
         return data_format
 
     def export(self) -> bytes:
-        """Export to binary form (serialization).
+        """Export debug credential to binary form.
 
-        :return: binary representation of the debug credential
-        :raises SPSDKError: When Debug Credential Signature is not set, call the `sign` method first
+        Serializes the debug credential object into its binary representation that can be
+        used for provisioning or storage purposes.
+
+        :return: Binary representation of the debug credential.
+        :raises SPSDKError: When debug credential signature is not set, call the `sign` method first.
         """
         if not self.signature:
             raise SPSDKError("Debug Credential signature is not set, call the `sign` method first")
@@ -433,11 +577,16 @@ class DebugCredentialCertificateRsa(DebugCredentialCertificate):
 
     @classmethod
     def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
-        """Parse the debug credential.
+        """Parse the debug credential from raw binary data.
 
-        :param data: Raw data as bytes
-        :param family: Mandatory family name.
-        :return: DebugCredential object
+        The method extracts and validates all components of a debug credential including
+        version, UUID, rotation metadata, public keys, capability constraints, and signature.
+        It also validates that the parsed SOCC matches the expected family SOCC.
+
+        :param data: Raw binary data containing the debug credential
+        :param family: Target MCU family revision for validation
+        :raises SPSDKValueError: When parsed SOCC doesn't match expected family SOCC
+        :return: Parsed DebugCredential object with all extracted components
         """
         # we need to get version first so we can calculate the data length
         version = ProtocolVersion.from_version(*unpack_from("<2H", data))
@@ -475,7 +624,15 @@ class DebugCredentialCertificateRsa(DebugCredentialCertificate):
         return ret
 
     def _get_data_to_sign(self) -> bytes:
-        """Collects data for signing."""
+        """Get data to be signed for debug credential.
+
+        Collects and packs all the debug credential fields into a binary format
+        suitable for cryptographic signing. This includes version information,
+        SOCC, UUID, RoT metadata, DCK public key, challenge-response data,
+        and RoT public key.
+
+        :return: Packed binary data ready for signing.
+        """
         data = pack(
             self.get_data_format(self.version, include_signature=False),
             self.version.major,
@@ -494,21 +651,41 @@ class DebugCredentialCertificateRsa(DebugCredentialCertificate):
     def __eq__(self, other: Any) -> bool:
         """Check object equality.
 
-        :param other: object to compare with.
-        :return: True if matches, False otherwise.
+        Compare this DebugCredentialCertificateRsa instance with another object to determine if they
+        are equal based on their internal variables.
+
+        :param other: Object to compare with this instance.
+        :return: True if other is a DebugCredentialCertificateRsa with matching internal variables,
+                 False otherwise.
         """
         return isinstance(other, DebugCredentialCertificateRsa) and self._vars() == other._vars()
 
 
 class DebugCredentialCertificateEcc(DebugCredentialCertificate):
-    """Class for ECC specific of DebugCredential."""
+    """ECC-specific Debug Credential Certificate implementation.
+
+    This class provides ECC (Elliptic Curve Cryptography) specific functionality for debug
+    credential certificates, handling ECC key operations, hash calculations, and certificate
+    data formatting for NXP MCU debug authentication.
+
+    :cvar COORDINATE_SIZE: ECC coordinate sizes mapping for different curve types.
+    :cvar ROT_META_CLASS: Root of Trust metadata class for ECC operations.
+    """
 
     COORDINATE_SIZE = {0: 32, 1: 48, 2: 66}
     ROT_META_CLASS: TypeAlias = RotMetaEcc
 
     @property
     def rot_hash_length(self) -> int:
-        """Root of Trust  debug credential hash length."""
+        """Get Root of Trust debug credential hash length.
+
+        The method determines the hash length based on database configuration and public key size.
+        If the database specifies SHA256 usage, returns 32 bytes. Otherwise, calculates the length
+        from the ECC public key size.
+
+        :return: Hash length in bytes (32 for SHA256 or calculated from key size).
+        :raises AssertionError: If rot_pub is not an instance of PublicKeyEcc.
+        """
         db = get_db(self.family)
         if db.get_bool(DatabaseManager.DAT, "dat_is_using_sha256_always", False):
             return 32
@@ -516,14 +693,26 @@ class DebugCredentialCertificateEcc(DebugCredentialCertificate):
         return self.rot_pub.key_size // 8
 
     def __str__(self) -> str:
+        """Get string representation of the debug credential.
+
+        The method extends the parent class string representation by adding
+        the CTRK (Credential Tool Root Key) hash information.
+
+        :return: String representation including CTRK hash.
+        """
         msg = super().__str__()
         msg += f"CTRK hash   : {self.calculate_hash().hex()}\n"
         return msg
 
     def calculate_hash(self) -> bytes:
-        """Get Root Of Trust Keys Hash.
+        """Calculate the Root of Trust Keys Hash (RoTKH).
 
-        :return: RoTKH in bytes
+        The method first attempts to calculate the hash using the rot_meta object.
+        If that fails, it falls back to calculating the hash directly from the
+        exported public key using the appropriate SHA algorithm based on key size.
+
+        :raises SPSDKError: When rot_meta hash calculation fails and fallback is used.
+        :return: Root of Trust Keys Hash as bytes.
         """
         try:
             return self.rot_meta.calculate_hash()
@@ -537,7 +726,7 @@ class DebugCredentialCertificateEcc(DebugCredentialCertificate):
     def export_rot_pub(self) -> bytes:
         """Export RoT public key as bytes.
 
-        :return: binary representing the RoT key
+        :return: Binary data representing the RoT public key.
         """
         assert isinstance(self.rot_pub, PublicKeyEcc)
         return self.rot_pub.export()
@@ -545,12 +734,21 @@ class DebugCredentialCertificateEcc(DebugCredentialCertificate):
     def export_dck_pub(self) -> bytes:
         """Export Debugger public key (DCK) as bytes.
 
-        :return: binary representing the DCK key
+        :return: Binary representing the DCK key.
         """
         return self.dck_pub.export()
 
     def get_data_format(self, include_signature: bool = True) -> str:
-        """Get the format of exported binary data."""
+        """Get the format of exported binary data.
+
+        Returns a struct format string that describes the binary layout of the debug
+        credential data, including version, SOCC, UUID, control codes, metadata,
+        public keys, and optionally the signature.
+
+        :param include_signature: Whether to include signature in the format string.
+        :raises SPSDKError: When signature is requested but not set.
+        :return: Struct format string for binary data packing.
+        """
         assert isinstance(self.rot_pub, PublicKeyEcc)
         assert isinstance(self.dck_pub, PublicKeyEcc)
         data_format = (
@@ -574,7 +772,14 @@ class DebugCredentialCertificateEcc(DebugCredentialCertificate):
         return data_format
 
     def export(self) -> bytes:
-        """Export to binary form (serialization)."""
+        """Export debug credential to binary format.
+
+        Serializes the debug credential object into its binary representation for storage
+        or transmission. The credential must be signed before export.
+
+        :raises SPSDKError: If the debug credential signature is not set.
+        :return: Binary representation of the debug credential.
+        """
         if not self.signature:
             raise SPSDKError("Debug Credential signature is not set, call the `sign` method first")
         data = pack(
@@ -594,7 +799,14 @@ class DebugCredentialCertificateEcc(DebugCredentialCertificate):
         return data
 
     def _get_data_to_sign(self) -> bytes:
-        """Collects data meant for signing."""
+        """Get data meant for signing.
+
+        Collects and packs all debug credential data fields that need to be signed,
+        excluding the signature itself. The data is packed according to the credential
+        format specification.
+
+        :return: Packed binary data ready for signing.
+        """
         data = pack(
             self.get_data_format(include_signature=False),
             self.version.major,
@@ -613,18 +825,27 @@ class DebugCredentialCertificateEcc(DebugCredentialCertificate):
     def __eq__(self, other: Any) -> bool:
         """Check object equality.
 
-        :param other: object to compare with.
-        :return: True if matches, False otherwise.
+        Compare this DebugCredentialCertificateEcc instance with another object to determine if they
+        are equal based on their internal variables.
+
+        :param other: Object to compare with this instance.
+        :return: True if other is a DebugCredentialCertificateEcc with matching internal variables,
+            False otherwise.
         """
         return isinstance(other, DebugCredentialCertificateEcc) and self._vars() == other._vars()
 
     @classmethod
     def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
-        """Parse the debug credential.
+        """Parse the debug credential from binary data.
 
-        :param data: Raw data as bytes
-        :param family: Mandatory family name.
-        :return: DebugCredential object
+        This method deserializes binary data into a DebugCredential object by unpacking
+        the structured format and validating the SOCC (SoC Class) value
+        against the family-specific SOCC.
+
+        :param data: Raw binary data containing the debug credential structure.
+        :param family: Target MCU family revision for validation purposes.
+        :raises SPSDKValueError: When SOCC from binary data doesn't match family SOCC.
+        :return: Parsed DebugCredential object with all fields populated.
         """
         format_head = (
             "<"
@@ -676,24 +897,46 @@ class DebugCredentialCertificateEcc(DebugCredentialCertificate):
 
 
 class DebugCredentialEdgeLockEnclave(DebugCredentialCertificateEcc):
-    """EdgeLock Class."""
+    """Debug credential implementation for EdgeLock Enclave devices.
+
+    This class provides specialized debug credential functionality for NXP EdgeLock
+    Enclave secure elements, handling ECC-based authentication and credential
+    management with EdgeLock-specific Root of Trust metadata.
+
+    :cvar ROT_META_CLASS: Root of Trust metadata class for EdgeLock Enclave.
+    """
 
     ROT_META_CLASS: TypeAlias = RotMetaEdgeLockEnclave
 
     @property
     def rot_hash_length(self) -> int:
-        """Root of Trust  debug credential hash length."""
+        """Root of Trust debug credential hash length.
+
+        :return: Hash length in bytes (always 32).
+        """
         return 32
 
     def calculate_hash(self) -> bytes:
-        """Get Root Of Trust Keys Hash.
+        """Calculate Root Of Trust Keys Hash.
 
-        :return: RoTKH in bytes
+        This method computes the hash of the Root Of Trust keys using the
+        associated metadata.
+
+        :return: Root Of Trust Keys Hash (RoTKH) as bytes.
         """
         return self.rot_meta.calculate_hash()
 
     def get_data_format(self, include_signature: bool = True) -> str:
-        """Get the format of exported binary data."""
+        """Get the format of exported binary data.
+
+        Constructs a struct format string for packing the debug credential data into binary format.
+        The format includes version, SOCC, UUID, control codes, RoT metadata, DCK public key,
+        and optionally the signature.
+
+        :param include_signature: Whether to include signature in the format string.
+        :raises SPSDKError: If signature is requested but not set.
+        :return: Struct format string for binary data packing.
+        """
         assert isinstance(self.rot_pub, (PublicKeyEcc, PublicKeyRsa))
         data_format = (
             "<"
@@ -715,7 +958,14 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialCertificateEcc):
         return data_format
 
     def export(self) -> bytes:
-        """Export to binary form (serialization)."""
+        """Export debug credential to binary format for storage or transmission.
+
+        Serializes the debug credential object into its binary representation according to
+        the specified data format. The credential must be properly signed before export.
+
+        :raises SPSDKError: Debug credential signature is not set.
+        :return: Binary representation of the debug credential.
+        """
         if not self.signature:
             raise SPSDKError("Debug Credential signature is not set, call the `sign` method first")
         data = pack(
@@ -734,7 +984,13 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialCertificateEcc):
         return data
 
     def _get_data_to_sign(self) -> bytes:
-        """Collects data meant for signing."""
+        """Get data that needs to be signed for the debug credential.
+
+        This method collects and packs all the necessary fields from the debug credential
+        that must be included in the signature calculation, excluding the signature itself.
+
+        :return: Packed binary data ready for signing.
+        """
         data = pack(
             self.get_data_format(include_signature=False),
             self.version.major,
@@ -752,18 +1008,27 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialCertificateEcc):
     def __eq__(self, other: Any) -> bool:
         """Check object equality.
 
-        :param other: object to compare with.
-        :return: True if matches, False otherwise.
+        Compare this DebugCredentialEdgeLockEnclave instance with another object to determine if they
+        are equal based on their internal variables.
+
+        :param other: Object to compare with this instance.
+        :return: True if other is a DebugCredentialEdgeLockEnclave with matching internal variables,
+                 False otherwise.
         """
         return isinstance(other, DebugCredentialEdgeLockEnclave) and self._vars() == other._vars()
 
     @classmethod
     def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
-        """Parse the debug credential.
+        """Parse the debug credential from binary data.
 
-        :param data: Raw data as bytes
-        :param family: Mandatory family name.
-        :return: DebugCredential object
+        The method parses binary data containing a debug credential structure,
+        validates the SOCC (SoC Class) value against the family,
+        and constructs a DebugCredential object with all parsed components.
+
+        :param data: Raw binary data containing the debug credential structure.
+        :param family: Target MCU family revision for validation.
+        :raises SPSDKValueError: When SOCC from binary data doesn't match family SOCC.
+        :return: Parsed DebugCredential object with all components initialized.
         """
         format_head = (
             "<"
@@ -812,13 +1077,30 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialCertificateEcc):
 
 
 class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
-    """Debug Credential file for ELE version 2 (with PQC support)."""
+    """Debug Credential for EdgeLock Enclave version 2 with Post-Quantum Cryptography support.
+
+    This class represents a debug credential specifically designed for EdgeLock Enclave (ELE)
+    version 2, which includes support for Post-Quantum Cryptography (PQC). It manages the
+    creation and validation of debug credentials used for secure debugging operations on
+    NXP MCUs with ELE v2 security subsystem.
+
+    :cvar SUB_FEATURE: Feature identifier for ELE with PQC support.
+    :cvar ROT_META_CLASS: Root of Trust metadata class used for this credential type.
+    """
 
     SUB_FEATURE = "ele_pqc"
     ROT_META_CLASS = RotMetaDummy
 
     def __init__(self, family: FamilyRevision, certificate: AhabCertificate) -> None:
-        """Constructor for EdgeLock Enclave version 2 debug credential class."""
+        """Constructor for EdgeLock Enclave version 2 debug credential class.
+
+        Initializes a debug credential instance with the specified family revision and certificate.
+        The certificate must contain a valid SRKRecordV2 public key.
+
+        :param family: Target MCU family and revision information.
+        :param certificate: AHAB certificate containing the public key and UUID for the credential.
+        :raises AssertionError: If certificate.public_key_0 is not an instance of SRKRecordV2.
+        """
         self.certificate = certificate
         assert isinstance(certificate.public_key_0, SRKRecordV2)
         super().__init__(
@@ -837,12 +1119,27 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
         )
 
     def __eq__(self, value: object) -> bool:
+        """Check equality between two DebugCredentialEdgeLockEnclaveV2 instances.
+
+        Compares two debug credential objects by checking if their certificates are equal.
+        Only returns True if the compared object is of the same type and has an identical
+        certificate.
+
+        :param value: Object to compare with this debug credential instance.
+        :return: True if objects are equal, False otherwise.
+        """
         if not isinstance(value, DebugCredentialEdgeLockEnclaveV2):
             return False
         return self.certificate == value.certificate
 
     def __str__(self) -> str:
-        """String representation of DebugCredential."""
+        """Get string representation of DebugCredential.
+
+        Returns a formatted string containing the debug credential information
+        including SOCC, CC_SOCU, BEACON values and certificate details.
+
+        :return: Formatted string representation of the debug credential.
+        """
         msg = "Debug Credential for ELE v2 :\n"
         msg += f" SOCC    : {hex(self.socc)}\n"
         msg += f" CC_SOCU : {hex(self.socu)}\n"
@@ -852,51 +1149,126 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
 
     @property
     def srk_count(self) -> int:
-        """Get the number of Super Root Keys (SRK)."""
+        """Get the number of Super Root Keys (SRK).
+
+        :return: Number of Super Root Keys, currently always returns 0.
+        """
         return 0
 
     def __repr__(self) -> str:
+        """Return string representation of the Debug Credential ELE v2.
+
+        Creates a formatted string showing the debug credential type and SOCC value
+        in hexadecimal format.
+
+        :return: String representation in format "DC ELE v2, 0x{socc:08X}".
+        """
         return f"DC ELE v2, 0x{self.socc:08X}"
 
     @property
     def socu(self) -> int:
-        """DC SOCU field."""
+        """Get the SoCU (SoC Usage) field from debug credential.
+
+        What is SoCu:
+            A CC (constraint) value that is a bit mask, and whose bits are used in an SoC-specific
+            manner. These bits are typically used for controlling which debug domains are
+            accessed via the authentication protocol. Device-specific debug options can also be
+            managed in this way.
+
+        The SoCU field is extracted from the permission data section of the certificate
+        by unpacking the first 12 bytes and returning the second 32-bit value.
+
+        :return: SoCU field value as integer.
+        """
         _, socu, _ = unpack("<LLL", self.certificate.permission_data[:12])
         return socu
 
     @socu.setter
     def socu(self, value: int) -> None:
-        """DC SOCU field set."""
+        """Set the SoCU (SoC Usage) field in the debug credential.
+
+        What is SoCu:
+            A CC (constraint) value that is a bit mask, and whose bits are used in an SoC-specific
+            manner. These bits are typically used for controlling which debug domains are
+            accessed via the authentication protocol. Device-specific debug options can also be
+            managed in this way.
+
+        This method updates the permission data of the certificate by packing the SOCC,
+        SoCU, and beacon values into a binary format.
+
+        :param value: The SoCU value to be set in the debug credential.
+        """
         self.certificate.permission_data = pack("<LLL", self.socc, value, self.beacon)
 
     @property
     def socc(self) -> int:
-        """DC SOCC field."""
+        """Get the SoCC (SoC Class) field from debug credential.
+
+        What is SoCC:
+            A unique identifier for a set of SoCs that require no SoC-specific differentiation in their
+            debug authentication. The main usage is to allow a different set of debug domains
+            and options to be negotiated between the device configuration and credentials. If the
+            granularity of debug control warrants it, a class can contain a single revision of a single
+            SoC model.
+
+        Extracts and returns the SoCC value from the first 4 bytes of the certificate's
+        permission data using little-endian byte order.
+
+        :return: SoCC field value as integer.
+        """
         socc, _, _ = unpack("<LLL", self.certificate.permission_data[:12])
         return socc
 
     @socc.setter
     def socc(self, value: int) -> None:
-        """DC SOCC field set."""
+        """Set the SoCC (SoC Class) field value.
+
+        What is SoCC:
+            A unique identifier for a set of SoCs that require no SoC-specific differentiation in their
+            debug authentication. The main usage is to allow a different set of debug domains
+            and options to be negotiated between the device configuration and credentials. If the
+            granularity of debug control warrants it, a class can contain a single revision of a single
+            SoC model.
+
+        Updates the permission data in the certificate with the new SoCC value
+        while preserving the existing SOCU and beacon values.
+
+        :param value: The SoCC field value to set.
+        """
         self.certificate.permission_data = pack("<LLL", value, self.socu, self.beacon)
 
     @property
     def beacon(self) -> int:
-        """DC SOCU field."""
+        """Get the beacon value from the debug credential SOCU field.
+
+        Extracts and returns the beacon value from the certificate's permission data
+        by unpacking the third 32-bit little-endian value.
+
+        :return: Beacon value extracted from the SOCU field.
+        """
         _, _, beacon = unpack("<LLL", self.certificate.permission_data[:12])
         return beacon
 
     @beacon.setter
     def beacon(self, value: int) -> None:
-        """DC Beacon field set."""
+        """Set the DC Beacon field value.
+
+        Updates the certificate permission data with the current SOCC, SOCU, and the provided beacon value.
+
+        :param value: The beacon value to set in the debug credential.
+        """
         self.certificate.permission_data = pack("<LLL", self.socc, self.socu, value)
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Get list of validation schemas.
+        """Get list of validation schemas for Debug Credential configuration.
 
-        :param family: Family for what will be json schema generated.
-        :return: Validation list of schemas.
+        The method retrieves and customizes validation schemas based on the target family,
+        including AHAB certificate schemas and family-specific configurations. It handles
+        special cases like beacon usage and vendor usage instead of fuse version.
+
+        :param family: Family revision for which the JSON schema will be generated.
+        :return: List of validation schemas with family-specific customizations.
         """
         ret = get_ahab_certificate_class(family).get_validation_schemas(family)
         schema = get_schema_file(DatabaseManager.DAT)
@@ -904,7 +1276,7 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
         update_validation_schema_family(
             sch=ret[0]["properties"], devices=cls.get_supported_families(), family=family
         )
-
+        ret.pop(1)  # Remove the output container key configuration schema
         ret[0]["main_title"] = f"Debug Credential configuration file for {family} family."
 
         ret[1]["properties"].pop("permissions")
@@ -924,11 +1296,15 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
 
     @classmethod
     def load_from_config(cls, config: Config) -> Self:
-        """Create a debug credential object out of yaml configuration.
+        """Create a debug credential object from YAML configuration.
 
-        :param config: Debug credential file configuration.
+        The method processes configuration data to create a debug credential with proper
+        family-specific settings, including SOCC/SOCU values, beacon configuration,
+        and permission data based on the target device family capabilities.
 
-        :return: DebugCredential object
+        :param config: Debug credential file configuration containing device family,
+                       SOCU value, beacon settings, and other credential parameters.
+        :return: DebugCredential object configured for the specified device family.
         """
         family = FamilyRevision.load_from_config(config)
         db = get_db(family=family)
@@ -948,42 +1324,63 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
 
     @classmethod
     def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
-        """Parse the debug credential.
+        """Parse the debug credential from raw binary data.
 
-        :param data: Raw data as bytes
-        :param family: Mandatory family name.
-        :return: DebugCredential object
+        This method creates a DebugCredential object by parsing the provided binary data
+        using the appropriate certificate class for the specified chip family.
+
+        :param data: Raw binary data containing the debug credential.
+        :param family: Chip family revision for proper parsing context.
+        :return: Parsed DebugCredential object.
         """
         return cls(
             family=family, certificate=get_ahab_certificate_class(family).parse(data, family)
         )
 
     def sign(self) -> None:
-        """Sign the DC data using SignatureProvider."""
+        """Sign the DC data using SignatureProvider.
+
+        This method updates the certificate fields and applies the digital signature
+        to the Debug Credential data structure using the configured signature provider.
+
+        :raises SPSDKError: If signature generation fails or certificate update fails.
+        """
         self.certificate.update_fields()
 
     def export(self) -> bytes:
-        """Export to binary form (serialization)."""
+        """Export debug credential to binary form.
+
+        Serializes the debug credential certificate into its binary representation
+        for storage or transmission.
+
+        :return: Binary representation of the debug credential certificate.
+        """
         return self.certificate.export()
 
     def calculate_hash(self) -> bytes:
-        """Calculate the RoT hash."""
+        """Calculate the RoT hash.
+
+        :return: The calculated Root of Trust hash as bytes.
+        """
         return b""
 
     def export_rot_pub(self) -> bytes:
         """Export RoT public key as bytes.
 
-        :return: binary representing the RoT key
+        :return: Binary representing the RoT key.
         """
         return b""
 
     def export_dck_pub(self) -> bytes:
         """Export Debugger public key (DCK) as bytes.
 
-        :return: binary representing the DCK key
+        :return: Binary representing the DCK key.
         """
         return b""
 
     def _get_data_to_sign(self) -> bytes:
-        """Get data to be signed."""
+        """Get data to be signed.
+
+        :return: Data bytes that need to be signed for the debug credential.
+        """
         return b""

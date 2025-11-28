@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module for key derivation functionality for SB3.1 encryption."""
+"""SPSDK SB3.1 key derivation utilities.
+
+This module provides functionality for deriving encryption keys used in
+Secure Binary 3.1 (SB3.1) file format. It supports both local and remote
+key derivation modes with CMAC-based key generation algorithms.
+"""
 
 import abc
 import functools
@@ -23,9 +28,10 @@ logger = logging.getLogger(__name__)
 
 
 class KeyDerivationMode(SpsdkEnum):
-    """Modes for Key derivation.
+    """Key derivation mode enumeration for SPSDK operations.
 
-    Defines the different operation modes used during key derivation process.
+    This enumeration defines the available modes for key derivation processes,
+    including Key Derivation Key (KDK) mode and Block Key Derivation (BLK) mode.
     """
 
     KDK = (1, "KDK", "Key Derivation Key mode")
@@ -33,9 +39,14 @@ class KeyDerivationMode(SpsdkEnum):
 
 
 class SB31KeyDerivator(ServiceProvider):
-    """Engine for generating derived keys.
+    """SB3.1 Key Derivation Engine.
 
-    Base class that implements the key derivation protocol for SB3.1 format.
+    Abstract base class that implements the key derivation protocol for SB3.1 secure boot format.
+    This class provides the foundation for generating derived keys used in SB3.1 file encryption
+    and authentication, supporting both 128-bit and 256-bit key lengths.
+
+    :cvar legacy_identifier_name: Legacy identifier for plugin compatibility.
+    :cvar plugin_identifier: Plugin system identifier for service discovery.
     """
 
     legacy_identifier_name = "kd_type"
@@ -43,6 +54,9 @@ class SB31KeyDerivator(ServiceProvider):
 
     def __init__(self, *args: str, **kwargs: str) -> None:
         """Initialize the KeyDerivator.
+
+        Sets up a new KeyDerivator instance with default configuration values.
+        All key derivation parameters are initialized to their default states.
 
         :param args: Positional arguments passed to parent class
         :param kwargs: Keyword arguments with configuration options
@@ -58,16 +72,17 @@ class SB31KeyDerivator(ServiceProvider):
     def remote_cmac(self, data: bytes) -> bytes:
         """Calculate CMAC using the implementation-specific method.
 
-        :param data: Input data for CMAC calculation
-        :return: Calculated CMAC value
+        :param data: Input data for CMAC calculation.
+        :return: Calculated CMAC value.
         """
 
     def _derive_kdk(self) -> bytes:
         """Derive the KeyDerivationKey from PCK and timestamp.
 
-        Uses the configured parameters to derive a key derivation key.
+        Uses the configured parameters to derive a key derivation key. For 256-bit keys,
+        two iterations are performed and the results are concatenated.
 
-        :return: Derived key derivation key
+        :return: Derived key derivation key as bytes.
         """
         derivation_data_func = functools.partial(
             self._get_key_derivation_data,
@@ -82,8 +97,11 @@ class SB31KeyDerivator(ServiceProvider):
     def get_block_key(self, block_number: int) -> bytes:
         """Derive key for particular block.
 
-        :param block_number: The number of the block for key derivation
-        :return: Derived key for the specified block
+        The method uses CMAC-based key derivation with the block number as derivation constant.
+        For 256-bit keys, two CMAC iterations are performed and concatenated.
+
+        :param block_number: The number of the block for key derivation.
+        :return: Derived key for the specified block as bytes.
         """
         derivation_data_func = functools.partial(
             self._get_key_derivation_data,
@@ -100,9 +118,9 @@ class SB31KeyDerivator(ServiceProvider):
 
         Sets up necessary configuration and derives the key derivation key.
 
-        :param timestamp: Timestamp value for key derivation
-        :param kdk_access_rights: Access rights for the key derivation key
-        :param key_length: Length of encryption key in bits, defaults to 256
+        :param timestamp: Timestamp value for key derivation.
+        :param kdk_access_rights: Access rights for the key derivation key.
+        :param key_length: Length of encryption key in bits, defaults to 256.
         """
         self.timestamp = timestamp
         self.kdk_access_rights = kdk_access_rights
@@ -119,12 +137,14 @@ class SB31KeyDerivator(ServiceProvider):
     ) -> bytes:
         """Generate data for AES key derivation.
 
-        Composes the data structure used for key derivation according to the protocol.
+        Composes the data structure used for key derivation according to the protocol
+        specification. The method combines derivation constant, access rights, mode,
+        key options, and iteration into a structured byte sequence.
 
-        :param derivation_constant: Number for the key derivation
+        :param derivation_constant: Number for the key derivation (12 bytes, little endian)
         :param mode: Mode for key derivation (KDK or BLK)
-        :param iteration: Iteration of the key derivation
-        :return: Data used for key derivation
+        :param iteration: Iteration of the key derivation (4 bytes, big endian)
+        :return: Data used for key derivation as bytes sequence
         :raises SPSDKError: When key derivator is not configured or configured incorrectly
         """
         if not self._configured:
@@ -152,9 +172,14 @@ class SB31KeyDerivator(ServiceProvider):
 
 
 class LocalKeyDerivator(SB31KeyDerivator):
-    """Key derivator that uses a locally stored key file.
+    """Local key derivator for SB3.1 secure boot operations.
 
-    Performs key derivation using a key stored in a local file.
+    This class implements key derivation functionality using cryptographic keys
+    stored in local files or provided as direct hex string data. It supports
+    both 128-bit and 256-bit PCK (Part Common Key) formats and
+    handles automatic key size detection during loading.
+
+    :cvar identifier: String identifier for this derivator type.
     """
 
     identifier = "file"
@@ -168,10 +193,16 @@ class LocalKeyDerivator(SB31KeyDerivator):
     ) -> None:
         """Initialize the Local Key Derivator.
 
+        Initializes a key derivator that can load Part Common Key (PCK) from either
+        a file or direct hex string data. The PCK must be either 128-bit (16 bytes) or
+        256-bit (32 bytes).
+
         :param file_path: Path to PCK file (text with hex string or binary file)
         :param search_paths: List of paths where to search for the file, defaults to None
         :param data: Direct hex string data (alternative to file_path)
         :param kwargs: Additional keyword arguments
+        :raises SPSDKError: When PCK data cannot be parsed, file cannot be loaded, or neither
+            file_path nor data is provided
         """
         super().__init__(**kwargs)
 
@@ -209,16 +240,21 @@ class LocalKeyDerivator(SB31KeyDerivator):
     def remote_cmac(self, data: bytes) -> bytes:
         """Calculate CMAC using locally stored key.
 
-        :param data: Input data for CMAC calculation
-        :return: Calculated CMAC value
+        :param data: Input data for CMAC calculation.
+        :return: Calculated CMAC value as bytes.
         """
         return cmac(key=self.pck, data=data)
 
 
 class RemoteKeyDerivator(HTTPClientBase, SB31KeyDerivator):
-    """Key derivator that uses a remote service over HTTP.
+    """Remote key derivator for SB31 operations using HTTP service.
 
-    Delegates key derivation operations to a remote service.
+    This class provides key derivation functionality by delegating operations
+    to a remote HTTP service, enabling distributed key management and processing
+    for secure boot file operations.
+
+    :cvar identifier: Service identifier for proxy-based key derivation.
+    :cvar api_version: API version supported by the remote service.
     """
 
     identifier = "proxy"
@@ -234,11 +270,14 @@ class RemoteKeyDerivator(HTTPClientBase, SB31KeyDerivator):
     ) -> None:
         """Initialize remote key derivator.
 
-        :param host: Hostname of the remote service
-        :param port: Port number of the remote service
-        :param url_prefix: URL prefix for API endpoints
-        :param timeout: Request timeout in seconds
-        :param kwargs: Additional configuration options
+        This constructor sets up a connection to a remote key derivation service
+        with configurable network parameters and timeout settings.
+
+        :param host: Hostname of the remote service, defaults to "localhost".
+        :param port: Port number of the remote service, defaults to 8000.
+        :param url_prefix: URL prefix for API endpoints, defaults to "api".
+        :param timeout: Request timeout in seconds, defaults to 60.
+        :param kwargs: Additional configuration options passed to parent class.
         """
         super().__init__(
             host=host, port=int(port), url_prefix=url_prefix, timeout=timeout, **kwargs  # type: ignore[arg-type]
@@ -247,8 +286,8 @@ class RemoteKeyDerivator(HTTPClientBase, SB31KeyDerivator):
     def remote_cmac(self, data: bytes) -> bytes:
         """Calculate CMAC using the remote service.
 
-        :param data: Input data for CMAC calculation
-        :return: Calculated CMAC value from the remote service
+        :param data: Input data for CMAC calculation.
+        :return: Calculated CMAC value from the remote service.
         """
         response = self._handle_request(
             method=self.Method.GET, url="/cmac", json_data={"data": data.hex()}
@@ -266,13 +305,14 @@ def get_sb31_key_derivator(
     """Factory function to create an appropriate key derivator.
 
     Creates either a service-based or file-based key derivator based on the provided parameters.
+    The kd_cfg parameter can be a file path, hex string key, or service configuration string.
 
-    :param kd_cfg: Path to key derivator configuration file
-    :param local_file_key: Path to local key file
-    :param search_paths: Additional paths to search for keys
-    :param kwargs: Additional arguments passed to the key derivator
-    :return: Configured key derivator instance
-    :raises SPSDKError: When no configuration is provided or key derivator creation fails
+    :param kd_cfg: Key derivator configuration (file path, hex string, or service config).
+    :param local_file_key: Path to local key file.
+    :param search_paths: Additional paths to search for configuration and key files.
+    :param kwargs: Additional arguments passed to the key derivator constructor.
+    :raises SPSDKError: When no configuration is provided or key derivator creation fails.
+    :return: Configured key derivator instance.
     """
     if kd_cfg:
         # config string might still be a path to local file

@@ -5,6 +5,16 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""SPSDK RT5xx MCU test examples and utilities.
+
+This module provides comprehensive test functions and utilities for RT5xx MCU series,
+including image generation, secure boot operations, cryptographic operations, and
+hardware provisioning workflows.
+Main test categories include XIP and RAM image testing with CRC, signed, and encrypted
+variants, Secure Binary file operations with various security configurations, OTP fuse
+burning and keystore management, OTFAD testing, and production mode validation.
+"""
+
 import os
 from datetime import datetime, timezone
 from struct import pack
@@ -18,7 +28,7 @@ from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.signature_provider import PlainFileSP, SignatureProvider
 from spsdk.image.keystore import KeySourceType, KeyStore
 from spsdk.image.mbi.mbi import MasterBootImage
-from spsdk.image.trustzone import TrustZone
+from spsdk.image.otfad.otfad import KeyBlob, Otfad
 from spsdk.mboot.commands import KeyProvUserKeyType
 from spsdk.mboot.exceptions import McuBootConnectionError
 from spsdk.mboot.interfaces.uart import MbootUARTInterface
@@ -26,7 +36,6 @@ from spsdk.mboot.mcuboot import McuBoot, PropertyTag
 from spsdk.mboot.memories import ExtMemId
 from spsdk.sbfile.sb2.commands import CmdErase, CmdFill, CmdLoad, CmdMemEnable
 from spsdk.sbfile.sb2.images import BootImageV21, BootSectionV2, CertBlockV1, SBV2xAdvancedParams
-from spsdk.image.otfad.otfad import KeyBlob, Otfad
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import Endianness, align_block, load_binary
 from tests.misc import compare_bin_files
@@ -64,17 +73,24 @@ ENCR_CTR_IV = bytes.fromhex("fff5a54ee37de8f9606c048d941588df")
 
 @pytest.fixture(scope="module")
 def data_dir(data_dir: str) -> str:
-    """:return: absolute path where data files for the test are located"""
+    """Get absolute path to RT5xx test data directory.
+
+    :param data_dir: Base directory path containing test data files.
+    :return: Absolute path to the RT5xx-specific test data directory.
+    """
     return os.path.join(data_dir, "rt5xx")
 
 
 def write_image(data_dir: str, image_file_name: str, bin_data: bytes) -> None:
-    """In production mode, this function should write image to the disk and burn info external FLASH.
-    In test mode, the function just compare existing image with provided image.
+    """Write image to disk and optionally burn to external FLASH.
 
-    :param data_dir: absolute path of the data directory
-    :param image_file_name: of the output image on the disk
-    :param bin_data: binary content of the image
+    In production mode, this function writes the image to disk and burns it to external FLASH.
+    In test mode, the function compares the existing image with the provided image data.
+
+    :param data_dir: Absolute path of the data directory.
+    :param image_file_name: Name of the output image file on disk.
+    :param bin_data: Binary content of the image to write or compare.
+    :raises SPSDKError: If burning to external FLASH fails or file operations fail.
     """
     path = os.path.join(data_dir, OUTPUT_IMAGES_SUBDIR, image_file_name)
     if TEST_IMG_CONTENT:
@@ -84,17 +100,21 @@ def write_image(data_dir: str, image_file_name: str, bin_data: bytes) -> None:
             f.write(bin_data)
         # burn info external flash; processor must be connected using USB
         mboot = burn_img_via_usb_into_flexspi_flash(data_dir, bin_data)
+        assert mboot
         mboot.close()
 
 
 def write_sb(data_dir: str, sb_file_name: str, bin_data: bytes, key_store: KeyStore) -> None:
-    """In production mode, this function should write SB file to the disk and burn info external FLASH.
-    In test mode, the function just compare existing content with provided content.
+    """Write SB file to disk and optionally send to processor.
 
-    :param data_dir: absolute path of the data directory
-    :param sb_file_name: of the output SB file on the disk
-    :param bin_data: binary content of the SB file
-    :param key_store: key-store used for SB file
+    In production mode, this function writes the SB file to disk and burns it to external FLASH.
+    In test mode, the function compares existing content with provided content.
+
+    :param data_dir: Absolute path of the data directory.
+    :param sb_file_name: Name of the output SB file on the disk.
+    :param bin_data: Binary content of the SB file.
+    :param key_store: Key-store used for SB file operations.
+    :raises SPSDKError: If file operations or USB communication fails.
     """
     path = os.path.join(data_dir, OUTPUT_IMAGES_SUBDIR, sb_file_name)
     if TEST_IMG_CONTENT:
@@ -112,16 +132,18 @@ def write_sb(data_dir: str, sb_file_name: str, bin_data: bytes, key_store: KeySt
 
 
 def write_shadow_regis(data_dir: str, writes: list[tuple[int, int]]) -> None:
-    """Write shadow registers:
-    - prepares and burns into FLASH a binary application for initialization of shadow registers
-    - the application is launched using "execute" command
-    - after registers are written, the application do software reset to return back to boot-loader
+    """Write shadow registers by burning a binary application into FLASH.
 
-    :param data_dir: absolute path of directory with data files
-    :param writes: list of show register initialization tuples, that contain:
-    - the first parameter is an address of the shadow register
-    - second parameter represents 32-bit value (unsigned integer)
-    The list may contain maximum 12 tuples
+    Prepares and burns into FLASH a binary application for initialization of shadow registers.
+    The application is launched using "execute" command and after registers are written,
+    it performs a software reset to return back to boot-loader.
+
+    :param data_dir: Absolute path of directory with data files.
+    :param writes: List of shadow register initialization tuples, where each tuple contains
+                   address of the shadow register (int) and 32-bit value (unsigned integer).
+                   Maximum 12 tuples are allowed.
+    :raises AssertionError: If writes list contains more than 12 tuples or if binary
+                           replacement fails.
     """
     if TEST_IMG_CONTENT:
         return
@@ -164,10 +186,15 @@ def write_shadow_regis(data_dir: str, writes: list[tuple[int, int]]) -> None:
 
 
 def open_mboot() -> McuBoot:
-    """Open USB communication with RT5xx boot-loader
+    """Open USB communication with RT5xx boot-loader.
 
-    :return: McuBoot instance
-    :raises McuBootConnectionError: if device not connected
+    Attempts to establish USB communication with RT5xx device by scanning for available
+    UART interfaces. Retries up to 5 times with 1-second delays to allow shadow registers
+    to become ready. Validates connection by retrieving the current version property.
+
+    :raises McuBootConnectionError: If RT5xx device is not connected via USB or if
+        multiple devices are found.
+    :return: Configured and opened McuBoot instance with established connection.
     """
     assert not TEST_IMG_CONTENT
 
@@ -200,12 +227,17 @@ def open_mboot() -> McuBoot:
 
 
 def burn_img_via_usb_into_flexspi_flash(data_dir: str, img_data: bytes) -> Optional[McuBoot]:
-    """Burn image into external FLASH connected through FlexSPI
+    """Burn image into external FLASH connected through FlexSPI.
 
-    :param data_dir: absolute path where the data files are located
-    :param img_data: binary image data
-    :return: McuBoot instance to talk to processor bootloader; None in test mode
-    :raises ConnectionError: if USB connection with processor's boot-loader cannot be established
+    This function configures the FlexSPI NOR flash memory, erases the target region,
+    writes the Flash Configuration Block (FCB), and burns the application image.
+    The process includes memory configuration, region erasure, FCB setup, and
+    image programming via USB connection to the processor bootloader.
+
+    :param data_dir: Absolute path where the data files are located.
+    :param img_data: Binary image data to be written to flash.
+    :return: McuBoot instance to talk to processor bootloader; None in test mode.
+    :raises ConnectionError: If USB connection with processor's boot-loader cannot be established.
     """
     if TEST_IMG_CONTENT:  # this function communicates with HW board, it cannot be used in test mode
         return None
@@ -240,11 +272,16 @@ def burn_img_via_usb_into_flexspi_flash(data_dir: str, img_data: bytes) -> Optio
 
 
 def send_sb_via_usb_into_processor(sb_data: bytes, key_store: KeyStore) -> None:
-    """Send SB file into processor
+    """Send SB file into processor via USB connection.
 
-    :param sb_data: SB file to be sent
-    :param key_store: key-store used for SB file
-    :raises ConnectionError: if USB connection with processor's boot-loader cannot be established
+    This function establishes a USB connection with the processor's boot-loader,
+    configures the key store if needed, and sends the Secure Binary (SB) file data
+    to the target processor. The function skips execution in test mode.
+
+    :param sb_data: Binary data of the SB file to be sent to processor.
+    :param key_store: Key store instance used for SB file encryption and authentication.
+    :raises ConnectionError: If USB connection with processor's boot-loader cannot be established.
+    :raises AssertionError: If key store write or SB file transfer fails.
     """
     if TEST_IMG_CONTENT:  # this function communicates with HW board, it cannot be used in test mode
         return
@@ -263,8 +300,19 @@ def send_sb_via_usb_into_processor(sb_data: bytes, key_store: KeyStore) -> None:
 
 
 def burn_rkht_fuses() -> None:
-    """Burn RKHT fuses, permanent irreversible operation
-    (This script was not tested on HW)"""
+    """Burn RKHT fuses on RT5xx device.
+
+    This function performs a permanent and irreversible operation to program
+    the Root Key Hash Table (RKHT) fuses with predefined values. The operation
+    includes programming 8 consecutive fuse registers (0x78-0x7F) and verifying
+    the written values.
+    .. warning::
+        This is a permanent and irreversible operation that modifies device fuses.
+        This script has not been tested on hardware.
+
+    :raises SPSDKConnectionError: If mboot connection cannot be established.
+    :raises SPSDKError: If fuse programming or verification fails.
+    """
 
     mboot = open_mboot()
 
@@ -293,13 +341,18 @@ def burn_rkht_fuses() -> None:
 
 
 def generate_keystore(data_dir: str) -> bytes:
-    """Generate key-store with
+    """Generate key-store with encryption and signing keys.
+
+    The method provisions three types of keys to the MCU:
     - OTFAD KEK key for encryption of OTFAD key blobs
     - HMAC user key for signed images
     - SB KEK key for SB2.1 file processing
+    The generated key-store is saved to the specified data directory and returned as binary data.
 
-    :param data_dir: absolute path where test data files are located
-    :return: key-store binary data from the processor
+    :param data_dir: Absolute path where test data files are located.
+    :raises AssertionError: If any key provisioning operation fails.
+    :raises FileNotFoundError: If required key files are not found in data directory.
+    :return: Key-store binary data from the processor.
     """
     mboot = open_mboot()
 
@@ -335,11 +388,16 @@ def generate_keystore(data_dir: str) -> bytes:
 
 
 def get_keystore(data_dir: str) -> KeyStore:
-    """Return key-store for current processor
-    See description of `UPDATE_KEYSTORE` and `gen_keystore` for more details
+    """Return key-store for current processor.
 
-    :param data_dir: absolute path of directory with data
-    :return: instance of key-store class with key-store binary data
+    The method either generates a new key-store using generate_keystore() if UPDATE_KEYSTORE
+    is True, or loads an existing key-store binary file from the specified data directory.
+    See description of `UPDATE_KEYSTORE` and `gen_keystore` for more details.
+
+    :param data_dir: Absolute path of directory with data.
+    :raises FileNotFoundError: If key-store file doesn't exist when UPDATE_KEYSTORE is False.
+    :raises OSError: If there's an issue reading the key-store file.
+    :return: Instance of key-store class with key-store binary data.
     """
     if UPDATE_KEYSTORE:
         key_store_bin = generate_keystore(data_dir)  # generate new key-store for current processor
@@ -352,10 +410,15 @@ def get_keystore(data_dir: str) -> KeyStore:
 
 
 def create_cert_block(data_dir: str) -> CertBlockV1:
-    """Load 4 certificates and create certificate block
+    """Create certificate block with loaded certificates for RT5xx testing.
 
-    :param data_dir: absolute path
-    :return: certificate block with 4 certificates, certificate 0 is selected
+    Loads 4 certificates from the specified data directory and creates a CertBlockV1
+    instance for mimxrt595s family. The first certificate is added to the block and
+    root key hashes are set for all loaded certificates.
+
+    :param data_dir: Absolute path to the directory containing certificate data.
+    :raises SPSDKError: If certificate files cannot be loaded or certificate block creation fails.
+    :return: Certificate block with 4 certificates where certificate 0 is selected.
     """
     # load certificates
     cert_path = os.path.join(data_dir, "keys_certs")
@@ -377,8 +440,18 @@ def create_cert_block(data_dir: str) -> CertBlockV1:
 
 
 def create_signature_provider(data_dir: str) -> SignatureProvider:
+    """Create a signature provider from a private key file.
+
+    This method constructs a file-based signature provider using a predefined
+    private key located in the data directory's keys_certs folder.
+
+    :param data_dir: Base directory path containing the keys_certs folder with private key files.
+    :raises SPSDKError: If the private key file cannot be found or loaded.
+    :return: Configured signature provider instance for cryptographic operations.
+    """
     priv_key_pem_path = os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem")
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key_pem_path}")
+    assert signature_provider
     return signature_provider
 
 
@@ -395,10 +468,16 @@ def create_signature_provider(data_dir: str) -> SignatureProvider:
     ],
 )
 def test_xip_crc(data_dir: str, image_file_name: str) -> None:
-    """Create image with CRC
+    """Create image with CRC for RT5xx MCU testing.
 
-    :param data_dir: absolute path with data files
-    :param image_file_name: name of the input image file (including extension)
+    This test function loads an unsigned binary image, creates a Master Boot Image (MBI)
+    with CRC protection for XIP (Execute In Place) configuration, and writes the
+    resulting image to the output directory.
+
+    :param data_dir: Absolute path to directory containing test data files.
+    :param image_file_name: Name of the input unsigned binary image file (must end with '_unsigned.bin').
+    :raises AssertionError: If image_file_name doesn't end with '_unsigned.bin'.
+    :raises SPSDKError: If image loading or MBI creation fails.
     """
     assert image_file_name.endswith("_unsigned.bin")
     path = os.path.join(data_dir, INPUT_IMAGES_SUBDIR, image_file_name)
@@ -421,11 +500,15 @@ def test_xip_crc(data_dir: str, image_file_name: str) -> None:
     ],
 )
 def test_ram_crc(data_dir: str, image_file_name: str, ram_addr: int) -> None:
-    """Create image with CRC
+    """Create image with CRC for RT5xx MCU.
 
-    :param data_dir: absolute path with data files
-    :param image_file_name: name of the input image file (including extension)
-    :param ram_addr: address in RAM, where the image should be located
+    This function loads an unsigned binary image, creates a Master Boot Image (MBI) with CRC
+    protection for RAM execution, and saves the resulting image to the output directory.
+
+    :param data_dir: Absolute path to directory containing data files.
+    :param image_file_name: Name of the input unsigned binary file (must end with '_unsigned.bin').
+    :param ram_addr: Target RAM address where the image will be loaded and executed.
+    :raises AssertionError: If image_file_name does not end with '_unsigned.bin'.
     """
     assert image_file_name.endswith("_unsigned.bin")
     path = os.path.join(data_dir, INPUT_IMAGES_SUBDIR, image_file_name)
@@ -448,11 +531,16 @@ def test_ram_crc(data_dir: str, image_file_name: str, ram_addr: int) -> None:
     ],
 )
 def test_ram_signed_otp(data_dir: str, image_file_name: str, ram_addr: int) -> None:
-    """Create signed load-to-RAM image with keys stored in OTP
+    """Create signed load-to-RAM image with keys stored in OTP.
 
-    :param data_dir: absolute path with data files
-    :param image_file_name: name of the input image file (including extension)
-    :param ram_addr: address in RAM, where the image should be located
+    The method reads an unsigned image file, creates a keystore with OTP source type,
+    generates certificate block and signature provider, then creates a signed Master Boot Image
+    for RAM loading and writes it to an output file.
+
+    :param data_dir: Absolute path with data files.
+    :param image_file_name: Name of the input image file (including extension).
+    :param ram_addr: Address in RAM where the image should be located.
+    :raises SPSDKError: If image creation or file operations fail.
     """
     # read unsigned image (must be built without boot header)
     path = os.path.join(data_dir, INPUT_IMAGES_SUBDIR, image_file_name)
@@ -487,11 +575,16 @@ def test_ram_signed_otp(data_dir: str, image_file_name: str, ram_addr: int) -> N
     ],
 )
 def test_ram_signed_keystore(data_dir: str, image_file_name: str, ram_addr: int) -> None:
-    """Create signed load-to-RAM image with keys stored in key-store
+    """Create signed load-to-RAM image with keys stored in key-store.
 
-    :param data_dir: absolute path with data files
-    :param image_file_name: name of the input image file (including extension)
-    :param ram_addr: address in RAM, where the image should be located
+    This method reads an unsigned image file, creates a certificate block and signature provider,
+    loads a key store with HMAC user key, and generates a signed Master Boot Image for RT5xx family.
+    The output image is saved with a modified filename indicating it's signed with keystore.
+
+    :param data_dir: Absolute path to directory containing data files
+    :param image_file_name: Name of the input image file including extension
+    :param ram_addr: Target RAM address where the image should be loaded
+    :raises SPSDKError: If image file cannot be loaded or MBI creation fails
     """
     # read unsigned image (must be built without boot header)
     path = os.path.join(data_dir, INPUT_IMAGES_SUBDIR, image_file_name)
@@ -529,10 +622,15 @@ def test_ram_signed_keystore(data_dir: str, image_file_name: str, ram_addr: int)
     ],
 )
 def test_xip_signed(data_dir: str, image_file_name: str) -> None:
-    """Create signed XIP image
+    """Create signed XIP image for RT5xx MCU.
 
-    :param data_dir: absolute path with data files
-    :param image_file_name: name of the input image file (including extension)
+    The method loads an unsigned binary image, creates a certificate block and signature provider,
+    then generates a signed XIP (Execute In Place) Master Boot Image with the specified load address.
+    The signed image is written to the output directory with '_signed.bin' suffix.
+
+    :param data_dir: Absolute path to directory containing data files and certificates.
+    :param image_file_name: Name of the input unsigned image file including extension.
+    :raises SPSDKError: If image loading, certificate creation, or MBI generation fails.
     """
     # read unsigned image (must be built without boot header)
     path = os.path.join(data_dir, INPUT_IMAGES_SUBDIR, image_file_name)
@@ -562,11 +660,16 @@ def test_xip_signed(data_dir: str, image_file_name: str) -> None:
     ],
 )
 def test_ram_encrypted_otp(data_dir: str, image_file_name: str, ram_addr: int) -> None:
-    """Test encrypted load-to-RAM image with key stored in OTP
+    """Test encrypted load-to-RAM image with key stored in OTP.
 
-    :param data_dir: absolute path with data files
-    :param image_file_name: name of the input image file (including extension)
-    :param ram_addr: address in RAM, where the image should be located
+    Creates an encrypted and signed Master Boot Image (MBI) for RT5xx family with encryption key
+    stored in OTP (One-Time Programmable) memory. The method loads the input binary, sets up
+    certificate block and signature provider, reads HMAC user key, and generates the final
+    encrypted image file.
+
+    :param data_dir: Absolute path to directory containing data files.
+    :param image_file_name: Name of the input image file including extension.
+    :param ram_addr: Target address in RAM where the image should be loaded.
     """
     path = os.path.join(data_dir, INPUT_IMAGES_SUBDIR, image_file_name)
     org_data = load_binary(path)
@@ -603,11 +706,17 @@ def test_ram_encrypted_otp(data_dir: str, image_file_name: str, ram_addr: int) -
     ],
 )
 def test_ram_encrypted_keystore(data_dir: str, image_file_name: str, ram_addr: int) -> None:
-    """Test encrypted load-to-RAM image with key stored in key-store
+    """Test encrypted load-to-RAM image with key stored in key-store.
 
-    :param data_dir: absolute path with data files
-    :param image_file_name: name of the input image file (including extension)
-    :param ram_addr: address in RAM, where the image should be located
+    Creates an encrypted and signed Master Boot Image (MBI) for RT5xx family MCUs
+    using a key stored in the key-store. The method loads the original binary,
+    applies encryption with HMAC user key, and exports the final encrypted image.
+
+    :param data_dir: Absolute path to directory containing data files
+    :param image_file_name: Name of the input image file including extension
+    :param ram_addr: Target RAM address where the image should be loaded
+    :raises SPSDKError: If keystore loading, certificate creation, or MBI generation fails
+    :raises FileNotFoundError: If input image file or required data files are not found
     """
     path = os.path.join(data_dir, INPUT_IMAGES_SUBDIR, image_file_name)
     org_data = load_binary(path)
@@ -638,8 +747,14 @@ def test_ram_encrypted_keystore(data_dir: str, image_file_name: str, ram_addr: i
     write_image(data_dir, out_image_file_name, mbi.export())
 
 
-def test_production_disabled():
-    """Ensure for unit test the configuration is not for production"""
+def test_production_disabled() -> None:
+    """Ensure for unit test the configuration is not for production.
+
+    This test verifies that the TEST_IMG_CONTENT variable is properly set,
+    confirming that the test environment is not configured for production use.
+
+    :raises AssertionError: When TEST_IMG_CONTENT is not set or is falsy.
+    """
     assert TEST_IMG_CONTENT
 
 
@@ -654,10 +769,15 @@ def test_production_disabled():
     ],
 )
 def test_sb_unsigned_keystore(data_dir: str, subdir: str, image_name: str) -> None:
-    """Test creation of SB file for RT5xx with unsigned image. SBKEK Key for SB file is stored in KEYSTORE.
+    """Test creation of SB file for RT5xx with unsigned image.
 
-    :param data_dir: absolute path of the directory with data files for the test
-    :param image_name: file name of the unsigned image WITHOUT file extension
+    SBKEK Key for SB file is stored in KEYSTORE. This test creates a secure boot
+    image with certificate block, configures memory settings, and generates the
+    final SB file with keystore integration.
+
+    :param data_dir: Absolute path of the directory with data files for the test.
+    :param subdir: Subdirectory name within data_dir containing the image file.
+    :param image_name: File name of the unsigned image WITHOUT file extension.
     """
     if not TEST_IMG_CONTENT:
         write_shadow_regis(data_dir, [(0x40130194, 0x00000080)])  # BOOT_CFG[5]: USE_PUF = 1
@@ -725,10 +845,15 @@ def test_sb_unsigned_keystore(data_dir: str, subdir: str, image_name: str) -> No
     ],
 )
 def test_sb_unsigned_otp(data_dir: str, subdir: str, image_name: str) -> None:
-    """Test creation of SB file for RT5xx with unsigned image. SBKEK Key for SB file is stored in KEYSTORE.
+    """Test creation of SB file for RT5xx with unsigned image.
 
-    :param data_dir: absolute path of the directory with data files for the test
-    :param image_name: file name of the unsigned image WITHOUT file extension
+    This test configures shadow registers, derives SBKEK key from master key stored in OTP,
+    creates a secure boot image with certificate block and signature, and exports it as SB file.
+    The SBKEK key for SB file is stored in KEYSTORE.
+
+    :param data_dir: Absolute path of the directory with data files for the test.
+    :param subdir: Subdirectory name containing the image file.
+    :param image_name: File name of the unsigned image WITHOUT file extension.
     """
     write_shadow_regis(
         data_dir,
@@ -809,10 +934,16 @@ def test_sb_unsigned_otp(data_dir: str, subdir: str, image_name: str) -> None:
     ],
 )
 def test_sb_signed_encr_keystore(data_dir: str, subdir: str, image_name: str) -> None:
-    """Test creation of SB file for RT5xx with signed or encrypted image. SBKEK Key for SB file is stored in KEYSTORE.
+    """Test creation of SB file for RT5xx with signed or encrypted image.
 
-    :param data_dir: absolute path of the directory with data files for the test
-    :param image_name: file name of the signed or encrypted image WITHOUT file extension
+    The SBKEK Key for SB file is stored in KEYSTORE. This test function configures
+    shadow registers, creates a boot image with certificate block and signature
+    provider, adds boot sections with FCB and image data, and exports the final
+    SB file.
+
+    :param data_dir: Absolute path of the directory with data files for the test.
+    :param subdir: Subdirectory name containing the image file.
+    :param image_name: File name of the signed or encrypted image WITHOUT file extension.
     """
     if not TEST_IMG_CONTENT:
         write_shadow_regis(
@@ -889,11 +1020,16 @@ def test_sb_signed_encr_keystore(data_dir: str, subdir: str, image_name: str) ->
     ],
 )
 def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: bool) -> None:
-    """Test creation of SB file for RT5xx with OTFAD encrypted image. SBKEK Key for SB file is stored in KEYSTORE.
+    """Test creation of SB file for RT5xx with OTFAD encrypted image.
 
-    :param data_dir: absolute path of the directory with data files for the test
-    :param image_name: file name of the signed image WITHOUT file extension
-    :param secure: whether security should be enabled
+    SBKEK Key for SB file is stored in KEYSTORE. This test configures shadow registers,
+    creates a secure boot image with OTFAD encryption, sets up key blobs, and generates
+    the final SB file with encrypted image data.
+
+    :param data_dir: Absolute path of the directory with data files for the test.
+    :param subdir: Subdirectory name containing the image file.
+    :param image_name: File name of the signed image WITHOUT file extension.
+    :param secure: Whether security should be enabled.
     """
     if not TEST_IMG_CONTENT:
         secure_boot_en = 0x900000 if secure else 0  # BOOT_CFG[0]: SECURE_BOOT_EN=?
@@ -999,11 +1135,15 @@ def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: 
 )
 def test_sb_otfad_otp(data_dir: str, subdir: str, image_name: str, secure: bool) -> None:
     """Test creation of SB file for RT5xx with OTFAD encrypted image.
-    SBKEK Key for SB file is derived from master key in OTP.
 
-    :param data_dir: absolute path of the directory with data files for the test
-    :param image_name: file name of the signed image WITHOUT file extension
-    :param secure: whether security should be enabled
+    SBKEK Key for SB file is derived from master key in OTP. The test configures
+    shadow registers, creates encrypted boot image with OTFAD key blobs, and
+    generates the final SB file with FCB data and key store.
+
+    :param data_dir: Absolute path of the directory with data files for the test.
+    :param subdir: Subdirectory name within data_dir containing the image file.
+    :param image_name: File name of the signed image WITHOUT file extension.
+    :param secure: Whether security should be enabled in boot configuration.
     """
     if not TEST_IMG_CONTENT:
         secure_boot_en = 0x900000 if secure else 0  # BOOT_CFG[0]: SECURE_BOOT_EN=?

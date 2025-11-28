@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module implementing SBFile version 1."""
+"""SPSDK SBFile version 1 implementation.
+
+This module provides complete functionality for creating, parsing, and manipulating
+Secure Binary (SB) files version 1, including headers, sections, images, and related
+utilities for NXP MCU secure boot process.
+"""
+
 from spsdk.sbfile.misc import BcdVersion3
 from spsdk.sbfile.sb1.headers import SecureBootFlagsV1
 from spsdk.sbfile.sb1.images import SecureBootV1

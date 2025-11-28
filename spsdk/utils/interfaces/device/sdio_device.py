@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Low level sdio device."""
+"""SPSDK SDIO device interface implementation.
+
+This module provides low-level SDIO (Secure Digital Input Output) device
+communication interface for SPSDK operations. It implements the SdioDevice
+class for handling SDIO protocol communications with NXP MCU devices.
+"""
+
 import logging
 import os
 import time
@@ -23,7 +29,14 @@ logger = logging.getLogger(__name__)
 
 
 class SdioDevice(DeviceBase):
-    """SDIO device class."""
+    """SDIO device interface for SPSDK communication.
+
+    This class provides a communication interface for SDIO (Secure Digital Input Output)
+    devices, enabling data transfer operations with configurable timeout settings and
+    both blocking and non-blocking operation modes.
+
+    :cvar DEFAULT_TIMEOUT: Default timeout value in milliseconds for SDIO operations.
+    """
 
     DEFAULT_TIMEOUT = 2000
 
@@ -34,7 +47,9 @@ class SdioDevice(DeviceBase):
     ) -> None:
         """Initialize the SDIO interface object.
 
-        :raises McuBootConnectionError: when the path is empty
+        :param path: Path to the SDIO device, required for connection.
+        :param timeout: Communication timeout in seconds, uses DEFAULT_TIMEOUT if not specified.
+        :raises SPSDKConnectionError: When the path is None or empty.
         """
         self._opened = False
         # Temporarily use hard code until there is a way to retrieve VID/PID
@@ -49,29 +64,38 @@ class SdioDevice(DeviceBase):
 
     @property
     def timeout(self) -> int:
-        """Timeout property."""
+        """Get timeout value for SDIO device operations.
+
+        :return: Timeout value in appropriate units.
+        """
         return self._timeout
 
     @timeout.setter
     def timeout(self, value: int) -> None:
-        """Timeout property setter."""
+        """Set timeout value for the device communication.
+
+        :param value: Timeout value in milliseconds for device operations.
+        """
         self._timeout = value
 
     @property
     def is_opened(self) -> bool:
-        """Indicates whether device is open.
+        """Check if the SDIO device is currently opened.
 
         :return: True if device is open, False otherwise.
         """
         return self.device is not None and self._opened
 
     def open(self) -> None:
-        """Open the interface with non-blocking mode.
+        """Open the SDIO device interface.
 
-        :raises McuBootError: if non-blocking mode is not available
-        :raises SPSDKError: if trying to open in non-blocking mode on non-linux os
-        :raises SPSDKConnectionError: if no device is available
-        :raises SPSDKConnectionError: if the device can not be opened
+        Opens the SDIO device file with read/write access and configures it for blocking or
+        non-blocking mode based on the interface settings. The device must be available and
+        accessible for the operation to succeed.
+
+        :raises McuBootError: If non-blocking mode is not available.
+        :raises SPSDKError: If trying to open in non-blocking mode on non-Linux OS.
+        :raises SPSDKConnectionError: If no device is available or the device cannot be opened.
         """
         logger.debug("Opening the sdio device.")
         if not self._opened:
@@ -91,10 +115,14 @@ class SdioDevice(DeviceBase):
                 ) from error
 
     def close(self) -> None:
-        """Close the interface.
+        """Close the SDIO interface connection.
 
-        :raises SPSDKConnectionError: if no device is available
-        :raises SPSDKConnectionError: if the device can not be opened
+        Properly closes the SDIO device connection and updates the internal state.
+        The method ensures clean disconnection from the device and handles any
+        errors that may occur during the closing process.
+
+        :raises SPSDKConnectionError: If no device is available.
+        :raises SPSDKConnectionError: If the device cannot be closed properly.
         """
         logger.debug("Closing the sdio Interface.")
         if not self.device:
@@ -109,13 +137,16 @@ class SdioDevice(DeviceBase):
                 ) from error
 
     def read(self, length: int, timeout: Optional[int] = None) -> bytes:
-        """Read 'length' amount for bytes from device.
+        """Read specified number of bytes from the SDIO device.
 
-        :param length: Number of bytes to read
-        :param timeout: Read timeout
-        :return: Data read from the device
-        :raises SPSDKTimeoutError: Time-out
-        :raises SPSDKConnectionError: When device was not open for reading
+        The method uses either blocking or non-blocking read operation based on the device
+        configuration. It validates that the device is properly opened before attempting to read.
+
+        :param length: Number of bytes to read from the device.
+        :param timeout: Read operation timeout in milliseconds, None for default timeout.
+        :return: Data read from the device.
+        :raises SPSDKTimeoutError: When read operation times out or no data is received.
+        :raises SPSDKConnectionError: When device is not opened for reading.
         """
         if not self.device or not self.is_opened:
             raise SPSDKConnectionError("Device is not opened for reading")
@@ -127,13 +158,16 @@ class SdioDevice(DeviceBase):
         return data
 
     def _read_blocking(self, length: int, timeout: Optional[int] = None) -> bytes:
-        """Read 'length' amount for bytes from device in blocking mode.
+        """Read specified number of bytes from device in blocking mode.
 
-        :param length: Number of bytes to read
-        :param timeout: Read timeout
-        :return: Data read from the device
-        :raises SPSDKConnectionError: When reading data from device fails
-        :raises SPSDKConnectionError: Raises if device is not opened for reading
+        The method reads data from the SDIO device using blocking I/O operation.
+        It requires the device to be properly opened before attempting to read.
+
+        :param length: Number of bytes to read from the device.
+        :param timeout: Read timeout in seconds (currently not used by implementation).
+        :return: Data read from the device as bytes.
+        :raises SPSDKConnectionError: When device is not opened for reading.
+        :raises SPSDKConnectionError: When reading data from device fails.
         """
         if not self.device or not self.is_opened:
             raise SPSDKConnectionError("Device is not opened for writing")
@@ -144,14 +178,15 @@ class SdioDevice(DeviceBase):
             raise SPSDKConnectionError(str(e)) from e
 
     def _read_non_blocking(self, length: int, timeout: Optional[int] = None) -> bytes:
-        """Read 'length' amount for bytes from device in non-blocking mode.
+        """Read specified number of bytes from device in non-blocking mode.
 
-        :param length: Number of bytes to read
-        :param timeout: Read timeout
-        :return: Data read from the device
-        :raises TimeoutError: When timeout occurs
-        :raises SPSDKConnectionError: When reading data from device fails
-        :raises SPSDKConnectionError: Raises if device is not opened for reading
+        The method continuously attempts to read data until the requested length is achieved or timeout
+        occurs. It handles partial reads and implements retry logic with delays.
+
+        :param length: Number of bytes to read from the device.
+        :param timeout: Read timeout in milliseconds, uses default timeout if not specified.
+        :return: Data read from the device, may be shorter than requested length on timeout.
+        :raises SPSDKConnectionError: When device is not opened or reading fails.
         """
         if not self.device or not self.is_opened:
             raise SPSDKConnectionError("Device is not opened for reading")
@@ -185,13 +220,15 @@ class SdioDevice(DeviceBase):
         return bytes(data)
 
     def write(self, data: bytes, timeout: Optional[int] = None) -> None:
-        """Send data to device with non-blocking mode.
+        """Send data to device.
 
-        :param data: Data to send
-        :param timeout: Write timeout
-        :raises SPSDKConnectionError: Raises an error if device is not available
-        :raises SPSDKConnectionError: When sending the data fails
-        :raises TimeoutError: When timeout occurs
+        The method automatically selects blocking or non-blocking mode based on device configuration
+        and handles data transmission with proper error handling and logging.
+
+        :param data: Data bytes to send to the device.
+        :param timeout: Write operation timeout in seconds, None for default timeout.
+        :raises SPSDKConnectionError: Device is not opened or data transmission fails.
+        :raises TimeoutError: Write operation exceeds specified timeout.
         """
         if not self.device or not self.is_opened:
             raise SPSDKConnectionError("Device is not opened for writing.")
@@ -202,11 +239,10 @@ class SdioDevice(DeviceBase):
     def _write_blocking(self, data: bytes, timeout: Optional[int] = None) -> None:
         """Write data to device in blocking mode.
 
-        :param data: Data to be written
-        :param timeout: Write timeout
-
-        :raises SPSDKConnectionError: When writing data to device fails
-        :raises SPSDKConnectionError: Raises if device is not opened for writing
+        :param data: Data to be written to the device.
+        :param timeout: Write timeout in seconds (currently not used).
+        :raises SPSDKConnectionError: If device is not opened for writing.
+        :raises SPSDKConnectionError: If writing data to device fails.
         """
         if not self.device or not self.is_opened:
             raise SPSDKConnectionError("Device is not opened for writing")
@@ -219,11 +255,13 @@ class SdioDevice(DeviceBase):
     def _write_non_blocking(self, data: bytes, timeout: Optional[int] = None) -> None:
         """Write data to device in non-blocking mode.
 
-        :param data: Data to be written
-        :param timeout: Write timeout
+        The method writes data in chunks with timeout handling and sleep intervals
+        between write operations to ensure non-blocking behavior.
 
-        :raises SPSDKConnectionError: When writing data to device fails
-        :raises SPSDKConnectionError: Raises if device is not opened for writing
+        :param data: Data bytes to be written to the device.
+        :param timeout: Write timeout in milliseconds, uses default timeout if None.
+        :raises SPSDKConnectionError: When device is not opened or writing fails.
+        :raises SPSDKTimeoutError: When write operation exceeds timeout limit.
         """
         if not self.device or not self.is_opened:
             raise SPSDKConnectionError("Device is not opened for writing")
@@ -242,7 +280,13 @@ class SdioDevice(DeviceBase):
                 raise SPSDKTimeoutError()
 
     def __str__(self) -> str:
-        """Return information about the SDIO interface."""
+        """Return string representation of the SDIO interface.
+
+        The method provides a formatted string containing the vendor ID and product ID
+        in hexadecimal format for easy identification of the SDIO device.
+
+        :return: Formatted string with vendor and product IDs in format "(0xVVVV, 0xPPPP)".
+        """
         return f"(0x{self.vid:04X}, 0x{self.pid:04X})"
 
     @classmethod
@@ -253,9 +297,12 @@ class SdioDevice(DeviceBase):
     ) -> list[Self]:
         """Scan connected SDIO devices.
 
-        :param device_path: device path string
-        :param timeout: default read/write timeout
-        :return: matched SDIO device
+        Attempts to connect to the specified SDIO device path to verify availability.
+        Creates a device instance if the connection is successful.
+
+        :param device_path: Path string to the SDIO device to scan.
+        :param timeout: Read/write timeout in seconds for device operations.
+        :return: List containing the SDIO device instance if found, empty list otherwise.
         """
         if device_path is None:
             logger.debug("No sdio path has been defined.")

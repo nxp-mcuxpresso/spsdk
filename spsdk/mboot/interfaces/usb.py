@@ -2,11 +2,15 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""USB Mboot interface implementation."""
+"""USB interface implementation for MBoot communication protocol.
+
+This module provides USB-based communication interface for MBoot protocol,
+enabling secure provisioning operations over USB connections with NXP MCUs.
+"""
 
 from typing import Optional
 
@@ -18,7 +22,15 @@ from spsdk.utils.interfaces.device.usb_device import UsbDevice
 
 
 class MbootUSBInterface(MbootBulkProtocol):
-    """USB interface."""
+    """MbootUSB interface for NXP MCU communication.
+
+    This class provides USB communication interface for MBoot protocol operations,
+    enabling device discovery, connection management, and data transfer over USB.
+    It extends the bulk protocol implementation with USB-specific functionality
+    for scanning and identifying connected NXP devices.
+
+    :cvar identifier: Interface type identifier for USB communication.
+    """
 
     identifier = "usb"
     device: UsbDevice
@@ -26,14 +38,21 @@ class MbootUSBInterface(MbootBulkProtocol):
     def __init__(self, device: UsbDevice) -> None:
         """Initialize the MbootUSBInterface object.
 
-        :param device: The device instance
+        :param device: The USB device instance to be used for communication.
+        :raises AssertionError: If device is not an instance of UsbDevice.
         """
         assert isinstance(device, UsbDevice)
         super().__init__(device=device)
 
     @property
     def name(self) -> str:
-        """Get the name of the device."""
+        """Get the name of the USB device.
+
+        Searches through available USB device configurations to find a matching
+        device based on VID and PID, then returns the corresponding device name.
+
+        :return: Name of the device if found in configurations, otherwise "Unknown".
+        """
         assert isinstance(self.device, UsbDevice)
         for name, usb_configs in self.get_devices().items():
             for usb_config in usb_configs:
@@ -45,7 +64,10 @@ class MbootUSBInterface(MbootBulkProtocol):
     def get_devices(cls) -> dict[str, list[UsbId]]:
         """Get list of all supported devices from the database.
 
-        :return: Dictionary containing device names with their usb configurations
+        The method retrieves device information from the database manager and filters devices
+        that have USB configurations available for mboot interface.
+
+        :return: Dictionary with device names as keys and lists of UsbId objects as values.
         """
         devices = {}
         for device, quick_info in DatabaseManager().quick_info.devices.devices.items():
@@ -62,9 +84,13 @@ class MbootUSBInterface(MbootBulkProtocol):
     ) -> list[Self]:
         """Scan connected USB devices.
 
-        :param device_id: Device identifier <vid>, <vid:pid>, device/instance path, device name are supported
-        :param timeout: Read/write timeout
-        :return: list of matching RawHid devices
+        Searches for and identifies USB devices that match the specified criteria,
+        creating interface instances for each discovered device.
+
+        :param device_id: Device identifier supporting multiple formats: <vid>, <vid:pid>,
+            device/instance path, or device name
+        :param timeout: Read/write timeout in seconds for device communication
+        :return: List of matching RawHid device interface instances
         """
         devices = UsbDevice.scan(
             device_id=device_id, usb_devices_filter=cls.get_devices(), timeout=timeout

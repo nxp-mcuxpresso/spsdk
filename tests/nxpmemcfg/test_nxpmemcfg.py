@@ -5,9 +5,16 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Test functionality of nxpmemcfg application."""
+"""Test suite for the nxpmemcfg command-line application.
+
+This module contains comprehensive tests for the nxpmemcfg application,
+which provides memory configuration utilities for NXP MCUs within the SPSDK framework.
+Tests validate core functionality including help output, family information display,
+configuration export, template generation, and BLHost script creation.
+"""
 
 import os
+from typing import Any
 
 import pytest
 
@@ -17,8 +24,14 @@ from spsdk.utils.family import FamilyRevision, get_db
 from tests.cli_runner import CliRunner
 
 
-def test_app_help(cli_runner: CliRunner):
-    """Simple test that application works at least with help."""
+def test_app_help(cli_runner: CliRunner) -> None:
+    """Test that the nxpmemcfg application displays help information correctly.
+
+    Verifies that the CLI application responds appropriately when invoked without arguments
+    and that the help output contains expected command names and application identifier.
+
+    :param cli_runner: Click CLI test runner instance for invoking command-line interface.
+    """
     ret = cli_runner.invoke(
         nxpmemcfg.main, "", expected_code=cli_runner.get_help_error_code(use_help_flag=False)
     )
@@ -40,8 +53,21 @@ def test_app_help(cli_runner: CliRunner):
         ("mimxrt1189", "flexspi_nor", ["mimxrt1189"], ["lpc55s3x", "flexspi_nand"]),
     ],
 )
-def test_app_family_info(cli_runner: CliRunner, family, peripheral, checks_output, not_in_output):
-    """Test of family info command."""
+def test_app_family_info(
+    cli_runner: CliRunner, family: Any, peripheral: Any, checks_output: Any, not_in_output: Any
+) -> None:
+    """Test the family info command functionality.
+
+    This test verifies that the family-info command produces the expected output
+    when called with various family and peripheral parameters. It checks both
+    that required content is present and that unwanted content is absent.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param family: Family parameter to pass to the command, or None to omit.
+    :param peripheral: Peripheral parameter to pass to the command, or None to omit.
+    :param checks_output: List of strings that must be present in command output.
+    :param not_in_output: List of strings that must not be present in command output.
+    """
     cmd = "family-info"
     if family:
         cmd += f" -f {family}"
@@ -66,8 +92,22 @@ def test_app_family_info(cli_runner: CliRunner, family, peripheral, checks_outpu
         ("lpc55s3x", "flexspi_nor", [0xC100_0007, 0x0000_0001]),
     ],
 )
-def test_app_parse_export(cli_runner: CliRunner, tmpdir, family, peripheral, ow):
-    """Test of family info command."""
+def test_app_parse_export(
+    cli_runner: CliRunner, tmpdir: Any, family: Any, peripheral: Any, ow: Any
+) -> None:
+    """Test nxpmemcfg parse and export commands functionality.
+
+    This test verifies that the parse command can generate a configuration file
+    from the given family, peripheral, and option words, and that the export
+    command can successfully process the generated configuration file and
+    display the option words in the expected format.
+
+    :param cli_runner: Click CLI runner for testing command line interface.
+    :param tmpdir: Temporary directory for test files.
+    :param family: Target MCU family name.
+    :param peripheral: Target peripheral name.
+    :param ow: List of option words to be processed.
+    """
     cmd = f"parse -f {family} -p {peripheral} "
     for x in ow:
         cmd += f"-w {str(x)} "
@@ -93,9 +133,21 @@ def test_app_parse_export(cli_runner: CliRunner, tmpdir, family, peripheral, ow)
     ],
 )
 def test_app_parse_export_all(
-    cli_runner: CliRunner, tmpdir, peripheral: str, mem_type: str, interfaces: list[str]
-):
-    """Test of family info command."""
+    cli_runner: CliRunner, tmpdir: Any, peripheral: str, mem_type: str, interfaces: list[str]
+) -> None:
+    """Test parsing and exporting memory configurations for all known peripheral memories.
+
+    This test verifies that the nxpmemcfg CLI can successfully parse memory configurations
+    with option words and export them back to YAML format. It iterates through all known
+    memories for a given peripheral and validates that option words are correctly preserved
+    in the export output.
+
+    :param cli_runner: Click CLI test runner for invoking commands
+    :param tmpdir: Temporary directory for storing generated configuration files
+    :param peripheral: Name of the peripheral to test memory configurations for
+    :param mem_type: Type of memory being tested
+    :param interfaces: List of interface names available for the memory configurations
+    """
     memories = MemoryConfig.get_known_peripheral_memories(
         family=FamilyRevision("mimxrt1189"), peripheral=peripheral
     )
@@ -117,8 +169,16 @@ def test_app_parse_export_all(
 
 
 @pytest.mark.parametrize("family", [x.name for x in MemoryConfig.get_supported_families()])
-def test_get_templates(cli_runner: CliRunner, family, tmpdir: str):
-    """Simple test that application works at least with help."""
+def test_get_templates(cli_runner: CliRunner, family: Any, tmpdir: str) -> None:
+    """Test get-templates command functionality.
+
+    Verifies that the nxpmemcfg get-templates command executes successfully
+    and generates template files for the specified family in the output directory.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param family: Target MCU family for template generation.
+    :param tmpdir: Temporary directory path for output files.
+    """
     output = f"{tmpdir}".replace("\\", "/")
     ret = cli_runner.invoke(nxpmemcfg.main, f"get-templates -f {family} -o {output}")
     assert ret.exit_code == 0
@@ -198,10 +258,26 @@ def test_blhost_script(
     chip_name: str,
     fcb: bool,
     secure_address: bool,
-    output_checks: str,
+    output_checks: Any,
     tmpdir: str,
-):
-    """Simple test that application works at least with help."""
+) -> None:
+    """Test blhost-script command functionality with various configuration options.
+
+    This test verifies that the nxpmemcfg application can successfully parse memory
+    configuration and generate blhost scripts with different parameter combinations
+    including FCB generation and secure address handling.
+
+    :param cli_runner: Click CLI test runner for invoking commands
+    :param family: Target MCU family name
+    :param peripheral: Memory peripheral type to configure
+    :param instance: Instance number of the peripheral (optional)
+    :param interface: Communication interface type
+    :param chip_name: Specific chip model name
+    :param fcb: Flag to enable FCB (Flash Configuration Block) generation
+    :param secure_address: Flag to enable secure address mode
+    :param output_checks: Expected strings to verify in command output
+    :param tmpdir: Temporary directory path for output files
+    """
     output = f"{tmpdir}".replace("\\", "/")
     output_cfg = output + "/cfg.yaml"
     output_fcb = output + "/fcb.bin"
@@ -220,8 +296,21 @@ def test_blhost_script(
 
 
 @pytest.mark.parametrize("family", MemoryConfig.get_supported_families())
-def test_app_blhost_script_flexspi_nor(cli_runner: CliRunner, family: FamilyRevision, tmpdir):
-    """Test of blhost script generation for all chips command."""
+def test_app_blhost_script_flexspi_nor(
+    cli_runner: CliRunner, family: FamilyRevision, tmpdir: Any
+) -> None:
+    """Test blhost script generation for FlexSPI NOR memory configuration.
+
+    This test verifies the complete workflow of generating a memory configuration
+    file and then creating a blhost script for FlexSPI NOR memory. It tests the
+    parse command to generate a configuration file and the blhost-script command
+    to create FCB (Flash Configuration Block) output.
+
+    :param cli_runner: Click CLI test runner for invoking commands
+    :param family: Target MCU family and revision for testing
+    :param tmpdir: Temporary directory for test output files
+    :raises AssertionError: If CLI commands fail or return non-zero exit codes
+    """
     if MemoryConfig.get_peripheral_cnt(family, "flexspi_nor") > 0:
         output = f"{tmpdir}".replace("\\", "/")
         output_cfg = output + "/cfg.yaml"
@@ -247,7 +336,20 @@ def test_app_blhost_script_flexspi_nor(cli_runner: CliRunner, family: FamilyRevi
         (FamilyRevision("mimxrt798s"), "xspi_nor", "octal_spi", True),
     ],
 )
-def test_non_supported_interface(family, peripheral, interface, supported):
+def test_non_supported_interface(
+    family: Any, peripheral: Any, interface: Any, supported: Any
+) -> None:
+    """Test non-supported interface configuration.
+
+    This test verifies that MemoryConfig properly raises SPSDKUnsupportedInterface
+    when attempting to create a configuration with an unsupported interface,
+    and successfully creates the configuration when the interface is supported.
+
+    :param family: MCU family identifier for memory configuration.
+    :param peripheral: Peripheral type for memory configuration.
+    :param interface: Interface type to test for support.
+    :param supported: Boolean flag indicating if the interface should be supported.
+    """
     if not supported:
         with pytest.raises(SPSDKUnsupportedInterface):
             MemoryConfig(family=family, peripheral=peripheral, interface=interface)
@@ -277,7 +379,9 @@ def test_non_supported_interface(family, peripheral, interface, supported):
         ),  # Invalid peripheral should return empty list
     ],
 )
-def test_get_known_peripheral_memories(family, peripheral, validate, expected_not_empty):
+def test_get_known_peripheral_memories(
+    family: Any, peripheral: Any, validate: Any, expected_not_empty: Any
+) -> None:
     """Test the get_known_peripheral_memories function with various parameters.
 
     This test verifies that the function returns memories in different scenarios:
@@ -285,6 +389,11 @@ def test_get_known_peripheral_memories(family, peripheral, validate, expected_no
     - When no peripheral is specified
     - When both family and peripheral are specified
     - With and without validation
+
+    :param family: The MCU family name to filter memories by, or None for all families.
+    :param peripheral: The peripheral type to filter memories by, or None for all peripherals.
+    :param validate: Whether to validate option words in the returned memories.
+    :param expected_not_empty: Whether the returned list is expected to contain memories.
     """
     memories = MemoryConfig.get_known_peripheral_memories(
         family=family, peripheral=peripheral, validate_option_words=validate
@@ -323,8 +432,18 @@ def test_get_known_peripheral_memories(family, peripheral, validate, expected_no
         ("IS25WPxxxA", ["octal_spi"]),  # A memory with octal_spi interface
     ],
 )
-def test_get_known_chip_memory(chip_name, expected_interfaces):
-    """Test the get_known_chip_memory function for specific chips."""
+def test_get_known_chip_memory(chip_name: Any, expected_interfaces: Any) -> None:
+    """Test the get_known_chip_memory function for specific chips.
+
+    Validates that the MemoryConfig.get_known_chip_memory method correctly retrieves
+    memory configuration for a given chip and verifies that the returned Memory object
+    contains the expected interfaces. If the chip is not found in the database,
+    the test is skipped.
+
+    :param chip_name: Name of the chip to test memory configuration retrieval for.
+    :param expected_interfaces: List of interface names that should be present in the chip's memory configuration.
+    :raises Exception: When chip is not found in database, causing test to be skipped.
+    """
     try:
         memory = MemoryConfig.get_known_chip_memory(chip_name)
         assert isinstance(memory, Memory)

@@ -5,11 +5,18 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Test SecureBinary part of nxpimage app."""
-import json
-import jsonschema
-import os
+"""Test module for SecureBinary 3.1 functionality in nxpimage application.
 
+This module contains comprehensive tests for the SecureBinary 3.1 (SB3.1) format
+handling within the nxpimage tool, covering image creation, parsing, encryption,
+and key management scenarios.
+"""
+
+import json
+import os
+from typing import Any
+
+import jsonschema
 import pytest
 
 from spsdk.apps import nxpimage
@@ -24,12 +31,25 @@ from tests.cli_runner import CliRunner
 from tools.convert_cfg import DatabaseManager
 
 
-def process_config_file(config_path: str, destination: str):
+def process_config_file(config_path: str, destination: str) -> tuple[str, str, str]:
+    """Process configuration file and prepare it for destination directory.
+
+    Loads the configuration file, normalizes path separators to forward slashes,
+    extracts the container output file path, and creates a new configuration file
+    in the destination directory with updated paths.
+
+    :param config_path: Path to the source configuration file.
+    :param destination: Destination directory where new config will be created.
+    :raises ValueError: When containerOutputFile is not found in configuration.
+    :return: Tuple containing reference binary path, new binary path, and new config path.
+    """
     config_data = load_configuration(config_path)
     for key in config_data:
         if isinstance(config_data[key], str):
             config_data[key] = config_data[key].replace("\\", "/")
     ref_binary = config_data.get("containerOutputFile")
+    if ref_binary is None:
+        raise ValueError("containerOutputFile not found in config")
     new_binary = f"{destination}/{os.path.basename(ref_binary)}"
     new_config = f"{destination}/{os.path.basename(config_path)}"
     config_data["containerOutputFile"] = new_binary
@@ -39,6 +59,17 @@ def process_config_file(config_path: str, destination: str):
 
 
 def get_signing_key(config: Config) -> PrivateKeyEcc:
+    """Get signing key from configuration.
+
+    Extracts and loads the private key for signing operations from the provided
+    configuration. First attempts to get the key file using the "signer" input
+    file configuration, and if that fails, falls back to parsing the signer
+    string directly to extract the file path.
+
+    :param config: Configuration object containing signer information.
+    :raises SPSDKError: When the private key file cannot be loaded or parsed.
+    :return: Loaded ECC private key for signing operations.
+    """
     try:
         private_key_file = config.get_input_file_name("signer")
     except SPSDKError:
@@ -76,7 +107,23 @@ def get_signing_key(config: Config) -> PrivateKeyEcc:
         ("sb3_384_none.yaml", "k32w1xx"),
     ],
 )
-def test_nxpimage_sb31(cli_runner: CliRunner, nxpimage_data_dir, tmpdir, config_file, device):
+def test_nxpimage_sb31(
+    cli_runner: CliRunner, nxpimage_data_dir: str, tmpdir: str, config_file: str, device: str
+) -> None:
+    """Test SB31 secure binary generation and validation.
+
+    This test validates the complete SB31 secure binary creation process including:
+    - Exporting SB31 binary from configuration file using CLI
+    - Loading and validating the secure binary structure
+    - Comparing header and data block sections between reference and generated binaries
+    - Verifying cryptographic signatures using the signing key
+
+    :param cli_runner: CLI test runner for invoking nxpimage commands
+    :param nxpimage_data_dir: Directory containing test data and configuration files
+    :param tmpdir: Temporary directory for output files
+    :param config_file: Name of the SB31 configuration file to test
+    :param device: Target device name for configuration selection
+    """
     with use_working_directory(nxpimage_data_dir):
         config_file = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
@@ -95,11 +142,14 @@ def test_nxpimage_sb31(cli_runner: CliRunner, nxpimage_data_dir, tmpdir, config_
             + sb31.sb_header.cert_block.expected_size
         )
         header_part_size = signature_offset
+        signature_length = 0
+        if sb31.signature_provider is not None:
+            signature_length = sb31.signature_provider.signature_length
         data_blocks_offset = (
             SecureBinary31Header.HEADER_SIZE
             + len(sb31.sb_commands.final_hash)
             + sb31.sb_header.cert_block.expected_size
-            + sb31.signature_provider.signature_length
+            + signature_length
         )
         if sb31.sb_header.cert_block.isk_certificate:
             header_part_size -= len(sb31.sb_header.cert_block.isk_certificate.signature)
@@ -123,7 +173,19 @@ def test_nxpimage_sb31(cli_runner: CliRunner, nxpimage_data_dir, tmpdir, config_
         # ISK signature won't be checked - is already checked in MBI tests
 
 
-def test_nxpimage_sb31_notime(cli_runner: CliRunner, nxpimage_data_dir, tmpdir):
+def test_nxpimage_sb31_notime(cli_runner: CliRunner, nxpimage_data_dir: str, tmpdir: str) -> None:
+    """Test SB31 export command without timestamp validation.
+
+    This test verifies that the nxpimage SB31 export functionality works correctly
+    by comparing generated binary files while accounting for timestamp differences.
+    The test uses a specific configuration file for LPC55S3X device and validates
+    that the generated binary matches the reference binary in all sections except
+    the timestamp portion.
+
+    :param cli_runner: Click CLI test runner for invoking commands
+    :param nxpimage_data_dir: Directory path containing test data files
+    :param tmpdir: Temporary directory path for output files
+    """
     config_file = "sb3_256_256.yaml"
     device = "lpc55s3x"
     with use_working_directory(nxpimage_data_dir):
@@ -144,7 +206,16 @@ def test_nxpimage_sb31_notime(cli_runner: CliRunner, nxpimage_data_dir, tmpdir):
         assert ref_data[0x1C:0x3C] == new_data[0x1C:0x3C]
 
 
-def test_nxpimage_sb31_kaypair_not_matching(nxpimage_data_dir):
+def test_nxpimage_sb31_kaypair_not_matching(nxpimage_data_dir: str) -> None:
+    """Test SB3.1 export with non-matching key pair configuration.
+
+    This test verifies that the SecureBinary31.export() method properly raises
+    an SPSDKKeysNotMatchingError when the configuration contains keys that don't
+    match each other.
+
+    :param nxpimage_data_dir: Path to the test data directory containing configuration files.
+    :raises SPSDKKeysNotMatchingError: Expected exception when keys don't match.
+    """
     with use_working_directory(nxpimage_data_dir):
         config_file = (
             f"{nxpimage_data_dir}/workspace/cfgs/lpc55s3x/sb3_256_256_keys_dont_match.yaml"
@@ -183,8 +254,23 @@ def test_nxpimage_sb31_kaypair_not_matching(nxpimage_data_dir):
         ("sb3_384_none.yaml", "k32w1xx"),
     ],
 )
-def test_nxpimage_sb31_parse(cli_runner: CliRunner, nxpimage_data_dir, tmpdir, config_file, device):
-    """Test parsing of SB31 files."""
+def test_nxpimage_sb31_parse(
+    cli_runner: CliRunner, nxpimage_data_dir: str, tmpdir: str, config_file: str, device: str
+) -> None:
+    """Test parsing of SB31 files using nxpimage CLI.
+
+    This test verifies that SB31 files can be correctly parsed by:
+    1. Loading the original configuration file
+    2. Running the sb31 parse command with appropriate parameters
+    3. Comparing the parsed configuration with the original to ensure accuracy
+    The test handles both encrypted and non-encrypted SB31 files.
+
+    :param cli_runner: Click CLI runner for executing nxpimage commands
+    :param nxpimage_data_dir: Directory containing test data files
+    :param tmpdir: Temporary directory for output files
+    :param config_file: Name of the configuration file to test
+    :param device: Target device name for the test
+    """
     with use_working_directory(nxpimage_data_dir):
         # Load original config
         config_path = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{config_file}"
@@ -250,8 +336,20 @@ def test_nxpimage_sb31_parse(cli_runner: CliRunner, nxpimage_data_dir, tmpdir, c
         ({"isEncrypted": False, "containerKeyBlobEncryptionKey": "path/to/key.txt"}, True),
     ],
 )
-def test_isEncrypted_requires_containerKeyBlobEncryptionKey(config, passed):
-    """Test that when isEncrypted is true, containerKeyBlobEncryptionKey is required."""
+def test_isEncrypted_requires_containerKeyBlobEncryptionKey(
+    config: dict[str, Any], passed: bool
+) -> None:
+    """Test that when isEncrypted is true, containerKeyBlobEncryptionKey is required.
+
+    This test validates the SB31 schema enforcement of the dependency between
+    the isEncrypted flag and the containerKeyBlobEncryptionKey property.
+    When isEncrypted is set to true, the schema should require the presence
+    of containerKeyBlobEncryptionKey.
+
+    :param config: Configuration dictionary to validate against SB31 schema.
+    :param passed: Flag indicating whether validation should pass or fail.
+    :raises ValidationError: When schema validation fails (expected for negative test cases).
+    """
     sb31_schema = DatabaseManager.get_db().get_schema_file("sb31")["sb3"]
     if passed:
         # Should pass validation

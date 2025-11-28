@@ -198,4 +198,4 @@ containers:
         # --------------------------------------===== DEK keyblob [Optional] =====--------------------------------------
         # Description: Wrapped Data Encryption key. Used for AES CBC-MAC (128/192/256 size). The HEX format is accepted.
         # If NOT used, the empty keyblob is inserted into container and need to be updated later.
-        dek_keyblob: ./outputs/dek_keyblob.bin
+        dek_keyblob: ../outputs/dek_keyblob.bin

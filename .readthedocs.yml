@@ -21,8 +21,5 @@ build:
   tools:
     python: "3.10"
   apt_packages:
-    - swig
-    - pcscd
-    - libpcsclite-dev
     - pandoc
     - cmake

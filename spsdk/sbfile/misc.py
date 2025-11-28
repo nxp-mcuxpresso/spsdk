@@ -5,7 +5,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Miscellaneous functions in SBFile module."""
+"""SPSDK SBFile miscellaneous utilities and helper functions.
+
+This module provides utility functions and classes for SBFile operations,
+including version handling, block size management, and timestamp operations.
+"""
 
 # Backward compatibility re-imports
 # pylint: disable=unused-import

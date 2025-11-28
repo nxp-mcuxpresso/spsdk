@@ -4,7 +4,13 @@
 # Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""DK6 Prog CLI interface."""
+"""DK6 Prog CLI interface for NXP DK6 programmer device communication.
+
+This module provides command-line interface functionality for interacting with
+NXP DK6 programmer devices, including device listing, ISP operations, memory
+read/write/erase operations, and device information retrieval.
+"""
+
 import logging
 import os
 import sys

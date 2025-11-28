@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module is used to generate initialization SB file."""
+"""SPSDK NXP DevHSM utilities for secure boot file generation.
+
+This module provides command-line interface and functionality for generating
+initialization Secure Boot (SB) files using NXP Development Hardware Security
+Module (DevHSM). It supports SB3.1 and SB4 families with master key management,
+customer firmware authentication, and secure provisioning operations.
+"""
 
 import os
 import sys

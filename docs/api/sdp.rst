@@ -1,7 +1,6 @@
 SDP Module API
 ==============
-
-Module implementing the SDP communication protocol.
+.. automodule:: spsdk.sdp
 
 .. toctree::
    :maxdepth: 1

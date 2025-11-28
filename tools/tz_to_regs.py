@@ -4,7 +4,12 @@
 # Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Tool for converting C-code TrustZone data into YAML config file."""
+"""SPSDK TrustZone configuration converter tool.
+
+This module provides functionality to convert C-code TrustZone data into
+YAML configuration files for SPSDK usage. It parses C source files containing
+TrustZone register definitions and transforms them into structured YAML format.
+"""
 
 import logging
 import re
@@ -21,7 +26,16 @@ regex = re.compile(r"\s+(?P<value>[x0-9a-fA-F]+).*// ?(?P<name>\w+);\s+/[!<\* ]+
 
 
 def parse_c(code: str) -> dict[str, str]:
-    """Extract TrustZone settings from the code."""
+    """Extract TrustZone settings from C code.
+
+    Parses C code line by line to extract TrustZone configuration settings
+    using regex pattern matching. Each matched line is converted to a key-value
+    pair where the key combines description and name, and value contains the
+    setting value.
+
+    :param code: C source code containing TrustZone settings to parse.
+    :return: Dictionary mapping setting descriptions with names to their values.
+    """
     result = {}
     for line in code.splitlines():
         logging.debug(line)
@@ -68,7 +82,19 @@ def parse_c(code: str) -> dict[str, str]:
 )
 @click.option("-d", "--debug", is_flag=True, default=False, help="Enable more detailed logging.")
 def main(family: str, revision: str, c_file: str, output: str, debug: bool) -> None:
-    """Extract TrustZone settings from the C code."""
+    """Extract TrustZone settings from the C code and generate register specification.
+
+    The method parses C code to extract TrustZone register settings, creates a register
+    specification with proper offsets and descriptions, and writes the output to a file.
+
+    :param family: Target MCU family name for register specification.
+    :param revision: MCU revision identifier.
+    :param c_file: Path to the C source file containing TrustZone settings.
+    :param output: Output file path for the generated register specification.
+    :param debug: Enable debug logging when True, otherwise use warning level.
+    :raises FileNotFoundError: If the input C file cannot be found.
+    :raises UnicodeDecodeError: If the C file cannot be decoded as UTF-8.
+    """
     logging.basicConfig(level=logging.DEBUG if debug else logging.WARNING)
     with open(c_file, encoding="utf-8") as f:
         code = f.read()

@@ -5,6 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""SPSDK IEE (Inline Encryption Engine) functionality tests.
+
+This module contains comprehensive test cases for the IEE module functionality,
+including keyblob creation, encryption/decryption operations, and error handling
+for various IEE configurations and scenarios.
+"""
+
 import os
 
 import pytest
@@ -18,12 +25,22 @@ from spsdk.image.iee.iee import (
     IeeKeyBlobLockAttributes,
     IeeKeyBlobModeAttributes,
 )
-from spsdk.utils.misc import align_block, load_binary
 from spsdk.utils.family import FamilyRevision
+from spsdk.utils.misc import align_block, load_binary
 
 
-def test_iee_keyblob(data_dir):
-    """Test generation of key blob for IEE"""
+def test_iee_keyblob(data_dir: str) -> None:
+    """Test generation of key blob for IEE.
+
+    This test validates the complete IEE (Inline Encryption Engine) workflow including:
+    - Creating key blob with specific attributes and encryption keys
+    - Adding key blob to IEE instance and verifying plain key blob export
+    - Encrypting key blobs and comparing with expected encrypted data
+    - Testing image encryption functionality with the key blob
+    - Validating error handling for misaligned start addresses
+
+    :param data_dir: Directory path containing test data files for IEE operations
+    """
     keyblob_attribute = IeeKeyBlobAttribute(
         IeeKeyBlobLockAttributes.UNLOCK,
         IeeKeyBlobKeyAttributes.CTR256XTS512,
@@ -34,8 +51,8 @@ def test_iee_keyblob(data_dir):
         keyblob_attribute,
         0x30001000,
         0x30008000,
-        0x000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F,
-        0x202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F,
+        bytes.fromhex("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F"),
+        bytes.fromhex("202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F"),
     )
 
     assert str(keyblob)
@@ -43,8 +60,8 @@ def test_iee_keyblob(data_dir):
     iee = Iee(
         family=FamilyRevision("mimxrt1176"),
         keyblob_address=0x30000000,
-        ibkek1=0x000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F,
-        ibkek2=0x202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F,
+        ibkek1=bytes.fromhex("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F"),
+        ibkek2=bytes.fromhex("202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F"),
     )
     iee.add_key_blob(keyblob)
 
@@ -54,8 +71,8 @@ def test_iee_keyblob(data_dir):
     assert exported_plain_keyblobs == plain_keyblobs
 
     encrypted = iee.encrypt_key_blobs(
-        ibkek1=0x000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F,
-        ibkek2=0x202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F,
+        ibkek1=bytes.fromhex("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F"),
+        ibkek2=bytes.fromhex("202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F"),
         keyblob_address=0x30000000,
     )
 
@@ -75,13 +92,21 @@ def test_iee_keyblob(data_dir):
             keyblob_attribute,
             0x30001100,
             0x30008000,
-            0x000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F,
-            0x202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F,
+            bytes.fromhex("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F"),
+            bytes.fromhex("202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F"),
         )
 
 
-def test_iee_unencrypted(data_dir):
-    """Test IEE - image address range does not match to key blob, won't be encrypted"""
+def test_iee_unencrypted(data_dir: str) -> None:
+    """Test IEE encryption when image address range does not match key blob.
+
+    This test verifies that when an image's address range falls outside the key blob's
+    defined address range, the image remains unencrypted. The test creates an IEE
+    instance with a key blob covering addresses 0x30001000-0x30008000, then attempts
+    to encrypt an image at address 0x0800FFF (outside the range).
+
+    :param data_dir: Directory path containing test data files including boot_image.bin
+    """
     keyblob_attribute = IeeKeyBlobAttribute(
         IeeKeyBlobLockAttributes.UNLOCK,
         IeeKeyBlobKeyAttributes.CTR256XTS512,
@@ -92,15 +117,15 @@ def test_iee_unencrypted(data_dir):
         keyblob_attribute,
         0x30001000,
         0x30008000,
-        0x000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F,
-        0x202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F,
+        bytes.fromhex("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F"),
+        bytes.fromhex("202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F"),
     )
 
     iee = Iee(
         family=FamilyRevision("mimxrt1176"),
         keyblob_address=0x30001000,
-        ibkek1=0x000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F,
-        ibkek2=0x202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F,
+        ibkek1=bytes.fromhex("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F"),
+        ibkek2=bytes.fromhex("202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F"),
     )
     iee.add_key_blob(keyblob)
     assert iee[0] == keyblob
@@ -111,7 +136,15 @@ def test_iee_unencrypted(data_dir):
     assert image == encrypted
 
 
-def test_keyblob_invalid():
+def test_keyblob_invalid() -> None:
+    """Test invalid keyblob creation with invalid address range.
+
+    This test verifies that creating an IeeKeyBlob with a start address
+    greater than the end address raises an SPSDKError with appropriate
+    error message.
+
+    :raises SPSDKError: When start address is greater than end address.
+    """
     attribute = IeeKeyBlobAttribute(
         IeeKeyBlobLockAttributes.UNLOCK,
         IeeKeyBlobKeyAttributes.CTR256XTS512,

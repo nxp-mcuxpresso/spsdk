@@ -5,11 +5,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""AHAB abstract classes.
+"""AHAB abstract interfaces for secure boot container management.
 
-This module provides abstract base classes for AHAB (Advanced High-Assurance Boot)
-containers used in secure boot implementations. It defines the common interfaces
-for serialization, parsing, and validation of container structures.
+This module provides abstract base classes and interfaces for AHAB (Advanced High-Assurance Boot)
+containers used in secure boot implementations. It defines common functionality for container
+serialization, parsing, validation, and header management across different container types.
 """
 
 import textwrap
@@ -28,51 +28,73 @@ from spsdk.utils.verifier import Verifier, VerifierResult
 
 
 class Container(BaseClass):
-    """Base class for any container.
+    """Base class for AHAB container implementations.
 
-    Provides common interface for container operations including parsing,
-    exporting and length calculations.
+    Provides common interface for container operations including parsing, exporting, and length
+    calculations. All AHAB container types inherit from this class to ensure consistent behavior
+    across different container formats.
+
+    :cvar _parser_verifier: Optional verifier for parsing validation.
     """
 
     _parser_verifier: Optional[Verifier]
 
     @classmethod
     def fixed_length(cls) -> int:
-        """Returns the length of a container which is fixed.
+        """Get fixed length of container in bytes.
 
         Fixed length refers to the part of a container that holds fixed values,
         whereas some entries may have variable length.
 
-        :return: Fixed length in bytes
+        :return: Fixed length in bytes.
         """
         return calcsize(cls.format())
 
     def __len__(self) -> int:
-        """Returns the total length of a container.
+        """Get the total length of a container.
 
         The length includes both the fixed and the variable length parts.
 
-        :return: Total container length in bytes
+        :return: Total container length in bytes.
         """
         return self.fixed_length()
 
     def __repr__(self) -> str:
+        """Return string representation of the AHAB container object.
+
+        Provides a human-readable string representation that includes the class name
+        for debugging and logging purposes.
+
+        :return: String representation containing the class name.
+        """
         return "Base AHAB Container class: " + self.__class__.__name__
 
     def __str__(self) -> str:
+        """Get string representation of AHAB container.
+
+        This method must be implemented by concrete AHAB container subclasses to provide
+        a meaningful string representation of the container's contents and properties.
+
+        :raises NotImplementedError: Always raised as this is an abstract method that must be
+            implemented by subclasses.
+        :return: String representation of the AHAB container.
+        """
         raise NotImplementedError("__str__() is not implemented in base AHAB container class")
 
     def export(self) -> bytes:
         """Export the container to bytes.
 
-        :return: Bytes representation of the container
-        :raises NotImplementedError: If export is not implemented in derived class
+        :return: Bytes representation of the container.
+        :raises NotImplementedError: If export is not implemented in derived class.
         """
         raise NotImplementedError("export() is not implemented in base AHAB container class")
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
         """Parse binary data into a container object.
+
+        This method converts raw binary data into a structured container object representation.
+        It serves as the base interface for all AHAB container parsing operations.
 
         :param data: Binary input data to parse
         :return: Parsed container object
@@ -82,22 +104,23 @@ class Container(BaseClass):
 
     @classmethod
     def format(cls) -> str:
-        """Returns the container data format as defined by struct package.
+        """Get container data format for struct operations.
 
-        The base returns only endianness (LITTLE_ENDIAN).
+        The base implementation returns only endianness (LITTLE_ENDIAN).
 
-        :return: Format string for struct operations
+        :return: Format string for struct operations.
         """
         return LITTLE_ENDIAN
 
     @classmethod
     def _check_fixed_input_length(cls, binary: bytes) -> Verifier:
-        """Checks the data length and container fixed length.
+        """Check data length against container fixed length requirement.
 
-        This is just a helper function used throughout the code.
+        This helper method validates that the input binary data meets the minimum
+        length requirements for the container block.
 
-        :param binary: Binary input data
-        :return: The verifier object with checked minimal container length
+        :param binary: Binary input data to validate.
+        :return: Verifier object with length validation results.
         """
         data_len = len(binary)
         fixed_input_len = cls.fixed_length()
@@ -108,9 +131,11 @@ class Container(BaseClass):
 
 @dataclass
 class HeaderContainerData:
-    """Holder for Container header data.
+    """AHAB container header data holder.
 
-    Contains the basic attributes found in container headers.
+    This class represents the fundamental header information found in AHAB
+    (Advanced High Assurance Boot) container headers, providing structured
+    access to tag, length, and version fields with parsing capabilities.
     """
 
     tag: int
@@ -119,12 +144,15 @@ class HeaderContainerData:
 
     @classmethod
     def parse(cls, binary: bytes, inverted: bool = False) -> Self:
-        """Parse binary header.
+        """Parse binary header into container data structure.
 
-        :param binary: Binary data to parse
-        :param inverted: Whether the header fields are in inverted order
-        :return: Parsed header container data
-        :raises SPSDKParsingError: If header length is insufficient
+        The method unpacks binary data using struct format and handles both normal
+        and inverted field ordering for AHAB header parsing.
+
+        :param binary: Binary data to parse into header structure.
+        :param inverted: Whether the header fields are in inverted order, defaults to False.
+        :return: Parsed header container data instance.
+        :raises SPSDKParsingError: If header length is insufficient for parsing.
         """
         fmt = LITTLE_ENDIAN + UINT8 + UINT16 + UINT8
         if len(binary) < 4:
@@ -137,13 +165,17 @@ class HeaderContainerData:
 
 
 class HeaderContainer(Container):
-    """A container with first byte defined as header - tag, length and version.
+    """AHAB container with header structure containing tag, length and version fields.
 
-    Every "container" in AHAB consists of a header - tag, length and version.
-    The only exception is the 'image array' or 'image array entry' respectively
-    which has no header at all and SRK record, which has 'signing algorithm'
-    instead of version. But this can be considered as a sort of SRK record
-    'version'.
+    This class represents containers used in AHAB (Advanced High Assurance Boot) that
+    include a standardized header format. Most AHAB containers follow this pattern
+    with tag, length and version fields, with exceptions being image arrays and
+    SRK records which have modified header structures.
+
+    :cvar TAG: Default tag value for the container type.
+    :cvar VERSION: Default version value for the container type.
+    :cvar DIFF_ATTRIBUTES_VALUES: List of value attributes used in diff operations.
+    :cvar DIFF_ATTRIBUTES_OBJECTS: List of object attributes used in diff operations.
     """
 
     TAG: Union[int, list[int]] = 0x00
@@ -155,9 +187,9 @@ class HeaderContainer(Container):
     def __init__(self, tag: int, length: int, version: int):
         """Initialize container with header values.
 
-        :param tag: Container tag
-        :param length: Container length
-        :param version: Container version
+        :param tag: Container tag identifier.
+        :param length: Container length in bytes.
+        :param version: Container version number.
         """
         self.length = length
         self.tag = tag
@@ -165,6 +197,13 @@ class HeaderContainer(Container):
         self._parsed_header: Optional[HeaderContainerData] = None
 
     def __eq__(self, other: object) -> bool:
+        """Check equality with another HeaderContainer or HeaderContainerInverted object.
+
+        Two header containers are considered equal if they have the same tag, length, and version values.
+
+        :param other: Object to compare with this header container.
+        :return: True if objects are equal, False otherwise.
+        """
         if isinstance(other, (HeaderContainer, HeaderContainerInverted)):
             if (
                 self.tag == other.tag
@@ -179,7 +218,7 @@ class HeaderContainer(Container):
     def format(cls) -> str:
         """Format of binary representation.
 
-        :return: Format string for struct operations
+        :return: Format string for struct operations.
         """
         return super().format() + UINT8 + UINT16 + UINT8
 
@@ -188,18 +227,19 @@ class HeaderContainer(Container):
 
         Validates tag, length and version against constraints.
 
-        :return: Verifier object with validation results
-        :raises SPSDKValueError: If any mandatory field has invalid value
+        :return: Verifier object with validation results.
+        :raises SPSDKValueError: If any mandatory field has invalid value.
         """
         return self._verify_header(self.tag, self.length, self.version, len(self))
 
     def verify_parsed_header(self) -> Verifier:
-        """Verifies the parsed header of container properties.
+        """Verify the parsed header of container properties.
 
-        Validates parsed tag, length and version against constraints.
+        Validates parsed tag, length and version against constraints. If no parsed header
+        is available, adds a warning record to the verification results.
 
-        :return: Verifier object with validation results
-        :raises SPSDKValueError: If any mandatory field has invalid value
+        :return: Verifier object with validation results.
+        :raises SPSDKValueError: If any mandatory field has invalid value.
         """
         ret = Verifier(f"Parsed header ({self.__class__.__name__})", important=False)
         if self._parsed_header:
@@ -219,16 +259,16 @@ class HeaderContainer(Container):
     def _verify_header(
         cls, tag: int, length: int, version: int, object_length: Optional[int] = None
     ) -> Verifier:
-        """Verifies the header of container properties.
+        """Verify the header of container properties.
 
-        Validates tag, length and version against constraints.
+        Validates tag, length and version against class constraints and performs
+        bit range checks for each field.
 
-        :param tag: Container tag value
-        :param length: Container length value
-        :param version: Container version value
+        :param tag: Container tag value to validate against class TAG
+        :param length: Container length value for bit range validation
+        :param version: Container version value to validate against class VERSION
         :param object_length: Actual object length for comparison with header length
-        :return: Verifier object with validation results
-        :raises SPSDKValueError: If any mandatory field has invalid value
+        :return: Verifier object with validation results for header fields
         """
         ret = Verifier("Header")
         ver_tag = Verifier("Tag")
@@ -291,9 +331,12 @@ class HeaderContainer(Container):
     def parse_head(cls, binary: bytes) -> tuple[int, int, int]:
         """Parse binary data to get head members.
 
-        :param binary: Binary data
-        :return: Tuple with TAG, LENGTH, VERSION
-        :raises SPSDKLengthError: If binary data length is not enough
+        Extracts TAG, LENGTH, and VERSION from the first 4 bytes of binary data
+        using the HeaderContainer format for AHAB container processing.
+
+        :param binary: Binary data to parse (minimum 4 bytes required).
+        :return: Tuple with TAG, LENGTH, VERSION extracted from header.
+        :raises SPSDKLengthError: If binary data length is less than 4 bytes.
         """
         if len(binary) < 4:
             raise SPSDKLengthError(
@@ -304,7 +347,7 @@ class HeaderContainer(Container):
         return tag, length, version
 
     @classmethod
-    def check_container_head(cls, binary: bytes) -> Verifier:
+    def check_container_head(cls, binary: bytes, ignore_length: bool = False) -> Verifier:
         """Validate container header and ensure sufficient data length.
 
         Performs multiple validation steps on the container header:
@@ -314,6 +357,7 @@ class HeaderContainer(Container):
         4. Ensures input data is long enough to contain the entire container
 
         :param binary: Input data containing the container header
+        :param ignore_length: Flag to bypass length validation if set to True
         :return: Verification results for all container header checks
         """
         ret = Verifier(f"Container({cls.__name__}) header")
@@ -324,7 +368,7 @@ class HeaderContainer(Container):
             ret.add_child(cls._verify_header(tag, length, version))
 
         if not ret.has_errors:
-            if data_len < length:
+            if not ignore_length and data_len < length:
                 ret.add_record(
                     "Binary length",
                     VerifierResult.ERROR,
@@ -336,15 +380,30 @@ class HeaderContainer(Container):
     def diff(self, other: object) -> dict[str, dict]:
         """Get difference of a container with another container.
 
-        :param other: Another container to compare
-        :return: Dictionary containing differences between containers
+        The method compares this container with another container and returns a dictionary
+        containing all differences found between their attributes and objects.
+
+        :param other: Another container to compare against this container.
+        :return: Dictionary containing differences between containers with original and new values.
         """
         diff_dict = {}
 
         def compare_objects(
             self_obj: Optional[Union[dict, list]], other_obj: Optional[Union[dict, list]]
         ) -> dict:
-            """Helper method to recursively compare objects."""
+            """Compare two objects recursively and return their differences.
+
+            This method handles comparison of dictionaries, lists, and objects with diff methods.
+            For lists, it compares items by index up to the minimum length. For objects with
+            a 'diff' method, it delegates to that method. Otherwise, it returns original and
+            new values.
+
+            :param self_obj: First object to compare (dict, list, or object with diff method).
+            :param other_obj: Second object to compare (dict, list, or object with diff method).
+            :return: Dictionary containing differences between objects with structure depending
+                     on object types - for arrays uses index keys, for objects uses diff method
+                     result, otherwise returns original/new value pairs.
+            """
             sub_diff = {}
             if isinstance(self_obj, list):
                 min_length = min(len(self_obj), len(other_obj)) if other_obj is not None else 0
@@ -394,14 +453,29 @@ class HeaderContainer(Container):
 
     @staticmethod
     def print_diff(diff: dict) -> str:
-        """Helper method to format and print differences between containers.
+        """Format and print differences between containers with color coding.
+
+        The method formats a dictionary of differences into a human-readable string with
+        color-coded output. Original values are shown in yellow, new values in green,
+        and section headers in cyan. The output is wrapped to fit within specified line
+        limits with proper indentation.
 
         :param diff: Dictionary containing differences from diff() method
-        :return: Formatted string representation of differences
+        :return: Formatted string representation of differences with color coding
         """
         max_line = 120
 
         def format_dict(d: dict, intend: int = 0) -> str:
+            """Format dictionary into colored, indented string representation.
+
+            Recursively formats a dictionary into a human-readable string with color coding
+            and proper indentation. Special formatting is applied for different data types
+            and specific keys ('original' and 'new' get special colors).
+
+            :param d: Dictionary to format into string representation.
+            :param intend: Current indentation level for nested formatting.
+            :return: Formatted string with color codes and proper indentation.
+            """
             sub_diff = ""
             for k, v in d.items():
                 if isinstance(v, dict):
@@ -434,18 +508,21 @@ class HeaderContainer(Container):
 
 
 class HeaderContainerInverted(HeaderContainer):
-    """A container with inverted header field order.
+    """AHAB container with inverted header field order.
 
-    Same as "HeaderContainer" only the tag/length/version are in reverse order in binary form.
+    This class extends HeaderContainer to handle binary data where the
+    tag/length/version fields are stored in reverse order compared to the
+    standard header format. It provides specialized parsing for containers
+    that use this inverted field arrangement.
     """
 
     @classmethod
     def parse_head(cls, binary: bytes) -> tuple[int, int, int]:
         """Parse binary data to get head members from inverted header.
 
-        :param binary: Binary data
-        :return: Tuple with TAG, LENGTH, VERSION
-        :raises SPSDKLengthError: If binary data length is not enough
+        :param binary: Binary data to parse for header information.
+        :raises SPSDKLengthError: If binary data length is not enough (less than 4 bytes).
+        :return: Tuple with TAG, LENGTH, VERSION extracted from header.
         """
         if len(binary) < 4:
             raise SPSDKLengthError(

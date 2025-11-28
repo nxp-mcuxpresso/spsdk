@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""This module contains Bootable image related code."""
+"""SPSDK Bootable Image management utilities.
+
+This module provides functionality for creating, parsing, and manipulating
+bootable images across NXP MCU portfolio. It handles bootable image segments
+and provides the main BootableImage class for comprehensive image operations.
+"""
 
 
 import logging
@@ -33,7 +38,14 @@ logger = logging.getLogger(__name__)
 
 
 class BootableImage(FeatureBaseClass):
-    """Bootable Image class."""
+    """Bootable Image representation for NXP MCU devices.
+
+    This class manages the creation and manipulation of bootable images that can be
+    programmed to various memory types on NXP MCU devices. It handles image segments,
+    memory layout, and provides functionality for exporting complete bootable images.
+
+    :cvar FEATURE: Database feature identifier for bootable image support.
+    """
 
     FEATURE = DatabaseManager.BOOTABLE_IMAGE
 
@@ -45,8 +57,12 @@ class BootableImage(FeatureBaseClass):
     ) -> None:
         """Bootable Image constructor.
 
-        :param family: Chip family.
-        :param mem_type: Used memory type.
+        Initialize a new bootable image instance for the specified chip family and memory type.
+
+        :param family: Chip family and revision information.
+        :param mem_type: Target memory type for the bootable image.
+        :param init_offset: Initial offset for the image, either as segment or integer value.
+        :raises SPSDKValueError: When the specified memory type is not supported for the given family.
         """
         if mem_type not in self.get_supported_memory_types(family):
             raise SPSDKValueError(f"Unsupported memory type: {mem_type.label}")
@@ -60,11 +76,25 @@ class BootableImage(FeatureBaseClass):
 
     @property
     def segments(self) -> list[Segment]:
-        """List of used segments."""
+        """Get list of segments that are currently present in the bootable image.
+
+        This method filters the internal segments list to return only those segments
+        that have the is_present flag set to True, indicating they contain actual data
+        and are part of the bootable image.
+
+        :return: List of segments that are present in the bootable image.
+        """
         return [seg for seg in self._segments if seg.is_present]
 
     def post_export(self, output_path: str) -> list[str]:
-        """Perform post export on all segments."""
+        """Perform post export operations on all segments.
+
+        Iterates through all segments in the bootable image and calls their post_export
+        method if available, collecting any generated files.
+
+        :param output_path: Directory path where post-export files should be created.
+        :return: List of file paths created during post-export operations.
+        """
         files = []
         for segment in self.segments:
             if hasattr(segment, "post_export"):
@@ -73,7 +103,16 @@ class BootableImage(FeatureBaseClass):
         return files
 
     def set_init_offset(self, init_offset: Union[BootableImageSegment, int]) -> None:
-        """Set init offset by name of segment or length."""
+        """Set init offset by name of segment or length.
+
+        The method allows setting the initialization offset either by providing a direct
+        integer value or by specifying a bootable image segment. When a segment is provided,
+        the method uses its full image offset as the init offset value.
+
+        :param init_offset: Either an integer offset value or a BootableImageSegment object
+                           whose offset will be used.
+        :raises SPSDKError: When the specified segment does not exist in the image.
+        """
         if isinstance(init_offset, int):
             self.init_offset = init_offset
         else:
@@ -85,8 +124,9 @@ class BootableImage(FeatureBaseClass):
     def get_segment(self, segment: Union[str, BootableImageSegment]) -> Segment:
         """Get bootable segment by its name or Enum class.
 
-        :param segment: Name of enum class of segment.
-        :return: Segment.
+        :param segment: Name of segment as string or BootableImageSegment enum value.
+        :raises SPSDKError: When the specified segment is not present in the bootable image.
+        :return: The requested segment object.
         """
         name = segment if isinstance(segment, str) else segment.label
         for seg in self.segments:
@@ -98,12 +138,25 @@ class BootableImage(FeatureBaseClass):
 
     @property
     def init_offset(self) -> int:
-        """Initial offset compared to "full" bootable image.Only segments after this offset are considered."""
+        """Get initial offset compared to "full" bootable image.
+
+        Only segments after this offset are considered.
+
+        :return: Initial offset value.
+        """
         return self._init_offset
 
     @init_offset.setter
     def init_offset(self, offset: int) -> None:
-        """Initial offset setter."""
+        """Set the initial offset for the bootable image.
+
+        This method validates and sets the initial offset, finding the closest upper segment
+        offset if needed. When offset is 0, the entire image is used. For non-zero offsets,
+        it finds the nearest segment boundary at or above the specified offset.
+
+        :param offset: The initial offset value in bytes, must be non-negative.
+        :raises SPSDKValueError: If offset is negative or exceeds the last segment start.
+        """
         if offset < 0:
             raise SPSDKValueError("Offset cannot be a negative number.")
         # In case the init offset is 0, return the whole image
@@ -124,20 +177,42 @@ class BootableImage(FeatureBaseClass):
         self._update_segments()
 
     def _update_segments(self) -> None:
-        """Update segment indexes."""
+        """Update segment indexes based on initialization offset.
+
+        This method iterates through all segments and recalculates their offsets relative to the
+        initialization offset. Segments are marked as excluded if their new offset becomes negative
+        while their full image offset was non-negative, indicating they fall outside the valid
+        range after offset adjustment.
+        """
         for segment in self._segments:
             full_offset = segment.full_image_offset
             new_offset = full_offset - self.init_offset
             segment.excluded = new_offset < 0 <= full_offset
 
     def get_segment_offset(self, segment: Segment) -> int:
-        """Get segment offset.
+        """Get segment offset within the bootable image.
 
-        :param segment: Segment object to get its offset
-        :return: Segment offset
+        Calculates the absolute offset of a segment within the bootable image. For segments
+        with static offsets, returns the predefined value. For segments with dynamic offsets,
+        computes the position based on previous segments and alignment requirements.
+
+        :param segment: Segment object to get its offset from.
+        :raises SPSDKError: If segment is excluded from image or offset cannot be computed.
+        :return: Absolute offset of the segment within the bootable image.
         """
 
         def _get_segment_offset(segments: list[Segment], segment: Segment) -> int:
+            """Get the offset of a segment within the bootable image.
+
+            Calculates either the static offset if already defined, or dynamically computes
+            the offset based on the previous segment's position and alignment requirements.
+
+            :param segments: List of all segments in the bootable image.
+            :param segment: Target segment to get the offset for.
+            :raises SPSDKError: When dynamic offset calculation fails due to missing previous
+                segment or segment not found in the list.
+            :return: Absolute offset of the segment in bytes.
+            """
             if segment.full_image_offset >= 0:
                 return segment.full_image_offset
 
@@ -165,16 +240,26 @@ class BootableImage(FeatureBaseClass):
         return _get_segment_offset(self._segments, segment) - self._init_offset
 
     def __len__(self) -> int:
-        """Length of output binary."""
+        """Calculate the total length of the output binary.
+
+        The length is determined by finding the offset of the last segment plus
+        the length of that segment, representing the total size of the binary
+        when all segments are included.
+
+        :return: Total length of the output binary in bytes.
+        """
         last_segment = self.segments[-1]
         return self.get_segment_offset(last_segment) + len(last_segment)
 
     @property
     def header_len(self) -> int:
-        """Length of the header.
+        """Get the length of the bootable image header.
 
-        The length of the space before application data.
-        :return: Length of the bootable image area.
+        Calculates the length of the space before application data by finding the first
+        non-boot header segment and returning its offset position.
+
+        :raises SPSDKError: When unable to determine the size of bootable image header.
+        :return: Length of the bootable image header in bytes.
         """
         for segment in self.segments:
             if not segment.BOOT_HEADER:
@@ -183,13 +268,27 @@ class BootableImage(FeatureBaseClass):
 
     @property
     def bootable_header_only(self) -> bool:
-        """The image contains only bootable image header.
+        """Check if the image contains only bootable image header.
 
-        No application is available.
+        The method verifies whether the bootable image consists solely of the header
+        without any application data by examining if all segments are either non-boot
+        header segments with zero length or boot header segments.
+
+        :return: True if image contains only bootable header, False otherwise.
         """
         return any(((not x.BOOT_HEADER and len(x) == 0) for x in self.segments))
 
     def _parse(self, binary: bytes) -> None:
+        """Parse binary data into bootable image segments.
+
+        Iterates through all non-excluded segments and attempts to parse the binary data
+        at their respective offsets. Handles both fixed and variable offset segments,
+        with proper alignment and error handling for missing or invalid segments.
+
+        :param binary: Binary data to parse into segments.
+        :raises SPSDKError: When input binary is insufficient for required boot header segments
+                           or when segment parsing fails.
+        """
         try:
             prev_offset = prev_size = 0
             for segment in [seg for seg in self._segments if not seg.excluded]:
@@ -226,12 +325,18 @@ class BootableImage(FeatureBaseClass):
         mem_type: Optional[MemoryType] = None,
         no_errors: bool = True,
     ) -> list[Self]:
-        """Parse binary into bootable image object.
+        """Parse binary data into bootable image objects.
 
-        :param binary: Bootable image binary.
-        :param family: Chip family.
-        :param mem_type: Used memory type.
-        :param no_errors: Do not accept any parsing errors.
+        Attempts to parse the provided binary data into bootable image instances by trying
+        different memory types and initial offsets. First tries exact matches, then attempts
+        parsing with various initial segment offsets if no exact match is found.
+
+        :param binary: Binary data of the bootable image to parse.
+        :param family: Target chip family and revision for parsing.
+        :param mem_type: Specific memory type to use, if None tries all supported types.
+        :param no_errors: When True, validates parsed images and rejects any with errors.
+        :raises SPSDKValueError: When family parameter is not specified.
+        :return: List of successfully parsed bootable image instances.
         """
         if not family:
             raise SPSDKValueError("Family attribute must be specified.")
@@ -285,11 +390,17 @@ class BootableImage(FeatureBaseClass):
         family: Optional[FamilyRevision] = None,
         mem_type: Optional[MemoryType] = None,
     ) -> Self:
-        """Parse binary into bootable image object.
+        """Parse binary data into a bootable image object.
 
-        :param binary: Bootable image binary.
-        :param family: Chip family.
-        :param mem_type: Used memory type.
+        The method attempts to parse the provided binary data using all possible memory types
+        and returns the first successful match. If multiple memory types are detected, a warning
+        is logged and the first one is used.
+
+        :param binary: Binary data of the bootable image to parse.
+        :param family: Target chip family revision, auto-detected if not specified.
+        :param mem_type: Specific memory type to use, auto-detected if not specified.
+        :raises SPSDKError: When binary parsing fails for all memory types.
+        :return: Parsed bootable image object.
         """
         bimg_instances = cls._parse_all(binary=binary, family=family, mem_type=mem_type)
 
@@ -307,11 +418,20 @@ class BootableImage(FeatureBaseClass):
         return bimg_instances[0]
 
     def __repr__(self) -> str:
-        """Text short representation about the BootableImage."""
+        """Get text short representation of the BootableImage.
+
+        :return: String representation containing family and memory type information.
+        """
         return f"BootableImage, family:{self.family}, mem_type:{self.mem_type.description}"
 
     def __str__(self) -> str:
-        """Text information about the BootableImage."""
+        """Get string representation of the BootableImage.
+
+        Provides detailed information about the bootable image including family,
+        memory type, and all configured segments in a human-readable format.
+
+        :return: Formatted string containing bootable image information.
+        """
         nfo = "BootableImage\n"
         nfo += f"  Family:      {self.family}\n"
         nfo += f"  Memory Type: {self.mem_type.description}\n"
@@ -324,6 +444,9 @@ class BootableImage(FeatureBaseClass):
     def _get_validation_schemas(self) -> list[dict[str, Any]]:
         """Get validation schema for the object.
 
+        The method retrieves validation schemas based on the object's family and memory type
+        by delegating to the static get_validation_schemas method.
+
         :return: List of validation schema dictionaries.
         """
         return self.get_validation_schemas(self.family, self.mem_type)
@@ -332,11 +455,15 @@ class BootableImage(FeatureBaseClass):
     def get_validation_schemas(
         cls, family: FamilyRevision, mem_type: Optional[MemoryType] = None
     ) -> list[dict[str, Any]]:
-        """Get validation schema for the family.
+        """Get validation schemas for bootable image configuration.
 
-        :param family: Chip family
-        :param mem_type: Used memory type.
-        :return: List of validation schema dictionaries.
+        Retrieves and configures validation schemas specific to the given chip family
+        and memory type, including family-specific settings and supported segments.
+
+        :param family: Target chip family and revision.
+        :param mem_type: Memory type to be used for bootable image.
+        :raises SPSDKValueError: When memory type parameter is not defined.
+        :return: List of validation schema dictionaries for configuration.
         """
         if mem_type is None:
             raise SPSDKValueError("The memory type parameter must be defined.")
@@ -371,7 +498,7 @@ class BootableImage(FeatureBaseClass):
         """Create configuration of the AHAB Image.
 
         :param data_path: Path to store the data files of configuration.
-        :return: Configuration dictionary.c
+        :return: Configuration dictionary.
         """
         config = Config()
         config["family"] = self.family.name
@@ -387,8 +514,11 @@ class BootableImage(FeatureBaseClass):
     def _init_offset_from_cfg(config: Config) -> Union[int, BootableImageSegment]:
         """Convert configuration value to correct format of init offset.
 
-        :param config: Input bootable configuration
-        :return: Union - real offset or name v bootable segment
+        Processes the init_offset configuration value and converts it to either an integer
+        offset or a BootableImageSegment object based on the input type.
+
+        :param config: Input bootable image configuration containing init_offset value.
+        :return: Integer offset value or BootableImageSegment object based on configuration.
         """
         init_offset = config.get("init_offset", 0)
         try:
@@ -405,10 +535,15 @@ class BootableImage(FeatureBaseClass):
 
     @classmethod
     def get_validation_schemas_from_cfg(cls, config: Config) -> list[dict[str, Any]]:
-        """Get validation schema based on configuration.
+        """Get validation schemas based on configuration.
 
-        :param config: Valid configuration
-        :return: Validation schemas
+        This method validates the basic configuration, extracts family, memory type,
+        and initialization offset parameters, then creates a bootable image instance
+        to retrieve the appropriate validation schemas.
+
+        :param config: Configuration object containing bootable image settings
+        :return: List of validation schema dictionaries for the specified configuration
+        :raises SPSDKError: Invalid configuration or unsupported family/memory type combination
         """
         config.check(cls.get_validation_schemas_basic())
         family = FamilyRevision.load_from_config(config)
@@ -422,7 +557,13 @@ class BootableImage(FeatureBaseClass):
     def load_from_config(cls, config: Config) -> Self:
         """Load bootable image from configuration.
 
-        :param config: Configuration of Bootable image.
+        Creates a new bootable image instance by parsing the provided configuration data,
+        including family revision, memory type, and initialization offset. Loads all
+        available segments from the configuration.
+
+        :param config: Configuration data containing bootable image settings.
+        :raises SPSDKSegmentNotPresent: When a segment is not present in configuration.
+        :return: New bootable image instance configured according to the provided settings.
         """
         family = FamilyRevision.load_from_config(config)
         mem_type = MemoryType.from_label(config.get_str("memory_type"))
@@ -440,9 +581,14 @@ class BootableImage(FeatureBaseClass):
         return bimg
 
     def image_info(self) -> BinaryImage:
-        """Create Binary image of bootable image.
+        """Create Binary image representation of the bootable image.
 
-        :return: BinaryImage object of bootable image.
+        This method generates a BinaryImage object that contains information about all segments
+        in the bootable image, including their offsets, sizes, and descriptions. It handles
+        segment alignment and provides detailed information about the memory type and whether
+        the image contains only headers or includes application data.
+
+        :return: BinaryImage object containing structured information about the bootable image.
         """
         description = f"Memory type: {self.mem_type}"
         if self.bootable_header_only:
@@ -455,7 +601,7 @@ class BootableImage(FeatureBaseClass):
         )
         prev_offset = prev_size = 0
         if self.init_offset:
-            logger.info(f"The image is not complete. Staring from offset {self.init_offset}")
+            logger.info(f"The image is not complete. Starting from offset {self.init_offset}")
         for segment in self.segments:
             seg_offset = segment.full_image_offset
             if segment.full_image_offset < 0:
@@ -468,23 +614,40 @@ class BootableImage(FeatureBaseClass):
         return bin_image
 
     def export(self) -> bytes:
-        """Export bootable image.
+        """Export bootable image to binary format.
 
-        :return: Complete binary of bootable image.
+        This method generates the complete binary representation of the bootable image
+        by calling the export method on the image info object.
+
+        :return: Complete binary data of the bootable image.
         """
         return self.image_info().export()
 
     @staticmethod
     def pre_parse_verify(data: bytes, family: FamilyRevision, mem_type: MemoryType) -> Verifier:
-        """Pre-Parse binary T osee main issue before parsing.
+        """Pre-parse binary to see main issues before parsing.
 
-        :param data: Bootable image binary.
-        :param family: Chip family.
-        :param mem_type: Used memory type.
-        :return: Verifier object of preparsed data.
+        Performs verification of bootable image segments to identify potential parsing issues.
+        The method attempts to parse the entire image first, and if that fails, tries parsing
+        from different initial segment offsets to find a valid starting point.
+
+        :param data: Bootable image binary data to be verified.
+        :param family: Target chip family and revision information.
+        :param mem_type: Memory type where the image will be stored.
+        :raises SPSDKVerificationError: When verification of segments fails.
+        :return: Verifier object containing pre-parse verification results.
         """
 
         def check_segments(bimg_obj: BootableImage, name: str) -> Verifier:
+            """Check and verify all segments in a bootable image.
+
+            Validates each non-excluded segment in the bootable image by checking offsets,
+            alignment, and performing pre-parse verification on segment data.
+
+            :param bimg_obj: The bootable image object containing segments to verify.
+            :param name: Name identifier for the verification process.
+            :return: Verifier object containing validation results for all segments.
+            """
             ret = Verifier(f"Pre-parsed Bootable Image at offset {hex(bimg_obj.init_offset)}")
             all_ret.add_child(ret, name)
 
@@ -530,9 +693,15 @@ class BootableImage(FeatureBaseClass):
         return all_ret
 
     def verify(self) -> Verifier:
-        """Get verifier object of segment.
+        """Get verifier object for bootable image validation.
 
-        :return: Verifier of current object.
+        Creates a comprehensive verifier that validates the bootable image structure,
+        including header information, segments, and binary layout. The verifier checks
+        each segment's availability and offset, validates the overall image structure,
+        and provides detailed verification results.
+
+        :raises SPSDKError: When binary structure validation fails.
+        :return: Verifier object containing validation results for the bootable image.
         """
         ret = Verifier(f"Bootable Image of {self.family} for {self.mem_type} memory type")
         ret.add_record_range("Header length", self.header_len)
@@ -565,11 +734,14 @@ class BootableImage(FeatureBaseClass):
     def get_config_template(
         cls, family: FamilyRevision, mem_type: MemoryType = MemoryType.FLEXSPI_NOR
     ) -> str:
-        """Get validation schema for the family.
+        """Get configuration template for the family.
 
-        :param family: Chip family
-        :param mem_type: Used memory type.
-        :return: Configuration template in string.
+        The method generates a configuration template based on the validation schemas
+        for the specified chip family and memory type.
+
+        :param family: Chip family and revision information.
+        :param mem_type: Memory type to use for template generation.
+        :return: Configuration template as a string.
         """
         schemas = cls.get_validation_schemas(family, mem_type)
         return cls._get_config_template(family, schemas)
@@ -578,9 +750,13 @@ class BootableImage(FeatureBaseClass):
     def get_supported_memory_types(
         cls, family: Optional[FamilyRevision] = None
     ) -> list[MemoryType]:
-        """Return list of supported memory types.
+        """Get supported memory types for bootable images.
 
-        :return: List of supported families.
+        The method retrieves memory types either for a specific family from the database
+        or all supported memory types across families if no family is specified.
+
+        :param family: Optional family revision to get memory types for specific family.
+        :return: List of supported memory types.
         """
         if family:
             database = get_db(family)
@@ -598,12 +774,15 @@ class BootableImage(FeatureBaseClass):
 
     @staticmethod
     def get_memory_type_config(family: FamilyRevision, mem_type: MemoryType) -> dict[str, Any]:
-        """Return dictionary with configuration for specific memory type.
+        """Get memory type configuration for specific chip family and memory type.
 
-        :param family: Chip family name.
-        :param mem_type: CHip memory type to handle bootable area.
-        :raises SPSDKKeyError: If memory type does not exist in database
-        :return: Dictionary with configuration.
+        The method retrieves configuration dictionary from the database for the specified
+        memory type, ensuring it's supported by the given chip family.
+
+        :param family: Chip family revision to get configuration for.
+        :param mem_type: Chip memory type to handle bootable area.
+        :raises SPSDKKeyError: If memory type does not exist in database.
+        :return: Dictionary with memory type configuration.
         """
         if mem_type not in BootableImage.get_supported_memory_types(family):
             raise SPSDKKeyError(f"Memory type not supported: {mem_type.description}")
@@ -615,9 +794,12 @@ class BootableImage(FeatureBaseClass):
     def _get_segments(family: FamilyRevision, mem_type: MemoryType) -> list[Segment]:
         """Return list of used segments for specific memory type.
 
-        :param family: Chip family name.
-        :param mem_type: CHip memory type to handle bootable area.
-        :return: List of segments for choose chip and memory type.
+        The method retrieves bootable image configuration for the given family and memory type,
+        then creates and returns a list of segment objects based on the configuration.
+
+        :param family: Chip family revision identifier.
+        :param mem_type: Chip memory type to handle bootable area.
+        :return: List of segments for chosen chip and memory type.
         """
         bimg_descr = BootableImage.get_memory_type_config(family=family, mem_type=mem_type)
         segments: list[Segment] = []
@@ -631,8 +813,12 @@ class BootableImage(FeatureBaseClass):
 
     @staticmethod
     def get_supported_revisions(family: FamilyRevision) -> list[str]:
-        """Return list of supported revisions.
+        """Get supported revisions for a given family.
 
-        :return: List of supported revisions.
+        The method retrieves all available revisions for the specified family from the
+        database manager, including only enabled revisions.
+
+        :param family: Family revision object containing the family name.
+        :return: List of supported revision names for the given family.
         """
         return DatabaseManager().db.devices.get(family.name).revisions.revision_names(True)

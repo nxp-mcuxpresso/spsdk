@@ -4,7 +4,12 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""NXP tool for working with SHE protocol."""
+"""SPSDK NXP SHE (Secure Hardware Extension) protocol command-line tool.
+
+This module provides a command-line interface for working with NXP's SHE protocol,
+enabling secure key management, boot authentication, and cryptographic operations
+on supported NXP MCUs.
+"""
 
 import logging
 import sys

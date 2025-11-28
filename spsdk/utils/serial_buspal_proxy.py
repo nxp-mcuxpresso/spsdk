@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""SerialBuspalProxy serves as patch replacement for serial.Serial class."""
+"""SPSDK Serial Buspal proxy interface for MCU communication.
+
+This module provides a proxy interface that extends SerialProxy functionality
+to support Buspal communication protocols including I2C and SPI modes for
+NXP MCU interactions.
+"""
 
 import logging
 from typing import Optional, Type  # pylint: disable=unused-import  # Type is necessary for Mypy
@@ -18,22 +23,28 @@ logger = logging.getLogger(__name__)
 
 
 class SerialBuspalProxy(SerialProxy):
-    """SerialProxy is used to simulate communication with BUSPAL serial device.
+    """Serial BUSPAL proxy for simulating BUSPAL device communication.
 
-    It can be used as mock.patch for serial.Serial class.
-    @patch(<your.package>.Serial, SerialProxy.init_proxy(pre_recorded_responses))
+    This class extends SerialProxy to provide mock functionality for BUSPAL serial devices,
+    supporting I2C and SPI communication protocols. It can be used as a drop-in replacement
+    for serial.Serial in testing scenarios with pre-recorded response data.
+
+    :cvar frame_header: Command frame header value based on target protocol type.
     """
 
     frame_header: int
 
     @classmethod
     def init_buspal_proxy(cls, target: str, data: dict[bytes, bytes]) -> "Type[SerialProxy]":
-        """Initialized response dictionary of write and read bytes.
+        """Initialize BUSPAL proxy with target-specific configuration.
 
-        :param target: BUSPAL target type
-        :param data: Dictionary of write and read bytes
-        :return: SerialProxy class with configured data
-        :raises SPSDKError: target not supported
+        Sets up the frame header based on the target communication protocol (I2C or SPI)
+        and initializes the proxy with the provided data dictionary.
+
+        :param target: BUSPAL target communication protocol ('i2c' or 'spi').
+        :param data: Dictionary mapping write bytes to expected read bytes.
+        :return: SerialProxy class instance configured with the specified data.
+        :raises SPSDKError: Target protocol not supported.
         """
         if target == "i2c":
             cls.frame_header = I2cModeCommand.write_then_read.value
@@ -44,13 +55,15 @@ class SerialBuspalProxy(SerialProxy):
         return super().init_proxy(data)
 
     def __init__(self, port: str, timeout: int, baudrate: int, write_timeout: Optional[int] = None):
-        """Basic initialization for serial.Serial class.
+        """Initialize serial BusPal proxy connection.
 
-        __init__ signature must accommodate instantiation of serial.Serial
+        Basic initialization for serial.Serial class. The __init__ signature must accommodate
+        instantiation of serial.Serial for BusPal proxy communication.
 
-        :param port: Serial port name
-        :param timeout: timeout (does nothing)
-        :param baudrate: Serial port speed (does nothing)
+        :param port: Serial port name for BusPal connection.
+        :param timeout: Connection timeout value (currently not used).
+        :param baudrate: Serial port communication speed (currently not used).
+        :param write_timeout: Optional write timeout for serial operations.
         """
         self._buffer_index = 0
         self.tx_buffer = b""
@@ -58,14 +71,15 @@ class SerialBuspalProxy(SerialProxy):
         super().__init__(port, timeout, baudrate, write_timeout=write_timeout)
 
     def write(self, data: bytes) -> None:
-        """Simulates a BUSPAL write, pick up response from responses, store if command frame.
+        """Simulate a BUSPAL write operation by processing data and managing response buffers.
 
-        Description:
-            Command frame length is 5 bytes and start with byte 0x8:
-                - if byte 1 is not 0, this is the number of bytes to write, sent as consecutive frames
-                - if byte 3 is not 0, this is the number of bytes to read, received from consecutive frames
+        The method handles command frames and data frames differently:
+        - Command frames: 5 bytes starting with frame header (0x8)
+          - Byte 1 non-zero: number of bytes to write in consecutive frames
+          - Byte 3 non-zero: number of bytes to read from consecutive frames
+        - Data frames: appended to transmit buffer or used to lookup responses
 
-        :param data: Bytes to write, key in responses
+        :param data: Bytes to write, used as key in responses dictionary
         """
         if len(data) == 5 and data[0] == self.frame_header:
             if data[1]:
@@ -85,10 +99,13 @@ class SerialBuspalProxy(SerialProxy):
         logger.debug(f"[{' '.join(hex(x) for x in data)}]")
 
     def read(self, length: int) -> bytes:
-        """Read portion of pre-configured data.
+        """Read portion of pre-configured data from buffer.
 
-        :param length: Amount of data to read from buffer
-        :return: Data read
+        The method reads data from either a list-based buffer (advancing the buffer index)
+        or a single buffer, and logs the read data in hexadecimal format for debugging.
+
+        :param length: Amount of data to read from buffer in bytes.
+        :return: Data segment read from the buffer.
         """
         if isinstance(self.rx_buffer, list):
             segment = self.rx_buffer[self._buffer_index][:length]

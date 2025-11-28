@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""CLI application for various cryptographic operations."""
+"""SPSDK cryptographic operations command-line interface.
+
+This module provides a comprehensive CLI application for various cryptographic
+operations including certificate management, key operations, digital signatures,
+hash calculations, and PKI tree generation for NXP security features like
+AHAB and HAB.
+"""
 
 import base64
 import glob
@@ -153,6 +159,69 @@ def export(family: FamilyRevision, key: list[str], password: str, output: str) -
     click.echo(f"RoT table: {rot_hash.hex()}")
 
 
+@rot_group.command(name="parse", no_args_is_help=True)
+@spsdk_family_option(families=Rot.get_supported_families())
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+    help="Path to binary RoT table file to parse.",
+)
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(dir_okay=True, file_okay=False),
+    required=True,
+    help="Output directory where public keys will be saved.",
+)
+@click.option(
+    "-e",
+    "--encoding",
+    type=click.Choice(["PEM", "DER"], case_sensitive=False),
+    default="PEM",
+    help="Encoding format for output public keys (default: PEM).",
+)
+def parse_rot(family: FamilyRevision, binary: str, output: str, encoding: str) -> None:
+    """Parse RoT table from binary data and extract public keys."""
+    # Load the binary RoT data
+    rot_data = load_binary(binary)
+
+    # Parse the RoT table
+    try:
+        rot = Rot.parse(family, rot_data)
+        click.echo(f"Successfully parsed RoT table from: {binary}")
+        click.echo(str(rot))
+    except SPSDKError as exc:
+        raise SPSDKAppError(f"Failed to parse RoT table: {exc}") from exc
+
+    # Create output directory if it doesn't exist
+    os.makedirs(output, exist_ok=True)
+
+    # Extract and save public keys from the parsed keys_or_certs list
+    encoding_type = SPSDKEncoding.PEM if encoding.upper() == "PEM" else SPSDKEncoding.DER
+
+    try:
+        public_keys = rot.rot_obj.keys_or_certs
+
+        if not public_keys:
+            click.echo("No public keys found in the RoT table.")
+            return
+
+        # Save each public key
+        for key_index, public_key in enumerate(public_keys):
+            key_filename = f"public_key_{key_index}.{encoding.lower()}"
+            key_path = os.path.join(output, key_filename)
+            if isinstance(public_key, PublicKey):
+                public_key.save(key_path, encoding=encoding_type)
+                click.echo(f"Public key {key_index} saved to: {key_path}")
+
+        click.echo(f"Successfully extracted {len(public_keys)} public key(s) to: {output}")
+
+    except Exception as exc:
+        raise SPSDKAppError(f"Failed to extract public keys: {exc}") from exc
+
+
 @rot_group.command(name="calculate-hash", no_args_is_help=True)
 @spsdk_family_option(families=Rot.get_supported_families())
 @click.option(
@@ -234,7 +303,12 @@ def cert_convert(encoding: str, input_file: str, output: str, puk: bool) -> None
 
 
 class CertificateParametersConfig:  # pylint: disable=too-few-public-methods
-    """Configuration object for creating the certificate."""
+    """SPSDK Certificate Parameters Configuration.
+
+    This class manages configuration parameters for X.509 certificate creation
+    including issuer and subject information, cryptographic keys, extensions,
+    and certificate properties such as serial number and validity duration.
+    """
 
     def __init__(self, config: Config) -> None:
         """Initialize cert_config from yml config data."""
@@ -330,7 +404,7 @@ def get_template(output: str) -> None:
     type=click.Path(exists=True, dir_okay=False),
     help="Path to key to verify certificate signature",
 )
-@optgroup.option(  # type: ignore[arg-type]
+@optgroup.option(
     "-p",
     "--puk",
     type=click.Path(exists=True, dir_okay=False),

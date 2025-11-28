@@ -4,7 +4,12 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Module for validation of commands."""
+"""SPSDK SB3.1 commands validation framework.
+
+This module provides a comprehensive validation system for SB3.1 secure boot file commands,
+including rule-based validators for command sequences, occurrence limits, and ordering
+constraints to ensure proper command structure and dependencies.
+"""
 
 import logging
 from typing import Any, Optional, Type
@@ -19,11 +24,20 @@ logger = logging.getLogger(__name__)
 
 
 class SPSDKValidationError(SPSDKError):
-    """SPSDK command validation error."""
+    """SPSDK command validation error exception.
+
+    This exception is raised when validation of SB3.1 commands fails during
+    processing or verification operations.
+    """
 
 
 class ResultType(SpsdkEnum):
-    """Validation result status."""
+    """Enumeration for SB3.1 command validation result types.
+
+    This enum defines the possible outcomes when validating SB3.1 commands,
+    providing standardized result codes and human-readable descriptions for
+    validation operations.
+    """
 
     PASSED = (0, "Passed")
     SKIPPED = (1, "Skipped")
@@ -32,10 +46,22 @@ class ResultType(SpsdkEnum):
 
 
 class CommandsValidator:
-    """Commands validator."""
+    """SB3.1 commands validator for device-specific rule enforcement.
+
+    This class validates sequences of SB3.1 commands against device-specific rules
+    to ensure compatibility and proper execution on target hardware. It uses a
+    rule-based validation system that can be configured per device family.
+    """
 
     def __init__(self, family: FamilyRevision, command_rules: list[dict]):
-        """Commands validator init."""
+        """Initialize the commands validator.
+
+        Sets up the validator with family-specific configuration and command rules
+        for validating SB3.1 commands.
+
+        :param family: Target MCU family and revision information.
+        :param command_rules: List of dictionaries containing validation rules for commands.
+        """
         self.family = family
         self.command_rules = command_rules
         self.db = get_db(family=self.family)
@@ -43,7 +69,12 @@ class CommandsValidator:
     def validate_commands(self, commands: list[BaseCmd]) -> None:
         """Validate commands against device-specific rules.
 
-        :raises SPSDKError: When command validation rules are violated
+        This method iterates through all configured command validation rules for the
+        current device family and applies each rule to the provided command list.
+        If no family is set or no rules are configured, validation is skipped.
+
+        :param commands: List of commands to validate against device rules.
+        :raises SPSDKError: When command validation rules are violated.
         """
         if not self.family:
             return
@@ -67,20 +98,34 @@ class CommandsValidator:
 
 
 class ValidationResult:
-    """Validation result object."""
+    """Validation result container for SB3.1 command validation operations.
+
+    This class encapsulates the outcome of a validation rule execution, including
+    the result status, associated rule, and optional reason for the result. It provides
+    functionality to check and handle validation results with appropriate logging
+    and error handling.
+    """
 
     def __init__(self, rule: "BaseRuleValidator", result: ResultType, reason: Optional[str] = None):
-        """Constructor for validation result.
+        """Initialize validation result with rule, result type and optional reason.
 
-        :param result: Result type
-        :param reason: Optional reason text
+        :param rule: The rule validator instance that produced this result.
+        :param result: The type of validation result.
+        :param reason: Optional descriptive text explaining the validation outcome.
         """
         self.rule = rule
         self.reason = reason
         self.result = result
 
     def check(self) -> None:
-        """Check if the validation result indicates a pass."""
+        """Check if the validation result indicates a pass.
+
+        The method processes validation results and takes appropriate actions based on the result type.
+        For failed validations, it raises an exception. For warnings, skipped, and passed validations,
+        it logs appropriate messages with the rule information and optional reason.
+
+        :raises SPSDKValidationError: When validation result indicates failure.
+        """
         if self.result == ResultType.FAILED:
             raise SPSDKValidationError(
                 f"Validation rule '{str(self.rule)}' failed.{self.reason or ''}"
@@ -96,21 +141,29 @@ class ValidationResult:
 
 
 class BaseRuleValidator:
-    """Base class for command rule validators."""
+    """Base class for command rule validators in SB3.1 files.
+
+    This abstract class provides the foundation for implementing specific validation rules
+    that can be applied to sequences of SB3.1 commands. Validators check command patterns,
+    dependencies, and constraints to ensure proper command structure and execution order.
+    """
 
     def __init__(self, rule: dict) -> None:
         """Initialize the rule validator.
 
-        :param rule: The rule configuration dictionary
-        :param commands: List of commands to validate
-        :param command_map: Mapping of command names to command classes
+        :param rule: The rule configuration dictionary containing validation rules.
         """
         self.rule = rule
 
     def __str__(self) -> str:
         """Return a string representation of the validator with its rule.
 
-        :return: A formatted string representation
+        The method formats the validator class name along with its rule dictionary
+        in a readable format. If no rule is specified, it returns a message indicating
+        the absence of rules.
+
+        :return: A formatted string showing validator name and rule parameters, or
+                 a message if no rule is specified.
         """
         validator_name = self.__class__.__name__
 
@@ -123,15 +176,20 @@ class BaseRuleValidator:
     def validate(self, commands: list[BaseCmd]) -> ValidationResult:
         """Validate the rule against the commands.
 
-        :raises SPSDKError: When validation fails
+        :param commands: List of commands to validate against the rule.
+        :return: Result of the validation process.
+        :raises SPSDKError: When validation fails.
         """
         raise NotImplementedError("Subclasses must implement validate()")
 
     def get_command_class(self, command_name: str) -> Optional[type[BaseCmd]]:
         """Get command class by name.
 
-        :param command_name: Name of the command
-        :return: Command class or None if not found
+        Retrieves the command class associated with the specified command name from the
+        configuration mapping. The search is case-insensitive.
+
+        :param command_name: Name of the command to search for.
+        :return: Command class if found, None otherwise.
         """
         for cmd_name, cmd_cls in CFG_NAME_TO_CLASS.items():
             if cmd_name.lower() == command_name.lower():
@@ -139,26 +197,42 @@ class BaseRuleValidator:
         return None
 
     def get_command_tags(self, commands: list[BaseCmd]) -> list[EnumCmdTag]:
-        """Get list of command tags."""
+        """Get list of command tags from provided commands.
+
+        :param commands: List of command objects to extract tags from.
+        :return: List of command tags corresponding to the input commands.
+        """
         return [cmd.CMD_TAG for cmd in commands]
 
     def get_command_names(self, commands: list[BaseCmd]) -> list[str]:
-        """Get list of command names."""
+        """Get list of command names from provided commands.
+
+        Extracts the class names from a list of command objects to create a list of
+        command name strings.
+
+        :param commands: List of command objects to extract names from.
+        :return: List of command class names as strings.
+        """
         return [cmd.__class__.__name__ for cmd in commands]
 
 
 class MustFollowValidator(BaseRuleValidator):
-    """Validator for 'must_follow' rule type.
+    """Validator for 'must_follow' rule type in SB3.1 command sequences.
 
-    This rule means: If the prerequisite command exists, then the specified command must follow it.
-    The command can be used independently if the prerequisite is not present.
+    This validator enforces conditional command ordering where if a prerequisite command exists
+    in the sequence, then a specified command must immediately follow it. The command can be
+    used independently if the prerequisite is not present in the sequence.
     """
 
     def validate(self, commands: list[BaseCmd]) -> ValidationResult:
         """Validate that if prerequisite exists, command must follow it.
 
-        :param commands: List of commands to validate
-        :raises SPSDKError: When validation fails
+        Checks if a specified command is properly followed by its required subsequent command
+        according to device validation rules. Returns appropriate validation results for
+        missing rules, unknown commands, or rule violations.
+
+        :param commands: List of commands to validate for proper sequencing
+        :return: ValidationResult indicating success, failure, or warnings with details
         """
         command_name: Optional[str] = self.rule.get("command")
         following_command: Optional[str] = self.rule.get("following_cmd")
@@ -205,12 +279,21 @@ class MustFollowValidator(BaseRuleValidator):
 
 
 class MaxOccurrencesValidator(BaseRuleValidator):
-    """Validator for 'max_occurrences' rule type."""
+    """SB3.1 command occurrence validator.
+
+    This validator ensures that specific commands do not exceed their maximum
+    allowed occurrences within a command sequence according to device-specific
+    rules and constraints.
+    """
 
     def validate(self, commands: list[BaseCmd]) -> ValidationResult:
         """Validate that a command doesn't appear more than allowed times.
 
-        :raises SPSDKError: When validation fails
+        Checks if any command in the provided list exceeds the maximum allowed occurrences
+        as defined by the validation rule configuration.
+
+        :param commands: List of commands to validate against occurrence limits.
+        :return: ValidationResult indicating whether validation passed, failed, or had warnings.
         """
         command_name = self.rule.get("command")
         max_count = self.rule.get("count", 1)
@@ -242,24 +325,39 @@ class MaxOccurrencesValidator(BaseRuleValidator):
 
 
 class MustAppearAfterValidator(BaseRuleValidator):
-    """Validator for 'must_appear_after' rule type.
+    """Validator for command ordering rules in SB3.1 files.
 
-    This rule means: If both the source and target commands exist in the sequence,
-    then the target command must appear after the source command.
+    This validator enforces 'must_appear_after' rules which ensure that if both
+    a source and target command exist in the command sequence, the target command
+    must appear after the source command in the execution order.
+    </response>
     """
 
     @staticmethod
     def _find_max_index(lst: list, element: Any) -> int:
+        """Find the maximum (last) index of an element in a list.
+
+        This method searches for all occurrences of the specified element in the list
+        and returns the index of the last occurrence.
+
+        :param lst: List to search in.
+        :param element: Element to find in the list.
+        :return: Last index where element appears, or -1 if element is not found.
+        """
         # Find all indices where the element appears
         indices = [i for i, x in enumerate(lst) if x == element]
         # Return the last index or -1 if not found
         return max(indices) if indices else -1
 
     def validate(self, commands: list[BaseCmd]) -> ValidationResult:
-        """Validate that if both commands exist, target command appears after source command.
+        """Validate command ordering according to must_appear_after rule.
 
-        :param commands: List of commands to validate
-        :return: ValidationResult indicating success or failure
+        Checks that if both source and target commands exist in the command list,
+        the target command appears after the source command as required by device rules.
+
+        :param commands: List of BaseCmd objects to validate for proper ordering
+        :return: ValidationResult with PASSED if ordering is correct, FAILED if target appears
+                 before source, or WARNING if validation rule is incomplete or contains unknown commands
         """
         source_command: Optional[str] = self.rule.get("command")
         target_command: Optional[str] = self.rule.get("target_command")

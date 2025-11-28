@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Helper module for blhost application."""
+"""SPSDK blhost application helper utilities.
+
+This module provides helper classes and functions to support the blhost
+application, including property tag parsing, key type parsing for various
+provisioning operations, and output display utilities.
+"""
 
 import inspect
 import json
@@ -29,7 +34,13 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 class OemGenMasterShareHelp(click.Command):
-    """Class for customized "usage" help line for oem_gen_master_share command."""
+    """Custom Click command for OEM master share generation help display.
+
+    This class extends Click's Command class to provide a customized usage help
+    format specifically for the blhost trust-provisioning oem_gen_master_share
+    command, displaying all required memory address and size parameters in a
+    structured format.
+    """
 
     def format_usage(self, ctx: Any, formatter: Any) -> None:
         """Customizes "usage" help line for oem_gen_master_share command."""
@@ -46,7 +57,12 @@ class OemGenMasterShareHelp(click.Command):
 
 
 class OemSetMasterShareHelp(click.Command):
-    """Class for customized "usage" help line for oem_set_master_share command."""
+    """Custom Click command for OEM master share operations help display.
+
+    This class extends Click's Command class to provide customized usage help
+    formatting specifically for the oem_set_master_share command in blhost
+    trust provisioning operations.
+    """
 
     def format_usage(self, ctx: Any, formatter: Any) -> None:
         """Customizes "usage" help line for oem_set_master_share command."""

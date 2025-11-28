@@ -6,7 +6,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """HAB Check Data command implementation.
 
-This module implements the Check Data command for High Assurance Boot (HAB).
+This module implements the Check Data command for High Assurance Boot (HAB),
+providing functionality to verify data integrity during the boot process.
 """
 
 from struct import pack, unpack_from
@@ -22,7 +23,12 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 class CheckDataOpsEnum(SpsdkEnum):
-    """Enum definition for 'par' parameter of Check Data command."""
+    """HAB Check Data operation types enumeration.
+
+    This enumeration defines the available operation types for the HAB Check Data
+    command 'par' parameter, specifying different bit checking modes for data
+    validation operations.
+    """
 
     ALL_CLEAR = (0, "ALL_CLEAR", "All bits clear")
     ALL_SET = (1, "ALL_SET", "All bits set")
@@ -31,7 +37,13 @@ class CheckDataOpsEnum(SpsdkEnum):
 
 
 class CmdCheckData(CmdBase):
-    """Check data command. Test for a given 1, 2 or 4-byte bitmask from a source address.
+    """HAB Check Data command for memory validation operations.
+
+    This class represents a HAB (High Assurance Boot) command that tests memory locations
+    against specified bit masks. It supports 1, 2, or 4-byte operations and can validate
+    data at given addresses using configurable masks and optional count parameters.
+    The command structure includes address, mask, and optional count fields as shown
+    in the binary layout diagram.
 
     +-------------+--------------+--------------+
     |     tag     |      len     |     par      |
@@ -42,6 +54,8 @@ class CmdCheckData(CmdBase):
     +-------------------------------------------+
     |                  [count]                  |
     +-------------------------------------------+
+
+    :cvar CMD_TAG: Command tag identifier for check data operations.
     """
 
     CMD_TAG = CmdTag.CHK_DAT
@@ -56,13 +70,16 @@ class CmdCheckData(CmdBase):
     ) -> None:
         """Initialize the check data command.
 
-        :param numbytes: number of bytes
-        :param ops: type of  operation
-        :param address: list of tuples: address and value
-        :param mask: mask value
-        :param count: count value
-        :raises SPSDKError: If incorrect number of bytes
-        :raises SPSDKError: If incorrect operation
+        Creates a HAB check data command with specified parameters for memory verification
+        operations.
+
+        :param numbytes: Number of bytes to check (must be 1, 2, or 4).
+        :param ops: Type of check operation to perform.
+        :param address: Memory address to check.
+        :param mask: Mask value for the check operation.
+        :param count: Optional count value for repeated operations.
+        :raises SPSDKError: If incorrect number of bytes (not 1, 2, or 4).
+        :raises SPSDKError: If incorrect operation type.
         """
         if numbytes not in (1, 2, 4):
             raise SPSDKError("Incorrect number of bytes")
@@ -77,11 +94,25 @@ class CmdCheckData(CmdBase):
 
     @property
     def num_bytes(self) -> int:
-        """Number of bytes."""
+        """Get the number of bytes from the header parameter.
+
+        Extracts the lower 3 bits from the header parameter field to determine
+        the number of bytes value.
+
+        :return: Number of bytes as extracted from header parameter (0-7 range).
+        """
         return self._header.param & 0x7
 
     @num_bytes.setter
     def num_bytes(self, value: int) -> None:
+        """Set the number of bytes for data checking operation.
+
+        Configures the parameter field in the header to specify how many bytes
+        should be processed during the data check operation.
+
+        :param value: Number of bytes to check, must be 1, 2, or 4.
+        :raises SPSDKError: If value is not 1, 2, or 4.
+        """
         if value not in (1, 2, 4):
             raise SPSDKError("Incorrect number of bytes")
         self._header.param &= ~0x7
@@ -89,14 +120,21 @@ class CmdCheckData(CmdBase):
 
     @property
     def ops(self) -> CheckDataOpsEnum:
-        """Operation of Check data command."""
+        """Get operation of Check data command.
+
+        :return: Operation type extracted from the command header parameter bits.
+        """
         return CheckDataOpsEnum.from_tag((self._header.param >> 3) & 0x3)
 
     @ops.setter
     def ops(self, value: CheckDataOpsEnum) -> None:
-        """Operation of Check data command.
+        """Set the operation type for Check data command.
 
-        :raises SPSDKError: If incorrect operation
+        The method configures the operation field in the command header by clearing
+        the existing operation bits and setting new ones based on the provided value.
+
+        :param value: Operation type to be set for the check data command.
+        :raises SPSDKError: If incorrect operation type is provided.
         """
         if value not in CheckDataOpsEnum:
             raise SPSDKError("Incorrect operation")
@@ -104,13 +142,26 @@ class CmdCheckData(CmdBase):
         self._header.param |= int(value.tag) << 3
 
     def __repr__(self) -> str:
+        """Return string representation of the CheckData command.
+
+        The representation includes the class name, operation label, number of bytes,
+        address, and mask in hexadecimal format.
+
+        :return: String representation of the CheckData command object.
+        """
         return (
             f"{self.__class__.__name__} <{self.ops.label}/{self.num_bytes}, "
             f"ADDR=0x{self.address:X}, MASK=0x{self.mask:X}>"
         )
 
     def __str__(self) -> str:
-        """Text description of the command."""
+        """Get text description of the Check Data command.
+
+        Provides a formatted string representation of the Check Data command including
+        operation type, number of bytes, address, mask, and optional count parameters.
+
+        :return: Formatted string description of the command.
+        """
         msg = super().__str__()
         msg += f"Check Data Command (Ops: {self.ops.label}, Bytes: {self.num_bytes})\n"
 
@@ -121,9 +172,12 @@ class CmdCheckData(CmdBase):
         return msg
 
     def export(self) -> bytes:
-        """Export to binary form (serialization).
+        """Export command to binary representation.
 
-        :return: binary representation of the command
+        Serializes the command data including address, mask, and optional count
+        into binary format suitable for HAB processing.
+
+        :return: Binary representation of the command as bytes.
         """
         raw_data = super().export()
         raw_data += pack(">LL", self.address, self.mask)
@@ -133,10 +187,13 @@ class CmdCheckData(CmdBase):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Convert binary representation into command (deserialization from binary data).
+        """Parse binary data into CheckData command object.
 
-        :param data: being parsed
-        :return: parse command
+        Deserializes binary representation of a CheckData command by extracting
+        header information, operation parameters, address, mask, and optional count.
+
+        :param data: Binary data to be parsed into command object.
+        :return: Parsed CheckData command instance.
         """
         header = CmdHeader.parse(data, CmdTag.CHK_DAT.tag)
         numbytes = header.param & 0x7

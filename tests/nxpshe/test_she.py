@@ -4,13 +4,29 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+"""SPSDK SHE (Secure Hardware Extension) module tests.
+
+This module contains comprehensive unit tests for the SPSDK SHE functionality,
+validating key derivation, key update operations, boot MAC calculations, and
+authentication mechanisms for NXP MCUs with SHE support.
+"""
+
 import pytest
+
 from spsdk.exceptions import SPSDKError
 from spsdk.she.she import SHEBootMac, SHEDeriveKey, SHEUpdate
 from spsdk.utils.config import Config
 
 
-def test_she_derive_enc():
+def test_she_derive_enc() -> None:
+    """Test SHE encryption key derivation functionality.
+
+    Verifies that the SHE (Secure Hardware Extension) encryption key derivation
+    produces the expected output for a known test vector. This test ensures the
+    derive_enc_key method correctly implements the SHE key derivation algorithm.
+
+    :raises AssertionError: If the derived encryption key doesn't match expected value.
+    """
     key = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
     exp_enc = bytes.fromhex("118a46447a770d87828a69c222e2d17e")
 
@@ -19,7 +35,16 @@ def test_she_derive_enc():
     assert enc == exp_enc
 
 
-def test_she_key_update():
+def test_she_key_update() -> None:
+    """Test SHE key update functionality.
+
+    Validates the SHE (Secure Hardware Extension) key update process by creating
+    an SHEUpdate instance with predefined authentication and new key parameters,
+    then verifying that the generated messages (M1, M2, M3) match expected values
+    and that message verification (M4, M5) works correctly.
+    The test uses hardcoded test vectors to ensure the cryptographic operations
+    produce consistent and correct results across different environments.
+    """
     auth_key = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
     new_key = bytes.fromhex("0f0e0d0c0b0a09080706050403020100")
     uid = 1
@@ -50,7 +75,15 @@ def test_she_key_update():
     updater.verify_messages(m4=exp_m4, m5=exp_m5)
 
 
-def test_calc_boot_mac():
+def test_calc_boot_mac() -> None:
+    """Test calculation of SHE boot MAC.
+
+    This test verifies that the SHE boot MAC calculation produces the expected
+    MAC value when given a known key and data input. It uses predefined test
+    vectors to ensure the cryptographic function works correctly.
+
+    :raises AssertionError: If the calculated MAC doesn't match the expected value.
+    """
     key = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
     data = bytes.fromhex("deadbeef")
     mac = SHEBootMac.calculate(key, data)
@@ -68,7 +101,18 @@ def test_calc_boot_mac():
         ("BOOT_MAC", "USER_KEY_1", False),
     ],
 )
-def test_auth_key_id(key_id: int, auth_key_id: int, passed: bool):
+def test_auth_key_id(key_id: int, auth_key_id: int, passed: bool) -> None:
+    """Test authentication key ID validation in SHE configuration.
+
+    This test verifies that the SHE configuration validation correctly handles
+    different combinations of key_id and auth_key_id parameters, ensuring that
+    invalid combinations are properly rejected.
+
+    :param key_id: The ID of the key to be updated in SHE memory.
+    :param auth_key_id: The ID of the authentication key used for authorization.
+    :param passed: Expected test result - True if validation should pass, False if it should raise an exception.
+    :raises SPSDKError: When passed is False and validation fails as expected.
+    """
     cfg = Config(
         {
             "family": "mcxe247",

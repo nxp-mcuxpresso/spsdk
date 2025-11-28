@@ -5,18 +5,25 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Test OTFAD part of nxpimage app."""
+"""Test module for OTFAD functionality in nxpimage application.
+
+This module contains comprehensive tests for the On-The-Fly AES Decryption (OTFAD)
+features within the nxpimage tool, covering export operations, key management,
+and CLI command validation across different NXP MCU families.
+"""
+
 import filecmp
 import os
 import shutil
+from typing import Any
 
 import pytest
 import yaml
 
 from spsdk.apps import nxpimage
 from spsdk.image.otfad.otfad import Otfad
-from spsdk.utils.misc import load_configuration, load_text, use_working_directory
 from spsdk.utils.family import FamilyRevision
+from spsdk.utils.misc import load_configuration, load_text, use_working_directory
 from tests.cli_runner import CliRunner
 
 
@@ -27,7 +34,20 @@ from tests.cli_runner import CliRunner
         ("otfad_rt6xx.yaml"),
     ],
 )
-def test_nxpimage_otfad_export(cli_runner: CliRunner, tmpdir, data_dir, config):
+def test_nxpimage_otfad_export(
+    cli_runner: CliRunner, tmpdir: Any, data_dir: str, config: str
+) -> None:
+    """Test OTFAD export functionality using CLI runner.
+
+    This test verifies that the OTFAD export command correctly generates all expected
+    output files including encrypted blobs, OTFAD table, whole image, readme, and
+    example board file.
+
+    :param cli_runner: CLI runner instance for executing commands.
+    :param tmpdir: Temporary directory for test operations.
+    :param data_dir: Path to test data directory containing OTFAD test files.
+    :param config: Configuration file name for OTFAD export operation.
+    """
     work_dir = os.path.join(tmpdir, "otfad")
     shutil.copytree(os.path.join(data_dir, "otfad"), work_dir)
     with use_working_directory(work_dir):
@@ -139,8 +159,31 @@ def test_nxpimage_otfad_export(cli_runner: CliRunner, tmpdir, data_dir, config):
     ],
 )
 def test_nxpimage_otfad_export_rt11x0(
-    cli_runner: CliRunner, tmpdir, data_dir, config, per_ix, blhost_bcf_res, bin_out, family
-):
+    cli_runner: CliRunner,
+    tmpdir: Any,
+    data_dir: str,
+    config: str,
+    per_ix: int,
+    blhost_bcf_res: list[str],
+    bin_out: str,
+    family: str,
+) -> None:
+    """Test OTFAD export functionality for RT11x0 family devices.
+
+    This test verifies that the OTFAD export command correctly generates all expected
+    output files including BCF script, encrypted blobs, OTFAD table, whole image binary,
+    and readme file. It also validates the content of the generated BCF script and
+    compares the output binary with expected results.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for test files.
+    :param data_dir: Path to test data directory containing OTFAD test files.
+    :param config: Configuration file name for OTFAD export.
+    :param per_ix: Peripheral index for OTFAD configuration.
+    :param blhost_bcf_res: List of expected strings in the generated BCF script.
+    :param bin_out: Path to expected binary output file for comparison.
+    :param family: Target MCU family name for the test.
+    """
     work_dir = os.path.join(tmpdir, "otfad")
     shutil.copytree(os.path.join(data_dir, "otfad"), work_dir)
     with use_working_directory(work_dir):
@@ -196,7 +239,22 @@ def test_nxpimage_otfad_export_rt11x0(
         ("otp_master_key.txt", "otfad_key.txt", "rt6xx"),
     ],
 )
-def test_nxpimage_otfad_kek_cli(cli_runner: CliRunner, tmpdir, data_dir, omk, ok, family):
+def test_nxpimage_otfad_kek_cli(
+    cli_runner: CliRunner, tmpdir: Any, data_dir: str, omk: str, ok: str, family: str
+) -> None:
+    """Test OTFAD KEK generation CLI command functionality.
+
+    Verifies that the nxpimage CLI can successfully generate OTFAD KEK files
+    using the provided master key and key parameters for a specific chip family.
+    The test checks that both binary and text KEK files are created in the output directory.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory path for output files.
+    :param data_dir: Base directory containing test data files.
+    :param omk: OTFAD master key parameter (optional).
+    :param ok: OTFAD key parameter (optional).
+    :param family: Target chip family name.
+    """
     with use_working_directory(os.path.join(data_dir, "otfad")):
         cmd = f"otfad get-kek {'-m '+ omk if omk else ''} {'-k '+ ok if ok else ''} -f {family} -o {tmpdir}"
         cli_runner.invoke(nxpimage.main, cmd.split())
@@ -228,7 +286,18 @@ def test_nxpimage_otfad_kek_cli(cli_runner: CliRunner, tmpdir, data_dir, omk, ok
         ),
     ],
 )
-def test_nxpimage_otfad_keys_blhost(omk, ok, family, results):
+def test_nxpimage_otfad_keys_blhost(omk: str, ok: str, family: str, results: list[str]) -> None:
+    """Test OTFAD keys generation for blhost script.
+
+    Verifies that the OTFAD blhost script generation works correctly by checking
+    that the generated script contains expected results and has proper length.
+
+    :param omk: OTP master key as hexadecimal string
+    :param ok: OTFAD KEK seed as hexadecimal string
+    :param family: Target MCU family name
+    :param results: List of expected strings that should be present in generated script
+    :raises AssertionError: If generated script is empty or missing expected results
+    """
     blhost_script = Otfad.get_blhost_script_otp_keys(
         FamilyRevision(family), otp_master_key=bytes.fromhex(omk), otfad_kek_seed=bytes.fromhex(ok)
     )
@@ -248,7 +317,17 @@ def test_nxpimage_otfad_keys_blhost(omk, ok, family, results):
         ("mimxrt1189"),
     ],
 )
-def test_nxpimage_otfad_template_cli(cli_runner: CliRunner, tmpdir, family):
+def test_nxpimage_otfad_template_cli(cli_runner: CliRunner, tmpdir: Any, family: str) -> None:
+    """Test CLI command for generating OTFAD template files.
+
+    This test verifies that the 'otfad get-template' CLI command successfully
+    generates a template YAML file for the specified MCU family and saves it
+    to the designated output location.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory fixture for test file operations.
+    :param family: Target MCU family name for template generation.
+    """
     template = os.path.join(tmpdir, "otfad_template.yaml")
     cmd = f"otfad get-template -f {family} --output {template}"
     cli_runner.invoke(nxpimage.main, cmd.split())
@@ -261,7 +340,21 @@ def test_nxpimage_otfad_template_cli(cli_runner: CliRunner, tmpdir, family):
         ("otfad_rt1170_custom_name.yaml"),
     ],
 )
-def test_otfad_custom_output(cli_runner: CliRunner, tmpdir, data_dir, config):
+def test_otfad_custom_output(
+    cli_runner: CliRunner, tmpdir: Any, data_dir: str, config: str
+) -> None:
+    """Test OTFAD export functionality with custom output configuration.
+
+    This test verifies that the OTFAD export command works correctly when using
+    a modified configuration with custom output paths and filenames. It tests
+    the ability to specify custom output names for the main output file while
+    using default names for keyblob and encrypted files.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for test files.
+    :param data_dir: Path to test data directory containing OTFAD test files.
+    :param config: Configuration file name to be used for the test.
+    """
     work_dir = os.path.join(tmpdir, "otfad")
     shutil.copytree(os.path.join(data_dir, "otfad"), work_dir)
 

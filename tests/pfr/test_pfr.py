@@ -4,18 +4,13 @@
 # Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Test suite for Protected Flash Region (PFR) API.
+"""Test suite for SPSDK Protected Flash Region (PFR) functionality.
 
-This module provides comprehensive testing for PFR functionality, including:
-- CMPA (Customer Manufacturing Programming Area) configuration and binary generation
-- CFPA (Customer Field Programmable Area) configuration and binary generation
-- Configuration handling for different device families (LPC55Sxx, MCXAxx)
-- Key handling and validation for various cryptographic algorithms
-- Validation of sealing mechanisms for both CMPA and CFPA areas
-- Error handling for invalid configurations and keys
-
-The tests ensure proper functionality across different NXP microcontroller families
-and verify compatibility between JSON and YAML configuration formats.
+This module contains comprehensive tests for PFR (Protected Flash Region) implementation,
+covering CMPA and CFPA area management, configuration generation, and validation across
+NXP MCU families including LPC55Sxx and MCXAxx series.
+The tests ensure reliable PFR functionality for secure provisioning workflows
+across the NXP microcontroller portfolio.
 """
 
 import os
@@ -38,8 +33,8 @@ from spsdk.pfr.pfr import (
 )
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
-from spsdk.utils.misc import load_configuration, load_file
 from spsdk.utils.family import FamilyRevision
+from spsdk.utils.misc import load_configuration, load_file
 
 
 def test_generate_cmpa(data_dir: str) -> None:
@@ -88,6 +83,7 @@ def test_supported_devices() -> None:
     matches the list of devices with PFR features in the database, and that
     all CFPA-supported devices are also supported for CMPA operations.
 
+    :raises AssertionError: When supported device families don't match database or CFPA devices are not supported for CMPA.
     """
     cfpa_devices = CFPA.get_supported_families()
     assert isinstance(cfpa_devices, list)
@@ -108,11 +104,14 @@ def test_supported_devices() -> None:
 
 
 def test_seal_cfpa() -> None:
-    """Verify CFPA sealing functionality.
+    """```
 
+    Verify CFPA sealing functionality.
     Tests that CFPA data exported with and without sealing has the expected
-    structure and seal markers at the appropriate offsets.
-
+    structure and seal markers at the appropriate offsets. Validates that
+    unsealed data contains zeros in the seal area and sealed data contains
+    the proper CFPA mark pattern.
+    ```
     """
     cfpa = CFPA(FamilyRevision("lpc55s6x"))
 
@@ -126,11 +125,12 @@ def test_seal_cfpa() -> None:
 
 
 def test_seal_cmpa_lpc55s3x() -> None:
-    """Verify CMPA sealing functionality for LPC55S3x family.
+    """Test CMPA sealing functionality for LPC55S3x family.
 
-    Tests that CFPA data for LPC55S3x devices exported with and without
+    Verifies that CFPA data for LPC55S3x devices exported with and without
     sealing has the expected structure and seal markers at the appropriate offsets.
-
+    Tests both unsealed export (should have zeros in seal area) and sealed export
+    (should contain CFPA.MARK at the correct offset).
     """
     cfpa = CFPA(FamilyRevision("lpc55s3x"))
 
@@ -147,16 +147,18 @@ def test_basic_cmpa() -> None:
     """Verify basic CMPA instantiation.
 
     Tests that a CMPA object can be created for a supported family without errors.
-
+    This test ensures the CMPA constructor works correctly with valid family revision input.
     """
     CMPA(FamilyRevision("lpc55s6x"))
 
 
 def test_config_cfpa(data_dir: str) -> None:
-    """Verify CFPA configuration handling.
+    """Test CFPA configuration handling and consistency.
 
-    Tests that CFPA configuration can be retrieved consistently and that
-    configurations remain consistent after parsing and reexporting.
+    Verifies that CFPA configuration can be retrieved consistently and that
+    configurations remain consistent after parsing and reexporting. The test
+    creates CFPA instances, parses empty page content, applies reset values,
+    and validates configuration consistency.
 
     :param data_dir: Path to test data directory containing configuration files
     """
@@ -183,7 +185,8 @@ def test_config_cmpa() -> None:
 
     Tests that CMPA configuration can be retrieved consistently and that
     configurations remain consistent after parsing and reexporting.
-
+    This test validates the round-trip integrity of CMPA configuration
+    data for the lpc55s3x family.
     """
     family = FamilyRevision("lpc55s3x")
     cmpa = CMPA(family)
@@ -205,7 +208,7 @@ def test_config_cmpa_yml(tmpdir: str) -> None:
     from YAML files, and that the configuration remains consistent through
     the process with expected default values.
 
-    :param tmpdir: Temporary directory for creating test files
+    :param tmpdir: Temporary directory for creating test files.
     """
     yaml = YAML()
     yaml.indent(sequence=4, offset=2)
@@ -231,19 +234,19 @@ def test_config_cmpa_yml(tmpdir: str) -> None:
         "revision": "a1",
         "type": "CMPA",
         "settings": {
-            "DCFG_CC_SOCU_PIN": {"INVERSE_VALUE": "0xFFFF"},
-            "DCFG_CC_SOCU_DFLT": {"INVERSE_VALUE": "0xFFFF"},
+            "DCFG_CC_SOCU_PIN": {"Inverse_value": "0xFFFF"},
+            "DCFG_CC_SOCU_DFLT": {"Inverse_value": "0xFFFF"},
         },
     }
 
 
 def test_set_config_rev_latest(data_dir: str) -> None:
-    """Verify configuration handling with 'latest' revision specification.
+    """Test configuration handling with 'latest' revision specification.
 
     Tests that a CMPA object can be correctly created from a configuration
     that specifies 'latest' as the revision value.
 
-    :param data_dir: Path to test data directory containing configuration files
+    :param data_dir: Path to test data directory containing configuration files.
     """
     pfr_cfg = Config.create_from_file(data_dir + "/latest_rev.yml")
     cmpa = CMPA.load_from_config(pfr_cfg)
@@ -251,39 +254,49 @@ def test_set_config_rev_latest(data_dir: str) -> None:
 
 
 def test_json_yml_configs(data_dir: str) -> None:
-    """Verify configuration equivalence between JSON and YAML formats.
+    """```
 
+    Verify configuration equivalence between JSON and YAML formats.
     Tests that configurations loaded from equivalent JSON and YAML files
-    produce identical CMPA configuration objects.
+    produce identical CMPA configuration objects. Validates both diff and
+    non-diff configuration outputs for consistency.
 
     :param data_dir: Path to test data directory containing configuration files
+    :raises AssertionError: When JSON and YAML configurations produce different results
+    ```
     """
     cmpa_json = CMPA.load_from_config(Config.create_from_file(f"{data_dir}/cmpa_96mhz.json"))
     cmpa_yml = CMPA.load_from_config(Config.create_from_file(f"{data_dir}/cmpa_96mhz.yml"))
 
-    assert cmpa_yml.get_config(False) == cmpa_json.get_config(False)
-    assert cmpa_yml.get_config(True) == cmpa_json.get_config(True)
+    assert cmpa_yml.get_config(diff=False) == cmpa_json.get_config(diff=False)
+    assert cmpa_yml.get_config(diff=True) == cmpa_json.get_config(diff=True)
 
 
 def test_missing_rotkh() -> None:
-    """Verify proper error handling for missing Root of Trust Key Hash.
+    """```
 
+    Verify proper error handling for missing Root of Trust Key Hash.
     Tests that an appropriate exception is raised when trying to export
     CFPA data with invalid or missing keys for ROTKH generation.
 
+    :raises SPSDKPfrRotkhIsNotPresent: When CFPA export is called with invalid keys.
+    ```
     """
     cfpa = CFPA(FamilyRevision("lpc55s6x"))
     with pytest.raises(SPSDKPfrRotkhIsNotPresent):
-        cfpa.export(keys=["Invalid"])
+        cfpa.export(keys=["Invalid"])  # type: ignore
 
 
 def test_lpc55s3x_load_yml_without_change(data_dir: str) -> None:
-    """Verify LPC55S3x CFPA loading without configuration changes.
+    """```
 
+    Verify LPC55S3x CFPA loading without configuration changes.
     Tests that CFPA data for LPC55S3x can be loaded from YAML configuration
-    without changes and correctly computes antipole values.
+    without changes and correctly computes antipole values. Validates that
+    the exported binary data matches the expected reference file.
 
     :param data_dir: Path to test data directory containing configuration files
+    ```
     """
     cfpa = CFPA.load_from_config(Config.create_from_file(f"{data_dir}/cfpa_no_change.yml"))
     data = cfpa.export()
@@ -299,7 +312,7 @@ def test_lpc55s3x_binary_ec256(data_dir: str) -> None:
     Tests CMPA binary generation and ROTKH computation for LPC55S3x using
     ECC256 keys, verifying the output matches expected binary data.
 
-    :param data_dir: Path to test data directory containing key files and reference binary
+    :param data_dir: Path to test data directory containing key files and reference binary.
     """
     cmpa = CMPA(FamilyRevision("lpc55s3x"))
     keys_path = [
@@ -317,12 +330,14 @@ def test_lpc55s3x_binary_ec256(data_dir: str) -> None:
 
 
 def test_lpc55s3x_binary_ec384(data_dir: str) -> None:
-    """Verify CMPA binary generation with ECC384 keys for LPC55S3x.
+    """```
 
+    Verify CMPA binary generation with ECC384 keys for LPC55S3x.
     Tests CMPA binary generation and ROTKH computation for LPC55S3x using
     ECC384 keys, verifying the output matches expected binary data.
 
-    :param data_dir: Path to test data directory containing key files and reference binary
+    :param data_dir: Path to test data directory containing key files and reference binary.
+    ```
     """
     cmpa = CMPA(FamilyRevision("lpc55s3x"))
     keys_path = [
@@ -345,7 +360,8 @@ def test_invalid_key_size(data_dir: str) -> None:
     Tests that an appropriate exception is raised when trying to use
     keys with unsupported sizes for ROTKH computation.
 
-    :param data_dir: Path to test data directory containing key files
+    :param data_dir: Path to test data directory containing key files.
+    :raises SPSDKError: When keys with unsupported sizes are used for ROTKH computation.
     """
     cfpa = CMPA(FamilyRevision("lpc55s6x"))
     keys_path = [
@@ -360,11 +376,12 @@ def test_invalid_key_size(data_dir: str) -> None:
 
 
 def test_base_config_area_invalid_device_revision() -> None:
-    """Verify error handling for invalid device family and revision.
+    """Test error handling for invalid device family and revision in BaseConfigArea.
 
-    Tests that appropriate exceptions are raised when attempting to use
-    non-existent device families or unsupported revisions.
+    Verifies that appropriate SPSDKError exceptions are raised when attempting to create
+    BaseConfigArea instances with non-existent device families or unsupported device revisions.
 
+    :raises SPSDKError: When device family doesn't exist in database or revision is not supported.
     """
     with pytest.raises(
         SPSDKError, match="Cannot load the device 'bb' - Doesn't exists in database."
@@ -380,7 +397,7 @@ def get_mcxa_families() -> list[str]:
     Identifies all supported device families that start with 'mcxa' from
     the complete list of supported CMPA families.
 
-    :return: List of MCXA family device names supported for CMPA operations
+    :return: List of MCXA family device names supported for CMPA operations.
     """
     all_families = CMPA.get_supported_families()
     mcxa_families = [family.name for family in all_families if family.name.startswith("mcxa")]
@@ -394,17 +411,21 @@ def test_rop_state_reset_value_mcxa1x(cpu_name: str, reset_value: int = 0xFFFF_F
     Verifies that both ROP_STATE and ROP_STATE_DP register fields in CMPA
     have the expected reset value of 0xFFFFFFFF for all MCXA1x series devices.
 
-    :param cpu_name: Name of the CPU/device to test
-    :param reset_value: Expected reset value for the registers
-    :return: None
+    :param cpu_name: Name of the CPU/device to test.
+    :param reset_value: Expected reset value for the registers, defaults to 0xFFFFFFFF.
     """
     cmpa = CMPA(FamilyRevision(cpu_name))
     assert cmpa.registers.find_reg("ROP_STATE").get_reset_value() == reset_value
     assert cmpa.registers.find_reg("ROP_STATE_DP").get_reset_value() == reset_value
 
 
-def test_additional_data_setter_success():
-    """Test that additional_data setter works correctly when configuration allows it."""
+def test_additional_data_setter_success() -> None:
+    """Test that additional_data setter works correctly when configuration allows it.
+
+    This test verifies that the CMPA additional_data setter successfully accepts and stores
+    data when the additional_data_cfg is configured with enabled=True. It mocks the
+    configuration to allow additional data and confirms the setter operates without errors.
+    """
     # Use patch as a context manager instead of a fixture
     with patch.object(CMPA, "additional_data_cfg") as mock_cfg:
         # Mock the additional_data_cfg to return a configuration that allows additional data
@@ -418,8 +439,16 @@ def test_additional_data_setter_success():
         assert cmpa._additional_data == test_data
 
 
-def test_additional_data_setter_disabled():
-    """Test that additional_data setter raises error when additional data is disabled."""
+def test_additional_data_setter_disabled() -> None:
+    """Test that additional_data setter raises error when additional data is disabled.
+
+    This test verifies that attempting to set additional data on a CMPA instance
+    raises SPSDKPfrError when the family configuration has additional data disabled.
+    The test mocks the additional_data_cfg to return a configuration with enabled=False
+    and verifies the appropriate exception is raised with the expected error message.
+
+    :raises SPSDKPfrError: When attempting to set additional data on disabled configuration.
+    """
     with patch.object(CMPA, "additional_data_cfg") as mock_cfg:
         # Mock the additional_data_cfg to return a configuration that disables additional data
         mock_cfg.return_value = AdditionalDataCfg(enabled=False, offset=-1, max_size=0)
@@ -432,8 +461,15 @@ def test_additional_data_setter_disabled():
             cmpa.additional_data = test_data
 
 
-def test_additional_data_setter_size_exceeded():
-    """Test that additional_data setter raises error when data size exceeds maximum."""
+def test_additional_data_setter_size_exceeded() -> None:
+    """Test that additional_data setter raises error when data size exceeds maximum.
+
+    This test verifies that the CMPA additional_data setter properly validates
+    the size of input data against the maximum allowed size and raises an
+    appropriate SPSDKPfrError when the data exceeds the limit.
+
+    :raises SPSDKPfrError: When additional data size exceeds the configured maximum size.
+    """
     with patch.object(CMPA, "additional_data_cfg") as mock_cfg:
         # Mock the additional_data_cfg to return a configuration with small max size
         mock_cfg.return_value = AdditionalDataCfg(enabled=True, offset=512, max_size=2)
@@ -446,8 +482,16 @@ def test_additional_data_setter_size_exceeded():
             cmpa.additional_data = test_data
 
 
-def test_additional_data_cfg():
-    """Test that additional_data_cfg returns correct configuration from database."""
+def test_additional_data_cfg() -> None:
+    """Test that additional_data_cfg returns correct configuration from database.
+
+    This test verifies that the CMPA.additional_data_cfg method properly retrieves
+    and returns the additional data configuration for a given family from the database.
+    It checks that the returned object is of the correct type and contains the expected
+    attributes.
+
+    :raises AssertionError: If the configuration object is not of expected type or missing required attributes.
+    """
     # Test with a family that has additional data configuration in the database
     family = FamilyRevision("lpc55s6x")
     cfg = CMPA.additional_data_cfg(family)
@@ -460,8 +504,16 @@ def test_additional_data_cfg():
     assert hasattr(cfg, "max_size")
 
 
-def test_export_with_additional_data():
-    """Test that export correctly includes additional data in the binary output."""
+def test_export_with_additional_data() -> None:
+    """Test that export correctly includes additional data in the binary output.
+
+    This test verifies that when a CMPA object has additional data configured,
+    the export method properly includes that data in the generated binary output.
+    The test mocks the additional data configuration and validates both the
+    content placement and total binary size calculations.
+
+    :raises AssertionError: If additional data is not properly included in binary output.
+    """
     # This test requires mocking or using a family that supports additional data
     with patch.object(CMPA, "additional_data_cfg") as mock_cfg:
         mock_cfg.return_value = AdditionalDataCfg(enabled=True, offset=-1, max_size=16)
@@ -482,8 +534,16 @@ def test_export_with_additional_data():
         assert cmpa.binary_size == cmpa.registers_size + len(test_data)
 
 
-def test_parse_with_additional_data():
-    """Test that parse correctly extracts additional data from binary."""
+def test_parse_with_additional_data() -> None:
+    """Test that CMPA parse method correctly extracts additional data from binary.
+
+    This test verifies the round-trip functionality of CMPA additional data handling:
+    1. Creates a CMPA instance with mock additional data configuration
+    2. Sets test data as additional data
+    3. Exports the CMPA to binary format
+    4. Parses the binary back to a new CMPA instance
+    5. Verifies that the additional data was preserved correctly during the parse operation
+    """
     # Create a binary with additional data
     with patch.object(CMPA, "additional_data_cfg") as mock_cfg:
         mock_cfg.return_value = AdditionalDataCfg(enabled=True, offset=-1, max_size=16)
@@ -503,8 +563,15 @@ def test_parse_with_additional_data():
         assert parsed_cmpa.additional_data == test_data
 
 
-def test_get_config_with_additional_data():
-    """Test that get_config includes additional data in the configuration."""
+def test_get_config_with_additional_data() -> None:
+    """Test that get_config method includes additional data in the configuration.
+
+    This test verifies that when a CMPA object has additional data set,
+    the get_config method properly includes this data in the returned
+    configuration dictionary with the correct hexadecimal formatting.
+
+    :raises AssertionError: If additional data is not properly included in config or formatting is incorrect.
+    """
     with patch.object(CMPA, "additional_data_cfg") as mock_cfg:
         mock_cfg.return_value = AdditionalDataCfg(enabled=True, offset=-1, max_size=16)
 

@@ -1,7 +1,6 @@
 lpcprog
 ====================================
-
-This module contains support for programming LPC devices.
+.. automodule:: spsdk.lpcprog
 
 Module representing communication interface
 ----------------------------------------------------------

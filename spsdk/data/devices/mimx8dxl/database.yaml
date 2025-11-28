@@ -57,22 +57,27 @@ features:
     # AHAB extra images
     ddr_alignments: [0x8000, 0x4000, 0x8000, 0]
     ddr_fw_alignment: 0x4
+    ddr_image_size_alignment: 0x400
 
     spl_ddr_load_address: 0x80000000
     spl_ddr_core_id: cortex-a35
     spl_ddr_meta_data_start_cpu_id: 2
+    spl_ddr_image_size_alignment: 0x400
 
     atf_load_address: 0x80000000
     atf_core_id: cortex-a35
     atf_meta_data_start_cpu_id: 2
+    atf_image_size_alignment: 0x400
 
     uboot_load_address: 0x80020000
     uboot_core_id: cortex-a35
     uboot_meta_data_start_cpu_id: 2
+    uboot_image_size_alignment: 0x400
 
     tee_load_address: 0x96000000
     tee_core_id: cortex-a35
     tee_meta_data_start_cpu_id: 2
+    tee_image_size_alignment: 0x400
 
     extra_images: ["spl_ddr", "atf", "uboot", "tee"]
 

@@ -4,7 +4,12 @@
 # Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Implementation of AHAB container Signature certificate support."""
+"""SPSDK AHAB container certificate management utilities.
+
+This module provides functionality for handling AHAB (Advanced High Assurance Boot)
+certificates used in NXP secure boot process. It supports both standard and
+post-quantum cryptography certificates for container signature verification.
+"""
 
 import logging
 import os
@@ -46,12 +51,14 @@ logger = logging.getLogger(__name__)
 
 
 def get_key_by_val(dictionary: dict, val: Any) -> Any:
-    """Get Dictionary key by its value or default.
+    """Get dictionary key by its value.
+
+    Searches through the dictionary to find the key that corresponds to the given value.
 
     :param dictionary: Dictionary to search in.
-    :param val: Value to search
-    :raises SPSDKValueError: In case that dictionary doesn't contains the value.
-    :return: Key.
+    :param val: Value to search for.
+    :raises SPSDKValueError: In case that dictionary doesn't contain the value.
+    :return: Key corresponding to the given value.
     """
     for key, value in dictionary.items():
         if value == val:
@@ -62,10 +69,14 @@ def get_key_by_val(dictionary: dict, val: Any) -> Any:
 
 
 class AhabCertificate(FeatureBaseClass, HeaderContainer):
-    """Represents certificate in the AHAB container as part of the signature block.
+    """AHAB Certificate representation for secure boot containers.
 
-    The Certificate comes in two forms - with and without UUID.
-
+    Represents a certificate structure used within AHAB (Advanced High Assurance Boot)
+    containers as part of the signature block. The certificate manages cryptographic
+    validation and permission settings for secure boot operations.
+    The certificate supports two variants: with and without UUID identification.
+    It contains permission data, SRK (Super Root Key) records, signatures, and
+    metadata required for secure boot validation.
     Certificate format::
 
         +-----+--------------+--------------+----------------+----------------+
@@ -94,6 +105,8 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         |...  |                        Signature 1                            |
         +-----+---------------------------------------------------------------+
 
+    :cvar PERM_NXP: NXP-specific permission flags for certificate validation.
+    :cvar PERM_OEM: OEM-specific permission flags for certificate validation.
     """
 
     FEATURE = DatabaseManager.AHAB
@@ -143,19 +156,20 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         public_key_1: Optional[SRKRecordV2] = None,
         signature_provider_1: Optional[SignatureProvider] = None,
     ):
-        """Class object initializer.
+        """Initialize AHAB certificate container.
 
-        :param family: Family of the chip.
-        :param permissions: used to indicate what a certificate can be used for.
-        :param permissions_data: Complementary information for debug auth feature.
-        :param fuse_version: Version of certificate
-        :param uuid: 128-bit unique identifier.
-        :param public_key_0: public Key. SRK record entry describing the key. SET 1.
-        :param signature_provider_0: Signature provider for certificate. Signature is calculated over
-            all data from beginning of the certificate up to, but not including the signature.  SET 1.
-        :param public_key_1: public Key. SRK record entry describing the key. SET 2.
-        :param signature_provider_1: Signature provider for certificate. Signature is calculated over
-            all data from beginning of the certificate up to, but not including the signature.  SET 2.
+        Creates a new AHAB certificate with specified family, permissions, and cryptographic
+        components for secure boot authentication.
+
+        :param family: Target chip family and revision.
+        :param permissions: Certificate usage permissions flags, defaults to 0.
+        :param permissions_data: Additional data for debug authentication features.
+        :param fuse_version: Certificate version number, defaults to 0.
+        :param uuid: 128-bit unique identifier, auto-generated if not provided.
+        :param public_key_0: Primary SRK record entry describing the public key.
+        :param signature_provider_0: Primary signature provider for certificate signing.
+        :param public_key_1: Secondary SRK record entry describing the public key.
+        :param signature_provider_1: Secondary signature provider for certificate signing.
         """
         super().__init__(tag=self.TAG, length=-1, version=self.VERSION)
         self.family = family
@@ -176,6 +190,14 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         )
 
     def __eq__(self, other: object) -> bool:
+        """Check equality of AHAB certificate objects.
+
+        Compares all certificate attributes including permissions, permission data, signature offset,
+        UUID, public keys, and signatures to determine if two certificate objects are identical.
+
+        :param other: Object to compare with this certificate instance.
+        :return: True if certificates are equal, False otherwise.
+        """
         if isinstance(other, self.__class__):
             if (
                 super().__eq__(other)  # pylint: disable=too-many-boolean-expressions
@@ -193,9 +215,20 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         return False
 
     def __repr__(self) -> str:
+        """Return string representation of AHAB Certificate.
+
+        :return: String representation of the certificate.
+        """
         return "AHAB Certificate"
 
     def __str__(self) -> str:
+        """Return string representation of AHAB Certificate.
+
+        Provides a formatted string containing all certificate details including permissions,
+        permission data, fuse version, UUID, public keys, and signatures.
+
+        :return: Formatted string with certificate information.
+        """
         return (
             "AHAB Certificate:\n"
             f"  Permission:         {hex(self._permissions)}\n"
@@ -210,7 +243,14 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
 
     @classmethod
     def format(cls) -> str:
-        """Format of binary representation."""
+        """Get format string for binary representation of the certificate.
+
+        This method returns a format string that defines the structure of the binary
+        representation, including endianness, header fields, signature offset,
+        permissions, UUID, and other certificate-specific data fields.
+
+        :return: Format string compatible with struct module for binary packing/unpacking.
+        """
         return (
             super().format()  # endianness, header: version, length, tag
             + UINT16  # signature offset
@@ -225,6 +265,10 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
 
     def __len__(self) -> int:
         """Calculate the total length of the certificate.
+
+        The method computes the combined length of all certificate components including
+        public keys, SRK data, and signatures. For certificates with dual keys, both
+        key pairs are included in the calculation.
 
         :raises SPSDKValueError: When certificate is not properly initialized.
         :return: Total length of the certificate in bytes.
@@ -246,8 +290,12 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
     def create_permissions(cls, permissions: list[str]) -> int:
         """Create integer representation of permission field.
 
-        :param permissions: List of string permissions.
-        :return: Integer representation of permissions.
+        The method combines NXP and OEM permission mappings to convert a list of
+        permission strings into their corresponding integer bitmask representation.
+
+        :param permissions: List of string permissions to be converted.
+        :raises KeyError: Invalid permission string not found in permission mappings.
+        :return: Integer representation of combined permissions as bitmask.
         """
         ret = 0
         permission_map = {}
@@ -262,6 +310,9 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
     def permission_to_sign_container(self) -> bool:
         """Check if certificate has permission to sign container.
 
+        This method verifies whether the certificate contains the necessary permissions
+        to sign a container by checking the container permission bit in the permissions field.
+
         :return: True if certificate has permission to sign container, False otherwise.
         """
         return bool(self._permissions & self.PERM_OEM["container"])
@@ -269,8 +320,11 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
     def create_config_permissions(self, srk_set: FlagsSrkSet) -> list[str]:
         """Create list of string representation of permission field.
 
-        :param srk_set: SRK set to get proper string values.
-        :return: List of string representation of permissions.
+        The method iterates through permission bits and converts them to human-readable
+        string representations using the appropriate permission mapping based on the SRK set type.
+
+        :param srk_set: SRK set type to determine correct permission mapping (NXP or OEM).
+        :return: List of string representations of active permissions.
         """
         ret = []
         perm_map = self.PERM_NXP if srk_set == FlagsSrkSet.NXP else self.PERM_OEM
@@ -287,7 +341,13 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
 
     @property
     def _cert_data_to_sign(self) -> bytes:
-        """Internal method to prepare certificate data for signing."""
+        """Prepare certificate data for signing.
+
+        This internal method serializes the certificate fields into a binary format
+        that can be used for cryptographic signing operations.
+
+        :return: Binary representation of certificate data ready for signing.
+        """
         return pack(
             self.format(),
             self.version,
@@ -304,10 +364,12 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         )
 
     def get_signature_data(self) -> bytes:
-        """Return binary data to be signed.
+        """Get binary data to be signed.
 
         The certificate block must be properly initialized, so the data are valid for
-        signing. There is signed whole certificate block without signature part.
+        signing. The method returns the whole certificate block without signature part,
+        including public key data and SRK data for both primary and optional secondary
+        public keys.
 
         :raises SPSDKValueError: If Signature Block or SRK Table is missing.
         :return: Bytes representing data to be signed.
@@ -325,7 +387,15 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         return cert_data_to_sign
 
     def update_fields(self) -> None:
-        """Update all fields depending on input values."""
+        """Update all fields that depend on input values.
+
+        This method recalculates the certificate length, signature offset, and updates
+        all public keys and their associated data. It also generates and applies
+        signatures for the certificate data.
+
+        :raises AssertionError: If public_key_0 is not SRKRecordV2 or its srk_data is not SRKData.
+        :raises AssertionError: If public_key_1 exists but its srk_data is not SRKData.
+        """
         assert isinstance(self.public_key_0, SRKRecordV2)
         assert isinstance(self.public_key_0.srk_data, SRKData)
         self.public_key_0.update_fields()
@@ -346,7 +416,12 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
     def export(self) -> bytes:
         """Export container certificate object into bytes.
 
-        :return: Bytes representing container content.
+        The method combines signature data with exported signatures to create
+        the complete certificate binary representation. Validates that the
+        computed length matches the expected certificate length.
+
+        :raises SPSDKValueError: When certificate length doesn't match computed length.
+        :return: Bytes representing container certificate content.
         """
         cert = self.get_signature_data()
         cert += self.signature_0.export()
@@ -361,8 +436,12 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
     def verify(self, srk: Optional[SRKTableArray] = None) -> Verifier:
         """Verify container certificate data.
 
-        :param srk: SRK table to allow verify also signature of certificate.
-        :return: Verifier object with verification results.
+        Performs comprehensive verification of the certificate including header validation,
+        permissions, fuse version, UUID, public keys, signature offsets, and optionally
+        signature verification when SRK table is provided.
+
+        :param srk: SRK table to allow verification of certificate signature.
+        :return: Verifier object with detailed verification results.
         """
         ret = Verifier("Certificate", description="")
         ret.add_child(self.verify_parsed_header())
@@ -434,6 +513,16 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
             srk_table_cnt = srk.srk_count
 
             def check_key_type(ix: int, srk_key: SRKRecordV2, key: Optional[SRKRecordV2]) -> None:
+                """Validate SRK key type compatibility with certificate key.
+
+                Compares the signing algorithm, hash algorithm, key size, and SRK flags between
+                the SRK record and certificate key to ensure compatibility. Creates verification
+                records for each comparison and adds them to the public key types verifier.
+
+                :param ix: Index of the public key being validated.
+                :param srk_key: SRK record containing the reference key parameters.
+                :param key: Certificate SRK record to validate against reference, None if not present.
+                """
                 pub_key_ver = Verifier(f"Public key {ix}")
                 if key is None:
                     pub_key_ver.add_record("Presence", VerifierResult.ERROR, "Is not present")
@@ -478,6 +567,15 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
 
             # Verify Signature
             def check_signature(ix: int, signature: Optional[ContainerSignature]) -> None:
+                """Verify signature against SRK table record.
+
+                Validates a container signature using the corresponding SRK (Super Root Key) table record
+                and adds verification results to the signatures verifier.
+
+                :param ix: Index of the signature and SRK table to use for verification.
+                :param signature: Container signature to verify, None if signature is missing.
+                :raises AssertionError: If srk is not an instance of SRKTableArray.
+                """
                 assert isinstance(srk, SRKTableArray)
                 srk_public_key = srk._srk_tables[ix].srk_records[used_srk_id].get_public_key()
                 srk_hash = EnumHashAlgorithm.from_label(
@@ -535,15 +633,16 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
     def _parse_header(cls, data: bytes) -> tuple[int, int, int, int, bytes, int, bytes]:
         """Parse the header of the certificate from binary data.
 
+        Extracts and returns key certificate header fields from the binary data using the
+        class format specification.
+
         :param data: Binary data containing the certificate header.
-        :return: Tuple containing:
-            - container_length: Total length of the certificate container
-            - signature_offset: Offset to the signature data
-            - inverted_permissions: Inverted permissions byte
-            - permissions: Permissions byte
-            - permission_data: Permission data bytes
-            - fuse_version: Fuse version value
-            - uuid: UUID bytes
+        :return: Tuple containing (container_length, signature_offset, inverted_permissions,
+            permissions, permission_data, fuse_version, uuid) where container_length is the
+            total certificate container length, signature_offset is offset to signature data,
+            inverted_permissions and permissions are permission bytes, permission_data contains
+            permission data bytes, fuse_version is the fuse version value, and uuid contains
+            UUID bytes.
         """
         (
             _,  # version
@@ -572,10 +671,14 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
     def parse(cls, data: bytes, family: Optional[FamilyRevision] = None) -> Self:
         """Parse input binary chunk to the container object.
 
+        The method parses binary data containing an AHAB certificate block and reconstructs
+        the certificate object with all its components including public keys, signatures,
+        and metadata.
+
         :param data: Binary data with Certificate block to parse.
         :param family: Family revision of the device.
-        :raises SPSDKValueError: Certificate permissions are invalid.
-        :raises SPSDKParsingError: Certificate parsing error.
+        :raises SPSDKValueError: Missing family parameter or invalid certificate permissions.
+        :raises SPSDKParsingError: Certificate parsing error or container length mismatch.
         :return: Object recreated from the binary data.
         """
         if family is None:
@@ -644,10 +747,14 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
     ) -> Config:
         """Create configuration of the AHAB Image Certificate.
 
+        The method generates a configuration dictionary containing all necessary parameters
+        for AHAB certificate creation, including public keys, permissions, and metadata.
+        Public key files are exported to the specified data path.
+
         :param data_path: Path to store the data files of configuration.
-        :param index: Container Index.
-        :param srk_set: SRK set to know how to create certificate permissions.
-        :return: Configuration dictionary.
+        :param index: Container index used for file naming.
+        :param srk_set: SRK set to determine certificate permissions.
+        :return: Configuration dictionary with certificate parameters.
         """
         ret_cfg = Config()
         ret_cfg["family"] = self.family.name
@@ -687,13 +794,14 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
 
     @classmethod
     def load_from_config(cls, config: Config) -> Self:
-        """Converts the configuration option into an AHAB image signature block certificate object.
+        """Create AHAB certificate from configuration.
 
-        "config" content of container configurations.
+        Converts the configuration options into an AHAB image signature block certificate object
+        by extracting family information, permissions, cryptographic keys, and signature providers.
 
-        :param config: array of AHAB containers configuration dictionaries.
-
-        :return: Certificate object.
+        :param config: Configuration object containing AHAB certificate settings including keys,
+            permissions, hash algorithms, and signature providers.
+        :return: AHAB certificate object configured with the specified parameters.
         """
         family = FamilyRevision.load_from_config(config)
 
@@ -758,24 +866,38 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Get list of validation schemas.
+        """Get list of validation schemas for AHAB certificate.
 
-        :param family: Family for which the validation schema should be generated.
-        :return: Validation list of schemas.
+        This method retrieves and configures validation schemas from the database manager,
+        including AHAB, certificate block, and general family schemas. It removes required
+        fields from the certificate block output schema and updates the family schema
+        with supported families.
+
+        :param family: Family revision for which the validation schema should be generated.
+        :return: List of validation schemas containing family, certificate block output,
+                 and AHAB certificate schemas.
         """
         sch = DatabaseManager().db.get_schema_file(DatabaseManager.AHAB)
+        sch_cfg = DatabaseManager().db.get_schema_file(DatabaseManager.CERT_BLOCK)
         sch_family = DatabaseManager().db.get_schema_file("general")["family"]
+        sch_cfg["cert_block_output"].pop("required")
         update_validation_schema_family(
             sch_family["properties"], cls.get_supported_families(), family
         )
-        return [sch_family, sch["ahab_certificate"]]
+        return [sch_family, sch_cfg["cert_block_output"], sch["ahab_certificate"]]
 
 
 class AhabCertificateMcuPqc(AhabCertificate):
-    """Represents certificate in the AHAB container as part of the signature block this version is for MCU PQC.
+    """AHAB Certificate for MCU Post-Quantum Cryptography.
 
-    The difference against the standard certificate is 32 bit width Fuse Version.
+    This class represents a specialized AHAB certificate variant designed for MCU
+    Post-Quantum Cryptography implementations. It extends the standard AHAB certificate
+    with a 32-bit fuse version field instead of the standard width, providing enhanced
+    security features for quantum-resistant cryptographic operations.
+    The certificate contains permission data, SRK records, signatures, and UUID
+    information formatted according to the AHAB container specification for MCU PQC.
 
+    :cvar FUSE_VERSION_BIT_SIZE: Bit width for fuse version field (32-bit for MCU PQC).
     Certificate format::
 
         +-----+--------------+--------------+----------------+----------------+
@@ -809,11 +931,22 @@ class AhabCertificateMcuPqc(AhabCertificate):
     FUSE_VERSION_BIT_SIZE = 32  # 32-bit width for Fuse Version in MCU PQC variant
 
     def __repr__(self) -> str:
+        """Return string representation of AHAB Certificate.
+
+        :return: String describing the certificate with its fuse version type.
+        """
         return "AHAB Certificate with 32-bit fuse version"
 
     @classmethod
     def format(cls) -> str:
-        """Format of binary representation."""
+        """Get the format string for binary representation of the certificate.
+
+        The format string defines the structure used for packing/unpacking the certificate
+        data including header container, signature offset, permissions, permission data,
+        fuse version, and UUID fields.
+
+        :return: Format string compatible with struct module for binary operations.
+        """
         return (
             HeaderContainer.format()  # endianness, header: version, length, tag
             + UINT16  # signature offset
@@ -826,7 +959,14 @@ class AhabCertificateMcuPqc(AhabCertificate):
 
     @property
     def _cert_data_to_sign(self) -> bytes:
-        """Internal method to prepare certificate data for signing."""
+        """Prepare certificate data for signing.
+
+        This internal method serializes the certificate fields into a binary format
+        that can be used for cryptographic signing operations. The data includes
+        version, length, tag, permissions, fuse version, and UUID fields.
+
+        :return: Binary representation of certificate data ready for signing.
+        """
         return pack(
             self.format(),
             self.version,
@@ -843,6 +983,9 @@ class AhabCertificateMcuPqc(AhabCertificate):
     @classmethod
     def _parse_header(cls, data: bytes) -> tuple[int, int, int, int, bytes, int, bytes]:
         """Parse the header of the certificate from binary data.
+
+        Extracts and returns key certificate header fields from the provided binary data using
+        the class format specification.
 
         :param data: Binary data containing the certificate header.
         :return: Tuple containing:
@@ -879,8 +1022,12 @@ class AhabCertificateMcuPqc(AhabCertificate):
 def get_ahab_certificate_class(family: FamilyRevision) -> Type[AhabCertificate]:
     """Get the appropriate AHAB certificate class based on the MCU family revision.
 
-    :param family: MCU family revision
-    :return: Appropriate AHAB certificate class
+    This method retrieves the certificate type from the database for the given family
+    and returns the corresponding AHAB certificate class implementation.
+
+    :param family: MCU family revision to determine certificate type.
+    :raises KeyError: If certificate type from database is not supported.
+    :return: Appropriate AHAB certificate class for the specified family.
     """
     certificate_classes = {"standard": AhabCertificate, "32bit_fuse_version": AhabCertificateMcuPqc}
     certificate_type = get_db(family).get_str(DatabaseManager.AHAB, "certificate_type", "standard")

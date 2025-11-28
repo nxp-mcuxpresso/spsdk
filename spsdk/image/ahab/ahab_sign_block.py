@@ -4,7 +4,12 @@
 # Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Implementation of AHAB container signature block support."""
+"""SPSDK AHAB container signature block implementation.
+
+This module provides classes and functionality for creating, parsing, and managing
+signature blocks used in AHAB (Advanced High Assurance Boot) containers. It supports
+both standard and version 2 signature block formats for secure boot operations.
+"""
 
 
 import logging
@@ -43,9 +48,17 @@ logger = logging.getLogger(__name__)
 
 
 class SignatureBlock(HeaderContainer):
-    """Class representing signature block in the AHAB container.
+    """AHAB signature block container for secure boot authentication.
 
-    Signature Block::
+    This class represents and manages the signature block structure within AHAB
+    (Advanced High Assurance Boot) containers. The signature block contains
+    cryptographic elements including SRK table, signatures, certificates, and
+    optional blob data with proper 64-bit alignment and offset management.
+    The signature block structure includes fixed header fields (tag, length,
+    version) followed by offset pointers to variable-length cryptographic
+    components that are padded for proper memory alignment.
+
+        Signature Block::
 
         +---------------+----------------+----------------+----------------+-----+
         |    Byte 3     |     Byte 2     |      Byte 1    |     Byte 0     | Fix |
@@ -73,6 +86,9 @@ class SignatureBlock(HeaderContainer):
         |                              Blob                                |     |
         +------------------------------------------------------------------+-----+
 
+    :cvar TAG: AHAB signature block identifier tag
+    :cvar VERSION: Supported signature block format version
+    :cvar SUPPORTED_SIGNATURES_CNT: Maximum number of supported signatures
     """
 
     TAG = AHABTags.SIGNATURE_BLOCK.tag
@@ -95,13 +111,16 @@ class SignatureBlock(HeaderContainer):
         certificate: Optional[AhabCertificate] = None,
         blob: Optional[AhabBlob] = None,
     ):
-        """Initialize the signature block object.
+        """Initialize the AHAB signature block object.
+
+        Creates a new signature block with the specified chip configuration and optional
+        cryptographic components for AHAB container signing.
 
         :param chip_config: AHAB container chip configuration.
-        :param srk_assets: SRK table.
-        :param container_signature: Container signature.
-        :param certificate: Container certificate.
-        :param blob: Container blob.
+        :param srk_assets: Optional SRK (Super Root Key) table for key management.
+        :param container_signature: Optional container signature data.
+        :param certificate: Optional AHAB certificate for authentication.
+        :param blob: Optional AHAB blob containing additional data.
         """
         super().__init__(tag=self.TAG, length=-1, version=self.VERSION)
         self._srk_assets_offset = 0
@@ -117,8 +136,11 @@ class SignatureBlock(HeaderContainer):
     def __eq__(self, other: object) -> bool:
         """Compare for equality with other Signature Block objects.
 
-        :param other: Object to compare with.
-        :return: True on match, False otherwise.
+        Compares all signature block attributes including offsets, SRK assets, signature,
+        certificate, and blob data to determine equality.
+
+        :param other: Object to compare with this signature block.
+        :return: True if objects are equal, False otherwise.
         """
         if isinstance(other, SignatureBlock):
             if (
@@ -139,6 +161,9 @@ class SignatureBlock(HeaderContainer):
     def __len__(self) -> int:
         """Get the length of the signature block.
 
+        The method automatically updates internal fields if the current length is invalid
+        to ensure accurate length calculation.
+
         :return: Length of the signature block in bytes.
         """
         if self.length <= 0:
@@ -146,16 +171,19 @@ class SignatureBlock(HeaderContainer):
         return self.length
 
     def __repr__(self) -> str:
-        """Get the string representation of the object.
+        """Get the string representation of the AHAB signature block.
 
-        :return: String representation.
+        :return: String representation of the AHAB signature block.
         """
         return "AHAB Signature Block"
 
     def __str__(self) -> str:
-        """Get the readable string representation of the object.
+        """Get the readable string representation of the AHAB signature block.
 
-        :return: Readable string representation.
+        Returns a formatted string showing the presence of SRK table, certificate,
+        signature, and blob components in the AHAB signature block.
+
+        :return: Formatted string representation of the signature block components.
         """
         return (
             "AHAB Signature Block:\n"
@@ -169,7 +197,11 @@ class SignatureBlock(HeaderContainer):
     def format(cls) -> str:
         """Get the format of binary representation.
 
-        :return: Format string for struct operations.
+        Returns the struct format string that defines the binary layout of the sign block,
+        including certificate offset, SRK table offset, signature offset, blob offset,
+        and key identifier fields.
+
+        :return: Format string for struct operations containing the complete binary layout.
         """
         return (
             super().format()
@@ -181,7 +213,13 @@ class SignatureBlock(HeaderContainer):
         )
 
     def update_fields(self) -> None:
-        """Update all fields dependent on input values."""
+        """Update all fields dependent on input values.
+
+        This method recalculates and updates the internal field offsets and lengths for all components
+        of the AHAB signature block including SRK assets, signature, certificate, and blob. Each
+        component is aligned according to CONTAINER_ALIGNMENT requirements and the total signature
+        block length is updated accordingly.
+        """
         # 1: Update SRK Table
         # Nothing to do with SRK Table
         last_offset = 0
@@ -228,6 +266,10 @@ class SignatureBlock(HeaderContainer):
     def sign_itself(self, data_to_sign: bytes) -> None:
         """Sign the container with provided data.
 
+        This method performs the actual signing operation on the container using the
+        provided data. It requires a signature container to be present and only
+        processes SRK_TABLE signature types.
+
         :param data_to_sign: Data to be signed.
         :raises SPSDKError: When signature container is missing.
         """
@@ -238,6 +280,10 @@ class SignatureBlock(HeaderContainer):
 
     def export(self) -> bytes:
         """Export signature block as binary data.
+
+        The method serializes the signature block into its binary representation by packing
+        the header and concatenating all components (SRK assets, signature, certificate, and blob)
+        at their respective offsets within the block.
 
         :return: Binary representation of the signature block.
         :raises SPSDKLengthError: If exported data length doesn't match container length.
@@ -278,7 +324,11 @@ class SignatureBlock(HeaderContainer):
     def verify(self) -> Verifier:
         """Verify container signature block data.
 
-        :return: Verifier object with verification results.
+        The method performs comprehensive validation of all signature block components including
+        SRK table, signature, certificate, and blob. It checks offsets, alignment, and validates
+        each component using their respective verification methods.
+
+        :return: Verifier object with verification results and detailed validation records.
         """
 
         def verify_block(
@@ -290,6 +340,19 @@ class SignatureBlock(HeaderContainer):
             offset: int,
             verify_data: Optional[Any] = None,
         ) -> Verifier:
+            """Verify AHAB container block consistency and validity.
+
+            Validates that a block object and its offset are properly defined and aligned.
+            Checks block existence, offset validity, alignment requirements, and performs
+            block-specific verification.
+
+            :param name: Name identifier for the verification record.
+            :param obj: Block object to verify (SRKTable, ContainerSignature, Certificate, etc.).
+            :param min_offset: Minimum allowed offset value for the block.
+            :param offset: Actual offset position of the block in container.
+            :param verify_data: Optional additional data needed for block verification.
+            :return: Verifier object containing validation results and error records.
+            """
             ver = Verifier(name)
             if bool(offset) != bool(obj):
                 if bool(offset):
@@ -357,11 +420,23 @@ class SignatureBlock(HeaderContainer):
     def verify_container_authenticity(self, data_to_sign: bytes) -> Verifier:
         """Verify container authenticity using signature verification.
 
-        :param data_to_sign: Data to verify signature against, provided by container.
-        :return: Verifier object with verification results.
+        This method performs comprehensive verification of the AHAB container's digital signature,
+        including SRK key validation, certificate checks, and signature authenticity verification.
+        It handles both standard SRK-based signing and Device HSM with CMAC scenarios.
+
+        :param data_to_sign: Binary data from container to verify signature against.
+        :return: Verifier object containing detailed verification results and status records.
         """
 
         def verify_signature() -> None:
+            """Verify the signature of the AHAB sign block.
+
+            Performs comprehensive signature verification including SRK table validation,
+            certificate checks, and signature data verification. Handles special cases
+            for DEVHSM with CMAC signature types where SRK assets are not required.
+
+            :raises SPSDKError: When signature verification fails or required components are missing.
+            """
             # Verify signature
             # Check if we're using DEVHSM with CMAC signature type
             is_devhsm = self.chip_config.srk_set == FlagsSrkSet.DEVHSM
@@ -484,8 +559,13 @@ class SignatureBlock(HeaderContainer):
     def parse(cls, data: bytes, chip_config: AhabChipContainerConfig) -> Self:  # type: ignore[override]
         """Parse input binary chunk to the container object.
 
+        The method validates the container header and extracts all signature block components
+        including SRK table, certificate, signature, and blob. Parsing errors for individual
+        components are handled gracefully with warnings.
+
         :param data: Binary data with Signature block to parse.
         :param chip_config: AHAB container chip configuration.
+        :raises SPSDKParsingError: Invalid container header format.
         :return: Object recreated from the binary data.
         """
         cls.check_container_head(data).validate()
@@ -547,10 +627,14 @@ class SignatureBlock(HeaderContainer):
 
     @classmethod
     def pre_parse_verify(cls, data: bytes) -> Verifier:
-        """Pre-Parse verify of AHAB Signature Block.
+        """Pre-parse and verify AHAB Signature Block structure.
 
-        :param data: Binary data with Signature block to pre-parse.
-        :return: Verifier of pre-parsed binary data.
+        Performs initial validation of the signature block header and verifies the alignment
+        and presence of various components including SRK table, certificates, signatures,
+        and blobs according to AHAB specification requirements.
+
+        :param data: Binary data containing the AHAB signature block to validate.
+        :return: Verifier object containing validation results and any detected issues.
         """
         ret = cls.check_container_head(data)
         if ret.has_errors:
@@ -610,13 +694,15 @@ class SignatureBlock(HeaderContainer):
 
     @classmethod
     def load_from_config(cls, config: Config, chip_config: AhabChipContainerConfig) -> Self:
-        """Converts the configuration option into an AHAB Signature block object.
+        """Load AHAB signature block from configuration.
 
-        "config" content of container configurations.
+        Creates an AHAB signature block object by parsing the provided configuration data,
+        including SRK table, container signature, certificate block, and DEK blob components.
 
-        :param config: array of AHAB signature block configuration dictionaries.
-        :param chip_config: AHAB container chip configuration.
-        :return: AHAB Signature block object.
+        :param config: Configuration containing AHAB signature block settings.
+        :param chip_config: AHAB container chip-specific configuration.
+        :raises SPSDKError: Invalid configuration or certificate loading failure.
+        :return: Configured AHAB signature block object.
         """
         signature_block = cls(chip_config=chip_config)
         # SRK Table
@@ -667,9 +753,12 @@ class SignatureBlock(HeaderContainer):
     def get_config(self, index: int, data_path: str) -> Config:
         """Create configuration of the AHAB Image.
 
-        :param index: Container index.
+        The method generates a configuration dictionary containing signing assets like SRK table,
+        certificate, and blob data. Configuration files are written to the specified data path.
+
+        :param index: Container index for configuration generation.
         :param data_path: Path to store the data files of configuration.
-        :return: Configuration dictionary.
+        :return: Configuration dictionary with signing components.
         """
         cfg = Config()
 
@@ -695,9 +784,13 @@ class SignatureBlock(HeaderContainer):
 
 
 class SignatureBlockV2(HeaderContainer):
-    """Class representing signature block in the AHAB container.
+    """AHAB Signature Block Version 2 container.
 
-    Signature Block::
+    This class represents a signature block within an AHAB (Advanced High Assurance Boot) container,
+    managing cryptographic signatures, certificates, SRK tables, and optional blob data for secure
+    boot verification.
+
+        Signature Block::
 
         +---------------+----------------+----------------+----------------+-----+
         |    Byte 3     |     Byte 2     |      Byte 1    |     Byte 0     | Fix |
@@ -719,6 +812,10 @@ class SignatureBlockV2(HeaderContainer):
         |                              Blob                                |     |
         +------------------------------------------------------------------+-----+
 
+    :cvar TAG: AHAB signature block tag identifier.
+    :cvar VERSION: Signature block format version (0x01).
+    :cvar SUPPORTED_SIGNATURES_CNT: Maximum number of supported signatures (2).
+    :cvar DIFF_ATTRIBUTES_OBJECTS: List of object attributes for comparison operations.
     """
 
     TAG = AHABTags.SIGNATURE_BLOCK.tag
@@ -742,15 +839,17 @@ class SignatureBlockV2(HeaderContainer):
         blob: Optional[AhabBlob] = None,
         container_signature_2: Optional[ContainerSignature] = None,
     ):
-        """Class object initializer.
+        """Initialize AHAB sign block with cryptographic components.
+
+        Creates a new AHAB (Advanced High Assurance Boot) sign block containing
+        the necessary cryptographic elements for secure boot authentication.
 
         :param chip_config: AHAB container chip configuration.
-        :param srk_assets: SRK table.
-        :param chip_config: AHAB container chip configuration.
-        :param container_signature: Container signature # 1.
-        :param certificate: container certificate.
-        :param blob: container blob.
-        :param container_signature_2: Container signature # 2, defaults to None
+        :param srk_assets: SRK (Super Root Key) table array, defaults to None.
+        :param container_signature: Container signature # 1, defaults to None.
+        :param certificate: Container certificate for authentication, defaults to None.
+        :param blob: Container blob data, defaults to None.
+        :param container_signature_2: Container signature # 2, defaults to None.
         """
         super().__init__(tag=self.TAG, length=-1, version=self.VERSION)
         self._srk_assets_offset = 0
@@ -765,10 +864,13 @@ class SignatureBlockV2(HeaderContainer):
         self.chip_config = chip_config
 
     def __eq__(self, other: object) -> bool:
-        """Compares for equality with other Signature Block objects.
+        """Compare equality with another Signature Block object.
 
-        :param other: object to compare with.
-        :return: True on match, False otherwise.
+        Performs deep comparison of all signature block attributes including offsets,
+        SRK assets, signatures, certificates, and blob data.
+
+        :param other: Object to compare with this signature block.
+        :return: True if objects are equal, False otherwise.
         """
         if isinstance(other, SignatureBlockV2):
             if (
@@ -788,14 +890,33 @@ class SignatureBlockV2(HeaderContainer):
         return False
 
     def __len__(self) -> int:
+        """Get the length of the AHAB sign block in bytes.
+
+        The method automatically updates internal fields if the current length
+        is invalid (less than or equal to zero) before returning the length.
+
+        :return: Length of the sign block in bytes.
+        """
         if self.length <= 0:
             self.update_fields()
         return self.length
 
     def __repr__(self) -> str:
+        """Return string representation of AHAB Signature Block V2.
+
+        :return: String identifier for the AHAB signature block version 2.
+        """
         return "AHAB Signature Block V2"
 
     def __str__(self) -> str:
+        """Get string representation of AHAB Signature Block.
+
+        Provides a formatted string showing the presence status of each component
+        in the signature block including SRK table array, certificate, signature,
+        and blob.
+
+        :return: Formatted string representation of the signature block components.
+        """
         return (
             "AHAB Signature Block:\n"
             f"  SRK Table Array:    {bool(self.srk_assets)}\n"
@@ -806,7 +927,13 @@ class SignatureBlockV2(HeaderContainer):
 
     @classmethod
     def format(cls) -> str:
-        """Format of binary representation."""
+        """Get the format string for binary representation of AHAB sign block.
+
+        The format string defines the structure of the binary data including certificate offset,
+        SRK table offset, signature offset, blob offset, and key identifier fields.
+
+        :return: Format string describing the binary layout of the sign block.
+        """
         return (
             super().format()
             + UINT16  # certificate offset
@@ -817,7 +944,13 @@ class SignatureBlockV2(HeaderContainer):
         )
 
     def update_fields(self) -> None:
-        """Update all fields depended on input values."""
+        """Update all fields dependent on input values.
+
+        This method recalculates and updates the offsets and length of all components
+        within the AHAB signature block including SRK assets, signatures, certificates,
+        and blobs. The components are positioned sequentially and their offsets are
+        updated accordingly.
+        """
         # 1: Update SRK Table
         # Nothing to do with SRK Table
         last_offset = 0
@@ -858,10 +991,13 @@ class SignatureBlockV2(HeaderContainer):
     def sign_itself(self, data_to_sign: bytes) -> None:
         """Sign the container with provided data.
 
-        Signs both the primary and secondary (PQC) signatures if applicable.
+        Signs both the primary and secondary signatures if applicable. The method handles
+        CMAC signature types by skipping the signing process. For dual SRK table setups,
+        both primary and secondary signatures are processed.
 
-        :param data_to_sign: Data to be signed.
-        :raises SPSDKError: When signature container or SRK table array is missing.
+        :param data_to_sign: Binary data that needs to be signed.
+        :raises SPSDKError: When signature container, SRK table array, or secondary
+            signature container is missing.
         """
         if not self.signature:
             raise SPSDKError("Cannot sign because the Signature container is missing.")
@@ -874,14 +1010,17 @@ class SignatureBlockV2(HeaderContainer):
         self.signature.sign(data_to_sign)
         if len(self.srk_assets._srk_tables) == 2:
             if not self.signature_2:
-                raise SPSDKError("Cannot sign because the Signature 2 (PQC) container is missing.")
+                raise SPSDKError("Cannot sign because the Signature 2 container is missing.")
             self.signature_2.sign(data_to_sign)
 
     def export(self) -> bytes:
-        """Export Signature block.
+        """Export Signature block to binary format.
 
-        :raises SPSDKLengthError: if exported data length doesn't match container length.
-        :return: bytes signature block content.
+        Serializes the signature block including all its components (SRK assets, signatures,
+        certificates, and blob) into a binary representation suitable for AHAB container.
+
+        :raises SPSDKLengthError: If exported data length doesn't match container length.
+        :return: Binary signature block content.
         """
         extended_header = pack(
             self.format(),
@@ -926,7 +1065,12 @@ class SignatureBlockV2(HeaderContainer):
     def verify(self) -> Verifier:
         """Verify container signature block data.
 
-        :return: Verifier object
+        Performs comprehensive validation of the signature block including header verification,
+        SRK table validation, signature checks, certificate verification, and blob validation.
+        The method validates offsets, block consistency, and ensures proper structure alignment.
+
+        :return: Verifier object containing detailed validation results for all signature block
+                 components.
         """
 
         def verify_block(
@@ -938,6 +1082,19 @@ class SignatureBlockV2(HeaderContainer):
             offset: int,
             verify_data: Optional[Any] = None,
         ) -> Verifier:
+            """Verify AHAB container signature block.
+
+            Validates the consistency between block object and its offset, checks offset bounds,
+            and performs block-specific verification.
+
+            :param name: Name identifier for the verification record.
+            :param obj: Block object to verify (SRKTable, SRKTableArray, ContainerSignature,
+                AhabCertificate, or AhabBlob), or None if block is not used.
+            :param min_offset: Minimum allowed offset value for the block.
+            :param offset: Actual offset of the block in container.
+            :param verify_data: Optional verification data passed to certificate verification.
+            :return: Verifier object containing validation results and child verifications.
+            """
             ver = Verifier(name)
             if bool(offset) != bool(obj):
                 if bool(offset):
@@ -989,22 +1146,22 @@ class SignatureBlockV2(HeaderContainer):
         if signature_cnt < 2:
             if self.signature_2:
                 target_ver.add_record(
-                    "PQC Signature",
+                    "Second Signature",
                     VerifierResult.ERROR,
                     "Should not be present, because is not mentioned in SRK Table Array",
                 )
             else:
                 target_ver.add_record(
-                    "PQC Signature",
+                    "Second Signature",
                     VerifierResult.SUCCEEDED,
                     "Not present, as SRK Table Array declare",
                 )
         else:
             if self.signature_2:
-                target_ver.add_child(self.signature_2.verify(), prefix_name="PQC Signature")
+                target_ver.add_child(self.signature_2.verify(), prefix_name="Second Signature")
                 min_offset += len(self.signature_2)
             else:
-                target_ver.add_record("PQC Signature", VerifierResult.ERROR, "Missing")
+                target_ver.add_record("Second Signature", VerifierResult.ERROR, "Missing")
 
         ret.add_child(
             verify_block(
@@ -1024,15 +1181,29 @@ class SignatureBlockV2(HeaderContainer):
         return ret
 
     def verify_container_authenticity(self, data_to_sign: bytes) -> Verifier:
-        """Verify container authenticity.
+        """Verify container authenticity using cryptographic signatures.
 
-        :param data_to_sign: Data to sign provided by container.
-        :return: Verifier object with result.
+        This method performs comprehensive verification of the container's authenticity by validating
+        signatures, certificates, and SRK (Super Root Key) tables. It handles both standard RSA/ECC
+        signatures and Device HSM CMAC signatures, checking for proper key usage, revocation status,
+        and signature validity.
+
+        :param data_to_sign: Binary data that was signed by the container.
+        :return: Verifier object containing detailed verification results and status.
         """
         # Define used_image_key at the beginning
         used_image_key = False
 
         def verify_signature(ix: int) -> Verifier:
+            """Verify signature for AHAB sign block at specified index.
+
+            Performs comprehensive signature verification including SRK table validation,
+            certificate checks, and actual signature verification. Handles special cases
+            for DEVHSM with CMAC signature types where SRK assets are not required.
+
+            :param ix: Index of the signature to verify (0 for primary, 1 for secondary)
+            :return: Verifier object containing verification results and status records
+            """
             # Verify signature
             ver_sign = Verifier(f"Signature #{ix}")
             signature_container = self.signature if ix == 0 else self.signature_2
@@ -1187,10 +1358,15 @@ class SignatureBlockV2(HeaderContainer):
     # pylint: disable=arguments-differ
     @classmethod
     def parse(cls, data: bytes, chip_config: AhabChipContainerConfig) -> Self:  # type: ignore[override]
-        """Parse input binary chunk to the container object.
+        """Parse input binary chunk to the AHAB signature block object.
+
+        The method parses binary data containing an AHAB signature block and reconstructs
+        the object with all its components including SRK assets, certificates, signatures,
+        and blob data. Parsing errors for individual components are handled gracefully.
 
         :param data: Binary data with Signature block to parse.
         :param chip_config: AHAB container chip configuration.
+        :raises SPSDKParsingError: When container header validation fails.
         :return: Object recreated from the binary data.
         """
         cls.check_container_head(data).validate()
@@ -1262,10 +1438,14 @@ class SignatureBlockV2(HeaderContainer):
 
     @classmethod
     def pre_parse_verify(cls, data: bytes) -> Verifier:
-        """Pre-Parse verify of AHAB Signature Block.
+        """Pre-parse and verify AHAB Signature Block structure.
 
-        :param data: Binary data with Signature block to pre-parse.
-        :return: Verifier of pre-parsed binary data.
+        Performs structural validation of the signature block including verification of SRK tables,
+        signatures, certificates, and blobs. Checks for consistency between components and validates
+        their presence according to AHAB specification requirements.
+
+        :param data: Binary data containing the AHAB signature block to pre-parse and verify.
+        :return: Verifier object containing validation results and any detected errors or warnings.
         """
         ret = cls.check_container_head(data)
         if ret.has_errors:
@@ -1302,7 +1482,7 @@ class SignatureBlockV2(HeaderContainer):
                     # Add to verifier second signature pre parse verifier
                     ret.add_child(
                         ContainerSignature.check_container_head(data[signature_offset + length :]),
-                        prefix_name="PQC Signature",
+                        prefix_name="Second Signature",
                     )
 
         elif signature_offset:
@@ -1321,13 +1501,15 @@ class SignatureBlockV2(HeaderContainer):
 
     @classmethod
     def load_from_config(cls, config: Config, chip_config: AhabChipContainerConfig) -> Self:
-        """Converts the configuration option into an AHAB Signature block object.
+        """Load AHAB signature block from configuration.
 
-        "config" content of container configurations.
+        Creates an AHAB signature block object from configuration data, including SRK table,
+        container signatures, certificate block, and DEK blob components.
 
-        :param config: array of AHAB signature block configuration dictionaries.
+        :param config: Configuration containing AHAB signature block settings.
         :param chip_config: AHAB container chip configuration.
-        :return: AHAB Signature block object.
+        :raises SPSDKError: When container signature configuration is invalid or SRK keys are not defined.
+        :return: AHAB signature block object.
         """
         signature_block = cls(chip_config=chip_config)
         # SRK Table Array
@@ -1390,9 +1572,12 @@ class SignatureBlockV2(HeaderContainer):
     def get_config(self, index: int, data_path: str) -> Config:
         """Create configuration of the AHAB Image.
 
-        :param index: Container index.
+        The method generates a configuration dictionary containing signer information, SRK table,
+        certificate, and blob data based on the available components in the sign block.
+
+        :param index: Container index used for configuration generation.
         :param data_path: Path to store the data files of configuration.
-        :return: Configuration dictionary.
+        :return: Configuration dictionary with AHAB image settings.
         """
         cfg = Config()
 

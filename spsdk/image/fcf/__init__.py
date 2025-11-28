@@ -5,4 +5,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""This module contains FCF (Flash Configuration Field) related code."""
+"""SPSDK Flash Configuration Field (FCF) utilities.
+
+This module provides functionality for handling Flash Configuration Field
+data structures used in NXP MCU boot process and flash memory configuration.
+"""

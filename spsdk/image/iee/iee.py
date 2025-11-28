@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""The module provides support for IEE (In-Line Encryption Engine)."""
+"""SPSDK IEE (In-Line Encryption Engine) support module.
+
+This module provides comprehensive functionality for handling IEE operations
+including key blob management, encryption attributes configuration, and IEE
+engine setup for NXP MCUs with in-line encryption capabilities.
+"""
 
 import logging
 import os
@@ -41,21 +46,38 @@ logger = logging.getLogger(__name__)
 
 
 class IeeKeyBlobLockAttributes(SpsdkEnum):
-    """IEE keyblob lock attributes."""
+    """IEE keyblob lock attributes enumeration.
+
+    This enumeration defines the available lock states for IEE (Inline Encryption Engine)
+    keyblob regions, controlling whether encryption regions are locked or unlocked.
+    """
 
     LOCK = (0x95, "LOCK")  #  IEE region lock.
     UNLOCK = (0x59, "UNLOCK")  #  IEE region unlock.
 
 
 class IeeKeyBlobKeyAttributes(SpsdkEnum):
-    """IEE keyblob key attributes."""
+    """IEE keyblob key attributes enumeration.
+
+    This enumeration defines the supported key attribute configurations for IEE
+    (Inline Encryption Engine) keyblob operations, specifying the encryption
+    algorithms and key sizes for CTR and XTS modes.
+
+    :cvar CTR128XTS256: AES 128-bit CTR mode with 256-bit XTS mode configuration.
+    :cvar CTR256XTS512: AES 256-bit CTR mode with 512-bit XTS mode configuration.
+    """
 
     CTR128XTS256 = (0x5A, "CTR128XTS256")  # AES 128 bits (CTR), 256 bits (XTS)
     CTR256XTS512 = (0xA5, "CTR256XTS512")  # AES 256 bits (CTR), 512 bits (XTS)
 
 
 class IeeKeyBlobModeAttributes(SpsdkEnum):
-    """IEE Keyblob mode attributes."""
+    """IEE Keyblob mode attributes enumeration.
+
+    Defines the available encryption modes for IEE (Inline Encryption Engine) keyblob operations,
+    including bypass mode and various AES encryption modes with different addressing and keystream
+    configurations.
+    """
 
     Bypass = (0x6A, "Bypass")  # AES encryption/decryption bypass
     AesXTS = (0xA6, "AesXTS")  # AES XTS mode
@@ -65,15 +87,26 @@ class IeeKeyBlobModeAttributes(SpsdkEnum):
 
 
 class IeeKeyBlobWritePmsnAttributes(SpsdkEnum):
-    """IEE keblob write permission attributes."""
+    """IEE key blob write permission attributes enumeration.
+
+    This enumeration defines the available write permission settings for IEE (Inline Encryption Engine)
+    key blobs in APC (Application Processing Core) context.
+
+    :cvar ENABLE: Enable write permission in APC IEE (0x99).
+    :cvar DISABLE: Disable write permission in APC IEE (0x11).
+    """
 
     ENABLE = (0x99, "ENABLE")  # Enable write permission in APC IEE
     DISABLE = (0x11, "DISABLE")  # Disable write permission in APC IEE
 
 
 class IeeKeyBlobAttribute:
-    """IEE Keyblob Attribute.
+    """IEE Keyblob Attribute configuration.
 
+    This class represents the attribute structure for IEE (Inline Encryption Engine) keyblob
+    configuration, managing lock control, key size, and AES mode settings. It provides
+    methods to determine encryption mode characteristics and key size requirements.
+    The class maps to the C structure:
     | typedef struct _iee_keyblob_attribute
     | {
     |     uint8_t lock;      #  IEE Region Lock control flag.
@@ -92,11 +125,14 @@ class IeeKeyBlobAttribute:
         key_attribute: IeeKeyBlobKeyAttributes,
         aes_mode: IeeKeyBlobModeAttributes,
     ) -> None:
-        """IEE keyblob constructor.
+        """Initialize IEE keyblob with security attributes.
 
-        :param lock: IeeKeyBlobLockAttributes
-        :param key_attribute: IeeKeyBlobKeyAttributes
-        :param aes_mode: IeeKeyBlobModeAttributes
+        Creates a new IEE (Inline Encryption Engine) keyblob instance with the specified
+        lock, key, and AES mode attributes for secure data encryption.
+
+        :param lock: Lock attributes controlling keyblob access permissions.
+        :param key_attribute: Key attributes defining encryption key properties.
+        :param aes_mode: AES mode attributes specifying encryption algorithm mode.
         """
         self.lock = lock
         self.key_attribute = key_attribute
@@ -104,9 +140,13 @@ class IeeKeyBlobAttribute:
 
     @property
     def ctr_mode(self) -> bool:
-        """Return true if AES mode is CTR.
+        """Check if AES mode is CTR (Counter) mode.
 
-        :return: True if AES-CTR, false otherwise
+        Determines whether the current AES mode configuration is set to any of the
+        Counter (CTR) mode variants including CTR with address, CTR without address,
+        or CTR keystream mode.
+
+        :return: True if AES mode is CTR variant, False otherwise.
         """
         if self.aes_mode in [
             IeeKeyBlobModeAttributes.AesCTRWAddress,
@@ -118,9 +158,12 @@ class IeeKeyBlobAttribute:
 
     @property
     def key1_size(self) -> int:
-        """Return IEE key size based on selected mode.
+        """Get IEE key1 size based on selected encryption mode.
 
-        :return: Key size in bytes
+        The key size depends on the key attribute configuration. For CTR128XTS256 mode,
+        a 16-byte key is used, while other modes require a 32-byte key.
+
+        :return: Key size in bytes.
         """
         if self.key_attribute == IeeKeyBlobKeyAttributes.CTR128XTS256:
             return 16
@@ -128,9 +171,12 @@ class IeeKeyBlobAttribute:
 
     @property
     def key2_size(self) -> int:
-        """Return IEE key size based on selected mode.
+        """Get IEE key2 size based on selected encryption mode.
 
-        :return: Key size in bytes
+        The method determines the appropriate key size by checking the key attribute
+        and CTR mode configuration to return the correct size for the second key.
+
+        :return: Key size in bytes (16 for CTR128XTS256 and CTR modes, 32 otherwise).
         """
         if self.key_attribute == IeeKeyBlobKeyAttributes.CTR128XTS256:
             return 16
@@ -141,13 +187,24 @@ class IeeKeyBlobAttribute:
     def export(self) -> bytes:
         """Export binary representation of KeyBlobAttribute.
 
-        :return: Exported binary data
+        The method packs the lock tag, key attribute tag, AES mode tag, and a reserved zero value
+        into a binary format using the predefined structure format.
+
+        :return: Exported binary data as bytes.
         """
         return pack(self._FORMAT, self.lock.tag, self.key_attribute.tag, self.aes_mode.tag, 0)
 
 
 class IeeKeyBlob:
-    """IEE KeyBlob.
+    """IEE KeyBlob representation for NXP MCU image encryption.
+
+    This class manages IEE (Inline Encryption Engine) key blob data structures
+    used for configuring encryption regions in NXP MCU images. It handles both
+    XTS-AES and AES-CTR encryption modes, providing functionality to encrypt
+    image data and manage encryption parameters.
+    The key blob contains encryption keys, region addresses, and configuration
+    attributes that define how the IEE hardware should encrypt specific memory
+    regions during runtime.
 
     | typedef struct _iee_keyblob_
     | {
@@ -164,6 +221,10 @@ class IeeKeyBlob:
     |     uint32_t reserved;               #  Reserved word.
     |     uint32_t crc32;                  #  Entire IEE Key Blob CRC32 value. Must be the last struct member.
     | } iee_keyblob_t
+
+    :cvar HEADER_TAG: IEE Key Blob header identifier (0x49454542).
+    :cvar KEYBLOB_VERSION: Version identifier for keyblob format (0x56010000).
+    :cvar KEYBLOB_OFFSET: Default offset for keyblob placement (0x1000).
     """
 
     _FORMAT = "LL4BL8L8LLLLL96B"
@@ -195,17 +256,22 @@ class IeeKeyBlob:
         page_offset: int = 0,
         crc: Optional[bytes] = None,
     ):
-        """Constructor.
+        """Initialize IEE keyblob with encryption parameters and memory region.
 
-        :param attributes: IEE keyblob attributes
-        :param start_addr: start address of the region
-        :param end_addr: end address of the region
+        Creates a new IEE (Inline Encryption Engine) keyblob instance with specified
+        attributes, memory region boundaries, and encryption keys. If keys are not
+        provided, random keys will be generated automatically.
+
+        :param attributes: IEE keyblob attributes defining encryption mode and key sizes.
+        :param start_addr: Start address of the memory region to be encrypted.
+        :param end_addr: End address of the memory region to be encrypted.
         :param key1: Encryption key1 for XTS-AES mode, encryption key for AES-CTR mode.
         :param key2: Encryption key2 for XTS-AES mode, initial_counter for AES-CTR mode.
-        :param crc: optional value for unused CRC fill (for testing only); None to use calculated value
-        :raises SPSDKError: Start or end address are not aligned
-        :raises SPSDKError: When there is invalid key
-        :raises SPSDKError: When there is invalid start/end address
+        :param page_offset: Page offset value for the encryption region.
+        :param crc: Optional CRC fill value for testing purposes; None to use calculated value.
+        :raises SPSDKError: When start or end address are not properly aligned.
+        :raises SPSDKError: When there is invalid key configuration.
+        :raises SPSDKError: When start/end addresses are invalid or out of range.
         """
         self.attributes = attributes
 
@@ -235,7 +301,13 @@ class IeeKeyBlob:
         self.crc_fill = crc
 
     def __str__(self) -> str:
-        """Text info about the instance."""
+        """Get string representation of the IEE instance.
+
+        Returns formatted information about the IEE configuration including encryption keys
+        and memory address range.
+
+        :return: Formatted string containing key values and address range information.
+        """
         msg = ""
         msg += f"KEY 1:        {self.key1.hex()}\n"
         msg += f"KEY 2:       {self.key2.hex()}\n"
@@ -244,9 +316,12 @@ class IeeKeyBlob:
         return msg
 
     def plain_data(self) -> bytes:
-        """Plain data for selected key range.
+        """Export key blob data in binary format.
 
-        :return: key blob exported into binary form (serialization)
+        Serializes the key blob structure including header, attributes, page offset,
+        encryption keys, address range, and CRC checksum into binary representation.
+
+        :return: Key blob exported into binary form with proper alignment and CRC.
         """
         result = bytes()
         result += pack("<II", self.HEADER_TAG, self.KEYBLOB_VERSION)
@@ -265,28 +340,36 @@ class IeeKeyBlob:
         return result
 
     def contains_addr(self, addr: int) -> bool:
-        """Whether key blob contains specified address.
+        """Check if the key blob contains the specified address.
 
-        :param addr: to be tested
-        :return: True if yes, False otherwise
+        :param addr: Memory address to be tested for containment within the key blob range.
+        :return: True if the address is within the key blob range, False otherwise.
         """
         return self.start_addr <= addr <= self.end_addr
 
     def matches_range(self, image_start: int, image_end: int) -> bool:
-        """Whether key blob matches address range of the image to be encrypted.
+        """Check if key blob matches the address range of the image to be encrypted.
 
-        :param image_start: start address of the image
-        :param image_end: last address of the image
-        :return: True if yes, False otherwise
+        The method verifies that both the start and end addresses of the image
+        fall within the address range covered by this key blob.
+
+        :param image_start: Start address of the image to be encrypted.
+        :param image_end: End address of the image to be encrypted.
+        :return: True if the key blob covers the entire image address range, False otherwise.
         """
         return self.contains_addr(image_start) and self.contains_addr(image_end)
 
     def encrypt_image_xts(self, base_address: int, data: bytes) -> bytes:
-        """Encrypt specified data using AES-XTS.
+        """Encrypt specified data using AES-XTS algorithm.
 
-        :param base_address: of the data in target memory; must be >= self.start_addr
-        :param data: to be encrypted (e.g. plain image); base_address + len(data) must be <= self.end_addr
-        :return: encrypted data
+        The method encrypts data block by block using AES-XTS encryption with the configured
+        keys. The base address must be within the valid memory range defined by start_addr
+        and end_addr.
+
+        :param base_address: Base address of the data in target memory, must be >= self.start_addr.
+        :param data: Data to be encrypted (e.g. plain image), base_address + len(data) must be
+            <= self.end_addr.
+        :return: Encrypted data as bytes.
         """
         encrypted_data = bytes()
         current_start = base_address
@@ -307,11 +390,15 @@ class IeeKeyBlob:
         return encrypted_data
 
     def encrypt_image_ctr(self, base_address: int, data: bytes) -> bytes:
-        """Encrypt specified data using AES-CTR.
+        """Encrypt specified data using AES-CTR algorithm.
 
-        :param base_address: of the data in target memory; must be >= self.start_addr
-        :param data: to be encrypted (e.g. plain image); base_address + len(data) must be <= self.end_addr
-        :return: encrypted data
+        The method encrypts data block by block using AES-CTR mode with keys and nonce
+        derived from the IEE configuration. The counter is initialized based on the
+        base address and incremented for each encryption block.
+
+        :param base_address: Base address of the data in target memory; must be >= self.start_addr
+        :param data: Data to be encrypted (e.g. plain image); base_address + len(data) must be <= self.end_addr
+        :return: Encrypted data as bytes
         """
         encrypted_data = bytes()
         key = reverse_bytes_in_longs(self.key1)
@@ -331,13 +418,17 @@ class IeeKeyBlob:
         return encrypted_data
 
     def encrypt_image(self, base_address: int, data: bytes) -> bytes:
-        """Encrypt specified data.
+        """Encrypt specified data using IEE encryption.
 
-        :param base_address: of the data in target memory; must be >= self.start_addr
-        :param data: to be encrypted (e.g. plain image); base_address + len(data) must be <= self.end_addr
-        :return: encrypted data
-        :raises SPSDKError: If start address is not valid
-        :raises NotImplementedError: AES-CTR is not implemented yet
+        The method encrypts the provided data using either AES-XTS or AES-CTR mode
+        based on the configuration. The data is automatically aligned to the required
+        block size and the base address must be 16-byte aligned.
+
+        :param base_address: Base address of the data in target memory, must be 16-byte aligned
+        :param data: Data to be encrypted (e.g. plain image)
+        :return: Encrypted data with proper alignment
+        :raises SPSDKError: If start address is not 16-byte aligned
+        :raises NotImplementedError: If AES-CTR mode is not implemented yet
         """
         if base_address % 16 != 0:
             raise SPSDKError("Invalid start address")  # Start address has to be 16 byte aligned
@@ -358,8 +449,11 @@ class IeeKeyBlob:
     def calculate_tweak(address: int) -> bytes:
         """Calculate tweak value for AES-XTS encryption based on the address value.
 
-        :param address: start address of encryption
-        :return: 16 byte tweak values
+        The method calculates a 16-byte tweak by extracting the sector number from the address
+        (address >> 12) and distributing its bytes across the tweak array.
+
+        :param address: Start address of encryption.
+        :return: 16-byte tweak value for AES-XTS encryption.
         """
         sector = address >> 12
         tweak = bytearray(16)
@@ -370,7 +464,17 @@ class IeeKeyBlob:
 
 
 class Iee(FeatureBaseClass):
-    """IEE: Inline Encryption Engine."""
+    """IEE (Inline Encryption Engine) manager for NXP MCU devices.
+
+    This class provides functionality to manage inline encryption operations including
+    key blob management, image encryption, and export capabilities. It handles the
+    configuration and processing of encryption keys, binary images, and generates
+    necessary output files for secure provisioning.
+
+    :cvar FEATURE: Database feature identifier for IEE operations.
+    :cvar IEE_DATA_UNIT: Standard data unit size for IEE operations (4KB).
+    :cvar IEE_KEY_BLOBS_SIZE: Size of IEE key blobs in bytes.
+    """
 
     FEATURE = DatabaseManager.IEE
 
@@ -390,18 +494,22 @@ class Iee(FeatureBaseClass):
         generate_readme: bool = True,
         generate_fuse_script: bool = True,
     ) -> None:
-        """Constructor.
+        """Initialize IEE (Inline Encryption Engine) configuration.
 
-        :param family: Device family
-        :param ibkek1: 256 bit key to encrypt IEE keyblob
-        :param ibkek2: 256 bit key to encrypt IEE keyblob
-        :param key_blobs: Optional Key blobs to add to IEE, defaults to None
-        :param binaries: Optional extra binaries
-        :param iee_export_filepath: Filepath for export to IEE full image with keyblobs
-        :param keyblob_export_filepath: Filepath to export for IEE keyblobs
-        :param generate_readme: True to generate readme file
-        :param generate_fuse_script: True to generate fuse script
-        :raises SPSDKValueError: Unsupported family
+        Sets up the IEE configuration with encryption keys, key blobs, and export settings
+        for secure image processing on NXP MCU devices.
+
+        :param family: Target device family and revision information.
+        :param keyblob_address: Memory address where key blobs will be stored.
+        :param ibkek1: First 256-bit key for IEE keyblob encryption (hex string or bytes).
+        :param ibkek2: Second 256-bit key for IEE keyblob encryption (hex string or bytes).
+        :param key_blobs: List of IEE key blob objects to include in configuration.
+        :param binaries: Additional binary images to process with IEE.
+        :param iee_export_filepath: Output file path for complete IEE image with keyblobs.
+        :param keyblob_export_filepath: Output file path for standalone IEE keyblobs.
+        :param generate_readme: Whether to generate documentation readme file.
+        :param generate_fuse_script: Whether to generate fuse programming script.
+        :raises SPSDKValueError: Unsupported device family or invalid configuration.
         """
         self._key_blobs: list[IeeKeyBlob] = []
 
@@ -425,11 +533,20 @@ class Iee(FeatureBaseClass):
                 self.add_key_blob(key_blob)
 
     def __repr__(self) -> str:
-        """Simple object text representation."""
+        """Get string representation of IEE object.
+
+        :return: String representation containing the target family name.
+        """
         return f"IEE object for {self.family}"
 
     def __str__(self) -> str:
-        """Object text representation."""
+        """Get string representation of IEE object.
+
+        Returns a formatted string containing IEE configuration details including family,
+        keyblob address, binaries information, and IBKEK keys if available.
+
+        :return: Formatted string with IEE object details.
+        """
         description = (
             f"IEE object for {self.family}:\n"
             f" Keyblob address: {hex(self.keyblob_address)}\n"
@@ -441,25 +558,42 @@ class Iee(FeatureBaseClass):
         return description
 
     def __getitem__(self, index: int) -> IeeKeyBlob:
+        """Get key blob at specified index.
+
+        :param index: Index of the key blob to retrieve.
+        :return: Key blob at the specified index.
+        """
         return self._key_blobs[index]
 
     def __setitem__(self, index: int, value: IeeKeyBlob) -> None:
+        """Set key blob at specified index.
+
+        Replaces the existing key blob at the given index with a new key blob value.
+
+        :param index: Index position where to set the key blob.
+        :param value: IeeKeyBlob instance to set at the specified index.
+        :raises IndexError: If index is out of range.
+        """
         self._key_blobs.remove(self._key_blobs[index])
         self._key_blobs.insert(index, value)
 
     def add_key_blob(self, key_blob: IeeKeyBlob) -> None:
-        """Add key for specified address range.
+        """Add key blob for specified address range.
 
-        :param key_blob: to be added
+        :param key_blob: IEE key blob object to be added to the collection.
         """
         self._key_blobs.append(key_blob)
 
     def encrypt_image(self, image: bytes, base_addr: int) -> bytes:
         """Encrypt image with all available keyblobs.
 
-        :param image: plain image to be encrypted
-        :param base_addr: where the image will be located in target processor
-        :return: encrypted image
+        The method iterates through the image data in blocks and applies encryption
+        using matching keyblobs based on memory address ranges. Each block is
+        encrypted with all keyblobs that cover its address range.
+
+        :param image: Plain image data to be encrypted.
+        :param base_addr: Base address where the image will be located in target processor.
+        :return: Encrypted image data.
         """
         encrypted_data = bytearray(image)
         addr = base_addr
@@ -478,9 +612,11 @@ class Iee(FeatureBaseClass):
         return bytes(encrypted_data)
 
     def get_key_blobs(self) -> bytes:
-        """Get key blobs.
+        """Get key blobs data.
 
-        :return: Binary key blobs joined together
+        Retrieves all key blobs as concatenated binary data, aligned to the required IEE key blobs size.
+
+        :return: Binary key blobs joined together and aligned to IEE_KEY_BLOBS_SIZE.
         """
         result = bytes()
         for key_blob in self._key_blobs:
@@ -497,10 +633,13 @@ class Iee(FeatureBaseClass):
     ) -> bytes:
         """Encrypt keyblobs and export them as binary.
 
-        :param ibkek1: key encryption key AES-XTS 256 bit
-        :param ibkek2: key encryption key AES-XTS 256 bit
-        :param keyblob_address: keyblob base address
-        :return: encrypted keyblobs
+        This method takes two key encryption keys and encrypts the keyblobs using AES-XTS encryption
+        with a calculated tweak based on the keyblob address.
+
+        :param ibkek1: First key encryption key for AES-XTS 256-bit encryption (32 bytes).
+        :param ibkek2: Second key encryption key for AES-XTS 256-bit encryption (32 bytes).
+        :param keyblob_address: Base address of the keyblob used for tweak calculation.
+        :return: Encrypted keyblobs as binary data.
         """
         plain_key_blobs = self.get_key_blobs()
 
@@ -517,9 +656,13 @@ class Iee(FeatureBaseClass):
         )
 
     def export_key_blobs(self) -> bytes:
-        """Export encrypted keyblobs in binary.
+        """Export encrypted keyblobs in binary format.
 
-        :return: Encrypted keyblobs
+        This method encrypts and exports the key blobs using the configured IBKEK1 and IBKEK2 keys
+        at the specified keyblob address.
+
+        :raises SPSDKError: When IBKEK1 or IBKEK2 is missing.
+        :return: Encrypted keyblobs as binary data.
         """
         if self.ibkek1 and self.ibkek2:
             return self.encrypt_key_blobs(self.ibkek1, self.ibkek2, self.keyblob_address)
@@ -528,13 +671,24 @@ class Iee(FeatureBaseClass):
     def export(self) -> bytes:
         """Export object into bytes array.
 
-        :raises: NotImplementedError if not implemented in child class
-        :return: Exported bytes
+        This is an abstract method that must be implemented by child classes to provide
+        serialization functionality for IEE objects.
+
+        :raises NotImplementedError: Method not implemented in child class.
+        :return: Exported bytes representation of the object.
         """
         raise NotImplementedError()
 
     def post_export(self, output_path: str) -> list[str]:
-        """Perform post export steps like saving the script files."""
+        """Perform post export steps for IEE image generation.
+
+        Exports the complete IEE binary image, individual encrypted data blobs, generates
+        documentation files, and creates fuse programming scripts based on configuration.
+        The method handles file generation with proper logging and skips disabled components.
+
+        :param output_path: Directory path where generated files will be saved.
+        :return: List of file paths for all successfully generated files.
+        """
         generated_files = []
 
         binary_image = self.binary_image(keyblob_name=self.keyblob_name, image_name=self.iee_all)
@@ -587,15 +741,24 @@ class Iee(FeatureBaseClass):
     def parse(cls, data: bytes) -> Self:
         """Parse object from bytes array.
 
-        :param data: Input bytes array
-        :return: Parsed object
+        This is an abstract method that must be implemented by subclasses to deserialize
+        an object from its binary representation.
+
+        :param data: Input bytes array containing the serialized object data.
+        :raises NotImplementedError: This method must be implemented by subclasses.
+        :return: Parsed object instance.
         """
         raise NotImplementedError
 
     def export_image(self) -> Optional[BinaryImage]:
         """Export encrypted image.
 
-        :return: Encrypted image
+        This method processes all binary images and their segments, encrypting each binary
+        using the configured encryption settings. The original binaries are preserved by
+        creating a deep copy before encryption.
+
+        :return: Encrypted binary image with all sub-images and segments processed,
+            or None if no binaries are available.
         """
         if self.binaries is None:
             return None
@@ -619,9 +782,12 @@ class Iee(FeatureBaseClass):
         return binaries
 
     def get_blhost_script_otp_kek(self) -> str:
-        """Create BLHOST script to load fuses needed to run IEE with OTP fuses.
+        """Generate BLHOST script to load fuses needed to run IEE with OTP fuses.
 
-        :return: BLHOST script that loads the keys into fuses.
+        The method checks if the target family supports IEE KEK fuses and generates
+        a fuse script accordingly. If KEK fuses are not supported, returns empty string.
+
+        :return: BLHOST script that loads the keys into fuses, or empty string if not supported.
         """
         if not self.db.get_bool(DatabaseManager.IEE, "has_kek_fuses", default=False):
             logger.debug(f"The {self.family} has no IEE KEK fuses")
@@ -639,11 +805,14 @@ class Iee(FeatureBaseClass):
     ) -> BinaryImage:
         """Get the IEE Binary Image representation.
 
+        The method creates a binary image containing IEE keyblobs and encrypted data,
+        with configurable alignment and naming options for output files.
+
         :param plain_data: Binary representation in plain format, defaults to False
-        :param data_alignment: Alignment of data part key blobs.
-        :param keyblob_name: Filename of the IEE keyblob
-        :param image_name: Filename of the IEE image
-        :return: IEE in BinaryImage.
+        :param data_alignment: Alignment of data part key blobs, defaults to 16
+        :param keyblob_name: Filename of the IEE keyblob, defaults to "iee_keyblob.bin"
+        :param image_name: Filename of the IEE image, defaults to "encrypted.bin"
+        :return: IEE in BinaryImage format.
         """
         iee = BinaryImage(image_name, offset=self.keyblob_address)
         if self.generate_keyblob:
@@ -668,10 +837,13 @@ class Iee(FeatureBaseClass):
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Get list of validation schemas.
+        """Get list of validation schemas for IEE configuration.
 
-        :param family: Family for which the template should be generated.
-        :return: Validation list of schemas.
+        Retrieves validation schemas including family-specific schema, general IEE schemas,
+        and any additional schemas defined in the database for the specified family.
+
+        :param family: Family revision for which the validation schemas should be generated.
+        :return: List of validation schema dictionaries for IEE configuration.
         """
         database = get_db(family)
         schemas = get_schema_file(DatabaseManager.IEE)
@@ -692,21 +864,26 @@ class Iee(FeatureBaseClass):
         return ret
 
     def get_config(self, data_path: str = "./") -> Config:
-        """Create configuration of the Feature.
+        """Get configuration of the IEE feature.
 
-        :param data_path: Path to store the data files of configuration.
-        :return: Configuration dictionary.
+        Creates a configuration object that can be used to configure the IEE (Inline Encryption Engine)
+        feature with the specified data path for storing configuration files.
+
+        :param data_path: Path to directory where configuration data files will be stored.
+        :raises NotImplementedError: This method must be implemented by subclasses.
+        :return: Configuration object for the IEE feature.
         """
         raise NotImplementedError
 
     @classmethod
     def load_from_config(cls, config: Config) -> Self:
-        """Converts the configuration option into an IEE image object.
+        """Load IEE image object from configuration.
 
-        "config" content array of containers configurations.
+        Creates an IEE (In-line Encryption Engine) image object by parsing the provided
+        configuration data, including key blobs, data blobs, and encryption parameters.
 
-        :param config: array of IEE configuration dictionaries.
-        :return: initialized IEE object.
+        :param config: Configuration object containing IEE settings and key blob definitions.
+        :return: Initialized IEE object with configured key blobs and encryption settings.
         """
         family = FamilyRevision.load_from_config(config)
         ibkek1: Optional[bytes] = None

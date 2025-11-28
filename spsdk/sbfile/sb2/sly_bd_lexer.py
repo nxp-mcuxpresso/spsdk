@@ -6,7 +6,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-"""Lexer for command (BD) files used by parser."""
+"""SPSDK SLY-based lexer for Boot Descriptor (BD) command files.
+
+This module provides lexical analysis functionality for parsing Boot Data command files
+used in secure boot processes. It defines tokens and lexical rules for BD file syntax
+using the SLY lexer framework.
+"""
 
 from typing import Union
 
@@ -23,45 +28,68 @@ from sly.lex import Token
 # no-self-use : the public methods must be defined as class methods although
 #   the self is not used at all.
 class Variable:
-    """Class representing a variable in command file."""
+    """Command file variable representation for SB2 lexical analysis.
+
+    This class encapsulates variable definitions found in SB2 command files,
+    storing the variable name, type token, and associated value for use during
+    lexical parsing and processing.
+    """
 
     def __init__(self, name: str, token: str, value: Union[str, int, float]) -> None:
-        """Initializer.
+        """Initialize identifier with name, token type, and value.
 
-        :param name: name of identifier (variable)
-        :param token: type of variable (option, constant etc.)
-        :param value: the content of the variable
+        :param name: Name of the identifier (variable).
+        :param token: Type of variable (option, constant etc.).
+        :param value: The content of the variable.
         """
         self.name = name
         self.t = token
         self.value = value
 
     def __str__(self) -> str:
-        """Returns a string with variable info.
+        """Return string representation of the variable.
 
-        i.e.
+        The string contains variable name, type, and value in format:
         "<var_name>, <var_type>, <var_value>"
 
-        :return: string
+        :return: Formatted string with variable information.
         """
         return f"{self.name}, {self.t}, {self.value}"
 
 
 class BDLexer(Lexer):
-    """Lexer for bd files."""
+    """Lexer for Boot Descriptor (BD) files used in SB2.1 format.
+
+    This class provides tokenization and parsing capabilities for Boot Descriptor
+    files, which contain commands and configuration for secure boot operations.
+    It handles reserved keywords, identifiers, literals, and maintains source
+    references for proper parsing context.
+
+    :cvar reserved: Dictionary mapping BD file keywords to token types.
+    """
 
     def __init__(self) -> None:
-        """Initializer."""
+        """Initialize the Variables container.
+
+        Creates an empty list to store Variable objects that will be used
+        for managing variables in the SB2 file processing.
+        """
         self._sources: list[Variable] = []
 
     def cleanup(self) -> None:
-        """Resets the lexers internals into initial state."""
+        """Reset the lexer's internal state to initial conditions.
+
+        Clears all internal data sources and prepares the lexer for reuse or reinitialization.
+        """
         self._sources.clear()
 
     def add_source(self, source: Variable) -> None:
-        """Append an identifier of source type into list.
+        """Add source identifier to the sources list.
 
-        :param source: identifier defined under sources block in BD file
+        Appends a source identifier that was defined in the sources block of a BD file
+        to the internal sources list for later processing.
+
+        :param source: Source identifier defined under sources block in BD file.
         """
         self._sources.append(source)
 
@@ -162,12 +190,13 @@ class BDLexer(Lexer):
     # doing, when changing the order of function declarations!!!
     @_(r"(//.*)|(/\*(.|\s)*?\*/)|(\#.*)")  # type: ignore
     def COMMENT(self, token: Token) -> None:
-        """Token rule to detect comments (including multiline).
+        """Token rule to detect comments including multiline comments.
 
-        Allowed comments are C/C++ like comments '/* */', '//' and bash-like
-        comments starting with '#'.
+        Handles C/C++ style comments ('/* */', '//') and bash-style comments ('#').
+        Updates line numbering to account for multiline comments by incrementing
+        the line counter based on newlines within the comment content.
 
-        :param token: token matching a comment
+        :param token: Token object containing the matched comment text.
         """
         # Multiline comments are counted as a single line. This causes us troubles
         # in t_newline(), which treats the multiline comment as a single line causing
@@ -180,19 +209,17 @@ class BDLexer(Lexer):
     # letter in real use case, because of regex engine limitation in positive lookbehind.
     @_(r"(?<=(\d|[0-9a-fA-F])\.)[ \t]*[whb]")  # type: ignore
     def INT_SIZE(self, token: Token) -> Token:
-        """Token rule to detect numbers appended with w/h/b.
+        """Token rule to detect numbers appended with w/h/b size specifiers.
 
         Example:
         my_number = 4.b
         my_number = 1.h
         my_number = 3.w
-
         The w/h/b defines size (Byte, Halfword, Word). This should be taken into
         account during number computation.
 
-        :param token: token matching int size
-
-        :return: Token representing the size of int literal
+        :param token: Token matching int size specifier.
+        :return: Token representing the size of int literal.
         """
         return token
 
@@ -202,14 +229,13 @@ class BDLexer(Lexer):
 
         A valid identifier can start either with underscore or a letter followed
         by any numbers of underscores, letters and numbers.
-
         If the name of an identifier is from the set of reserved keywords, the
         token type is replaced with the keyword name, otherwise the token is
         of type 'IDENT'.
-        Values of type TRUE/YES, FALSE/NO are replaces by 1 or 0 respectively.
+        Values of type TRUE/YES, FALSE/NO are replaced by 1 or 0 respectively.
 
-        :param token: token matching an identifier pattern
-        :return: Token representing identifier
+        :param token: Token matching an identifier pattern.
+        :return: Token representing identifier with appropriate type and value.
         """
         # it may happen that we find an identifier, which is a keyword, in such
         # a case remap the type from IDENT to reserved word (i.e. keyword)
@@ -232,22 +258,18 @@ class BDLexer(Lexer):
 
     @_(r"\b([0-9]+[K]?|0[xX][0-9a-fA-F]+)\b|'.*'")  # type: ignore
     def INT_LITERAL(self, token: Token) -> Token:
-        """Token rule to detect integer literals.
+        """Process integer literal tokens and convert them to numeric values.
 
-        An int literal may be represented as a number in decimal form appended
-        with a 'K' or number in hexadecimal form.
+        Supports decimal numbers, hexadecimal numbers, string literals in single quotes,
+        and decimal numbers with 'K' suffix (multiplied by 1024).
+        Supported formats:
+        - Decimal: 1024, -256
+        - Hexadecimal: 0x25
+        - With K suffix: 1K (equals 1024)
+        - String literals: 'text' (converted to hex representation)
 
-        Example:
-        1024
-        1K # same as above
-        -256
-        0x25
-
-        Lexer converts the detected string into a number. String literals
-        appended with 'K' are multiplied by 1024.
-
-        :param token: token matching integer literal pattern
-        :return: Token representing integer literal
+        :param token: Token object containing the matched integer literal pattern.
+        :return: Token object with numeric value assigned to the value attribute.
         """
         number = token.value
         if number[0] == "'" and number[-1] == "'":
@@ -266,29 +288,30 @@ class BDLexer(Lexer):
     def SECTION_NAME(self, token: Token) -> Token:
         """Token rule to detect section names.
 
-        Section names start with a dollar sign ($) glob-type expression that
+        Section names start with a dollar sign ($) followed by a glob-type expression that
         can match any number of ELF sections.
 
-        Example:
-        $section_[ab]
-        $math*
+        Examples:
+            $section_[ab]
+            $math*
 
-        :param token: token matching section name pattern
-        :return: Token representing section name
+        :param token: Token matching section name pattern.
+        :return: Token representing section name.
         """
         return token
 
     @_(r"\{\{([0-9a-fA-F]{2}| )+\}\}")  # type: ignore
     def BINARY_BLOB(self, token: Token) -> Token:
-        """Token rule to detect binary blob.
+        """Process binary blob token from lexer input.
 
-        A binary blob is a sequence of hexadecimal bytes in double curly braces.
+        A binary blob is a sequence of hexadecimal bytes enclosed in double curly braces.
+        The method extracts the hexadecimal content and removes whitespace formatting.
 
         Example:
-        {{aa bb cc 1F 3C}}
+        {{aa bb cc 1F 3C}} becomes "aabbcc1F3C"
 
-        :param token: token matching binary blob pattern
-        :return: Token representing binary blob
+        :param token: Token object matching binary blob pattern from lexer.
+        :return: Modified token with cleaned hexadecimal string value.
         """
         # return just the content between braces
         value = token.value[2:-2]
@@ -301,11 +324,12 @@ class BDLexer(Lexer):
 
     @_(r"\n")  # type: ignore
     def newline(self, token: Token) -> None:
-        """Token rule to detect new lines.
+        """Process new line token and increment line counter.
 
-        On new line character the line number count is incremented.
+        Updates the internal line number counter based on the number of newline
+        characters found in the token value.
 
-        :param token: token matching new line character
+        :param token: Token containing newline character(s) to process.
         """
         self.lineno += len(token.value)
 
@@ -354,14 +378,14 @@ class BDLexer(Lexer):
 
     # Error handling rule
     def error(self, t: Token) -> Token:
-        """Token error handler.
+        """Handle token error during lexical analysis.
 
         The lexing index is incremented so lexing can continue, however, an
         error token is returned. The token contains the whole text starting
         with the detected error.
 
-        :param t: invalid token.
-        :return: the invalid token.
+        :param t: Invalid token that caused the error.
+        :return: The invalid token with updated value.
         """
         self.index += 1
         t.value = t.value[0]

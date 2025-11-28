@@ -1,0 +1,362 @@
+pipeline {
+    agent { label 'linux-spsdk' }
+
+    // Schedule to run every Sunday at 2 AM
+    triggers {
+        cron('0 2 * * 0')
+    }
+
+    parameters {
+        booleanParam(
+            name: 'DRY_RUN',
+            defaultValue: false,
+            description: 'Perform dry run without pushing to remote'
+        )
+        booleanParam(
+            name: 'SKIP_TESTS',
+            defaultValue: false,
+            description: 'Skip test execution (not recommended for production)'
+        )
+        booleanParam(
+            name: 'FORCE_UPDATE',
+            defaultValue: false,
+            description: 'Force update even if branch is up-to-date'
+        )
+    }
+
+    environment {
+        MASTER_BRANCH = 'master'
+        CURRENT_INTEGRATION_BRANCH = "${env.BRANCH_NAME}"
+    }
+
+    stages {
+        stage('Validate Branch') {
+            steps {
+                script {
+                    if (!env.BRANCH_NAME.endsWith('integration')) {
+                        error "This pipeline only runs on integration branches (branches ending with 'integration')"
+                    }
+                    echo "Processing integration branch: ${env.CURRENT_INTEGRATION_BRANCH}"
+                    echo "Build triggered by: ${currentBuild.getBuildCauses()}"
+                }
+            }
+        }
+
+        stage('Setup Git') {
+            steps {
+                script {
+                    // Configure git
+                    sh '''
+                        git config user.name "Jenkins CI"
+                        git config user.email "jenkins@diomedes"
+                        git fetch origin
+                    '''
+                }
+            }
+        }
+
+        stage('Check Update Status') {
+            steps {
+                script {
+                    // Check if integration branch is behind master
+                    def behindCount = sh(
+                        script: "git rev-list --count HEAD..origin/${env.MASTER_BRANCH}",
+                        returnStdout: true
+                    ).trim() as Integer
+
+                    def aheadCount = sh(
+                        script: "git rev-list --count origin/${env.MASTER_BRANCH}..HEAD",
+                        returnStdout: true
+                    ).trim() as Integer
+
+                    env.BEHIND_COUNT = behindCount.toString()
+                    env.AHEAD_COUNT = aheadCount.toString()
+
+                    // Get the last commit author information
+                    def lastCommitAuthor = sh(
+                        script: "git log -1 --pretty=format:'%an'",
+                        returnStdout: true
+                    ).trim()
+
+                    def lastCommitEmail = sh(
+                        script: "git log -1 --pretty=format:'%ae'",
+                        returnStdout: true
+                    ).trim()
+
+                    env.LAST_COMMIT_AUTHOR = lastCommitAuthor
+                    env.LAST_COMMIT_EMAIL = lastCommitEmail
+
+                    echo "Integration branch ${env.CURRENT_INTEGRATION_BRANCH} status:"
+                    echo "- ${behindCount} commits behind ${env.MASTER_BRANCH}"
+                    echo "- ${aheadCount} commits ahead of ${env.MASTER_BRANCH}"
+                    echo "Last commit by: ${lastCommitAuthor} <${lastCommitEmail}>"
+
+                    if (behindCount == 0 && !params.FORCE_UPDATE) {
+                        echo "Integration branch is already up-to-date with ${env.MASTER_BRANCH}"
+                        env.NEEDS_UPDATE = 'false'
+                    } else {
+                        if (params.FORCE_UPDATE) {
+                            echo "Force update requested"
+                        }
+                        echo "Integration branch will be updated"
+                        env.NEEDS_UPDATE = 'true'
+                    }
+
+                    // Get the commits that will be merged
+                    if (behindCount > 0) {
+                        def commitLog = sh(
+                            script: "git log --oneline HEAD..origin/${env.MASTER_BRANCH}",
+                            returnStdout: true
+                        ).trim()
+                        echo "Commits to be merged:\n${commitLog}"
+                    }
+                }
+            }
+        }
+
+        stage('Merge Master') {
+            when {
+                environment name: 'NEEDS_UPDATE', value: 'true'
+            }
+            steps {
+                script {
+                    try {
+                        echo "Merging ${env.MASTER_BRANCH} into ${env.CURRENT_INTEGRATION_BRANCH}..."
+
+                        // Create a backup branch before merging
+                        def timestamp = new Date().format('yyyyMMdd-HHmmss')
+                        def backupBranch = "${env.CURRENT_INTEGRATION_BRANCH}-backup-${timestamp}"
+                        sh "git branch ${backupBranch}"
+                        echo "Created backup branch: ${backupBranch}"
+                        env.BACKUP_BRANCH = backupBranch
+
+                        // Perform the merge
+                        def mergeResult = sh(
+                            script: "git merge origin/${env.MASTER_BRANCH} --no-edit -m 'Auto-merge ${env.MASTER_BRANCH} into ${env.CURRENT_INTEGRATION_BRANCH} (Jenkins build #${env.BUILD_NUMBER})'",
+                            returnStatus: true
+                        )
+
+                        if (mergeResult != 0) {
+                            // Get conflict information
+                            def conflictFiles = sh(
+                                script: "git diff --name-only --diff-filter=U || echo 'Unable to determine conflict files'",
+                                returnStdout: true
+                            ).trim()
+
+                            // Reset to pre-merge state
+                            sh "git merge --abort || true"
+
+                            error """
+    ❌ MERGE CONFLICT DETECTED ❌
+
+    Failed to merge ${env.MASTER_BRANCH} into ${env.CURRENT_INTEGRATION_BRANCH}.
+
+    Conflicting files:
+    ${conflictFiles}
+
+    📋 Action Required:
+    1. Manual conflict resolution needed
+    2. Backup branch available: ${backupBranch}
+    3. Please resolve conflicts manually on Monday
+
+    💡 To resolve:
+    git checkout ${env.CURRENT_INTEGRATION_BRANCH}
+    git merge ${env.MASTER_BRANCH}
+    # Resolve conflicts
+    git commit
+    git push origin ${env.CURRENT_INTEGRATION_BRANCH}
+    """
+                        }
+
+                        echo "✅ Successfully merged ${env.MASTER_BRANCH} into ${env.CURRENT_INTEGRATION_BRANCH}"
+                        env.MERGE_SUCCESSFUL = 'true'
+
+                        // Show merge summary
+                        def mergeCommit = sh(
+                            script: "git rev-parse HEAD",
+                            returnStdout: true
+                        ).trim()
+
+                        echo "Merge commit: ${mergeCommit}"
+
+                        // Show what changed
+                        def changedFiles = sh(
+                            script: "git diff --name-only HEAD~1 HEAD",
+                            returnStdout: true
+                        ).trim()
+
+                        if (changedFiles) {
+                            echo "Files changed in merge:\n${changedFiles}"
+                        }
+
+                    } catch (Exception e) {
+                        env.MERGE_SUCCESSFUL = 'false'
+                        throw e
+                    }
+                }
+            }
+        }
+
+        stage('Run Codecheck') {
+            when {
+                allOf {
+                    expression { !params.SKIP_TESTS }
+                    environment name: 'NEEDS_UPDATE', value: 'true'
+                    environment name: 'MERGE_SUCCESSFUL', value: 'true'
+                }
+            }
+            steps {
+                script {
+                    echo "📊 Running code quality checks..."
+                    try {
+                        sh '''
+                            set -e  # Exit immediately if a command exits with a non-zero status
+
+                            # remove existing venv if exists
+                            rm -rf venv
+
+                            # create clean venv
+                            uv venv -p 3.13 venv
+                            . venv/bin/activate
+
+                            # install SPSDK and dev dependencies
+                            uv pip install -e . -r requirements-develop.txt
+
+                            # run standard code quality checks
+                            codecheck -s
+
+                            echo "✅ Code quality checks completed"
+                        '''
+                        env.CODE_QUALITY_PASSED = 'true'
+                    } catch (Exception e) {
+                        env.CODE_QUALITY_PASSED = 'false'
+                        throw e
+                    }
+                }
+            }
+        }
+
+        stage('Push to Remote') {
+            when {
+                allOf {
+                    expression { !params.DRY_RUN }
+                    environment name: 'MERGE_SUCCESSFUL', value: 'true'
+                    anyOf {
+                        expression { params.SKIP_TESTS }
+                        environment name: 'CODE_QUALITY_PASSED', value: 'true'
+                    }
+                }
+            }
+            steps {
+                script {
+                    try {
+                        echo "🚀 Pushing updated ${env.CURRENT_INTEGRATION_BRANCH} to remote..."
+                        sh "git push origin ${env.CURRENT_INTEGRATION_BRANCH}"
+                        echo "✅ Successfully pushed ${env.CURRENT_INTEGRATION_BRANCH} to remote"
+                        env.PUSH_SUCCESSFUL = 'true'
+
+                        // Clean up backup branch from remote if it exists
+                        if (env.BACKUP_BRANCH) {
+                            sh "git push origin --delete ${env.BACKUP_BRANCH} || echo 'Backup branch not on remote'"
+                        }
+
+                    } catch (Exception e) {
+                        env.PUSH_SUCCESSFUL = 'false'
+                        error "Failed to push ${env.CURRENT_INTEGRATION_BRANCH}: ${e.getMessage()}"
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                // Clean up workspace
+                sh '''
+                    git reset --hard HEAD || true
+                    git clean -fd || true
+                '''
+
+                // Generate summary
+                def summary = generateBuildSummary()
+                echo summary
+
+                // Set build description
+                currentBuild.description = "Branch: ${env.CURRENT_INTEGRATION_BRANCH} | Behind: ${env.BEHIND_COUNT ?: 'N/A'} commits"
+            }
+        }
+
+        success {
+            script {
+                def message = """
+    ✅ Integration branch update completed successfully!
+
+    Branch: ${env.CURRENT_INTEGRATION_BRANCH}
+    Status: ${env.NEEDS_UPDATE == 'true' ? 'Updated' : 'Already up-to-date'}
+    Commits merged: ${env.BEHIND_COUNT ?: '0'}
+    Build: ${env.BUILD_URL}
+    """
+
+                echo message
+
+                // Send success notification
+                emailext (
+                    subject: "✅ Integration Branch Updated: ${env.CURRENT_INTEGRATION_BRANCH}",
+                    body: message,
+                    to: "${env.LAST_COMMIT_EMAIL}",
+                    mimeType: 'text/plain'
+                )
+
+            }
+        }
+
+        failure {
+            script {
+                def message = """
+    ❌ Integration branch update failed!
+
+    Branch: ${env.CURRENT_INTEGRATION_BRANCH}
+    Build: ${env.BUILD_URL}
+
+    Please check the build logs...
+    """
+
+                if (env.BACKUP_BRANCH) {
+                    message += "\nBackup branch created: ${env.BACKUP_BRANCH}"
+                }
+
+                echo message
+
+                // Send failure notification
+                emailext (
+                    subject: "❌ Integration Branch Update Failed: ${env.CURRENT_INTEGRATION_BRANCH}",
+                    body: message,
+                    to: "${env.LAST_COMMIT_EMAIL}",
+                    mimeType: 'text/plain'
+                )
+            }
+        }
+
+    }
+}
+
+def generateBuildSummary() {
+    def summary = """
+    📊 BUILD SUMMARY 📊
+    ==================
+    Branch: ${env.CURRENT_INTEGRATION_BRANCH}
+    Master commits behind: ${env.BEHIND_COUNT ?: 'N/A'}
+    Update needed: ${env.NEEDS_UPDATE ?: 'N/A'}
+    Merge successful: ${env.MERGE_SUCCESSFUL ?: 'N/A'}
+    Codecheck successful: ${env.CODE_QUALITY_PASSED ?: 'N/A'}
+    Push successful: ${env.PUSH_SUCCESSFUL ?: 'N/A'}
+    Dry run: ${params.DRY_RUN}
+    """
+
+    if (env.BACKUP_BRANCH) {
+        summary += "Backup branch: ${env.BACKUP_BRANCH}\n"
+    }
+
+    return summary
+}

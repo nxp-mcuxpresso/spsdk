@@ -4,16 +4,23 @@
 # Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Test IEE part of nxpimage app."""
+"""Test module for IEE (Inline Encryption Engine) functionality in nxpimage.
+
+This module contains comprehensive tests for the IEE-related features of the
+nxpimage command-line tool, including template generation, custom output handling,
+and BCF export functionality.
+"""
+
 import os
 import shutil
+from typing import Any
 
 import pytest
 import yaml
 
 from spsdk.apps import nxpimage
-from spsdk.utils.config import Config
 from spsdk.image.iee.iee import Iee
+from spsdk.utils.config import Config
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 from tests.cli_runner import CliRunner
 
@@ -61,7 +68,28 @@ INPUT_BINARY = "evkmimxrt1170_iled_blinky_cm7_QSPI_FLASH_bootable_nopadding.bin"
         ),
     ],
 )
-def test_nxpimage_iee(cli_runner: CliRunner, tmpdir, data_dir, case, config, reference, keyblobs):
+def test_nxpimage_iee(
+    cli_runner: CliRunner,
+    tmpdir: Any,
+    data_dir: str,
+    case: str,
+    config: str,
+    reference: str,
+    keyblobs: str,
+) -> None:
+    """Test NXP image IEE (Inline Encryption Engine) functionality.
+
+    This test verifies the IEE export command by creating encrypted images and keyblobs
+    from configuration files, then comparing outputs against reference files when provided.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for test files.
+    :param data_dir: Base directory containing test data files.
+    :param case: Test case name identifying the specific IEE scenario.
+    :param config: Configuration file name for IEE export settings.
+    :param reference: Reference encrypted image file for comparison (optional).
+    :param keyblobs: Reference keyblob file for comparison (optional).
+    """
     work_dir = os.path.join(tmpdir, "iee", case)
     shutil.copytree(os.path.join(data_dir, "iee", case), work_dir)
     shutil.copy(os.path.join(data_dir, "iee", INPUT_BINARY), work_dir)
@@ -97,7 +125,16 @@ def test_nxpimage_iee(cli_runner: CliRunner, tmpdir, data_dir, case, config, ref
         ("mimxrt1189"),
     ],
 )
-def test_nxpimage_iee_template_cli(cli_runner: CliRunner, tmpdir, family):
+def test_nxpimage_iee_template_cli(cli_runner: CliRunner, tmpdir: Any, family: str) -> None:
+    """Test IEE template generation CLI command functionality.
+
+    Verifies that the 'iee get-template' command successfully generates a template file
+    for the specified family and saves it to the designated output path.
+
+    :param cli_runner: CLI test runner for invoking command-line interface.
+    :param tmpdir: Temporary directory fixture for test file operations.
+    :param family: Target MCU family name for template generation.
+    """
     template = os.path.join(tmpdir, "iee_template.yaml")
     cmd = f"iee get-template --family {family} --output {template}"
     cli_runner.invoke(nxpimage.main, cmd.split())
@@ -113,7 +150,22 @@ def test_nxpimage_iee_template_cli(cli_runner: CliRunner, tmpdir, family):
         )
     ],
 )
-def test_iee_custom_output(cli_runner: CliRunner, tmpdir, data_dir, case, config):
+def test_iee_custom_output(
+    cli_runner: CliRunner, tmpdir: Any, data_dir: str, case: str, config: str
+) -> None:
+    """Test IEE export functionality with custom output configuration.
+
+    This test verifies that the IEE export command works correctly when using
+    custom output paths and filenames. It modifies the configuration to use
+    custom output directory and filenames, then validates that the expected
+    files are generated in the correct locations.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for test files.
+    :param data_dir: Path to test data directory containing IEE test cases.
+    :param case: Name of the specific IEE test case to run.
+    :param config: Configuration file name for the test case.
+    """
     work_dir = os.path.join(tmpdir, "iee", case)
     shutil.copytree(os.path.join(data_dir, "iee", case), work_dir)
     shutil.copy(os.path.join(data_dir, "iee", INPUT_BINARY), work_dir)
@@ -161,7 +213,20 @@ def test_iee_custom_output(cli_runner: CliRunner, tmpdir, data_dir, case, config
         ),
     ],
 )
-def test_nxpimage_iee_export_bcf(data_dir, case, config, blhost_bcf_res):
+def test_nxpimage_iee_export_bcf(
+    data_dir: str, case: str, config: str, blhost_bcf_res: list[str]
+) -> None:
+    """Test nxpimage IEE export BCF functionality.
+
+    This test verifies that the IEE (Inline Encryption Engine) module can properly
+    generate blhost script commands for OTP KEK (One-Time Programmable Key Encryption Key)
+    configuration and that the expected results are present in the generated BCF script.
+
+    :param data_dir: Base directory path containing test data files
+    :param case: Specific test case subdirectory name within the IEE test data
+    :param config: Configuration file name to be used for the test
+    :param blhost_bcf_res: List of expected strings that should be present in the generated BCF script
+    """
     config_dir = os.path.join(data_dir, "iee", case)
     config1_dir = os.path.join(data_dir, "iee")
     config_data = Config.create_from_file(os.path.join(config_dir, config))

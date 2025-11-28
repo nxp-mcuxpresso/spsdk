@@ -4,7 +4,12 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""TLV."""
+"""SPSDK AHAB TLV (Type-Length-Value) data structure utilities.
+
+This module provides functionality for handling TLV data structures used in
+AHAB (Advanced High Assurance Boot) context, including TLV parsing, creation,
+and key import operations.
+"""
 
 import logging
 from inspect import isclass
@@ -45,22 +50,42 @@ logger = logging.getLogger(__name__)
 
 
 class TLV(FeatureBaseClass):
-    """`Tag-Length-Value` (TLV) base class for AHAB image processing."""
+    """Tag-Length-Value (TLV) base class for AHAB image processing.
+
+    This abstract base class provides the foundation for handling TLV data structures
+    in AHAB (Advanced High Assurance Boot) images. It manages TLV blob creation,
+    parsing, validation, and configuration template generation across different
+    MCU families.
+
+    :cvar NAME: TLV type identifier for the class.
+    :cvar FEATURE: Database feature reference for TLV blob operations.
+    """
 
     NAME = "TLV_BLOB"
     FEATURE = DatabaseManager.TLV_BLOB
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Parse object from bytes array."""
+        """Parse object from bytes array.
+
+        This is an abstract method that must be implemented by child classes to define
+        how to parse the specific TLV object from a byte array.
+
+        :param data: Input bytes array to be parsed.
+        :raises SPSDKNotImplementedError: This method must be implemented in child class.
+        """
         raise SPSDKNotImplementedError("'parse' must be implemented in child class")
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Get list of validation schemas.
+        """Get list of validation schemas for TLV blob configuration.
 
-        :param family: Family for which the validation schema should be generated.
-        :return: Validation list of schemas.
+        The method retrieves and prepares validation schemas including the main TLV blob schema,
+        family-specific schema, and general validation rules. It updates the family schema
+        with supported families and the specified target family.
+
+        :param family: Family revision for which the validation schema should be generated.
+        :return: List containing output file schema, family schema, and TLV schema dictionaries.
         """
         sch = get_schema_file(DatabaseManager.TLV_BLOB)
         sch_family = get_schema_file("general")["family"]
@@ -73,8 +98,11 @@ class TLV(FeatureBaseClass):
     def get_config_template(cls, family: FamilyRevision) -> str:
         """Get AHAB configuration template.
 
+        Generates a configuration template for the specified family by retrieving
+        validation schemas and creating a commented configuration template.
+
         :param family: Family for which the template should be generated.
-        :return: Dictionary of individual templates (key is name of template, value is template itself).
+        :return: Configuration template as a string with comments and structure.
         """
         val_schemas = cls.get_validation_schemas(family=family)
         return CommentedConfig(
@@ -83,7 +111,15 @@ class TLV(FeatureBaseClass):
 
     @classmethod
     def get_tlv_class(cls, name: str) -> Type[Self]:
-        """Get the dedicated class for TLV."""
+        """Get the dedicated class for TLV by name.
+
+        Searches through all available TLV subclasses to find the one that matches the specified
+        TLV type name.
+
+        :param name: Name/label of the TLV type to find the corresponding class for.
+        :raises SPSDKValueError: When the specified TLV name is not supported.
+        :return: The TLV subclass that corresponds to the given name.
+        """
         for var in globals():
             obj = globals()[var]
             if isclass(obj) and issubclass(obj, TLV) and obj is not TLV:
@@ -95,12 +131,14 @@ class TLV(FeatureBaseClass):
 
     @classmethod
     def load_from_config(cls, config: Config) -> Self:
-        """Converts the configuration option into an TLV object.
+        """Create TLV object from configuration data.
 
-        "config" content of container configurations.
+        Converts the configuration option into a TLV object by extracting the command
+        from the configuration and instantiating the appropriate TLV class.
 
-        :param config: Message configuration dictionaries.
-        :return: TLV object.
+        :param config: Message configuration dictionaries containing TLV command data.
+        :raises SPSDKError: Invalid config field command format.
+        :return: TLV object instance based on the configuration command.
         """
         family = config.get_family()
         command = config.get_dict("command")
@@ -111,13 +149,14 @@ class TLV(FeatureBaseClass):
 
     @classmethod
     def _load_from_config(cls, config: Config, family: FamilyRevision) -> Self:
-        """Converts the configuration option into an message object.
+        """Load message object from configuration.
 
-        "config" content of container configurations.
+        Converts the configuration option into a message object using the provided
+        family revision settings.
 
         :param config: Message configuration dictionaries.
         :param family: Family revision for message configuration.
-        :raises SPSDKError: Invalid configuration detected.
+        :raises SPSDKNotImplementedError: Method must be implemented in child class.
         :return: Message object.
         """
         raise SPSDKNotImplementedError("'_load_from_config' must be implemented in child class")
@@ -130,11 +169,19 @@ class TLV(FeatureBaseClass):
         return "TLV"
 
     def __repr__(self) -> str:
+        """Return string representation of TLV object.
+
+        :return: String representation of the TLV object.
+        """
         return "TLV"
 
 
 class TLVTypes(SpsdkEnum):
-    """TLV Types."""
+    """TLV Types enumeration for AHAB image processing.
+
+    This enumeration defines the available Type-Length-Value (TLV) types used in
+    AHAB (Advanced High Assurance Boot) image format for secure boot operations.
+    """
 
     KEY_IMPORT = (
         0,
@@ -144,7 +191,15 @@ class TLVTypes(SpsdkEnum):
 
 
 class KeyImportTLV(TLV):
-    """Key import request message class representation."""
+    """AHAB Key Import TLV message for secure key provisioning.
+
+    This class represents a Type-Length-Value (TLV) structure for importing cryptographic
+    keys into NXP EdgeLock Enclave. It handles key wrapping, signing, and validation
+    according to AHAB (Advanced High Assurance Boot) specifications.
+
+    :cvar NAME: TLV identifier name for key import operations.
+    :cvar HEADER_MAGIC: Magic string identifier for EdgeLock enclave import format.
+    """
 
     NAME = "KEY_IMPORT"
     HEADER_MAGIC = "edgelockenclaveimport"
@@ -166,19 +221,14 @@ class KeyImportTLV(TLV):
         wrapped_private_key: bytes = bytes(),
         signature: bytes = bytes(),
     ) -> None:
-        """Key exchange signed message class init.
+        """Initialize key import blob for secure key provisioning.
 
-        :param family: Family revision
-        :param cert_ver: Certificate version, defaults to 0
-        :param permissions: Certificate permission, to be used in future
-            The stated permission must allow the operation requested by the signed message
-            , defaults to 0
-        :param issue_date: Issue date, defaults to None (Current date will be applied)
-        :param unique_id: UUID of device, defaults to None
-        :param unique_id_len: UUID length - 64 or 128 bits, defaults to 64 bits (8 bytes)
-        :param key_id: Key ID where to store the derived key. It must be the key store ID
-            related to the key management handle set in the command API, defaults to 0
-        :param permitted_algorithm: Algorithm used by the key import process:
+        Creates a key import blob structure used for importing cryptographic keys into
+        NXP MCU secure elements with specified algorithms, usage permissions, and lifecycle settings.
+
+        :param family: Target MCU family revision for compatibility
+        :param key_id: Key storage identifier in ELE key management system, defaults to 0
+        :param permitted_algorithm: Cryptographic algorithm for key operations, defaults to SHA256
 
          **Hash Algorithms:**
             | MD5                    0x02000003
@@ -240,10 +290,7 @@ class KeyImportTLV(TLV):
             | ECDH HKDF SHA256       0x89020109
             | ECDH HKDF SHA384       0x8902010A
             | ECDH HKDF SHA ANY      0x890201FF
-
-
-        :param key_usage: Imported key usage attribute.
-
+        :param key_usage: List of permitted key usage flags (encrypt, decrypt, sign, verify, etc.),
             | Cache  0x00000004  Permission to cache the key in the ELE internal secure memory.
             |                     This usage is set by default by ELE FW for all keys generated or imported.
             | Encrypt  0x00000100  Permission to encrypt a message with the key. It could be cipher
@@ -263,8 +310,8 @@ class KeyImportTLV(TLV):
             |                     Setting this permission automatically sets the Verify Message usage.
             | Derive  0x00004000  Permission to derive other keys from this key.
             | , defaults to 0
-
-        :param key_type:
+            defaults to None
+        :param key_type: Type of cryptographic key (AES, HMAC, OEM_IMPORT_MK_SK), defaults to AES
 
             +-------------------+-------+------------------+
             |Key type           | Value | Key size in bits |
@@ -276,42 +323,37 @@ class KeyImportTLV(TLV):
             | OEM_IMPORT_MK_SK* |0x9200 | 128/192/256      |
             +-------------------+-------+------------------+
 
-            , defaults to AES
-
-        :param key_size_bits:  Derived key size bits attribute, defaults to 0
-        :param key_lifetime: Imported key lifetime attribute
+        :param key_size_bits: Key size in bits, defaults to 0
+        :param key_lifetime: Key persistence level (volatile, persistent, permanent),
+            defaults to permanent
 
             | ELE_KEY_IMPORT_VOLATILE           0xC0020000  Standard volatile key.
             | ELE_KEY_IMPORT_PERSISTENT         0xC0020001  Standard persistent key.
             | ELE_KEY_IMPORT_PERMANENT          0xC00200FF  Standard permanent key., defaults to PERSISTENT
-
-        :param key_lifecycle: Imported key lifecycle attribute
+        :param key_lifecycle: Lifecycle stage when key is usable (open, closed, locked),
+            defaults to open
 
             | CURRENT  0x00  Key is usable in current lifecycle.
             | OPEN  0x01  Key is usable in open lifecycle.
             | CLOSED  0x02  Key is usable in closed lifecycle.
             | CLOSED and LOCKED  0x04  Key is usable in closed and locked lifecycle.
-            | , defaults to OPEN
 
-        :param oem_import_mk_sk_key_id: Identifier in the ELE key storage of the OEM_IMPORT_MK_SK key to use
-            to encrypt and sign the imported key, defaults to 0
-        :param wrapping_algorithm: Wrapping algorithm of the key blob. This field is
-            required to distinguish between different flavors of wrapping algorithms.
+        :param oem_import_mk_sk_key_id: ELE storage ID of OEM master key for encryption/signing,
+            defaults to 0
+        :param wrapping_algorithm: Key blob wrapping method (RFC3394 or AES CBC),
+            defaults to RFC3394
 
             Possible values are:
             - 0x01: RFC3394 wrapping
             - 0x02: AES CBC wrapping
 
-        :param iv: IV to use for CBC wrapping. Not used if 'wrapping algorithm' not equal 0x02.
-        :param signing_algorithm: Algorithm used to sign the blob itself. Field “Signature” of this blob.
-            It must be: 0x01 (CMAC).
+        :param iv: Initialization vector for CBC wrapping (16 bytes), defaults to None
+        :param signing_algorithm: Algorithm for blob signature verification, defaults to CMAC
         :param wrapped_private_key: Private key data in encrypted format as defined by the 'Wrapping Algorithm'.
             Key used to do the encryption must be OEM_IMPORT_WRAP_SK derived from OEM_IMPORT_MK_SK.
         :param signature: Signature of all previous fields of this blob including
             the signature tag (0x5E) and signature length fields. Key used to do the signature must be
             OEM_IMPORT_CMAC_SK derived from OEM_IMPORT_MK_SK.
-
-
         """
         self.family = family
         self.reserved = RESERVED
@@ -331,17 +373,25 @@ class KeyImportTLV(TLV):
 
     @property
     def payload_len(self) -> int:
-        """Message payload length in bytes."""
+        """Get message payload length in bytes.
+
+        :return: Length of the exported message payload in bytes.
+        """
         return len(self.export())
 
     def wrap_and_sign(
         self, private_key: bytes, oem_import_mk_sk_key: bytes, srkh: Optional[bytes] = None
     ) -> None:
-        """Get wrapped key and sign whole Import Key message.
+        """Wrap private key and sign the Import Key message.
 
-        :param private_key: Unwrapped private key
-        :param oem_import_mk_sk_key: OEM_IMPORT_MK_SK_KEY
-        :param srkh: Optionally SRKH if Salt flags requires it in Key Exchange commands, defaults to None
+        The method derives wrapping and CMAC keys using HKDF, wraps the private key
+        using the specified algorithm (RFC3394 or AES-CBC), and generates a CMAC
+        signature for the entire message.
+
+        :param private_key: Unwrapped private key to be wrapped
+        :param oem_import_mk_sk_key: OEM import master key for key derivation
+        :param srkh: Super Root Key Hash used as salt for key derivation, defaults to None
+        :raises SPSDKError: Invalid wrapping algorithm specified
         """
         oem_import_wrap_sk = hkdf(
             salt=srkh or bytes(32),
@@ -369,86 +419,190 @@ class KeyImportTLV(TLV):
         self.signature = cmac(key=oem_import_cmac_sk, data=self.export()[:-16])
 
     class Ki(X690Type[bytes]):
-        """Key Import base field type."""
+        """Key Import TLV field type for AHAB image processing.
+
+        This class represents a TLV (Type-Length-Value) field specifically designed
+        for key import operations in AHAB (Advanced High Assurance Boot) images.
+        It extends the X690 encoding standard to handle key import data structures.
+
+        :cvar TAG: TLV tag identifier for key import fields.
+        :cvar TYPECLASS: ASN.1 type class specification.
+        :cvar NATURE: List of supported type natures for the field.
+        """
 
         TAG = 0x00
         TYPECLASS = TypeClass.APPLICATION
         NATURE = [TypeNature.PRIMITIVE]
 
     class KiMagic(Ki):
-        """TLV record - Magic header."""
+        """TLV record representing a magic header in AHAB images.
+
+        This class implements a specific type of Key Information (Ki) record that contains
+        magic header data used for AHAB (Advanced High Assurance Boot) image validation
+        and identification.
+
+        :cvar TAG: TLV tag identifier for magic header records (0x00).
+        """
 
         TAG = 0x00
 
     class KiKeyId(Ki):
-        """TLV record - Key ID."""
+        """TLV record representing a Key ID.
+
+        This class implements a specific TLV (Type-Length-Value) record type used
+        in AHAB image format for storing key identification information.
+
+        :cvar TAG: TLV tag identifier for Key ID records (0x01).
+        """
 
         TAG = 0x01
 
     class KiKeyAlgorithm(Ki):
-        """TLV record - Key algorithm."""
+        """TLV record representing key algorithm information.
+
+        This class handles the creation and management of Type-Length-Value (TLV)
+        records specifically for key algorithm data in AHAB image format.
+
+        :cvar TAG: TLV tag identifier for key algorithm records (0x02).
+        """
 
         TAG = 0x02
 
     class KiKeyUsage(Ki):
-        """TLV record - Key usage."""
+        """TLV record for key usage information in AHAB images.
+
+        This class represents a Type-Length-Value record that specifies key usage
+        constraints and permissions within AHAB (Advanced High Assurance Boot) image
+        structures.
+
+        :cvar TAG: TLV tag identifier for key usage records (0x03).
+        """
 
         TAG = 0x03
 
     class KiKeyType(Ki):
-        """TLV record - Key type."""
+        """TLV record representing a key type field.
+
+        This class implements a specific TLV (Type-Length-Value) record used in AHAB
+        (Advanced High Assurance Boot) image format to store key type information.
+
+        :cvar TAG: TLV tag identifier for key type records (0x04).
+        """
 
         TAG = 0x04
 
     class KiKeyBitsSize(Ki):
-        """TLV record - Key size."""
+        """TLV record for key size information.
+
+        This class represents a Type-Length-Value record that stores cryptographic
+        key size data in AHAB image format.
+
+        :cvar TAG: TLV tag identifier for key size records (0x05).
+        """
 
         TAG = 0x05
 
     class KiKeyLifeTime(Ki):
-        """TLV record - Key life time."""
+        """TLV record for managing key lifetime information.
+
+        This class represents a Type-Length-Value record that handles key lifetime
+        data in AHAB (Advanced High Assurance Boot) image format.
+
+        :cvar TAG: TLV tag identifier for key lifetime records (0x06).
+        """
 
         TAG = 0x06
 
     class KiKeyLifeCycle(Ki):
-        """TLV record - Key life cycle."""
+        """TLV record for managing key life cycle information.
+
+        This class represents a Type-Length-Value (TLV) record that handles
+        key life cycle data in AHAB (Advanced High Assurance Boot) images.
+
+        :cvar TAG: TLV tag identifier for key life cycle records (0x07).
+        """
 
         TAG = 0x07
 
     class KiImportMkSkKeyId(Ki):
-        """TLV record - Import MK SK KEY id."""
+        """TLV record for importing Master Key Signing Key identifier.
+
+        This class represents a Key Identifier (Ki) TLV record specifically used for
+        importing Master Key Signing Key identifiers in AHAB image processing.
+
+        :cvar TAG: TLV tag identifier for MK SK KEY import operations.
+        """
 
         TAG = 0x10
 
     class KiWrappingAlgorithm(Ki):
-        """TLV record - Key wrapping algorithm."""
+        """TLV record representing key wrapping algorithm configuration.
+
+        This class handles the key wrapping algorithm specification within AHAB
+        (Advanced High Assurance Boot) image format, providing the necessary
+        configuration for cryptographic key wrapping operations.
+
+        :cvar TAG: TLV tag identifier for key wrapping algorithm records.
+        """
 
         TAG = 0x11
 
     class KiIv(Ki):
-        """TLV record - Optional Initial vector."""
+        """TLV record for optional initial vector in AHAB images.
+
+        This class represents a Type-Length-Value record that contains an optional
+        initial vector used in AHAB (Advanced High Assurance Boot) image processing.
+        It extends the Ki class to provide specific functionality for initial vector
+        handling.
+
+        :cvar TAG: TLV tag identifier for initial vector records.
+        """
 
         TAG = 0x12
 
     class KiSigningAlgorithm(Ki):
-        """TLV record - Key signing algorithm."""
+        """TLV record representing key signing algorithm information.
+
+        This class handles the creation and management of Type-Length-Value records
+        specifically for key signing algorithm data in AHAB image format.
+
+        :cvar TAG: TLV tag identifier for signing algorithm records (0x14).
+        """
 
         TAG = 0x14
 
     class KiEncryptedPrk(Ki):
-        """TLV record - Key wrapped data."""
+        """TLV record for encrypted private key data.
+
+        This class represents a Key Information (Ki) TLV record that contains
+        encrypted private key material for secure key provisioning operations.
+
+        :cvar TAG: TLV tag identifier for encrypted private key records (0x15).
+        """
 
         TAG = 0x15
 
     class KiSignature(Ki):
-        """TLV record - Signature."""
+        """AHAB TLV signature record implementation.
+
+        This class represents a signature record in AHAB (Advanced High Assurance Boot)
+        TLV (Type-Length-Value) format, used for cryptographic signature operations
+        in secure boot processes.
+
+        :cvar TAG: TLV tag identifier for signature records (0x1E).
+        """
 
         TAG = 0x1E
 
     def export(self) -> bytes:
-        """Exports message payload to bytes array.
+        """Export key information message payload to bytes array.
 
-        :return: Bytes representation of message payload.
+        The method serializes all key information fields including magic header, key ID,
+        algorithm settings, usage flags, type, size, lifetime, lifecycle, import settings,
+        wrapping configuration, IV (for AES_CBC), signing algorithm, encrypted private key,
+        and signature into a binary format.
+
+        :return: Bytes representation of the complete key information message payload.
         """
         key_usage = 0
         for usage in self.key_usage:
@@ -475,10 +629,15 @@ class KeyImportTLV(TLV):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Parse object from bytes array.
+        """Parse key import data blob from binary data.
 
-        :param data: Binary data with Payload to parse.
-        :return: New instance with parsed data.
+        Parses TLV-encoded binary data containing key import information and creates
+        a new instance with all the extracted key parameters including algorithms,
+        usage flags, lifecycle settings, and cryptographic material.
+
+        :param data: Binary data containing TLV-encoded key import data blob.
+        :raises SPSDKParsingError: Invalid magic value in the data blob header.
+        :return: New instance populated with parsed key import parameters.
         """
         # Create a new instance with default values
         instance = cls(
@@ -565,7 +724,14 @@ class KeyImportTLV(TLV):
         return instance
 
     def verify(self) -> Verifier:
-        """Verify message properties."""
+        """Verify TLV blob message properties.
+
+        Creates a Verifier object that validates all key import parameters including
+        key ID, algorithms, usage flags, type, size, lifetime, lifecycle, wrapping
+        details, and cryptographic signatures.
+
+        :return: Verifier object containing validation records for all TLV properties.
+        """
         ret = Verifier("TLV blob")
         ret.add_record_range("Key ID", self.key_id)
         ret.add_record_enum("Key import algorithm", self.permitted_algorithm, KeyAlgorithm)
@@ -587,6 +753,14 @@ class KeyImportTLV(TLV):
         return ret
 
     def __str__(self) -> str:
+        """Get string representation of the key import TLV object.
+
+        Provides a detailed formatted string containing all key import parameters including
+        key ID, algorithms, usage flags, type, size, lifetime, lifecycle, wrapping details,
+        and cryptographic data.
+
+        :return: Formatted string representation with key import configuration details.
+        """
         ret = super().__str__() + "\n"
         ret += f"  Key ID value: 0x{self.key_id:08X}, {self.key_id}\n"
         ret += f"  Key import algorithm value: {self.permitted_algorithm.label}\n"
@@ -608,15 +782,16 @@ class KeyImportTLV(TLV):
 
     @classmethod
     def _load_from_config(cls, config: Config, family: FamilyRevision) -> Self:
-        """Converts the configuration option into an message object.
+        """Create key import request message from configuration.
 
-        "config" content of container configurations.
+        Parses configuration data to extract key import parameters and creates a properly
+        configured key import request message object with wrapped key and signature.
 
-        :param config: Message configuration dictionaries.
-        :param family: Family revision context.
-        :param base_cls: Base message class for configuration loading.
-        :raises SPSDKError: Invalid configuration detected.
-        :return: Message object.
+        :param config: Configuration dictionary containing key import settings.
+        :param family: Target MCU family and revision information.
+        :raises SPSDKError: Invalid configuration detected or missing required fields.
+        :raises SPSDKValueError: Invalid key import configuration parameters.
+        :return: Configured key import request message object.
         """
         command = config.get_config("command")
         if len(command) != 1:
@@ -707,8 +882,11 @@ class KeyImportTLV(TLV):
     def get_config(self, data_path: str = "./") -> Config:
         """Create configuration of the Key Import TLV.
 
+        Generates a configuration dictionary containing all the key import parameters
+        including key metadata, wrapping details, and cryptographic signatures.
+
         :param data_path: Path where to store the data files.
-        :return: Configuration dictionary.
+        :return: Configuration object with key import TLV settings.
         """
         # Create the base configuration structure
         config_dict = {

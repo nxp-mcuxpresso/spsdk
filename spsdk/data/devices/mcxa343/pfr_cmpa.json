@@ -40,17 +40,17 @@
                                 {
                                     "name": "UART_ISP",
                                     "value": 1,
-                                    "description": "LPUART ISP"
+                                    "description": "UART ISP"
                                 },
                                 {
-                                    "name": "SPI_SLAVE",
+                                    "name": "SPI_ISP",
                                     "value": 2,
-                                    "description": "LPSPI Slave ISP"
+                                    "description": "SPI ISP"
                                 },
                                 {
-                                    "name": "I2C_SLAVE",
+                                    "name": "I2C_ISP",
                                     "value": 3,
-                                    "description": "LPI2C slave ISP"
+                                    "description": "I2C ISP"
                                 }
                             ]
                         },
@@ -94,6 +94,7 @@
                         },
                         {
                             "width": 16,
+                            "access": "WRITE_CONST",
                             "id": "field000-bits16-31",
                             "name": "HEADER",
                             "description": "CMPA Header marker should be set to 0x5963. After this header is set, all non-zero values will take effect; leaving all settings at 0xff will cause undefined behavior. It is recommended to set all values to 0x00 before setting the CMPA header value"
@@ -123,14 +124,14 @@
                             "description": "Disable ISP mode entry through pin assertion",
                             "values": [
                                 {
-                                    "name": "DISABLED_0b01",
-                                    "value": 1,
-                                    "description": "ISP entry disabled"
-                                },
-                                {
-                                    "name": "ALLOWED_0b00",
+                                    "name": "ALLOWED_0B00",
                                     "value": 0,
                                     "description": "ISP entry allowed"
+                                },
+                                {
+                                    "name": "DISABLED_0B01",
+                                    "value": 1,
+                                    "description": "ISP entry disabled"
                                 }
                             ]
                         },
@@ -141,14 +142,14 @@
                             "description": "Disable ISP mode entry through debug mailbox command",
                             "values": [
                                 {
-                                    "name": "DISABLED_0b01",
-                                    "value": 1,
-                                    "description": "ISP entry disabled"
-                                },
-                                {
-                                    "name": "ALLOWED_0b00",
+                                    "name": "ALLOWED_0B00",
                                     "value": 0,
                                     "description": "ISP entry allowed"
+                                },
+                                {
+                                    "name": "DISABLED_0B01",
+                                    "value": 1,
+                                    "description": "ISP entry disabled"
                                 }
                             ]
                         },
@@ -159,14 +160,14 @@
                             "description": "Disable ISP mode entry through ROM API call. ISP mode can be entered through ROM API invocation",
                             "values": [
                                 {
-                                    "name": "DISABLED_0b01",
-                                    "value": 1,
-                                    "description": "ISP entry disabled"
-                                },
-                                {
-                                    "name": "ALLOWED_0b00",
+                                    "name": "ALLOWED_0B00",
                                     "value": 0,
                                     "description": "ISP entry allowed"
+                                },
+                                {
+                                    "name": "DISABLED_0B01",
+                                    "value": 1,
+                                    "description": "ISP entry disabled"
                                 }
                             ]
                         },
@@ -920,10 +921,52 @@
                             "width": 1
                         },
                         {
-                            "id": "field040-bits16-18",
                             "width": 3,
+                            "id": "field040-bits16-18",
                             "name": "ACL_SEC_4",
-                            "description": "acl sec 4"
+                            "description": "Access control for flash sector (offset range 0x00_8000 - 0x00_9FFF)",
+                            "values": [
+                                {
+                                    "name": "DEFAULT_RW_UNLOCKED",
+                                    "value": 0,
+                                    "description": "Data flash and unlocked (RW__)"
+                                },
+                                {
+                                    "name": "DATA_RW_LOCKED",
+                                    "value": 1,
+                                    "description": "Data flash and locked (RW_L)"
+                                },
+                                {
+                                    "name": "ROM_RX_LOCKED",
+                                    "value": 2,
+                                    "description": "Read only Memory (ROM) and locked (R_XL)"
+                                },
+                                {
+                                    "name": "DATA_ROM_LOCKED",
+                                    "value": 3,
+                                    "description": "Data Read only memory (DROM) and locked (R__L)"
+                                },
+                                {
+                                    "name": "ROM_RX_UNLOCKED",
+                                    "value": 4,
+                                    "description": "Read-Only-Memory (ROM) and un-locked (R_X_)"
+                                },
+                                {
+                                    "name": "XOM_UNLOCKED",
+                                    "value": 5,
+                                    "description": "eXecute-only Memory (XOM) and un-locked (__X_)"
+                                },
+                                {
+                                    "name": "XOM_LOCKED",
+                                    "value": 6,
+                                    "description": "eXecute-Only-Memory (XOM) and locked (__XL)"
+                                },
+                                {
+                                    "name": "NO_ACCESS_LOCKED",
+                                    "value": 7,
+                                    "description": "Hidden (___L)"
+                                }
+                            ]
                         },
                         {
                             "width": 1
@@ -1085,9 +1128,12 @@
                 },
                 {
                     "id": "field044",
-                    "name": "FLASH_ACL_15_8",
+                    "name": "FLASH_ACL_8_15",
                     "description": "Access control for flash sector",
                     "offset_int": "0x0044",
+                    "deprecated_names": [
+                        "FLASH_ACL_8_15"
+                    ],
                     "default_value_int": "0x44444444",
                     "bitfields": [
                         {
@@ -1502,9 +1548,12 @@
                 },
                 {
                     "id": "field048",
-                    "name": "FLASH_ACL_23_16",
+                    "name": "FLASH_ACL_16_23",
                     "description": "Access control for flash sector",
                     "offset_int": "0x0048",
+                    "deprecated_names": [
+                        "FLASH_ACL_16_23"
+                    ],
                     "default_value_int": "0x44444444",
                     "bitfields": [
                         {
@@ -1919,9 +1968,12 @@
                 },
                 {
                     "id": "field04C",
-                    "name": "FLASH_ACL_31_24",
+                    "name": "FLASH_ACL_24_31",
                     "description": "Access control for flash sector",
                     "offset_int": "0x004C",
+                    "deprecated_names": [
+                        "FLASH_ACL_24_31"
+                    ],
                     "default_value_int": "0x44444444",
                     "bitfields": [
                         {
@@ -2333,150 +2385,314 @@
                             "width": 1
                         }
                     ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved 00050-0007C",
+                "description": "Reserved 00050-0007C"
+            },
+            "registers": [
+                {
+                    "id": "Reserved00050",
+                    "name": "Reserved 0x00050",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0050",
+                    "is_reserved": true,
+                    "default_value_int": "0"
                 },
                 {
+                    "id": "Reserved00054",
+                    "name": "Reserved 0x00054",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0054",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved00058",
+                    "name": "Reserved 0x00058",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0058",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved0005C",
+                    "name": "Reserved 0x0005C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x005C",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved00060",
+                    "name": "Reserved 0x00060",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0060",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved00064",
+                    "name": "Reserved 0x00064",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0064",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved00068",
+                    "name": "Reserved 0x00068",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0068",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved0006C",
+                    "name": "Reserved 0x0006C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x006C",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved00070",
+                    "name": "Reserved 0x00070",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0070",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved00074",
+                    "name": "Reserved 0x00074",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0074",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved00078",
+                    "name": "Reserved 0x00078",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0078",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved0007C",
+                    "name": "Reserved 0x0007C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x007C",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Quick GPIO Configuration",
+                "description": "Quick GPIO Configuration"
+            },
+            "registers": [
+                {
                     "id": "field080",
-                    "offset_int": "0x80",
                     "name": "QUICK_SET_GPIO_0",
-                    "description": "Quick Set to Drive GPIO 0 port [31:0] pins high after reset. \nEach bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. \nThis feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
-                    "default_value_int": "0x0"
+                    "description": "Quick Set to Drive GPIO 0 port [31:0] pins high after reset. Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "offset_int": "0x0080",
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field084",
-                    "offset_int": "0x84",
                     "name": "QUICK_CLR_GPIO_0",
-                    "description": "Quick Clear to Drive GPIO 0 port [31:0] pins low after reset. \nEach bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. \nThis feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
-                    "default_value_int": "0x0"
+                    "description": "Quick Clear to Drive GPIO 0 port [31:0] pins low after reset. Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "offset_int": "0x0084",
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field088",
-                    "offset_int": "0x88",
                     "name": "QUICK_SET_GPIO_1",
-                    "description": "Quick Set to Drive GPIO 1 port [31:0] pins high after reset. \nEach bit corresponds to the pin in GPIO port 1. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. \nThis feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
-                    "default_value_int": "0x0"
+                    "description": "Quick Set to Drive GPIO 1 port [31:0] pins high after reset. Each bit corresponds to the pin in GPIO port 1. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "offset_int": "0x0088",
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field08C",
-                    "offset_int": "0x8c",
                     "name": "QUICK_CLR_GPIO_1",
-                    "description": "Quick Clear to Drive GPIO 1 port [31:0] pins low after reset. \nEach bit corresponds to the pin in GPIO port 1. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. \nThis feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
-                    "default_value_int": "0x0"
+                    "description": "Quick Clear to Drive GPIO 1 port [31:0] pins low after reset. Each bit corresponds to the pin in GPIO port 1. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "offset_int": "0x008C",
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field090",
-                    "offset_int": "0x90",
                     "name": "QUICK_SET_GPIO_2",
-                    "description": "Quick Set to Drive GPIO 2 port [31:0] pins high after reset. \nEach bit corresponds to the pin in GPIO port 2. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. \nThis feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
-                    "default_value_int": "0x0"
+                    "description": "Quick Set to Drive GPIO 2 port [31:0] pins high after reset. Each bit corresponds to the pin in GPIO port 2. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "offset_int": "0x0090",
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field094",
-                    "offset_int": "0x94",
                     "name": "QUICK_CLR_GPIO_2",
-                    "description": "Quick Clear to Drive GPIO 2 port [31:0] pins low after reset. \nEach bit corresponds to the pin in GPIO port 2. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. \nThis feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
-                    "default_value_int": "0x0"
+                    "description": "Quick Clear to Drive GPIO 2 port [31:0] pins low after reset. Each bit corresponds to the pin in GPIO port 2. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "offset_int": "0x0094",
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field098",
-                    "offset_int": "0x98",
                     "name": "QUICK_SET_GPIO_3",
-                    "description": "Quick Set to Drive GPIO 3 port [31:0] pins high after reset. \nEach bit corresponds to the pin in GPIO port 3. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. \nThis feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
-                    "default_value_int": "0x0"
+                    "description": "Quick Set to Drive GPIO 3 port [31:0] pins high after reset. Each bit corresponds to the pin in GPIO port 3. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "offset_int": "0x0098",
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field09C",
-                    "offset_int": "0x9c",
                     "name": "QUICK_CLR_GPIO_3",
-                    "description": "Quick Clear to Drive GPIO 3 port [31:0] pins low after reset. \nEach bit corresponds to the pin in GPIO port 3. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. \nThis feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
-                    "default_value_int": "0x0"
+                    "description": "Quick Clear to Drive GPIO 3 port [31:0] pins low after reset. Each bit corresponds to the pin in GPIO port 3. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "offset_int": "0x009C",
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field0A0",
-                    "offset_int": "0xa0",
                     "name": "QUICK_SET_GPIO_4",
-                    "description": "Quick Set to Drive GPIO 4 port [31:0] pins high after reset. \nEach bit corresponds to the pin in GPIO port 4. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. \nThis feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
-                    "default_value_int": "0x0"
+                    "description": "Quick Set to Drive GPIO 4 port [31:0] pins high after reset. Each bit corresponds to the pin in GPIO port 4. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "offset_int": "0x00A0",
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field0A4",
-                    "offset_int": "0xa4",
                     "name": "QUICK_CLR_GPIO_4",
-                    "description": "Quick Clear to Drive GPIO 4 port [31:0] pins low after reset. \nEach bit corresponds to the pin in GPIO port 4. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. \nThis feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
-                    "default_value_int": "0x0"
+                    "description": "Quick Clear to Drive GPIO 4 port [31:0] pins low after reset. Each bit corresponds to the pin in GPIO port 4. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "offset_int": "0x00A4",
+                    "default_value_int": "0"
                 },
                 {
+                    "id": "Reserved000A8",
+                    "name": "Reserved 0x000A8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00A8",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved000AC",
+                    "name": "Reserved 0x000AC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00AC",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Read Out Protection",
+                "description": "Read Out Protection (ROP) configuration"
+            },
+            "registers": [
+                {
                     "id": "field0B0",
-                    "offset_int": "0xB0",
                     "name": "ROP_STATE",
-                    "description": "Read Out Protection (ROP) State value. \nDevice does not support secure boot, but it does support four levels of Read Out Protection, referred as ROP_STATE. \nThis read out protection is a mechanism that allows user to enable different levels of protection in the system. \nROM reads ROP_STATE from ROP_STATE and ROP_STATE_DP on IFR0, does the compare, and if it does not match, resets the device; if match then programs it to SYSCON->ROP_STATE. \nAny other value then four listed means ROP3-like behavior (debug disabled/locked, ISP disabled).",
-                    "default_value_int": "0xffffffff",
-                    "bitfields": [
-                        {
-                            "id": "field0B0-bits0-31",
-                            "width": 32,
-                            "name": "ROP_STATE",
-                            "description": "ROP_STATE[31:0]",
-                            "values": [
-                                {
-                                    "name": "ROP_LEVEL0",
-                                    "value": 4294967295,
-                                    "description": "ROP_STATE = 0xFFFF_FFFF (erased FLASH value), no ROP. Default for blank state."
-                                },
-                                {
-                                    "name": "ROP_LEVEL1",
-                                    "value": 4005168323,
-                                    "description": "ROP_STATE = 0xEEBA_04C3. Debug disabled and unlocked, can be modified by customer, only limited debug mailbox commands available."
-                                },
-                                {
-                                    "name": "ROP_LEVEL2",
-                                    "value": 1228508555,
-                                    "description": "ROP_STATE = 0x4939_8D8B. Debug disabled and locked, cannot be modified by customer, only limited debug mailbox commands available."
-                                },
-                                {
-                                    "name": "ROP_LEVEL3",
-                                    "value": 2964043523,
-                                    "description": "ROP_STATE = 0xB0AB_B703. Debug disabled and locked, cannot be modified by customer, no debug mailbox commands available."
-                                }
-                            ]
-                        }
-                    ]
+                    "description": "Read Out Protection (ROP) State value. Device does not support secure boot, but it does support four levels of Read Out Protection, referred as ROP_STATE. This read out protection is a mechanism that allows user to enable different levels of protection in the system. ROM reads ROP_STATE from ROP_STATE and ROP_STATE_DP on IFR0, does the compare, and if it does not match, resets the device; if match then programs it to SYSCON->ROP_STATE. Any other value then four listed means ROP3-like behavior (debug disabled/locked, ISP disabled).",
+                    "offset_int": "0x00B0",
+                    "default_value_int": "0xFFFFFFFF"
+                },
+                {
+                    "id": "Reserved000B4",
+                    "name": "Reserved 0x000B4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00B4",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved000B8",
+                    "name": "Reserved 0x000B8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00B8",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved000BC",
+                    "name": "Reserved 0x000BC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00BC",
+                    "is_reserved": true,
+                    "default_value_int": "0"
                 },
                 {
                     "id": "field0C0",
-                    "offset_int": "0xC0",
                     "name": "ROP_STATE_DP",
-                    "description": "Read Out Protection (ROP) State duplicate value. \nROM reads ROP_STATE from ROP_STATE and ROP_STATE_DP on IFR0, does the compare, and if it does not match, resets the device; if match then programs it to SYSCON->ROP_STATE. \nAny other value then four listed means ROP3-like behavior (debug disabled/locked, ISP disabled).",
-                    "default_value_int": "0xffffffff",
-                    "bitfields": [
-                        {
-                            "id": "field0C0-bits0-31",
-                            "width": 32,
-                            "name": "ROP_STATE_DP",
-                            "description": "ROP_STATE_DP[31:0]",
-                            "values": [
-                                {
-                                    "name": "ROP_LEVEL0",
-                                    "value": 4294967295,
-                                    "description": "ROP_STATE = 0xFFFF_FFFF (erased FLASH value), no ROP. Default for blank state."
-                                },
-                                {
-                                    "name": "ROP_LEVEL1",
-                                    "value": 4005168323,
-                                    "description": "ROP_STATE = 0xEEBA_04C3. Debug disabled and unlocked, can be modified by customer, only limited debug mailbox commands available."
-                                },
-                                {
-                                    "name": "ROP_LEVEL2",
-                                    "value": 1228508555,
-                                    "description": "ROP_STATE = 0x4939_8D8B. Debug disabled and locked, cannot be modified by customer, only limited debug mailbox commands available."
-                                },
-                                {
-                                    "name": "ROP_LEVEL3",
-                                    "value": 2964043523,
-                                    "description": "ROP_STATE = 0xB0AB_B703. Debug disabled and locked, cannot be modified by customer, no debug mailbox commands available."
-                                }
-                            ]
-                        }
-                    ]
+                    "description": "Read Out Protection (ROP) State duplicate value. ROM reads ROP_STATE from ROP_STATE and ROP_STATE_DP on IFR0, does the compare, and if it does not match, resets the device; if match then programs it to SYSCON->ROP_STATE. Any other value then four listed means ROP3-like behavior (debug disabled/locked, ISP disabled).",
+                    "offset_int": "0x00C0",
+                    "default_value_int": "0xFFFFFFFF"
+                },
+                {
+                    "id": "Reserved000C4",
+                    "name": "Reserved 0x000C4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00C4",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved000C8",
+                    "name": "Reserved 0x000C8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00C8",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved000CC",
+                    "name": "Reserved 0x000CC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00CC",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved 000D0-000DC",
+                "description": "Reserved 000D0-000DC"
+            },
+            "registers": [
+                {
+                    "id": "Reserved000D0",
+                    "name": "Reserved 0x000D0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00D0",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved000D4",
+                    "name": "Reserved 0x000D4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00D4",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved000D8",
+                    "name": "Reserved 0x000D8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00D8",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved000DC",
+                    "name": "Reserved 0x000DC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00DC",
+                    "is_reserved": true,
+                    "default_value_int": "0"
                 }
             ]
         }

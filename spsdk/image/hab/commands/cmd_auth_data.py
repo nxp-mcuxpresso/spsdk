@@ -4,11 +4,13 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""HAB commands module for handling authentication data operations.
+"""HAB authentication data commands implementation.
 
-This module implements the Authenticate Data commands used in the HAB secure boot
-process.
+This module provides HAB (High Assurance Boot) commands for handling authentication
+data operations in the secure boot process. It includes commands for authenticating
+CSF data, decrypting data, and managing authentication signatures and MACs.
 """
+
 from datetime import datetime
 from struct import pack, unpack_from
 from typing import Any, Iterator, Optional, Union
@@ -36,40 +38,61 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 class AuthDataFlagsEnum(SpsdkEnum):
-    """Flags for Authenticate Data commands."""
+    """Flags enumeration for HAB Authenticate Data commands.
+
+    This enumeration defines the available flags that can be used with
+    HAB (High Assurance Boot) Authenticate Data commands to control
+    signature verification behavior.
+
+    :cvar CLR: No flags set, default behavior.
+    :cvar ABS: Absolute signature address flag.
+    """
 
     CLR = (0, "CLR", "No flags set")
     ABS = (1, "ABS", "Absolute signature address")
 
 
 class SPSDKExpectedSignatureOrMACError(SPSDKError):
-    """CmdAuthData additional data block: expected Signature or MAC object."""
+    """SPSDK exception for invalid authentication data format in HAB commands.
+
+    This exception is raised when CmdAuthData encounters an additional data block
+    that should contain a Signature or MAC object but contains invalid or
+    unexpected data instead.
+    """
 
 
 SignatureOrMAC = Union[MAC, Signature]
 
 
 class CmdAuthData(CmdBase):
-    """Verify the authenticity of pre-loaded data using a pre-installed key.
+    """HAB Authenticate Data command for verifying pre-loaded data authenticity.
 
-    The data may include executable SW instructions and may be spread across multiple non-contiguous blocks in memory.
-    +--------------+---------------+--------------+
-    |     tag      |      len      |    flags     |
-    +-----------+--+-------+-------+-+------------+
-    | key_index | sig_fmt  | engine  | engine_cfg |
-    +-----------+----------+---------+------------+
-    |                  aut_start                  |
-    +---------------------------------------------+
-    |                 [blk_start]                 |
-    +---------------------------------------------+
-    |                 [blk_bytes]                 |
-    +---------------------------------------------+
-    |                      .                      |
-    +---------------------------------------------+
-    |                 [blk_start]                 |
-    +---------------------------------------------+
-    |                 [blk_bytes]                 |
-    +---------------------------------------------+
+    This command verifies the authenticity of pre-loaded data using a pre-installed key.
+    The data may include executable SW instructions and can be spread across multiple
+    non-contiguous blocks in memory. The command structure includes authentication
+    parameters and block definitions for the data to be verified.
+
+        Authentication data command format::
+
+        +--------------+---------------+--------------+
+        |     tag      |      len      |    flags     |
+        +-----------+--+-------+-------+-+------------+
+        | key_index | sig_fmt  | engine  | engine_cfg |
+        +-----------+----------+---------+------------+
+        |                  aut_start                  |
+        +---------------------------------------------+
+        |                 [blk_start]                 |
+        +---------------------------------------------+
+        |                 [blk_bytes]                 |
+        +---------------------------------------------+
+        |                      .                      |
+        +---------------------------------------------+
+        |                 [blk_start]                 |
+        +---------------------------------------------+
+        |                 [blk_bytes]                 |
+        +---------------------------------------------+
+
+    :cvar CMD_TAG: Command tag identifier for authenticate data operations.
     """
 
     CMD_TAG = CmdTag.AUT_DAT
@@ -86,7 +109,23 @@ class CmdAuthData(CmdBase):
         private_key: Optional[PrivateKey] = None,
         signature_provider: Optional[SignatureProvider] = None,
     ):
-        """Initialize the Authenticate data command."""
+        """Initialize the Authenticate data command.
+
+        Creates a new HAB authenticate data command with specified cryptographic parameters
+        and validation settings.
+
+        :param flags: Authentication data flags controlling command behavior.
+        :param key_index: Index of the key to be used for authentication.
+        :param sig_fmt: Certificate format for signature verification.
+        :param engine: Cryptographic engine to be used for operations.
+        :param engine_cfg: Engine-specific configuration value.
+        :param location: Memory location for the authentication data.
+        :param certificate: HAB certificate for authentication (optional).
+        :param private_key: Private key for signing operations (optional).
+        :param signature_provider: External signature provider (optional).
+        :raises SPSDKValueError: When both private key and signature provider are specified.
+        :raises SPSDKError: When private key doesn't match the certificate's public key.
+        """
         super().__init__(flags.tag)
         self.key_index = key_index
         self.sig_format = sig_fmt
@@ -114,74 +153,115 @@ class CmdAuthData(CmdBase):
 
     @property
     def flags(self) -> AuthDataFlagsEnum:
-        """Flag of Authenticate data command."""
+        """Get the flags of Authenticate data command.
+
+        :return: Authentication data command flags extracted from header parameter.
+        """
         return AuthDataFlagsEnum.from_tag(self._header.param)
 
     @flags.setter
     def flags(self, value: AuthDataFlagsEnum) -> None:
+        """Set authentication data flags.
+
+        This method validates and sets the authentication data flags by updating
+        the header parameter with the provided flag value.
+
+        :param value: Authentication data flag to be set.
+        :raises SPSDKError: If the provided flag value is not valid.
+        """
         if value not in AuthDataFlagsEnum:
             raise SPSDKError("Incorrect flag")
         self._header.param = value.tag
 
     @property
     def key_index(self) -> int:
-        """Key index."""
+        """Get the key index value.
+
+        :return: The key index as an integer value.
+        """
         return self._key_index
 
     @key_index.setter
     def key_index(self, value: int) -> None:
-        """Key index setter."""
+        """Set the key index value.
+
+        :param value: Key index value, must be in range 0-5.
+        :raises SPSDKError: If the key index value is not in the valid range (0-5).
+        """
         if value not in (0, 1, 2, 3, 4, 5):
             raise SPSDKError("Incorrect key index")
         self._key_index = value
 
     @property
     def engine(self) -> EngineEnum:
-        """Engine."""
+        """Get the engine type used for authentication.
+
+        :return: The engine enumeration value specifying the cryptographic engine.
+        """
         return self._engine
 
     @engine.setter
     def engine(self, value: EngineEnum) -> None:
-        """Engine setter."""
+        """Set the engine type for the command.
+
+        :param value: Engine type to be set for the command.
+        :raises SPSDKError: If the provided engine value is not a valid EngineEnum member.
+        """
         if value not in EngineEnum:
             raise SPSDKError("Incorrect engine")
         self._engine = value
 
     @property
     def needs_cmd_data_reference(self) -> bool:
-        """Whether the command contains a reference to an additional data."""
+        """Check if the command contains a reference to additional data.
+
+        This method indicates whether the authentication data command requires
+        a reference to external data that needs to be processed separately.
+
+        :return: True if the command needs additional data reference, False otherwise.
+        """
         return True
 
     @property
     def cmd_data_offset(self) -> int:
-        """Offset of an additional data (such as signature or MAC, etc) in binary image."""
+        """Get offset of additional data in binary image.
+
+        The method returns the location offset for additional data such as signature or MAC
+        in the binary image.
+
+        :return: Offset value in bytes.
+        """
         return self.location
 
     @cmd_data_offset.setter
     def cmd_data_offset(self, value: int) -> None:
-        """Setter.
+        """Set command data offset value.
 
-        :param value: offset to set
+        :param value: Offset value to be assigned to the location attribute.
         """
         self.location = value
 
     @property  # type: ignore
     def cmd_data_reference(self) -> Optional[SignatureOrMAC]:
-        """Reference to an additional data (such as certificate, signature, etc).
+        """Get reference to additional data such as certificate or signature.
 
-        -   None if no reference was assigned;
-        -   Value type is command-specific
+        Returns the signature or MAC reference if one was assigned to this command,
+        otherwise returns None. The specific type of the returned value depends on
+        the command implementation.
+
+        :return: Signature or MAC reference if assigned, None otherwise.
         """
         return self._signature
 
     @cmd_data_reference.setter
     def cmd_data_reference(self, value: Union[HabCertificate, Signature, MAC, SrkTable]) -> None:
-        """Setter.
+        """Set command data reference for authentication.
 
-        By default, the command does not support cmd_data_reference
+        Sets the signature or MAC object based on the certificate format. For AEAD format,
+        a MAC object is required. For CMS format, a Signature object is required.
 
-        :param value: to be set
-        :raises SPSDKExpectedSignatureOrMACError: if unsupported data object is provided
+        :param value: Authentication data object (MAC for AEAD, Signature for CMS)
+        :raises SPSDKExpectedSignatureOrMACError: If unsupported data object is provided for the format
         """
         if self.sig_format == CertFormatEnum.AEAD:
             if not isinstance(value, MAC):
@@ -196,9 +276,12 @@ class CmdAuthData(CmdBase):
     def parse_cmd_data(self, data: bytes) -> SignatureOrMAC:
         """Parse additional command data from binary data.
 
-        :param data: to be parsed
-        :return: parsed data object; command-specific: Signature or MAC
-        :raises SPSDKExpectedSignatureOrMACError: if unsupported data object is provided
+        The method parses HAB command data and creates appropriate signature or MAC object
+        based on the header tag found in the binary data.
+
+        :param data: Binary data to be parsed containing signature or MAC information.
+        :return: Parsed data object, either Signature or MAC instance.
+        :raises SPSDKExpectedSignatureOrMACError: If unsupported data object is provided.
         """
         header = Header.parse(data)
         if header.tag == SegmentTag.MAC:
@@ -211,40 +294,84 @@ class CmdAuthData(CmdBase):
 
     @property
     def signature(self) -> Optional[SignatureOrMAC]:
-        """Signature referenced by `location` attribute."""
+        """Get signature referenced by location attribute.
+
+        :return: Signature or MAC object if available, None otherwise.
+        """
         return self._signature
 
     @signature.setter
     def signature(self, value: SignatureOrMAC) -> None:
-        """Setter.
+        """Set signature for the authentication data command.
 
-        :param value: signature to be installed by the command
+        :param value: Signature to be installed by the command.
         """
         self.cmd_data_reference = value
 
     def __repr__(self) -> str:
+        """Return string representation of the HAB Authenticate Data command.
+
+        The representation includes class name, flags, engine configuration, key index,
+        and memory location in a readable format.
+
+        :return: String representation of the command with key configuration details.
+        """
         return (
             f"{self.__class__.__name__} <{self.flags.label}, {self.engine.label},"
             f" {self.engine_cfg}, key:{self.key_index}, 0x{self.location:X}>"
         )
 
     def __len__(self) -> int:
+        """Get the number of blocks in the authentication data.
+
+        :return: Number of blocks contained in this authentication data object.
+        """
         return len(self._blocks)
 
     def __getitem__(self, key: int) -> tuple[int, int]:
+        """Get block tuple at specified index.
+
+        Retrieves a tuple containing block information from the internal blocks list
+        at the given index position.
+
+        :param key: Index position of the block to retrieve.
+        :return: Tuple containing two integers representing block information.
+        """
         return self._blocks[key]
 
     def __setitem__(self, key: int, value: tuple[int, int]) -> None:
+        """Set a block entry at the specified index.
+
+        Assigns a tuple containing start address and length to the blocks list at the given index.
+
+        :param key: Index position in the blocks list.
+        :param value: Tuple containing (start_address, length) for the block.
+        :raises SPSDKError: If the value tuple doesn't contain exactly 2 elements.
+        """
         assert isinstance(value, (list, tuple))
         if len(value) != 2:
             raise SPSDKError("Incorrect length")
         self._blocks[key] = value
 
     def __iter__(self) -> Iterator[Union[tuple[Any, ...], list[Any]]]:
+        """Iterate over authentication data blocks.
+
+        Provides an iterator interface to access the internal blocks collection,
+        allowing for standard Python iteration patterns over the authentication data.
+
+        :return: Iterator yielding tuples or lists containing block data elements.
+        """
         return self._blocks.__iter__()
 
     def __str__(self) -> str:
-        """Text description of the command."""
+        """Get string representation of the authentication data command.
+
+        Provides a detailed text description including command flags, key index, engine
+        configuration, memory location, associated signature, and all authenticated
+        memory blocks with their start addresses and lengths.
+
+        :return: Formatted string containing complete command information.
+        """
         msg = super().__str__()
         msg += f" Flag:        {self.flags} ({self.flags.description})\n"
         msg += f" Key index:   {self.key_index}\n"
@@ -259,14 +386,29 @@ class CmdAuthData(CmdBase):
         return msg
 
     def append(self, start_address: int, size: int) -> None:
-        """Append of Authenticate data command."""
+        """Append authentication data block to the command.
+
+        Adds a new memory block defined by start address and size to the list of blocks
+        that will be authenticated. Updates the command header length accordingly.
+
+        :param start_address: Starting memory address of the block to authenticate.
+        :param size: Size in bytes of the memory block to authenticate.
+        """
         self._blocks.append(
             (start_address, size),
         )
         self._header.length += 8
 
     def pop(self, index: int) -> tuple[int, int]:
-        """Pop of Authenticate data command."""
+        """Remove authentication data block from the command.
+
+        Removes a block at the specified index from the list of authentication data blocks
+        and updates the command header length accordingly.
+
+        :param index: Index of the block to remove from the blocks list.
+        :raises SPSDKError: If the index is out of range for the blocks list.
+        :return: Tuple containing the start address and length of the removed block.
+        """
         if index < 0 or index >= len(self._blocks):
             raise SPSDKError("Incorrect length of blocks")
         value = self._blocks.pop(index)
@@ -274,27 +416,33 @@ class CmdAuthData(CmdBase):
         return value
 
     def clear(self) -> None:
-        """Clear of Authenticate data command."""
+        """Clear the authenticate data command.
+
+        Resets the command by clearing all data blocks and resetting the header
+        length to its base size plus 8 bytes.
+        """
         self._blocks.clear()
         self._header.length = self._header.size + 8
 
     def update_signature(
         self, zulu: datetime, data: bytes, base_data_addr: int = 0xFFFFFFFF
     ) -> bool:
-        """Update signature.
+        """Update signature with provided data and timestamp.
 
-        This method must be called from parent to provide data to be signed
+        This method must be called from parent to provide data to be signed. It processes
+        the data according to defined blocks or signs the complete data if no blocks are
+        specified.
 
-        :param zulu: current UTC time+date
-        :param data: currently generated binary data
-        :param base_data_addr: base address of the generated data
-        :raises ValueError: When certificate or private key are not assigned
-        :raises ValueError: When signatures not assigned explicitly
-        :raises SPSDKError: If incorrect start address
-        :raises SPSDKError: If incorrect end address
-        :raises SPSDKError: If incorrect length
-        :return: True if length of the signature was unchanged, as this may affect content of the CSF section (pointer
-                        to data);
+        :param zulu: Current UTC time and date for signature timestamp.
+        :param data: Binary data to be signed.
+        :param base_data_addr: Base address of the generated data.
+        :raises SPSDKAttributeError: When certificate is not assigned.
+        :raises SPSDKAttributeError: When private key or signature provider not assigned.
+        :raises SPSDKError: When signature not assigned explicitly.
+        :raises SPSDKError: If incorrect start address.
+        :raises SPSDKError: If incorrect end address.
+        :raises SPSDKError: If incorrect length.
+        :return: True if signature length unchanged, False otherwise.
         """
         if not self.certificate:
             raise SPSDKAttributeError("Certificate not assigned, cannot update signature")
@@ -340,9 +488,13 @@ class CmdAuthData(CmdBase):
         return result
 
     def export(self) -> bytes:
-        """Export to binary form (serialization).
+        """Export command to binary representation for HAB processing.
 
-        :return: binary representation of the command
+        Serializes the authentication data command including header, key index, signature format,
+        engine configuration, location, and all associated data blocks into packed binary format
+        suitable for HAB (High Assurance Boot) consumption.
+
+        :return: Binary representation of the complete authentication data command.
         """
         self._header.length = self.size
         raw_data = super().export()
@@ -360,10 +512,13 @@ class CmdAuthData(CmdBase):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Convert binary representation into command (deserialization from binary data).
+        """Parse binary data into AuthData command object.
 
-        :param data: being parsed
-        :return: parse command
+        Deserializes binary representation of HAB Authenticate Data command into
+        a structured command object with all parameters and data blocks.
+
+        :param data: Binary data to be parsed into command structure.
+        :return: Parsed AuthData command object.
         """
         header = CmdHeader.parse(data, CmdTag.AUT_DAT.tag)
         key, sig_format, eng, cfg, location = unpack_from(">4BL", data, header.size)
@@ -384,7 +539,15 @@ class CmdAuthData(CmdBase):
 
 
 def get_hab_signature_provider(config: Config) -> SignatureProvider:
-    """Get the HAB signature provider from configuration."""
+    """Get the HAB signature provider from configuration.
+
+    This method retrieves and configures a signature provider for HAB (High Assurance Boot)
+    operations. For PlainFileSP providers using ECC private keys, it automatically sets
+    the hash algorithm to SHA256.
+
+    :param config: Configuration object containing signature provider settings.
+    :return: Configured signature provider instance for HAB operations.
+    """
     signature_provider = get_signature_provider(config, "Signer")
     if isinstance(signature_provider, PlainFileSP):
         if isinstance(signature_provider.private_key, PrivateKeyEcc):
@@ -393,7 +556,16 @@ def get_hab_signature_provider(config: Config) -> SignatureProvider:
 
 
 class CmdAuthenticateCsf(CmdAuthData):
-    """Authenticate CSFK command."""
+    """HAB Authenticate CSF command implementation.
+
+    This class represents the HAB (High Assurance Boot) Authenticate CSF (Command Sequence File)
+    command used for authenticating the CSF itself during the secure boot process. It handles
+    the creation and configuration of authentication commands that verify the integrity and
+    authenticity of the command sequence file.
+
+    :cvar SIGNED_DATA_SIZE: Size of the signed data block in bytes (768).
+    :cvar CMD_IDENTIFIER: Command identifier for authenticate CSF operations.
+    """
 
     SIGNED_DATA_SIZE = 768
     CMD_IDENTIFIER = CmdName.AUTHENTICATE_CSF
@@ -402,8 +574,15 @@ class CmdAuthenticateCsf(CmdAuthData):
     def load_from_config(cls, config: Config, cmd_index: Optional[int] = None) -> Self:
         """Load configuration into the command.
 
-        :param config: HAB image configuration
-        :param cmd_index: Optional index of the command in the configuration in case multiple same commands are present
+        This method creates a command instance from HAB image configuration by determining the
+        authentication mode (normal or fast) and setting up the appropriate signature provider
+        and certificate reference.
+
+        :param config: HAB image configuration containing command settings and certificates
+        :param cmd_index: Optional index of the command in the configuration in case multiple
+            same commands are present
+        :raises SPSDKError: When neither InstallCSFK nor InstallNOCAK commands are defined
+        :return: Configured command instance with certificate and signature provider
         """
         cmd_cfg = cls._get_cmd_config(config, cmd_index)
         # determine the key path, depending on if HAB is configured in normal or fast authentication mode
@@ -429,7 +608,14 @@ class CmdAuthenticateCsf(CmdAuthData):
 
 
 class CmdDecryptData(CmdAuthData):
-    """Set decrypt data command."""
+    """HAB decrypt data command for secure data decryption operations.
+
+    This command handles decryption of data blocks in HAB (High Assurance Boot) images,
+    providing cryptographic decryption capabilities with configurable encryption engines,
+    nonce handling, and MAC (Message Authentication Code) validation.
+
+    :cvar CMD_IDENTIFIER: Command identifier for decrypt data operations.
+    """
 
     CMD_IDENTIFIER = CmdName.DECRYPT_DATA
 
@@ -447,10 +633,22 @@ class CmdDecryptData(CmdAuthData):
         nonce: Optional[bytes] = None,
         mac_len: int = 16,
     ):
-        """Command initialization.
+        """Initialize HAB Authenticate Data command.
 
-        :param nonce: Nonce data
-        :param mac_len: MAC length
+        Initializes the command with authentication parameters including flags, key information,
+        signature format, engine configuration, and optional nonce data for MAC operations.
+
+        :param flags: Authentication data flags controlling command behavior.
+        :param key_index: Index of the key to use for authentication.
+        :param sig_fmt: Certificate format for signature verification.
+        :param engine: Cryptographic engine to use for operations.
+        :param engine_cfg: Engine-specific configuration value.
+        :param location: Memory location for the authentication operation.
+        :param certificate: HAB certificate for authentication.
+        :param private_key: Private key for signing operations.
+        :param signature_provider: External signature provider for signing.
+        :param nonce: Nonce data for MAC calculation.
+        :param mac_len: Length of the MAC in bytes.
         """
         super().__init__(
             flags,
@@ -468,10 +666,17 @@ class CmdDecryptData(CmdAuthData):
 
     @classmethod
     def load_from_config(cls, config: Config, cmd_index: Optional[int] = None) -> Self:
-        """Load configuration into the command.
+        """Load configuration into the authenticate data command.
 
-        :param config: HAB image configuration
-        :param cmd_index: Optional index of the command in the configuration in case multiple same commands are present
+        Creates an authenticate data command instance from HAB image configuration with proper
+        validation of engine settings and verification parameters.
+
+        :param config: HAB image configuration containing decrypt settings
+        :param cmd_index: Optional index of the command in the configuration in case multiple
+            same commands are present
+        :raises SPSDKValueError: Invalid engine configuration combination or verification index
+            out of range
+        :return: Configured authenticate data command instance
         """
         cmd_cfg = cls._get_cmd_config(config, cmd_index)
         engine = cmd_cfg.get("Decrypt_Engine", "ANY")
@@ -504,14 +709,25 @@ class CmdDecryptData(CmdAuthData):
 
         The nonce length is determined based on the length of the data to be decrypted.
 
-        :param data: The data that will be decrypted, used to calculate appropriate nonce length
+        :param data: The data that will be decrypted, used to calculate appropriate nonce length.
         """
         nonce_len = aead_nonce_len(len(data))
         self.nonce = random_bytes(nonce_len)
 
 
 class SecCsfAuthenticateData(CmdAuthData):
-    """Authenticate data command."""
+    """HAB Authenticate Data command for secure boot verification.
+
+    This command is used in HAB (High Assurance Boot) to authenticate data blocks
+    during the secure boot process. It manages cryptographic verification of data
+    using certificates and signatures, supporting both normal and fast authentication
+    modes.
+
+    :cvar KEY_IDX_AUT_DAT_FAST_AUTH: Key index for fast authentication mode.
+    :cvar KEY_IDX_AUT_DAT_MIN: Minimum allowed key index for normal authentication.
+    :cvar KEY_IDX_AUT_DAT_MAX: Maximum allowed key index for normal authentication.
+    :cvar CMD_IDENTIFIER: Command identifier for authenticate data operations.
+    """
 
     KEY_IDX_AUT_DAT_FAST_AUTH = 0
     KEY_IDX_AUT_DAT_MIN = 2
@@ -520,10 +736,18 @@ class SecCsfAuthenticateData(CmdAuthData):
 
     @classmethod
     def load_from_config(cls, config: Config, cmd_index: Optional[int] = None) -> Self:
-        """Load configuration into the command.
+        """Load configuration into the authenticate data command.
 
-        :param config: HAB image configuration
-        :param cmd_index: Optional index of the command in the configuration in case multiple same commands are present
+        Creates an authenticate data command instance from HAB configuration, determining the
+        appropriate key installation method (InstallCSFK or InstallNOCAK) and validating
+        engine and verification index parameters.
+
+        :param config: HAB image configuration containing command parameters
+        :param cmd_index: Optional index of the command in the configuration in case multiple
+            same commands are present
+        :raises SPSDKError: When neither InstallCSFK nor InstallNOCAK is defined
+        :raises SPSDKValueError: When engine configuration or key index has invalid value
+        :return: Configured authenticate data command instance
         """
         cmd_cfg = cls._get_cmd_config(config, cmd_index)
         # determine the key path, depending on if HAB is configured in normal or fast authentication mode

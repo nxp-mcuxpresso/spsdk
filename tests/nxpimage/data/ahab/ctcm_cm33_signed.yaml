@@ -8,7 +8,7 @@
 # ----------------------------------------------------------------------------------------------------
 family: mimxrt1189  # [Required], MCU family; Family identifier including the chip revision. If revision is not present, latest revision is used as default; Possible options:['mx93', 'mimxrt1189']
 revision: a0 # [Optional], MCU revision; Revision of silicon; Possible options:['a0']
-image_type: xip # [Required], Type of image; The final use of image, this setting is changing the style of offsets in final container; Possible options:['xip', 'non_xip', 'serial_downloader', 'nand']
+target_memory: sd_emmc # [Required], Type of image; The final use of image, this setting is changing the style of offsets in final container; Possible options:['xip', 'non_xip', 'serial_downloader', 'nand']
 output: ahab/cntr_signed_ctcm_cm33.bin # [Required], Output file name; Output AHAB file name
 containers: # [Required], List of containers present in AHAB; The order of containers in the list defines the order in AHAB.
   -

@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module is used to generate initialization SBc file."""
+"""SPSDK DevHSM SBc file generation utilities.
+
+This module provides functionality for generating initialization SBc files
+for DevHSM (Development Hardware Security Module) operations within the
+SPSDK framework.
+"""
 
 import logging
 from typing import Any, Callable, Optional
@@ -30,7 +35,17 @@ logger = logging.getLogger(__name__)
 
 
 class DevHsmSBc(DevHsm):
-    """Class to handle device HSM provisioning procedure for SBc."""
+    """Device HSM provisioning handler for Secure Binary Container (SBc) format.
+
+    This class manages the complete device HSM provisioning workflow for SBc containers,
+    including OEM share generation, key wrapping, data signing, encryption, and final
+    SBc file creation with hardware security module integration.
+
+    :cvar SIGNATURE_SIZE: Size of signature data in bytes (16).
+    :cvar OEM_SHARE_OUTPUT_SIZE: Size of OEM share output buffer in bytes (48).
+    :cvar KEY_SIZE: Encryption key size in bytes (24).
+    :cvar KEY_WRAPPING_OVERHEAD: Additional bytes required for key wrapping (8).
+    """
 
     SUB_FEATURE = "DevHsmSBc"
 

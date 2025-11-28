@@ -1,0 +1,11 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/return_lifecycle_update_req.yaml
+user_cfg: inputs/return_lifecycle_update_req.yaml
+custom_command: "%! nxpimage signed-msg get-template -f mx93 -o workspace/return_lifecycle_update_req.yaml -m return_lifecycle_update_req  --force"
+
+comments:
+  signer: "Add private key or signer"
+  srk_array: "Add your SRK public keys"
+  uuid: "UUID can be optionally specified"
+  RETURN_LIFECYCLE_UPDATE_REQ: "Specify number 16 to indicate FIELD OEM RETURN request"

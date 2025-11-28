@@ -6,7 +6,11 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Top-level package for My Secure Binary Key Derivation Provider."""
+"""SPSDK Secure Binary Key Derivation Provider plugin.
+
+This module provides a custom key derivation provider implementation for SPSDK's
+encryption framework, enabling secure key derivation for binary protection workflows.
+"""
 
 __author__ = """NXP"""
 __email__ = "spsdk@nxp.com"

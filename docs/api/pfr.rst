@@ -1,7 +1,6 @@
 Protected Flash Region API
 ===========================
-
-Support for Protected Flash Region areas (CMPA, CFPA).
+.. automodule:: spsdk.pfr
 
 .. toctree::
    :maxdepth: 1

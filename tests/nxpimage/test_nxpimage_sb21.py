@@ -5,9 +5,17 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""SPSDK NXP Image SB2.1 format testing module.
+
+This module contains comprehensive tests for the SB2.1 (Secure Binary 2.1) image format
+functionality in SPSDK's nxpimage tool. It validates image creation, parsing, conversion,
+and CLI operations for SB2.1 secure boot images.
+"""
+
 import os
 from binascii import unhexlify
 from itertools import zip_longest
+from typing import Any
 
 import pytest
 from test_nxpimage_sb31 import process_config_file
@@ -67,14 +75,31 @@ SB21_TEST_CONFIGURATIONS = [
 @pytest.mark.parametrize("bd_file,legacy_sb,external,family", SB21_TEST_CONFIGURATIONS)
 def test_nxpimage_sb21(
     cli_runner: CliRunner,
-    use_signature_provider,
-    bd_file,
-    legacy_sb,
-    external,
-    nxpimage_data_dir,
-    family,
-    tmpdir,
-):
+    use_signature_provider: bool,
+    bd_file: str,
+    legacy_sb: str,
+    external: list[str],
+    nxpimage_data_dir: str,
+    family: str,
+    tmpdir: Any,
+) -> None:
+    """Test SB2.1 image generation and compare with legacy implementation.
+
+    This test validates that the new nxpimage SB2.1 export functionality produces
+    equivalent secure boot images compared to legacy elftosb tool. It generates
+    a new SB2.1 image using provided configuration and compares its structure
+    with a reference legacy image, excluding timestamp and digest fields that
+    naturally differ between generations.
+
+    :param cli_runner: Click CLI test runner instance for command execution.
+    :param use_signature_provider: Flag to determine signature provider usage format.
+    :param bd_file: Relative path to the boot descriptor configuration file.
+    :param legacy_sb: Relative path to the reference legacy SB2.1 image file.
+    :param external: List of additional external command line arguments.
+    :param nxpimage_data_dir: Absolute path to test data directory.
+    :param family: Target MCU family identifier.
+    :param tmpdir: Temporary directory for output files.
+    """
     with use_working_directory(nxpimage_data_dir):
         bd_file_path = os.path.join(nxpimage_data_dir, bd_file)
         out_file_path_new = os.path.join(tmpdir, "new_elf2sb.bin")
@@ -177,67 +202,30 @@ def test_nxpimage_sb21(
             assert i[0] == i[1]
 
 
-def test_sb_21_invalid_signature_provider(cli_runner: CliRunner, tmpdir, nxpimage_data_dir):
-    with use_working_directory(nxpimage_data_dir):
-        cmd = [
-            "sb21",
-            "export",
-            "-c",
-            os.path.join(nxpimage_data_dir, "sb_sources", "BD_files", "real_example1.bd"),
-            "-o",
-            os.path.join(tmpdir, "new_elf2sb.bin"),
-            "-k",
-            os.path.join(nxpimage_data_dir, "sb_sources", "keys", "SBkek_PUF.txt"),
-            "-s",
-            "type=invalid_sp",
-            "-S",
-            os.path.join(
-                nxpimage_data_dir,
-                "sb_sources",
-                "keys_and_certs",
-                "root_k0_signed_cert0_noca.der.cert",
-            ),
-            "-R",
-            os.path.join(
-                nxpimage_data_dir,
-                "sb_sources",
-                "keys_and_certs",
-                "root_k0_signed_cert0_noca.der.cert",
-            ),
-            "-R",
-            os.path.join(
-                nxpimage_data_dir,
-                "sb_sources",
-                "keys_and_certs",
-                "root_k1_signed_cert0_noca.der.cert",
-            ),
-            "-R",
-            os.path.join(
-                nxpimage_data_dir,
-                "sb_sources",
-                "keys_and_certs",
-                "root_k2_signed_cert0_noca.der.cert",
-            ),
-            "-R",
-            os.path.join(
-                nxpimage_data_dir,
-                "sb_sources",
-                "keys_and_certs",
-                "root_k3_signed_cert0_noca.der.cert",
-            ),
-            "-h",
-            os.path.join(tmpdir, "hash.bin"),
-        ]
-        result = cli_runner.invoke(nxpimage.main, cmd, expected_code=1)
-        assert issubclass(result.exc_info[0], SPSDKError)
+def test_sb_21_invalid_parse() -> None:
+    """Test parsing of SB 2.1 boot image with invalid empty KEK.
 
+    Verifies that BootImageV21.parse() properly validates the KEK parameter
+    and raises an appropriate error when an empty KEK is provided.
 
-def test_sb_21_invalid_parse():
+    :raises SPSDKError: When KEK parameter is empty bytes.
+    """
     with pytest.raises(SPSDKError, match="kek cannot be empty"):
-        BootImageV21.parse(data=bytes(232), kek=None)
+        BootImageV21.parse(data=bytes(232), kek=bytes())
 
 
-def test_nxpimage_sbkek_cli(cli_runner: CliRunner, tmpdir):
+def test_nxpimage_sbkek_cli(cli_runner: CliRunner, tmpdir: Any) -> None:
+    """Test SB21 SBKEK CLI command functionality.
+
+    This test verifies the 'sb21 get-sbkek' command works correctly in different scenarios:
+    - Basic command execution without parameters
+    - Command with output directory specification
+    - Command with custom key and output directory
+    Validates that the expected output files (sbkek.bin and sbkek.txt) are created.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for test file operations.
+    """
     cmd = "sb21 get-sbkek"
     cli_runner.invoke(nxpimage.main, cmd.split())
 
@@ -267,13 +255,29 @@ def test_nxpimage_sbkek_cli(cli_runner: CliRunner, tmpdir):
 )
 def test_nxpimage_relative_path_sb21(
     cli_runner: CliRunner,
-    use_signature_provider,
-    bd_file,
-    legacy_sb,
-    external,
-    nxpimage_data_dir,
-    tmpdir,
-):
+    use_signature_provider: bool,
+    bd_file: str,
+    legacy_sb: str,
+    external: list[str],
+    nxpimage_data_dir: str,
+    tmpdir: Any,
+) -> None:
+    """Test SB21 image generation with relative paths and compare against legacy output.
+
+    This test validates that the new SPSDK SB21 export functionality produces
+    equivalent secure boot images compared to legacy elftosb tool. It generates
+    a new SB21 image using provided configuration and keys, then parses and
+    compares the structure against a reference legacy image, excluding
+    timestamp and digest fields that naturally differ between generations.
+
+    :param cli_runner: Click CLI test runner instance for command execution.
+    :param use_signature_provider: Flag to determine signature provider usage format.
+    :param bd_file: Relative path to the boot descriptor configuration file.
+    :param legacy_sb: Relative path to the legacy reference SB21 image file.
+    :param external: List of additional external command line arguments.
+    :param nxpimage_data_dir: Absolute path to test data directory containing input files.
+    :param tmpdir: Temporary directory path for output file generation.
+    """
     bd_file_path = os.path.join(nxpimage_data_dir, bd_file)
     out_file_path_new = os.path.join(tmpdir, "new_elf2sb.bin")
     kek_key_path = os.path.join(nxpimage_data_dir, "sb_sources/keys/SBkek_PUF.txt")
@@ -386,7 +390,16 @@ def test_nxpimage_relative_path_sb21(
         "mimxrt685s",
     ],
 )
-def test_nxpimage_sb21_get_template(cli_runner: CliRunner, tmpdir, family):
+def test_nxpimage_sb21_get_template(cli_runner: CliRunner, tmpdir: str, family: str) -> None:
+    """Test SB21 get-template command functionality.
+
+    Verifies that the nxpimage sb21 get-template command successfully generates
+    a YAML configuration template file and validates its content structure.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory path for output file creation.
+    :param family: Target MCU family name for template generation.
+    """
     cmd = f"sb21 get-template -f {family} -o {tmpdir}/tmp.yaml"
     cli_runner.invoke(nxpimage.main, cmd.split())
     assert os.path.isfile(f"{tmpdir}/tmp.yaml")
@@ -396,8 +409,28 @@ def test_nxpimage_sb21_get_template(cli_runner: CliRunner, tmpdir, family):
 
 @pytest.mark.parametrize("bd_file,legacy_sb,external,family", SB21_TEST_CONFIGURATIONS)
 def test_nxpimage_sb21_convert(
-    cli_runner: CliRunner, bd_file, legacy_sb, external, nxpimage_data_dir, family, tmpdir
-):
+    cli_runner: CliRunner,
+    bd_file: str,
+    legacy_sb: str,
+    external: list[str],
+    nxpimage_data_dir: str,
+    family: str,
+    tmpdir: str,
+) -> None:
+    """Test SB21 convert functionality with CLI runner.
+
+    This test verifies the complete SB21 conversion workflow by converting a BD file
+    to YAML configuration, then exporting it to SB format, and comparing the result
+    with a legacy SB file to ensure compatibility.
+
+    :param cli_runner: CLI test runner instance for executing commands.
+    :param bd_file: Relative path to the BD (Boot Data) file to convert.
+    :param legacy_sb: Relative path to the legacy SB file for comparison.
+    :param external: List of additional external command line arguments.
+    :param nxpimage_data_dir: Absolute path to the test data directory.
+    :param family: Target MCU family name for the conversion.
+    :param tmpdir: Temporary directory path for output files.
+    """
     with use_working_directory(nxpimage_data_dir):
         bd_file_path = os.path.join(nxpimage_data_dir, bd_file)
         out_file_path_new = os.path.join(tmpdir, "config.yaml")
@@ -508,7 +541,19 @@ def test_nxpimage_sb21_convert(
             assert i[0] == i[1]
 
 
-def test_sb_21_invalid_signature_provider(cli_runner: CliRunner, tmpdir, nxpimage_data_dir):
+def test_sb_21_invalid_signature_provider(
+    cli_runner: CliRunner, tmpdir: str, nxpimage_data_dir: str
+) -> None:
+    """Test SB21 export command with invalid signature provider.
+
+    Verifies that the nxpimage CLI properly handles and rejects invalid signature
+    provider types when exporting SB21 images. The test expects the command to fail
+    with an SPSDKError when an invalid signature provider type is specified.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory path for output files.
+    :param nxpimage_data_dir: Path to test data directory containing SB sources.
+    """
     with use_working_directory(nxpimage_data_dir):
         cmd = [
             "sb21",
@@ -560,10 +605,21 @@ def test_sb_21_invalid_signature_provider(cli_runner: CliRunner, tmpdir, nxpimag
             os.path.join(tmpdir, "hash.bin"),
         ]
         result = cli_runner.invoke(nxpimage.main, cmd, expected_code=1)
+        assert result.exc_info
         assert issubclass(result.exc_info[0], SPSDKError)
 
 
-def test_nxpimage_parse_cli(cli_runner: CliRunner, tmpdir, nxpimage_data_dir):
+def test_nxpimage_parse_cli(cli_runner: CliRunner, tmpdir: str, nxpimage_data_dir: str) -> None:
+    """Test nxpimage CLI parsing functionality for SB21 files.
+
+    This test verifies that the nxpimage CLI can successfully parse a legacy SB21 file
+    and generate the expected output files including certificates, parsed information,
+    and section data files.
+
+    :param cli_runner: CLI test runner for invoking command line interface.
+    :param tmpdir: Temporary directory path for test output files.
+    :param nxpimage_data_dir: Path to directory containing test data files.
+    """
     with use_working_directory(f"{nxpimage_data_dir}/sb_sources"):
         parsed_output = f"{tmpdir}/parsed_sb"
         cmd = f"sb21 parse -b SB_files/legacy_real_example1.sb -k keys/SBkek_PUF.txt -o {parsed_output}"
@@ -575,7 +631,18 @@ def test_nxpimage_parse_cli(cli_runner: CliRunner, tmpdir, nxpimage_data_dir):
         assert os.path.isfile(os.path.join(parsed_output, "section_0_load_command_9_data.bin"))
 
 
-def test_nxpimage_parse_cli_invalid(cli_runner: CliRunner, tmpdir, nxpimage_data_dir):
+def test_nxpimage_parse_cli_invalid(
+    cli_runner: CliRunner, tmpdir: str, nxpimage_data_dir: str
+) -> None:
+    """Test CLI parsing of invalid/corrupted SB2.1 file.
+
+    This test verifies that the nxpimage CLI properly handles and reports errors
+    when attempting to parse a corrupted Secure Binary 2.1 file with valid keys.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory path for test output files.
+    :param nxpimage_data_dir: Path to test data directory containing SB files and keys.
+    """
     with use_working_directory(f"{nxpimage_data_dir}/sb_sources"):
         parsed_output = f"{tmpdir}/parsed_sb"
         cmd = f"sb21 parse -b SB_files/corrupted.sb -k keys/SBkek_PUF.txt -o {parsed_output}"
@@ -583,8 +650,28 @@ def test_nxpimage_parse_cli_invalid(cli_runner: CliRunner, tmpdir, nxpimage_data
 
 
 @pytest.mark.parametrize("bd_file,legacy_sb,external,family", SB21_TEST_CONFIGURATIONS)
-def test_nxpimage_sb21_hex_values(bd_file, legacy_sb, external, nxpimage_data_dir, family, tmpdir):
-    """Test that also hex values in configuration are accepted."""
+def test_nxpimage_sb21_hex_values(
+    bd_file: str,
+    legacy_sb: str,
+    external: list[str],
+    nxpimage_data_dir: str,
+    family: str,
+    tmpdir: str,
+) -> None:
+    """Test that hexadecimal values in SB21 configuration are properly accepted and processed.
+
+    This test verifies that the BootImageV21 class can handle configuration files where
+    numeric values are provided as hexadecimal strings instead of integers. It converts
+    various numeric fields (flags, addresses, patterns, lengths) to hex format and
+    ensures the boot image can still be created successfully.
+
+    :param bd_file: Path to the boot descriptor file containing SB21 configuration
+    :param legacy_sb: Path to legacy secure boot file for reference
+    :param external: List of external file paths referenced in the configuration
+    :param nxpimage_data_dir: Directory containing test data files and certificates
+    :param family: Target MCU family name for the boot image
+    :param tmpdir: Temporary directory path for output files
+    """
     with use_working_directory(nxpimage_data_dir):
         parsed_config = BootImageV21.parse_sb21_config(bd_file, external_files=external)
 
@@ -641,11 +728,25 @@ def test_nxpimage_sb21_hex_values(bd_file, legacy_sb, external, nxpimage_data_di
 
 
 @pytest.mark.parametrize("conf", ["conf1", "conf2", "conf3", "conf4", "conf5", "conf6"])
-def test_nxpimage_sb21_yaml(cli_runner: CliRunner, conf, nxpimage_data_dir, tmpdir):
+def test_nxpimage_sb21_yaml(
+    cli_runner: CliRunner, conf: str, nxpimage_data_dir: str, tmpdir: str
+) -> None:
+    """Test SB21 YAML configuration file processing and binary generation.
+
+    This test validates the nxpimage SB21 export functionality by:
+    1. Processing a YAML configuration file to generate a secure binary
+    2. Parsing both the newly generated and reference binaries using KEK
+    3. Comparing the parsed content while excluding timestamp and digest fields
+    4. Ensuring the generated binary matches the reference implementation
+
+    :param cli_runner: Click CLI test runner for invoking nxpimage commands
+    :param conf: Configuration directory name containing the test YAML files
+    :param nxpimage_data_dir: Path to the test data directory with SB sources
+    :param tmpdir: Temporary directory path for output files
+    """
     KEK_PATH = os.path.join(nxpimage_data_dir, "sb_sources/keys/SBkek_PUF.txt")
     with use_working_directory(nxpimage_data_dir):
         # for conf in conf_dir:
-        output_path = os.path.join(tmpdir, "output.sb")
         conf_path = os.path.join(nxpimage_data_dir, "sb_sources", "YAML_files", conf, "config.yaml")
         ref_binary, new_binary, new_config = process_config_file(conf_path, tmpdir)
         cmd = [
@@ -695,7 +796,22 @@ def test_nxpimage_sb21_yaml(cli_runner: CliRunner, conf, nxpimage_data_dir, tmpd
 
 
 @pytest.mark.parametrize("conf", ["advanced_params"])
-def test_nxpimage_sb21_zero_padding(cli_runner: CliRunner, conf, nxpimage_data_dir, tmpdir):
+def test_nxpimage_sb21_zero_padding(
+    cli_runner: CliRunner, conf: str, nxpimage_data_dir: str, tmpdir: str
+) -> None:
+    """Test SB21 zero padding functionality with CLI export command.
+
+    This test verifies that the SB21 export command generates a secure binary image
+    that matches the reference binary when zero padding is applied. It processes
+    a configuration file, exports the SB21 image, and compares the generated
+    binary with the expected reference file.
+
+    :param cli_runner: CLI test runner for invoking nxpimage commands.
+    :param conf: Configuration directory name containing test files.
+    :param nxpimage_data_dir: Base directory path containing test data files.
+    :param tmpdir: Temporary directory path for output files.
+    :raises AssertionError: When generated binary doesn't match reference or file doesn't exist.
+    """
     with use_working_directory(nxpimage_data_dir):
         # for conf in conf_dir:
         conf_path = os.path.join(nxpimage_data_dir, "sb_sources", "YAML_files", conf, "config.yaml")

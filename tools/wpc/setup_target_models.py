@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Script setting up target (MCU) models for WPC."""
+"""SPSDK WPC target model setup utilities.
+
+This module provides functionality for setting up and configuring target MCU models
+for Wireless Power Consortium (WPC) applications within the SPSDK framework.
+"""
 
 import os
 import secrets
@@ -18,7 +22,18 @@ from spsdk.crypto.keys import EccCurve, PrivateKeyEcc
 
 
 def main() -> None:
-    """Setting up target (MCU) models for WPC."""
+    """Set up target (MCU) models for WPC interactive configuration.
+
+    This function provides an interactive command-line interface for creating
+    and configuring target device models used in WPC (Wireless Power Consortium)
+    operations. It prompts the user for a root directory path and device names,
+    then creates the necessary directory structure and configuration files for
+    each target model, including private keys and YAML configuration files.
+
+    :raises OSError: If directory creation fails due to permission issues.
+    :raises FileNotFoundError: If the specified root path cannot be accessed.
+    :raises KeyboardInterrupt: If user interrupts the interactive process.
+    """
     model_root = inquirer.filepath(
         message="Path to root folders with target models",
         only_directories=True,

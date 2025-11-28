@@ -4,7 +4,12 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Nxpimage BCA group."""
+"""SPSDK NXP Image BCA (Boot Configuration Area) command-line interface.
+
+This module provides CLI commands for managing Boot Configuration Area (BCA)
+operations including template generation, configuration export, and BCA parsing
+for NXP microcontrollers.
+"""
 
 import logging
 

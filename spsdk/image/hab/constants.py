@@ -15,7 +15,13 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 class EnumAlgorithm(SpsdkEnum):
-    """Algorithm types."""
+    """HAB algorithm type enumeration.
+
+    This enumeration defines algorithm identifiers used in High Assurance Boot (HAB)
+    for cryptographic operations including hashing, signatures, ciphers, and key wrapping.
+    Each algorithm is represented by a unique identifier, name, and description following
+    the HAB specification standards.
+    """
 
     ANY = (0x00, "ANY", "Algorithm type ANY")
     HASH = (0x01, "HASH", "Hash algorithm type")
@@ -41,7 +47,12 @@ class EnumAlgorithm(SpsdkEnum):
 
 
 class CertFormatEnum(SpsdkEnum):
-    """Certificate format tags."""
+    """HAB certificate format enumeration for secure boot operations.
+
+    This enumeration defines the supported certificate and signature format types
+    used in High Assurance Boot (HAB) operations, including various cryptographic
+    formats and proprietary key wrapping mechanisms.
+    """
 
     SRK = (0x03, "SRK", "SRK certificate format")
     X509 = (0x09, "X509", "X.509v3 certificate format")
@@ -51,7 +62,13 @@ class CertFormatEnum(SpsdkEnum):
 
 
 class EngineEnum(SpsdkEnum):
-    """Engine plugin tags."""
+    """HAB engine plugin enumeration for cryptographic and security operations.
+
+    This enumeration defines the available engine plugins used in HAB (High Assurance Boot)
+    for various cryptographic and security operations. Each engine represents a specific
+    hardware or software component that can perform security-related functions during
+    the boot process.
+    """
 
     ANY = (
         0x00,
@@ -74,7 +91,12 @@ class EngineEnum(SpsdkEnum):
 
 
 class CmdName(SpsdkEnum):
-    """CSF command Enum."""
+    """HAB CSF command enumeration.
+
+    This enumeration defines all available Command Sequence File (CSF) commands
+    used in High Assurance Boot (HAB) for secure boot operations including
+    key installation, authentication, decryption, and engine configuration.
+    """
 
     HEADER = (20, "Header", "Header")
     INSTALL_SRK = (21, "InstallSRK", "Install SRK")
@@ -90,7 +112,13 @@ class CmdName(SpsdkEnum):
 
 
 class CmdTag(SpsdkEnum):
-    """CSF/DCD Command Tag."""
+    """CSF/DCD Command Tag enumeration.
+
+    This enumeration defines the command tags used in Command Sequence Files (CSF)
+    and Device Configuration Data (DCD) for HAB (High Assurance Boot) operations.
+    Each tag represents a specific command type with its corresponding opcode and
+    description for secure boot operations.
+    """
 
     SET = (0xB1, "SET", "Set")
     INS_KEY = (0xBE, "INS_KEY", "Install Key")

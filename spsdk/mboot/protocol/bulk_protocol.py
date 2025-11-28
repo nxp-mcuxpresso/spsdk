@@ -5,7 +5,14 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Mboot bulk implementation."""
+"""SPSDK MBoot bulk protocol implementation.
+
+This module provides the bulk protocol interface for MBoot communication,
+enabling efficient data transfer operations between host and target devices.
+The module implements the ReportId enumeration for protocol identification
+and MbootBulkProtocol class for handling bulk transfer operations.
+"""
+
 import logging
 from struct import pack, unpack_from
 from typing import Optional, Union
@@ -20,7 +27,11 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 class ReportId(SpsdkEnum):
-    """Report ID enum."""
+    """HID Report ID enumeration for bulk protocol communication.
+
+    This enumeration defines the standard HID report identifiers used in bulk
+    protocol operations for command and data transfer between host and device.
+    """
 
     CMD_OUT = (0x01, "CMD_OUT")
     CMD_IN = (0x03, "CMD_IN")
@@ -32,25 +43,47 @@ logger = logging.getLogger(__name__)
 
 
 class MbootBulkProtocol(MbootProtocolBase):
-    """Mboot Bulk protocol."""
+    """Mboot Bulk Protocol implementation for USB/HID communication.
+
+    This class provides bulk transfer protocol implementation for Mboot communication
+    over USB HID interfaces. It handles frame encapsulation, data transmission,
+    and abort detection for reliable MCU boot operations.
+    """
 
     def open(self) -> None:
-        """Open the interface."""
+        """Open the interface.
+
+        Establishes connection to the bulk protocol device interface.
+
+        :raises SPSDKError: If the device interface fails to open.
+        """
         self.device.open()
 
     def close(self) -> None:
-        """Close the interface."""
+        """Close the interface.
+
+        Closes the underlying device connection and releases any associated resources.
+        """
         self.device.close()
 
     @property
     def is_opened(self) -> bool:
-        """Indicates whether interface is open."""
+        """Indicates whether the bulk protocol interface is open.
+
+        :return: True if interface is open, False otherwise.
+        """
         return self.device.is_opened
 
     def write_data(self, data: bytes) -> None:
         """Encapsulate data into frames and send them to device.
 
-        :param data: Data to be sent
+        The method creates a frame from the provided data and sends it to the device.
+        If abort functionality is enabled, it first checks for any abort data from the
+        device before sending the frame.
+
+        :param data: Data to be sent to the device.
+        :raises McuBootConnectionError: If there's a communication error with the device.
+        :raises McuBootDataAbortError: If abort data is received from the device.
         """
         frame = self._create_frame(data, ReportId.DATA_OUT)
         abort_data = None
@@ -71,7 +104,7 @@ class MbootBulkProtocol(MbootProtocolBase):
         """Encapsulate command into frames and send them to device.
 
         :param packet: Command packet object to be sent
-        :raises SPSDKAttributeError: Command packed contains no data to be sent
+        :raises SPSDKAttributeError: Command packet contains no data to be sent
         """
         data = packet.export(padding=False)
         if not data:
@@ -82,8 +115,12 @@ class MbootBulkProtocol(MbootProtocolBase):
     def read(self, length: Optional[int] = None) -> Union[CmdResponse, bytes]:
         """Read data from device.
 
-        :return: read data
-        :raises SPSDKTimeoutError: Timeout occurred
+        Reads up to 1024 bytes from the connected device and parses the received frame
+        into a command response or raw bytes.
+
+        :param length: Maximum number of bytes to read (currently unused, reads fixed 1024 bytes).
+        :return: Parsed command response or raw bytes data from device.
+        :raises SPSDKTimeoutError: When timeout occurs or no data can be read from device.
         """
         data = self.device.read(1024)
         if not data:
@@ -92,11 +129,14 @@ class MbootBulkProtocol(MbootProtocolBase):
         return self._parse_frame(bytes(data))
 
     def _create_frame(self, data: bytes, report_id: ReportId) -> bytes:
-        """Encode the USB packet.
+        """Encode the USB packet into HID report frame format.
 
-        :param report_id: ID of the report (see: HID_REPORT)
-        :param data: Data to send
-        :return: Encoded bytes and length of the final report frame
+        The method creates a properly formatted HID report frame by adding the report ID,
+        reserved byte, data length, and payload data according to the bulk protocol specification.
+
+        :param data: Data payload to be encoded into the frame.
+        :param report_id: ID of the report identifying the frame type.
+        :return: Encoded frame as bytes ready for USB transmission.
         """
         raw_data = pack("<2BH", report_id.tag, 0x00, len(data))
         raw_data += data
@@ -105,11 +145,14 @@ class MbootBulkProtocol(MbootProtocolBase):
 
     @staticmethod
     def _parse_frame(raw_data: bytes) -> Union[CmdResponse, bytes]:
-        """Decodes the data read on USB interface.
+        """Parse USB interface frame data into command response or raw data.
 
-        :param raw_data: Data received
-        :return: CmdResponse object or data read
-        :raises McuBootDataAbortError: Transaction aborted by target
+        The method decodes raw USB data by extracting report ID, payload length, and data content.
+        Returns either a parsed command response object or raw data bytes depending on report type.
+
+        :param raw_data: Raw bytes received from USB interface
+        :return: CmdResponse object for command reports or raw bytes for data reports
+        :raises McuBootDataAbortError: Transaction aborted by target when payload length is zero
         """
         logger.debug(f"IN [{len(raw_data)}]: {', '.join(f'{b:02X}' for b in raw_data)}")
         report_id, _, plen = unpack_from("<2BH", raw_data)

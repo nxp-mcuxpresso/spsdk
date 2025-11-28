@@ -6,7 +6,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module for communication with the bootloader."""
+"""SPSDK MCU bootloader communication interface.
+
+This module provides the McuBoot class for communicating with NXP MCU bootloaders,
+enabling secure provisioning operations, firmware updates, and device configuration
+through various transport protocols.
+"""
 
 import logging
 import struct
@@ -63,23 +68,41 @@ logger = logging.getLogger(__name__)
 # McuBoot Class
 ########################################################################################################################
 class McuBoot:  # pylint: disable=too-many-public-methods
-    """Class for communication with the bootloader."""
+    """McuBoot communication interface for NXP bootloader operations.
+
+    This class provides a high-level interface for communicating with NXP MCU bootloaders,
+    handling command execution, status management, and data transfer operations. It supports
+    various bootloader protocols and manages connection state and error handling.
+
+    :cvar DEFAULT_MAX_PACKET_SIZE: Default maximum packet size for data transfers.
+    """
 
     DEFAULT_MAX_PACKET_SIZE = 32
 
     @property
     def status_code(self) -> int:
-        """Return status code of the last operation."""
+        """Return status code of the last operation.
+
+        :return: Status code as integer value.
+        """
         return self._status_code
 
     @property
     def status_string(self) -> str:
-        """Return status string."""
+        """Return status string.
+
+        Convert the internal status code to a human-readable string representation.
+
+        :return: Human-readable status string corresponding to the current status code.
+        """
         return stringify_status_code(self._status_code)
 
     @property
     def is_opened(self) -> bool:
-        """Return True if the device is open."""
+        """Check if the device interface is currently opened.
+
+        :return: True if the device interface is opened, False otherwise.
+        """
         return self._interface.is_opened
 
     def __init__(
@@ -94,7 +117,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :param cmd_exception: True to throw McuBootCommandError on any error;
                 False to set status code only
                 Note: some operation might raise McuBootCommandError is all cases
-
+        :param family: Optional family revision specification
         """
         self._cmd_exception = cmd_exception
         self._status_code = StatusCode.SUCCESS.tag
@@ -107,6 +130,13 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         self.max_packet_size: Optional[int] = None
 
     def __enter__(self) -> "McuBoot":
+        """Enter the runtime context of the McuBoot object.
+
+        This method is used as a context manager entry point that ensures the McuBoot
+        connection is properly opened and configured for use within a 'with' statement.
+
+        :return: The McuBoot instance itself for use in the context manager.
+        """
         self.reopen = True
         self.open()
         return self
@@ -117,15 +147,27 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         exception_value: Optional[Exception] = None,
         traceback: Optional[TracebackType] = None,
     ) -> None:
+        """Close the MCU boot interface context manager.
+
+        This method is called automatically when exiting a 'with' statement context.
+        It ensures proper cleanup of the MCU boot interface connection.
+
+        :param exception_type: Type of exception that caused the context to exit, if any.
+        :param exception_value: Exception instance that caused the context to exit, if any.
+        :param traceback: Traceback object associated with the exception, if any.
+        """
         self.close()
 
     def _process_cmd(self, cmd_packet: CmdPacket) -> CmdResponse:
-        """Process Command.
+        """Process command packet and return response.
 
-        :param cmd_packet: Command Packet
-        :return: command response derived from the CmdResponse
-        :raises McuBootConnectionError: Timeout Error
-        :raises McuBootCommandError: Error during command execution on the target
+        Sends the command packet to the target device through the interface and waits for response.
+        Handles timeout scenarios and validates command execution status.
+
+        :param cmd_packet: Command packet to be sent to the target device.
+        :return: Command response received from the target device.
+        :raises McuBootConnectionError: Device is not opened or connection issue occurred.
+        :raises McuBootCommandError: Error during command execution on the target device.
         """
         if not self.is_opened:
             logger.info("TX: Device not opened")
@@ -158,12 +200,17 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     ) -> bytes:
         """Read data from device.
 
-        :param cmd_tag: Tag indicating the read command.
-        :param length: Length of data to read
-        :param progress_callback: Callback for updating the caller about the progress
-        :raises McuBootConnectionError: Timeout error or a problem opening the interface
-        :raises McuBootCommandError: Error during command execution on the target
-        :return: Data read from the device
+        This method continuously reads data from the MCU device interface until the specified
+        length is reached or an error occurs. It handles timeout errors and provides progress
+        updates through an optional callback function.
+
+        :param cmd_tag: Tag indicating the read command type.
+        :param length: Number of bytes to read from the device.
+        :param progress_callback: Optional callback function for progress updates, called with
+            (current_bytes, total_bytes) parameters.
+        :raises McuBootConnectionError: Device is not opened or interface communication problem.
+        :raises McuBootCommandError: Error during command execution on the target device.
+        :return: Data read from the device, truncated to requested length if necessary.
         """
         data = b""
 
@@ -215,14 +262,19 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         data: list[bytes],
         progress_callback: Optional[Callable[[int, int], None]] = None,
     ) -> bool:
-        """Send Data part of specific command.
+        """Send data part of specific command to the target device.
 
-        :param cmd_tag: Tag indicating the command
-        :param data: List of data chunks to send
-        :param progress_callback: Callback for updating the caller about the progress
-        :raises McuBootConnectionError: Timeout error
-        :raises McuBootCommandError: Error during command execution on the target
-        :return: True if the operation is successful
+        The method sends data chunks sequentially to the target device and optionally
+        reports progress through a callback. It handles connection errors and command
+        execution errors appropriately.
+
+        :param cmd_tag: Tag indicating the command type being executed.
+        :param data: List of data chunks to send to the target device.
+        :param progress_callback: Optional callback function for progress updates with
+            signature (bytes_sent, total_bytes).
+        :raises McuBootConnectionError: Device is disconnected or timeout occurred.
+        :raises McuBootCommandError: Error during command execution on the target.
+        :return: True if all data was sent successfully, False otherwise.
         """
         if not self.is_opened:
             logger.info("TX: Device Disconnected")
@@ -275,9 +327,14 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return total_sent == total_to_send
 
     def _get_max_packet_size(self) -> int:
-        """Get max packet size.
+        """Get maximum packet size for communication.
 
-        :return int: max packet size in B
+        The method first checks for a cached value, then queries the device for the
+        MAX_PACKET_SIZE property. If the property cannot be retrieved, it falls back
+        to a default value and logs a warning.
+
+        :return: Maximum packet size in bytes.
+        :raises McuBootError: When communication with the device fails during property retrieval.
         """
         if self.max_packet_size is not None:
             logger.debug(f"Using cached max_packet_size={self.max_packet_size}")
@@ -300,8 +357,11 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def _split_data(self, data: bytes) -> list[bytes]:
         """Split data to send if necessary.
 
-        :param data: Data to send
-        :return: List of data splices
+        The method checks if the interface requires data splitting and divides the data
+        into chunks based on the maximum packet size if needed.
+
+        :param data: Data bytes to be split for transmission.
+        :return: List of data chunks, either single chunk if no split needed or multiple chunks.
         """
         if not self._interface.need_data_split:
             return [data]
@@ -309,21 +369,38 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return [data[i : i + max_packet_size] for i in range(0, len(data), max_packet_size)]
 
     def open(self) -> None:
-        """Connect to the device."""
+        """Connect to the device.
+
+        Establishes connection to the target device using the configured interface.
+        Logs the connection attempt with interface details.
+
+        :raises SPSDKConnectionError: If the connection to the device fails.
+        :raises SPSDKError: If the interface is not properly configured.
+        """
         logger.info(f"Connect: {str(self._interface)}")
         self._interface.open()
 
     def close(self) -> None:
-        """Disconnect from the device."""
+        """Disconnect from the device.
+
+        Closes the connection to the MCU device through the underlying interface.
+        This method should be called when communication with the device is no longer needed
+        to properly release resources and terminate the connection.
+        """
         logger.info(f"Closing: {str(self._interface)}")
         self._interface.close()
 
     def get_property_list(self) -> list[PropertyValueBase]:
         """Get a list of available properties.
 
-        :return: List of available properties.
-        :raises McuBootCommandError: Failure to read properties list
-        :raises McuBootError: Property values cannot be parsed
+        Retrieves all available properties for the target device by iterating through
+        known property tags and attempting to read their values. Properties that cannot
+        be read are skipped, and successfully read properties are parsed and included
+        in the result list.
+
+        :return: List of available properties with their parsed values.
+        :raises McuBootCommandError: Failure to read properties list.
+        :raises McuBootError: Property values cannot be parsed.
         """
         property_list: list[PropertyValueBase] = []
         for property_tag in get_properties(self.family):
@@ -350,7 +427,12 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def available_commands(self) -> list[CommandTag]:
         """Get a list of supported commands.
 
-        :return: List of supported commands
+        Retrieves the available commands from the MCU boot loader. If the commands list is already
+        cached, returns the cached version. Otherwise, queries the device for available commands
+        using the AVAILABLE_COMMANDS property and caches the result.
+
+        :raises McuBootCommandError: When unable to retrieve available commands property.
+        :return: List of supported command tags from the MCU boot loader.
         """
         if self.available_commands_lst:
             return self.available_commands_lst
@@ -374,7 +456,12 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def _get_internal_flash(self) -> list[FlashRegion]:
         """Get information about the internal flash.
 
-        :return: list of FlashRegion objects
+        Retrieves flash region information by iterating through available flash indices and querying
+        properties for start address, size, and sector size. The iteration continues until no more
+        valid flash regions are found or an error occurs.
+
+        :raises McuBootCommandError: When flash property retrieval fails.
+        :return: List of FlashRegion objects containing flash memory information.
         """
         index = 0
         mdata: list[FlashRegion] = []
@@ -412,9 +499,15 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return mdata
 
     def _get_internal_ram(self) -> list[RamRegion]:
-        """Get information about the internal RAM.
+        """Get information about the internal RAM regions.
 
-        :return: list of RamRegion objects
+        Iterates through available RAM regions by querying the device properties for RAM start
+        addresses and sizes. The iteration continues until no more regions are found or an error
+        occurs.
+
+        :raises McuBootCommandError: When communication with the device fails during property
+            retrieval.
+        :return: List of RamRegion objects containing information about each internal RAM region.
         """
         index = 0
         mdata: list[RamRegion] = []
@@ -443,9 +536,13 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def _get_ext_memories(self) -> list[ExtMemRegion]:
         """Get information about the external memories.
 
-        :return: list of ExtMemRegion objects supported by the device
-        :raises SPSDKError: If no response to get property command
-        :raises SPSDKError: Other Error
+        Retrieves a list of external memory regions supported by the target device by querying
+        the device properties. The method first checks the MCU boot version to determine which
+        external memory types are supported, then queries each memory type for its attributes.
+
+        :return: List of ExtMemRegion objects representing external memories supported by device.
+        :raises SPSDKError: If no response to get property command.
+        :raises SPSDKError: If other communication error occurs.
         """
         ext_mem_list: list[ExtMemRegion] = []
         # The items of ExtMemId enum may not have unique tags
@@ -495,9 +592,13 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def get_memory_list(self) -> dict:
         """Get list of embedded memories.
 
-        :return: dict, with the following keys: internal_flash (optional) - list ,
-                internal_ram (optional) - list, external_mems (optional) - list
-        :raises McuBootCommandError: Error reading the memory list
+        Retrieves information about all available memory regions including internal flash,
+        internal RAM, and external memories connected to the MCU.
+
+        :return: Dictionary with memory regions. Keys: 'internal_flash' (optional) - list of
+                 internal flash regions, 'internal_ram' (optional) - list of internal RAM
+                 regions, 'external_mems' (optional) - list of external memory regions.
+        :raises McuBootCommandError: Error reading the memory list.
         """
         memory_list: dict[str, Sequence[MemoryRegion]] = {}
 
@@ -527,8 +628,11 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def flash_erase_all(self, mem_id: int = 0) -> bool:
         """Erase complete flash memory without recovering flash security section.
 
-        :param mem_id: Memory ID
-        :return: False in case of any problem; True otherwise
+        This operation will erase all flash memory content except for the flash security section,
+        which remains intact to preserve security configurations.
+
+        :param mem_id: Memory identifier specifying which memory to erase (default is 0).
+        :return: True if erase operation completed successfully, False otherwise.
         """
         logger.info(f"CMD: FlashEraseAll(mem_id={mem_id})")
         cmd_packet = CmdPacket(CommandTag.FLASH_ERASE_ALL, CommandFlag.NONE.tag, mem_id)
@@ -536,12 +640,16 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return response.status == StatusCode.SUCCESS
 
     def flash_erase_region(self, address: int, length: int, mem_id: int = 0) -> bool:
-        """Erase specified range of flash.
+        """Erase specified range of flash memory.
 
-        :param address: Start address
-        :param length: Count of bytes
-        :param mem_id: Memory ID
-        :return: False in case of any problem; True otherwise
+        This method erases a contiguous region of flash memory starting at the given
+        address for the specified length. The operation is performed on the target
+        device through the MCU boot protocol.
+
+        :param address: Start address of the flash region to erase.
+        :param length: Number of bytes to erase from the start address.
+        :param mem_id: Memory identifier specifying which memory to erase (default is 0).
+        :return: True if erase operation completed successfully, False otherwise.
         """
         logger.info(
             f"CMD: FlashEraseRegion(address=0x{address:08X}, length={length}, mem_id={mem_id})"
@@ -562,12 +670,17 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     ) -> Optional[bytes]:
         """Read data from MCU memory.
 
-        :param address: Start address
-        :param length: Count of bytes
-        :param mem_id: Memory ID
-        :param fast_mode: Fast mode for USB-HID data transfer, not reliable !!!
-        :param progress_callback: Callback for updating the caller about the progress
-        :return: Data read from the memory; None in case of a failure
+        The method implements a workaround for better USB-HID reliability by splitting large reads
+        into smaller packets when not in fast mode. Fast mode transfers data in single operation
+        but may be unreliable for USB-HID interfaces.
+
+        :param address: Start address in memory to read from.
+        :param length: Number of bytes to read.
+        :param mem_id: Memory identifier, defaults to 0.
+        :param progress_callback: Optional callback function to report progress with signature
+                                 (bytes_read, total_bytes).
+        :param fast_mode: Enable fast mode for USB-HID transfer, may be unreliable.
+        :return: Data read from memory, empty bytes on command failure, or None on read failure.
         """
         logger.info(f"CMD: ReadMemory(address=0x{address:08X}, length={length}, mem_id={mem_id})")
         mem_id = _clamp_down_memory_id(memory_id=mem_id)
@@ -626,11 +739,15 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     ) -> bool:
         """Write data into MCU memory.
 
-        :param address: Start address
-        :param data: List of bytes
-        :param progress_callback: Callback for updating the caller about the progress
-        :param mem_id: Memory ID, see ExtMemId; additionally use `0` for internal memory
-        :return: False in case of any problem; True otherwise
+        The method writes the provided data to the specified memory address in the MCU.
+        Data is automatically split into chunks for transmission.
+
+        :param address: Start address in memory where data will be written.
+        :param data: Bytes data to be written to memory.
+        :param mem_id: Memory ID (see ExtMemId), use 0 for internal memory.
+        :param progress_callback: Optional callback function for progress updates with
+            (current, total) parameters.
+        :return: True if write operation succeeded, False otherwise.
         """
         logger.info(
             f"CMD: WriteMemory(address=0x{address:08X}, length={len(data)}, mem_id={mem_id})"
@@ -647,10 +764,13 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def fill_memory(self, address: int, length: int, pattern: int = 0xFFFFFFFF) -> bool:
         """Fill MCU memory with specified pattern.
 
-        :param address: Start address (must be word aligned)
-        :param length: Count of words (must be word aligned)
-        :param pattern: Count of wrote bytes
-        :return: False in case of any problem; True otherwise
+        The method fills a specified memory region with a given 32-bit pattern value.
+        All parameters must be word-aligned for proper operation.
+
+        :param address: Start address in MCU memory (must be word aligned).
+        :param length: Number of words to fill (must be word aligned).
+        :param pattern: 32-bit pattern value to fill memory with.
+        :return: True if operation successful, False otherwise.
         """
         logger.info(
             f"CMD: FillMemory(address=0x{address:08X}, length={length}, pattern=0x{pattern:08X})"
@@ -661,11 +781,14 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
     def flash_security_disable(self, backdoor_key: bytes) -> bool:
-        """Disable flash security by using of backdoor key.
+        """Disable flash security by using backdoor key.
 
-        :param backdoor_key: The key value as array of 8 bytes
-        :return: False in case of any problem; True otherwise
-        :raises McuBootError: If the backdoor_key is not 8 bytes long
+        The method sends a flash security disable command to the MCU using the provided 8-byte
+        backdoor key. The key bytes are reordered (reversed in 4-byte chunks) before transmission.
+
+        :param backdoor_key: The backdoor key value as bytes array, must be exactly 8 bytes long.
+        :return: True if flash security was successfully disabled, False otherwise.
+        :raises McuBootError: If the backdoor_key is not exactly 8 bytes long.
         """
         if len(backdoor_key) != 8:
             raise McuBootError("Backdoor key must by 8 bytes long")
@@ -680,11 +803,14 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def get_property(
         self, prop_tag: Union[PropertyTag, int], index: int = 0
     ) -> Optional[list[int]]:
-        """Get specified property value.
+        """Get specified property value from the MCU device.
 
-        :param prop_tag: Property TAG (see Properties Enum)
+        Retrieves a property value using the get-property command. The property can be
+        related to device capabilities, memory regions, or external memory configurations.
+
+        :param prop_tag: Property tag identifier from PropertyTag enum or integer value
         :param index: External memory ID or internal memory region index (depends on property type)
-        :return: list integers representing the property; None in case no response from device
+        :return: List of integers representing the property value; None if no response from device
         :raises McuBootError: If received invalid get-property response
         """
         property_id, label = get_property_tag_label(prop_tag, self.family)
@@ -700,9 +826,12 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def set_property(self, prop_tag: Union[PropertyTag, int], value: int) -> bool:
         """Set value of specified property.
 
-        :param  prop_tag: Property TAG (see Property enumerator)
-        :param  value: The value of selected property
-        :return: False in case of any problem; True otherwise
+        This method sets a property value on the target device using the SetProperty command.
+        The property is identified by its tag and the new value is applied.
+
+        :param prop_tag: Property tag identifier from PropertyTag enum or integer value.
+        :param value: New value to set for the specified property.
+        :return: True if property was set successfully, False otherwise.
         """
         property_id, label = get_property_tag_label(prop_tag, self.family)
         logger.info(f"CMD: SetProperty({label}, value=0x{value:08X})")
@@ -718,13 +847,15 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     ) -> bool:
         """Receive SB file.
 
-        :param  data: SB file data
-        :param progress_callback: Callback for updating the caller about the progress
-        :param check_errors: Check for ABORT_FRAME (and related errors) on USB interface between data packets.
-            When this parameter is set to `False` significantly improves USB transfer speed (cca 20x)
-            However, the final status code might be misleading (original root cause may get overridden)
-            In case `receive-sb-file` fails, re-run the operation with this flag set to `True`
-        :return: False in case of any problem; True otherwise
+        Sends Secure Binary file data to the target device for processing. The method handles
+        data chunking, progress reporting, and error checking during transmission.
+
+        :param data: SB file data to be transmitted to the device.
+        :param progress_callback: Optional callback function for progress updates during transmission.
+        :param check_errors: Check for ABORT_FRAME and related errors on USB interface between packets.
+            When False, significantly improves USB transfer speed (~20x) but final status may be
+            misleading. If receive-sb-file fails, re-run with this flag set to True.
+        :return: True if successful, False if any problem occurred.
         """
         logger.info(f"CMD: ReceiveSBfile(data_length={len(data)})")
         data_chunks = self._split_data(data=data)
@@ -771,7 +902,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
     def call(self, address: int, argument: int) -> bool:
-        """Fill MCU memory with specified pattern.
+        """Call function at specified address with given argument.
 
         :param address: Call address (must be word aligned)
         :param argument: Function arguments address
@@ -784,11 +915,13 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def reset(self, timeout: int = 2000, reopen: bool = True) -> bool:
         """Reset MCU and reconnect if enabled.
 
-        :param timeout: The maximal waiting time in [ms] for reopen connection
-        :param reopen: True for reopen connection after HW reset else False
-        :return: False in case of any problem; True otherwise
-        :raises McuBootError: if reopen is not supported
-        :raises McuBootConnectionError: Failure to reopen the device
+        The method sends a reset command to the MCU, closes the current connection,
+        and optionally reopens it after a specified timeout period.
+
+        :param timeout: The maximal waiting time in milliseconds for reopen connection.
+        :param reopen: True for reopen connection after HW reset else False.
+        :return: False in case of any problem; True otherwise.
+        :raises McuBootConnectionError: Reset command failed or reopen failed.
         """
         logger.info("CMD: Reset MCU")
         cmd_packet = CmdPacket(CommandTag.RESET, CommandFlag.NONE.tag)
@@ -820,7 +953,10 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def flash_erase_all_unsecure(self) -> bool:
         """Erase complete flash memory and recover flash security section.
 
-        :return: False in case of any problem; True otherwise
+        This command performs a mass erase of the entire flash memory and restores
+        the flash security settings to their default unsecured state.
+
+        :return: True if the erase operation completed successfully, False otherwise.
         """
         logger.info("CMD: FlashEraseAllUnsecure")
         cmd_packet = CmdPacket(CommandTag.FLASH_ERASE_ALL_UNSECURE, CommandFlag.NONE.tag)
@@ -829,8 +965,11 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def efuse_read_once(self, index: int) -> Optional[int]:
         """Read from MCU flash program once region.
 
-        :param index: Start index
-        :return: read value (32-bit int); None if operation failed
+        The method reads a 32-bit value from the specified index in the MCU's
+        one-time programmable (OTP) flash region.
+
+        :param index: Start index in the flash program once region.
+        :return: Read value as 32-bit integer, or None if operation failed.
         """
         logger.info(f"CMD: FlashReadOnce(index={index})")
         cmd_packet = CmdPacket(CommandTag.FLASH_READ_ONCE, CommandFlag.NONE.tag, index, 4)
@@ -843,10 +982,14 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def efuse_program_once(self, index: int, value: int, verify: bool = False) -> bool:
         """Write into MCU once program region (OCOTP).
 
-        :param index: Start index
-        :param value: Int value (4 bytes long)
-        :param verify: Verify that data were written (by comparing value as bitmask)
-        :return: False in case of any problem; True otherwise
+        This method programs a 4-byte value into the One-Time Programmable (OTP) memory at the
+        specified index. Optionally verifies the write operation by reading back and comparing
+        the value as a bitmask.
+
+        :param index: Start index in the OTP memory region.
+        :param value: 4-byte integer value to program into OTP.
+        :param verify: If True, verify programming by reading back and comparing as bitmask.
+        :return: True if programming succeeded, False if any error occurred.
         """
         logger.info(
             f"CMD: FlashProgramOnce(index={index}, value=0x{value:X}) "
@@ -871,11 +1014,14 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return cmd_response.status == StatusCode.SUCCESS
 
     def flash_read_once(self, index: int, count: int = 4) -> Optional[bytes]:
-        """Read from MCU flash program once region (max 8 bytes).
+        """Read from MCU flash program once region.
 
-        :param index: Start index
-        :param count: Count of bytes
-        :return: Data read; None in case of an failure
+        The method reads data from the MCU's one-time programmable (OTP) flash region.
+        Maximum read size is 8 bytes per operation.
+
+        :param index: Start index in the program once region
+        :param count: Number of bytes to read (must be 4 or 8)
+        :return: Data read from the program once region; None if operation fails
         :raises SPSDKError: When invalid count of bytes. Must be 4 or 8
         """
         if count not in (4, 8):
@@ -891,10 +1037,10 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def flash_program_once(self, index: int, data: bytes) -> bool:
         """Write into MCU flash program once region (max 8 bytes).
 
-        :param index: Start index
-        :param data: Input data aligned to 4 or 8 bytes
-        :return: False in case of any problem; True otherwise
-        :raises SPSDKError: When invalid length of data. Must be aligned to 4 or 8 bytes
+        :param index: Start index for the program once region.
+        :param data: Input data aligned to 4 or 8 bytes.
+        :return: False in case of any problem; True otherwise.
+        :raises SPSDKError: When invalid length of data. Must be aligned to 4 or 8 bytes.
         """
         if len(data) not in (4, 8):
             raise SPSDKError("Invalid length of data. Must be aligned to 4 or 8 bytes")
@@ -907,11 +1053,14 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def flash_read_resource(self, address: int, length: int, option: int = 1) -> Optional[bytes]:
         """Read resource of flash module.
 
-        :param address: Start address
-        :param length: Number of bytes
-        :param option: Area to be read. 0 means Flash IFR, 1 means Flash Firmware ID
-        :raises McuBootError: when the length is not aligned to 4 bytes
-        :return: Data from the resource; None in case of an failure
+        The method reads data from specific flash memory areas like IFR or Firmware ID.
+        The length must be aligned to 4 bytes boundary.
+
+        :param address: Start address to read from.
+        :param length: Number of bytes to read (must be aligned to 4 bytes).
+        :param option: Area to be read. 0 means Flash IFR, 1 means Flash Firmware ID.
+        :raises McuBootError: When the length is not aligned to 4 bytes.
+        :return: Data from the resource; None in case of failure.
         """
         if length % 4:
             raise McuBootError("The number of bytes to read is not aligned to the 4 bytes")
@@ -928,21 +1077,27 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return None
 
     def configure_memory(self, address: int, mem_id: int) -> bool:
-        """Configure memory.
+        """Configure memory with specified parameters.
 
-        :param address: The address in memory where are locating configuration data
-        :param mem_id: Memory ID
-        :return: False in case of any problem; True otherwise
+        This method configures a memory region at the given address with the specified memory ID.
+        The configuration data is expected to be located at the provided memory address.
+
+        :param address: The address in memory where configuration data is located.
+        :param mem_id: Memory identifier specifying which memory to configure.
+        :return: True if configuration was successful, False if any problem occurred.
         """
         logger.info(f"CMD: ConfigureMemory({mem_id}, address=0x{address:08X})")
         cmd_packet = CmdPacket(CommandTag.CONFIGURE_MEMORY, CommandFlag.NONE.tag, mem_id, address)
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
     def reliable_update(self, address: int) -> bool:
-        """Reliable Update.
+        """Execute reliable update command on the target device.
 
-        :param address: Address where new the firmware is stored
-        :return: False in case of any problem; True otherwise
+        This command instructs the bootloader to perform a reliable update using
+        firmware stored at the specified address.
+
+        :param address: Memory address where the new firmware is stored.
+        :return: True if the reliable update command was successful, False otherwise.
         """
         logger.info(f"CMD: ReliableUpdate(address=0x{address:08X})")
         cmd_packet = CmdPacket(CommandTag.RELIABLE_UPDATE, CommandFlag.NONE.tag, address)
@@ -956,10 +1111,14 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     ) -> Optional[bytes]:
         """Generate Key Blob.
 
-        :param dek_data: Data Encryption Key as bytes
-        :param key_sel: select the BKEK used to wrap the BK (default: OPTMK/FUSES)
-        :param count: Key blob count (default: 72 - AES128bit)
-        :return: Key blob; None in case of an failure
+        This method creates a key blob by wrapping a Data Encryption Key (DEK) using the
+        specified Blob Key Encryption Key (BKEK). The process involves sending the DEK data
+        to the target device and retrieving the generated encrypted key blob.
+
+        :param dek_data: Data Encryption Key as bytes to be wrapped into key blob
+        :param key_sel: Select the BKEK used to wrap the BK (default: OPTMK/FUSES)
+        :param count: Expected key blob size in bytes (default: 72 for AES128bit)
+        :return: Generated key blob as bytes, None if operation fails
         """
         logger.info(
             f"CMD: GenerateKeyBlob(dek_len={len(dek_data)}, key_sel={key_sel}, count={count})"
@@ -989,7 +1148,10 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def kp_enroll(self) -> bool:
         """Key provisioning: Enroll Command (start PUF).
 
-        :return: False in case of any problem; True otherwise
+        This command initiates the Physical Unclonable Function (PUF) enrollment process
+        for key provisioning operations.
+
+        :return: True if enrollment was successful, False otherwise.
         """
         logger.info("CMD: [KeyProvisioning] Enroll")
         cmd_packet = CmdPacket(
@@ -1000,9 +1162,12 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def kp_set_intrinsic_key(self, key_type: int, key_size: int) -> bool:
         """Key provisioning: Generate Intrinsic Key.
 
-        :param key_type: Type of the key
-        :param key_size: Size of the key
-        :return: False in case of any problem; True otherwise
+        This method generates an intrinsic key with the specified type and size using the key
+        provisioning functionality.
+
+        :param key_type: Type of the key to generate.
+        :param key_size: Size of the key in bytes.
+        :return: True if key generation was successful, False otherwise.
         """
         logger.info(f"CMD: [KeyProvisioning] SetIntrinsicKey(type={key_type}, key_size={key_size})")
         cmd_packet = CmdPacket(
@@ -1015,10 +1180,13 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
     def kp_write_nonvolatile(self, mem_id: int = 0) -> bool:
-        """Key provisioning: Write the key to a nonvolatile memory.
+        """Write the key to a nonvolatile memory during key provisioning.
 
-        :param mem_id: The memory ID (default: 0)
-        :return: False in case of any problem; True otherwise
+        This method performs a key provisioning operation to store the previously loaded
+        key into nonvolatile memory for persistent storage.
+
+        :param mem_id: The memory ID where the key should be written (default: 0)
+        :return: True if the operation was successful, False otherwise
         """
         logger.info(f"CMD: [KeyProvisioning] WriteNonVolatileMemory(mem_id={mem_id})")
         cmd_packet = CmdPacket(
@@ -1030,10 +1198,13 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
     def kp_read_nonvolatile(self, mem_id: int = 0) -> bool:
-        """Key provisioning: Load the key from a nonvolatile memory to bootloader.
+        """Load the key from a nonvolatile memory to bootloader.
 
-        :param mem_id: The memory ID (default: 0)
-        :return: False in case of any problem; True otherwise
+        This method performs key provisioning operation to read a key from nonvolatile
+        memory and load it into the bootloader for further use.
+
+        :param mem_id: The memory ID to read from.
+        :return: True if operation successful, False otherwise.
         """
         logger.info(f"CMD: [KeyProvisioning] ReadNonVolatileMemory(mem_id={mem_id})")
         cmd_packet = CmdPacket(
@@ -1045,11 +1216,11 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
     def kp_set_user_key(self, key_type: int, key_data: bytes) -> bool:
-        """Key provisioning: Send the user key specified by <key_type> to bootloader.
+        """Send the user key specified by key_type to bootloader for key provisioning.
 
-        :param key_type: type of the user key, see enumeration for details
-        :param key_data: binary content of the user key
-        :return: False in case of any problem; True otherwise
+        :param key_type: Type of the user key, see enumeration for details.
+        :param key_data: Binary content of the user key.
+        :return: True if key was successfully sent, False in case of any problem.
         """
         logger.info(
             f"CMD: [KeyProvisioning] SetUserKey(key_type={key_type}, " f"key_len={len(key_data)})"
@@ -1070,8 +1241,11 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def kp_write_key_store(self, key_data: bytes) -> bool:
         """Key provisioning: Write key data into key store area.
 
-        :param key_data: key store binary content to be written to processor
-        :return: result of the operation; True means success
+        This method writes the provided key store binary content to the processor's
+        key store area using the key provisioning protocol.
+
+        :param key_data: Key store binary content to be written to processor.
+        :return: True if operation succeeded, False otherwise.
         """
         logger.info(f"CMD: [KeyProvisioning] WriteKeyStore(key_len={len(key_data)})")
         data_chunks = self._split_data(data=key_data)
@@ -1088,7 +1262,14 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return False
 
     def kp_read_key_store(self) -> Optional[bytes]:
-        """Key provisioning: Read key data from key store area."""
+        """Read key data from key store area.
+
+        This method performs a key provisioning operation to retrieve key data
+        stored in the device's key store area. The operation sends a READ_KEY_STORE
+        command and processes the response to extract the key data.
+
+        :return: Key data from key store area if successful, None if operation fails.
+        """
         logger.info("CMD: [KeyProvisioning] ReadKeyStore")
         cmd_packet = CmdPacket(
             CommandTag.KEY_PROVISIONING, CommandFlag.NONE.tag, KeyProvOperation.READ_KEY_STORE.tag
@@ -1104,9 +1285,13 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     ) -> bool:
         """Load a boot image to the device.
 
-        :param data: boot image
-        :param progress_callback: Callback for updating the caller about the progress
-        :return: False in case of any problem; True otherwise
+        The method splits the boot image data into chunks and sends them to the device
+        for loading. Progress can be tracked through an optional callback function.
+
+        :param data: Boot image data to be loaded to the device.
+        :param progress_callback: Optional callback function for progress updates, receives current
+            and total progress values.
+        :return: True if image loaded successfully, False if any problem occurred.
         """
         logger.info(f"CMD: LoadImage(length={len(data)})")
         data_chunks = self._split_data(data)
@@ -1117,22 +1302,25 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def tp_prove_genuinity(self, address: int, buffer_size: int) -> Optional[int]:
         """Start the process of proving genuinity.
 
-        :param address: Address where to prove genuinity request (challenge) container
-        :param buffer_size: Maximum size of the response package (limit 0xFFFF)
-        :raises McuBootError: Invalid input parameters
-        :return: True if prove_genuinity operation is successfully completed
+        :param address: Address where to prove genuinity request (challenge) container.
+        :param buffer_size: Maximum size of the response package (limit 0xFFFF).
+        :raises McuBootError: Invalid input parameters.
+        :return: Operation result if prove genuinity operation is successfully completed.
         """
         return self._tp_prove_genuinity(
             address=address, buffer_size=buffer_size, opcode=TrustProvOperation.PROVE_GENUINITY.tag
         )
 
     def tp_prove_genuinity_hybrid(self, address: int, buffer_size: int) -> Optional[int]:
-        """Start the process of proving genuinity.
+        """Start the process of proving genuinity using hybrid mode.
 
-        :param address: Address where to prove genuinity request (challenge) container
-        :param buffer_size: Maximum size of the response package (limit 0xFFFF)
-        :raises McuBootError: Invalid input parameters
-        :return: True if prove_genuinity operation is successfully completed
+        This method initiates a trust provisioning operation to prove the genuinity
+        of the device using hybrid cryptographic approach.
+
+        :param address: Address where to store the genuinity request (challenge) container.
+        :param buffer_size: Maximum size of the response package (limit 0xFFFF).
+        :raises McuBootError: Invalid input parameters.
+        :return: Operation result code if successful, None otherwise.
         """
         return self._tp_prove_genuinity(
             address=address,
@@ -1143,11 +1331,14 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def _tp_prove_genuinity(self, address: int, buffer_size: int, opcode: int) -> Optional[int]:
         """Internal method to prove genuinity with configurable operation code.
 
-        :param address: Address where to prove genuinity request (challenge) container
-        :param buffer_size: Maximum size of the response package (limit 0xFFFF)
-        :param opcode: Operation code for trust provisioning
-        :raises McuBootError: Invalid input parameters
-        :return: Response value or None if operation fails
+        This method sends a trust provisioning command to prove device genuinity by processing
+        a challenge container at the specified address and returning the response size.
+
+        :param address: Address where to prove genuinity request (challenge) container is located.
+        :param buffer_size: Maximum size of the response package (limit 0xFFFF).
+        :param opcode: Operation code for trust provisioning.
+        :raises McuBootError: Invalid input parameters or command response issues.
+        :return: Response value indicating proof of genuinity result, or None if operation fails.
         """
         logger.info(
             f"CMD: [TrustProvisioning] ProveGenuinity(address={hex(address)}, "
@@ -1170,12 +1361,17 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return None
 
     def tp_set_wrapped_data(self, address: int, stage: int = 0x4B, control: int = 1) -> bool:
-        """Start the process of setting OEM data.
+        """Start the process of setting OEM data in TrustProvisioning flow.
 
-        :param address: Address where the wrapped data container on target
-        :param control: 1 - use the address, 2 - use container within the firmware, defaults to 1
+        This method initiates the TrustProvisioning SetWrappedData operation to configure OEM data
+        on the target device. The operation can use either a specified address or a container
+        within the firmware.
+
+        :param address: Address where the wrapped data container is located on target device
         :param stage: Stage of TrustProvisioning flow, defaults to 0x4B
-        :return: True if set_wrapped_data operation is successfully completed
+        :param control: Control flag - 1 to use the address, 2 to use container within firmware,
+                        defaults to 1
+        :return: True if set_wrapped_data operation is successfully completed, False otherwise
         """
         logger.info(f"CMD: [TrustProvisioning] SetWrappedData(address={hex(address)})")
         if address == 0:
@@ -1195,12 +1391,15 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return cmd_response.status == StatusCode.SUCCESS
 
     def fuse_program(self, address: int, data: bytes, mem_id: int = 0) -> bool:
-        """Program fuse.
+        """Program fuse memory with specified data.
 
-        :param address: Start address
-        :param data: List of bytes
-        :param mem_id: Memory ID
-        :return: False in case of any problem; True otherwise
+        This method programs fuse memory at the given address with the provided data.
+        The operation is performed through the MCU bootloader interface.
+
+        :param address: Start address in fuse memory where programming begins.
+        :param data: Binary data to be programmed into fuse memory.
+        :param mem_id: Memory identifier for the target fuse memory (default: 0).
+        :return: True if programming succeeded, False if any error occurred.
         """
         logger.info(
             f"CMD: FuseProgram(address=0x{address:08X}, length={len(data)}, mem_id={mem_id})"
@@ -1217,12 +1416,16 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return False
 
     def fuse_read(self, address: int, length: int, mem_id: int = 0) -> Optional[bytes]:
-        """Read fuse.
+        """Read fuse memory from the target device.
 
-        :param address: Start address
-        :param length: Count of bytes
-        :param mem_id: Memory ID
-        :return: Data read from the fuse; None in case of a failure
+        This method reads data from the fuse memory at the specified address and length.
+        The operation may fail if the fuse memory is not accessible or if invalid
+        parameters are provided.
+
+        :param address: Start address in fuse memory to read from.
+        :param length: Number of bytes to read from fuse memory.
+        :param mem_id: Memory identifier for fuse access, defaults to 0.
+        :return: Data read from the fuse memory; None in case of a failure.
         """
         logger.info(f"CMD: ReadFuse(address=0x{address:08X}, length={length}, mem_id={mem_id})")
         mem_id = _clamp_down_memory_id(memory_id=mem_id)
@@ -1237,8 +1440,10 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def update_life_cycle(self, life_cycle: int) -> bool:
         """Update device life cycle.
 
-        :param life_cycle: New life cycle value.
-        :return: False in case of any problems, True otherwise.
+        This method sends a command to update the device's life cycle state to a new value.
+
+        :param life_cycle: New life cycle value to set on the device.
+        :return: True if the life cycle update was successful, False otherwise.
         """
         logger.info(f"CMD: UpdateLifeCycle (life cycle=0x{life_cycle:02X})")
         cmd_packet = CmdPacket(CommandTag.UPDATE_LIFE_CYCLE, CommandFlag.NONE.tag, life_cycle)
@@ -1249,12 +1454,14 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     ) -> bool:
         """Send EdgeLock Enclave message.
 
-        :param cmdMsgAddr: Address in RAM where is prepared the command message words
-        :param cmdMsgCnt: Count of 32bits command words
-        :param respMsgAddr: Address in RAM where the command store the response
-        :param respMsgCnt: Count of 32bits response words
+        This method sends a command message to the EdgeLock Enclave and optionally receives a response.
+        The command and response data are exchanged through RAM addresses.
 
-        :return: False in case of any problems, True otherwise.
+        :param cmdMsgAddr: Address in RAM where the command message words are prepared.
+        :param cmdMsgCnt: Count of 32-bit command words.
+        :param respMsgAddr: Address in RAM where the response will be stored.
+        :param respMsgCnt: Count of 32-bit response words.
+        :return: True if the operation was successful, False otherwise.
         """
         logger.info(
             f"CMD: EleMessage Command (cmdMsgAddr=0x{cmdMsgAddr:08X}, cmdMsgCnt={cmdMsgCnt})"
@@ -1283,16 +1490,20 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         ecdsa_puk_output_addr: int,
         ecdsa_puk_output_size: int,
     ) -> Optional[list[int]]:
-        """Trust provisioning: OEM generate common keys.
+        """Generate HSM keys for trust provisioning operations.
 
-        :param key_type: Key to generate (MFW_ISK, MFW_ENCK, GEN_SIGNK, GET_CUST_MK_SK)
-        :param reserved: Reserved, must be zero
-        :param key_blob_output_addr: The output buffer address where ROM writes the key blob to
-        :param key_blob_output_size: The output buffer size in byte
-        :param ecdsa_puk_output_addr: The output buffer address where ROM writes the public key to
-        :param ecdsa_puk_output_size: The output buffer size in byte
-        :return: Return byte count of the key blob + byte count of the public key from the device;
-            None in case of an failure
+        This method generates common keys used in trust provisioning, including manufacturing
+        firmware keys, encryption keys, signing keys, and customer master keys. The generated
+        keys are written to specified output buffers.
+
+        :param key_type: Type of key to generate (MFW_ISK, MFW_ENCK, GEN_SIGNK, GET_CUST_MK_SK).
+        :param reserved: Reserved parameter, must be zero.
+        :param key_blob_output_addr: Output buffer address where ROM writes the key blob.
+        :param key_blob_output_size: Size of the key blob output buffer in bytes.
+        :param ecdsa_puk_output_addr: Output buffer address where ROM writes the public key.
+        :param ecdsa_puk_output_size: Size of the public key output buffer in bytes.
+        :return: List containing byte count of the key blob and public key from device,
+            None if operation fails.
         """
         logger.info("CMD: [TrustProvisioning] OEM generate common keys")
         cmd_packet = CmdPacket(
@@ -1322,22 +1533,26 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         oem_cust_cert_puk_output_addr: int,
         oem_cust_cert_puk_output_size: int,
     ) -> Optional[list[int]]:
-        """Takes the entropy seed provided by the OEM as input.
+        """Generate OEM master share for trust provisioning.
 
-        :param oem_share_input_addr: The input buffer address
-            where the OEM Share(entropy seed) locates at
-        :param oem_share_input_size: The byte count of the OEM Share
-        :param oem_enc_share_output_addr: The output buffer address
-            where ROM writes the Encrypted OEM Share to
-        :param oem_enc_share_output_size: The output buffer size in byte
-        :param oem_enc_master_share_output_addr: The output buffer address
-            where ROM writes the Encrypted OEM Master Share to
-        :param oem_enc_master_share_output_size: The output buffer size in byte.
-        :param oem_cust_cert_puk_output_addr: The output buffer address where
-            ROM writes the OEM Customer Certificate Public Key to
-        :param oem_cust_cert_puk_output_size: The output buffer size in byte
-        :return: Sizes of two encrypted blobs(the Encrypted OEM Share and the Encrypted OEM Master Share)
-            and a public key(the OEM Customer Certificate Public Key).
+        Takes the entropy seed provided by the OEM as input and generates encrypted shares
+        and customer certificate public key through the trust provisioning operation.
+
+        :param oem_share_input_addr: The input buffer address where the OEM Share
+            (entropy seed) is located.
+        :param oem_share_input_size: The byte count of the OEM Share.
+        :param oem_enc_share_output_addr: The output buffer address where ROM writes
+            the Encrypted OEM Share.
+        :param oem_enc_share_output_size: The output buffer size in bytes.
+        :param oem_enc_master_share_output_addr: The output buffer address where ROM
+            writes the Encrypted OEM Master Share.
+        :param oem_enc_master_share_output_size: The output buffer size in bytes.
+        :param oem_cust_cert_puk_output_addr: The output buffer address where ROM
+            writes the OEM Customer Certificate Public Key.
+        :param oem_cust_cert_puk_output_size: The output buffer size in bytes.
+        :return: Sizes of two encrypted blobs (the Encrypted OEM Share and the
+            Encrypted OEM Master Share) and a public key (the OEM Customer Certificate
+            Public Key), or None if operation fails.
         """
         logger.info("CMD: [TrustProvisioning] OEM generate master share")
         cmd_packet = CmdPacket(
@@ -1365,15 +1580,19 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         oem_enc_master_share_input_addr: int,
         oem_enc_master_share_input_size: int,
     ) -> bool:
-        """Takes the entropy seed and the Encrypted OEM Master Share.
+        """Set OEM master share for trust provisioning.
 
-        :param oem_share_input_addr: The input buffer address
-            where the OEM Share(entropy seed) locates at
-        :param oem_share_input_size: The byte count of the OEM Share
-        :param oem_enc_master_share_input_addr: The input buffer address
-            where the Encrypted OEM Master Share locates at
-        :param oem_enc_master_share_input_size: The byte count of the Encrypted OEM Master Share
-        :return: False in case of any problem; True otherwise
+        Takes the entropy seed and the Encrypted OEM Master Share to configure
+        the trust provisioning process.
+
+        :param oem_share_input_addr: The input buffer address where the OEM Share
+            (entropy seed) is located.
+        :param oem_share_input_size: The byte count of the OEM Share.
+        :param oem_enc_master_share_input_addr: The input buffer address where the
+            Encrypted OEM Master Share is located.
+        :param oem_enc_master_share_input_size: The byte count of the Encrypted OEM
+            Master Share.
+        :return: True if operation succeeded, False otherwise.
         """
         logger.info(
             "CMD: [TrustProvisioning] Takes the entropy seed and the Encrypted OEM Master Share."
@@ -1397,15 +1616,19 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         oem_cust_cert_dice_puk_output_size: int,
         mldsa: bool = False,
     ) -> Optional[int]:
-        """Creates the initial DICE CA keys.
+        """Get OEM customer certificate DICE public key.
 
-        :param oem_rkth_input_addr: The input buffer address where the OEM RKTH locates at
-        :param oem_rkth_input_size: The byte count of the OEM RKTH
-        :param oem_cust_cert_dice_puk_output_addr: The output buffer address where ROM writes the OEM Customer
-            Certificate Public Key for DICE to
-        :param oem_cust_cert_dice_puk_output_size: The output buffer size in byte
-        :param mldsa: Flag to indicate MLDSA operation, defaults to False
-        :return: The byte count of the OEM Customer Certificate Public Key for DICE
+        Creates the initial DICE CA keys by processing OEM Root Key Table Hash (RKTH) input
+        and generating the corresponding OEM Customer Certificate Public Key for DICE.
+
+        :param oem_rkth_input_addr: Input buffer address where the OEM RKTH is located.
+        :param oem_rkth_input_size: Byte count of the OEM RKTH.
+        :param oem_cust_cert_dice_puk_output_addr: Output buffer address where ROM writes the
+            OEM Customer Certificate Public Key for DICE.
+        :param oem_cust_cert_dice_puk_output_size: Output buffer size in bytes.
+        :param mldsa: Flag to indicate MLDSA operation, defaults to False.
+        :return: Byte count of the OEM Customer Certificate Public Key for DICE, or None if
+            operation fails.
         """
         logger.info("CMD: [TrustProvisioning] Creates the initial DICE CA keys")
         operation_tag = (
@@ -1434,13 +1657,16 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         response_addr: int,
         response_size: int,
     ) -> Optional[int]:
-        """Creates DICE response for given challenge.
+        """Create DICE response for given challenge.
 
-        :param challenge_addr: The input buffer address where the challenge is located
-        :param challenge_size: The byte count of the challenge
-        :param response_addr: The output buffer address where ROM/FW writes the response
-        :param response_size: The byte count of the response
-        :return: The byte count of the DICE response
+        This method generates a Device Identifier Composition Engine (DICE) response
+        based on the provided challenge data through the Trust Provisioning interface.
+
+        :param challenge_addr: The input buffer address where the challenge is located.
+        :param challenge_size: The byte count of the challenge.
+        :param response_addr: The output buffer address where ROM/FW writes the response.
+        :param response_size: The byte count of the response.
+        :return: The byte count of the DICE response, or None if operation failed.
         """
         logger.info("CMD: [TrustProvisioning] Creates DICE response for given challenge")
         cmd_packet = CmdPacket(
@@ -1468,15 +1694,17 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     ) -> Optional[list[int]]:
         """Trust provisioning: Store OEM common keys.
 
-        :param key_type: Key to generate (CKDFK, HKDFK, HMACK, CMACK, AESK, KUOK)
-        :param key_property: Bit 0: Key Size, 0 for 128bit, 1 for 256bit.
-            Bits 30-31: set key protection CSS mode.
-        :param key_input_addr: The input buffer address where the key locates at
-        :param key_input_size: The byte count of the key
-        :param key_blob_output_addr: The output buffer address where ROM writes the key blob to
-        :param key_blob_output_size: The output buffer size in byte
-        :return: Return header of the key blob + byte count of the key blob
-            (header is not included) from the device; None in case of an failure
+        This method stores OEM common keys using the trust provisioning HSM functionality.
+        The key is stored as a blob in the specified output buffer location.
+
+        :param key_type: Key type to store (CKDFK, HKDFK, HMACK, CMACK, AESK, KUOK)
+        :param key_property: Key properties - Bit 0: Key Size (0=128bit, 1=256bit),
+            Bits 30-31: CSS protection mode
+        :param key_input_addr: Input buffer address where the key is located
+        :param key_input_size: Size of the key in bytes
+        :param key_blob_output_addr: Output buffer address for the key blob
+        :param key_blob_output_size: Output buffer size in bytes
+        :return: Key blob header and byte count (header excluded) on success, None on failure
         """
         logger.info("CMD: [TrustProvisioning] OEM generate common keys")
         cmd_packet = CmdPacket(
@@ -1508,19 +1736,22 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     ) -> bool:
         """Trust provisioning: Encrypt the given SB3 data block.
 
-        :param mfg_cust_mk_sk_0_blob_input_addr: The input buffer address
-            where the CKDF Master Key Blob locates at
-        :param mfg_cust_mk_sk_0_blob_input_size: The byte count of the CKDF Master Key Blob
-        :param kek_id: The CKDF Master Key Encryption Key ID
-            (0x10: NXP_CUST_KEK_INT_SK, 0x11: NXP_CUST_KEK_EXT_SK)
-        :param sb3_header_input_addr: The input buffer address,
-            where the SB3 Header(block0) locates at
-        :param sb3_header_input_size: The byte count of the SB3 Header
-        :param block_num: The index of the block. Due to SB3 Header(block 0) is always unencrypted,
-            the index starts from block1
-        :param block_data_addr: The buffer address where the SB3 data block locates at
-        :param block_data_size: The byte count of the SB3 data block
-        :return: False in case of any problem; True otherwise
+        This method encrypts a Secure Binary 3 (SB3) data block using HSM encryption with the
+        provided CKDF Master Key Blob and encryption parameters.
+
+        :param mfg_cust_mk_sk_0_blob_input_addr: The input buffer address where the CKDF
+            Master Key Blob locates at.
+        :param mfg_cust_mk_sk_0_blob_input_size: The byte count of the CKDF Master Key Blob.
+        :param kek_id: The CKDF Master Key Encryption Key ID (0x10: NXP_CUST_KEK_INT_SK,
+            0x11: NXP_CUST_KEK_EXT_SK).
+        :param sb3_header_input_addr: The input buffer address where the SB3 Header (block0)
+            locates at.
+        :param sb3_header_input_size: The byte count of the SB3 Header.
+        :param block_num: The index of the block. Due to SB3 Header (block 0) is always
+            unencrypted, the index starts from block1.
+        :param block_data_addr: The buffer address where the SB3 data block locates at.
+        :param block_data_size: The byte count of the SB3 data block.
+        :return: True if encryption was successful, False otherwise.
         """
         logger.info("CMD: [TrustProvisioning] Encrypt the given SB3 data block")
         cmd_packet = CmdPacket(
@@ -1547,15 +1778,18 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         signature_output_addr: int,
         signature_output_size: int,
     ) -> Optional[int]:
-        """Signs the given data.
+        """Sign data using HSM encryption and signing operation.
 
-        :param key_blob_input_addr: The input buffer address where signing key blob locates at
-        :param key_blob_input_size: The byte count of the signing key blob
-        :param block_data_input_addr: The input buffer address where the data locates at
-        :param block_data_input_size: The byte count of the data
-        :param signature_output_addr: The output buffer address where ROM writes the signature to
-        :param signature_output_size: The output buffer size in byte
-        :return: Return signature size; None in case of an failure
+        This method performs Trust Provisioning HSM encryption and signing operation on the provided
+        data block using the specified key blob, writing the resulting signature to the output buffer.
+
+        :param key_blob_input_addr: Input buffer address where signing key blob is located.
+        :param key_blob_input_size: Size of the signing key blob in bytes.
+        :param block_data_input_addr: Input buffer address where the data to be signed is located.
+        :param block_data_input_size: Size of the data to be signed in bytes.
+        :param signature_output_addr: Output buffer address where ROM writes the signature.
+        :param signature_output_size: Size of the output buffer in bytes.
+        :return: Signature size in bytes if successful, None if operation fails.
         """
         logger.info("CMD: [TrustProvisioning] HSM ENC SIGN")
         cmd_packet = CmdPacket(
@@ -1581,8 +1815,12 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     ) -> Optional[int]:
         """Command used for harvesting device ID blob.
 
-        :param wpc_id_blob_addr: Buffer address
-        :param wpc_id_blob_size: Buffer size
+        The method retrieves the Wireless Power Consortium (WPC) device identification
+        blob from the target device through trust provisioning interface.
+
+        :param wpc_id_blob_addr: Buffer address where the WPC ID blob will be stored.
+        :param wpc_id_blob_size: Size of the buffer allocated for the WPC ID blob.
+        :return: Device ID value if successful, None if command fails or returns invalid response.
         """
         logger.info("CMD: [TrustProvisioning] WPC GET ID")
         cmd_packet = CmdPacket(
@@ -1602,10 +1840,14 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         id_blob_addr: int,
         id_blob_size: int,
     ) -> Optional[int]:
-        """Command used for harvesting device ID blob during wafer test as part of RTS flow.
+        """Harvest device ID blob during wafer test as part of RTS flow.
 
-        :param id_blob_addr: address of ID blob defined by Round-trip trust provisioning specification.
-        :param id_blob_size: length of buffer in bytes
+        This command retrieves the device ID blob from the specified memory location
+        according to the Round-trip trust provisioning specification.
+
+        :param id_blob_addr: Address of ID blob in device memory.
+        :param id_blob_size: Size of the ID blob buffer in bytes.
+        :return: First value from trust provisioning response if successful, None otherwise.
         """
         logger.info("CMD: [TrustProvisioning] NXP GET ID")
         cmd_packet = CmdPacket(
@@ -1627,16 +1869,16 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         ec_id_offset: int,
         wpc_puk_offset: int,
     ) -> Optional[int]:
-        """Command used for certificate validation before it is written into flash.
+        """Insert WPC certificate for validation before writing to flash.
 
-        This command does following things:
-            Extracts ECID and WPC PUK from certificate
-            Validates ECID and WPC PUK. If both are OK it returns success. Otherwise returns fail
+        This command extracts ECID and WPC PUK from the certificate and validates both
+        components. Returns success if validation passes, otherwise returns failure.
 
-        :param wpc_cert_addr: address of inserted certificate
-        :param wpc_cert_len: length in bytes of inserted certificate
-        :param ec_id_offset: offset to 72-bit ECID
-        :param wpc_puk_offset: WPC PUK offset from beginning of inserted certificate
+        :param wpc_cert_addr: Address of the certificate to be inserted.
+        :param wpc_cert_len: Length of the certificate in bytes.
+        :param ec_id_offset: Offset to the 72-bit ECID within the certificate.
+        :param wpc_puk_offset: Offset to the WPC PUK from the beginning of the certificate.
+        :return: 0 if validation successful, None if validation failed.
         """
         logger.info("CMD: [TrustProvisioning] WPC INSERT CERT")
         cmd_packet = CmdPacket(
@@ -1660,13 +1902,16 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         signature_addr: int,
         signature_len: int,
     ) -> Optional[int]:
-        """Command used sign CSR data (TBS portion).
+        """Sign CSR data using the TBS (To Be Signed) portion.
 
-        :param csr_tbs_addr: address of CSR-TBS data
-        :param csr_tbs_len: length in bytes of CSR-TBS data
-        :param signature_addr: address where to store signature
-        :param signature_len: expected length of signature
-        :return: actual signature length
+        This command signs Certificate Signing Request data and stores the resulting signature
+        at the specified memory location.
+
+        :param csr_tbs_addr: Address of CSR-TBS data in memory.
+        :param csr_tbs_len: Length in bytes of CSR-TBS data.
+        :param signature_addr: Address where to store the generated signature.
+        :param signature_len: Expected length of the signature in bytes.
+        :return: Actual signature length if successful, None otherwise.
         """
         logger.info("CMD: [TrustProvisioning] WPC SIGN CSR-TBS DATA")
         cmd_packet = CmdPacket(
@@ -1690,12 +1935,15 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         oem_share_output_addr: int,
         oem_share_output_size: int,
     ) -> Optional[int]:
-        """Command used by OEM to provide it share to create the initial trust provisioning keys.
+        """Create DSC HSM session for trust provisioning.
 
-        :param oem_seed_input_addr: address of 128-bit entropy seed value provided by the OEM.
-        :param oem_seed_input_size: OEM seed size in bytes
-        :param oem_share_output_addr: A 128-bit encrypted token.
-        :param oem_share_output_size: size in bytes
+        Command used by OEM to provide its share to create the initial trust provisioning keys.
+
+        :param oem_seed_input_addr: Address of 128-bit entropy seed value provided by the OEM.
+        :param oem_seed_input_size: OEM seed size in bytes.
+        :param oem_share_output_addr: Address for 128-bit encrypted token output.
+        :param oem_share_output_size: Output buffer size in bytes.
+        :return: Session value if successful, None otherwise.
         """
         logger.info("CMD: [TrustProvisioning] DSC HSM CREATE SESSION")
         cmd_packet = CmdPacket(
@@ -1724,12 +1972,13 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         This command is only supported after issuance of dsc_hsm_create_session.
 
-        :param sbx_header_input_addr: SBx header containing file size, Firmware version and Timestamp data.
-            Except for hash digest of block 0, all other fields should be valid.
-        :param sbx_header_input_size: size of the header in bytes
-        :param block_num: Number of block
-        :param block_data_addr: Address of data block
-        :param block_data_size: Size of data block
+        :param sbx_header_input_addr: SBx header containing file size, Firmware version and
+            Timestamp data. Except for hash digest of block 0, all other fields should be valid.
+        :param sbx_header_input_size: Size of the header in bytes.
+        :param block_num: Number of block to encrypt.
+        :param block_data_addr: Address of data block to encrypt.
+        :param block_data_size: Size of data block in bytes.
+        :return: Response value from trust provisioning operation, None if operation failed.
         """
         logger.info("CMD: [TrustProvisioning] DSC HSM ENC BLK")
         cmd_packet = CmdPacket(
@@ -1754,14 +2003,15 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         signature_output_addr: int,
         signature_output_size: int,
     ) -> Optional[int]:
-        """Command used for signing the data buffer provided.
+        """Sign data buffer using DSC HSM encryption.
 
         This command is only supported after issuance of dsc_hsm_create_session.
 
-        :param block_data_input_addr: Address of data buffer to be signed
-        :param block_data_input_size: Size of data buffer in bytes
-        :param signature_output_addr: Address to output signature data
-        :param signature_output_size: Size of the output signature data in bytes
+        :param block_data_input_addr: Address of data buffer to be signed.
+        :param block_data_input_size: Size of data buffer in bytes.
+        :param signature_output_addr: Address to output signature data.
+        :param signature_output_size: Size of the output signature data in bytes.
+        :return: Response value from trust provisioning operation, None if operation failed.
         """
         logger.info("CMD: [TrustProvisioning] DSC HSM ENC SIGN")
         cmd_packet = CmdPacket(
@@ -1779,7 +2029,14 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return None
 
     def el2go_get_version(self) -> Optional[list[int]]:
-        """Get version of the EL2GO Provisioning FW."""
+        """Get version of the EL2GO Provisioning FW.
+
+        This method retrieves the firmware version information from the EL2GO (EdgeLock 2GO)
+        provisioning system by sending a version query command and processing the response.
+
+        :return: List of version integers if successful, None if the command fails or returns
+            an unexpected response type.
+        """
         logger.info("CMD: Getting FW version")
         cmd_packet = CmdPacket(
             CommandTag.EL2GO, CommandFlag.NONE.tag, EL2GOCommandGroup.EL2GO_GET_FW_VERSION.tag
@@ -1790,8 +2047,16 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return None
 
     def el2go_close_device(self, address: int, dry_run: bool = False) -> Optional[int]:
-        """Close device using EL2GO Provisioning FW."""
-        logger.info("CMD: Close device")
+        """Close device using EL2GO Provisioning FW.
+
+        This command finalizes the device provisioning process by closing the device
+        through the EL2GO (EdgeLock 2GO) provisioning firmware.
+
+        :param address: Target device address for the close operation.
+        :param dry_run: If True, performs a simulation without actual device changes.
+        :return: Response value from the trust provisioning operation, or None if operation failed.
+        """
+        logger.info("CMD: Device-based Close device")
         cmd_packet = CmdPacket(
             CommandTag.EL2GO,
             CommandFlag.NONE.tag,
@@ -1805,15 +2070,26 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return None
 
     def el2go_batch_tp(
-        self, data_address: int, report_address: int = 0xFFFF_FFFF, dry_run: bool = False
+        self,
+        data_address: int,
+        report_address: int = 0xFFFF_FFFF,
+        dry_run: bool = False,
+        progress_callback: Optional[Callable[[int, int], None]] = None,
     ) -> tuple[Optional[int], Optional[bytes]]:
-        """Perform Batch  Trust Provisioning.
+        """Perform EL2GO batch trust provisioning operation.
 
-        :param data_address: Address of the Secure Objects in target
-        :param report_address: Address where to store the Provisioning Report,
-            defaults to 0xFFFF_FFFF = don't store the report
-        :param dry_run: Don't run the full operation, defaults to False
-        :return: Status code; provisioning report in case provisioning was successful
+        Executes product-based trust provisioning using secure objects stored at the specified
+        address in target memory. Optionally stores provisioning report and supports dry-run mode
+        for validation without actual provisioning.
+
+        :param data_address: Memory address where secure objects are stored in target device.
+        :param report_address: Memory address to store provisioning report, defaults to
+            0xFFFF_FFFF (no report storage).
+        :param dry_run: Execute validation only without actual provisioning, defaults to False.
+        :param progress_callback: Optional callback function for progress updates during data
+            transfer operations.
+        :return: Tuple containing status code and provisioning report data if successful,
+            (None, None) if operation failed.
         """
         logger.info("CMD: Batch Trust Provisioning")
         cmd_packet = CmdPacket(
@@ -1825,9 +2101,27 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             report_address,
         )
         cmd_response = self._process_cmd(cmd_packet=cmd_packet)
-        if isinstance(cmd_response, TrustProvisioningResponse):
-            return cmd_response.values[0], cmd_response.get_payload_data(offset=1)
-        return None, None
+
+        if cmd_response.status != StatusCode.SUCCESS:
+            return None, None
+
+        assert isinstance(cmd_response, TrustProvisioningResponse)
+
+        status_code = cmd_response.values[0] if cmd_response.values else None
+        if status_code != StatusCode.EL2GO_PROV_SUCCESS.tag:
+            return status_code, None
+
+        # no data phase
+        if cmd_response.header.flags != CommandFlag.HAS_DATA_PHASE.tag:
+            return status_code, cmd_response.get_payload_data(offset=1)
+
+        # data is coming in data phase
+        if len(cmd_response.values) == 2:
+            data = self._read_data(CommandTag.EL2GO, cmd_response.values[1], progress_callback)
+            return status_code, data
+
+        # Return existing payload data present the response
+        return status_code, cmd_response.get_payload_data(offset=1)
 
 
 ####################
@@ -1836,7 +2130,17 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
 
 def _tp_sentinel_frame(command: int, args: list[int], tag: int = 0x17, version: int = 0) -> bytes:
-    """Prepare frame used by sentinel."""
+    """Prepare frame used by sentinel.
+
+    Creates a binary frame structure for sentinel communication with command,
+    arguments, and metadata packed in little-endian format.
+
+    :param command: Command identifier for the sentinel operation.
+    :param args: List of integer arguments to be packed into the frame.
+    :param tag: Frame tag identifier, defaults to 0x17.
+    :param version: Frame version number, defaults to 0.
+    :return: Binary frame data ready for sentinel communication.
+    """
     data = struct.pack("<4B", command, len(args), version, tag)
     for item in args:
         data += struct.pack("<I", item)
@@ -1844,6 +2148,15 @@ def _tp_sentinel_frame(command: int, args: list[int], tag: int = 0x17, version: 
 
 
 def _clamp_down_memory_id(memory_id: int) -> int:
+    """Clamp down memory ID to zero for mapped external memory access.
+
+    This method validates the memory ID and returns 0 for mapped external memory
+    (memory IDs 1-255) while preserving other values. A warning is logged when
+    clamping occurs to inform about the automatic adjustment.
+
+    :param memory_id: Memory identifier to be validated and potentially clamped.
+    :return: Clamped memory ID (0 for mapped external memory, original value otherwise).
+    """
     if memory_id > 255 or memory_id == 0:
         return memory_id
     logger.warning("Note: memoryId is not required when accessing mapped external memory")

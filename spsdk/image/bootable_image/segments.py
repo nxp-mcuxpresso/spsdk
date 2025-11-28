@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""This module contains Bootable image related code."""
+"""SPSDK bootable image segments management.
+
+This module provides classes and utilities for handling various segments
+that compose bootable images across NXP MCU portfolio. It includes segment
+types for key blobs, FCB, image versions, key stores, BEE headers, XMCD,
+MBI, HAB, AHAB, and Secure Binary containers.
+"""
 
 
 import logging
@@ -18,6 +24,7 @@ from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKValueError
 from spsdk.image.ahab.ahab_image import AHABImage
+from spsdk.image.exceptions import SPSDKSegmentNotPresent
 from spsdk.image.fcb.fcb import FCB
 from spsdk.image.hab.hab_image import HabImage
 from spsdk.image.mbi.mbi import MasterBootImage
@@ -36,12 +43,13 @@ from spsdk.utils.verifier import Verifier, VerifierResult
 logger = logging.getLogger(__name__)
 
 
-class SPSDKSegmentNotPresent(SPSDKError):
-    """The segment is not present in the configuration."""
-
-
 class BootableImageSegment(SpsdkEnum):
-    """Bootable image segment."""
+    """Bootable image segment type enumeration.
+
+    This enumeration defines the different types of segments that can be found
+    in bootable images across NXP MCU portfolio, including security headers,
+    containers, and image data segments.
+    """
 
     UNKNOWN = (0, "unknown", "Unknown segment")
     KEYBLOB = (1, "keyblob", "Keyblob segment")
@@ -70,7 +78,19 @@ class BootableImageSegment(SpsdkEnum):
 
 
 class Segment(BaseClass):
-    """Base Bootable Image Segment class."""
+    """Base class for bootable image segments.
+
+    This class provides the foundation for all bootable image segments, managing
+    segment data, positioning, and export functionality. Each segment represents
+    a specific part of a bootable image with defined offset and memory type.
+
+    :cvar NAME: Segment type identifier from BootableImageSegment enumeration.
+    :cvar BOOT_HEADER: Flag indicating if segment requires boot header.
+    :cvar INIT_SEGMENT: Flag indicating if this is an initialization segment.
+    :cvar CFG_NAME: Configuration name for the segment type.
+    :cvar IMAGE_PATTERNS: Supported image patterns for segment generation.
+    :cvar OFFSET_ALIGNMENT: Required alignment for segment offset positioning.
+    """
 
     NAME = BootableImageSegment.UNKNOWN
     BOOT_HEADER = True
@@ -86,12 +106,15 @@ class Segment(BaseClass):
         mem_type: MemoryType,
         raw_block: Optional[bytes] = None,
     ) -> None:
-        """Segment initialization, at least raw data are stored.
+        """Initialize a bootable image segment with basic properties.
 
-        :param offset: Offset of Segment in the full bootable image.
-        :param family: Chip family.
-        :param mem_type: Used memory type.
-        :param raw_block: Raw data of segment.
+        Stores the segment's position, target hardware configuration, and optional raw data
+        for further processing in the bootable image creation workflow.
+
+        :param offset: Offset of segment in the full bootable image.
+        :param family: Target chip family and revision information.
+        :param mem_type: Memory type where the segment will be stored.
+        :param raw_block: Raw binary data of the segment, defaults to None.
         """
         self._offset = offset
         self.family = family
@@ -102,33 +125,63 @@ class Segment(BaseClass):
 
     @property
     def size(self) -> int:
-        """Segment size."""
+        """Get the size of the segment.
+
+        :return: Size of the segment in bytes, returns -1 if size cannot be determined.
+        """
         return -1
 
     @property
     def is_present(self) -> bool:
-        """Returns true if the segment is present in the image."""
+        """Check if the segment is present in the bootable image.
+
+        The segment is considered present when it's not excluded and has exportable content.
+
+        :return: True if segment is present and has content, False otherwise.
+        """
         return not (self.excluded) and bool(self.export())
 
     def clear(self) -> None:
-        """Clear the segment to init state."""
+        """Clear the segment to init state.
+
+        This method resets the segment by setting the raw_block attribute to None,
+        effectively returning the segment to its initial uninitialized state.
+        """
         self.raw_block = None
 
     def __repr__(self) -> str:
-        """Object representation in string format."""
+        """Get string representation of the bootable image segment.
+
+        :return: String describing the segment with its name and description.
+        """
         return f"Bootable image segment: {self.NAME.description}"
 
     def __str__(self) -> str:
-        """Object description in string format."""
+        """Get string representation of the object.
+
+        :return: String representation of the object.
+        """
         return self.__repr__()
 
     def __len__(self) -> int:
-        """Segment length."""
+        """Get the length of the segment.
+
+        Returns the number of bytes in the exported segment data.
+
+        :return: Length of the segment in bytes.
+        """
         return len(self.export())
 
     @property
     def full_image_offset(self) -> int:
-        """Offset of the segment within the full bootable image."""
+        """Get the offset of the segment within the full bootable image.
+
+        The method returns the aligned offset for positive values or the raw offset for negative
+        values. The offset must be defined before calling this method.
+
+        :raises SPSDKValueError: When segment offset is not defined.
+        :return: Aligned offset for positive values, raw offset for negative values.
+        """
         if self._offset is None:
             raise SPSDKValueError("Segment offset is not defined.")
         if self._offset < 0:
@@ -137,12 +190,19 @@ class Segment(BaseClass):
 
     @full_image_offset.setter
     def full_image_offset(self, offset: int) -> None:
+        """Set the full image offset for this segment.
+
+        This method updates the internal offset value that represents the position
+        of this segment within the complete bootable image.
+
+        :param offset: The byte offset position within the full image.
+        """
         self._offset = offset
 
     def export(self) -> bytes:
         """Export object into bytes array.
 
-        :return: Raw binary block of segment
+        :return: Raw binary block of segment if available, empty bytes otherwise.
         """
         if self.raw_block:
             return self.raw_block
@@ -151,15 +211,21 @@ class Segment(BaseClass):
     def post_export(self, output_path: str) -> list[str]:
         """Post export artifacts like fuse scripts.
 
-        :param output_path: Path to export artifacts
-        :return: List of post export artifacts (usually fuse scripts)
+        This method handles the generation and export of additional artifacts that are created
+        after the main export process, typically including fuse scripts or other configuration files.
+
+        :param output_path: Path to export artifacts.
+        :return: List of post export artifacts (usually fuse scripts).
         """
         return []
 
     def image_info(self) -> BinaryImage:
-        """Get Image info format.
+        """Get image information in binary format.
 
-        :return: The segment content in Binary Image format.
+        Exports the segment content and wraps it in a BinaryImage object containing
+        metadata such as name, size, and offset information.
+
+        :return: The segment content wrapped in Binary Image format with metadata.
         """
         export_binary = self.export()
         return BinaryImage(
@@ -171,33 +237,47 @@ class Segment(BaseClass):
 
     @staticmethod
     def find_segment_offset(binary: bytes) -> int:
-        """Try to find the start of the Segment in data blob.
+        """Find the start offset of a Segment in binary data.
 
-        :param binary: Data  to be used to find Segment.
-        :return: Offset in data to new data container.
+        This method searches through the provided binary data to locate where
+        a Segment begins and returns the byte offset position.
+
+        :param binary: Binary data to search for Segment start position.
+        :return: Byte offset where the Segment begins in the data.
         """
         return 0
 
     @classmethod
     def cfg_key(cls) -> str:
-        """Configuration key name."""
+        """Get configuration key name for the segment.
+
+        Returns the configuration key name used in configuration files. Falls back to
+        the segment's label name if no specific configuration name is defined.
+
+        :return: Configuration key name as string.
+        """
         return cls.CFG_NAME or cls.NAME.label
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
         """Parse object from bytes array.
 
-        :param data: Input data to parse
-        :return: Parsed object
+        :param data: Input data to parse.
+        :raises NotImplementedError: Method must be implemented by subclass.
+        :return: Parsed object instance.
         """
         raise NotImplementedError
 
     def parse_binary(self, binary: bytes) -> None:
         """Parse binary block into Segment object.
 
-        :param binary: Binary image.
-        :raises SPSDKParsingError: If given binary block size is not equal to block size in header
-        :raises SPSDKSegmentNotPresent: If the input binary contains only padding bytes
+        This method processes a binary block and populates the segment object with the parsed data.
+        It validates the binary size against the expected segment size and checks for padding-only
+        content.
+
+        :param binary: Binary image data to be parsed into the segment.
+        :raises SPSDKParsingError: If given binary block size is smaller than expected segment size.
+        :raises SPSDKSegmentNotPresent: If the input binary contains only padding bytes.
         """
         self.not_parsed = True
         if self.size > 0 and len(binary) < self.size:
@@ -208,7 +288,14 @@ class Segment(BaseClass):
         self.raw_block = binary[: self.size] if self.size > 0 else binary
 
     def _is_padding(self, binary: bytes) -> bool:
-        """Check is given binary is padding only."""
+        """Check if given binary data contains only padding patterns.
+
+        This method verifies whether the provided binary data consists entirely of
+        recognized padding patterns used in bootable images.
+
+        :param binary: Binary data to check for padding patterns.
+        :return: True if the binary contains only padding patterns, False otherwise.
+        """
         if self.size > 0 and binary[: self.size] in [
             BinaryPattern(pattern).get_block(self.size) for pattern in self.IMAGE_PATTERNS
         ]:
@@ -216,10 +303,13 @@ class Segment(BaseClass):
         return False
 
     def create_config(self, output_dir: str) -> Union[str, int, dict]:
-        """Create configuration including store the data to specified path.
+        """Create configuration and store segment data to specified directory.
 
-        :param output_dir: Path where the information should be stored
-        :returns: Value of segment to configuration file
+        Exports the segment data to a binary file in the output directory if the segment
+        is present, otherwise returns an empty string.
+
+        :param output_dir: Directory path where the segment data file should be stored.
+        :return: Filename of the created binary file or empty string if segment not present.
         """
         if not self.is_present:
             return ""
@@ -230,7 +320,12 @@ class Segment(BaseClass):
     def load_config(self, config: Config) -> None:
         """Load segment from configuration.
 
-        :param config: Configuration of Segment.
+        The method loads a binary file specified in the configuration and assigns it to the
+        raw_block attribute of the segment.
+
+        :param config: Configuration object containing segment settings and file paths.
+        :raises SPSDKSegmentNotPresent: When the segment is not present in config file.
+        :raises SPSDKValueError: When the binary file path is invalid or cannot be loaded.
         """
         cfg_value = config.get(self.cfg_key())
         if not cfg_value:
@@ -246,10 +341,13 @@ class Segment(BaseClass):
             ) from exc
 
     def pre_parse_verify(self, data: bytes) -> Verifier:
-        """Pre-Parse binary to see main issue before parsing.
+        """Pre-parse binary to validate data before full parsing.
 
-        :param data: Bootable image binary.
-        :return: Verifier object of preparsed data.
+        The method performs initial validation of the bootable image binary data
+        to identify potential issues before attempting full parsing operations.
+
+        :param data: Bootable image binary data to be validated.
+        :return: Verifier object containing pre-parse validation results.
         """
         ret = Verifier(f"Segment({self.NAME}) pre-parse")
         if self.size > 0 and len(data) < self.size:
@@ -266,7 +364,11 @@ class Segment(BaseClass):
     def verify(self) -> Verifier:
         """Get verifier object of segment.
 
-        :return: Verifier of current object.
+        Creates and returns a Verifier instance that validates the segment's properties including
+        offset, size, and raw data integrity. The verifier checks for proper offset values,
+        validates data size constraints, and ensures raw block data consistency.
+
+        :return: Verifier object containing validation results for the current segment.
         """
         ret = Verifier(f"Segment({self.NAME}) details")
         if self._offset < 0:
@@ -292,18 +394,35 @@ class Segment(BaseClass):
 
 
 class SegmentKeyBlob(Segment):
-    """Bootable Image KeyBlob Segment class."""
+    """Bootable Image KeyBlob Segment.
+
+    This segment represents a key blob section in bootable images, containing
+    cryptographic keys and security data with a fixed size of 256 bytes.
+
+    :cvar NAME: Segment type identifier for keyblob segments.
+    """
 
     NAME = BootableImageSegment.KEYBLOB
 
     @property
     def size(self) -> int:
-        """Keyblob segment size."""
+        """Get the size of the keyblob segment.
+
+        :return: Size of the keyblob segment in bytes (always 256).
+        """
         return 256
 
 
 class SegmentFcb(Segment):
-    """Bootable Image FCB Segment class."""
+    """Bootable Image FCB Segment.
+
+    This class represents a Flash Configuration Block (FCB) segment within a bootable image.
+    It manages FCB data including validation, parsing, and configuration for NXP MCU families
+    that support FCB functionality.
+
+    :cvar NAME: Segment type identifier for FCB segments.
+    :cvar INIT_SEGMENT: Flag indicating this is an initialization segment.
+    """
 
     NAME = BootableImageSegment.FCB
     INIT_SEGMENT = True
@@ -316,13 +435,17 @@ class SegmentFcb(Segment):
         raw_block: Optional[bytes] = None,
         fcb: Optional[FCB] = None,
     ) -> None:
-        """Segment initialization, at least raw data are stored.
+        """Initialize FCB segment with offset and memory configuration.
 
-        :param offset: Offset of Segment in whole bootable image.
-        :param family: Chip family.
-        :param mem_type: Used memory type.
-        :param raw_block: Raw data of segment.
-        :param fcb: FCB class.
+        The segment stores raw data and validates FCB block consistency if both
+        raw data and FCB object are provided.
+
+        :param offset: Offset of segment in whole bootable image.
+        :param family: Chip family revision identifier.
+        :param mem_type: Target memory type for the segment.
+        :param raw_block: Raw binary data of the segment, defaults to None.
+        :param fcb: Flash Configuration Block object, defaults to None.
+        :raises SPSDKParsingError: When FCB block doesn't match the raw data.
         """
         super().__init__(offset, family, mem_type, raw_block)
         self.fcb = fcb
@@ -342,7 +465,11 @@ class SegmentFcb(Segment):
         return self.family in FCB.get_supported_families(True)
 
     def clear(self) -> None:
-        """Clear the segment to init state."""
+        """Clear the segment to initial state.
+
+        This method resets the segment by calling the parent class clear method
+        and setting the FCB (Flash Configuration Block) to None.
+        """
         super().clear()
         self.fcb = None
 
@@ -350,7 +477,11 @@ class SegmentFcb(Segment):
     def size(self) -> int:
         """Size of the segment in bytes.
 
-        :return: The segment size in bytes.
+        Calculates the segment size based on FCB (Flash Configuration Block) support.
+        If FCB is supported, returns the size of existing FCB or creates a new FCB
+        to determine the size. Returns -1 for unsupported segments.
+
+        :return: The segment size in bytes, or -1 if FCB is not supported.
         """
         if self._size is None:
             if self.is_fcb_supported:
@@ -365,11 +496,16 @@ class SegmentFcb(Segment):
         return self._size
 
     def parse_binary(self, binary: bytes) -> None:
-        """Parse binary block into Segment object.
+        """Parse binary block into FCB Segment object.
 
-        :param binary: binary image.
-        :raises SPSDKParsingError: If given binary block size is not equal to block size in header
-        :raises SPSDKSegmentNotPresent: If the input binary contains only padding bytes
+        The method attempts to parse the binary data as an FCB (Flash Configuration Block).
+        It first checks if the binary contains valid FCB tags and if FCB is supported for
+        the current family. If FCB is not present or parsing fails, appropriate exceptions
+        are raised.
+
+        :param binary: Binary image data to parse into FCB segment.
+        :raises SPSDKParsingError: If binary block is smaller than FCB size or parsing fails.
+        :raises SPSDKSegmentNotPresent: If the input binary contains only padding bytes.
         """
         self.not_parsed = True
         if len(binary) < self.size:
@@ -390,10 +526,13 @@ class SegmentFcb(Segment):
         raise SPSDKParsingError("Parsing of FCB segment failed.")
 
     def create_config(self, output_dir: str) -> Union[str, int, dict]:
-        """Create configuration including store the data to specified path.
+        """Create configuration and store data to specified path.
 
-        :param output_dir: Path where the information should be stored
-        :returns: Value of segment to configuration file
+        The method generates configuration data for the segment and optionally writes
+        FCB configuration to a YAML file in the output directory.
+
+        :param output_dir: Path where the configuration information should be stored
+        :return: Value of segment for configuration file
         """
         ret = super().create_config(output_dir)
         if self.fcb:
@@ -404,9 +543,14 @@ class SegmentFcb(Segment):
         return ret
 
     def load_config(self, config: Config) -> None:
-        """Load segment from configuration.
+        """Load FCB segment from configuration.
 
-        :param config: Configuration of Segment.
+        Attempts to load FCB (Flash Configuration Block) segment from configuration,
+        first trying to load from config structure, then falling back to binary file.
+        Validates the FCB data and logs warnings for corrupted blocks.
+
+        :param config: Configuration object containing FCB segment settings.
+        :raises SPSDKSegmentNotPresent: When FCB segment is not present in config file.
         """
         # Try to load FCB from configuration as a first attempt
         cfg_value = config.get(self.cfg_key())
@@ -432,29 +576,45 @@ class SegmentFcb(Segment):
 
 
 class SegmentImageVersion(Segment):
-    """Bootable Image Image version Segment class."""
+    """Bootable Image version segment.
+
+    This class represents a segment that stores version information for bootable images.
+    It handles parsing, configuration, and verification of 4-byte version data with
+    little-endian byte ordering.
+
+    :cvar NAME: Segment type identifier for image version segments.
+    """
 
     NAME = BootableImageSegment.IMAGE_VERSION
 
     @property
     def size(self) -> int:
-        """Keyblob segment size."""
+        """Get the size of the keyblob segment.
+
+        :return: Size of the keyblob segment in bytes.
+        """
         return 4
 
     def parse_binary(self, binary: bytes) -> None:
         """Parse binary block into Segment object.
 
-        :param binary: binary image.
-        :raises SPSDKParsingError: If given binary block size is not equal to block size in header
+        The method extracts segment data from the provided binary based on the segment size
+        and marks the segment as parsed.
+
+        :param binary: Binary image data to parse.
+        :raises SPSDKParsingError: If given binary block size is not equal to block size in header.
         """
         self.not_parsed = False
         self.raw_block = binary[: self.size] if self.size > 0 else binary
 
     def create_config(self, output_dir: str) -> Union[str, int, dict]:
-        """Create configuration including store the data to specified path.
+        """Create configuration and extract segment value.
 
-        :param output_dir: Path where the information should be stored
-        :returns: Value of segment to configuration file
+        Extracts the first 4 bytes from the raw block data and converts them to an integer
+        using little-endian byte order. Returns 0 if the segment is not present.
+
+        :param output_dir: Path where the information should be stored.
+        :return: Integer value extracted from segment data, or 0 if segment not present.
         """
         if not self.is_present:
             return 0
@@ -464,7 +624,11 @@ class SegmentImageVersion(Segment):
     def load_config(self, config: Config) -> None:
         """Load segment from configuration.
 
-        :param config: Configuration of Segment.
+        The method extracts configuration value using the segment's configuration key,
+        validates it as an integer, and converts it to raw bytes in little-endian format.
+
+        :param config: Configuration object containing segment settings.
+        :raises SPSDKValueError: Invalid configuration value (not an integer).
         """
         cfg_value = config.get(self.cfg_key(), 0)
         if not isinstance(cfg_value, int):
@@ -476,7 +640,10 @@ class SegmentImageVersion(Segment):
     def verify(self) -> Verifier:
         """Get verifier object of segment.
 
-        :return: Verifier of current object.
+        Creates and returns a verifier object for the current segment, including validation
+        of the image version from the raw block data if available.
+
+        :return: Verifier object containing validation records for the current segment.
         """
         ret = super().verify()
         if self.raw_block:
@@ -487,7 +654,16 @@ class SegmentImageVersion(Segment):
 
 
 class SegmentImageVersionAntiPole(Segment):
-    """Bootable Image Image version with antipole value Segment class."""
+    """Bootable Image segment for image version with antipole value.
+
+    This segment manages image version data using an antipole encoding scheme where
+    the version value and its bitwise complement are stored together for data
+    integrity verification.
+
+    :cvar NAME: Segment identifier for bootable image processing.
+    :cvar CFG_NAME: Configuration key name for this segment type.
+    :cvar UNPROGRAMMED_VALUE: Default value for unprogrammed flash memory.
+    """
 
     NAME = BootableImageSegment.IMAGE_VERSION_AP
     CFG_NAME = "image_version"
@@ -495,14 +671,20 @@ class SegmentImageVersionAntiPole(Segment):
 
     @property
     def size(self) -> int:
-        """Keyblob segment size."""
+        """Get the size of the keyblob segment.
+
+        :return: Size of the keyblob segment in bytes.
+        """
         return 4
 
     def create_config(self, output_dir: str) -> Union[str, int, dict]:
-        """Create configuration including store the data to specified path.
+        """Create configuration and extract segment value.
 
-        :param output_dir: Path where the information should be stored
-        :returns: Value of segment to configuration file
+        The method extracts a 2-byte value from the raw block data in little-endian format.
+        Returns 0 if the segment is not present.
+
+        :param output_dir: Path where the information should be stored.
+        :return: Value of segment for configuration file (0 if not present, otherwise extracted value).
         """
         if not self.is_present:
             return 0
@@ -512,7 +694,12 @@ class SegmentImageVersionAntiPole(Segment):
     def load_config(self, config: Config) -> None:
         """Load segment from configuration.
 
-        :param config: Configuration of Segment.
+        The method loads image version from configuration and processes it into raw block data.
+        If no configuration value is provided, uses unprogrammed values. The image version
+        is stored with its complement in the upper 16 bits.
+
+        :param config: Configuration object containing segment settings.
+        :raises SPSDKValueError: Invalid configuration value (not an integer).
         """
         cfg_value = config.get(self.cfg_key())
         if cfg_value is None:
@@ -529,8 +716,11 @@ class SegmentImageVersionAntiPole(Segment):
     def parse_binary(self, binary: bytes) -> None:
         """Parse binary block into Segment object.
 
-        :param binary: binary image.
-        :raises SPSDKParsingError: If given binary block size is not equal to block size in header
+        The method validates the binary size against the segment requirements and stores
+        the raw block data for further processing.
+
+        :param binary: Binary image data to be parsed into segment.
+        :raises SPSDKParsingError: If given binary block size is smaller than required segment size.
         """
         self.not_parsed = True
         if len(binary) < self.size:
@@ -539,9 +729,13 @@ class SegmentImageVersionAntiPole(Segment):
         self.raw_block = binary[:4]
 
     def verify(self) -> Verifier:
-        """Get verifier object of segment.
+        """Verify the segment and return verifier object with validation results.
 
-        :return: Verifier of current object.
+        The method validates the image version by checking if the version and its antipole
+        (bitwise inverse) match the expected pattern. It handles three cases: valid version
+        pairs, unprogrammed default values, and mismatched version/antipole pairs.
+
+        :return: Verifier object containing validation results for the segment.
         """
         ret = super().verify()
         if not ret.has_errors and self.raw_block:
@@ -566,46 +760,85 @@ class SegmentImageVersionAntiPole(Segment):
 
 
 class SegmentKeyStore(Segment):
-    """Bootable Image KeyStore Segment class."""
+    """Bootable Image KeyStore Segment.
+
+    This class represents a keystore segment within a bootable image, managing
+    cryptographic key storage with a fixed size allocation for security operations.
+
+    :cvar NAME: Segment type identifier for keystore segments.
+    """
 
     NAME = BootableImageSegment.KEYSTORE
 
     @property
     def size(self) -> int:
-        """Keyblob segment size."""
+        """Get the size of the keyblob segment.
+
+        :return: Size of the keyblob segment in bytes (always 2048).
+        """
         return 2048
 
 
 class SegmentBeeHeader0(Segment):
-    """Bootable Image BEE encryption header 0 Segment class."""
+    """Bootable Image BEE encryption header 0 segment.
+
+    This segment represents the first BEE (Bus Encryption Engine) header used for
+    encryption configuration in bootable images. It provides a fixed-size header
+    structure for BEE encryption parameters.
+
+    :cvar NAME: Segment identifier for BEE header 0.
+    """
 
     NAME = BootableImageSegment.BEE_HEADER_0
 
     @property
     def size(self) -> int:
-        """Keyblob segment size."""
+        """Get the size of the keyblob segment.
+
+        :return: Size of the keyblob segment in bytes (always 512).
+        """
         return 512
 
 
 class SegmentBeeHeader1(Segment):
-    """Bootable Image BEE encryption header 1 Segment class."""
+    """Bootable Image BEE encryption header 1 segment.
+
+    This segment represents the first header used in Bus Encryption Engine (BEE)
+    encryption for bootable images, providing encryption metadata and configuration
+    with a fixed size of 512 bytes.
+
+    :cvar NAME: Segment type identifier for BEE header 1.
+    """
 
     NAME = BootableImageSegment.BEE_HEADER_1
 
     @property
     def size(self) -> int:
-        """Keyblob segment size."""
+        """Get the size of the keyblob segment.
+
+        :return: Size of the keyblob segment in bytes (always 512).
+        """
         return 512
 
 
 class SegmentXmcd(Segment):
-    """Bootable Image XMCD Segment class."""
+    """Bootable Image XMCD Segment class.
+
+    This class represents an External Memory Configuration Data (XMCD) segment
+    within a bootable image, providing functionality to parse, validate, and
+    manage XMCD configuration data for external memory initialization.
+
+    :cvar NAME: Segment type identifier for XMCD segments.
+    """
 
     NAME = BootableImageSegment.XMCD
 
     @property
     def size(self) -> int:
-        """Keyblob segment size."""
+        """Get keyblob segment size.
+
+        :return: Size of the keyblob segment in bytes (always 512).
+        """
         return 512
 
     def __init__(
@@ -616,12 +849,17 @@ class SegmentXmcd(Segment):
         raw_block: Optional[bytes] = None,
         xmcd: Optional[XMCD] = None,
     ) -> None:
-        """Segment initialization, at least raw data are stored.
+        """Initialize XMCD segment with configuration data.
 
-        :param offset: Offset of Segment in whole bootable image.
-        :param family: Chip family.
-        :param raw_block: Raw data of segment.
-        :param xmcd: XMCD class.
+        The segment stores XMCD (eXternal Memory Configuration Data) block that contains
+        memory configuration parameters for external memory initialization.
+
+        :param offset: Offset of segment in whole bootable image.
+        :param family: Target chip family and revision information.
+        :param mem_type: Type of memory where segment will be stored.
+        :param raw_block: Raw binary data of the segment, optional.
+        :param xmcd: XMCD configuration object, optional.
+        :raises SPSDKParsingError: When XMCD block doesn't match provided raw data.
         """
         super().__init__(offset, family, mem_type, raw_block)
         self.xmcd = xmcd
@@ -629,16 +867,24 @@ class SegmentXmcd(Segment):
             raise SPSDKParsingError("The XMCD block doesn't match the raw data.")
 
     def clear(self) -> None:
-        """Clear the segment to init state."""
+        """Clear the segment to init state.
+
+        This method resets the segment to its initial state by calling the parent class
+        clear method and setting the xmcd attribute to None.
+        """
         super().clear()
         self.xmcd = None
 
     def parse_binary(self, binary: bytes) -> None:
-        """Parse binary block into Segment object.
+        """Parse binary block into XMCD Segment object.
 
-        :param binary: binary image.
-        :raises SPSDKParsingError: If given binary block size is not equal to block size in header
-        :raises SPSDKSegmentNotPresent: If the input binary contains only padding bytes
+        The method parses the input binary data to create an XMCD (External Memory Configuration Data)
+        segment. It validates the binary size and checks for padding bytes to ensure valid XMCD data
+        is present.
+
+        :param binary: Binary image data to parse into XMCD segment.
+        :raises SPSDKParsingError: If given binary block size is smaller than required XMCD size.
+        :raises SPSDKSegmentNotPresent: If the input binary contains only padding bytes.
         """
         self.not_parsed = True
         if len(binary) < self.size:
@@ -653,10 +899,13 @@ class SegmentXmcd(Segment):
         self.not_parsed = False
 
     def create_config(self, output_dir: str) -> Union[str, int, dict]:
-        """Create configuration including store the data to specified path.
+        """Create configuration and store data to specified path.
 
-        :param output_dir: Path where the information should be stored
-        :returns: Value of segment to configuration file
+        The method creates configuration data by calling the parent class method and
+        additionally writes XMCD configuration to a YAML file if XMCD data exists.
+
+        :param output_dir: Directory path where the configuration files should be stored.
+        :return: Configuration value for the segment.
         """
         ret = super().create_config(output_dir)
         if self.xmcd:
@@ -666,7 +915,12 @@ class SegmentXmcd(Segment):
     def load_config(self, config: Config) -> None:
         """Load segment from configuration.
 
-        :param config: Configuration of Segment.
+        The method attempts to load XMCD from configuration first. If XMCD loading fails,
+        it falls back to the parent class loading method.
+
+        :param config: Configuration object containing segment data.
+        :raises SPSDKSegmentNotPresent: When XMCD segment is not present in config file.
+        :raises SPSDKError: When configuration loading fails.
         """
         # Try to load XMCD from configuration as a first attempt
         cfg_value = config.get(self.cfg_key())
@@ -682,7 +936,9 @@ class SegmentXmcd(Segment):
     def verify(self) -> Verifier:
         """Get verifier object of segment.
 
-        :return: Verifier of current object.
+        Performs verification of the segment and includes XMCD verification if present.
+
+        :return: Verifier object containing validation results for current segment.
         """
         ret = super().verify()
         if not ret.has_errors and self.xmcd:
@@ -691,7 +947,16 @@ class SegmentXmcd(Segment):
 
 
 class SegmentMbi(Segment):
-    """Bootable Image Master Boot Image(MBI) Segment class."""
+    """Bootable Image Master Boot Image (MBI) Segment.
+
+    This class represents a segment containing Master Boot Image data within a bootable image.
+    It manages MBI-specific operations including parsing, configuration, and export of MBI
+    segments for NXP MCU bootable images.
+
+    :cvar NAME: Segment type identifier for MBI segments.
+    :cvar BOOT_HEADER: Indicates this segment is not a boot header.
+    :cvar INIT_SEGMENT: Marks this as an initialization segment.
+    """
 
     NAME = BootableImageSegment.MBI
     BOOT_HEADER = False
@@ -705,13 +970,17 @@ class SegmentMbi(Segment):
         raw_block: Optional[bytes] = None,
         mbi: Optional[MasterBootImage] = None,
     ) -> None:
-        """Segment initialization, at least raw data are stored.
+        """Initialize MBI segment with offset and configuration data.
 
-        :param offset: Offset of Segment in whole bootable image.
-        :param family: Chip family.
-        :param mem_type: Used memory type.
-        :param raw_block: Raw data of segment.
-        :param mbi: Master boot image class.
+        The segment stores raw data and optionally validates it against the provided
+        Master Boot Image instance. If both raw_block and mbi are provided, they are
+        compared for consistency.
+
+        :param offset: Offset of segment in whole bootable image.
+        :param family: Chip family revision identifier.
+        :param mem_type: Target memory type for the segment.
+        :param raw_block: Raw binary data of the segment, defaults to None.
+        :param mbi: Master Boot Image instance for validation, defaults to None.
         """
         super().__init__(offset, family, mem_type, raw_block)
         if mbi and raw_block and raw_block != mbi.export():
@@ -719,12 +988,20 @@ class SegmentMbi(Segment):
         self.mbi = mbi
 
     def clear(self) -> None:
-        """Clear the segment to init state."""
+        """Clear the segment to init state.
+
+        This method resets the segment to its initial state by calling the parent class
+        clear method and setting the MBI (Master Boot Image) attribute to None.
+        """
         super().clear()
         self.mbi = None
 
     def image_info(self) -> BinaryImage:
-        """Get Image info format.
+        """Get image information in binary format.
+
+        Retrieves the segment content as a BinaryImage object. If MBI (Master Boot Image)
+        is available, exports the MBI image with proper offset and name. Otherwise,
+        falls back to the parent class implementation.
 
         :return: The segment content in Binary Image format.
         """
@@ -737,7 +1014,13 @@ class SegmentMbi(Segment):
         return image
 
     def __len__(self) -> int:
-        """MBI segment length."""
+        """Get the length of the MBI segment.
+
+        Returns the total length of the MBI (Master Boot Image) if available,
+        otherwise falls back to the parent class length calculation.
+
+        :return: Length of the MBI segment in bytes.
+        """
         if self.mbi:
             return self.mbi.total_len
         return super().__len__()
@@ -745,7 +1028,12 @@ class SegmentMbi(Segment):
     def parse_binary(self, binary: bytes) -> None:
         """Parse binary block into Segment object.
 
-        :param binary: binary image.
+        The method parses a binary image into a Master Boot Image (MBI) object, validates it,
+        and stores the parsed data in the segment. Sets the parsing state accordingly.
+
+        :param binary: Binary image data to be parsed.
+        :raises SPSDKParsingError: When the input binary block has zero length.
+        :raises SPSDKError: When MBI parsing or validation fails.
         """
         self.not_parsed = True
         if len(binary) == 0:
@@ -757,10 +1045,13 @@ class SegmentMbi(Segment):
         self.not_parsed = False
 
     def create_config(self, output_dir: str) -> Union[str, int, dict]:
-        """Create configuration including store the data to specified path.
+        """Create configuration and store data to specified path.
 
-        :param output_dir: Path where the information should be stored
-        :returns: Value of segment to configuration file
+        The method generates configuration data for the segment and optionally creates
+        an MBI configuration YAML file if an MBI object is present.
+
+        :param output_dir: Directory path where configuration files should be stored.
+        :return: Configuration value for the segment.
         """
         ret = super().create_config(output_dir)
         if self.mbi:
@@ -772,7 +1063,11 @@ class SegmentMbi(Segment):
     def load_config(self, config: Config) -> None:
         """Load segment from configuration.
 
-        :param config: Configuration of Segment.
+        Attempts to load MBI (Master Boot Image) from configuration first, falling back
+        to binary loading if configuration parsing fails.
+
+        :param config: Configuration object containing segment data.
+        :raises SPSDKValueError: When MBI container cannot be exported from configuration.
         """
         # Try to load MBI from configuration as a first attempt
         cfg_key = self.cfg_key() if self.cfg_key() in config else "application"
@@ -793,7 +1088,16 @@ class SegmentMbi(Segment):
 
 
 class SegmentHab(Segment):
-    """Bootable Image High Assurance Boot(HAB) Segment class."""
+    """Bootable Image High Assurance Boot (HAB) Segment.
+
+    This class represents a HAB segment within a bootable image, managing High Assurance Boot
+    container data and providing functionality for HAB image processing, validation, and export
+    operations.
+
+    :cvar NAME: Segment type identifier for HAB container.
+    :cvar BOOT_HEADER: Indicates this segment does not contain boot header.
+    :cvar INIT_SEGMENT: Marks this as an initialization segment.
+    """
 
     NAME = BootableImageSegment.HAB_CONTAINER
     BOOT_HEADER = False
@@ -807,13 +1111,16 @@ class SegmentHab(Segment):
         raw_block: Optional[bytes] = None,
         hab: Optional[HabImage] = None,
     ) -> None:
-        """Segment initialization, at least raw data are stored.
+        """Initialize HAB segment with raw data and configuration.
 
-        :param offset: Offset of Segment in whole bootable image.
-        :param family: Chip family.
-        :param mem_type: Used memory type.
-        :param raw_block: Raw data of segment.
-        :param hab: High Assurance Boot class.
+        The segment stores raw data and optionally validates it against HAB image patterns
+        to ensure data integrity and proper formatting.
+
+        :param offset: Offset of segment in whole bootable image.
+        :param family: Chip family revision information.
+        :param mem_type: Memory type used for the segment.
+        :param raw_block: Raw binary data of the segment, defaults to None.
+        :param hab: High Assurance Boot image instance for validation, defaults to None.
         """
         super().__init__(offset, family, mem_type, raw_block)
         self.hab = hab
@@ -825,18 +1132,32 @@ class SegmentHab(Segment):
             logger.info("The HAB block doesn't match the raw data.")
 
     def clear(self) -> None:
-        """Clear the segment to init state."""
+        """Clear the segment to init state.
+
+        This method resets the segment to its initial state by calling the parent class
+        clear method and setting the HAB (High Assurance Boot) attribute to None.
+        """
         super().clear()
         self.hab = None
 
     def __len__(self) -> int:
-        """Hab segment length."""
+        """Get the length of the HAB segment.
+
+        Returns the length of the HAB data if present, otherwise falls back to the parent class
+        implementation.
+
+        :return: Length of the HAB segment in bytes.
+        """
         if self.hab:
             return len(self.hab)
         return super().__len__()
 
     def image_info(self) -> BinaryImage:
-        """Get Image info format.
+        """Get image information in binary format.
+
+        Retrieves the segment content as a BinaryImage object. If HAB (High Assurance Boot)
+        is available, uses HAB's image info with updated offset and name. Otherwise, falls
+        back to the parent class implementation.
 
         :return: The segment content in Binary Image format.
         """
@@ -851,7 +1172,11 @@ class SegmentHab(Segment):
     def parse_binary(self, binary: bytes) -> None:
         """Parse binary block into Segment object.
 
-        :param binary: binary image.
+        The method parses the provided binary data into a HAB (High Assurance Boot) image format
+        and updates the segment's internal state accordingly.
+
+        :param binary: Binary image data to be parsed.
+        :raises SPSDKParsingError: When the input binary block has zero length.
         """
         self.not_parsed = True
         if len(binary) == 0:
@@ -864,7 +1189,11 @@ class SegmentHab(Segment):
     def load_config(self, config: Config) -> None:
         """Load segment from configuration.
 
-        :param config: Configuration of Segment.
+        Attempts to load HAB (High Assurance Boot) configuration first, then falls back to
+        parent class configuration loading if HAB loading fails.
+
+        :param config: Configuration object containing segment data.
+        :raises SPSDKValueError: When HAB container cannot be exported from configuration.
         """
         # Try to load HAB from configuration as a first attempt
         try:
@@ -886,7 +1215,16 @@ class SegmentHab(Segment):
 
 
 class SegmentAhab(Segment):
-    """Bootable Image Advanced High Assurance Boot(HAB) Segment class."""
+    """Bootable Image Advanced High Assurance Boot (AHAB) Segment.
+
+    This class represents a segment containing AHAB container data within a bootable image.
+    It manages AHAB-specific operations including parsing, validation, and export of AHAB
+    containers used for secure boot processes in NXP MCUs.
+
+    :cvar NAME: Segment type identifier for AHAB containers.
+    :cvar BOOT_HEADER: Indicates this segment does not contain boot header.
+    :cvar INIT_SEGMENT: Marks this as an initialization segment.
+    """
 
     NAME = BootableImageSegment.AHAB_CONTAINER
     BOOT_HEADER = False
@@ -900,13 +1238,16 @@ class SegmentAhab(Segment):
         raw_block: Optional[bytes] = None,
         ahab: Optional[AHABImage] = None,
     ) -> None:
-        """Segment initialization, at least raw data are stored.
+        """Initialize AHAB segment with bootable image parameters.
 
-        :param offset: Offset of Segment in whole bootable image.
-        :param family: Chip family.
-        :param mem_type: Used memory type.
-        :param raw_block: Raw data of segment.
-        :param ahab: Advanced High Assurance Boot class.
+        The segment stores raw data and optional AHAB image, validating consistency
+        between raw block and AHAB export data if both are provided.
+
+        :param offset: Offset of segment in whole bootable image.
+        :param family: Chip family revision identifier.
+        :param mem_type: Target memory type for the segment.
+        :param raw_block: Raw binary data of the segment, defaults to None.
+        :param ahab: Advanced High Assurance Boot image instance, defaults to None.
         """
         super().__init__(offset, family, mem_type, raw_block)
         self.ahab = ahab
@@ -914,20 +1255,34 @@ class SegmentAhab(Segment):
             logger.info("The AHAB block doesn't match the raw data.")
 
     def __len__(self) -> int:
-        """Ahab segment length."""
+        """Get the length of the AHAB segment.
+
+        Returns the length of the AHAB segment if it exists, otherwise falls back to the parent
+        class implementation.
+
+        :return: Length of the AHAB segment or parent segment length.
+        """
         if self.ahab:
             return len(self.ahab)
         return super().__len__()
 
     def clear(self) -> None:
-        """Clear the segment to init state."""
+        """Clear the segment to init state.
+
+        This method resets the segment to its initial state by calling the parent class
+        clear method and setting the ahab attribute to None.
+        """
         super().clear()
         self.ahab = None
 
     def image_info(self) -> BinaryImage:
-        """Get Image info format.
+        """Get image information in binary format.
 
-        :return: The segment content in Binary Image format.
+        Retrieves the segment content as a BinaryImage object. If AHAB (Advanced High Assurance Boot)
+        is available, it uses AHAB's image info with updated offset and name. Otherwise, falls back
+        to the parent class implementation.
+
+        :return: The segment content in Binary Image format with proper offset and name.
         """
         if not self.ahab:
             return super().image_info()
@@ -938,9 +1293,14 @@ class SegmentAhab(Segment):
         return image
 
     def parse_binary(self, binary: bytes) -> None:
-        """Parse binary block into Segment object.
+        """Parse binary block into AHAB Segment object.
 
-        :param binary: binary image.
+        The method validates the binary data contains a valid AHAB container header,
+        parses it into an AHABImage object, and updates the segment's internal state.
+
+        :param binary: Binary image data containing AHAB container.
+        :raises SPSDKParsingError: When input binary block has zero length.
+        :raises SPSDKSegmentNotPresent: When AHAB container header is not available or invalid.
         """
         self.not_parsed = True
         if len(binary) == 0:
@@ -957,10 +1317,14 @@ class SegmentAhab(Segment):
         self.not_parsed = False
 
     def post_export(self, output_path: str) -> list[str]:
-        """Post export step.
+        """Execute post-export operations for the bootable image.
 
-        :param output_path: _description_
-        :return: _description_
+        This method performs any necessary post-processing steps after the main export
+        operation has completed. If AHAB (Advanced High Assurance Boot) is configured,
+        it delegates the post-export handling to the AHAB component.
+
+        :param output_path: Path where the exported image files are located.
+        :return: List of additional files created during post-export processing.
         """
         if self.ahab:
             return self.ahab.post_export(output_path)
@@ -968,18 +1332,24 @@ class SegmentAhab(Segment):
 
     @staticmethod
     def find_segment_offset(binary: bytes) -> int:
-        """Try to find the start of the AHAB Image in data blob.
+        """Find the start offset of AHAB Image in binary data.
 
-        :param binary: Data  to be used to find AHAB container.
-        :return: Offset in data to new data container.
+        The method locates the beginning position of an AHAB (Advanced High Assurance Boot)
+        container within the provided binary data blob.
+
+        :param binary: Binary data to search for AHAB container.
+        :return: Byte offset position of the AHAB container in the binary data.
         """
         return AHABImage.find_offset_of_ahab(binary)
 
     def create_config(self, output_dir: str) -> Union[str, int, dict]:
-        """Create configuration including store the data to specified path.
+        """Create configuration and store data to specified path.
 
-        :param output_dir: Path where the information should be stored
-        :returns: Value of segment to configuration file
+        Generates configuration for the segment and writes AHAB configuration
+        to YAML file if AHAB container is present.
+
+        :param output_dir: Directory path where configuration files should be stored
+        :return: Relative path to generated configuration file or inherited value
         """
         ret = super().create_config(output_dir)
         if self.ahab:
@@ -992,7 +1362,13 @@ class SegmentAhab(Segment):
     def load_config(self, config: Config) -> None:
         """Load segment from configuration.
 
-        :param config: Configuration of Segment.
+        The method attempts to load AHAB container from configuration first. If the configuration
+        contains a sub-configuration for the segment, it loads and validates an AHAB image.
+        If validation fails or no sub-configuration exists, it falls back to loading as binary data.
+
+        :param config: Configuration object containing segment data and settings.
+        :raises SPSDKSegmentNotPresent: When the segment is not present in config file.
+        :raises SPSDKValueError: When AHAB container cannot be exported from configuration.
         """
         # Try to load AHAB from configuration as a first attempt
         cfg_value = config.get(self.cfg_key())
@@ -1018,10 +1394,13 @@ class SegmentAhab(Segment):
             ) from exc
 
     def pre_parse_verify(self, data: bytes) -> Verifier:
-        """Pre-Parse binary T osee main issue before parsing.
+        """Pre-parse binary to see main issues before parsing.
 
-        :param data: Bootable image binary.
-        :return: Verifier object of preparsed data.
+        Performs initial validation of the bootable image data by calling the parent
+        class pre-parse verification and adding AHAB image specific verification.
+
+        :param data: Bootable image binary data to be pre-parsed.
+        :return: Verifier object containing pre-parsed validation results.
         """
         ret = super().pre_parse_verify(data)
         ret.add_child(AHABImage.pre_parse_verify(data))
@@ -1030,7 +1409,11 @@ class SegmentAhab(Segment):
     def verify(self) -> Verifier:
         """Get verifier object of segment.
 
-        :return: Verifier of current object.
+        Verifies the current segment and includes AHAB container verification
+        if present. The method performs hierarchical verification by adding
+        child verifier results.
+
+        :return: Verifier object containing validation results for the segment.
         """
         ret = super().verify()
         if not ret.has_errors and self.ahab:
@@ -1039,13 +1422,28 @@ class SegmentAhab(Segment):
 
 
 class SegmentPrimaryAhab(SegmentAhab):
-    """Primary Bootable Image Advanced High Assurance Boot(HAB) Segment class."""
+    """Primary Bootable Image Advanced High Assurance Boot (AHAB) Segment.
+
+    This class represents the primary image container set segment for AHAB-based
+    bootable images, managing the primary boot container configuration and data.
+
+    :cvar NAME: Segment identifier for primary image container set.
+    """
 
     NAME = BootableImageSegment.PRIMARY_IMAGE_CONTAINER_SET
 
 
 class SegmentSecondaryAhab(SegmentAhab):
-    """Primary Bootable Image Advanced High Assurance Boot(HAB) Segment class."""
+    """Secondary Bootable Image Advanced High Assurance Boot (AHAB) Segment class.
+
+    This class manages secondary AHAB container segments in bootable images,
+    handling configuration loading and creation with custom offset management
+    for secondary image containers.
+
+    :cvar NAME: Segment type identifier for secondary image container set.
+    :cvar OFFSET_ALIGNMENT: Required alignment boundary of 1024 bytes.
+    :cvar INIT_SEGMENT: Flag indicating this is not an initialization segment.
+    """
 
     NAME = BootableImageSegment.SECONDARY_IMAGE_CONTAINER_SET
     OFFSET_ALIGNMENT = 1024
@@ -1054,7 +1452,11 @@ class SegmentSecondaryAhab(SegmentAhab):
     def load_config(self, config: Config) -> None:
         """Load segment from configuration.
 
-        :param config: Configuration of Segment.
+        This method extracts segment configuration data, processes offset if present,
+        and delegates path processing to the parent class.
+
+        :param config: Configuration object containing segment settings including optional offset and path.
+        :raises SPSDKValueError: If configuration values cannot be processed or converted.
         """
         cfg_value = config.get(self.cfg_key())
         if cfg_value and isinstance(cfg_value, dict):
@@ -1065,10 +1467,13 @@ class SegmentSecondaryAhab(SegmentAhab):
         super().load_config(config)
 
     def create_config(self, output_dir: str) -> Union[str, int, dict]:
-        """Create configuration including store the data to specified path.
+        """Create configuration and store data to specified path.
 
-        :param output_dir: Path where the information should be stored
-        :returns: Value of segment to configuration file
+        The method generates configuration data for the segment and optionally includes
+        offset information if the segment is not positioned right behind the previous segment.
+
+        :param output_dir: Path where the segment information should be stored.
+        :return: Configuration value - either basic segment data or dictionary with path and offset.
         """
         ret = super().create_config(output_dir)
         # if offset is not < 0, the segment isn't right behind the previous segment
@@ -1078,7 +1483,16 @@ class SegmentSecondaryAhab(SegmentAhab):
 
 
 class SegmentSB21(Segment):
-    """Bootable Image Secure Binary 2.1 Segment class."""
+    """Bootable Image Secure Binary 2.1 Segment class.
+
+    This class represents a segment containing Secure Binary v2.1 data within a bootable image.
+    It handles loading, parsing, and management of SB2.1 format data, supporting both
+    configuration-based initialization and raw binary data processing.
+
+    :cvar NAME: Segment type identifier for SB2.1 segments.
+    :cvar BOOT_HEADER: Indicates this segment does not contain boot header.
+    :cvar INIT_SEGMENT: Indicates this is an initialization segment.
+    """
 
     NAME = BootableImageSegment.SB21
     BOOT_HEADER = False
@@ -1092,7 +1506,11 @@ class SegmentSB21(Segment):
         raw_block: Optional[bytes] = None,
         sb21: Optional[BootImageV21] = None,
     ) -> None:
-        """Segment initialization, at least raw data are stored.
+        """Initialize Segment with bootable image data.
+
+        Segment initialization requires at least raw data to be stored. The method
+        also supports initialization with Secure Binary v2.1 data and validates
+        consistency between raw block and SB21 export data.
 
         :param offset: Offset of Segment in whole bootable image.
         :param family: Chip family.
@@ -1106,14 +1524,22 @@ class SegmentSB21(Segment):
             logger.info("The SB21 block doesn't match the raw data.")
 
     def clear(self) -> None:
-        """Clear the segment to init state."""
+        """Clear the segment to initial state.
+
+        This method resets the segment by calling the parent class clear method
+        and setting the sb21 attribute to None.
+        """
         super().clear()
         self.sb21 = None
 
     def load_config(self, config: Config) -> None:
         """Load segment from configuration.
 
-        :param config: Configuration of Segment.
+        Loads SB2.1 (Secure Binary 2.1) segment from configuration data. First attempts to load
+        as SB2.1 configuration, then falls back to binary loading if configuration parsing fails.
+
+        :param config: Configuration object containing segment data.
+        :raises SPSDKValueError: When SB2.1 cannot be exported from the configuration.
         """
         # Try to load SB2.1 from configuration as a first attempt
         cfg_key = self.cfg_key() if self.cfg_key() in config else "sb21"
@@ -1138,7 +1564,11 @@ class SegmentSB21(Segment):
     def parse_binary(self, binary: bytes) -> None:
         """Parse binary block into Segment object.
 
-        :param binary: binary image.
+        This method validates the binary header using BootImageV21 validation and then
+        delegates the actual parsing to the parent class implementation.
+
+        :param binary: Binary image data to be parsed into segment structure.
+        :raises SPSDKError: Invalid binary header format or parsing failure.
         """
         self.not_parsed = True
         BootImageV21.validate_header(binary)
@@ -1146,7 +1576,16 @@ class SegmentSB21(Segment):
 
 
 class SegmentSB31(Segment):
-    """Bootable Image Secure Binary 3.1 Segment class."""
+    """Bootable Image Secure Binary 3.1 Segment class.
+
+    This class represents a segment containing Secure Binary v3.1 data within a bootable image.
+    It handles loading, parsing, and management of SB3.1 segments including configuration-based
+    initialization and binary data processing.
+
+    :cvar NAME: Segment type identifier for SB3.1 segments.
+    :cvar BOOT_HEADER: Indicates this segment type does not contain boot header.
+    :cvar INIT_SEGMENT: Indicates this segment requires initialization.
+    """
 
     NAME = BootableImageSegment.SB31
     BOOT_HEADER = False
@@ -1160,26 +1599,34 @@ class SegmentSB31(Segment):
         raw_block: Optional[bytes] = None,
         sb31: Optional[SecureBinary31] = None,
     ) -> None:
-        """Segment initialization, at least raw data are stored.
+        """Initialize segment with bootable image data and secure binary configuration.
 
-        :param offset: Offset of Segment in whole bootable image.
-        :param family: Chip family.
-        :param mem_type: Used memory type.
-        :param raw_block: Raw data of segment.
-        :param sb31: Secure Binary v3.1 class.
+        :param offset: Offset of segment in whole bootable image.
+        :param family: Chip family revision identifier.
+        :param mem_type: Target memory type for the segment.
+        :param raw_block: Raw binary data of the segment, defaults to None.
+        :param sb31: Secure Binary v3.1 configuration object, defaults to None.
         """
         super().__init__(offset, family, mem_type, raw_block)
         self.sb31 = sb31
 
     def clear(self) -> None:
-        """Clear the segment to init state."""
+        """Clear the segment to init state.
+
+        This method resets the segment to its initial state by calling the parent class
+        clear method and setting the sb31 attribute to None.
+        """
         super().clear()
         self.sb31 = None
 
     def load_config(self, config: Config) -> None:
         """Load segment from configuration.
 
-        :param config: Configuration of Segment.
+        Attempts to load SB3.1 (Secure Binary 3.1) from configuration first, falling back
+        to binary loading if configuration parsing fails.
+
+        :param config: Configuration object containing segment data.
+        :raises SPSDKValueError: When SB3.1 cannot be exported from the configuration.
         """
         # Try to load SB3.1 from configuration as a first attempt
         cfg_key = self.cfg_key() if self.cfg_key() in config else "sb31"
@@ -1202,7 +1649,11 @@ class SegmentSB31(Segment):
     def parse_binary(self, binary: bytes) -> None:
         """Parse binary block into Segment object.
 
-        :param binary: binary image.
+        This method validates the binary header and delegates parsing to the parent class
+        implementation while marking the segment as not parsed initially.
+
+        :param binary: Binary image data to be parsed into segment structure.
+        :raises SPSDKError: Invalid binary header format.
         """
         self.not_parsed = True
         SecureBinary31.validate_header(binary)
@@ -1210,7 +1661,13 @@ class SegmentSB31(Segment):
 
 
 def get_segments() -> dict[BootableImageSegment, Type[Segment]]:
-    """Get list of all supported segments."""
+    """Get dictionary of all supported bootable image segments.
+
+    This method dynamically discovers all segment classes that inherit from the base Segment class
+    by inspecting the global namespace and filtering for valid segment implementations.
+
+    :return: Dictionary mapping segment names to their corresponding segment class types.
+    """
     ret = {}
     for var in globals():
         obj = globals()[var]
@@ -1221,8 +1678,10 @@ def get_segments() -> dict[BootableImageSegment, Type[Segment]]:
 
 
 def get_segment_class(name: BootableImageSegment) -> Type["Segment"]:
-    """Get the segment class type.
+    """Get the segment class type for a bootable image segment.
 
+    :param name: The bootable image segment identifier.
+    :raises SPSDKValueError: Unsupported bootable image segment name.
     :return: Segment class type.
     """
     segments = get_segments()

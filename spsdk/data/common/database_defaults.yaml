@@ -117,7 +117,6 @@ features:
     containers_max_cnt: 2
     oem_images_max_cnt: 8
     valid_offset_minimal_alignment: 4
-    container_image_size_alignment: 512 # To satisfy SD card blocks
     container_types: [1] # Supported container types
     certificate_type: standard # The standard certificate
     iae_has_signed_offsets: False # There is a special cases when the Container is after images
@@ -420,6 +419,7 @@ features:
     rtf_length: 32
     ca_puk_length: 64
     rkth_length: 32
+    rkth_truncated_length: 32
     need_reset: false
 
   # ======== Fastboot ========

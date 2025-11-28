@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""The module provides support for On-The-Fly encoding for RTxxx devices."""
+"""SPSDK On-The-Fly AES Decryption (OTFAD) support for NXP devices.
+
+This module provides functionality for configuring and managing OTFAD regions
+that enable transparent decryption of encrypted flash memory content during
+code execution.
+"""
 
 import logging
 import os
@@ -42,7 +47,12 @@ logger = logging.getLogger(__name__)
 
 
 class KeyBlob:
-    """OTFAD KeyBlob: The class specifies AES key and counter initial value for specified address range.
+    """OTFAD KeyBlob for AES encryption configuration.
+
+    This class represents a key blob structure that specifies AES key and counter initial value
+    for a defined address range in OTFAD (On-The-Fly AES Decryption) operations. It manages
+    encryption parameters, address range validation, and provides functionality for image
+    encryption and key blob export.
 
     | typedef struct KeyBlob
     | {
@@ -58,6 +68,12 @@ class KeyBlob:
     |     // end of 48 byte (6*64-bit) wrap data
     |     unsigned char unused_filler[16]; // unused fill to 64 bytes
     | } keyblob_t;
+
+    :cvar KEY_FLAG_READ_ONLY: Read-only flag for context registers (0x4).
+    :cvar KEY_FLAG_ADE: AES Decryption Enable flag (0x2).
+    :cvar KEY_FLAG_VLD: Valid context flag (0x1).
+    :cvar KEY_SIZE: AES key length in bytes (16).
+    :cvar CTR_SIZE: Counter length in bytes (8).
     """
 
     _START_ADDR_MASK = 0x400 - 1
@@ -106,20 +122,22 @@ class KeyBlob:
         zero_fill: Optional[bytes] = None,
         crc: Optional[bytes] = None,
     ):
-        """Constructor.
+        """Initialize OTFAD key blob with encryption parameters.
 
-        :param start_addr: start address of the region
-        :param end_addr: end address of the region
-        :param key_flags: see KEY_FLAG_xxx constants; default flags: RO = 0, ADE = 1, VLD = 1
-        :param key: optional AES key; None to use random value
-        :param counter_iv: optional counter init value for AES; None to use random value
-        :param binaries: optional data chunks of this key blob
-        :param zero_fill: optional value for zero_fill (for testing only); None to use random value (recommended)
-        :param crc: optional value for unused CRC fill (for testing only); None to use random value (recommended)
-        :raises SPSDKError: Start or end address are not aligned
-        :raises SPSDKError: When there is invalid key
-        :raises SPSDKError: When there is invalid start/end address
-        :raises SPSDKError: When key_flags exceeds mask
+        Creates a new OTFAD (On-The-Fly AES Decryption) key blob for secure memory region
+        encryption with specified address range and cryptographic parameters.
+
+        :param start_addr: Start address of the encrypted memory region.
+        :param end_addr: End address of the encrypted memory region.
+        :param key: AES encryption key (16 bytes); None to generate random key.
+        :param counter_iv: Counter initialization vector for AES (16 bytes); None to generate random.
+        :param key_flags: Key configuration flags using KEY_FLAG_xxx constants; default: VLD|ADE.
+        :param zero_fill: Zero fill value for testing purposes; None to use random (recommended).
+        :param crc: CRC fill value for testing purposes; None to use random (recommended).
+        :raises SPSDKError: When start address is not properly aligned.
+        :raises SPSDKError: When key or counter_iv have invalid length.
+        :raises SPSDKError: When start/end addresses are invalid or out of range.
+        :raises SPSDKError: When key_flags value exceeds allowed mask.
         """
         if key is None:
             key = random_bytes(self.KEY_SIZE)
@@ -146,7 +164,13 @@ class KeyBlob:
         self.crc_fill = crc
 
     def __str__(self) -> str:
-        """Text info about the instance."""
+        """Get string representation of the OTFAD region.
+
+        Provides formatted information about the OTFAD region including encryption key,
+        counter initialization vector, and memory address range.
+
+        :return: Formatted string containing key, counter IV, start address, and end address.
+        """
         msg = ""
         msg += f"Key:        {self.key.hex()}\n"
         msg += f"Counter IV: {self.ctr_init_vector.hex()}\n"
@@ -155,12 +179,15 @@ class KeyBlob:
         return msg
 
     def plain_data(self) -> bytes:
-        """Plain data for selected key range.
+        """Serialize OTFAD key blob data into binary format.
 
-        :return: key blob exported into binary form (serialization)
-        :raises SPSDKError: Invalid value of zero fill parameter
-        :raises SPSDKError: Invalid value crc
-        :raises SPSDKError: Invalid length binary data
+        The method creates a 64-byte binary representation of the OTFAD key blob containing
+        the encryption key, counter initialization vector, address range, flags, and padding.
+
+        :return: 64-byte binary data representing the serialized key blob.
+        :raises SPSDKError: Invalid zero fill parameter length (must be 4 bytes).
+        :raises SPSDKError: Invalid CRC fill parameter length (must be 4 bytes).
+        :raises SPSDKError: Invalid binary data length (must be 64 bytes).
         """
         result = bytes()
         result += self.key
@@ -205,15 +232,18 @@ class KeyBlob:
         iv: bytes = bytes([0xA6] * 8),
         byte_swap_cnt: int = 0,
     ) -> bytes:
-        """Creates key wrap for the key blob.
+        """Export OTFAD key blob with AES key wrapping.
 
-        :param kek: key to encode; 16 bytes long
-        :param iv: counter initialization vector; 8 bytes; optional, OTFAD uses empty init value
-        :param byte_swap_cnt: Encrypted keyblob reverse byte count, 0 means NO reversing is enabled
-        :return: Exported key blob
-        :raises SPSDKError: If any parameter is not valid
-        :raises SPSDKError: If length of kek is not valid
-        :raises SPSDKError: If length of data is not valid
+        Creates an encrypted key blob using AES key wrap algorithm with optional
+        byte swapping for OTFAD (On-The-Fly AES Decryption) configuration.
+
+        :param kek: Key encryption key as bytes or hex string; must be 16 bytes long
+        :param iv: Counter initialization vector; must be 8 bytes; defaults to 0xA6 pattern
+        :param byte_swap_cnt: Number of bytes to reverse in encrypted keyblob; 0 disables reversing
+        :return: Exported key blob aligned to 64 bytes with zero padding
+        :raises SPSDKError: If kek length is not 16 bytes
+        :raises SPSDKError: If iv length is not 8 bytes
+        :raises SPSDKError: If plaintext data length is insufficient for encryption
         """
         if isinstance(kek, str):
             kek = bytes.fromhex(kek)
@@ -241,8 +271,12 @@ class KeyBlob:
     def _get_ctr_nonce(self) -> bytes:
         """Get the counter initial value for image encryption.
 
-        :return: counter bytes
-        :raises SPSDKError: If length of counter is not valid
+        Constructs a 16-byte counter nonce using the CTR initialization vector according to OTFAD
+        specification. The nonce format includes the original CTR values, their XOR, and space
+        for system address bits.
+
+        :raises SPSDKError: If length of counter initialization vector is not 8 bytes.
+        :return: 16-byte counter nonce for AES-CTR encryption.
         """
         #  CTRn_x[127-0] = {CTR_W0_x[C0...C3],    // 32 bits of pre-programmed CTR
         #  CTR_W1_x[C4...C7],                     // another 32 bits of CTR
@@ -263,19 +297,22 @@ class KeyBlob:
         return bytes(result)
 
     def contains_addr(self, addr: int) -> bool:
-        """Whether key blob contains specified address.
+        """Check if the key blob contains the specified address.
 
-        :param addr: to be tested
-        :return: True if yes, False otherwise
+        :param addr: Memory address to be tested for containment within the key blob range.
+        :return: True if the address is within the key blob's address range, False otherwise.
         """
         return self.start_addr <= addr <= self.end_addr
 
     def matches_range(self, image_start: int, image_end: int) -> bool:
-        """Whether key blob matches address range of the image to be encrypted.
+        """Check if key blob matches the address range of the image to be encrypted.
 
-        :param image_start: start address of the image
-        :param image_end: last address of the image
-        :return: True if yes, False otherwise
+        The method verifies that both the start and end addresses of the image
+        fall within the address range covered by this key blob.
+
+        :param image_start: Start address of the image to be encrypted.
+        :param image_end: End address of the image to be encrypted.
+        :return: True if the key blob covers the entire image address range, False otherwise.
         """
         return self.contains_addr(image_start) and self.contains_addr(image_end)
 
@@ -286,14 +323,18 @@ class KeyBlob:
         byte_swap: bool,
         counter_value: Optional[int] = None,
     ) -> bytes:
-        """Encrypt specified data.
+        """Encrypt image data using AES-CTR encryption with OTFAD key blob.
 
-        :param base_address: of the data in target memory; must be >= self.start_addr
-        :param data: to be encrypted (e.g. plain image); base_address + len(data) must be <= self.end_addr
-        :param byte_swap: this probably depends on the flash device, how bytes are organized there
-        :param counter_value: Optional counter value, if not specified start address of keyblob will be used
-        :return: encrypted data
-        :raises SPSDKError: If start address is not valid
+        The method encrypts the provided data using AES-CTR mode with the key blob's
+        encryption key. It supports byte swapping for different flash device organizations
+        and validates address alignment and ranges.
+
+        :param base_address: Base address of data in target memory, must be 16-byte aligned.
+        :param data: Data to be encrypted (e.g. plain image data).
+        :param byte_swap: Whether to swap bytes for flash device compatibility.
+        :param counter_value: Optional counter value for encryption, defaults to start address.
+        :return: Encrypted data with same length as input.
+        :raises SPSDKError: If base address is not 16-byte aligned or encryption fails.
         """
         if base_address % 16 != 0:
             raise SPSDKError("Invalid start address")  # Start address has to be 16 byte aligned
@@ -343,7 +384,11 @@ class KeyBlob:
 
     @property
     def is_encrypted(self) -> bool:
-        """Get the required encryption or not.
+        """Check if the OTFAD region requires encryption.
+
+        This method determines whether encryption is required by checking if both
+        the ADE (Address Decryption Enable) and VLD (Valid) flags are set in the
+        key flags.
 
         :return: True if blob is encrypted, False otherwise.
         """
@@ -354,7 +399,16 @@ class KeyBlob:
 
 
 class Otfad(FeatureBaseClass):
-    """OTFAD: On-the-Fly AES Decryption Module with reflecting of NXP parts."""
+    """OTFAD encryption and decryption module for NXP microcontrollers.
+
+    This class provides On-the-Fly AES Decryption functionality for NXP MCU parts,
+    managing encryption keys, key blobs, and binary image encryption. It handles
+    OTFAD table generation, key scrambling, and provides a complete solution for
+    secure boot and runtime decryption scenarios.
+
+    :cvar FEATURE: Database feature identifier for OTFAD functionality.
+    :cvar OTFAD_DATA_UNIT: Standard OTFAD data unit size (1024 bytes).
+    """
 
     FEATURE = DatabaseManager.OTFAD
 
@@ -375,23 +429,27 @@ class Otfad(FeatureBaseClass):
         generate_readme: bool = True,
         index: Optional[int] = None,
     ) -> None:
-        """Constructor.
+        """Initialize OTFAD (On-The-Fly AES Decryption) configuration.
 
-        :param family: Device family
-        :param kek: KEK to encrypt OTFAD table
-        :param table_address: Absolute address of OTFAD table.
-        :param key_blobs: Optional Key blobs to add to OTFAD, defaults to None
-        :param key_scramble_mask: If defined, the key scrambling algorithm will be applied.
-            ('key_scramble_align' must be defined also)
-        :param key_scramble_align: If defined, the key scrambling algorithm will be applied.
-            ('key_scramble_mask' must be defined also)
-        :param binaries: Optional binary image to be encrypted
-        :param data_alignment: Data alignment for the binary image
-        :param otfad_table_name: Name of the OTFAD table file
-        :param otfad_all_name: Name of the whole OTFAD image file
-        :param generate_readme: Generate readme file
-        :param index: Index of the OTFAD peripheral for fuses
-        :raises SPSDKValueError: Unsupported family
+        Sets up OTFAD encryption parameters, key blobs, and binary image handling for secure
+        boot applications. Automatically fills minimum required key blobs if not provided.
+
+        :param family: Target device family and revision information.
+        :param kek: Key Encryption Key as bytes or hex string for OTFAD table encryption.
+        :param table_address: Absolute memory address where OTFAD table will be located.
+        :param key_blobs: List of KeyBlob objects for encryption regions, defaults to None.
+        :param key_scramble_mask: Mask value for key scrambling algorithm (requires
+            key_scramble_align).
+        :param key_scramble_align: Alignment value for key scrambling algorithm (requires
+            key_scramble_mask).
+        :param binaries: Binary image to be encrypted, defaults to None.
+        :param data_alignment: Byte alignment requirement for binary image data.
+        :param otfad_table_name: Output filename for OTFAD table.
+        :param otfad_all_name: Output filename for complete OTFAD image.
+        :param generate_readme: Whether to generate documentation readme file.
+        :param index: OTFAD peripheral index for fuse configuration, defaults to None.
+        :raises SPSDKValueError: When family is unsupported, key scrambling parameters are
+            incomplete, or database configuration is invalid.
         """
         self._key_blobs: list[KeyBlob] = []
         self.data_alignment = data_alignment
@@ -444,30 +502,51 @@ class Otfad(FeatureBaseClass):
             )
 
     def __getitem__(self, index: int) -> KeyBlob:
+        """Get key blob at specified index.
+
+        :param index: Index of the key blob to retrieve.
+        :return: Key blob at the specified index.
+        """
         return self._key_blobs[index]
 
     def __setitem__(self, index: int, value: KeyBlob) -> None:
+        """Set a key blob at the specified index.
+
+        Replaces the existing key blob at the given index with a new key blob value.
+
+        :param index: Index position where to set the key blob.
+        :param value: Key blob to be set at the specified index.
+        :raises IndexError: If the index is out of range.
+        """
         self._key_blobs.remove(self._key_blobs[index])
         self._key_blobs.insert(index, value)
 
     def __len__(self) -> int:
-        """Count of keyblobs."""
+        """Get the count of keyblobs in the OTFAD configuration.
+
+        :return: Number of keyblobs currently stored.
+        """
         return len(self._key_blobs)
 
     def add_key_blob(self, key_blob: KeyBlob) -> None:
-        """Add key for specified address range.
+        """Add key blob for specified address range.
 
-        :param key_blob: to be added
+        :param key_blob: Key blob object to be added to the collection.
+        :raises SPSDKError: If the key blob is invalid or cannot be added.
         """
         self._key_blobs.append(key_blob)
 
     def encrypt_image(self, image: bytes, base_addr: int, byte_swap: bool) -> bytes:
         """Encrypt image with all available keyblobs.
 
-        :param image: plain image to be encrypted
-        :param base_addr: where the image will be located in target processor
-        :param byte_swap: this probably depends on the flash device, how bytes are organized there
-        :return: encrypted image
+        The method processes the image in data units and applies encryption using
+        matching keyblobs based on address ranges. Only keyblobs that match the
+        current address range and have encryption enabled are used.
+
+        :param image: Plain image data to be encrypted.
+        :param base_addr: Base address where the image will be located in target processor.
+        :param byte_swap: Byte organization flag depending on flash device characteristics.
+        :return: Encrypted image data.
         """
         encrypted_data = bytearray(image)
         addr = base_addr
@@ -486,9 +565,12 @@ class Otfad(FeatureBaseClass):
         return bytes(encrypted_data)
 
     def get_key_blobs(self) -> bytes:
-        """Get key blobs.
+        """Get key blobs data as aligned binary block.
 
-        :return: Binary key blobs joined together
+        The method concatenates all key blob plain data and aligns the result to 256 bytes
+        for compatibility with elftosb tool and FLASH sector requirements.
+
+        :return: Binary key blobs joined together and aligned to 256 bytes.
         """
         result = bytes()
         for key_blob in self._key_blobs:
@@ -504,14 +586,18 @@ class Otfad(FeatureBaseClass):
         key_scramble_align: Optional[int] = None,
         byte_swap_cnt: int = 0,
     ) -> bytes:
-        """Encrypt key blobs with specified key.
+        """Encrypt key blobs with specified KEK (Key Encryption Key).
 
-        :param kek: key to encode key blobs
-        :param key_scramble_mask: 32-bit scramble key, if KEK scrambling is desired.
-        :param key_scramble_align: 8-bit scramble align, if KEK scrambling is desired.
-        :param byte_swap_cnt: Encrypted keyblob reverse byte count, 0 means NO reversing is enabled
-        :raises SPSDKValueError: Invalid input value.
-        :return: encrypted binary key blobs joined together
+        The method encrypts all key blobs using the provided KEK. Optional scrambling
+        can be applied to the KEK before encryption. The result is aligned to 256 bytes
+        for flash sector compatibility.
+
+        :param kek: Key Encryption Key as bytes or hex string to encrypt key blobs.
+        :param key_scramble_mask: 32-bit scramble mask for KEK scrambling (optional).
+        :param key_scramble_align: 8-bit scramble alignment for KEK scrambling (optional).
+        :param byte_swap_cnt: Number of bytes to reverse in encrypted keyblob, 0 disables.
+        :raises SPSDKValueError: Invalid scramble mask or align value.
+        :return: Encrypted binary key blobs joined together and aligned to 256 bytes.
         """
         if isinstance(kek, str):
             kek = bytes.fromhex(kek)
@@ -554,11 +640,20 @@ class Otfad(FeatureBaseClass):
         )  # this is for compatibility with elftosb, probably need FLASH sector size
 
     def __repr__(self) -> str:
-        """Simple object text representation."""
+        """Get string representation of OTFAD object.
+
+        :return: String representation showing the target family for this OTFAD instance.
+        """
         return f"Otfad object for {self.family}"
 
     def __str__(self) -> str:
-        """Text info about the instance."""
+        """Get string representation of the OTFAD key-blob collection.
+
+        Provides a formatted text representation showing all key-blobs in the collection
+        with their index numbers and detailed information.
+
+        :return: Formatted string containing information about all key-blobs.
+        """
         msg = "Key-Blob\n"
         for index, key_blob in enumerate(self._key_blobs):
             msg += f"Key-Blob {str(index)}:\n"
@@ -567,7 +662,10 @@ class Otfad(FeatureBaseClass):
 
     @property
     def scramble_enabled(self) -> bool:
-        """Property indicating if the scrambling is enabled."""
+        """Property indicating if the scrambling is enabled.
+
+        :return: True if both key_scramble_mask and key_scramble_align are set, False otherwise.
+        """
         return self.key_scramble_mask is not None and self.key_scramble_align is not None
 
     @staticmethod
@@ -576,16 +674,25 @@ class Otfad(FeatureBaseClass):
     ) -> str:
         """Create BLHOST script to load fuses needed to run OTFAD with OTP fuses.
 
-        :param family: Device family.
-        :param otp_master_key: OTP Master Key.
-        :param otfad_kek_seed: OTFAD Key Seed.
-        :return: BLHOST script that loads the keys into fuses.
+        This method generates a script that can be used with BLHOST tool to program
+        the necessary fuse values for OTFAD (On-The-Fly AES Decryption) operation
+        using OTP (One-Time Programmable) keys.
+
+        :param family: Device family and revision information.
+        :param otp_master_key: OTP Master Key used for OTFAD encryption.
+        :param otfad_kek_seed: OTFAD Key Encryption Key seed value.
+        :return: BLHOST script content as string that loads the keys into fuses.
         """
         fuses_script = FuseScript(family, DatabaseManager.OTFAD)
 
         @dataclass
         class OTP:
-            """Just dumb class for storing OTP values."""
+            """OTFAD OTP data container.
+
+            This class stores One-Time Programmable (OTP) values used in OTFAD
+            (On-The-Fly AES Decryption) operations, including the master key
+            and KEK seed values.
+            """
 
             otp_master_key: bytes
             otfad_kek_seed: bytes
@@ -614,13 +721,16 @@ class Otfad(FeatureBaseClass):
         join_sub_images: bool = True,
         table_address: int = 0,
     ) -> Optional[BinaryImage]:
-        """Get the OTFAD Key Blob Binary Image representation.
+        """Export OTFAD key blob as binary image representation.
+
+        The method processes binary data by aligning blocks to encryption size, optionally
+        encrypting the data based on OTFAD table addresses, and joining sub-images if requested.
 
         :param plain_data: Binary representation in plain data format, defaults to False
-        :param swap_bytes: For some platforms the swap bytes is needed in encrypted format, defaults to False.
-        :param join_sub_images: If it's True, all the binary sub-images are joined into one, defaults to True.
-        :param table_address: Absolute address of OTFAD table.
-        :return: OTFAD key blob data in BinaryImage.
+        :param swap_bytes: For some platforms byte swapping is needed in encrypted format, defaults to False
+        :param join_sub_images: If True, all binary sub-images are joined into one, defaults to True
+        :param table_address: Absolute address of OTFAD table
+        :return: OTFAD key blob data in BinaryImage format, or None if no binaries available
         """
         if self.binaries is None:
             return None
@@ -664,10 +774,13 @@ class Otfad(FeatureBaseClass):
     ) -> BinaryImage:
         """Get the OTFAD Binary Image representation.
 
+        Creates a binary image containing the OTFAD table and associated data with proper
+        alignment and encryption settings.
+
         :param plain_data: Binary representation in plain format, defaults to False
-        :param data_alignment: Alignment of data part key blobs.
-        :param otfad_table_name: name of the output file that contains OTFAD table
-        :return: OTFAD in BinaryImage.
+        :param data_alignment: Alignment of data part key blobs
+        :param otfad_table_name: Name of the output file that contains OTFAD table
+        :return: OTFAD in BinaryImage format
         """
         otfad = BinaryImage("OTFAD", offset=self.table_address)
         # Add mandatory OTFAD table
@@ -709,20 +822,27 @@ class Otfad(FeatureBaseClass):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Parse object from bytes array.
+        """Parse OTFAD keyblob from bytes array.
 
-        :param data: OTFAD keyblob in bytes.
-        :return: Parsed object.
+        This is an abstract method that must be implemented by specific OTFAD subclasses
+        to handle parsing of their respective keyblob formats.
+
+        :param data: OTFAD keyblob in bytes format.
+        :return: Parsed OTFAD object instance.
         :raises NotImplementedError: If not implemented in the specific subclass.
         """
         raise NotImplementedError()
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Get list of validation schemas.
+        """Get list of validation schemas for OTFAD configuration.
 
-        :param family: Family for which the template should be generated.
-        :return: Validation list of schemas.
+        This method retrieves and configures validation schemas specific to the given family,
+        including family-specific schema updates, memory address configurations from FlexSPI
+        base addresses, and any additional schemas defined in the database.
+
+        :param family: Family revision for which the validation schemas should be generated.
+        :return: List of validation schema dictionaries including family, output, and OTFAD schemas.
         """
         database = get_db(family)
         schemas = get_schema_file(cls.FEATURE)
@@ -761,18 +881,21 @@ class Otfad(FeatureBaseClass):
         """Create configuration of the Feature.
 
         :param data_path: Path to store the data files of configuration.
+        :raises NotImplementedError: Method must be implemented by subclass.
         :return: Configuration dictionary.
         """
         raise NotImplementedError
 
     @classmethod
     def load_from_config(cls, config: Config) -> Self:
-        """Converts the configuration option into an OTFAD image object.
+        """Create OTFAD image object from configuration.
 
-        "config" content array of containers configurations.
+        Converts the configuration dictionary containing OTFAD settings into a fully
+        initialized OTFAD image object with key blobs and optional data blobs.
 
-        :param config: array of OTFAD configuration dictionaries.
-        :return: initialized OTFAD object.
+        :param config: Configuration dictionary containing OTFAD settings including
+                       key blobs, KEK, addresses, and optional data blobs.
+        :return: Initialized OTFAD object with configured key blobs and settings.
         """
         otfad_config = config.get_list_of_configs("key_blobs")
         family = FamilyRevision.load_from_config(config)
@@ -873,7 +996,16 @@ class Otfad(FeatureBaseClass):
         return otfad
 
     def post_export(self, output_path: str) -> list[str]:
-        """Perform post export steps like saving the script files."""
+        """Perform post export steps like saving the script files.
+
+        This method generates and saves various OTFAD-related files including binary images,
+        readme documentation, BD file examples for SB2.1, and BLHOST scripts for OTP KEK
+        configuration. It processes the binary image structure and creates separate files
+        for OTFAD table and key blobs.
+
+        :param output_path: Directory path where generated files will be saved.
+        :return: List of file paths that were successfully generated and saved.
+        """
         generated_files = []
 
         binary_image = self.binary_image(

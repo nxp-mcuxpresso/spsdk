@@ -4,16 +4,20 @@
 # Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+"""Test module for XMCD functionality in nxpimage application.
 
-"""Test FCB part of nxpimage app."""
+This module contains comprehensive tests for External Memory Configuration Data (XMCD)
+handling within the nxpimage tool, covering export, parsing, template generation,
+validation, and CRC calculation functionality.
+"""
+
 import filecmp
 import os
+from typing import Any, Optional
 
 import pytest
-import yaml
 
 from spsdk.apps import nxpimage
-from spsdk.apps.utils.utils import SPSDKAppError
 from spsdk.exceptions import SPSDKError
 from spsdk.image.xmcd.xmcd import XMCD, MemoryType
 from spsdk.utils.config import Config
@@ -45,8 +49,27 @@ from tests.cli_runner import CliRunner
     ],
 )
 def test_nxpimage_xmcd_export(
-    cli_runner: CliRunner, tmpdir, data_dir, family, mem_type, config_type, option
-):
+    cli_runner: CliRunner,
+    tmpdir: str,
+    data_dir: str,
+    family: str,
+    mem_type: str,
+    config_type: str,
+    option: Optional[int],
+) -> None:
+    """Test XMCD export functionality through CLI interface.
+
+    This test verifies that the XMCD export command correctly generates binary files
+    from YAML configuration files and that the output matches expected reference files.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory path for output files.
+    :param data_dir: Base directory containing test data files.
+    :param family: Target MCU family name for XMCD configuration.
+    :param mem_type: Memory type identifier for XMCD configuration.
+    :param config_type: Configuration type identifier for XMCD.
+    :param option: Optional configuration variant number.
+    """
     with use_working_directory(data_dir):
         file_base_name = f"{mem_type}_{config_type}"
         if option is not None:
@@ -80,8 +103,27 @@ def test_nxpimage_xmcd_export(
     ],
 )
 def test_nxpimage_xmcd_parse_cli(
-    cli_runner: CliRunner, tmpdir, data_dir, family, mem_type, config_type, option
-):
+    cli_runner: CliRunner,
+    tmpdir: str,
+    data_dir: str,
+    family: str,
+    mem_type: str,
+    config_type: str,
+    option: Optional[int],
+) -> None:
+    """Test CLI parsing of XMCD binary files to YAML configuration.
+
+    This test verifies that the nxpimage CLI can successfully parse XMCD (External Memory Configuration Data)
+    binary files and convert them to YAML configuration format for various memory types and configurations.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory path for output files.
+    :param data_dir: Base directory containing test data files.
+    :param family: Target MCU family name.
+    :param mem_type: Memory type identifier.
+    :param config_type: Configuration type identifier.
+    :param option: Optional configuration option number.
+    """
     with use_working_directory(data_dir):
         data_folder = os.path.join(data_dir, "xmcd", family)
         output_file = os.path.join(tmpdir, f"xmcd_{family}_{mem_type}_{config_type}.yaml")
@@ -109,8 +151,20 @@ def test_nxpimage_xmcd_parse_cli(
     "family",
     ["mimxrt1176", "mimxrt1166", "mimxrt1189", "mimxrt798s"],
 )
-def test_nxpimage_xmcd_template_cli(cli_runner: CliRunner, tmpdir, data_dir, family):
-    templates_folder = os.path.join(data_dir, "xmcd", family, "templates")
+def test_nxpimage_xmcd_template_cli(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str, family: str
+) -> None:
+    """Test XMCD template generation CLI command.
+
+    Verifies that the bootable-image xmcd get-templates command correctly generates
+    template files for all supported memory types and configuration types for a given family.
+    The test checks that all expected template files are created in the output directory.
+
+    :param cli_runner: CLI test runner fixture for invoking commands.
+    :param tmpdir: Temporary directory path for output files.
+    :param data_dir: Test data directory path.
+    :param family: Target MCU family name for template generation.
+    """
     cmd = f"bootable-image xmcd get-templates -f {family} --output {tmpdir}"
     cli_runner.invoke(nxpimage.main, cmd.split())
 
@@ -133,7 +187,22 @@ def test_nxpimage_xmcd_template_cli(cli_runner: CliRunner, tmpdir, data_dir, fam
         ("flexspi_ram", "full", None),
     ],
 )
-def test_nxpimage_xmcd_export_invalid(data_dir, mem_type, config_type, option):
+def test_nxpimage_xmcd_export_invalid(
+    data_dir: str, mem_type: str, config_type: str, option: Optional[int]
+) -> None:
+    """Test XMCD export functionality with invalid configurations.
+
+    This test validates that XMCD.load_from_config properly raises SPSDKError
+    when provided with invalid configuration data, including missing mandatory
+    fields, invalid memory types, invalid configuration types, and unsupported
+    device families.
+
+    :param data_dir: Base directory containing test data files.
+    :param mem_type: Memory type identifier for the test configuration.
+    :param config_type: Configuration type identifier for the test.
+    :param option: Optional parameter to modify the configuration file name.
+    :raises SPSDKError: When XMCD configuration validation fails as expected.
+    """
     file_base_name = f"{mem_type}_{config_type}"
     if option is not None:
         file_base_name += f"_{option}"
@@ -162,7 +231,13 @@ def test_nxpimage_xmcd_export_invalid(data_dir, mem_type, config_type, option):
         XMCD.load_from_config(Config(config_data))
 
 
-def test_nxpimage_supported_mem_types():
+def test_nxpimage_supported_mem_types() -> None:
+    """Test XMCD supported memory types functionality.
+
+    Verifies that the XMCD class returns the correct number and types of
+    supported memory types. The test checks that exactly 3 memory types
+    are supported and validates the specific memory types returned.
+    """
     mem_types = XMCD.get_supported_memory_types()
     assert len(mem_types) == 3
     mem_types[0] == MemoryType.FLEXSPI_RAM
@@ -170,7 +245,21 @@ def test_nxpimage_supported_mem_types():
     mem_types[0] == MemoryType.XSPI_RAM
 
 
-def test_nxpimage_xmcd_validate(caplog, cli_runner: CliRunner, tmpdir, data_dir):
+def test_nxpimage_xmcd_validate(
+    caplog: Any, cli_runner: CliRunner, tmpdir: str, data_dir: str
+) -> None:
+    """Test XMCD validation functionality through CLI interface.
+
+    Tests both valid and invalid XMCD configurations by creating XMCD objects from config files,
+    exporting them to binary format, and validating them using the nxpimage CLI tool.
+    Verifies that valid configurations pass validation and invalid configurations fail with
+    appropriate error messages.
+
+    :param caplog: Pytest log capture fixture for controlling log levels.
+    :param cli_runner: Click CLI runner fixture for testing command-line interface.
+    :param tmpdir: Temporary directory path for storing test files.
+    :param data_dir: Path to test data directory containing XMCD configuration files.
+    """
     family = "mimxrt1166"
     caplog.set_level(100_000)
     with use_working_directory(data_dir):
@@ -178,7 +267,7 @@ def test_nxpimage_xmcd_validate(caplog, cli_runner: CliRunner, tmpdir, data_dir)
         # Test Valid
         config = Config.create_from_file(config_file)
         xmcd = XMCD.load_from_config(config)
-        bin_path = os.path.join(tmpdir, f"xmcd.bin")
+        bin_path = os.path.join(tmpdir, "xmcd.bin")
         write_file(xmcd.export(), bin_path, mode="wb")
 
         cmd = [
@@ -212,7 +301,22 @@ def test_nxpimage_xmcd_validate(caplog, cli_runner: CliRunner, tmpdir, data_dir)
         ("flexspi_ram", "simplified_1", "20fa163a"),
     ],
 )
-def test_nxpimage_xmcd_crc(data_dir, mem_type, config_type, expected_crc):
+def test_nxpimage_xmcd_crc(
+    data_dir: str, mem_type: str, config_type: str, expected_crc: str
+) -> None:
+    """Test XMCD CRC validation against expected value.
+
+    This test method verifies that the CRC calculated for an XMCD (External Memory Configuration Data)
+    object matches the expected CRC value. It loads a binary file containing XMCD data, parses it
+    using the MIMXRT1176 family configuration, and compares the computed CRC with the expected result.
+
+    :param data_dir: Base directory path containing test data files
+    :param mem_type: Memory type identifier used in the binary filename
+    :param config_type: Configuration type identifier used in the binary filename
+    :param expected_crc: Expected CRC value as hexadecimal string for comparison
+    :raises AssertionError: When computed CRC doesn't match expected CRC value
+    :raises SPSDKError: When binary file loading or XMCD parsing fails
+    """
     family = FamilyRevision("mimxrt1176")
     data_folder = os.path.join(data_dir, "xmcd", family.name)
     bin_path = os.path.join(data_folder, f"{mem_type}_{config_type}.bin")
@@ -225,8 +329,21 @@ def test_nxpimage_xmcd_crc(data_dir, mem_type, config_type, expected_crc):
     [("mimxrt1166", 73), ("mimxrt1176", 73), ("mimxrt1189", 32)],
 )
 def test_nxpimage_xmcd_crc_fuses_script(
-    cli_runner: CliRunner, tmpdir, data_dir, family: str, crc_sum_fuse_id
-):
+    cli_runner: CliRunner, tmpdir: str, data_dir: str, family: str, crc_sum_fuse_id: int
+) -> None:
+    """Test XMCD CRC fuses script generation functionality.
+
+    This test verifies that the nxpimage CLI can generate a proper fuses programming
+    script for XMCD CRC values. It uses a sample XMCD binary file and validates
+    that the generated script contains the expected content including family info,
+    warnings, and the correct efuse programming command.
+
+    :param cli_runner: Click CLI test runner for invoking commands
+    :param tmpdir: Temporary directory path for output files
+    :param data_dir: Path to test data directory containing XMCD binaries
+    :param family: Target MCU family name for the fuses script
+    :param crc_sum_fuse_id: Expected CRC sum fuse identifier in the output
+    """
     # we take any XMCD binary as there are no differences between families
     binary_path = os.path.join(data_dir, "xmcd", "mimxrt1176", "semc_sdram_simplified.bin")
     fuses_script = os.path.join(tmpdir, "fuses.txt")
@@ -246,5 +363,5 @@ def test_nxpimage_xmcd_crc_fuses_script(
     content = load_file(fuses_script, mode="r")
     assert "blhost XMCD CRC fuses programming script" in content
     assert f"Family: {family}, Revision: latest" in content
-    assert f"WARNING! Partially set register, check all bitfields before writing" in content
+    assert "WARNING! Partially set register, check all bitfields before writing" in content
     assert f"efuse-program-once {crc_sum_fuse_id} 0xBC333806" in content

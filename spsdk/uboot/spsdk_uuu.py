@@ -4,11 +4,18 @@
 # Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""module that wraps libuuu library and provides a more user-friendly interface."""
+"""SPSDK U-Boot UUU library wrapper.
+
+This module provides a Python interface to the libuuu library for U-Boot
+USB recovery operations. It enables communication with NXP devices in
+Serial Download Protocol (SDP) mode for flashing and recovery purposes.
+"""
+
 import logging
 import re
 from ctypes import CFUNCTYPE, POINTER, c_char_p, c_int, c_uint16, c_void_p
 from functools import wraps
+from types import TracebackType
 from typing import Any, Callable, Optional, no_type_check
 
 import click
@@ -19,6 +26,7 @@ from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.database import DatabaseManager, UsbId
 from spsdk.utils.family import FamilyRevision, get_db, get_families
 from spsdk.utils.misc import load_text
+from spsdk.utils.threading import CancellableWait
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +45,14 @@ UUULsUsbDevices = CFUNCTYPE(
 
 @UUUNotifyCallback
 def _spsdk_notify_callback(struct: UUUNotifyStruct, data) -> int:  # type: ignore
-    """A default callback function that stores the response in a class variable.
+    """Default callback function that stores UUU response in class variable.
 
-    :param struct: A UUUNotifyStruct object
-    :param data: A pointer to data, here it is not used
+    This callback processes UUU notifications and updates the internal state. For command info
+    notifications, it accumulates the response data in the LibUUU response buffer.
+
+    :param struct: UUU notification structure containing response data and type information
+    :param data: Pointer to additional data (unused in this implementation)
+    :return: 1 if no error occurred, 0 if there was an error in the state
     """
     # pylint: disable=unused-argument
     SPSDKUUU._state.update(struct)
@@ -50,14 +62,23 @@ def _spsdk_notify_callback(struct: UUUNotifyStruct, data) -> int:  # type: ignor
 
 
 class SPSDKUUUState(UUUState):
-    """A class that represents the state of the UUU."""
+    """SPSDK UUU State Manager.
+
+    This class extends UUUState to provide enhanced state management for UUU operations
+    with integrated progress tracking and visual feedback capabilities for SPSDK workflows.
+
+    :cvar progress_bars: Dictionary storing active progress bar instances for concurrent tasks.
+    """
 
     progress_bars: dict[str, Any] = {}
 
     def __init__(self, progress_bar: bool = True) -> None:
-        """SPSDKUUU State constructor.
+        """Initialize SPSDK UUU state manager.
 
-        :param progress_bar: show progress bar, defaults to True
+        Creates a new instance of the SPSDK UUU state manager with configurable progress bar display
+        and initializes the status tracking.
+
+        :param progress_bar: Enable progress bar display during operations, defaults to True
         """
         self.progress_bar = progress_bar
         self.status = 0
@@ -66,9 +87,12 @@ class SPSDKUUUState(UUUState):
     def update_progress_bar(self, task_name: str, total_steps: int, step: int) -> None:
         """Update the progress bar for a task.
 
-        :param task_name: The name of the task.
+        Creates a new progress bar if it doesn't exist for the given task, updates the current
+        progress, and cleans up when the task is completed.
+
+        :param task_name: The name of the task to display in progress bar.
         :param total_steps: The total number of steps for the task.
-        :param step: The current step of the task.
+        :param step: The current step number of the task.
         """
         # Check if the progress bar for the task already exists
         if task_name not in self.progress_bars:
@@ -79,7 +103,7 @@ class SPSDKUUUState(UUUState):
 
         # Update the existing progress bar
         bar = self.progress_bars[task_name]
-        bar.update(step)
+        bar.update(step - bar.pos)
 
         # If the current step is the last step print new line
         if step == total_steps:
@@ -91,8 +115,12 @@ class SPSDKUUUState(UUUState):
     def update(self, struct: UUUNotifyStruct) -> None:
         """Update the state with a notification from uuu.
 
-        :param struct: A UUUNotifyStruct object
-        :raises SPSDKError: If the command fails
+        This method processes different types of notifications from the uuu tool and updates
+        the internal state accordingly, including command progress, device attachment status,
+        transfer progress, and error conditions.
+
+        :param struct: A UUUNotifyStruct object containing notification data and type.
+        :raises SPSDKError: If the command fails.
         """
         self.waiting = struct.type == UUUNotifyType.NOTIFY_WAIT_FOR
         self.done = struct.type == UUUNotifyType.NOTIFY_DONE
@@ -126,17 +154,42 @@ class SPSDKUUUState(UUUState):
 @no_type_check
 # pylint: disable=no-self-argument,missing-type-doc
 def check_uuu_error_state_after_command(f: Any):
-    """Decorator to wrap around functions which call libuuu."""
+    """Decorator to check UUU error state after command execution.
+
+    This decorator wraps functions that call libuuu and automatically checks for error
+    conditions after the function execution. If an error is detected (non-zero return
+    code or error state), it raises an SPSDKError with detailed error information.
+
+    :param f: Function to be wrapped that calls libuuu operations.
+    :raises SPSDKError: When UUU command fails or error state is detected.
+    :return: Decorated function that performs error checking.
+    """
 
     @wraps(f)
     def inner(self: "SPSDKUUU", *args: Any, **kwargs: Any) -> int:
+        """Inner wrapper function for UUU command execution with error handling.
+
+        This method wraps the execution of UUU commands and provides comprehensive error
+        handling. It checks the return code and internal state, then raises an SPSDKError
+        with detailed error information if the command fails.
+
+        :param self: SPSDKUUU instance.
+        :param args: Variable length argument list passed to the wrapped function.
+        :param kwargs: Arbitrary keyword arguments passed to the wrapped function.
+        :raises SPSDKError: When UUU command execution fails or returns non-zero exit code.
+        :return: Exit code from the executed UUU command.
+        """
         ret = f(self, *args, **kwargs)
         if ret != 0 or self._state.error:
             message = (
                 f"{f.__name__}: "
-                + ("Failed UUU command " + self._state.cmd if self._state.cmd else "")
-                + f" returned with exit code {ret}"
-                + f" and status {self._state.status}."
+                + (
+                    "Failed while executing UUU command " + self._state.cmd
+                    if self._state.cmd
+                    else ""
+                )
+                + f"(exit code: {ret}, status: {self._state.status})"
+                + (f"\nError details: {self.last_error_str}" if self.last_error_str else "")
             )
             raise SPSDKError(message)
         return ret
@@ -145,30 +198,44 @@ def check_uuu_error_state_after_command(f: Any):
 
 
 class SPSDKUUU:
-    """A class that wraps the libuuu library and provides a more user-friendly interface."""
+    """SPSDK U-Boot UUU Interface.
+
+    This class provides a Python wrapper around the libuuu library for U-Boot
+    device programming and management. It offers a user-friendly interface for
+    executing UUU scripts, managing USB device connections, and handling device
+    communication with enhanced error handling and progress reporting.
+
+    :cvar SCRIPT_ARG_REGEX: Regular expression pattern for parsing UUU script arguments.
+    """
 
     SCRIPT_ARG_REGEX = r"# @(\S+)\s*(\[(\S+)\])?\s*\|\s*(.+)"
     _state = SPSDKUUUState()
 
     def __init__(
         self,
-        wait_timeout: int = 30,
-        wait_next_timeout: int = 30,
-        poll_period: int = 100,
+        wait_timeout: int = 5,
+        wait_next_timeout: int = 5,
+        poll_period: int = 200,
         progress_bar: bool = True,
         usb_path_filter: Optional[str] = None,
         usb_serial_no_filter: Optional[str] = None,
     ) -> None:
         """Initialize the SPSDKUUU object.
 
-        :param wait_timeout: The timeout value for command execution in seconds, defaults to 30
-        :param wait_next_timeout: The timeout value for waiting for the next device in seconds, defaults to 30
-        :param poll_period: The period in milliseconds for polling the USB device, defaults to 100
-        :param progress_bar: True for showing the progress bar to stdout
-        :param usb_path_filter: The USB path to filter
-        :param usb_serial_no_filter: The USB serial number to filter
+        Sets up the UUU library wrapper with specified timeouts, polling configuration,
+        and USB device filters for secure provisioning operations.
+
+        :param wait_timeout: Timeout for command execution in seconds, defaults to 5
+        :param wait_next_timeout: Timeout for waiting for next device in seconds, defaults to 5
+        :param poll_period: USB device polling period in milliseconds, defaults to 200
+        :param progress_bar: Enable progress bar display to stdout, defaults to True
+        :param usb_path_filter: USB path filter string for device selection
+        :param usb_serial_no_filter: USB serial number filter for device selection
+        :raises SPSDKValueError: Invalid USB path or serial number filter configuration
         """
         self.uuu = LibUUU()
+        self.wait_timeout = wait_timeout
+        self.wait_next_timeout = wait_next_timeout
         self.uuu.set_wait_timeout(wait_timeout)
         self.uuu.set_wait_next_timeout(wait_next_timeout)
         self.uuu.set_poll_period(poll_period)
@@ -187,30 +254,50 @@ class SPSDKUUU:
 
     @property
     def response(self) -> str:
-        """Get the response from the last command."""
+        """Get the response from the last command.
+
+        :return: Decoded response string from the most recent UUU command execution.
+        """
         return self.uuu.response.decode()
 
     @property
     def last_error_str(self) -> str:
-        """Get the last error string."""
+        """Get the last error string from UUU library.
+
+        :return: The last error message as a string.
+        """
         return self.uuu.get_last_error_string()
 
     @property
     def last_error(self) -> int:
-        """Get the last error code."""
+        """Get the last error code.
+
+        Retrieves the most recent error code from the UUU library operation.
+
+        :return: The last error code as an integer value.
+        """
         return self.uuu.get_last_error()
 
     @staticmethod
     def get_supported_families() -> list[FamilyRevision]:
-        """Get the list of supported families.
+        """Get the list of supported families for U-Boot operations.
 
-        :return: List of family names that support memory configuration.
+        This method retrieves all NXP MCU families that are supported by the SPSDK U-Boot
+        functionality through the database manager.
+
+        :return: List of FamilyRevision objects representing supported MCU families.
         """
         return get_families(DatabaseManager.NXPUUU)
 
     @staticmethod
     def get_supported_devices() -> list[str]:
-        """Get supported devices for the given family."""
+        """Get supported devices for U-Boot UUU operations.
+
+        Retrieves a list of all supported boot devices from the NXP UUU database
+        for the first available family in the database manager.
+
+        :return: List of supported device names for UUU operations.
+        """
         return list(
             get_db(get_families(DatabaseManager.NXPUUU)[0])
             .get_dict(DatabaseManager.NXPUUU, "boot_devices")
@@ -221,7 +308,10 @@ class SPSDKUUU:
     def get_usb_ids(cls) -> dict[str, list[UsbId]]:
         """Get list of all supported devices from the database.
 
-        :return: Dictionary containing device names with their usb configurations
+        The method retrieves device information from the database and filters devices that have
+        SDPS USB configurations available for UUU operations.
+
+        :return: Dictionary mapping device names to their corresponding USB ID configurations.
         """
         devices = {}
         for device, quick_info in DatabaseManager().quick_info.devices.devices.items():
@@ -234,12 +324,17 @@ class SPSDKUUU:
     def replace_arguments(
         input_string: str, arguments_dict: dict[str, dict[str, Any]], arguments: list[str]
     ) -> str:
-        """Replace arguments in the input string.
+        """Replace arguments in input string with provided values.
 
-        :param input_string: The input string to replace arguments in.
-        :param arguments_dict: A dictionary containing the arguments and their descriptions.
-        :param arguments: The list of arguments to replace in the input string.
-        :return: The input string with the arguments replaced.
+        The method normalizes file paths, maps argument keys to replacement values,
+        and handles special cases for compressed files (.ZST, .BZ2) by appending
+        wildcard patterns. Uses regex for whole-word replacement to avoid partial matches.
+
+        :param input_string: The input string containing argument placeholders to replace.
+        :param arguments_dict: Dictionary with argument keys and their metadata including
+                              optional_key field for fallback values.
+        :param arguments: List of replacement values corresponding to arguments_dict keys.
+        :return: Input string with argument placeholders replaced by actual values.
         """
         # Normalize arguments by replacing backslashes with forward slashes
         normalized_arguments = [arg.replace("\\", "/") for arg in arguments]
@@ -279,7 +374,18 @@ class SPSDKUUU:
     def get_uuu_script(
         self, boot_device: str, family: FamilyRevision, args: Optional[list[str]]
     ) -> str:
-        """Get the uuu script for the given boot device."""
+        """Get the uuu script for the given boot device.
+
+        Loads and processes a UUU script template by replacing argument placeholders
+        with provided values based on the boot device configuration.
+
+        :param boot_device: Name of the boot device to get script for.
+        :param family: Target MCU family and revision information.
+        :param args: List of arguments to substitute in the script template.
+        :raises SPSDKValueError: When no arguments provided, too many arguments passed,
+            or invalid arguments that don't match expected format.
+        :return: Processed UUU script with arguments substituted.
+        """
         script_path = get_db(family).get_file_path(
             DatabaseManager.NXPUUU, ["boot_devices", boot_device, "script"]
         )
@@ -316,10 +422,13 @@ class SPSDKUUU:
         return script
 
     def run_uboot(self, command: str) -> bool:
-        """Run uboot command.
+        """Execute U-Boot command via UUU protocol.
 
-        :param command: string command
-        :return: Return code from the libuuu
+        Sends the specified command to U-Boot through the libuuu interface and logs
+        the execution result along with any response received.
+
+        :param command: U-Boot command string to execute
+        :return: True if command executed successfully, False otherwise
         """
         success = self.uuu.run_cmd(f"FB:UCMD {command}", 0) == 0
         logger.info(f"{command} {success=} response={self.response}")
@@ -328,23 +437,36 @@ class SPSDKUUU:
     def run_uboot_acmd(self, command: str) -> bool:
         """Run uboot command ACMD.
 
-        :param command: string command
+        Executes a U-Boot command using the ACMD (Application Command) interface through UUU
+        (Universal Update Utility). The command execution status is logged for debugging purposes.
+
+        :param command: U-Boot command string to execute.
+        :return: True if command executed successfully, False otherwise.
         """
         success = self.uuu.run_cmd(f"FB:ACMD {command}", 0) == 0
         logger.info(f"{command} {success=} response={self.response}")
         return success
 
     def enable_fastboot_output(self) -> bool:
-        """Enable fastboot output for stdout and stderr of uboot commands."""
+        """Enable fastboot output for stdout and stderr of uboot commands.
+
+        This method configures the U-Boot environment to redirect both standard output
+        and standard error streams to serial and fastboot interfaces, enabling output
+        capture during fastboot operations.
+
+        :return: True if the command executed successfully, False otherwise.
+        """
         return self.run_uboot("setenv stdout serial,fastboot")
 
     @check_uuu_error_state_after_command
     def run_cmd(self, cmd: str, dry: bool = False) -> int:
         """Run a uuu command.
 
-        :param cmd: The command to run
-        :param dry: If set to False command will be executed, otherwise its a dry run
-        :return: 0 if success
+        Execute the specified uuu command either in dry run mode or actual execution mode.
+
+        :param cmd: The command to run.
+        :param dry: If set to False command will be executed, otherwise it's a dry run.
+        :return: 0 if success.
         """
         return self.uuu.run_cmd(cmd, dry)
 
@@ -352,18 +474,24 @@ class SPSDKUUU:
     def run_script(self, script_path: str, dry: bool = False) -> int:
         """Run a uuu script.
 
-        :param script_path: The path to the script file.
-        :param dry: If set to True, it will be a dry run without executing the commands, defaults to False.
-        :return: The result of the script execution.
+        Execute a Universal Update Utility (UUU) script file for device programming and configuration.
+
+        :param script_path: The path to the script file to execute.
+        :param dry: If set to True, performs a dry run without executing commands, defaults to False.
+        :return: The result code of the script execution.
         """
         self.uuu._response.value = b""
         return self.uuu.lib.uuu_run_cmd_script(c_char_p(str.encode(script_path)), c_int(int(dry)))
 
     def auto_detect_file(self, filename: str) -> int:
-        """Auto detect file.
+        """Auto detect file type and format.
 
-        :param filename: The name of the file to be auto detected.
-        :return: The result of the auto detection.
+        Automatically detects the type and format of the specified file using the UUU library's
+        auto-detection capabilities. This method clears any previous response data before
+        performing the detection.
+
+        :param filename: Path to the file to be analyzed for type detection.
+        :return: Detection result code from the UUU library (0 for success, non-zero for error).
         """
         self.uuu._response.value = b""
         return self.uuu.lib.uuu_auto_detect_file(c_char_p(str.encode(filename)))
@@ -376,32 +504,162 @@ class SPSDKUUU:
     ) -> int:
         """Wait for the uuu execution to finish.
 
+        The method waits for the Universal Update Utility (UUU) process to complete execution,
+        with options for daemon mode and dry run operations.
+
         :param daemon: If True, run uuu as a daemon process, defaults to False.
         :param dry: If True, perform a dry run without executing the commands, defaults to False.
-        :return: The result of the uuu execution.
+        :raises ValueError: When both daemon and dry parameters are True simultaneously.
+        :return: The result code of the uuu execution.
         """
-        return self.uuu.lib.uuu_wait_uuu_finish(c_int(int(daemon)), c_int(int(dry)))
+        if daemon and dry:
+            raise ValueError("Cannot run as daemon and dry run simultaneously")
+
+        if daemon:
+            self.uuu.set_wait_timeout(-1)
+            self.uuu.set_wait_next_timeout(-1)
+
+        wait_helper = CancellableWait()
+        return wait_helper.run_interruptible(
+            self.uuu.lib.uuu_wait_uuu_finish, c_int(int(daemon)), c_int(int(dry))
+        )
 
     def for_each_devices(self, callback: Callable) -> int:
-        """For each device.
+        """Execute callback function for each connected USB device.
 
-        :param callback: The callback function to be executed for each device.
-        :return: The result of the execution.
+        Iterates through all available USB devices and executes the provided callback
+        function for each device found in the system.
+
+        :param callback: Callback function to execute for each detected USB device.
+        :return: Result code from the underlying UUU library operation.
         """
         return self.uuu.lib.uuu_for_each_devices(UUULsUsbDevices(callback))
 
     def add_usbpath_filter(self, path: str) -> int:
-        """Add a USB path filter.
+        """Add a USB path filter to the UUU library.
 
-        :param path: The USB path to filter.
-        :return: The result of adding the filter.
+        This method adds a USB device path filter that can be used to restrict
+        communication to specific USB devices based on their system path.
+
+        :param path: USB device path string to be added as filter.
+        :return: Integer result code from the underlying UUU library operation.
         """
         return self.uuu.lib.uuu_add_usbpath_filter(c_char_p(str.encode(path)))
 
     def add_usbserial_no_filter(self, serial_no: str) -> int:
-        """Add a USB serial number filter.
+        """Add a USB serial number filter to the UUU library.
 
-        :param serial_no: The USB serial number to filter.
-        :return: The result of adding the filter.
+        This method adds a USB serial number filter that can be used to restrict
+        operations to specific USB devices based on their serial numbers.
+
+        :param serial_no: The USB serial number string to add as a filter.
+        :return: Integer result code from the underlying UUU library operation.
         """
         return self.uuu.lib.uuu_add_usbserial_no_filter(c_char_p(str.encode(serial_no)))
+
+    def set_timeouts(self, wait_timeout: int, wait_next_timeout: int) -> None:
+        """Set both wait timeouts for UUU operations.
+
+        This method configures the timeout values for waiting operations and applies
+        them to the underlying UUU instance.
+
+        :param wait_timeout: Timeout for waiting in seconds
+        :param wait_next_timeout: Timeout for waiting for next device in seconds
+        """
+        self.wait_timeout = wait_timeout
+        self.wait_next_timeout = wait_next_timeout
+        self.uuu.set_wait_timeout(wait_timeout)
+        self.uuu.set_wait_next_timeout(wait_next_timeout)
+
+    def get_timeouts(self) -> tuple[int, int]:
+        """Get current timeout values.
+
+        :return: Tuple of (wait_timeout, wait_next_timeout) in seconds.
+        """
+        return self.wait_timeout, self.wait_next_timeout
+
+    def with_temporary_timeouts(self, wait_timeout: int, wait_next_timeout: int) -> Any:
+        """Create context manager for temporary UUU timeout modifications.
+
+        This method provides a safe way to temporarily change UUU timeout values for specific
+        operations and automatically restore the original values when exiting the context,
+        ensuring proper cleanup even if exceptions occur.
+
+        :param wait_timeout: Temporary wait timeout value in seconds.
+        :param wait_next_timeout: Temporary wait next timeout value in seconds.
+        :return: Context manager instance for timeout handling.
+        """
+
+        class TimeoutContext:
+            """Context manager for temporarily modifying UUU timeout settings.
+
+            This class provides a safe way to temporarily change timeout values for UUU
+            operations and automatically restore the original values when exiting the
+            context, ensuring proper cleanup even if exceptions occur.
+            """
+
+            def __init__(self, uuu_instance: "SPSDKUUU", temp_wait: int, temp_next: int) -> None:
+                """Initialize UUU timeout context manager.
+
+                Context manager to temporarily modify UUU timeout settings and restore them afterwards.
+
+                :param uuu_instance: SPSDK UUU instance to modify timeout settings for.
+                :param temp_wait: Temporary wait timeout value in seconds.
+                :param temp_next: Temporary next timeout value in seconds.
+                """
+                self.uuu = uuu_instance
+                self.temp_wait = temp_wait
+                self.temp_next = temp_next
+                self.original_wait: Optional[int] = None
+                self.original_next: Optional[int] = None
+
+            def __enter__(self) -> "TimeoutContext":
+                """Enter the timeout context manager.
+
+                Sets temporary timeout values for UUU operations and stores the original
+                timeout values for restoration when exiting the context.
+
+                :return: The TimeoutContext instance for use in with statement.
+                """
+                self.original_wait, self.original_next = self.uuu.get_timeouts()
+                self.uuu.set_timeouts(self.temp_wait, self.temp_next)
+                return self
+
+            def __exit__(
+                self,
+                exc_type: Optional[type[BaseException]],
+                exc_val: Optional[BaseException],
+                exc_tb: Optional[TracebackType],
+            ) -> None:
+                """Exit the timeout context manager and restore original timeout values.
+
+                Restores the UUU instance's original wait and next timeout values that were
+                saved when entering the context manager, ensuring proper cleanup of timeout
+                modifications.
+
+                :param exc_type: Type of exception that caused the context to exit, if any.
+                :param exc_val: Exception instance that caused the context to exit, if any.
+                :param exc_tb: Traceback object associated with the exception, if any.
+                """
+                if self.original_wait is not None and self.original_next is not None:
+                    self.uuu.set_timeouts(self.original_wait, self.original_next)
+
+        return TimeoutContext(self, wait_timeout, wait_next_timeout)
+
+    def verify_fastboot_connection(self, timeout: int = 1) -> bool:
+        """Verify if fastboot connection is available with a short timeout.
+
+        The method temporarily sets connection timeouts and attempts to execute
+        a simple fastboot command to verify device connectivity.
+
+        :param timeout: Timeout in seconds for verification, defaults to 1
+        :return: True if fastboot is available, False otherwise
+        """
+        try:
+            with self.with_temporary_timeouts(timeout, timeout):
+                # Try a simple fastboot command to verify connection
+                result = self.run_cmd("FB: getvar version", dry=False)
+                return result == 0
+        except Exception as e:
+            logger.debug(f"Fastboot verification failed: {e}")
+            return False

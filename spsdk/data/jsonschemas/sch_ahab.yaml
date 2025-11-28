@@ -13,8 +13,8 @@ whole_ahab_image:
       type: string
       title: Target memory
       description: Target memory for AHAB container
-      enum: [standard, nor, serial_downloader, nand_2k, nand_4k]
-      enum_template: [serial_downloader, standard, nand_2k, nand_4k]
+      enum: [standard, nor, serial_downloader, nand_2k, nand_4k, sd_emmc]
+      enum_template: [serial_downloader, standard, nand_2k, nand_4k, sd_emmc]
       template_value: standard
     output:
       type: string
@@ -553,6 +553,12 @@ whole_ahab_image:
                               type: boolean
                               title: Image encryption
                               description: Determines, whether image is encrypted or not.
+                              template_value: false
+                              default: false
+                            is_image_descriptor:
+                              type: boolean
+                              title: Image Descriptor
+                              description: Determines, whether image is descriptor or not.
                               template_value: false
                               default: false
                             boot_flags:

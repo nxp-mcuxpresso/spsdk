@@ -6,7 +6,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-"""Master Boot Image data."""
+"""SPSDK Master Boot Image data definitions and enumerations.
+
+This module provides data structures, enumerations, and mappings for Master Boot Image
+configuration and processing within the SPSDK framework.
+"""
 
 import logging
 
@@ -16,7 +20,12 @@ logger = logging.getLogger(__name__)
 
 
 class MbiImageTypeEnum(SpsdkEnum):
-    """Enumeration of MBI image types."""
+    """MBI image type enumeration for Master Boot Image configurations.
+
+    This enumeration defines the supported image types for Master Boot Image (MBI)
+    including plain, signed, CRC-protected, and encrypted variants for both
+    XIP (Execute-in-Place) and Load-to-RAM execution models.
+    """
 
     PLAIN_IMAGE = (0x00, "PLAIN_IMAGE", "Plain Image (either XIP or Load-to-RAM)")
     SIGNED_RAM_IMAGE = (0x01, "SIGNED_RAM_IMAGE", "Plain Signed Load-to-RAM Image")

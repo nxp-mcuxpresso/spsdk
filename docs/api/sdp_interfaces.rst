@@ -1,7 +1,6 @@
 SDP Interfaces
 ==============
-
-Connection options for SDP.
+.. automodule:: spsdk.sdp.interfaces
 
 SDP UART
 --------

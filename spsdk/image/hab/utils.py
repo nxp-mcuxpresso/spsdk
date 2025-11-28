@@ -4,10 +4,13 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Utility functions for High Assurance Boot (HAB) image creation and processing.
+"""SPSDK High Assurance Boot (HAB) utility functions.
 
-This module provides helper functions for HAB-related operations.
+This module provides helper functions for HAB image creation and processing,
+including operations for extracting boot parameters, calculating offsets,
+and handling application images for NXP MCUs with HAB security features.
 """
+
 import logging
 
 from spsdk.utils.binary_image import BinaryImage
@@ -19,15 +22,14 @@ logger = logging.getLogger(__name__)
 
 
 def aead_nonce_len(app_data_len: int) -> int:
-    """Calculate the nonce length for AEAD (Authenticated Encryption with Associated Data) encryption.
+    """Calculate the nonce length for AEAD encryption.
 
     The nonce length is determined based on the application data length. This is used during
-    the HAB (High Assurance Boot) encryption process.
+    the HAB (High Assurance Boot) encryption process. The implementation is based on the CST
+    (Code Signing Tool) algorithm.
 
-    :param app_data_len: Length of the application data in bytes
-    :return: Calculated nonce length in bytes
-
-    Note: The implementation is based on the CST (Code Signing Tool) algorithm
+    :param app_data_len: Length of the application data in bytes.
+    :return: Calculated nonce length in bytes.
     """
     if app_data_len < 0x10000:
         len_bytes = 2
@@ -41,11 +43,11 @@ def aead_nonce_len(app_data_len: int) -> int:
 def get_reset_vector(data: bytes) -> int:
     """Extract the application reset vector from the binary image.
 
-    The reset vector is stored at bytes 4-7 in little-endian format and
-    represents the address where execution begins after a reset.
+    The reset vector is stored at bytes 4-7 in little-endian format and represents the address
+    where execution begins after a reset.
 
-    :param data: Binary data containing the vector table
-    :return: The reset vector address as an integer
+    :param data: Binary data containing the vector table.
+    :return: The reset vector address as an integer.
     """
     return int.from_bytes(data[4:8], "little")
 
@@ -53,11 +55,11 @@ def get_reset_vector(data: bytes) -> int:
 def get_stack_pointer(data: bytes) -> int:
     """Extract the initial stack pointer value from the binary image.
 
-    The stack pointer is stored at bytes 0-3 in little-endian format and
-    represents the initial stack pointer value used by the application.
+    The stack pointer is stored at bytes 0-3 in little-endian format and represents the initial
+    stack pointer value used by the application.
 
-    :param data: Binary data containing the vector table
-    :return: The stack pointer address as an integer
+    :param data: Binary data containing the vector table.
+    :return: The stack pointer address as an integer.
     """
     return int.from_bytes(data[0:4], "little")
 
@@ -69,11 +71,10 @@ def get_entrypoint_address(config: Config) -> int:
     1. Use explicit entrypoint address from configuration if provided
     2. Use execution_start_address from the binary image if available
     3. Fall back to the reset vector from the binary image
-
     The function will log warnings if there are mismatches between different address sources.
 
-    :param config: Configuration object containing application settings and file paths
-    :return: The determined entrypoint address
+    :param config: Configuration object containing application settings and file paths.
+    :return: The determined entrypoint address.
     """
     options = config.get_config("options")
     entrypoint_address = options.get("entryPointAddress")
@@ -100,14 +101,13 @@ def get_entrypoint_address(config: Config) -> int:
 
 
 def get_ivt_offset_from_cfg(config: Config) -> int:
-    """Determine the IVT (Image Vector Table) offset.
+    """Determine the IVT (Image Vector Table) offset from configuration.
 
-    The IVT offset is either:
-    1. Explicitly provided in the configuration as 'ivtOffset'
-    2. Retrieved from the device database based on the family and boot device
+    The IVT offset is either explicitly provided in the configuration as 'ivtOffset'
+    or retrieved from the device database based on the family and boot device.
 
-    :param config: Configuration object containing device family and boot device information
-    :return: The IVT offset value in bytes
+    :param config: Configuration object containing device family and boot device information.
+    :return: The IVT offset value in bytes.
     """
     options = config.get_config("options")
     if "ivtOffset" in options:
@@ -127,8 +127,8 @@ def get_initial_load_size(config: Config) -> int:
     1. Explicitly provided in the configuration as 'initialLoadSize'
     2. Retrieved from the device database based on the family and boot device
 
-    :param config: Configuration object containing device family and boot device information
-    :return: The initial load size in bytes
+    :param config: Configuration object containing device family and boot device information.
+    :return: The initial load size in bytes.
     """
     options = config.get_config("options")
     if "initialLoadSize" in options:
@@ -146,20 +146,22 @@ def get_app_image(config: Config) -> BinaryImage:
     This function retrieves the input image file from the configuration
     and loads it as a BinaryImage object.
 
-    :param config: Configuration object containing HAB configuration
-    :return: Loaded BinaryImage object
+    :param config: Configuration object containing HAB configuration.
+    :return: Loaded BinaryImage object.
     """
     return BinaryImage.load_binary_image(config.get_input_file_name("inputImageFile"))
 
 
 def get_header_version(config: Config) -> int:
-    """Parse version from string to actual integer.
+    """Get header version from HAB configuration.
 
-    An example: "4.2" -> 0x42 -> 64
+    Parses the header version from string format to integer representation.
+    The version string is converted by removing dots and interpreting as hexadecimal.
+    Example: "4.2" -> 0x42 -> 66
 
-    :param config: Configuration object containing HAB configuration
+    :param config: Configuration object containing HAB configuration data.
     :raises SPSDKTypeError: Input version if wrong type.
-    :return: Version as int value
+    :return: Version as integer value.
     """
     version = config.get_config("sections/0/Header").get_str("Header_Version")
     if isinstance(version, str):

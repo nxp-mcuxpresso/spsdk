@@ -4,6 +4,9 @@
 
 .. _github_loc: https://github.com/NXPmicro/spsdk
 .. _pypi_loc: https://pypi.org/project/spsdk/
+.. _rblhost_github: https://github.com/nxp-mcuxpresso/rblhost
+.. _rblhost_crates: https://crates.io/crates/rblhost
+
 
 .. Start of SPSDK document
 
@@ -31,6 +34,14 @@ Delivery
 
 - `GitHub <github_loc_>`__
 - `PyPI <pypi_loc_>`__
+
+=======
+Rblhost
+======= 
+
+If you are interested in using the blhost tool, consider *rblhost* as a faster alternative. Implemented in Rust, *rblhost* offers similar functionality for interacting with MCU bootloader.
+
+For more information and usage examples, visit the rblhost tool on `GitHub <rblhost_github_>`__ or `Crates <rblhost_crates_>`__.
 
 ============
 Organization

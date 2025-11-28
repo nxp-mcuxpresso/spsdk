@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Console script for el2go."""
+"""SPSDK EdgeLock 2GO command-line interface.
+
+This module provides the main entry point and command structure for the
+EdgeLock 2GO application, enabling secure provisioning and device management
+functionality through a unified CLI interface.
+"""
 
 import copy
 import logging

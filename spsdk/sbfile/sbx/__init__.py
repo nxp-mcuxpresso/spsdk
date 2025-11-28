@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""SBx module of sbfile."""
+"""SPSDK SBx secure boot file format support.
+
+This module provides the SBx interface for secure boot file operations,
+exposing commands and constants from the SB31 implementation for backward
+compatibility and unified access.
+"""
 
 from spsdk.sbfile.sb31.commands import (
     CmdErase,

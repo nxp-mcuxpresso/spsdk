@@ -2,11 +2,16 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Various types of memory identifiers used in the MBoot module."""
+"""SPSDK MBoot memory management and identification utilities.
+
+This module provides comprehensive memory handling functionality for the MBoot protocol,
+including memory region definitions, memory identifiers, and property management for
+different types of memory devices such as RAM, Flash, and external memory.
+"""
 
 from typing import Optional, cast
 
@@ -33,24 +38,37 @@ LEGACY_MEM_ID = {
 # McuBoot External Memory ID
 ########################################################################################################################
 class MemIdEnum(SpsdkEnum):
-    """McuBoot Memory Base class."""
+    """McuBoot Memory Identifier Enumeration.
+
+    This enumeration class manages memory identifiers for McuBoot operations,
+    providing conversion utilities between legacy and current memory ID formats.
+    The class supports bidirectional mapping between string and integer
+    representations of memory identifiers.
+    """
 
     @classmethod
     def get_legacy_str(cls, key: str) -> Optional[int]:
-        """Converts legacy str to new enum key.
+        """Convert legacy string identifier to corresponding memory tag value.
 
-        :param key: str value of legacy enum
-        :return: new enum value
+        This method looks up a legacy memory identifier string in the conversion table
+        and returns the corresponding new enum tag value if found.
+
+        :param key: Legacy memory identifier string to convert
+        :return: Memory tag value as integer if conversion successful, None if key not found
         """
         new_key = LEGACY_MEM_ID.get(key)
         return cast(int, cls.get_tag(new_key)) if new_key else None
 
     @classmethod
     def get_legacy_int(cls, key: int) -> Optional[str]:
-        """Converts legacy int to new enum key.
+        """Convert legacy integer memory ID to corresponding enum key string.
 
-        :param key: int value of legacy enum
-        :return: new enum value
+        This method takes a legacy integer memory identifier and converts it to the
+        corresponding string key used in the new enum system by looking up the mapping
+        in LEGACY_MEM_ID dictionary.
+
+        :param key: Legacy integer memory identifier to convert.
+        :return: String key corresponding to the legacy memory ID, or None if not found.
         """
         if isinstance(key, int):
             new_value = cls.from_tag(key)
@@ -61,7 +79,13 @@ class MemIdEnum(SpsdkEnum):
 
 
 class ExtMemId(MemIdEnum):
-    """McuBoot External Memory Property Tags."""
+    """McuBoot External Memory Property Tags.
+
+    Enumeration of external memory identifiers used by McuBoot for memory property
+    operations and configuration. Each memory type is defined with a unique ID,
+    short name, and descriptive name for various external memory interfaces
+    including SPI, SEMC, Flash, NAND, and card-based storage systems.
+    """
 
     QUAD_SPI0 = (1, "QSPI", "Quad SPI Memory 0")
     IFR = (4, "IFR0", "Nonvolatile information register 0 (only used by SB loader)")
@@ -80,7 +104,12 @@ class ExtMemId(MemIdEnum):
 
 
 class MemId(MemIdEnum):
-    """McuBoot Internal/External Memory Property Tags."""
+    """McuBoot Memory Identifier Enumeration.
+
+    This enumeration defines memory property tags used by McuBoot for identifying and accessing
+    different types of internal and external memory devices including Flash, RAM, QSPI, SEMC,
+    and various storage interfaces.
+    """
 
     INTERNAL_MEMORY = (0, "RAM/FLASH", "Internal RAM/FLASH (Used for the PRINCE configuration)")
     QUAD_SPI0 = (1, "QSPI", "Quad SPI Memory 0")
@@ -104,7 +133,12 @@ class MemId(MemIdEnum):
 
 
 class ExtMemPropTags(SpsdkEnum):
-    """McuBoot External Memory Property Tags."""
+    """McuBoot External Memory Property Tags.
+
+    Enumeration defining property tags used to identify and configure external memory
+    characteristics in McuBoot operations. These tags specify memory attributes such as
+    initialization status, addressing, and block organization parameters.
+    """
 
     INIT_STATUS = (0x00000000, "INIT_STATUS")
     START_ADDRESS = (0x00000001, "START_ADDRESS")
@@ -115,80 +149,133 @@ class ExtMemPropTags(SpsdkEnum):
 
 
 class MemoryRegion:
-    """Base class for memory regions."""
+    """Memory region representation for MCU memory management.
+
+    This class represents a contiguous memory region with defined start and end
+    addresses, providing basic memory region operations and formatting for
+    SPSDK memory management operations.
+    """
 
     def __init__(self, start: int, end: int) -> None:
         """Initialize the memory region object.
 
-        :param start: start address of region
-        :param end: end address of region
-
+        :param start: Start address of region.
+        :param end: End address of region.
         """
         self.start = start
         self.end = end
         self.size = end - start + 1
 
     def __repr__(self) -> str:
+        """Return string representation of the memory region.
+
+        :return: String containing the memory region start address in hexadecimal format.
+        """
         return f"Memory region, start: {hex(self.start)}"
 
     def __str__(self) -> str:
+        """Return string representation of memory region.
+
+        Provides a formatted string showing the start address, end address, and total size
+        of the memory region in a human-readable format.
+
+        :return: Formatted string with memory region details including addresses and size.
+        """
         return f"0x{self.start:08X} - 0x{self.end:08X}; Total Size: {size_fmt(self.size)}"
 
 
 class RamRegion(MemoryRegion):
-    """RAM memory regions."""
+    """RAM memory region representation for SPSDK memory operations.
+
+    This class represents a specific RAM memory region with indexed identification,
+    extending the base MemoryRegion functionality to provide RAM-specific memory
+    management capabilities for bootloader operations.
+    """
 
     def __init__(self, index: int, start: int, size: int) -> None:
         """Initialize the RAM memory region object.
 
-        :param index: number of region
-        :param start: start address of region
-        :param size: size of region
-
+        :param index: Number of region.
+        :param start: Start address of region.
+        :param size: Size of region in bytes.
         """
         super().__init__(start, start + size - 1)
         self.index = index
 
     def __repr__(self) -> str:
+        """Return string representation of RAM memory region.
+
+        :return: String containing memory region type and start address in hexadecimal format.
+        """
         return f"RAM Memory region, start: {hex(self.start)}"
 
     def __str__(self) -> str:
+        """Return string representation of the memory region.
+
+        Provides a formatted string that includes the region index and inherits
+        the string representation from the parent class.
+
+        :return: Formatted string with region index and parent string representation.
+        """
         return f"Region {self.index}: {super().__str__()}"
 
 
 class FlashRegion(MemoryRegion):
-    """Flash memory regions."""
+    """Flash memory region representation for SPSDK memory operations.
+
+    This class extends MemoryRegion to provide flash-specific functionality including
+    sector size management and region indexing for flash memory operations.
+    """
 
     def __init__(self, index: int, start: int, size: int, sector_size: int) -> None:
         """Initialize the Flash memory region object.
 
-        :param index: number of region
-        :param start: start address of region
-        :param size: size of region
-        :param sector_size: size of sector
-
+        :param index: Number of the memory region.
+        :param start: Start address of the memory region.
+        :param size: Size of the memory region in bytes.
+        :param sector_size: Size of the sector in bytes.
         """
         super().__init__(start, start + size - 1)
         self.index = index
         self.sector_size = sector_size
 
     def __repr__(self) -> str:
+        """Return string representation of Flash Memory region.
+
+        :return: String containing the flash memory region start address in hexadecimal format.
+        """
         return f"Flash Memory region, start: {hex(self.start)}"
 
     def __str__(self) -> str:
+        """Return string representation of the memory region.
+
+        Provides a formatted string containing the region index, base class information,
+        and sector size in human-readable format.
+
+        :return: Formatted string with region details including index and sector size.
+        """
         msg = f"Region {self.index}: {super().__str__()} Sector size: {size_fmt(self.sector_size)}"
         return msg
 
 
 class ExtMemRegion(MemoryRegion):
-    """External memory regions."""
+    """External memory region representation for SPSDK memory operations.
+
+    This class represents and manages external memory regions with their properties
+    including start address, size information, and block characteristics. It parses
+    raw memory property values and provides formatted access to external memory
+    configuration data.
+    """
 
     def __init__(self, mem_id: int, raw_values: Optional[list[int]] = None) -> None:
         """Initialize the external memory region object.
 
-        :param mem_id: ID of the external memory
-        :param raw_values: List of integers representing the property
+        Parses raw property values to extract memory characteristics like start address,
+        total size, page size, sector size, and block size based on property tags.
 
+        :param mem_id: ID of the external memory
+        :param raw_values: List of integers representing the memory properties, where first
+            element contains property tags and subsequent elements contain corresponding values
         """
         self.mem_id = mem_id
         if not raw_values:
@@ -208,15 +295,34 @@ class ExtMemRegion(MemoryRegion):
 
     @property
     def name(self) -> str:
-        """Get the name of external memory for given memory ID."""
+        """Get the name of external memory for given memory ID.
+
+        :return: Name of the external memory as a string label.
+        """
         return ExtMemId.get_label(self.mem_id)
 
     def __repr__(self) -> str:
+        """Return string representation of the external memory region.
+
+        Provides a human-readable string describing the external memory region configuration,
+        including its name and start address, or indicates if not configured.
+
+        :return: String representation showing region name and start address, or "Not Configured"
+                 if no value is set.
+        """
         if not self.value:
             return "Not Configured"
         return f"EXT Memory region, name: {self.name}, start: {hex(self.start)}"
 
     def __str__(self) -> str:
+        """Return string representation of memory configuration.
+
+        Provides a formatted string containing memory configuration details including
+        start address, sizes, and page/sector information. Returns "Not Configured"
+        if the memory is not properly configured.
+
+        :return: Formatted string with memory configuration details or "Not Configured".
+        """
         if not self.value:
             return "Not Configured"
         info = f"Start Address = 0x{self.start_address:08X}  "

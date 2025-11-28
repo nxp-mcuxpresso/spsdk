@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module for handling Certificate block."""
+"""SPSDK Certificate Block management and processing utilities.
+
+This module provides comprehensive functionality for handling various types of
+certificate blocks used in NXP secure boot and authentication processes.
+It supports multiple certificate block versions and formats including V1, V2.1,
+Vx, and AHAB certificate blocks with their respective headers and structures.
+"""
 
 import logging
 import os
@@ -28,12 +34,13 @@ from spsdk.exceptions import (
     SPSDKUnsupportedOperation,
     SPSDKValueError,
 )
+from spsdk.image.ahab.ahab_certificate import AhabCertificate, get_ahab_certificate_class
 from spsdk.image.cert_block.rkht import RKHTv1, RKHTv21
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
-from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
+from spsdk.utils.family import FamilyRevision, get_db, get_families, update_validation_schema_family
 from spsdk.utils.misc import (
     Endianness,
     align,
@@ -51,20 +58,35 @@ logger = logging.getLogger(__name__)
 
 
 class CertBlock(FeatureBaseClass):
-    """Common general class for various CertBlocks."""
+    """Certificate Block base class for secure boot authentication.
+
+    This class provides a unified interface for managing different versions of
+    certificate blocks used in NXP MCU secure boot processes. It handles
+    certificate validation, root key management, and family-specific
+    implementations across the SPSDK-supported device portfolio.
+
+    :cvar FEATURE: Database manager feature identifier for certificate blocks.
+    """
 
     FEATURE = DatabaseManager.CERT_BLOCK
 
     def __init__(self, family: FamilyRevision) -> None:
-        """Base constructor of certificate block."""
+        """Initialize certificate block with family revision.
+
+        :param family: Family revision specification for the certificate block.
+        """
         self.family = family
 
     @classmethod
     def get_cert_block_class(cls, family: FamilyRevision) -> Type["CertBlock"]:
         """Get certification block class by family name.
 
-        :param family: Chip family
-        :raises SPSDKError: No certification block class found for given family
+        Retrieves the appropriate certification block class that supports the specified
+        chip family from all available certification block classes.
+
+        :param family: Chip family to find certification block class for.
+        :raises SPSDKError: No certification block class found for given family.
+        :return: Certification block class that supports the specified family.
         """
         for cert_block_class in cls.get_cert_block_classes():
             if family in cert_block_class.get_supported_families():
@@ -73,10 +95,14 @@ class CertBlock(FeatureBaseClass):
 
     @classmethod
     def get_validation_schemas_from_cfg(cls, config: Config) -> list[dict[str, Any]]:
-        """Get validation schema based on configuration.
+        """Get validation schemas based on configuration.
 
-        :param config: Valid configuration
-        :return: Validation schemas
+        This method validates the provided configuration against basic schemas, extracts
+        the family information, and returns the appropriate validation schemas for the
+        specific certificate block class.
+
+        :param config: Valid configuration object containing family and other settings.
+        :return: List of validation schema dictionaries for the certificate block.
         """
         config.check(cls.get_validation_schemas_basic())
         family = FamilyRevision.load_from_config(config)
@@ -84,29 +110,50 @@ class CertBlock(FeatureBaseClass):
 
     @classmethod
     def get_all_supported_families(cls) -> list[FamilyRevision]:
-        """Get supported families for all certification blocks."""
+        """Get supported families for all certification blocks.
+
+        This class method aggregates and returns all supported family revisions
+        from all available certification block types in the SPSDK library.
+
+        :return: List of all supported family revisions across all cert block types.
+        """
         return (
             CertBlockV1.get_supported_families()
             + CertBlockV21.get_supported_families()
             + CertBlockVx.get_supported_families()
+            + CertBlockAhab.get_supported_families()
         )
 
     @classmethod
     def get_cert_block_classes(cls) -> list[Type["CertBlock"]]:
-        """Get list of all cert block classes."""
+        """Get list of all certificate block classes.
+
+        This method returns all subclasses of CertBlock that are currently loaded
+        in the system.
+
+        :return: List of all certificate block class types.
+        """
         return CertBlock.__subclasses__()
 
     @property
     def rkth(self) -> bytes:
-        """Root Key Table Hash 32-byte hash (SHA-256) of SHA-256 hashes of up to four root public keys."""
+        """Get Root Key Table Hash.
+
+        Returns a 32-byte hash (SHA-256) of SHA-256 hashes of up to four root public keys.
+
+        :return: Root Key Table Hash as bytes.
+        """
         return bytes()
 
     @classmethod
     def find_main_cert_index(cls, config: Config) -> Optional[int]:
-        """Go through all certificates and find the index matching to private key.
+        """Find the index of the main certificate that matches the private key.
 
-        :param config: Configuration to be searched.
-        :return: List of root certificates.
+        Searches through all root certificates in the configuration to find the one
+        whose public key corresponds to the configured signature provider's private key.
+
+        :param config: Configuration object containing certificate and signature provider settings.
+        :return: Index of the matching certificate, or None if no match is found.
         """
         try:
             signature_provider = get_signature_provider(config)
@@ -132,8 +179,12 @@ class CertBlock(FeatureBaseClass):
     def get_main_cert_index(cls, config: Config) -> int:
         """Gets main certificate index from configuration.
 
-        :param config: Input standard configuration.
-        :return: Certificate index
+        The method retrieves the main root certificate ID from the configuration and validates
+        it against the found certificate index. If no root certificate ID is specified in
+        the configuration, it attempts to find one automatically.
+
+        :param config: Input standard configuration containing certificate settings.
+        :return: Certificate index of the main certificate.
         :raises SPSDKError: If invalid configuration is provided.
         :raises SPSDKError: If correct certificate could not be identified.
         :raises SPSDKValueError: If certificate is not of correct type.
@@ -163,7 +214,8 @@ class CertBlock(FeatureBaseClass):
     def get_root_public_key(self) -> PublicKey:
         """Get the root public key from the certificate block.
 
-        :raises SPSDKNotImplementedError: When called on the base class (this method must be implemented by subclasses)
+        :raises SPSDKNotImplementedError: When called on the base class (this method must be
+            implemented by subclasses).
         """
         raise SPSDKNotImplementedError()
 
@@ -172,19 +224,28 @@ class CertBlock(FeatureBaseClass):
 # Certificate Block Header Class
 ########################################################################################################################
 class CertBlockHeader(BaseClass):
-    """Certificate block header."""
+    """Certificate block header for SPSDK image processing.
+
+    This class represents the header structure of a certificate block used in secure
+    boot images. It manages certificate block metadata including version information,
+    flags, build numbers, and certificate table properties.
+
+    :cvar FORMAT: Binary format string for header serialization.
+    :cvar SIZE: Size of the header in bytes.
+    :cvar SIGNATURE: Binary signature identifying certificate blocks.
+    """
 
     FORMAT = "<4s2H6I"
     SIZE = calcsize(FORMAT)
     SIGNATURE = b"cert"
 
     def __init__(self, version: str = "1.0", flags: int = 0, build_number: int = 0) -> None:
-        """Constructor.
+        """Initialize certificate block header.
 
-        :param version: Version of the certificate in format n.n
-        :param flags: Flags for the Certificate Header
-        :param build_number: of the certificate
-        :raises SPSDKError: When there is invalid version
+        :param version: Version of the certificate in format n.n (e.g., "1.0").
+        :param flags: Flags for the Certificate Header.
+        :param build_number: Build number of the certificate.
+        :raises SPSDKError: When there is invalid version format.
         """
         if not re.match(r"[0-9]+\.[0-9]+", version):  # check format of the version: N.N
             raise SPSDKError("Invalid version")
@@ -196,12 +257,27 @@ class CertBlockHeader(BaseClass):
         self.cert_table_length = 0
 
     def __repr__(self) -> str:
+        """Return string representation of CertBlockHeader.
+
+        Provides a formatted string containing the certificate block header information
+        including version, flags, build number, image length, certificate count, and
+        certificate table length.
+
+        :return: Formatted string with header information.
+        """
         nfo = f"CertBlockHeader: V={self.version}, F={self.flags}, BN={self.build_number}, IL={self.image_length}, "
         nfo += f"CC={self.cert_count}, CTL={self.cert_table_length}"
         return nfo
 
     def __str__(self) -> str:
-        """Info of the certificate header in text form."""
+        """Get string representation of the certificate header.
+
+        Returns formatted text containing certificate block information including
+        version, flags, build number, image length, certificate count, and
+        certificate table length.
+
+        :return: Formatted string with certificate header information.
+        """
         nfo = str()
         nfo += f" CB Version:           {self.version}\n"
         nfo += f" CB Flags:             {self.flags}\n"
@@ -212,7 +288,13 @@ class CertBlockHeader(BaseClass):
         return nfo
 
     def export(self) -> bytes:
-        """Certificate block in binary form."""
+        """Export certificate block to binary format.
+
+        Converts the certificate block structure into its binary representation using
+        the defined format with signature, version, size, flags, and certificate information.
+
+        :return: Certificate block data in binary format.
+        """
         major_version, minor_version = [int(v) for v in self.version.split(".")]
         return pack(
             self.FORMAT,
@@ -229,9 +311,12 @@ class CertBlockHeader(BaseClass):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Parse object from bytes array.
+        """Parse Certificate Header object from bytes array.
 
-        :param data: Input data as bytes
+        The method validates the input data size and signature, then unpacks the binary
+        data to create a Certificate Header instance with proper version formatting.
+
+        :param data: Input data as bytes containing the certificate header
         :return: Certificate Header instance
         :raises SPSDKError: Unexpected size or signature of data
         """
@@ -267,9 +352,14 @@ class CertBlockHeader(BaseClass):
 # Certificate Block Class
 ########################################################################################################################
 class CertBlockV1(CertBlock):
-    """Certificate block.
+    """Certificate block version 1 implementation.
 
-    Shared for SB file 2.1 and for MasterBootImage using RSA keys.
+    This class represents a certificate block used in SB file 2.1 and MasterBootImage
+    operations with RSA keys. It manages certificate chains, root key hashes, and
+    provides functionality for signature verification and key management.
+
+    :cvar SUB_FEATURE: Feature identifier for certificate block version 1.
+    :cvar DEFAULT_ALIGNMENT: Default size alignment value in bytes.
     """
 
     SUB_FEATURE = "based_on_cert1"
@@ -279,24 +369,42 @@ class CertBlockV1(CertBlock):
 
     @property
     def header(self) -> CertBlockHeader:
-        """Certificate block header."""
+        """Get the certificate block header.
+
+        :return: Certificate block header instance.
+        """
         return self._header
 
     @property
     def rkh(self) -> list[bytes]:
-        """List of root keys hashes (SHA-256), each hash as 32 bytes."""
+        """Get list of root keys hashes.
+
+        Returns SHA-256 hashes of root keys from the root key hash table.
+
+        :return: List of root key hashes, each hash as 32 bytes.
+        """
         return self._rkht.rkh_list
 
     @property
     def rkth(self) -> bytes:
-        """Root Key Table Hash 32-byte hash (SHA-256) of SHA-256 hashes of up to four root public keys."""
+        """Get Root Key Table Hash.
+
+        Returns a 32-byte SHA-256 hash of SHA-256 hashes of up to four root public keys
+        from the Root Key Hash Table.
+
+        :return: 32-byte hash as bytes.
+        """
         return self._rkht.rkth()
 
     @property
     def rkth_fuses(self) -> list[int]:
-        """List of RKHT fuses, ordered from highest bit to lowest.
+        """Get list of RKHT fuses ordered from highest bit to lowest.
 
-        Note: Returned values are in format that should be passed for blhost
+        The method processes the RKHT (Root Key Table Hash) data by splitting it into 4-byte chunks
+        and converting each chunk to an integer using little-endian byte order. The returned values
+        are formatted for use with blhost tool.
+
+        :return: List of RKHT fuse values as integers.
         """
         result = []
         rkht = self.rkth
@@ -310,20 +418,35 @@ class CertBlockV1(CertBlock):
     def certificates(self) -> list[Certificate]:
         """List of certificates in header.
 
-        First certificate is root certificate and followed by optional chain certificates
+        First certificate is root certificate and followed by optional chain certificates.
+
+        :return: List of Certificate objects, with root certificate first followed by chain certificates.
         """
         return self._cert
 
     @property
     def signature_size(self) -> int:
-        """Size of the signature in bytes."""
+        """Get the size of the signature in bytes.
+
+        Returns the size of the first certificate's signature, which is used as the
+        reference since the certificate is self-signed.
+
+        :return: Size of the signature in bytes.
+        """
         return len(
             self.certificates[0].signature
         )  # The certificate is self signed, return size of its signature
 
     @property
     def rkh_index(self) -> Optional[int]:
-        """Index of the Root Key Hash that matches the certificate; None if does not match."""
+        """Get the index of Root Key Hash that matches the certificate.
+
+        The method searches through the available Root Key Hashes to find a match with the
+        certificate's root public key hash. Returns None if no match is found or if no
+        certificate is available.
+
+        :return: Index of matching Root Key Hash, or None if no match found.
+        """
         if self._cert:
             rkh = self.get_root_public_key().key_hash()
             for index, value in enumerate(self.rkh):
@@ -333,15 +456,24 @@ class CertBlockV1(CertBlock):
 
     @property
     def alignment(self) -> int:
-        """Alignment of the binary output, by default it is DEFAULT_ALIGNMENT but can be customized."""
+        """Get alignment of the binary output.
+
+        The method returns the alignment value for binary output formatting.
+        By default it uses DEFAULT_ALIGNMENT but can be customized.
+
+        :return: Alignment value in bytes.
+        """
         return self._alignment
 
     @alignment.setter
     def alignment(self, value: int) -> None:
-        """Setter.
+        """Set the alignment value for the certificate block.
 
-        :param value: new alignment
-        :raises SPSDKError: When there is invalid alignment
+        The alignment must be a positive integer value that determines how the
+        certificate block data should be aligned in memory.
+
+        :param value: The alignment value in bytes, must be greater than 0.
+        :raises SPSDKError: When the alignment value is invalid (less than or equal to 0).
         """
         if value <= 0:
             raise SPSDKError("Invalid alignment")
@@ -349,7 +481,14 @@ class CertBlockV1(CertBlock):
 
     @property
     def raw_size(self) -> int:
-        """Aligned size of the certificate block."""
+        """Calculate the aligned size of the certificate block in bytes.
+
+        The method computes the total size by adding the certificate block header size,
+        certificate table length, and Root Key Hash Table (RKHT) size, then aligns
+        the result to the specified alignment boundary.
+
+        :return: Total aligned size of the certificate block in bytes.
+        """
         size = CertBlockHeader.SIZE
         size += self._header.cert_table_length
         size += self._rkht.RKH_SIZE * self._rkht.RKHT_SIZE
@@ -357,20 +496,28 @@ class CertBlockV1(CertBlock):
 
     @property
     def expected_size(self) -> int:
-        """Expected size of binary block."""
+        """Get expected size of binary block.
+
+        :return: Expected size of the binary block in bytes.
+        """
         return self.raw_size
 
     @property
     def image_length(self) -> int:
-        """Image length in bytes."""
+        """Get image length in bytes.
+
+        :return: Image length in bytes from the certificate block header.
+        """
         return self._header.image_length
 
     @image_length.setter
     def image_length(self, value: int) -> None:
-        """Setter.
+        """Set the image length value.
 
-        :param value: new image length
-        :raises SPSDKError: When there is invalid image length
+        Validates that the provided image length is positive before setting it in the header.
+
+        :param value: New image length in bytes, must be greater than 0
+        :raises SPSDKError: When the image length is invalid (zero or negative)
         """
         if value <= 0:
             raise SPSDKError("Invalid image length")
@@ -379,12 +526,12 @@ class CertBlockV1(CertBlock):
     def __init__(
         self, family: FamilyRevision, version: str = "1.0", flags: int = 0, build_number: int = 0
     ) -> None:
-        """Constructor.
+        """Initialize certificate block with specified parameters.
 
-        :param family: Chip family information
-        :param version: of the certificate in format n.n
-        :param flags: Flags for the Certificate Block Header
-        :param build_number: of the certificate
+        :param family: Chip family and revision information for target device.
+        :param version: Certificate version string in format "major.minor" (default "1.0").
+        :param flags: Configuration flags for the Certificate Block Header (default 0).
+        :param build_number: Build number identifier for the certificate (default 0).
         """
         super().__init__(family)
         self._header = CertBlockHeader(version, flags, build_number)
@@ -393,18 +540,22 @@ class CertBlockV1(CertBlock):
         self._alignment = self.DEFAULT_ALIGNMENT
 
     def __len__(self) -> int:
+        """Get the length of the certificate.
+
+        :return: Number of bytes in the certificate.
+        """
         return len(self._cert)
 
     def set_root_key_hash(self, index: int, key_hash: Union[bytes, bytearray, Certificate]) -> None:
-        """Add Root Key Hash into RKHT.
+        """Set root key hash into RKHT at specified index.
 
-        Note: Multiple root public keys are supported to allow for key revocation.
+        Multiple root public keys are supported to allow for key revocation.
 
-        :param index: The index of Root Key Hash in the table
-        :param key_hash: The Root Key Hash value (32 bytes, SHA-256);
-                        or Certificate where the hash can be created from public key
-        :raises SPSDKError: When there is invalid index of root key hash in the table
-        :raises SPSDKError: When there is invalid length of key hash
+        :param index: The index of Root Key Hash in the table.
+        :param key_hash: The Root Key Hash value (32 bytes, SHA-256) or Certificate where the hash
+            can be created from public key.
+        :raises SPSDKError: When there is invalid index of root key hash in the table.
+        :raises SPSDKError: When there is invalid length of key hash.
         """
         if isinstance(key_hash, Certificate):
             key_hash = get_hash(key_hash.get_public_key().export())
@@ -414,12 +565,15 @@ class CertBlockV1(CertBlock):
         self._rkht.set_rkh(index, bytes(key_hash))
 
     def add_certificate(self, cert: Union[bytes, Certificate]) -> None:
-        """Add certificate.
+        """Add certificate to the certificate block.
 
         First call adds root certificate. Additional calls add chain certificates.
+        The root certificate must be self-signed and all chain certificates must be
+        verifiable using their parent certificate's public key.
 
-        :param cert: The certificate itself in DER format
-        :raises SPSDKError: If certificate cannot be added
+        :param cert: Certificate in DER format (bytes) or Certificate object
+        :raises SPSDKError: If certificate cannot be added due to invalid type,
+            unsupported version, verification failure, or root certificate not self-signed
         """
         if isinstance(cert, bytes):
             cert_obj = Certificate.parse(cert)
@@ -441,10 +595,23 @@ class CertBlockV1(CertBlock):
         self._header.cert_table_length += cert_obj.raw_size + 4
 
     def __repr__(self) -> str:
+        """Get string representation of the certificate block.
+
+        Returns the string representation of the certificate block header.
+
+        :return: String representation of the header object.
+        """
         return str(self._header)
 
     def __str__(self) -> str:
-        """Text info about certificate block."""
+        """Get string representation of the certificate block.
+
+        Provides detailed information about the certificate block including header details,
+        public root keys hash (RKH) with indication of which key is used, RKTH hash and
+        corresponding fuse values, and all certificates in the block.
+
+        :return: Formatted string containing comprehensive certificate block information.
+        """
         nfo = str(self.header)
         nfo += " Public Root Keys Hash e.g. RKH (SHA256):\n"
         rkh_index = self.rkh_index
@@ -463,11 +630,14 @@ class CertBlockV1(CertBlock):
         return nfo
 
     def verify_data(self, signature: bytes, data: bytes) -> bool:
-        """Signature verification.
+        """Verify signature against signed data using certificate.
 
-        :param signature: to be verified
-        :param data: that has been signed
-        :return: True if the data signature can be confirmed using the certificate; False otherwise
+        The method uses the public key from the last certificate in the chain to verify
+        that the provided signature matches the given data.
+
+        :param signature: Signature bytes to be verified.
+        :param data: Original data that has been signed.
+        :return: True if the data signature can be confirmed using the certificate; False otherwise.
         """
         cert = self._cert[-1]
         pub_key = cert.get_public_key()
@@ -476,15 +646,27 @@ class CertBlockV1(CertBlock):
     def verify_private_key(self, private_key: PrivateKeyRsa) -> bool:
         """Verify that given private key matches the public certificate.
 
-        :param private_key: to be tested
-        :return: True if yes; False otherwise
+        The method compares the private key against the public key from the last certificate
+        in the certificate chain to ensure they form a valid key pair.
+
+        :param private_key: Private RSA key to be verified against the certificate.
+        :return: True if the private key matches the public certificate; False otherwise.
         """
         cert = self.certificates[-1]  # last certificate
         pub_key = cert.get_public_key()
         return private_key.verify_public_key(pub_key)
 
     def export(self) -> bytes:
-        """Export Certificate Block V1 object."""
+        """Export Certificate Block V1 object to binary format.
+
+        Validates the certificate chain structure and exports the complete certificate block
+        including header, certificates, and root key hash table (RKHT). The method ensures
+        proper certificate chain validation and alignment requirements.
+
+        :raises SPSDKError: If no certificates are present, root key hash index is missing,
+            certificate chain structure is invalid, or exported data length is incorrect.
+        :return: Binary representation of the Certificate Block V1.
+        """
         # At least one certificate must be used
         if not self._cert:
             raise SPSDKError("At least one certificate must be used")
@@ -510,10 +692,13 @@ class CertBlockV1(CertBlock):
 
     @classmethod
     def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
-        """Parse CertBlockV1 from binary file.
+        """Parse CertBlockV1 from binary data.
 
-        :param data: Binary data
-        :param family: The MCU family
+        Parses the binary data to create a CertBlockV1 instance by extracting the header,
+        certificates, and root key hash table from the provided data.
+
+        :param data: Binary data containing the certificate block
+        :param family: The MCU family revision for the certificate block
         :return: Certificate Block instance
         :raises SPSDKError: Length of the data doesn't match Certificate Block length
         """
@@ -538,9 +723,14 @@ class CertBlockV1(CertBlock):
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Create the list of validation schemas.
+        """Create the list of validation schemas for certificate blocks.
 
-        :return: List of validation schemas.
+        The method retrieves and configures validation schemas including family-specific
+        schemas, certificate schemas, and output schemas. It updates the family schema
+        with supported families and current family information.
+
+        :param family: Target family and revision for schema validation.
+        :return: List of validation schemas including family, certificate, root keys, and output schemas.
         """
         sch_cfg = get_schema_file(DatabaseManager.CERT_BLOCK)
         sch_family = get_schema_file("general")["family"]
@@ -558,9 +748,14 @@ class CertBlockV1(CertBlock):
     def load_from_config(cls, config: Config) -> Self:
         """Creates an instance of CertBlockV1 from configuration.
 
-        :param config: Input standard configuration.
-        :return: Instance of CertBlockV1
-        :raises SPSDKError: Invalid certificates detected, Invalid configuration.
+        The method supports loading from binary file or creating from certificate configuration.
+        It processes root certificates, certificate chains, and validates the configuration
+        to build a complete certificate block structure.
+
+        :param config: Input standard configuration containing certificate paths and settings.
+        :return: Instance of CertBlockV1 with loaded certificates and configuration.
+        :raises SPSDKError: Invalid certificates detected, invalid configuration, or missing
+            required root certificate files.
         """
         if "certBlock" in config:
             family = FamilyRevision.load_from_config(config)
@@ -621,11 +816,25 @@ class CertBlockV1(CertBlock):
     def get_config(self, data_path: str = "./") -> Config:
         """Create configuration of Certificate V2 from object.
 
-        :param data_path: Output folder to store possible files.
-        :return: Configuration dictionary.
+        Generates a configuration dictionary containing certificate file references and metadata.
+        The method extracts certificate data from the current object and saves individual
+        certificates to files in the specified directory.
+
+        :param data_path: Output folder path to store certificate files.
+        :raises SPSDKError: When index of used certificate is not defined.
+        :return: Configuration dictionary with certificate file paths and metadata.
         """
 
         def create_certificate_cfg(root_id: int, chain_id: int) -> Optional[str]:
+            """Create certificate configuration file and return its filename.
+
+            Saves the certificate at the specified chain depth to a DER file in the data path
+            and returns the generated filename for configuration purposes.
+
+            :param root_id: Root certificate identifier used in filename generation.
+            :param chain_id: Chain depth index of the certificate to save.
+            :return: Generated filename if certificate exists at chain_id, None otherwise.
+            """
             if len(self._cert) <= chain_id:
                 return None
 
@@ -651,7 +860,10 @@ class CertBlockV1(CertBlock):
     def get_root_public_key(self) -> PublicKey:
         """Get the root public key from the certificate block.
 
-        :return: Public key object
+        The method extracts the public key from the first certificate in the certificate chain,
+        which represents the root certificate.
+
+        :return: Root certificate public key object.
         """
         return self._cert[0].get_public_key()
 
@@ -662,7 +874,15 @@ class CertBlockV1(CertBlock):
 
 
 def convert_to_ecc_key(key: Union[PublicKeyEcc, bytes]) -> PublicKeyEcc:
-    """Convert key into EccKey instance."""
+    """Convert key into ECC key instance.
+
+    Converts various key formats (bytes or existing ECC key) into a standardized
+    PublicKeyEcc instance for consistent handling within the certificate block.
+
+    :param key: Input key data as either existing ECC key instance or raw bytes.
+    :raises SPSDKError: When the provided key is not an ECC key type.
+    :return: Standardized ECC public key instance.
+    """
     if isinstance(key, PublicKeyEcc):
         return key
     try:
@@ -677,22 +897,41 @@ def convert_to_ecc_key(key: Union[PublicKeyEcc, bytes]) -> PublicKeyEcc:
 
 
 class CertificateBlockHeader(BaseClass):
-    """Create Certificate block header."""
+    """Certificate block header for SPSDK image processing.
+
+    This class represents the header structure of certificate blocks used in secure boot
+    images. It handles the binary format, version information, and size management for
+    certificate block headers in NXP MCU secure provisioning.
+
+    :cvar FORMAT: Binary format string for header structure.
+    :cvar SIZE: Size of the header in bytes.
+    :cvar MAGIC: Magic bytes identifier for certificate block headers.
+    """
 
     FORMAT = "<4s2HL"
     SIZE = calcsize(FORMAT)
     MAGIC = b"chdr"
 
     def __init__(self, format_version: str = "2.1") -> None:
-        """Constructor for Certificate block header version 2.1.
+        """Initialize Certificate block header.
 
-        :param format_version: Major = 2, minor = 1
+        Creates a new certificate block header with specified format version.
+        The header manages certificate block metadata including size and version information.
+
+        :param format_version: Certificate block format version in "major.minor" format, defaults to "2.1"
         """
         self.format_version = format_version
         self.cert_block_size = 0
 
     def export(self) -> bytes:
-        """Export Certificate block header as bytes array."""
+        """Export Certificate block header as bytes array.
+
+        Converts the certificate block header into a binary format by packing
+        the magic number, format version components, and block size according
+        to the defined FORMAT structure.
+
+        :return: Binary representation of the certificate block header.
+        """
         major_format_version, minor_format_version = [
             int(v) for v in self.format_version.split(".")
         ]
@@ -709,10 +948,10 @@ class CertificateBlockHeader(BaseClass):
     def parse(cls, data: bytes) -> Self:
         """Parse Certificate block header from bytes array.
 
-        :param data: Input data as bytes
-        :raises SPSDKError: Raised when SIZE is bigger than length of the data without offset
-        :raises SPSDKError: Raised when magic is not equal MAGIC
-        :return: CertificateBlockHeader
+        :param data: Input data as bytes array to be parsed.
+        :raises SPSDKError: Raised when SIZE is bigger than length of the data.
+        :raises SPSDKError: Raised when magic number doesn't match expected MAGIC value.
+        :return: CertificateBlockHeader instance with parsed data.
         """
         if cls.SIZE > len(data):
             raise SPSDKError("SIZE is bigger than length of the data without offset")
@@ -731,35 +970,67 @@ class CertificateBlockHeader(BaseClass):
         return obj
 
     def __len__(self) -> int:
-        """Length of the Certificate block header."""
+        """Get the length of the Certificate block header.
+
+        :return: Size of the certificate block header in bytes.
+        """
         return calcsize(self.FORMAT)
 
     def __repr__(self) -> str:
+        """Get string representation of certificate block header.
+
+        Returns a formatted string containing the certificate block header format version
+        for debugging and logging purposes.
+
+        :return: String representation showing format version.
+        """
         return f"Cert block header {self.format_version}"
 
     def __str__(self) -> str:
-        """Get info of Certificate block header."""
+        """Get info of Certificate block header.
+
+        Returns a formatted string containing the certificate block header information
+        including format version and certificate block size.
+
+        :return: Formatted string with certificate block header details.
+        """
         info = f"Format version:              {self.format_version}\n"
         info += f"Certificate block size:      {self.cert_block_size}\n"
         return info
 
 
 class CertificateBlockHeaderV2_2(CertificateBlockHeader):
-    """Create Certificate block header with v2.2 format that includes flags."""
+    """Certificate block header implementation for format version 2.2.
+
+    This class extends the base certificate block header to support version 2.2
+    format which includes additional flags field for enhanced functionality.
+
+    :cvar FORMAT: Binary format string for packing/unpacking header data.
+    :cvar SIZE: Size of the header in bytes.
+    """
 
     FORMAT = "<4s2H2L"
     SIZE = calcsize(FORMAT)
 
     def __init__(self, format_version: str = "2.2") -> None:
-        """Constructor for Certificate block header version 2.2.
+        """Initialize Certificate block header version 2.2.
 
-        :param format_version: Major = 2, minor = 2
+        Creates a new certificate block header with the specified format version and
+        initializes flags to zero.
+
+        :param format_version: Format version string in "major.minor" format, defaults to "2.2".
         """
         super().__init__(format_version)
         self.flags = 0
 
     def export(self) -> bytes:
-        """Export Certificate block header as bytes array."""
+        """Export Certificate block header as bytes array.
+
+        Serializes the certificate block header into a binary format using the predefined
+        structure with magic number, version information, size, and flags.
+
+        :return: Binary representation of the certificate block header.
+        """
         major_format_version, minor_format_version = [
             int(v) for v in self.format_version.split(".")
         ]
@@ -777,10 +1048,10 @@ class CertificateBlockHeaderV2_2(CertificateBlockHeader):
     def parse(cls, data: bytes) -> Self:
         """Parse Certificate block header from bytes array.
 
-        :param data: Input data as bytes
-        :raises SPSDKError: Raised when SIZE is bigger than length of the data without offset
-        :raises SPSDKError: Raised when magic is not equal MAGIC
-        :return: CertificateBlockHeaderV2_2
+        :param data: Input data as bytes array to parse the certificate block header from.
+        :raises SPSDKError: Raised when SIZE is bigger than length of the data without offset.
+        :raises SPSDKError: Raised when magic number is not equal to expected MAGIC value.
+        :return: CertificateBlockHeaderV2_2 instance with parsed header data.
         """
         if cls.SIZE > len(data):
             raise SPSDKError("SIZE is bigger than length of the data without offset")
@@ -802,7 +1073,13 @@ class CertificateBlockHeaderV2_2(CertificateBlockHeader):
 
 
 class RootKeyRecord(BaseClass):
-    """Create Root key record."""
+    """Root Key Record for certificate block operations.
+
+    This class manages root key records used in SPSDK certificate blocks, handling
+    root certificates, public keys, and associated metadata for secure boot operations.
+    It supports ECC public keys (P-256/P-384) and manages certificate authority flags,
+    root key hash tables, and certificate selection.
+    """
 
     # P-256
 
@@ -812,11 +1089,15 @@ class RootKeyRecord(BaseClass):
         root_certs: Optional[Union[Sequence[PublicKeyEcc], Sequence[bytes]]] = None,
         used_root_cert: int = 0,
     ) -> None:
-        """Constructor for Root key record.
+        """Initialize Root Key Record for certificate block.
 
-        :param ca_flag: CA flag
-        :param root_certs: Root cert used to ISK/image signature
-        :param used_root_cert: Used root cert number 0-3
+        Creates a new Root Key Record instance with specified CA flag, root certificates,
+        and the index of the root certificate to be used for ISK/image signature verification.
+
+        :param ca_flag: Certificate Authority flag indicating if this is a CA certificate.
+        :param root_certs: Sequence of root certificates as PublicKeyEcc objects or raw bytes,
+            defaults to None.
+        :param used_root_cert: Index of the root certificate to use (0-3), defaults to 0.
         """
         self.ca_flag = ca_flag
         self.root_certs_input = root_certs
@@ -828,21 +1109,47 @@ class RootKeyRecord(BaseClass):
 
     @property
     def number_of_certificates(self) -> int:
-        """Get number of included certificates."""
+        """Get number of included certificates.
+
+        This method extracts the certificate count from the flags field by masking
+        the upper 4 bits and shifting them to get the actual count value.
+
+        :return: Number of certificates included in the certificate block.
+        """
         return (self.flags & 0xF0) >> 4
 
     @property
     def expected_size(self) -> int:
-        """Get expected binary block size."""
+        """Get expected binary block size.
+
+        Calculates the total size of the certificate block including flags (4 bytes),
+        root key hash table export data, and root public key data.
+
+        :return: Expected size in bytes of the binary certificate block.
+        """
         # the '4' means 4 bytes for flags
         return 4 + len(self._rkht.export()) + len(self.root_public_key)
 
     def __repr__(self) -> str:
+        """Return string representation of the Root Key Record certificate block.
+
+        The method extracts the certificate type from the flags field and formats
+        it into a human-readable string showing the elliptic curve type used.
+
+        :return: Formatted string containing certificate block type and curve information.
+        """
         cert_type = {0x1: "secp256r1", 0x2: "secp384r1"}[self.flags & 0xF]
         return f"Cert Block: Root Key Record - ({cert_type})"
 
     def __str__(self) -> str:
-        """Get info of Root key record."""
+        """Get string representation of Root key record.
+
+        Returns formatted information about the root key record including flags,
+        CA status, certificate details, root certificates, CTRK hash table,
+        and root public key if available.
+
+        :return: Formatted string with root key record information.
+        """
         cert_type = {0x1: "secp256r1", 0x2: "secp384r1"}[self.flags & 0xF]
         info = ""
         info += f"Flags:           {hex(self.flags)}\n"
@@ -860,7 +1167,14 @@ class RootKeyRecord(BaseClass):
         return info
 
     def _calculate_flags(self) -> int:
-        """Function to calculate parameter flags."""
+        """Calculate certificate block parameter flags.
+
+        This method computes flags based on certificate authority status, root certificate
+        usage, certificate count, and cryptographic curve types. The flags are encoded as
+        a 32-bit integer with specific bit positions for different parameters.
+
+        :return: Calculated flags as 32-bit integer with encoded certificate parameters.
+        """
         flags = 0
         if self.ca_flag is True:
             flags |= 1 << 31
@@ -874,15 +1188,24 @@ class RootKeyRecord(BaseClass):
         return flags
 
     def _create_root_public_key(self) -> bytes:
-        """Function to create root public key."""
+        """Create root public key data from the selected root certificate.
+
+        Exports the public key data from the root certificate that is currently
+        selected by the used_root_cert index.
+
+        :return: Exported root public key data in bytes format.
+        """
         root_key = self.root_certs[self.used_root_cert]
         root_key_data = root_key.export()
         return root_key_data
 
     def calculate(self) -> None:
-        """Calculate all internal members.
+        """Calculate all internal members of the certificate block.
 
-        :raises SPSDKError: The RKHT certificates inputs are missing.
+        This method processes root certificates, calculates flags, creates RKHT (Root Key Hash Table),
+        validates hash algorithms, and generates the root public key.
+
+        :raises SPSDKError: The RKHT certificates inputs are missing or hash algorithm mismatch.
         """
         # pylint: disable=invalid-name
         if not self.root_certs_input:
@@ -895,7 +1218,14 @@ class RootKeyRecord(BaseClass):
         self.root_public_key = self._create_root_public_key()
 
     def export(self) -> bytes:
-        """Export Root key record as bytes array."""
+        """Export Root key record as bytes array.
+
+        Serializes the root key record into a binary format including flags,
+        root key hash table, and root public key data.
+
+        :raises SPSDKError: Invalid length of exported data.
+        :return: Binary representation of the root key record.
+        """
         data = bytes()
         data += pack("<L", self.flags)
         data += self._rkht.export()
@@ -906,10 +1236,13 @@ class RootKeyRecord(BaseClass):
 
     @staticmethod
     def get_hash_algorithm(flags: int) -> EnumHashAlgorithm:
-        """Get CTRK table hash algorithm.
+        """Get CTRK table hash algorithm from flags.
 
-        :param flags: Root Key Record flags
-        :return: Name of hash algorithm
+        Extracts the hash algorithm type from the lower 4 bits of the Root Key Record flags.
+
+        :param flags: Root Key Record flags containing hash algorithm information.
+        :raises KeyError: If the flags contain an unsupported hash algorithm value.
+        :return: Hash algorithm enumeration value (SHA256 or SHA384).
         """
         return {1: EnumHashAlgorithm.SHA256, 2: EnumHashAlgorithm.SHA384}[flags & 0xF]
 
@@ -944,7 +1277,13 @@ class RootKeyRecord(BaseClass):
 
 
 class IskCertificate(BaseClass):
-    """Create ISK certificate."""
+    """ISK Certificate representation for secure boot operations.
+
+    This class manages the creation, validation, and export of ISK (Image Signing Key)
+    certificates used in NXP secure boot processes. It handles certificate constraints,
+    signature operations, user data embedding, and ensures proper alignment and size
+    validation according to device family specifications.
+    """
 
     def __init__(
         self,
@@ -955,12 +1294,18 @@ class IskCertificate(BaseClass):
         offset_present: bool = True,
         family: Optional[FamilyRevision] = None,
     ) -> None:
-        """Constructor for ISK certificate.
+        """Initialize ISK certificate block.
 
-        :param constraints: Certificate version
-        :param signature_provider: ISK Signature Provider
-        :param isk_cert: ISK certificate
-        :param user_data: User data
+        Creates a new ISK (Intermediate Signing Key) certificate block with the specified
+        parameters and validates user data constraints based on the target family.
+
+        :param constraints: Certificate constraints/version value.
+        :param signature_provider: Signature provider for ISK certificate signing.
+        :param isk_cert: ISK certificate as ECC public key or raw bytes.
+        :param user_data: Additional user data to include in the certificate.
+        :param offset_present: Whether offset field is present in the certificate.
+        :param family: Target MCU family for validation of data constraints.
+        :raises SPSDKError: If user data exceeds size limit or alignment requirements.
         """
         self.flags = 0
         self.offset_present = offset_present
@@ -988,7 +1333,13 @@ class IskCertificate(BaseClass):
 
     @property
     def signature_offset(self) -> int:
-        """Signature offset inside the ISK Certificate."""
+        """Calculate the signature offset inside the ISK Certificate.
+
+        The method computes the offset by considering the header size (with or without
+        offset field), user data length, and ISK certificate coordinate size if present.
+
+        :return: Signature offset in bytes from the beginning of the certificate.
+        """
         offset = calcsize("<3L") if self.offset_present else calcsize("<2L")
         signature_offset = offset + len(self.user_data)
         if self.isk_cert:
@@ -998,7 +1349,15 @@ class IskCertificate(BaseClass):
 
     @property
     def expected_size(self) -> int:
-        """Binary block expected size."""
+        """Calculate the expected binary size of the certificate block.
+
+        The method computes the total size by summing up all components including
+        signature offset (if present), constraints, flags, ISK public key data,
+        user data, and ISK blob signature. The signature length is determined from
+        either existing signature or signature provider.
+
+        :return: Total expected size in bytes of the binary certificate block.
+        """
         sign_len = len(self.signature) or (
             self.signature_provider.signature_length if self.signature_provider else 0
         )
@@ -1017,11 +1376,24 @@ class IskCertificate(BaseClass):
         )
 
     def __repr__(self) -> str:
+        """Return string representation of ISK Certificate.
+
+        The method provides a human-readable representation showing the certificate type
+        and the elliptic curve algorithm based on the flags field.
+
+        :return: String representation in format "ISK Certificate, {curve_type}".
+        """
         isk_type = {0: "secp256r1", 1: "secp256r1", 2: "secp384r1"}[self.flags & 0xF]
         return f"ISK Certificate, {isk_type}"
 
     def __str__(self) -> str:
-        """Get info about ISK certificate."""
+        """Get string representation of ISK certificate information.
+
+        Provides detailed information about the ISK (Initial Secure Key) certificate including
+        constraints, flags, user data, cryptographic type, and public key details.
+
+        :return: Formatted string containing ISK certificate details.
+        """
         isk_type = {0: "secp256r1", 1: "secp256r1", 2: "secp384r1"}[self.flags & 0xF]
         info = ""
         info += f"Constraints:     {self.constraints}\n"
@@ -1035,7 +1407,14 @@ class IskCertificate(BaseClass):
         return info
 
     def _calculate_flags(self) -> None:
-        """Function to calculate parameter flags."""
+        """Calculate parameter flags based on certificate and user data configuration.
+
+        This method sets the flags attribute by examining the ISK certificate curve type
+        and user data presence. The flags are used to indicate the cryptographic algorithm
+        and data configuration for the certificate block.
+
+        :raises SPSDKError: ISK Certificate is required for flag calculation.
+        """
         self.flags = 0
         if self.user_data:
             self.flags |= 1 << 31
@@ -1047,8 +1426,13 @@ class IskCertificate(BaseClass):
             self.flags |= 1 << 1
 
     def create_isk_signature(self, key_record_data: bytes, force: bool = False) -> None:
-        """Function to create ISK signature.
+        """Create ISK signature for the certificate.
 
+        The method generates a signature using the provided key record data combined with
+        certificate metadata (offset, constraints, flags) and ISK public key data.
+
+        :param key_record_data: Binary data of the key record to be signed.
+        :param force: Force signature creation even if signature already exists.
         :raises SPSDKError: Signature provider is not specified.
         """
         # pylint: disable=invalid-name
@@ -1066,7 +1450,16 @@ class IskCertificate(BaseClass):
         self.signature = self.signature_provider.get_signature(data)
 
     def export(self) -> bytes:
-        """Export ISK certificate as bytes array."""
+        """Export ISK certificate as bytes array.
+
+        Serializes the ISK (Initial Secure Key) certificate into a binary format
+        by packing the certificate components including signature offset, constraints,
+        flags, public key data, user data, and signature.
+
+        :raises SPSDKError: If signature is not set or if the exported data size
+            does not match the expected size.
+        :return: Binary representation of the ISK certificate.
+        """
         if not self.signature:
             raise SPSDKError("Signature is not set.")
         if self.offset_present:
@@ -1084,11 +1477,15 @@ class IskCertificate(BaseClass):
 
     @classmethod
     def parse(cls, data: bytes, signature_size: int) -> Self:  # type: ignore # pylint: disable=arguments-differ
-        """Parse ISK certificate from bytes array.This operation is not supported.
+        """Parse ISK certificate from bytes array.
 
-        :param data:  Input data as bytes array
-        :param signature_size: The signature size of ISK block
-        :raises NotImplementedError: This operation is not supported
+        Parses the ISK (Initial Secure Key) certificate data structure including signature offset,
+        constraints, ISK flags, public key, optional user data, and signature components.
+
+        :param data: Input data as bytes array containing the ISK certificate
+        :param signature_size: The signature size of ISK block in bytes
+        :return: Parsed ISK certificate instance
+        :raises SPSDKError: Invalid certificate data format or parsing error
         """
         (signature_offset, constraints, isk_flags) = unpack_from("<3L", data)
         header_word_cnt = 3
@@ -1115,7 +1512,17 @@ class IskCertificate(BaseClass):
 
 
 class IskCertificateLite(BaseClass):
-    """ISK certificate lite."""
+    """ISK Certificate Lite for secure boot operations.
+
+    This class represents a lightweight version of an ISK (Image Signing Key) certificate
+    used in NXP secure boot processes. It manages ISK public key data, constraints,
+    and digital signatures for certificate validation and export operations.
+
+    :cvar MAGIC: Certificate magic number identifier (0x4D43).
+    :cvar VERSION: Certificate format version.
+    :cvar ISK_PUB_KEY_LENGTH: Expected length of ISK public key data in bytes.
+    :cvar ISK_SIGNATURE_SIZE: Expected size of ISK signature in bytes.
+    """
 
     MAGIC = 0x4D43
     VERSION = 1
@@ -1131,9 +1538,8 @@ class IskCertificateLite(BaseClass):
     ) -> None:
         """Constructor for ISK certificate.
 
-        :param pub_key: ISK public key
-        :param constraints: 1 = self signed, 0 = nxp signed
-        :param user_data: User data
+        :param pub_key: ISK public key, either PublicKeyEcc object or raw bytes
+        :param constraints: Certificate constraints (1 = self signed, 0 = NXP signed)
         """
         self.constraints = constraints
         self.pub_key = convert_to_ecc_key(pub_key)
@@ -1142,7 +1548,13 @@ class IskCertificateLite(BaseClass):
 
     @property
     def expected_size(self) -> int:
-        """Binary block expected size."""
+        """Get the expected size of the binary certificate block.
+
+        Calculates the total size including magic number, version, constraints,
+        ISK public key coordinates, and ISK blob signature.
+
+        :return: Expected size in bytes of the binary certificate block.
+        """
         return (
             +4  # magic + version
             + 4  # constraints
@@ -1151,10 +1563,20 @@ class IskCertificateLite(BaseClass):
         )
 
     def __repr__(self) -> str:
+        """Return string representation of ISK Certificate lite.
+
+        :return: String representation of the ISK Certificate lite object.
+        """
         return "ISK Certificate lite"
 
     def __str__(self) -> str:
-        """Get info about ISK certificate."""
+        """Get string representation of ISK certificate.
+
+        Returns formatted information about the ISK certificate including constraints and public key
+        details.
+
+        :return: Formatted string containing ISK certificate information.
+        """
         info = "ISK Certificate lite\n"
         info += f"Constraints:     {self.constraints}\n"
         info += f"Public Key:      {str(self.pub_key)}\n"
@@ -1163,11 +1585,15 @@ class IskCertificateLite(BaseClass):
     def create_isk_signature(
         self, signature_provider: Optional[SignatureProvider], force: bool = False
     ) -> None:
-        """Function to create ISK signature.
+        """Create ISK (Issuer Signing Key) signature for the certificate.
 
-        :param signature_provider: Signature Provider
-        :param force: Force resign.
-        :raises SPSDKError: Signature provider is not specified.
+        This method generates a digital signature for the certificate using the provided
+        signature provider. If a signature already exists, it will only be replaced
+        when force parameter is set to True.
+
+        :param signature_provider: Provider used to generate the digital signature
+        :param force: Force regeneration of signature even if one already exists
+        :raises SPSDKError: Signature provider is not specified
         """
         # pylint: disable=invalid-name
         if self.signature and not force:
@@ -1179,7 +1605,15 @@ class IskCertificateLite(BaseClass):
         self.signature = signature_provider.get_signature(data)
 
     def get_tbs_data(self) -> bytes:
-        """Get To-Be-Signed data."""
+        """Get To-Be-Signed data for certificate block.
+
+        Constructs the data that needs to be signed by packing the header information
+        (magic, version, constraints) and appending the ISK public key data. Validates
+        that the public key length and total data length match expected values.
+
+        :raises SPSDKError: Invalid public key length or invalid TBS data length.
+        :return: Packed binary data ready for signing.
+        """
         data = pack(self.HEADER_FORMAT, self.MAGIC, self.VERSION, self.constraints)
         if len(self.isk_public_key_data) != self.ISK_PUB_KEY_LENGTH:
             raise SPSDKError(
@@ -1194,7 +1628,14 @@ class IskCertificateLite(BaseClass):
         return data
 
     def export(self) -> bytes:
-        """Export ISK certificate as bytes array."""
+        """Export ISK certificate as bytes array.
+
+        Serializes the ISK (Initial Secure Key) certificate into a binary format
+        by combining the TBS (To Be Signed) data with the signature.
+
+        :raises SPSDKError: Signature is not set or data size does not match expected size.
+        :return: Binary representation of the ISK certificate.
+        """
         if not self.signature:
             raise SPSDKError("Signature is not set.")
 
@@ -1210,8 +1651,11 @@ class IskCertificateLite(BaseClass):
     def parse(cls, data: bytes) -> Self:  # pylint: disable=arguments-differ
         """Parse ISK certificate from bytes array.
 
-        :param data:  Input data as bytes array
-        :raises NotImplementedError: This operation is not supported
+        This method deserializes an ISK (Initial Secure Key) certificate from a binary data format,
+        extracting the constraints, public key, and signature components.
+
+        :param data: Input data as bytes array containing the serialized ISK certificate.
+        :return: Parsed ISK certificate instance.
         """
         (_, _, constraints) = unpack_from(cls.HEADER_FORMAT, data)
         offset = calcsize(cls.HEADER_FORMAT)
@@ -1227,9 +1671,15 @@ class IskCertificateLite(BaseClass):
 
 
 class CertBlockV21(CertBlock):
-    """Create Certificate block version 2.1.
+    """Certificate block implementation for version 2.1.
 
-    Used for SB 3.1 and MBI using ECC keys.
+    This class manages certificate blocks used in Secure Binary 3.1 and Master Boot Image
+    operations with ECC cryptographic keys. It handles root certificates, ISK certificates,
+    and provides the necessary structure for secure boot chain validation.
+
+    :cvar SUB_FEATURE: Feature identifier for certificate block v2.1.
+    :cvar MAGIC: Magic bytes identifier for the certificate block header.
+    :cvar FORMAT_VERSION: Version string for this certificate block format.
     """
 
     SUB_FEATURE = "based_on_cert21"
@@ -1249,7 +1699,21 @@ class CertBlockV21(CertBlock):
         isk_cert: Optional[Union[PublicKeyEcc, bytes]] = None,
         user_data: Optional[bytes] = None,
     ) -> None:
-        """The Constructor for Certificate block."""
+        """Initialize Certificate block with specified configuration.
+
+        Creates a certificate block with header, root key record, and optionally
+        an ISK certificate based on the provided parameters and CA flag setting.
+
+        :param family: Target MCU family and revision information.
+        :param root_certs: Sequence of root certificates as PublicKeyEcc objects or raw bytes.
+        :param ca_flag: Whether this is a Certificate Authority block, defaults to False.
+        :param version: Certificate block version string, defaults to "2.1".
+        :param used_root_cert: Index of the root certificate to use, defaults to 0.
+        :param constraints: Certificate constraints value, defaults to 0.
+        :param signature_provider: Provider for cryptographic signatures.
+        :param isk_cert: ISK certificate as PublicKeyEcc object or raw bytes.
+        :param user_data: Additional user-defined data to include in ISK certificate.
+        """
         super().__init__(family)
         self.header = CertificateBlockHeader(version)
         self.root_key_record = RootKeyRecord(
@@ -1267,15 +1731,32 @@ class CertBlockV21(CertBlock):
             )
 
     def _set_ca_flag(self, value: bool) -> None:
+        """Set the CA flag value for the root key record.
+
+        This method updates the CA (Certificate Authority) flag in the root key record
+        to indicate whether the certificate can be used as a certificate authority.
+
+        :param value: Boolean value to set as the CA flag.
+        """
         self.root_key_record.ca_flag = value
 
     def calculate(self) -> None:
-        """Calculate all internal members."""
+        """Calculate all internal members.
+
+        This method triggers the calculation of all internal components within the certificate block,
+        including the root key record and any other dependent structures.
+        """
         self.root_key_record.calculate()
 
     @property
     def signature_size(self) -> int:
-        """Size of the signature in bytes."""
+        """Get the size of the signature in bytes.
+
+        The signature size is determined by the public key data length from either
+        the ISK certificate or the root key record, whichever is available.
+
+        :return: Size of the signature in bytes.
+        """
         # signature size is same as public key data
         if self.isk_certificate:
             return len(self.isk_certificate.isk_public_key_data)
@@ -1284,7 +1765,13 @@ class CertBlockV21(CertBlock):
 
     @property
     def expected_size(self) -> int:
-        """Expected size of binary block."""
+        """Calculate the expected size of the certificate block in bytes.
+
+        The method calculates the total size by summing the header size, root key record size,
+        and ISK certificate size (if present).
+
+        :return: Expected size of the binary certificate block in bytes.
+        """
         expected_size = self.header.SIZE
         expected_size += self.root_key_record.expected_size
         if self.isk_certificate:
@@ -1293,14 +1780,33 @@ class CertBlockV21(CertBlock):
 
     @property
     def rkth(self) -> bytes:
-        """Root Key Table Hash 32-byte hash (SHA-256) of SHA-256 hashes of up to four root public keys."""
+        """Get Root Key Table Hash.
+
+        Returns a 32-byte SHA-256 hash of the SHA-256 hashes of up to four root public keys
+        from the root key record.
+
+        :return: 32-byte hash as bytes.
+        """
         return self.root_key_record._rkht.rkth()
 
     def __repr__(self) -> str:
+        """Return string representation of Certificate Block 2.1.
+
+        Provides a concise string representation showing the certificate block version
+        and its expected size in bytes.
+
+        :return: String representation in format "Cert block 2.1, Size:{size}B".
+        """
         return f"Cert block 2.1, Size:{self.expected_size}B"
 
     def __str__(self) -> str:
-        """Get info of Certificate block."""
+        """Get string representation of Certificate block.
+
+        Returns formatted information about the certificate block including header,
+        root key record, and ISK certificate if present.
+
+        :return: Formatted string containing certificate block information.
+        """
         msg = f"HEADER:\n{str(self.header)}\n"
         msg += f"ROOT KEY RECORD:\n{str(self.root_key_record)}\n"
         if self.isk_certificate:
@@ -1308,7 +1814,14 @@ class CertBlockV21(CertBlock):
         return msg
 
     def export(self) -> bytes:
-        """Export Certificate block as bytes array."""
+        """Export Certificate block as bytes array.
+
+        This method serializes the certificate block into a binary format by combining
+        the header, root key record, and optional ISK certificate data. The header's
+        cert_block_size field is automatically updated to reflect the total size.
+
+        :return: Binary representation of the certificate block.
+        """
         key_record_data = self.root_key_record.export()
         self.header.cert_block_size = self.header.SIZE + len(key_record_data)
         isk_cert_data = bytes()
@@ -1321,11 +1834,14 @@ class CertBlockV21(CertBlock):
 
     @classmethod
     def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
-        """Parse CertBlockV21 from binary file.
+        """Parse CertBlockV21 from binary data.
 
-        :param data: Binary data
-        :param family: The MCU family
-        :return: Certificate Block instance
+        The method parses binary data to create a Certificate Block V2.1 instance,
+        including certificate header, root key record, and optional ISK certificate.
+
+        :param data: Binary data to parse
+        :param family: The MCU family revision
+        :return: Certificate Block V2.1 instance
         :raises SPSDKError: Length of the data doesn't match Certificate Block length
         """
         # CertificateBlockHeader
@@ -1349,9 +1865,14 @@ class CertBlockV21(CertBlock):
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Create the list of validation schemas.
+        """Create the list of validation schemas for certificate blocks.
 
-        :return: List of validation schemas.
+        The method retrieves and configures validation schemas including family-specific
+        schemas, certificate schemas, root keys schemas, and output schemas. It updates
+        the family schema with supported families for the given family revision.
+
+        :param family: Family revision to configure validation schemas for.
+        :return: List of validation schemas including family, certificate, root keys, and output schemas.
         """
         sch_cfg = get_schema_file(DatabaseManager.CERT_BLOCK)
         sch_family = get_schema_file("general")["family"]
@@ -1369,9 +1890,12 @@ class CertBlockV21(CertBlock):
     def load_from_config(cls, config: Config) -> Self:
         """Creates an instance of CertBlockV21 from configuration.
 
-        :param config: Input standard configuration.
-        :return: Instance of CertBlockV21
-        :raises SPSDKError: If found gap in certificates from config file. Invalid configuration.
+        The method supports loading from binary file or creating from configuration parameters.
+        It handles root certificates, ISK certificates, constraints, and signature providers.
+
+        :param config: Input standard configuration containing certificate block settings.
+        :return: Instance of CertBlockV21 with calculated certificate block.
+        :raises SPSDKError: If main root certificate ID doesn't exist or configuration is invalid.
         """
         if "certBlock" in config:
             family = FamilyRevision.load_from_config(config)
@@ -1433,7 +1957,10 @@ class CertBlockV21(CertBlock):
         return cert_block
 
     def validate(self) -> None:
-        """Validate the settings of class members.
+        """Validate the settings of certification block class members.
+
+        This method performs validation checks on the certification block configuration,
+        including header parsing and ISK certificate signature validation.
 
         :raises SPSDKError: Invalid configuration of certification block class members.
         """
@@ -1445,8 +1972,12 @@ class CertBlockV21(CertBlock):
     def get_config(self, data_path: str = "./") -> Config:
         """Create configuration dictionary of the Certification block Image.
 
+        The method generates a configuration that includes root certificates, ISK certificate
+        settings, and associated data files. It saves public keys and user data to the
+        specified data path and creates appropriate configuration entries.
+
         :param data_path: Path to store the data files of configuration.
-        :return: Configuration dictionary.
+        :return: Configuration dictionary with certificate block settings.
         """
         cfg = Config()
         cfg["signer"] = "N/A"
@@ -1489,7 +2020,8 @@ class CertBlockV21(CertBlock):
     def get_root_public_key(self) -> PublicKey:
         """Get the root public key from the certificate block.
 
-        :return: Public key object
+        :raises SPSDKError: If root key record is not available or parsing fails.
+        :return: Root public key object parsed from the certificate block.
         """
         return PublicKey.parse(self.root_key_record.root_public_key)
 
@@ -1505,7 +2037,16 @@ class CertBlockV21(CertBlock):
 
 
 class CertBlockVx(CertBlock):
-    """Create Certificate block for MC56xx."""
+    """Certificate block implementation for MC56xx family devices.
+
+    This class provides certificate block functionality specifically designed for MC56xx
+    microcontrollers, handling ISK (Intermediate Signing Key) certificate management,
+    hash calculation, and binary export operations for secure boot processes.
+
+    :cvar SUB_FEATURE: Feature identifier for certificate-based implementations.
+    :cvar ISK_CERT_LENGTH: Standard length of ISK certificate in bytes.
+    :cvar ISK_CERT_HASH_LENGTH: Length of ISK certificate hash in bytes.
+    """
 
     SUB_FEATURE = "based_on_certx"
 
@@ -1519,7 +2060,16 @@ class CertBlockVx(CertBlock):
         signature_provider: Optional[SignatureProvider] = None,
         self_signed: bool = True,
     ) -> None:
-        """The Constructor for Certificate block."""
+        """Initialize Certificate block with ISK certificate and signature provider.
+
+        Creates a new certificate block instance with the specified family revision,
+        ISK certificate, and optional signature provider for certificate operations.
+
+        :param family: Target MCU family and revision information.
+        :param isk_cert: ISK certificate as ECC public key or raw bytes.
+        :param signature_provider: Optional provider for certificate signing operations.
+        :param self_signed: Whether the certificate should be self-signed.
+        """
         super().__init__(family)
         self.isk_cert_hash = bytes(self.ISK_CERT_HASH_LENGTH)
         self.isk_certificate = IskCertificateLite(pub_key=isk_cert, constraints=int(self_signed))
@@ -1527,44 +2077,78 @@ class CertBlockVx(CertBlock):
 
     @property
     def expected_size(self) -> int:
-        """Expected size of binary block."""
+        """Get expected size of binary block.
+
+        :return: Expected size of the ISK certificate in bytes.
+        """
         return self.isk_certificate.expected_size
 
     @property
     def cert_hash(self) -> bytes:
-        """Calculate first half [:127] of certificate hash."""
+        """Calculate certificate hash from ISK certificate data.
+
+        The method extracts the ISK certificate data and computes a hash, returning
+        only the first 127 bytes of the calculated hash value.
+
+        :return: First 127 bytes of the ISK certificate hash.
+        """
         isk_cert_data = self.isk_certificate.export()
         return get_hash(isk_cert_data)[: self.ISK_CERT_HASH_LENGTH]
 
     def __repr__(self) -> str:
+        """Return string representation of the certificate block.
+
+        :return: String identifier for the certificate block version.
+        """
         return "CertificateBlockVx"
 
     def __str__(self) -> str:
-        """Get info about Certificate block."""
+        """Get string representation of the Certificate block.
+
+        Provides detailed information about the certificate block including version,
+        ISK certificate details, and certificate hash.
+
+        :return: Formatted string containing certificate block information.
+        """
         msg = "Certificate block version x\n"
         msg += f"ISK Certificate:\n{str(self.isk_certificate)}\n"
         msg += f"Certificate hash: {self.cert_hash.hex()}"
         return msg
 
     def export(self) -> bytes:
-        """Export Certificate block as bytes array."""
+        """Export Certificate block as bytes array.
+
+        Creates ISK signature using the configured signature provider and exports
+        the ISK certificate data.
+
+        :return: Certificate block data as bytes.
+        """
         isk_cert_data = bytes()
         self.isk_certificate.create_isk_signature(self.signature_provider)
         isk_cert_data = self.isk_certificate.export()
         return isk_cert_data
 
     def get_tbs_data(self) -> bytes:
-        """Get To-Be-Signed data."""
+        """Get To-Be-Signed data from the ISK certificate.
+
+        This method retrieves the To-Be-Signed (TBS) portion of the ISK (Intermediate Signing Key)
+        certificate, which contains the certificate data that needs to be signed.
+
+        :return: The TBS data as bytes from the ISK certificate.
+        """
         return self.isk_certificate.get_tbs_data()
 
     @classmethod
     def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
         """Parse CertBlockVx from binary file.
 
-        :param data: Binary data
-        :param family: The MCU family
-        :return: Certificate Block instance
-        :raises SPSDKError: Length of the data doesn't match Certificate Block length
+        The method creates a Certificate Block instance by parsing the ISK certificate from the
+        provided binary data and extracting the public key and signature information.
+
+        :param data: Binary data containing the certificate block information.
+        :param family: The MCU family revision for the certificate block.
+        :return: Certificate Block instance with parsed ISK certificate data.
+        :raises SPSDKError: Length of the data doesn't match Certificate Block length.
         """
         # IskCertificate
         isk_certificate = IskCertificateLite.parse(data)
@@ -1578,9 +2162,14 @@ class CertBlockVx(CertBlock):
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Create the list of validation schemas.
+        """Create the list of validation schemas for certificate blocks.
 
-        :return: List of validation schemas.
+        The method retrieves and configures validation schemas including family-specific
+        schema, certificate schema, and certificate block output schema. It updates the
+        family schema with supported families for the given family revision.
+
+        :param family: Family revision to configure validation schemas for.
+        :return: List of validation schemas including family, certificate, and output schemas.
         """
         sch_cfg = get_schema_file(DatabaseManager.CERT_BLOCK)
         sch_family = get_schema_file("general")["family"]
@@ -1590,16 +2179,23 @@ class CertBlockVx(CertBlock):
         return [sch_family, sch_cfg["certificate_vx"], sch_cfg["cert_block_output"]]
 
     def get_config(self, data_path: str = "./") -> Config:
-        """Create configuration of the Certification block Image."""
+        """Create configuration of the Certification block Image.
+
+        :param data_path: Path to directory containing data files for configuration.
+        :raises SPSDKNotImplementedError: Parsing of Cert Block Vx is not supported.
+        """
         raise SPSDKNotImplementedError("Parsing of Cert Block Vx is not supported")
 
     @classmethod
     def load_from_config(cls, config: Config) -> Self:
-        """Creates an instance of CertBlockVx from configuration.
+        """Create an instance of CertBlockVx from configuration.
 
-        :param config: Input standard configuration.
-        :return: CertBlockVx
-        :raises SPSDKError: If found gap in certificates from config file. Invalid configuration.
+        The method supports loading from binary file or creating from configuration parameters.
+        It handles ISK certificates, signature providers, and family-specific settings.
+
+        :param config: Input standard configuration containing certificate block settings.
+        :return: CertBlockVx instance configured according to the provided configuration.
+        :raises SPSDKError: If found gap in certificates from config file or invalid configuration.
         """
         if "certBlock" in config:
             family = FamilyRevision.load_from_config(config)
@@ -1629,18 +2225,27 @@ class CertBlockVx(CertBlock):
         return cert_block
 
     def validate(self) -> None:
-        """Validate the settings of class members.
+        """Validate the settings of certification block class members.
 
-        :raises SPSDKError: Invalid configuration of certification block class members.
+        This method checks if the ISK certificate configuration is valid, specifically
+        verifying that when an ISK certificate exists without a signature, a proper
+        signature provider must be available.
+
+        :raises SPSDKError: Invalid ISK certificate configuration when certificate
+            exists without signature but no valid signature provider is set.
         """
         if self.isk_certificate and not self.isk_certificate.signature:
             if not isinstance(self.signature_provider, SignatureProvider):
                 raise SPSDKError("Invalid ISK certificate.")
 
     def get_otp_script(self) -> str:
-        """Return script for writing certificate hash to OTP.
+        """Generate OTP programming script for writing certificate hash to fuses.
 
-        :return: string value of blhost script
+        The method creates a blhost script that programs the ISK certificate hash
+        into OTP fuses starting from index 12. The hash is split into 4-byte chunks
+        with proper endianness conversion for fuse programming.
+
+        :return: Blhost script content as string for OTP fuse programming.
         """
         ret = (
             "# BLHOST Cert Block Vx fuses programming script\n"
@@ -1660,9 +2265,13 @@ class CertBlockVx(CertBlock):
 def find_root_certificates(config: dict[str, Any]) -> list[str]:
     """Find all root certificates in configuration.
 
-    :param config: Configuration to be searched.
-    :raises SPSDKError: If invalid configuration is provided.
-    :return: List of root certificates.
+    Searches for root certificate file paths in the configuration dictionary by looking for
+    keys matching the pattern 'rootCertificateXFile' where X is 0-3. Validates that there
+    are no gaps in the certificate numbering sequence.
+
+    :param config: Configuration dictionary containing certificate file paths.
+    :raises SPSDKError: If there are gaps in rootCertificateXFile definition sequence.
+    :return: List of root certificate file paths found in configuration.
     """
     root_certificates_loaded: list[Optional[str]] = [
         config.get(f"rootCertificate{idx}File") for idx in range(4)
@@ -1681,19 +2290,17 @@ def get_keys_or_rotkh_from_certblock_config(
     """Get keys or ROTKH value from ROT config.
 
     ROT config might be cert block config or MBI config.
-    There are four cases how cert block might be configured.
-
+    There are four cases how cert block might be configured:
     1. MBI with certBlock property pointing to YAML file
     2. MBI with certBlock property pointing to BIN file
     3. YAML configuration of cert block
     4. Binary cert block
 
-    :param rot: Path to ROT configuration (MBI or cert block)
-        or path to binary cert block
-    :param family: MCU family
-    :raises SPSDKError: In case the ROTKH or keys cannot be parsed
-    :return: Tuple containing root of trust (list of paths to keys)
-        or ROTKH in case of binary cert block
+    :param rot: Path to ROT configuration (MBI or cert block) or path to binary cert block.
+    :param family: MCU family.
+    :raises SPSDKError: In case the ROTKH or keys cannot be parsed.
+    :return: Tuple containing root of trust (list of paths to keys) or ROTKH in case of binary
+        cert block.
     """
     root_of_trust = None
     rotkh = None
@@ -1723,3 +2330,197 @@ def get_keys_or_rotkh_from_certblock_config(
                 raise SPSDKError(f"Parsing of binary cert block failed with {e}") from e
 
     return root_of_trust, rotkh
+
+
+class CertBlockAhab(CertBlock):
+    """Certificate block implementation using AHAB Certificate format.
+
+    This class provides certificate block functionality based on AHAB (Advanced High
+    Assurance Boot) certificates, supporting SRK-based certificate blocks with AHAB v2
+    48-byte format for compatible chip families.
+
+    :cvar SUB_FEATURE: Identifier for SRK-based certificate block type.
+    """
+
+    SUB_FEATURE = "based_on_srk"
+
+    def __init__(  # type: ignore[no-untyped-def]
+        self, family: FamilyRevision, ahab_certificate: Optional[AhabCertificate] = None, **kwargs
+    ) -> None:
+        """Initialize AHAB-based certificate block.
+
+        Creates a new AHAB certificate block instance either from an existing AHAB certificate
+        or by creating a new one using the provided arguments.
+
+        :param family: Chip family and revision information.
+        :param ahab_certificate: Optional existing AHAB Certificate instance to use.
+        :param kwargs: Additional keyword arguments for AHAB certificate creation when
+            ahab_certificate is not provided.
+        """
+        super().__init__(family)
+
+        if ahab_certificate:
+            self._ahab_certificate = ahab_certificate
+        else:
+            # Create AHAB certificate with provided arguments
+            ahab_cert_class = get_ahab_certificate_class(family)
+            self._ahab_certificate = ahab_cert_class(family=family, **kwargs)
+
+    @property
+    def ahab_certificate(self) -> AhabCertificate:
+        """Get the underlying AHAB certificate.
+
+        :return: The AHAB certificate instance associated with this certificate block.
+        """
+        return self._ahab_certificate
+
+    @property
+    def expected_size(self) -> int:
+        """Get expected size of binary block.
+
+        :return: Size of the AHAB certificate in bytes.
+        """
+        return len(self._ahab_certificate)
+
+    @property
+    def signature_size(self) -> int:
+        """Get the total size of signatures in bytes.
+
+        Calculates the combined size of both public key signatures (key 0 and key 1)
+        from the AHAB certificate. If a public key is not available or causes an error,
+        its signature size is treated as 0.
+
+        :return: Total signature size in bytes from both public keys.
+        """
+        sign0_size = 0
+        sign1_size = 0
+        try:
+            if self._ahab_certificate.public_key_0:
+                sign0_size = self._ahab_certificate.public_key_0.get_public_key().signature_size
+        except SPSDKError:
+            pass
+
+        try:
+            if self._ahab_certificate.public_key_1:
+                sign1_size = self._ahab_certificate.public_key_1.get_public_key().signature_size
+        except SPSDKError:
+            pass
+
+        return sign0_size + sign1_size
+
+    def export(self) -> bytes:
+        """Export certificate block as bytes.
+
+        Updates the internal AHAB certificate fields and exports the complete
+        certificate block data in binary format.
+
+        :return: Binary representation of the certificate block.
+        """
+        self._ahab_certificate.update_fields()
+        return self._ahab_certificate.export()
+
+    def get_root_public_key(self) -> PublicKey:
+        """Get the root public key from the certificate block.
+
+        Extracts and returns the first public key from the AHAB certificate, which serves as the root
+        public key for certificate validation.
+
+        :raises SPSDKError: No public key available in AHAB certificate.
+        :return: Public key object from the first public key in AHAB certificate.
+        """
+        if not self._ahab_certificate.public_key_0:
+            raise SPSDKError("No public key available in AHAB certificate")
+        return self._ahab_certificate.public_key_0.get_public_key()
+
+    @classmethod
+    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
+        """Parse Certificate block from binary data.
+
+        Creates a CertBlockAhab instance by parsing the provided binary data and extracting
+        the AHAB certificate information specific to the given chip family.
+
+        :param data: Binary data of certification block
+        :param family: Chip family revision information
+        :return: CertBlockAhab instance
+        """
+        ahab_cert_class = get_ahab_certificate_class(family)
+        ahab_certificate = ahab_cert_class.parse(data, family)
+
+        return cls(family=family, ahab_certificate=ahab_certificate)
+
+    @classmethod
+    def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
+        """Create the list of validation schemas for the specified family.
+
+        The method retrieves the appropriate AHAB certificate class for the given family
+        and delegates the schema creation to that class.
+
+        :param family: Family revision to get validation schemas for.
+        :return: List of validation schemas for the specified family.
+        """
+        ahab_cert_class = get_ahab_certificate_class(family)
+        return ahab_cert_class.get_validation_schemas(family)
+
+    @classmethod
+    def load_from_config(cls, config: Config) -> Self:
+        """Create an instance of CertBlockAhab from configuration.
+
+        Loads family revision and AHAB certificate from the provided configuration
+        and constructs a new CertBlockAhab instance.
+
+        :param config: Input standard configuration containing family and certificate data.
+        :return: Instance of CertBlockAhab with loaded family and certificate.
+        """
+        family = FamilyRevision.load_from_config(config)
+        ahab_cert_class = get_ahab_certificate_class(family)
+        ahab_certificate = ahab_cert_class.load_from_config(config)
+
+        return cls(family=family, ahab_certificate=ahab_certificate)
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of Certificate Block from object.
+
+        :param data_path: Output folder to store possible files.
+        :return: Configuration dictionary.
+        """
+        return self._ahab_certificate.get_config(data_path=data_path)
+
+    @classmethod
+    def get_supported_families(cls, include_predecessors: bool = False) -> list[FamilyRevision]:
+        """Get supported families for this certificate block.
+
+        Returns families that have cert_block configuration with:
+        - sub_features: [based_on_srk]
+        - rot_type: "srk_table_ahab_v2_48_bytes"
+
+        :param include_predecessors: Whether to include predecessor family revisions in the search.
+        :return: List of supported family revisions that meet the configuration requirements.
+        """
+        supported_families = get_families(
+            feature=cls.FEATURE,
+            sub_feature=cls.SUB_FEATURE,
+            include_predecessors=include_predecessors,
+        )
+        supported_families_final: list[FamilyRevision] = []
+        for family_rev in supported_families:
+            db = get_db(family_rev)
+            cert_block_config = db.get_str(cls.FEATURE, "rot_type", "None")
+            # Check for specific configuration requirements
+            if cert_block_config == "srk_table_ahab_v2_48_bytes":
+                supported_families_final.append(family_rev)
+
+        return supported_families_final
+
+    def __repr__(self) -> str:
+        """Return string representation of CertBlockAhab instance.
+
+        :return: String containing class name and target family.
+        """
+        return f"CertBlockAhab for {self.family}"
+
+    def __str__(self) -> str:
+        """Get string representation of AHAB Certificate Block.
+
+        :return: Formatted string containing AHAB certificate block information.
+        """
+        return f"AHAB Certificate Block:\n{str(self._ahab_certificate)}"

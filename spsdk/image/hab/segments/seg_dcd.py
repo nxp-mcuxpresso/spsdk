@@ -7,7 +7,10 @@
 """Device Configuration Data (DCD) segment module for HAB.
 
 This module implements the Device Configuration Data (DCD) segment used in HAB-enabled bootable images.
+The DCD segment contains initialization commands that configure the target device before the main
+application code execution.
 """
+
 import logging
 from typing import Iterator, Optional
 
@@ -32,9 +35,13 @@ logger = logging.getLogger(__name__)
 
 
 class SegDCD(PaddingSegment):
-    """Device configuration data (DCD) segment.
+    """Device Configuration Data (DCD) segment for HAB images.
 
-    IC configuration data, usually is used to configure DDR/SDRAM memory. Typically this is optional
+    This segment contains IC configuration data used to configure DDR/SDRAM memory
+    and other hardware components during boot. The DCD segment is typically optional
+    and supports various commands for writing data, checking data, and unlocking registers.
+
+    :cvar _COMMANDS: Tuple of supported DCD command tags including write data, check data, NOP, and unlock commands.
     """
 
     # list of supported DCD commands
@@ -46,7 +53,14 @@ class SegDCD(PaddingSegment):
     )
 
     def __init__(self, param: int = 0x41, enabled: bool = False) -> None:
-        """Initialize DCD segment."""
+        """Initialize DCD segment.
+
+        Creates a new Device Configuration Data (DCD) segment with specified parameters
+        and initializes the internal command list and header structure.
+
+        :param param: Parameter value for the DCD header, defaults to 0x41
+        :param enabled: Whether the DCD segment is enabled, defaults to False
+        """
         super().__init__()
         self.enabled = enabled
         self._header = Header(SegmentTag.DCD.tag, param)
@@ -55,57 +69,127 @@ class SegDCD(PaddingSegment):
 
     @property
     def header(self) -> Header:
-        """Header of Device configuration data (DCD) segment."""
+        """Get header of Device Configuration Data (DCD) segment.
+
+        :return: Header object containing DCD segment header information.
+        """
         return self._header
 
     @property
     def commands(self) -> list[CmdBase]:
-        """Commands of Device configuration data (DCD) segment."""
+        """Get commands of Device Configuration Data (DCD) segment.
+
+        :return: List of DCD commands contained in this segment.
+        """
         return self._commands
 
     @property
     def size(self) -> int:
-        """Size of Device configuration data (DCD) segment."""
+        """Size of Device configuration data (DCD) segment.
+
+        Returns the length from the header if the segment is enabled, otherwise returns 0.
+
+        :return: Size of the DCD segment in bytes, or 0 if disabled.
+        """
         return self._header.length if self.enabled else 0
 
     @property
     def space(self) -> int:
-        """Add space."""
+        """Get the space required by this segment.
+
+        Calculates the total space needed for the segment, including padding,
+        but only if the segment is enabled.
+
+        :return: Total space in bytes, or 0 if segment is disabled.
+        """
         return self.size + self.padding if self.enabled else 0
 
     def __repr__(self) -> str:
+        """Return string representation of DCD segment.
+
+        Provides a concise string representation showing the number of commands
+        contained in the DCD segment.
+
+        :return: String representation in format "DCD <Commands: {count}>".
+        """
         return f"DCD <Commands: {len(self._commands)}>"
 
     def __len__(self) -> int:
+        """Get the number of DCD commands.
+
+        :return: Number of commands in the DCD segment.
+        """
         return len(self._commands)
 
     def __getitem__(self, key: int) -> CmdBase:
+        """Get command at specified index.
+
+        :param key: Index of the command to retrieve.
+        :return: Command object at the specified index.
+        """
         return self._commands[key]
 
     def __setitem__(self, key: int, value: CmdBase) -> None:
+        """Set command at specified index in the DCD segment.
+
+        This method allows updating or replacing a command at a specific position
+        in the DCD commands list.
+
+        :param key: Index position where to set the command.
+        :param value: Command object to be set at the specified index.
+        :raises SPSDKError: If the command tag is not supported by DCD segment.
+        """
         if value.tag not in self._COMMANDS:
             raise SPSDKError("Invalid command")
         self._commands[key] = value
 
     def __iter__(self) -> Iterator:
+        """Get iterator over DCD commands.
+
+        Provides iteration capability over the internal commands collection,
+        allowing for sequential access to all DCD commands in the segment.
+
+        :return: Iterator over the DCD commands.
+        """
         return self._commands.__iter__()
 
     def __str__(self) -> str:
-        """String representation of the SegDCD."""
+        """String representation of the SegDCD.
+
+        Creates a formatted string containing all DCD commands in the segment,
+        with each command on a separate line.
+
+        :return: Multi-line string representation of all commands in the segment.
+        """
         msg = ""
         for cmd in self._commands:
             msg += str(cmd) + "\n"
         return msg
 
     def append(self, cmd: CmdBase) -> None:
-        """Appending of Device configuration data (DCD) segment."""
+        """Append command to Device Configuration Data (DCD) segment.
+
+        Adds a new command to the DCD segment and updates the header length
+        to reflect the added command size.
+
+        :param cmd: Command to be appended to the DCD segment
+        :raises SPSDKError: Invalid command type or unsupported command tag
+        """
         if not (isinstance(cmd, CmdBase) and (cmd.tag in self._COMMANDS)):
             raise SPSDKError("Invalid command")
         self._commands.append(cmd)
         self._header.length += cmd.size
 
     def pop(self, index: int) -> CmdBase:
-        """Popping of Device configuration data (DCD) segment."""
+        """Remove command from Device Configuration Data (DCD) segment at specified index.
+
+        The method removes a command from the internal commands list and updates
+        the header length accordingly.
+
+        :param index: Index of the command to remove from the segment.
+        :raises SPSDKError: Invalid index or unable to remove item from DCD segment.
+        :return: The removed command object.
+        """
         if index < 0 or index >= len(self._commands):
             raise SPSDKError("Can not pop item from dcd segment")
         cmd = self._commands.pop(index)
@@ -113,12 +197,24 @@ class SegDCD(PaddingSegment):
         return cmd
 
     def clear(self) -> None:
-        """Clear of Device configuration data (DCD) segment."""
+        """Clear the Device Configuration Data (DCD) segment.
+
+        Removes all commands from the DCD segment and resets the header length
+        to the base header size.
+        """
         self._commands.clear()
         self._header.length = self._header.size
 
     def export_txt(self, txt_data: Optional[str] = None) -> str:
-        """Export txt of Device configuration data (DCD) segment."""
+        """Export Device Configuration Data (DCD) segment to text format.
+
+        Converts the DCD segment commands into a human-readable text representation. The method
+        processes different command types (WriteData, CheckData, UnlockAny) and formats them
+        according to their specific syntax requirements.
+
+        :param txt_data: Optional existing text data to append to, defaults to empty string.
+        :return: Formatted text representation of the DCD segment commands.
+        """
         write_ops = ("WriteValue", "WriteClearBits", "ClearBitMask", "SetBitMask")
         check_ops = ("CheckAllClear", "CheckAllSet", "CheckAnyClear", "CheckAnySet")
         if txt_data is None:
@@ -159,7 +255,10 @@ class SegDCD(PaddingSegment):
     def export(self) -> bytes:
         """Export segment as bytes array.
 
-        :return: bytes
+        Exports the DCD segment data including header, commands, and padding when enabled.
+        If the segment is disabled, returns empty bytes.
+
+        :return: Exported segment data as bytes array.
         """
         data = b""
         if self.enabled:
@@ -175,8 +274,11 @@ class SegDCD(PaddingSegment):
     def parse_txt(cls, text: str) -> "SegDCD":
         """Parse segment from text file.
 
-        :param text: The string with DCD commands
-        :return: SegDCD object
+        This method creates a SegDCD object by parsing DCD (Device Configuration Data) commands
+        from a text string representation.
+
+        :param text: The string containing DCD commands to be parsed.
+        :return: SegDCD object created from the parsed text commands.
         """
         return SegDcdBuilder().build(text)
 
@@ -184,9 +286,12 @@ class SegDCD(PaddingSegment):
     def parse(cls, data: bytes) -> Self:
         """Parse segment from bytes array.
 
-        :param data: The bytes array of DCD segment
-        :raises SPSDKCorruptedException: Exception caused by corrupted data
-        :return: SegDCD object
+        This method parses a DCD (Device Configuration Data) segment from a byte array,
+        creating a SegDCD object with all contained commands.
+
+        :param data: The bytes array containing the DCD segment data.
+        :raises SPSDKCorruptedException: Exception caused by corrupted data or unknown commands.
+        :return: SegDCD object with parsed header and commands.
         """
         header = Header.parse(data, SegmentTag.DCD.tag)
         index = header.size
@@ -205,15 +310,21 @@ class SegDCD(PaddingSegment):
 class HabSegmentDcd(HabSegmentBase):
     """HAB Device Configuration Data (DCD) segment.
 
-    This class represents the DCD segment in the context of HAB images.
-    DCD is used to configure hardware peripherals (typically memory like DDR/SDRAM)
-    before the main application starts execution.
+    This class represents the DCD segment in HAB images, which is used to configure
+    hardware peripherals (typically memory controllers like DDR/SDRAM) before the
+    main application starts execution. The segment handles parsing, loading, and
+    exporting of DCD data within the HAB container structure.
+
+    :cvar SEGMENT_IDENTIFIER: HAB segment type identifier for DCD segments.
     """
 
     SEGMENT_IDENTIFIER = HabSegmentEnum.DCD
 
     def __init__(self, dcd: SegDCD):
-        """Initialize the segment."""
+        """Initialize the segment with DCD data.
+
+        :param dcd: DCD segment containing device configuration data.
+        """
         super().__init__()
         self.dcd = dcd
 
@@ -221,8 +332,12 @@ class HabSegmentDcd(HabSegmentBase):
     def load_from_config(cls, config: Config) -> Self:
         """Load the DCD HAB segment from HAB configuration.
 
-        :param config: Hab configuration object
-        :return: Instance of DCD HAB segment.
+        The method parses the DCD file path from configuration options and creates a DCD segment
+        instance with proper offset calculation based on IVT addresses.
+
+        :param config: HAB configuration object containing DCD file path and other options.
+        :return: Instance of DCD HAB segment with configured offset.
+        :raises SPSDKSegmentNotPresent: When DCDFilePath is not specified in configuration options.
         """
         options = config.get_config("options")
         if options.get("DCDFilePath"):
@@ -236,8 +351,13 @@ class HabSegmentDcd(HabSegmentBase):
     def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("unknown")) -> Self:
         """Parse DCD segment block from image binary.
 
+        Extracts the Device Configuration Data (DCD) segment from HAB container binary data
+        by locating the DCD address from the Image Vector Table and parsing the segment data.
+
         :param data: Binary data of HAB container to be parsed.
-        :return: Instance of DCD HAB segment.
+        :param family: Target MCU family revision information.
+        :return: Instance of DCD HAB segment with parsed data and offset.
+        :raises SPSDKSegmentNotPresent: When DCD segment is not present in the container.
         """
         ivt = HabSegmentIvt.parse(data)
         if ivt.dcd_address:
@@ -248,35 +368,56 @@ class HabSegmentDcd(HabSegmentBase):
         raise SPSDKSegmentNotPresent(f"Segment {cls.__name__} is not present")
 
     def export(self) -> bytes:
-        """Export segment as bytes.
+        """Export segment as bytes array.
 
-        :return: bytes
+        Converts the DCD (Device Configuration Data) segment into its binary representation
+        that can be written to memory or included in bootable images.
+
+        :return: Binary representation of the DCD segment.
         """
         return self.dcd.export()
 
     @property
     def size(self) -> int:
-        """Size of the binary data."""
+        """Get the size of the binary data.
+
+        :return: Size of the DCD binary data in bytes.
+        """
         return self.dcd.size
 
 
 class SegDcdBuilder:
-    """Builder to create SegDCD from text input."""
+    """DCD (Device Configuration Data) segment builder for HAB images.
+
+    This class provides functionality to build SegDCD objects from textual command
+    input, parsing and converting text-based DCD commands into their binary
+    representations for use in HAB (High Assurance Boot) images.
+    """
 
     def __init__(self) -> None:
-        """Initialize SegDcdBuilder."""
+        """Initialize SegDcdBuilder.
+
+        Sets up a new DCD (Device Configuration Data) segment builder with default values.
+        Initializes line counter for error reporting and command write cache for merging
+        consecutive write operations of the same type.
+        """
         self.line_cnt = 0  # current line number to be displayed in the error message
         self.cmd_write: Optional[CmdWriteData] = (
             None  # this is cache to merge several write commands of same type
         )
 
     def _parse_cmd(self, dcd_obj: SegDCD, cmd: list[str]) -> None:
-        """Parse one command.
+        """Parse one command from DCD script and add it to the DCD object.
 
-        :param dcd_obj: result of the builder
-        :param cmd: command with arguments
-        :raises SPSDKError: command is corrupted
-        :raises SPSDKError: When command is unsupported
+        The method processes different types of DCD commands including write operations,
+        check operations, NOP commands, and unlock commands. Write commands are batched
+        together when possible for optimization.
+
+        :param dcd_obj: DCD segment object to append the parsed command to
+        :param cmd: List of command strings where first element is command name
+        :raises SPSDKError: When command is corrupted or has insufficient arguments
+        :raises SPSDKError: When command is unsupported or unknown
+        :raises SPSDKSyntaxError: When check command has insufficient arguments
         """
         # ----------------------------
         # Parse command
@@ -347,8 +488,12 @@ class SegDcdBuilder:
     def build(self, text: str) -> SegDCD:
         """Parse segment from text file and build SegDCD.
 
-        :param text: input text to import
-        :return: SegDCD object
+        The method processes DCD (Device Configuration Data) commands from text input,
+        handling multi-line commands and building a complete SegDCD object with all
+        parsed commands.
+
+        :param text: Input text containing DCD commands to parse and import.
+        :return: SegDCD object with parsed commands and enabled state.
         """
         dcd_obj = SegDCD(enabled=True)
         cmd_mline = False

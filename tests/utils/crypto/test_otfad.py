@@ -5,18 +5,33 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""SPSDK OTFAD functionality unit tests.
+
+This module contains comprehensive unit tests for the On-The-Fly AES Decryption (OTFAD)
+functionality in SPSDK, validating both normal operations and error handling scenarios.
+"""
+
 import os
 
 import pytest
 
 from spsdk.exceptions import SPSDKError
 from spsdk.image.otfad.otfad import KeyBlob, Otfad
-from spsdk.utils.misc import align_block
 from spsdk.utils.family import FamilyRevision
+from spsdk.utils.misc import align_block
 
 
-def test_otfad_keyblob(data_dir):
-    """Test generation of key blob for OTFAD"""
+def test_otfad_keyblob(data_dir: str) -> None:
+    """Test OTFAD key blob generation and encryption functionality.
+
+    Validates key blob creation with both random and fixed keys, verifies
+    exported blob format against reference data, tests image encryption,
+    and ensures proper error handling for invalid parameters.
+
+    :param data_dir: Path to directory containing test data files including
+                    reference key blob and boot image binaries
+    :raises SPSDKError: When start address is not properly aligned
+    """
     # generate key blob using random keys
     key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x0800F3FF)
     gen_blob = key_blob.export(kek=bytes.fromhex("50F66BB4F23B855DCD8FEFC0DA59E963"))
@@ -70,8 +85,17 @@ def test_otfad_keyblob(data_dir):
     #     key_blob.encrypt_image(0x800F001, plain_image, True)
 
 
-def test_otfad(data_dir):
-    """Test OTFAD generator"""
+def test_otfad(data_dir: str) -> None:
+    """Test OTFAD (On-The-Fly AES Decryption) generator functionality.
+
+    This test verifies the OTFAD encryption capabilities including key blob creation,
+    image encryption with different parameters, and validation against expected output.
+    The test uses predefined test vectors and validates the encrypted image matches
+    the expected reference data.
+
+    :param data_dir: Directory path containing test data files including boot_image.bin and otfad_image.bin
+    :raises SPSDKError: When OTFAD operations fail or test data is invalid
+    """
     key = bytes.fromhex("B1A0C56AF31E98CD6936A79D9E6F829D")
     otfad = Otfad(family=FamilyRevision("mimxrt595s"), kek=key)
 
@@ -96,8 +120,15 @@ def test_otfad(data_dir):
     str(otfad)
 
 
-def test_oftad_invalid(data_dir):
-    """Test OTFAD - image address range does not match to key blob, won't be encrypted"""
+def test_oftad_invalid(data_dir: str) -> None:
+    """Test OTFAD encryption with mismatched address ranges.
+
+    Verifies that when the image address range does not match the key blob
+    address range, the image remains unencrypted. This test ensures proper
+    validation of address alignment between key blobs and target images.
+
+    :param data_dir: Directory path containing test data files including boot_image.bin
+    """
     key = bytes.fromhex("B1A0C56AF31E98CD6936A79D9E6F829D")
     otfad = Otfad(family=FamilyRevision("mimxrt595s"), kek=key)
     counter = bytes.fromhex("5689fab8b4bfb264")
@@ -111,7 +142,17 @@ def test_oftad_invalid(data_dir):
     assert image == encrypted
 
 
-def test_keyblob_invalid():
+def test_keyblob_invalid() -> None:
+    """Test KeyBlob class with invalid parameters and configurations.
+
+    This test function validates that KeyBlob properly raises SPSDKError exceptions
+    when initialized or used with invalid parameters including invalid address ranges,
+    malformed keys, invalid flags, incorrect KEK lengths, malformed CRC values,
+    invalid zero fill data, wrong initialization vector lengths, invalid data block
+    counts, and malformed counter initialization vectors.
+
+    :raises SPSDKError: When KeyBlob is created or used with invalid parameters.
+    """
     with pytest.raises(SPSDKError, match="Invalid start/end address"):
         KeyBlob(start_addr=0x08001000, end_addr=0x08000000)
     key = bytes.fromhex("B1")

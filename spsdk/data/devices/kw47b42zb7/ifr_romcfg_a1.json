@@ -1318,9 +1318,9 @@
                     "description": "This field is reserved for internal use",
                     "offset_int": "0x0109",
                     "is_reserved": true,
-                    "default_value_int": "0xFFFF",
+                    "default_value_int": "0xFF",
                     "individual_write_lock": "none",
-                    "reg_width": 16
+                    "reg_width": 8
                 },
                 {
                     "id": "Reserved0010A",

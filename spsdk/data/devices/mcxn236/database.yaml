@@ -335,9 +335,10 @@ features:
   # ======== EL2GO TP section ========
   el2go_tp:
     el2go_name: MCXN
-    prov_method: fw_user_config
+    prov_method: dispatch_fw
+    dispatch_method: sb_only
     use_additional_data: true
-    fw_read_address: 0x2000_0000
-    user_data_address: 0x2000_0100
+    fw_read_address: 0x2000_0100
     ignored_otp_ranges: [11, 22]
+    clean_method: erase_cmpa
     validation_method: max_count=16;max_total_size=16384

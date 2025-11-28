@@ -5,8 +5,14 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""EdgeLock Enclave Message."""
+"""SPSDK EdgeLock Enclave message handling and communication protocol.
 
+This module provides comprehensive message classes for communicating with NXP's EdgeLock
+Enclave security subsystem. It includes message formatting, serialization, and protocol
+handling for various ELE operations including authentication, key management, lifecycle
+operations, and system control functions.
+"""
+# pylint: disable=too-many-lines
 
 import logging
 from struct import pack, unpack
@@ -46,9 +52,17 @@ RESERVED = 0
 
 
 class EleMessage:
-    """Base class for any EdgeLock Enclave Message.
+    """Base class for EdgeLock Enclave message communication.
 
-    Message contains a header - tag, command id, size and version.
+    This class provides the foundation for creating and managing messages sent to and received from
+    the EdgeLock Enclave security subsystem. It handles message structure including headers with
+    tag, command ID, size and version fields, as well as memory alignment and addressing for both
+    command and response data.
+
+    :cvar TAG: Message tag identifier for commands (0x17).
+    :cvar RSP_TAG: Message tag identifier for responses (0xE1).
+    :cvar VERSION: Message protocol version (0x06).
+    :cvar ELE_MSG_ALIGN: Memory alignment requirement for messages (8 bytes).
     """
 
     CMD = 0x00
@@ -66,7 +80,11 @@ class EleMessage:
     MAX_COMMAND_DATA_SIZE = 0
 
     def __init__(self) -> None:
-        """Class object initialized."""
+        """Initialize ELE message object.
+
+        Initialize all message attributes to their default values including abort code,
+        indication, status, buffer address and size, command, and response data size.
+        """
         self.abort_code = 0
         self.indication = 0
         self.status = 0
@@ -77,37 +95,72 @@ class EleMessage:
 
     @property
     def command_address(self) -> int:
-        """Command address in target memory space."""
+        """Get command address in target memory space.
+
+        Returns the buffer address aligned to ELE message alignment requirements.
+
+        :return: Aligned command address as integer value.
+        """
         return align(self.buff_addr, self.ELE_MSG_ALIGN)
 
     @property
     def command_words_count(self) -> int:
-        """Command Words count."""
+        """Get the total count of command words.
+
+        Calculates the total number of words in the command by summing the header
+        words count and payload words count.
+
+        :return: Total number of words in the command.
+        """
         return self.COMMAND_HEADER_WORDS_COUNT + self.COMMAND_PAYLOAD_WORDS_COUNT
 
     @property
     def has_command_data(self) -> bool:
-        """Check if command has additional data."""
+        """Check if command has additional data.
+
+        :return: True if command has additional data, False otherwise.
+        """
         return bool(self.command_data_size > 0)
 
     @property
     def command_data_address(self) -> int:
-        """Command data address in target memory space."""
+        """Get command data address in target memory space.
+
+        Calculates the aligned address where command data should be placed in target memory,
+        based on the command address and the number of command words.
+
+        :return: Aligned address for command data placement in target memory.
+        """
         return align(self.command_address + self.command_words_count * 4, self.ELE_MSG_ALIGN)
 
     @property
     def command_data_size(self) -> int:
-        """Command data address in target memory space."""
+        """Get the size of command data aligned to ELE message requirements.
+
+        The method calculates the aligned size of command data, using either the actual
+        data length or the maximum command data size if no data is present.
+
+        :return: Size of command data aligned to ELE_MSG_ALIGN boundary.
+        """
         return align(len(self.command_data) or self.MAX_COMMAND_DATA_SIZE, self.ELE_MSG_ALIGN)
 
     @property
     def command_data(self) -> bytes:
-        """Command data to be loaded into target memory space."""
+        """Get command data to be loaded into target memory space.
+
+        :return: Command data as bytes, empty by default.
+        """
         return b""
 
     @property
     def response_address(self) -> int:
-        """Response address in target memory space."""
+        """Get response address in target memory space.
+
+        Calculates the memory address where the response data should be placed,
+        considering command data presence and proper alignment requirements.
+
+        :return: Aligned memory address for response data placement.
+        """
         if self.has_command_data:
             address = self.command_data_address + self.command_data_size
         else:
@@ -116,44 +169,86 @@ class EleMessage:
 
     @property
     def response_words_count(self) -> int:
-        """Response Words count."""
+        """Get the total count of response words.
+
+        Calculates the total number of words in the response by summing the header
+        words count and payload words count.
+
+        :return: Total number of words in the response message.
+        """
         return self.RESPONSE_HEADER_WORDS_COUNT + self.RESPONSE_PAYLOAD_WORDS_COUNT
 
     @property
     def has_response_data(self) -> bool:
-        """Check if response has additional data."""
+        """Check if response has additional data.
+
+        :return: True if response contains additional data, False otherwise.
+        """
         return bool(self.response_data_size > 0)
 
     @property
     def response_data_address(self) -> int:
-        """Response data address in target memory space."""
+        """Get response data address in target memory space.
+
+        Calculates the aligned memory address where response data should be stored,
+        based on the response address and the number of response words.
+
+        :return: Aligned memory address for response data storage.
+        """
         return align(self.response_address + self.response_words_count * 4, self.ELE_MSG_ALIGN)
 
     @property
     def response_data_size(self) -> int:
-        """Response data address in target memory space."""
+        """Get aligned response data size.
+
+        Returns the response data size aligned to ELE message alignment requirements.
+
+        :return: Aligned response data size in bytes.
+        """
         return align(self._response_data_size, self.ELE_MSG_ALIGN)
 
     @response_data_size.setter
     def response_data_size(self, size: int) -> None:
-        """Response data address in target memory space."""
+        """Set response data size in target memory space.
+
+        :param size: Size of the response data in bytes.
+        """
         self._response_data_size = size
 
     @property
     def free_space_address(self) -> int:
-        """First free address after ele message in target memory space."""
+        """Get first free address after ELE message in target memory space.
+
+        The method calculates the aligned address that comes after the response data,
+        ensuring proper memory alignment according to ELE message requirements.
+
+        :return: Aligned memory address representing the first free location after the ELE message.
+        """
         return align(self.response_data_address + self._response_data_size, self.ELE_MSG_ALIGN)
 
     @property
     def free_space_size(self) -> int:
-        """Free space size after ele message in target memory space."""
+        """Get free space size after ELE message in target memory space.
+
+        Calculates the available space remaining in the buffer after the ELE message,
+        aligned to the required ELE message alignment boundary.
+
+        :return: Size of free space in bytes, aligned to ELE_MSG_ALIGN boundary.
+        """
         return align(
             self.buff_size - (self.free_space_address - self.buff_addr), self.ELE_MSG_ALIGN
         )
 
     @property
     def status_string(self) -> str:
-        """Get status in readable string format."""
+        """Get status in readable string format.
+
+        Converts the response status and indication codes into a human-readable string
+        representation for easier debugging and logging purposes.
+
+        :return: Human-readable status string - "Succeeded" for success, "Failed: <indication>"
+                 for failures, or "Invalid status!" for unknown status codes.
+        """
         if not ResponseStatus.contains(self.status):
             return "Invalid status!"
         if self.status == ResponseStatus.ELE_SUCCESS_IND:
@@ -168,8 +263,9 @@ class EleMessage:
     def set_buffer_params(self, buff_addr: int, buff_size: int) -> None:
         """Set the communication buffer parameters to allow command update addresses inside command payload.
 
-        :param buff_addr: Real address of communication buffer in target memory space
-        :param buff_size: Size of communication buffer in target memory space
+        :param buff_addr: Real address of communication buffer in target memory space.
+        :param buff_size: Size of communication buffer in target memory space.
+        :raises SPSDKError: Invalid buffer parameters during validation.
         """
         self.buff_addr = buff_addr
         self.buff_size = buff_size
@@ -179,7 +275,10 @@ class EleMessage:
     def validate_buffer_params(self) -> None:
         """Validate communication buffer parameters.
 
-        raises SPSDKValueError: Invalid buffer parameters.
+        Checks if the communication buffer has sufficient size to accommodate the ELE message
+        response data or response words based on the message configuration.
+
+        :raises SPSDKValueError: Invalid buffer parameters - buffer too small for message.
         """
         if self.has_response_data:
             needed_space = self.response_data_address + self.response_data_size
@@ -193,12 +292,21 @@ class EleMessage:
             )
 
     def validate(self) -> None:
-        """Validate message."""
+        """Validate the ELE message structure and content.
+
+        Performs validation checks on the message to ensure it meets the required
+        format and contains valid data according to ELE protocol specifications.
+
+        :raises SPSDKError: Invalid message structure or content.
+        """
 
     def header_export(
         self,
     ) -> bytes:
-        """Exports message header to bytes.
+        """Export message header to bytes.
+
+        Converts the message header fields (version, command words count, command, and tag)
+        into their binary representation using the predefined header format.
 
         :return: Bytes representation of message header.
         """
@@ -209,7 +317,7 @@ class EleMessage:
     def export(
         self,
     ) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to final bytes array.
 
         :return: Bytes representation of message object.
         """
@@ -218,8 +326,12 @@ class EleMessage:
     def decode_response(self, response: bytes) -> None:
         """Decode response from target.
 
-        :param response: Data of response.
-        :raises SPSDKParsingError: Response parse detect some error.
+        Parses and validates the response message header and status information.
+        The method verifies message tag, command, size, and version fields against
+        expected values and extracts status, indication, and abort code.
+
+        :param response: Raw response data bytes from target device.
+        :raises SPSDKParsingError: Invalid response format or field values detected.
         """
         # Decode and validate header
         (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
@@ -242,11 +354,22 @@ class EleMessage:
     def decode_response_data(self, response_data: bytes) -> None:
         """Decode response data from target.
 
-        :note: The response data are specific per command.
-        :param response_data: Data of response.
+        The response data are specific per command and will be processed according to the
+        command's expected response format.
+
+        :param response_data: Raw response data bytes received from the target device.
         """
 
     def __eq__(self, other: object) -> bool:
+        """Check equality between two EleMessage objects.
+
+        Compares TAG, command, VERSION, and command_words_count attributes to determine
+        if two EleMessage instances are equal.
+
+        :param other: Object to compare with this EleMessage instance.
+        :return: True if objects are equal EleMessage instances with matching attributes,
+                 False otherwise.
+        """
         if isinstance(other, EleMessage):
             if (
                 self.TAG == other.TAG
@@ -262,7 +385,11 @@ class EleMessage:
     def get_msg_crc(payload: bytes) -> bytes:
         """Compute message CRC.
 
-        :param payload: The input data to compute CRC on them. Must be 4 bytes aligned.
+        The method calculates CRC using XOR operation on 4-byte chunks of the input payload.
+        All data must be properly aligned to 4-byte boundaries for correct computation.
+
+        :param payload: The input data to compute CRC on. Must be 4 bytes aligned.
+        :raises SPSDKValueError: Payload is not 4 bytes aligned.
         :return: 4 bytes of CRC in little endian format.
         """
         if len(payload) % 4 != 0:
@@ -273,9 +400,12 @@ class EleMessage:
         return res.to_bytes(4, Endianness.LITTLE.value)
 
     def response_status(self) -> str:
-        """Print the response status information.
+        """Get response status information as formatted string.
 
-        :return: String with response status.
+        Formats the response status with detailed failure information including
+        indication and abort code when applicable.
+
+        :return: Formatted string containing response status details.
         """
         ret = f"Response status: {ResponseStatus.get_label(self.status)}\n"
         if self.status == ResponseStatus.ELE_FAILURE_IND:
@@ -287,9 +417,12 @@ class EleMessage:
         return ret
 
     def info(self) -> str:
-        """Print information including live data.
+        """Get message information including live data.
 
-        :return: Information about the message.
+        Returns a formatted string containing command details, word counts,
+        data flags, and response status information.
+
+        :return: Formatted string with comprehensive message information.
         """
         ret = f"Command:         {self.MSG_IDS.get_label(self.command)} - ({hex(self.command)})\n"
         ret += f"Command words:   {self.command_words_count}\n"
@@ -303,18 +436,28 @@ class EleMessage:
 
 
 class EleMessagePing(EleMessage):
-    """ELE Message Ping."""
+    """ELE Message Ping command implementation.
+
+    This class represents a ping message used to test communication with the EdgeLock Enclave (ELE).
+    The ping command is typically used for connectivity verification and basic health checks.
+
+    :cvar CMD: Command identifier for ping request message.
+    """
 
     CMD = MessageIDs.PING_REQ.tag
 
 
 class EleMessageDumpDebugBuffer(EleMessage):
-    """ELE Message Dump Debug buffer.
+    """ELE Message for dumping EdgeLock Secure Enclave debug buffer.
 
-    EdgeLock Secure Enclave have a logging mechanism for debugging purposes.
-    Logs are sent over MU with maximum 20 logs per exchange. If ELE has more than
-    20 logs in buffer, this API must be called multiple times.
-    EdgeLock Secure Enclave internal buffer log size is approximately 2kB.
+    This class handles retrieval of debug logs from the EdgeLock Secure Enclave's
+    internal logging mechanism. Logs are transmitted over MU interface with a maximum
+    of 20 logs per exchange. Multiple calls may be required to retrieve all logs
+    when the ELE buffer contains more than 20 entries.
+
+    :cvar CMD: Command identifier for debug buffer dump request.
+    :cvar RESPONSE_PAYLOAD_WORDS_COUNT: Maximum response length in words.
+    :cvar ELE_DEBUG_LOG_MAX_RSP_LENGTH: Maximum response length constant.
     """
 
     CMD = MessageIDs.ELE_DUMP_DEBUG_BUFFER_REQ.tag
@@ -322,17 +465,25 @@ class EleMessageDumpDebugBuffer(EleMessage):
     ELE_DEBUG_LOG_MAX_RSP_LENGTH = 0x17  # Maximum response length constant
 
     def __init__(self) -> None:
-        """Class object initialized."""
+        """Initialize ELE message object.
+
+        Initializes the ELE (EdgeLock Enclave) message with empty debug words list,
+        zero log count, and sets the more logs flag to False.
+        """
         super().__init__()
         self.debug_words: list[int] = []
         self.nb_logs = 0
         self.has_more_logs = False
 
     def decode_response(self, response: bytes) -> None:
-        """Decode response from target.
+        """Decode response from target containing debug log data.
 
-        :param response: Data of response.
-        :raises SPSDKParsingError: Response parse detect some error.
+        This method parses the ELE debug log response, extracting debug words and handling
+        CRC verification when present. It determines if more logs are available and validates
+        the message integrity.
+
+        :param response: Raw response data bytes from the target device.
+        :raises SPSDKParsingError: When response parsing fails or CRC verification fails.
         """
         super().decode_response(response)
 
@@ -372,7 +523,14 @@ class EleMessageDumpDebugBuffer(EleMessage):
             self.debug_words = []
 
     def response_info(self) -> str:
-        """Print Dumped data of debug buffer in STEC team format."""
+        """Get formatted debug buffer information in STEC team format.
+
+        Formats the debug buffer data into a human-readable string following the STEC team
+        format specification. The logs are displayed in pairs with hexadecimal formatting,
+        and includes metadata about log count and availability of additional logs.
+
+        :return: Formatted string containing debug log information, log count, and availability status.
+        """
         if not self.debug_words:
             return "No debug logs available\n"
 
@@ -417,31 +575,49 @@ class EleMessageDumpDebugBuffer(EleMessage):
 
 
 class EleMessageReset(EleMessage):
-    """ELE Message Reset."""
+    """ELE Message Reset command handler.
+
+    This class implements the ELE (EdgeLock Enclave) reset message functionality,
+    providing the ability to send reset requests to the ELE subsystem.
+
+    :cvar CMD: Command identifier for reset request operations.
+    :cvar RESPONSE_HEADER_WORDS_COUNT: Number of header words in reset response.
+    """
 
     CMD = MessageIDs.RESET_REQ.tag
     RESPONSE_HEADER_WORDS_COUNT = 0
 
 
 class EleMessageEleFwAuthenticate(EleMessage):
-    """Ele firmware authenticate request."""
+    """ELE firmware authentication request message.
+
+    This class represents a message used to request authentication of ELE (EdgeLock Enclave)
+    firmware. It handles the communication protocol for authenticating firmware loaded at a
+    specific memory address in the target device.
+
+    :cvar CMD: Message command identifier for ELE firmware authentication request.
+    :cvar COMMAND_PAYLOAD_WORDS_COUNT: Number of payload words in the command message.
+    """
 
     CMD = MessageIDs.ELE_FW_AUTH_REQ.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 3
 
     def __init__(self, ele_fw_address: int) -> None:
-        """Constructor.
+        """Initialize ELE message with firmware address.
 
         Be aware to have ELE FW in accessible memory for ROM, and
         do not use the RAM memory used to communicate with ELE.
 
-        :param ele_fw_address: Address in target memory with ele firmware.
+        :param ele_fw_address: Address in target memory with ELE firmware.
         """
         super().__init__()
         self.ele_fw_address = ele_fw_address
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to final bytes array.
+
+        The method serializes the message object into a binary format by combining
+        the exported header with packed firmware address data.
 
         :return: Bytes representation of message object.
         """
@@ -453,23 +629,34 @@ class EleMessageEleFwAuthenticate(EleMessage):
 
 
 class EleMessageOemContainerAuthenticate(EleMessage):
-    """OEM container authenticate request."""
+    """ELE message for OEM container authentication request.
+
+    This class represents a message used to request authentication of an OEM container
+    in the EdgeLock Enclave (ELE) system. It handles the formatting and export of
+    authentication requests with the specified container address.
+
+    :cvar CMD: Command identifier for OEM container authentication request.
+    :cvar COMMAND_PAYLOAD_WORDS_COUNT: Number of payload words in the command.
+    """
 
     CMD = MessageIDs.ELE_OEM_CNTN_AUTH_REQ.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 2
 
     def __init__(self, oem_cntn_addr: int) -> None:
-        """Constructor.
+        """Initialize OEM container message with target memory address.
 
         Be aware to have OEM Container in accessible memory for ROM.
 
-        :param oem_cntn_addr: Address in target memory with oem container.
+        :param oem_cntn_addr: Address in target memory with OEM container.
         """
         super().__init__()
         self.oem_cntn_addr = oem_cntn_addr
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to final bytes array.
+
+        The method combines the header export with packed OEM container address
+        to create the complete message representation.
 
         :return: Bytes representation of message object.
         """
@@ -479,22 +666,31 @@ class EleMessageOemContainerAuthenticate(EleMessage):
 
 
 class EleMessageVerifyImage(EleMessage):
-    """Verify image request."""
+    """ELE message for verifying image integrity.
+
+    This class implements the ELE Verify Image request message that commands the ELE
+    to check the hash on one or more images after a container has been loaded into
+    memory and processed with an Authenticate Container message.
+
+    :cvar CMD: Message command identifier for verify image request.
+    :cvar COMMAND_PAYLOAD_WORDS_COUNT: Number of payload words in command.
+    :cvar RESPONSE_PAYLOAD_WORDS_COUNT: Number of payload words in response.
+    """
 
     CMD = MessageIDs.ELE_VERIFY_IMAGE_REQ.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 1
     RESPONSE_PAYLOAD_WORDS_COUNT = 2
 
     def __init__(self, image_mask: int = 0x0000_0001) -> None:
-        """Constructor.
+        """Initialize Verify Image message.
 
         The Verify Image message is sent to the ELE after a container has been
         loaded into memory and processed with an Authenticate Container message.
         This commands the ELE to check the hash on one or more images.
 
-        :param image_mask: Used to indicate which images are to be checked. There must be at least
-            one image. Each bit corresponds to a particular image index in the header, for example,
-            bit 0 is for image 0, and bit 1 is for image 1, and so on.
+        :param image_mask: Bitmask indicating which images to check. Each bit corresponds
+            to a particular image index in the header (bit 0 for image 0, bit 1 for image 1, etc.).
+            At least one image must be specified.
         """
         super().__init__()
         self.image_mask = image_mask
@@ -502,9 +698,12 @@ class EleMessageVerifyImage(EleMessage):
         self.invalid_image_mask = 0xFFFF_FFFF
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to bytes array.
 
-        :return: Bytes representation of message object.
+        Converts the message object into its binary representation by combining
+        the exported header with the image mask field.
+
+        :return: Binary representation of the message object.
         """
         ret = self.header_export()
         ret += pack(LITTLE_ENDIAN + UINT32, self.image_mask)
@@ -513,7 +712,10 @@ class EleMessageVerifyImage(EleMessage):
     def decode_response(self, response: bytes) -> None:
         """Decode response from target.
 
-        :param response: Data of response.
+        Parses the response data to extract valid and invalid image masks, then validates
+        that the combined masks match the originally requested image mask for checking.
+
+        :param response: Raw response data bytes from the target device.
         :raises SPSDKParsingError: Response parse detect some error.
         """
         super().decode_response(response)
@@ -529,38 +731,61 @@ class EleMessageVerifyImage(EleMessage):
             )
 
     def response_info(self) -> str:
-        """Print Dumped data of debug buffer."""
+        """Get response information as formatted string.
+
+        Formats the valid and invalid image masks into a human-readable string
+        representation with hexadecimal values.
+
+        :return: Formatted string containing valid and invalid image mask information.
+        """
         ret = f"Valid image mask    : 0x{self.valid_image_mask:08X}\n"
         ret += f"Invalid image mask  : 0x{self.invalid_image_mask:08X}"
         return ret
 
 
 class EleMessageReleaseContainer(EleMessage):
-    """ELE Message Release container."""
+    """ELE Message for releasing a container.
+
+    This class represents an ELE (EdgeLock Enclave) message used to release
+    a previously loaded container from the secure enclave memory.
+
+    :cvar CMD: Command identifier for the release container request.
+    """
 
     CMD = MessageIDs.ELE_RELEASE_CONTAINER_REQ.tag
 
 
 class EleMessageForwardLifeCycleUpdate(EleMessage):
-    """Forward Life cycle update request."""
+    """ELE message for forwarding life cycle update requests.
+
+    This class represents a message used to request a life cycle state transition
+    in the EdgeLock Enclave. The operation is non-revertible and changes the
+    device's security state permanently.
+
+    :cvar CMD: Command identifier for life cycle update requests.
+    :cvar COMMAND_PAYLOAD_WORDS_COUNT: Number of payload words in the message.
+    """
 
     CMD = MessageIDs.ELE_FWD_LIFECYCLE_UP_REQ.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 1
 
     def __init__(self, lifecycle_update: LifeCycleToSwitch) -> None:
-        """Constructor.
+        """Initialize lifecycle update message.
 
         Be aware that this is non-revertible operation.
 
-        :param lifecycle_update: New life cycle value.
+        :param lifecycle_update: New life cycle value to switch to.
         """
         super().__init__()
         self.lifecycle_update = lifecycle_update
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to bytes array representation.
 
-        :return: Bytes representation of message object.
+        Converts the message object into its binary format by combining the header
+        and lifecycle update data with proper padding.
+
+        :return: Binary representation of the complete message.
         """
         ret = self.header_export()
         ret += pack(LITTLE_ENDIAN + UINT16 + UINT8 + UINT8, self.lifecycle_update.tag, 0, 0)
@@ -568,14 +793,21 @@ class EleMessageForwardLifeCycleUpdate(EleMessage):
 
 
 class EleMessageGetEvents(EleMessage):
-    """Get events request.
+    """ELE message for retrieving system events from EdgeLock Enclave.
 
-    \b
+    This class handles requests to get singular events that have occurred since the firmware
+    started. Events include command failures and successful commands with indications (warnings).
+    The EdgeLock Enclave stores events in a fixed-size buffer, and when capacity is exceeded,
+    new events are lost. The complete event buffer is always returned regardless of actual
+    event count.
     Event layout:
     -------------------------
     - TAG - CMD - IND - STS -
     -------------------------
-    \b
+
+    :cvar CMD: Command identifier for get events request.
+    :cvar RESPONSE_PAYLOAD_WORDS_COUNT: Expected response payload size in words.
+    :cvar MAX_EVENT_CNT: Maximum number of events that can be stored.
     """
 
     CMD = MessageIDs.ELE_GET_EVENTS_REQ.tag
@@ -584,26 +816,30 @@ class EleMessageGetEvents(EleMessage):
     MAX_EVENT_CNT = 8
 
     def __init__(self) -> None:
-        """Constructor.
+        """Initialize ELE message for retrieving singular events.
 
         This message is used to retrieve any singular event that has occurred since the FW has
-         started. A singular event occurs when the second word of a response to any request is
-         different from ELE_SUCCESS_IND. That includes commands with failure response as well as
-         commands with successful response containing an indication (i.e. warning response).
+        started. A singular event occurs when the second word of a response to any request is
+        different from ELE_SUCCESS_IND. That includes commands with failure response as well as
+        commands with successful response containing an indication (i.e. warning response).
         The events are stored by the ELE in a fixed sized buffer. When the capacity of the buffer
-         is exceeded, new occurring events are lost.
+        is exceeded, new occurring events are lost.
         The event buffer is systematically returned in full to the requester independently of
-         the actual numbers of events stored.
+        the actual numbers of events stored.
         """
         super().__init__()
         self.event_cnt = 0
         self.events: list[int] = [0] * self.MAX_EVENT_CNT
 
     def decode_response(self, response: bytes) -> None:
-        """Decode response from target.
+        """Decode response from target device.
 
-        :param response: Data of response.
-        :raises SPSDKParsingError: Response parse detect some error.
+        Parses the response data to extract event count, maximum events, individual events,
+        and validates the CRC checksum. Logs errors if maximum event count doesn't match
+        expected value or if CRC validation fails.
+
+        :param response: Raw response data bytes from the target device.
+        :raises SPSDKParsingError: Response parsing detects an error or invalid data format.
         """
         super().decode_response(response)
         self.event_cnt, max_events, *self.events, crc = unpack(
@@ -618,30 +854,65 @@ class EleMessageGetEvents(EleMessage):
 
     @staticmethod
     def get_ipc_id(event: int) -> str:
-        """Get IPC ID in string from event."""
+        """Get IPC ID in string from event.
+
+        Extracts the IPC (Inter-Processor Communication) ID from the event value by shifting
+        and masking bits, then converts it to a human-readable string description.
+
+        :param event: Event value containing the IPC ID in bits 24-31.
+        :return: String description of the IPC ID or empty string if not found.
+        """
         ipc_id = (event >> 24) & 0xFF
         return MessageUnitId.get_description(ipc_id, f"Unknown MU: ({ipc_id})") or ""
 
     @staticmethod
     def get_cmd(event: int) -> str:
-        """Get Command in string from event."""
+        """Get Command in string from event.
+
+        Extracts the command field from an event value and returns its string description.
+
+        :param event: Event value containing command information in bits 16-23.
+        :return: String description of the command or empty string if not found.
+        """
         cmd = (event >> 16) & 0xFF
         return MessageIDs.get_description(cmd, f"Unknown Command: (0x{cmd:02})") or ""
 
     @staticmethod
     def get_ind(event: int) -> str:
-        """Get Indication in string from event."""
+        """Get indication string from event value.
+
+        Extracts the indication bits from the event value and converts them to a human-readable
+        string description.
+
+        :param event: Event value containing indication bits in bits 8-15.
+        :return: String description of the indication or empty string if not found.
+        """
         ind = (event >> 8) & 0xFF
         return ResponseIndication.get_description(ind, f"Unknown Indication: (0x{ind:02})") or ""
 
     @staticmethod
     def get_sts(event: int) -> str:
-        """Get Status in string from event."""
+        """Get status string representation from event code.
+
+        Extracts the status code from the lower 8 bits of the event and converts it to a
+        human-readable string description.
+
+        :param event: Event code containing status information in lower 8 bits.
+        :return: String description of the status code, or empty string if conversion fails.
+        """
         sts = event & 0xFF
         return ResponseStatus.get_description(sts, f"Unknown Status: (0x{sts:02})") or ""
 
     def response_info(self) -> str:
-        """Print events info."""
+        """Get formatted string with events information.
+
+        Formats and returns a string containing detailed information about all events,
+        including event count, IPC ID, command, indication, and status for each event.
+        If the event count exceeds the maximum supported limit, only the first events
+        up to the limit are displayed with a warning message.
+
+        :return: Formatted string with events information.
+        """
         ret = f"Event count:     {self.event_cnt}"
         for i, event in enumerate(self.events[: min(self.event_cnt, self.MAX_EVENT_CNT)]):
             ret += f"\nEvent[{i}]:      0x{event:08X}"
@@ -656,19 +927,38 @@ class EleMessageGetEvents(EleMessage):
 
 
 class EleMessageStartTrng(EleMessage):
-    """ELE Message Start True Random Generator."""
+    """ELE Message for starting the True Random Number Generator.
+
+    This class represents a command message used to initiate the hardware-based
+    True Random Number Generator (TRNG) in ELE (EdgeLock Enclave) secure subsystem.
+
+    :cvar CMD: Command identifier for the start TRNG request message.
+    """
 
     CMD = MessageIDs.START_RNG_REQ.tag
 
 
 class EleMessageGetTrngState(EleMessage):
-    """ELE Message Get True Random Generator State."""
+    """ELE Message for retrieving True Random Number Generator state.
+
+    This class handles communication with EdgeLock Enclave to query the current
+    state of both the TRNG (True Random Number Generator) and CSAL (Cryptographic
+    Secure Application Library) components. It decodes the response to provide
+    readable state information for both random number generation subsystems.
+
+    :cvar CMD: Command identifier for TRNG state request.
+    :cvar RESPONSE_PAYLOAD_WORDS_COUNT: Expected response payload size in words.
+    """
 
     CMD = MessageIDs.GET_TRNG_STATE_REQ.tag
     RESPONSE_PAYLOAD_WORDS_COUNT = 1
 
     def __init__(self) -> None:
-        """Class object initialized."""
+        """Initialize ELE message object.
+
+        Sets up the ELE message with default TRNG state set to ELE_TRNG_PROGRAM
+        and CSAL state set to ELE_CSAL_NOT_READY.
+        """
         super().__init__()
         self.ele_trng_state = EleTrngState.ELE_TRNG_PROGRAM.tag
         self.ele_csal_state = EleCsalState.ELE_CSAL_NOT_READY.tag
@@ -676,8 +966,11 @@ class EleMessageGetTrngState(EleMessage):
     def decode_response(self, response: bytes) -> None:
         """Decode response from target.
 
-        :param response: Data of response.
-        :raises SPSDKParsingError: Response parse detect some error.
+        This method parses the response bytes and extracts ELE TRNG state and CSAL state
+        from the last 4 bytes of the response data.
+
+        :param response: Raw response data bytes received from the target device.
+        :raises SPSDKParsingError: Response parsing detected an error or invalid format.
         """
         super().decode_response(response)
         self.ele_trng_state, self.ele_csal_state, _ = unpack(
@@ -685,9 +978,12 @@ class EleMessageGetTrngState(EleMessage):
         )
 
     def response_info(self) -> str:
-        """Print specific information of ELE.
+        """Get EdgeLock Enclave response information.
 
-        :return: Information about the TRNG.
+        Returns formatted string containing the current state of EdgeLock Enclave TRNG
+        and EdgeLock Secure Enclave RNG components.
+
+        :return: Formatted string with TRNG and RNG state information.
         """
         return (
             f"EdgeLock Enclave TRNG state: {EleTrngState.get_description(self.ele_trng_state)}"
@@ -696,27 +992,53 @@ class EleMessageGetTrngState(EleMessage):
 
 
 class EleMessageCommit(EleMessage):
-    """ELE Message Get FW status."""
+    """ELE Message Commit command handler.
+
+    This class implements the ELE commit message functionality for committing
+    various types of information to the EdgeLock Enclave. It manages the
+    creation of commit requests and processing of responses, including
+    validation of which information was successfully committed.
+
+    :cvar CMD: Command identifier for ELE commit request.
+    :cvar COMMAND_PAYLOAD_WORDS_COUNT: Number of payload words in command.
+    :cvar RESPONSE_PAYLOAD_WORDS_COUNT: Number of payload words in response.
+    """
 
     CMD = MessageIDs.ELE_COMMIT_REQ.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 1
     RESPONSE_PAYLOAD_WORDS_COUNT = 1
 
     def __init__(self, info_to_commit: list[EleInfo2Commit]) -> None:
-        """Class object initialized."""
+        """Initialize ELE message with information to commit.
+
+        :param info_to_commit: List of ELE information objects that need to be committed.
+        """
         super().__init__()
         self.info_to_commit = info_to_commit
 
     @property
     def info2commit_mask(self) -> int:
-        """Get info to commit mask used in command."""
+        """Get info to commit mask used in command.
+
+        This method iterates through all info_to_commit rules and combines their tags
+        using bitwise OR operation to create a composite mask value.
+
+        :return: Combined bitmask of all info to commit rule tags.
+        """
         ret = 0
         for rule in self.info_to_commit:
             ret |= rule.tag
         return ret
 
     def mask_to_info2commit(self, mask: int) -> list[EleInfo2Commit]:
-        """Get list of info to commit from mask."""
+        """Get list of info to commit from mask.
+
+        Converts a bitmask into a list of EleInfo2Commit objects by checking each bit
+        position and creating corresponding commit info objects.
+
+        :param mask: Bitmask where each bit represents a specific info to commit.
+        :return: List of EleInfo2Commit objects corresponding to set bits in the mask.
+        """
         ret = []
         for bit in range(32):
             bit_mask = 1 << bit
@@ -725,9 +1047,12 @@ class EleMessageCommit(EleMessage):
         return ret
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to bytes array.
 
-        :return: Bytes representation of message object.
+        Converts the message object into its binary representation by combining
+        the exported header with the info2commit_mask field.
+
+        :return: Binary representation of the message object.
         """
         ret = self.header_export()
         ret += pack(LITTLE_ENDIAN + UINT32, self.info2commit_mask)
@@ -736,8 +1061,12 @@ class EleMessageCommit(EleMessage):
     def decode_response(self, response: bytes) -> None:
         """Decode response from target.
 
-        :param response: Data of response.
-        :raises SPSDKParsingError: Response parse detect some error.
+        This method processes the response data and validates the commit mask against
+        the expected information to commit. If there's a mismatch, it logs a warning
+        about which information was actually committed versus what was requested.
+
+        :param response: Raw response data bytes from the target device.
+        :raises SPSDKParsingError: Response parsing detects an error.
         """
         super().decode_response(response)
         mask = int.from_bytes(response[8:12], Endianness.LITTLE.value)
@@ -751,41 +1080,69 @@ class EleMessageCommit(EleMessage):
 
 
 class EleMessageGetFwStatus(EleMessage):
-    """ELE Message Get FW status."""
+    """ELE Message for retrieving EdgeLock Enclave firmware status.
+
+    This class implements the GET_FW_STATUS_REQ message command to query and decode
+    the current firmware status of the EdgeLock Enclave security subsystem.
+
+    :cvar CMD: Message command identifier for firmware status request.
+    :cvar RESPONSE_PAYLOAD_WORDS_COUNT: Expected response payload size in words.
+    """
 
     CMD = MessageIDs.GET_FW_STATUS_REQ.tag
     RESPONSE_PAYLOAD_WORDS_COUNT = 1
 
     def __init__(self) -> None:
-        """Class object initialized."""
+        """Initialize ELE message object.
+
+        Sets up the ELE message with default firmware status indicating that ELE firmware
+        is not in place.
+        """
         super().__init__()
         self.ele_fw_status = EleFwStatus.ELE_FW_STATUS_NOT_IN_PLACE.tag
 
     def decode_response(self, response: bytes) -> None:
         """Decode response from target.
 
-        :param response: Data of response.
-        :raises SPSDKParsingError: Response parse detect some error.
+        The method parses the response bytes and extracts the ELE firmware status
+        from the response data using little-endian byte order.
+
+        :param response: Raw response data bytes received from the target device.
+        :raises SPSDKParsingError: Response parsing detects an error in the data format.
         """
         super().decode_response(response)
         self.ele_fw_status, _ = unpack(LITTLE_ENDIAN + UINT8 + "3s", response[8:12])
 
     def response_info(self) -> str:
-        """Print specific information of ELE.
+        """Get EdgeLock Enclave firmware status information.
 
-        :return: Information about the ELE.
+        Returns a formatted string containing the current firmware state of the EdgeLock Enclave,
+        providing human-readable status information for debugging and monitoring purposes.
+
+        :return: Formatted string with ELE firmware status information.
         """
         return f"EdgeLock Enclave firmware state: {EleFwStatus.get_label(self.ele_fw_status)}"
 
 
 class EleMessageGetFwVersion(EleMessage):
-    """ELE Message Get FW version."""
+    """ELE Message for retrieving EdgeLock Enclave firmware version information.
+
+    This class handles communication with the EdgeLock Enclave to request and process
+    firmware version data, including version numbers and commit SHA1 information.
+
+    :cvar CMD: Command identifier for firmware version request.
+    :cvar RESPONSE_PAYLOAD_WORDS_COUNT: Expected response payload size in words.
+    """
 
     CMD = MessageIDs.GET_FW_VERSION_REQ.tag
     RESPONSE_PAYLOAD_WORDS_COUNT = 2
 
     def __init__(self) -> None:
-        """Class object initialized."""
+        """Initialize ELE message object.
+
+        Sets up the ELE message instance with default firmware version attributes
+        initialized to zero.
+        """
         super().__init__()
         self.ele_fw_version_raw = 0
         self.ele_fw_version_sha1 = 0
@@ -793,17 +1150,24 @@ class EleMessageGetFwVersion(EleMessage):
     def decode_response(self, response: bytes) -> None:
         """Decode response from target.
 
-        :param response: Data of response.
-        :raises SPSDKParsingError: Response parse detect some error.
+        Parses the response bytes to extract ELE firmware version information including
+        the raw version and SHA1 hash values.
+
+        :param response: Response data bytes from the target device.
+        :raises SPSDKParsingError: Response parsing detected an error.
         """
         super().decode_response(response)
         self.ele_fw_version_raw = int.from_bytes(response[8:12], Endianness.LITTLE.value)
         self.ele_fw_version_sha1 = int.from_bytes(response[12:16], Endianness.LITTLE.value)
 
     def response_info(self) -> str:
-        """Print specific information of ELE.
+        """Get EdgeLock Enclave firmware version information.
 
-        :return: Information about the ELE.
+        Formats the ELE firmware version data into a human-readable string containing
+        the firmware version in both raw hexadecimal and readable format, commit SHA1,
+        and build status information.
+
+        :return: Formatted string with ELE firmware version details.
         """
         ret = (
             f"EdgeLock Enclave firmware version: {self.ele_fw_version_raw:08X}\n"
@@ -817,58 +1181,86 @@ class EleMessageGetFwVersion(EleMessage):
 
 
 class EleMessageReadCommonFuse(EleMessage):
-    """ELE Message Read common fuse."""
+    """ELE Message for reading common fuse values.
+
+    This class implements the ELE (EdgeLock Enclave) message protocol for reading
+    common fuse data from the target device. It handles the command formatting,
+    response parsing, and provides access to the retrieved fuse value.
+
+    :cvar CMD: Command identifier for read common fuse operation.
+    :cvar COMMAND_PAYLOAD_WORDS_COUNT: Number of payload words in command.
+    :cvar RESPONSE_PAYLOAD_WORDS_COUNT: Number of payload words in response.
+    """
 
     CMD = MessageIDs.READ_COMMON_FUSE.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 1
     RESPONSE_PAYLOAD_WORDS_COUNT = 1
 
     def __init__(self, index: int) -> None:
-        """Constructor.
+        """Initialize ELE message for reading common fuse.
 
-        Read common fuse.
+        Creates a new instance to read a specific fuse by its index identifier.
 
-        :param index: Fuse ID.
+        :param index: Fuse identifier to read.
         """
         super().__init__()
         self.index = index
         self.fuse_value = 0
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to bytes array representation.
 
-        :return: Bytes representation of message object.
+        The method serializes the message object into a binary format by combining
+        the exported header with the message index and padding.
+
+        :return: Binary representation of the message object.
         """
         ret = self.header_export()
         ret += pack(LITTLE_ENDIAN + UINT16 + UINT16, self.index, 0)
         return ret
 
     def decode_response(self, response: bytes) -> None:
-        """Decode response from target.
+        """Decode response from target and extract fuse value.
 
-        :param response: Data of response.
-        :raises SPSDKParsingError: Response parse detect some error.
+        The method parses the response bytes and extracts the fuse value from bytes 8-12
+        using little-endian byte order.
+
+        :param response: Response data bytes from the target device.
+        :raises SPSDKParsingError: Response parsing detected an error.
         """
         super().decode_response(response)
         self.fuse_value = int.from_bytes(response[8:12], Endianness.LITTLE.value)
 
     def response_info(self) -> str:
-        """Print fuse value.
+        """Get response information for fuse read operation.
 
-        :return: Read fuse value.
+        Formats the fuse ID and its value into a human-readable string representation
+        for display purposes.
+
+        :return: Formatted string containing fuse ID and value in hexadecimal format.
         """
         return f"Fuse ID_{self.index}: 0x{self.fuse_value:08X}\n"
 
 
 class EleMessageReadShadowFuse(EleMessageReadCommonFuse):
-    """ELE Message Read shadow fuse."""
+    """ELE Message for reading shadow fuse values.
+
+    This class represents an ELE (EdgeLock Enclave) message specifically designed
+    for reading shadow fuse data from the device. Shadow fuses are temporary
+    storage locations that mirror the actual fuse values.
+
+    :cvar CMD: Message command identifier for shadow fuse read operations.
+    """
 
     CMD = MessageIDs.READ_SHADOW_FUSE.tag
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to bytes array.
 
-        :return: Bytes representation of message object.
+        Converts the message object into its binary representation by combining
+        the exported header with the packed index value.
+
+        :return: Binary representation of the message object.
         """
         ret = self.header_export()
         ret += pack(LITTLE_ENDIAN + UINT32, self.index)
@@ -876,14 +1268,28 @@ class EleMessageReadShadowFuse(EleMessageReadCommonFuse):
 
 
 class EleMessageGetInfo(EleMessage):
-    """ELE Message Get Info."""
+    """ELE Message for retrieving device information.
+
+    This class implements the GET_INFO command for EdgeLock Enclave (ELE) communication,
+    allowing retrieval of comprehensive device information including SoC details, lifecycle
+    state, security configuration, and cryptographic hashes.
+
+    :cvar CMD: Command identifier for GET_INFO request.
+    :cvar COMMAND_PAYLOAD_WORDS_COUNT: Number of payload words in the command.
+    :cvar MAX_RESPONSE_DATA_SIZE: Maximum size of response data in bytes.
+    """
 
     CMD = MessageIDs.GET_INFO_REQ.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 3
     MAX_RESPONSE_DATA_SIZE = 256
 
     def __init__(self) -> None:
-        """Class object initialized."""
+        """Initialize ELE message object with default values.
+
+        Sets up all information fields to their default states including version info,
+        SOC details, lifecycle state, security subsystem state, attestation version,
+        UUID, hash values, and various state indicators.
+        """
         super().__init__()
         self.info_length = 0
         self.info_version = 0
@@ -903,9 +1309,12 @@ class EleMessageGetInfo(EleMessage):
         self.info_oem_pqc_srkh = bytes()
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to bytes array.
 
-        :return: Bytes representation of message object.
+        Converts the message object into its binary representation by packing
+        the payload data and combining it with the exported header.
+
+        :return: Binary representation of the message object.
         """
         payload = pack(
             LITTLE_ENDIAN + UINT32 + UINT32 + UINT16 + UINT16,
@@ -917,10 +1326,14 @@ class EleMessageGetInfo(EleMessage):
         return self.header_export() + payload
 
     def decode_response_data(self, response_data: bytes) -> None:
-        """Decode response data from target.
+        """Decode response data from target and populate info attributes.
 
-        :note: The response data are specific per command.
-        :param response_data: Data of response.
+        Parses the binary response data according to ELE message format and extracts
+        various system information fields including SoC details, lifecycle state,
+        cryptographic hashes, and security states.
+
+        :param response_data: Binary response data from ELE target device.
+        :raises struct.error: If response_data is too short or malformed.
         """
         # Word 0: Length(31-24), Version(23-16), Command(15-8), Reserved(7-0)
         word0 = unpack(LITTLE_ENDIAN + UINT32, response_data[0:4])[0]
@@ -957,9 +1370,14 @@ class EleMessageGetInfo(EleMessage):
             self.info_oem_pqc_srkh = bytes()
 
     def response_info(self) -> str:
-        """Print specific information of ELE.
+        """Get formatted ELE response information.
 
-        :return: Information about the ELE.
+        Formats and returns comprehensive information about the ELE (EdgeLock Enclave)
+        including command details, version, SoC information, life cycle state, security
+        states, and cryptographic hashes in a human-readable string format.
+
+        :return: Formatted string containing detailed ELE information including command,
+            version, SoC details, life cycle, security states, and hashes.
         """
         ret = f"Command:              {hex(self.info_cmd)}\n"
         ret += f"Version:              {self.info_version}\n"
@@ -1005,7 +1423,17 @@ class EleMessageGetInfo(EleMessage):
 
 
 class EleMessageDeriveKey(EleMessage):
-    """ELE Message Derive Key."""
+    """ELE Message for cryptographic key derivation operations.
+
+    This class implements the ELE (EdgeLock Enclave) message protocol for deriving
+    cryptographic keys with optional context-based diversification. It handles
+    the communication with the ELE subsystem to generate derived keys of specified
+    sizes using user-provided context data.
+
+    :cvar CMD: ELE derive key request command identifier.
+    :cvar SUPPORTED_KEY_SIZES: List of supported output key sizes in bytes.
+    :cvar MAX_RESPONSE_DATA_SIZE: Maximum size of response data from ELE.
+    """
 
     CMD = MessageIDs.ELE_DERIVE_KEY_REQ.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 6
@@ -1014,10 +1442,14 @@ class EleMessageDeriveKey(EleMessage):
     SUPPORTED_KEY_SIZES = [16, 32]
 
     def __init__(self, key_size: int, context: Optional[bytes]) -> None:
-        """Class object initialized.
+        """Initialize ELE message for key derivation.
 
-        :param key_size: Output key size [16,32] is valid
-        :param context:  User's context to be used for key diversification
+        Sets up the message with specified key size and optional context for key diversification.
+        Validates that key size is supported and context length is within limits.
+
+        :param key_size: Output key size in bytes, must be 16 or 32
+        :param context: Optional user context bytes for key diversification
+        :raises SPSDKValueError: If key size is not supported or context is too long
         """
         if key_size not in self.SUPPORTED_KEY_SIZES:
             raise SPSDKValueError(
@@ -1034,9 +1466,12 @@ class EleMessageDeriveKey(EleMessage):
         self.derived_key = b""
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to final bytes array.
 
-        :return: Bytes representation of message object.
+        The method serializes the message object into a binary format by packing
+        the payload data, combining it with the header, and appending a CRC checksum.
+
+        :return: Bytes representation of the complete message including header, payload, and CRC.
         """
         payload = pack(
             LITTLE_ENDIAN + UINT32 + UINT32 + UINT32 + UINT32 + UINT16 + UINT16,
@@ -1052,32 +1487,54 @@ class EleMessageDeriveKey(EleMessage):
 
     @property
     def command_data(self) -> bytes:
-        """Command data to be loaded into target memory space."""
+        """Get command data to be loaded into target memory space.
+
+        Returns the context data if available, otherwise returns empty bytes.
+
+        :return: Command data as bytes, or empty bytes if no context is available.
+        """
         return self.context if self.context else b""
 
     def decode_response_data(self, response_data: bytes) -> None:
-        """Decode response data from target.
+        """Decode response data from target and extract derived key.
 
-        :note: The response data are specific per command.
-        :param response_data: Data of response.
+        The response data are specific per command. This method extracts the derived key
+        from the beginning of the response data based on the configured key size.
+
+        :param response_data: Raw response data bytes from the target device.
+        :raises IndexError: If response_data is shorter than the expected key_size.
         """
         self.derived_key = response_data[: self.key_size]
 
     def get_key(self) -> bytes:
-        """Get derived key."""
+        """Get derived key.
+
+        :return: The derived cryptographic key as bytes.
+        """
         return self.derived_key
 
 
 class EleMessageSigned(EleMessage):
-    """ELE Message Signed."""
+    """ELE Message for signed message containers.
+
+    This class handles ELE (EdgeLock Enclave) messages that contain signed message
+    containers, providing functionality to parse, validate, and export signed
+    messages for secure communication with the ELE subsystem.
+
+    :cvar COMMAND_PAYLOAD_WORDS_COUNT: Number of payload words in the command.
+    """
 
     COMMAND_PAYLOAD_WORDS_COUNT = 2
 
     def __init__(self, signed_msg: bytes, family: FamilyRevision) -> None:
-        """Class object initialized.
+        """Initialize ELE message object from signed message data.
 
-        :param signed_msg: Signed message container.
-        :param family: Chip family name.
+        Parses and validates the provided signed message container, extracting the command
+        and storing the binary data for further processing.
+
+        :param signed_msg: Binary data containing the signed message container
+        :param family: Chip family revision information for message parsing
+        :raises SPSDKValueError: Invalid or malformed signed message container
         """
         super().__init__()
         self.signed_msg_binary = signed_msg
@@ -1094,9 +1551,12 @@ class EleMessageSigned(EleMessage):
         self._command_data_size = len(self.signed_msg_binary)
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to bytes array.
 
-        :return: Bytes representation of message object.
+        Converts the message object into its binary representation by combining
+        the exported header with a payload containing command data address.
+
+        :return: Binary representation of the message object.
         """
         payload = pack(
             LITTLE_ENDIAN + UINT32 + UINT32,
@@ -1107,13 +1567,19 @@ class EleMessageSigned(EleMessage):
 
     @property
     def command_data(self) -> bytes:
-        """Command data to be loaded into target memory space."""
+        """Get command data to be loaded into target memory space.
+
+        :return: Binary data of the signed message ready for loading into target memory.
+        """
         return self.signed_msg_binary
 
     def info(self) -> str:
-        """Print information including live data.
+        """Get information including live data about the message.
 
-        :return: Information about the message.
+        The method retrieves basic message information from the parent class and appends
+        detailed image information from the signed message component.
+
+        :return: Formatted string containing comprehensive message information.
         """
         ret = super().info()
         ret += "\n" + self.signed_msg.image_info().draw()
@@ -1122,7 +1588,19 @@ class EleMessageSigned(EleMessage):
 
 
 class EleMessageGenerateKeyBlob(EleMessage):
-    """ELE Message Generate KeyBlob."""
+    """ELE Message for generating encrypted key blobs.
+
+    This class handles the creation and processing of ELE (EdgeLock Enclave) messages
+    that generate encrypted key blobs from raw cryptographic keys. It supports various
+    encryption algorithms and manages the complete workflow from key input to encrypted
+    blob output.
+
+    :cvar KEYBLOB_NAME: Human-readable name for the key blob type.
+    :cvar SUPPORTED_ALGORITHMS: Dictionary mapping algorithms to supported key sizes.
+    :cvar KEYBLOB_TAG: Tag identifier for the key blob format.
+    :cvar KEYBLOB_VERSION: Version of the key blob format.
+    :cvar MAX_RESPONSE_DATA_SIZE: Maximum size of response data in bytes.
+    """
 
     KEYBLOB_NAME = "Unknown"
     # List of supported algorithms and theirs key sizes
@@ -1137,11 +1615,13 @@ class EleMessageGenerateKeyBlob(EleMessage):
     def __init__(
         self, key_identifier: int, algorithm: KeyBlobEncryptionAlgorithm, key: bytes
     ) -> None:
-        """Constructor of Generate Key Blob class.
+        """Initialize Generate Key Blob message.
 
-        :param key_identifier: ID of key
-        :param algorithm: Select supported algorithm
-        :param key: Key to be wrapped
+        Creates a new instance for generating a key blob with specified encryption algorithm.
+
+        :param key_identifier: Unique identifier for the key to be wrapped.
+        :param algorithm: Encryption algorithm to use for key blob generation.
+        :param key: Raw key data that will be wrapped into the key blob.
         """
         super().__init__()
         self.key_id = key_identifier
@@ -1152,9 +1632,12 @@ class EleMessageGenerateKeyBlob(EleMessage):
         self.validate()
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to final bytes array.
 
-        :return: Bytes representation of message object.
+        Converts the message object into its binary representation by packing the header,
+        payload data, and CRC checksum into a bytes array suitable for transmission.
+
+        :return: Complete binary representation of the message including header, payload, and CRC.
         """
         payload = pack(
             LITTLE_ENDIAN + UINT32 + UINT32 + UINT32 + UINT32 + UINT32 + UINT16 + UINT16,
@@ -1170,9 +1653,12 @@ class EleMessageGenerateKeyBlob(EleMessage):
         return payload + EleMessage.get_msg_crc(payload)
 
     def validate(self) -> None:
-        """Validate generate keyblob message data.
+        """Validate keyblob message data.
 
-        :raises SPSDKValueError: Invalid used key size or encryption algorithm
+        Validates that the algorithm is supported and the key size is compatible
+        with the selected algorithm for the keyblob generation.
+
+        :raises SPSDKValueError: Invalid used key size or encryption algorithm.
         """
         if self.algorithm not in self.SUPPORTED_ALGORITHMS:
             raise SPSDKValueError(
@@ -1187,9 +1673,13 @@ class EleMessageGenerateKeyBlob(EleMessage):
             )
 
     def info(self) -> str:
-        """Print information including live data.
+        """Get formatted information about the key blob message.
 
-        :return: Information about the message.
+        The method returns a comprehensive string containing details about the key blob
+        including its type, key ID, algorithm, and key size in bits.
+
+        :return: Formatted string with key blob information including type, ID, algorithm,
+                 and key size.
         """
         ret = super().info()
         ret += "\n"
@@ -1211,7 +1701,10 @@ class EleMessageGenerateKeyBlob(EleMessage):
     def get_supported_key_sizes(cls) -> str:
         """Get table with supported key sizes per algorithm.
 
-        :return: Table with supported key size in text.
+        The method iterates through all supported algorithms and formats their
+        key sizes into a human-readable string representation.
+
+        :return: Formatted string containing algorithm labels and their supported key sizes.
         """
         ret = ""
         for key, value in cls.SUPPORTED_ALGORITHMS.items():
@@ -1219,11 +1712,14 @@ class EleMessageGenerateKeyBlob(EleMessage):
         return ret
 
     def decode_response_data(self, response_data: bytes) -> None:
-        """Decode response data from target.
+        """Decode response data from target and extract key blob.
 
-        :note: The response data are specific per command.
-        :param response_data: Data of response.
-        :raises SPSDKParsingError: Invalid response detected.
+        The method parses the response data structure, validates the header fields
+        (version, length, tag) and extracts the key blob. The response data format
+        is command-specific.
+
+        :param response_data: Raw response data bytes from target device.
+        :raises SPSDKParsingError: Invalid tag, version, or length in response.
         """
         ver, length, tag = unpack(LITTLE_ENDIAN + UINT8 + UINT16 + UINT8, response_data[:4])
         if tag != self.KEYBLOB_TAG:
@@ -1237,7 +1733,15 @@ class EleMessageGenerateKeyBlob(EleMessage):
 
 
 class EleMessageGenerateKeyBlobDek(EleMessageGenerateKeyBlob):
-    """ELE Message Generate DEK KeyBlob."""
+    """ELE Message for generating DEK (Data Encryption Key) KeyBlob.
+
+    This class handles the creation of ELE messages specifically for generating DEK KeyBlobs,
+    which are used for data encryption operations. It supports AES-CBC and SM4-CBC encryption
+    algorithms with various key sizes.
+
+    :cvar KEYBLOB_NAME: Identifier for DEK keyblob type.
+    :cvar SUPPORTED_ALGORITHMS: Dictionary mapping encryption algorithms to supported key sizes.
+    """
 
     KEYBLOB_NAME = "DEK"
     # List of supported algorithms and theirs key sizes
@@ -1248,7 +1752,13 @@ class EleMessageGenerateKeyBlobDek(EleMessageGenerateKeyBlob):
 
     @property
     def command_data(self) -> bytes:
-        """Command data to be loaded into target memory space."""
+        """Generate command data to be loaded into target memory space.
+
+        Creates a binary data structure containing the keyblob header, options, and key data
+        formatted for ELE (EdgeLock Enclave) command processing.
+
+        :return: Binary command data ready for target memory loading.
+        """
         header = pack(
             LITTLE_ENDIAN + UINT8 + UINT16 + UINT8,
             self.KEYBLOB_VERSION,
@@ -1266,7 +1776,15 @@ class EleMessageGenerateKeyBlobDek(EleMessageGenerateKeyBlob):
 
 
 class EleMessageGenerateKeyBLobOtfad(EleMessageGenerateKeyBlob):
-    """ELE Message Generate OTFAD KeyBlob."""
+    """ELE Message Generate OTFAD KeyBlob.
+
+    This class handles generation of OTFAD (On-The-Fly AES Decryption) keyblobs for ELE
+    (EdgeLock Enclave) operations. It manages OTFAD-specific parameters including memory
+    address ranges, AES counter values, and decryption configuration flags.
+
+    :cvar KEYBLOB_NAME: Name identifier for OTFAD keyblob type.
+    :cvar SUPPORTED_ALGORITHMS: Dictionary of supported encryption algorithms and key sizes.
+    """
 
     KEYBLOB_NAME = "OTFAD"
     # List of supported algorithms and theirs key sizes
@@ -1283,16 +1801,19 @@ class EleMessageGenerateKeyBLobOtfad(EleMessageGenerateKeyBlob):
         decryption_enabled: bool = True,
         configuration_valid: bool = True,
     ) -> None:
-        """Constructor of generate OTFAD keyblob class.
+        """Initialize OTFAD keyblob for on-the-fly AES decryption configuration.
 
-        :param key_identifier: ID of Key
-        :param key: OTFAD key
-        :param aes_counter: AES counter value
-        :param start_address: Start address in memory to be encrypted
-        :param end_address: End address in memory to be encrypted
-        :param read_only: Read only flag, defaults to True
-        :param decryption_enabled: Decryption enable flag, defaults to True
-        :param configuration_valid: Configuration valid flag, defaults to True
+        Creates a keyblob instance for OTFAD (On-The-Fly AES Decryption) with specified
+        encryption parameters and memory region configuration.
+
+        :param key_identifier: Unique identifier for the encryption key
+        :param key: AES encryption key bytes for OTFAD operations
+        :param aes_counter: Initial counter value for AES-CTR mode encryption
+        :param start_address: Starting memory address for the encrypted region
+        :param end_address: Ending memory address for the encrypted region
+        :param read_only: Enable read-only access protection, defaults to True
+        :param decryption_enabled: Enable automatic decryption, defaults to True
+        :param configuration_valid: Mark configuration as valid, defaults to True
         """
         self.aes_counter = aes_counter
         self.start_address = start_address
@@ -1303,7 +1824,18 @@ class EleMessageGenerateKeyBLobOtfad(EleMessageGenerateKeyBlob):
         super().__init__(key_identifier, KeyBlobEncryptionAlgorithm.AES_CTR, key)
 
     def validate(self) -> None:
-        """Validate generate OTFAD keyblob."""
+        """Validate OTFAD keyblob parameters.
+
+        Performs comprehensive validation of all OTFAD keyblob parameters including
+        key identifier structure, AES counter length, and address alignment requirements.
+
+        :raises SPSDKValueError: Invalid key identifier structure (struct index not 0-3).
+        :raises SPSDKValueError: Invalid key identifier peripheral index (not 1-2 for FlexSPIx).
+        :raises SPSDKValueError: Invalid key identifier reserved bytes (must be 0).
+        :raises SPSDKValueError: Invalid AES counter length (must be 64 bits).
+        :raises SPSDKValueError: Invalid start address alignment (must be 1024-byte aligned).
+        :raises SPSDKValueError: Invalid end address alignment (must be 1024-byte aligned).
+        """
         # Validate general members
         super().validate()
         # 1 Validate OTFAD Key identifier
@@ -1344,7 +1876,15 @@ class EleMessageGenerateKeyBLobOtfad(EleMessageGenerateKeyBlob):
 
     @property
     def command_data(self) -> bytes:
-        """Command data to be loaded into target memory space."""
+        """Get command data to be loaded into target memory space.
+
+        Constructs the complete OTFAD keyblob command data by combining header,
+        options, OTFAD configuration, and CRC checksum. The method packs all
+        configuration parameters including encryption settings, memory addresses,
+        and security flags into a binary format suitable for target loading.
+
+        :return: Complete binary command data ready for target memory loading.
+        """
         header = pack(
             LITTLE_ENDIAN + UINT8 + UINT16 + UINT8,
             self.KEYBLOB_VERSION,
@@ -1379,9 +1919,12 @@ class EleMessageGenerateKeyBLobOtfad(EleMessageGenerateKeyBlob):
         return header + options + otfad_config + crc.to_bytes(4, Endianness.LITTLE.value)
 
     def info(self) -> str:
-        """Print information including live data.
+        """Get formatted information string including live configuration data.
 
-        :return: Information about the message.
+        Returns a multi-line string containing AES counter, memory addresses, and status flags
+        for the ELE message configuration.
+
+        :return: Formatted string with message configuration details.
         """
         ret = super().info()
         ret += f"AES Counter:     {self.aes_counter.hex()}\n"
@@ -1394,7 +1937,16 @@ class EleMessageGenerateKeyBLobOtfad(EleMessageGenerateKeyBlob):
 
 
 class EleMessageGenerateKeyBlobIee(EleMessageGenerateKeyBlob):
-    """ELE Message Generate IEE KeyBlob."""
+    """ELE Message for generating IEE (Inline Encryption Engine) KeyBlob.
+
+    This class handles the creation of IEE-specific keyblobs for secure data encryption
+    in NXP MCUs. It supports AES-XTS and AES-CTR encryption algorithms with various
+    key sizes and provides configuration for IEE-specific parameters like page offset,
+    region number, and CTR modes.
+
+    :cvar KEYBLOB_NAME: Identifier name for IEE keyblob type.
+    :cvar SUPPORTED_ALGORITHMS: Dictionary mapping supported encryption algorithms to their valid key sizes.
+    """
 
     KEYBLOB_NAME = "IEE"
     # List of supported algorithms and theirs key sizes
@@ -1415,17 +1967,20 @@ class EleMessageGenerateKeyBlobIee(EleMessageGenerateKeyBlob):
         bypass: bool = False,
         locked: bool = False,
     ) -> None:
-        """Constructor of generate IEE keyblob class.
+        """Initialize IEE keyblob generator.
 
-        :param key_identifier: ID of key
-        :param algorithm: Used algorithm
-        :param key: IEE key
-        :param ctr_mode: In case of AES CTR algorithm, the CTR mode must be selected
-        :param aes_counter: AES counter in case of AES CTR algorithm
-        :param page_offset: IEE page offset
-        :param region_number: Region number
-        :param bypass: Encryption bypass flag, defaults to False
-        :param locked: Locked flag, defaults to False
+        Creates an instance for generating IEE (Inline Encryption Engine) keyblobs with
+        specified encryption parameters and region configuration.
+
+        :param key_identifier: Unique identifier for the encryption key
+        :param algorithm: Encryption algorithm to be used for keyblob generation
+        :param key: Raw IEE encryption key bytes
+        :param ctr_mode: Counter mode configuration for AES CTR algorithm
+        :param aes_counter: Initial counter value for AES CTR mode encryption
+        :param page_offset: Memory page offset for IEE region configuration
+        :param region_number: Target region number for IEE configuration
+        :param bypass: Enable encryption bypass mode, defaults to False
+        :param locked: Lock the keyblob configuration, defaults to False
         """
         self.ctr_mode = ctr_mode
         self.aes_counter = aes_counter
@@ -1437,7 +1992,14 @@ class EleMessageGenerateKeyBlobIee(EleMessageGenerateKeyBlob):
 
     @property
     def command_data(self) -> bytes:
-        """Command data to be loaded into target memory space."""
+        """Generate command data to be loaded into target memory space.
+
+        Creates a binary representation of the keyblob command including header, options,
+        IEE configuration, and CRC checksum. The data is formatted according to the
+        target device's memory layout requirements.
+
+        :return: Binary command data ready for target memory loading.
+        """
         header = pack(
             LITTLE_ENDIAN + UINT8 + UINT16 + UINT8,
             self.KEYBLOB_VERSION,
@@ -1490,9 +2052,14 @@ class EleMessageGenerateKeyBlobIee(EleMessageGenerateKeyBlob):
         return header + options + iee_config + crc.to_bytes(4, Endianness.LITTLE.value)
 
     def info(self) -> str:
-        """Print information including live data.
+        """Get formatted information about the key blob encryption message.
 
-        :return: Information about the message.
+        Provides detailed information about the encryption algorithm, keys, counters,
+        and configuration parameters. The output includes live data with proper
+        formatting for debugging and verification purposes.
+
+        :return: Formatted string containing message details including algorithm type,
+            keys, counters, page offset, region number, bypass and lock status.
         """
         if self.algorithm == KeyBlobEncryptionAlgorithm.AES_CTR:
             key1 = align_block(self.key, 32, 0)
@@ -1515,16 +2082,28 @@ class EleMessageGenerateKeyBlobIee(EleMessageGenerateKeyBlob):
 
 
 class EleMessageLoadKeyBLob(EleMessage):
-    """ELE Message Load KeyBlob."""
+    """ELE Message for loading key blob operations.
+
+    This class implements the ELE (EdgeLock Enclave) message protocol for loading
+    key blobs into the target device. It handles the packaging and export of key
+    blob data along with key identifiers for secure provisioning operations.
+
+    :cvar CMD: Command identifier for load key blob request.
+    :cvar COMMAND_PAYLOAD_WORDS_COUNT: Number of payload words in the command.
+    """
 
     CMD = MessageIDs.LOAD_KEY_BLOB_REQ.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 3
 
     def __init__(self, key_identifier: int, keyblob: bytes) -> None:
-        """Constructor of Load Key Blob class.
+        """Initialize Load Key Blob instance.
 
-        :param key_identifier: ID of key
-        :param keyblob: Keyblob to be wrapped
+        Creates a new Load Key Blob object with the specified key identifier and keyblob data.
+        The constructor validates the provided parameters to ensure they meet the required format.
+
+        :param key_identifier: Unique identifier for the key to be loaded
+        :param keyblob: Binary data containing the encrypted key material to be wrapped
+        :raises SPSDKError: Invalid key identifier or keyblob format
         """
         super().__init__()
         self.key_id = key_identifier
@@ -1533,7 +2112,11 @@ class EleMessageLoadKeyBLob(EleMessage):
         self.validate()
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to final bytes array.
+
+        The method serializes the message object into a binary format by packing
+        the key ID, padding, and command data address into the payload, then
+        combining it with the exported header.
 
         :return: Bytes representation of message object.
         """
@@ -1545,13 +2128,19 @@ class EleMessageLoadKeyBLob(EleMessage):
 
     @property
     def command_data(self) -> bytes:
-        """Command data to be loaded into target memory space."""
+        """Get command data to be loaded into target memory space.
+
+        :return: The keyblob data as bytes.
+        """
         return self.keyblob
 
     def info(self) -> str:
-        """Print information including live data.
+        """Get information about the message including live data.
 
-        :return: Information about the message.
+        The method provides detailed information about the message, including
+        the key ID and keyblob size in addition to the base message information.
+
+        :return: Formatted string containing message information with key ID and keyblob size.
         """
         ret = super().info()
         ret += "\n"
@@ -1561,22 +2150,32 @@ class EleMessageLoadKeyBLob(EleMessage):
 
 
 class EleMessageWriteFuse(EleMessage):
-    """Write Fuse request."""
+    """ELE message for writing fuse data.
+
+    This class represents a request message to write data to fuses in ELE (EdgeLock Enclave).
+    It handles OEM fuse writing operations with configurable bit positioning, length, and
+    locking capabilities. Fuse accessibility depends on the chip lifecycle state.
+
+    :cvar CMD: Message command identifier for write fuse operation.
+    :cvar COMMAND_PAYLOAD_WORDS_COUNT: Number of payload words in the command.
+    :cvar RESPONSE_PAYLOAD_WORDS_COUNT: Number of payload words in the response.
+    """
 
     CMD = MessageIDs.WRITE_FUSE.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 2
     RESPONSE_PAYLOAD_WORDS_COUNT = 1
 
     def __init__(self, bit_position: int, bit_length: int, lock: bool, payload: int) -> None:
-        """Constructor.
+        """Initialize ELE fuse write message.
 
-        This command allows to write to the fuses.
-        OEM Fuses are accessible depending on the chip lifecycle.
+        This command allows to write to the fuses. OEM Fuses are accessible depending on the chip
+        lifecycle.
 
         :param bit_position: Fuse identifier expressed as its position in bit in the fuse map.
         :param bit_length: Number of bits to be written.
-        :param lock: Write lock requirement. When set to 1, fuse words are locked. When unset, no write lock is done.
-        :param payload: Data to be written
+        :param lock: Write lock requirement. When set to 1, fuse words are locked. When unset, no
+            write lock is done.
+        :param payload: Data to be written.
         """
         super().__init__()
         self.bit_position = bit_position
@@ -1586,9 +2185,12 @@ class EleMessageWriteFuse(EleMessage):
         self.processed_idx = 0
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to bytes array representation.
 
-        :return: Bytes representation of message object.
+        Converts the message object into its binary format by combining the header
+        with packed bit position, bit length (with lock flag), and payload data.
+
+        :return: Binary representation of the complete message.
         """
         ret = self.header_export()
 
@@ -1603,8 +2205,11 @@ class EleMessageWriteFuse(EleMessage):
     def decode_response(self, response: bytes) -> None:
         """Decode response from target.
 
-        :param response: Data of response.
-        :raises SPSDKParsingError: Response parse detect some error.
+        The method parses the response bytes and extracts the processed index value
+        from the response data structure.
+
+        :param response: Raw response data bytes from the target device.
+        :raises SPSDKParsingError: Response parsing detects an error in the data format.
         """
         super().decode_response(response)
         if len(response) == self.response_words_count * 4:
@@ -1612,13 +2217,21 @@ class EleMessageWriteFuse(EleMessage):
 
 
 class EleMessageWriteShadowFuse(EleMessage):
-    """Write shadow fuse request."""
+    """ELE message for writing shadow fuse values.
+
+    This class represents a request message to write data to shadow fuses in the
+    EdgeLock Enclave. Shadow fuses are temporary storage that mirrors the actual
+    fuse values and can be modified without permanently altering the hardware fuses.
+
+    :cvar CMD: Message command identifier for write shadow fuse operation.
+    :cvar COMMAND_PAYLOAD_WORDS_COUNT: Number of payload words in the message.
+    """
 
     CMD = MessageIDs.WRITE_SHADOW_FUSE.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 2
 
     def __init__(self, index: int, value: int) -> None:
-        """Constructor.
+        """Initialize ELE shadow fuse write command.
 
         This command allows to write to the shadow fuses.
 
@@ -1630,9 +2243,12 @@ class EleMessageWriteShadowFuse(EleMessage):
         self.value = value
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to bytes array.
 
-        :return: Bytes representation of message object.
+        Converts the message object into its binary representation by combining
+        the exported header with the packed index and value fields.
+
+        :return: Binary representation of the message object.
         """
         ret = self.header_export()
 
@@ -1645,19 +2261,38 @@ class EleMessageWriteShadowFuse(EleMessage):
 
 
 class EleMessageEnableApc(EleMessage):
-    """Enable APC (Application core) ELE Message."""
+    """ELE Message for enabling Application Processing Core (APC).
+
+    This message class handles the ELE command to enable the Application Processing Core,
+    which is responsible for managing application-level operations in the secure element.
+
+    :cvar CMD: Command identifier for the ELE enable APC request.
+    """
 
     CMD = MessageIDs.ELE_ENABLE_APC_REQ.tag
 
 
 class EleMessageEnableRtc(EleMessage):
-    """Enable RTC (Real time core) ELE Message."""
+    """ELE message for enabling Real Time Core functionality.
+
+    This class represents a command message used to enable the Real Time Core (RTC)
+    in EdgeLock Enclave operations, providing access to real-time processing capabilities.
+
+    :cvar CMD: Command identifier for the ELE enable RTC request.
+    """
 
     CMD = MessageIDs.ELE_ENABLE_RTC_REQ.tag
 
 
 class EleMessageResetApcContext(EleMessage):
-    """Send request to reset APC context ELE Message."""
+    """ELE Message for resetting APC (Application Processing Core) context.
+
+    This message requests the ELE (EdgeLock Enclave) to reset the APC context,
+    which clears the current application processing state and reinitializes
+    the core context for fresh operation.
+
+    :cvar CMD: Message command identifier for APC context reset request.
+    """
 
     CMD = MessageIDs.ELE_RESET_APC_CTX_REQ.tag
 
@@ -1668,9 +2303,13 @@ class EleMessageSessionOpen(EleMessage):
     Session open command is used to initialize the EdgeLock Secure Enclave HSM services
     for the requestor. It establishes a route between the user and the EdgeLock Secure
     Enclave as well as a quality of service.
+    A maximum of 20 sessions can be opened at the same time. Session open command must be
+    called before any other APIs that use a session.
 
-    A maximum of 20 sessions can be opened at the same time.
-    Session open command must be called before any other APIs that use a session.
+    :cvar CMD: Session open command ID (0x10).
+    :cvar VERSION: Version for HSM API (0x07).
+    :cvar COMMAND_PAYLOAD_WORDS_COUNT: Number of payload words in command (2).
+    :cvar RESPONSE_PAYLOAD_WORDS_COUNT: Number of payload words in response (1).
     """
 
     CMD = 0x10  # Session open command ID
@@ -1679,12 +2318,19 @@ class EleMessageSessionOpen(EleMessage):
     RESPONSE_PAYLOAD_WORDS_COUNT = 1  # Session handle word
 
     def __init__(self) -> None:
-        """Class object initialized."""
+        """Initialize ELE message object.
+
+        Initializes the ELE message instance with default values including
+        session handle set to 0.
+        """
         super().__init__()
         self.session_handle = 0
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to final bytes array.
+
+        The method overrides the header to use HSM API version and adds two reserved
+        words set to zero to create the complete message payload.
 
         :return: Bytes representation of message object.
         """
@@ -1699,8 +2345,12 @@ class EleMessageSessionOpen(EleMessage):
     def decode_response(self, response: bytes) -> None:
         """Decode response from target.
 
-        :param response: Data of response.
-        :raises SPSDKParsingError: Response parse detect some error.
+        Parses and validates the response message header, extracts status information,
+        and updates the message object with decoded values including status, indication,
+        abort code, and session handle.
+
+        :param response: Raw response data bytes from target device.
+        :raises SPSDKParsingError: Invalid response format, tag, command, size or version.
         """
         # Decode and validate header
         (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
@@ -1727,9 +2377,12 @@ class EleMessageSessionOpen(EleMessage):
             self.session_handle = 0
 
     def response_info(self) -> str:
-        """Print specific information about session open response.
+        """Get session open response information.
 
-        :return: Information about the session.
+        Formats and returns detailed information about the session handle status,
+        including whether the session was successfully opened or failed.
+
+        :return: Formatted string containing session handle and status information.
         """
         ret = f"Session handle: 0x{self.session_handle:08X}\n"
         if self.session_handle == 0:
@@ -1739,9 +2392,13 @@ class EleMessageSessionOpen(EleMessage):
         return ret
 
     def info(self) -> str:
-        """Print information including live data.
+        """Get information about the session open command including live data.
 
-        :return: Information about the message.
+        Provides detailed information about the EdgeLock Secure Enclave session open command,
+        including its purpose, limitations, and current session state if available.
+
+        :return: Formatted string containing comprehensive information about the session open
+            command and its current state.
         """
         ret = super().info()
         ret += "\nSession Open Command:\n"
@@ -1773,9 +2430,13 @@ class EleMessageSessionClose(EleMessage):
 
     Session close command is used to close an opened session. Any data related to the session,
     including other services flow contexts, will be deleted.
-
     User can call this function only after having opened a valid session (see Session open (0x10)).
     Session close command will close any associated services to the session as well.
+
+    :cvar CMD: Session close command ID (0x11).
+    :cvar VERSION: Version for HSM API (0x07).
+    :cvar COMMAND_PAYLOAD_WORDS_COUNT: Number of payload words in command (1).
+    :cvar RESPONSE_PAYLOAD_WORDS_COUNT: Number of payload words in response (0).
     """
 
     CMD = 0x11  # Session close command ID
@@ -1784,7 +2445,7 @@ class EleMessageSessionClose(EleMessage):
     RESPONSE_PAYLOAD_WORDS_COUNT = 0  # No response payload
 
     def __init__(self, session_handle: int) -> None:
-        """Class object initialized.
+        """Initialize ELE message for session closure.
 
         :param session_handle: Session handle to close. Handle value returned by Session open (0x10).
         """
@@ -1792,7 +2453,10 @@ class EleMessageSessionClose(EleMessage):
         self.session_handle = session_handle
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to final bytes array.
+
+        The method overrides the header to use HSM API version and adds session handle
+        to create the complete message payload.
 
         :return: Bytes representation of message object.
         """
@@ -1807,8 +2471,12 @@ class EleMessageSessionClose(EleMessage):
     def decode_response(self, response: bytes) -> None:
         """Decode response from target.
 
-        :param response: Data of response.
-        :raises SPSDKParsingError: Response parse detect some error.
+        Parses and validates the response message header and status information.
+        The method verifies message tag, command, size, and version fields against
+        expected values and extracts status, indication, and abort code.
+
+        :param response: Raw response data bytes from target device.
+        :raises SPSDKParsingError: Invalid response format or field values detected.
         """
         # Decode and validate header
         (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
@@ -1829,9 +2497,12 @@ class EleMessageSessionClose(EleMessage):
         ) = unpack(LITTLE_ENDIAN + UINT8 + UINT8 + UINT16, response[4:8])
 
     def info(self) -> str:
-        """Print information including live data.
+        """Get session close command information including live data.
 
-        :return: Information about the message.
+        Provides detailed information about the session close command, including
+        the session handle and operational constraints.
+
+        :return: Formatted string containing session close command information.
         """
         ret = super().info()
         ret += "\nSession Close Command:\n"
@@ -1848,10 +2519,12 @@ class EleMessageSabInit(EleMessage):
 
     SAB Init command is used to initialize the EdgeLock Secure Enclave Firmware HSM services.
     It must be called once, at boot, by any core.
-
     SAB Init command must be called before any other ones that use a SAB session.
     SAB Init command can be called multiple times, even if not recommended. EdgeLock Secure
     Enclave Firmware will do nothing and respond a success if the initialization is already done.
+
+    :cvar CMD: SAB Init command ID (0x17).
+    :cvar VERSION: Version for HSM API (0x07).
     """
 
     CMD = 0x17  # SAB Init command ID
@@ -1860,7 +2533,10 @@ class EleMessageSabInit(EleMessage):
     RESPONSE_PAYLOAD_WORDS_COUNT = 0  # No response payload
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to bytes representation.
+
+        Converts the message object to its final bytes array format by overriding
+        the header with HSM API version and correct word size.
 
         :return: Bytes representation of message object.
         """
@@ -1873,8 +2549,12 @@ class EleMessageSabInit(EleMessage):
     def decode_response(self, response: bytes) -> None:
         """Decode response from target.
 
-        :param response: Data of response.
-        :raises SPSDKParsingError: Response parse detect some error.
+        Parses and validates the response message header and status information.
+        The method verifies message tag, command, size, and version fields against
+        expected values and extracts status, indication, and abort code.
+
+        :param response: Raw response data bytes from target device.
+        :raises SPSDKParsingError: Invalid response format or field values detected.
         """
         # Decode and validate header
         (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
@@ -1895,9 +2575,13 @@ class EleMessageSabInit(EleMessage):
         ) = unpack(LITTLE_ENDIAN + UINT8 + UINT8 + UINT16, response[4:8])
 
     def info(self) -> str:
-        """Print information including live data.
+        """Get information about SAB Init Command including live data.
 
-        :return: Information about the message.
+        Returns detailed information about the SAB Init Command which initializes EdgeLock Secure
+        Enclave Firmware HSM services. This command must be called once at boot by any core and
+        before any other SAB session commands.
+
+        :return: Formatted string containing information about the SAB Init Command.
         """
         ret = super().info()
         ret += "\nSAB Init Command:\n"
@@ -1911,11 +2595,15 @@ class EleMessageSabInit(EleMessage):
 class EleMessageKeyStoreOpen(EleMessage):
     """ELE Message Key Store Open.
 
-    Key store open command is used to open a service flow on the specified key store.
-    A maximum of 2 key stores can be created/opened and a maximum of 100 keys can be stored per key store.
+    ELE message for opening a key store service flow on NXP EdgeLock Enclave.
+    Manages key store access with support for creation, loading, and configuration
+    of shared or isolated key stores with up to 100 keys per store.
 
-    User can call Key store open command only after having opened a valid session (see Session open (0x10)).
-    Key store open command must be called before any other APIs that use a key store service.
+    :cvar CMD: Key store open command identifier (0x30).
+    :cvar FLAG_CREATE_KEYSTORE: Flag bit for creating new key store.
+    :cvar FLAG_SHARED_KEYSTORE: Flag bit for shared key store access.
+    :cvar FLAG_MONOTONIC_COUNTER_INCREMENT: Flag bit for monotonic counter increment.
+    :cvar FLAG_SYNC_OPERATION: Flag bit for synchronous NVM operations.
     """
 
     CMD = 0x30  # Key store open command ID
@@ -1939,7 +2627,10 @@ class EleMessageKeyStoreOpen(EleMessage):
         monotonic_counter_increment: bool = False,
         sync_operation: bool = False,
     ) -> None:
-        """Class object initialized.
+        """Initialize ELE message for key store operations.
+
+        Configures the message with session parameters, key store settings, and operation flags
+        for creating or loading key stores with optional synchronization and counter increment.
 
         :param session_handle: Handle identifying the current session
         :param key_store_id: Key store identifier set by the user
@@ -1961,7 +2652,13 @@ class EleMessageKeyStoreOpen(EleMessage):
 
     @property
     def flags(self) -> int:
-        """Get flags byte from boolean parameters."""
+        """Get flags byte from boolean parameters.
+
+        Converts the boolean flag parameters into a single integer value by applying
+        bitwise OR operations with corresponding flag constants.
+
+        :return: Integer value representing combined flags from boolean parameters.
+        """
         flags = 0
         if self.create_keystore:
             flags |= self.FLAG_CREATE_KEYSTORE
@@ -1974,9 +2671,12 @@ class EleMessageKeyStoreOpen(EleMessage):
         return flags
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to bytes representation.
 
-        :return: Bytes representation of message object.
+        Converts the ELE message object into its final binary format by packing
+        the header and payload with proper CRC calculation for transmission.
+
+        :return: Complete message as bytes array ready for transmission.
         """
         # Override the header to use HSM API version
         header = pack(
@@ -2006,8 +2706,11 @@ class EleMessageKeyStoreOpen(EleMessage):
     def decode_response(self, response: bytes) -> None:
         """Decode response from target.
 
-        :param response: Data of response.
-        :raises SPSDKParsingError: Response parse detect some error.
+        Parses and validates the response message header, extracts status information,
+        and decodes the key store handle if present in the response data.
+
+        :param response: Raw response data bytes from the target device.
+        :raises SPSDKParsingError: Invalid response format, tag, command, size or version.
         """
         # Decode and validate header
         (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
@@ -2034,9 +2737,12 @@ class EleMessageKeyStoreOpen(EleMessage):
             self.key_store_handle = 0
 
     def response_info(self) -> str:
-        """Print specific information about key store open response.
+        """Get key store open response information.
 
-        :return: Information about the key store.
+        Formats and returns detailed information about the key store operation including
+        the handle, operation status, and key store type.
+
+        :return: Formatted string containing key store handle, operation status, and type information.
         """
         ret = f"Key store handle: 0x{self.key_store_handle:08X}\n"
         if self.key_store_handle == 0:
@@ -2048,9 +2754,15 @@ class EleMessageKeyStoreOpen(EleMessage):
         return ret
 
     def info(self) -> str:
-        """Print information including live data.
+        """Get information about the Key Store Open Command message.
 
-        :return: Information about the message.
+        The method provides comprehensive details about the key store operation including
+        session handle, key store ID, nonce, operation type, and various configuration
+        flags. If available, it also includes response information from the command
+        execution.
+
+        :return: Formatted string containing detailed information about the message
+                 including operation parameters and system limitations.
         """
         ret = super().info()
         ret += "\nKey Store Open Command:\n"
@@ -2084,17 +2796,19 @@ class EleMessageKeyStoreOpen(EleMessage):
 
 
 class EleMessagePublicKeyExport(EleMessage):
-    """ELE Message Public Key Export.
+    """ELE Message for Public Key Export operations.
 
-    Public key export command exports the public key of an asymmetric key whose private key
-    is present in the key store. By default, public key is not stored in EdgeLock Secure
-    Enclave key storage and it's then re-calculated.
+    This class handles the export of public keys from asymmetric key pairs stored in the
+    EdgeLock Secure Enclave key store. The public key is re-calculated from the stored
+    private key since public keys are not stored by default in the key storage.
+    For ECC keys, the public key is exported in non-compressed form {x, y} in big-endian
+    order. For RSA keys, only the modulus is exported as the public exponent uses the
+    default value (65,537). ECC Montgomery keys are exported in big-endian format per
+    EdgeLock Secure Enclave specifications.
+    Requires an active key store service session before use.
 
-    For ECC key type, public key is exported in a non-compressed form {x, y}, in big-endian order.
-    For RSA key type, only the modulus is exported as public exponent is only the default value (65 537).
-    Unlike RFC 7748, ECC PUBLIC KEY MONTGOMERY is exported in big-endian format.
-
-    User can call Public key export command only after having opened a valid key store service.
+    :cvar CMD: Public key export command identifier (0x32)
+    :cvar MAX_RESPONSE_DATA_SIZE: Maximum size limit for exported public key data
     """
 
     CMD = 0x32  # Public key export command ID
@@ -2104,7 +2818,7 @@ class EleMessagePublicKeyExport(EleMessage):
     MAX_RESPONSE_DATA_SIZE = 1024  # Maximum public key size
 
     def __init__(self, key_store_handle: int, key_id: int, output_buffer_size: int = 64) -> None:
-        """Class object initialized.
+        """Initialize ELE message for retrieving public key from key store.
 
         :param key_store_handle: Handle identifying the key store service flow
         :param key_id: ID of the asymmetric key stored in the key store
@@ -2119,9 +2833,12 @@ class EleMessagePublicKeyExport(EleMessage):
         self._response_data_size = min(output_buffer_size, self.MAX_RESPONSE_DATA_SIZE)
 
     def export(self) -> bytes:
-        """Exports message to final bytes array.
+        """Export message to bytes representation.
 
-        :return: Bytes representation of message object.
+        Converts the ELE message object into its final binary format by packing
+        the header, payload, and CRC into a bytes array ready for transmission.
+
+        :return: Complete message as bytes including header, payload and CRC.
         """
         # Header: Version(07) | Word size(07) | Command ID(32) | Tag(17)
         header = pack(
@@ -2149,10 +2866,13 @@ class EleMessagePublicKeyExport(EleMessage):
         return header + payload
 
     def decode_response(self, response: bytes) -> None:
-        """Decode response from target.
+        """Decode response from target device.
 
-        :param response: Data of response.
-        :raises SPSDKParsingError: Response parse detect some error.
+        Parses and validates the response message header, extracts status information,
+        and decodes the output public key size from the response data.
+
+        :param response: Raw response data bytes from the target device.
+        :raises SPSDKParsingError: Invalid response format, tag, command, size, or version.
         """
         # Decode and validate header
         (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
@@ -2181,7 +2901,11 @@ class EleMessagePublicKeyExport(EleMessage):
     def decode_response_data(self, response_data: bytes) -> None:
         """Decode response data from target.
 
-        :param response_data: Data of response.
+        The method extracts the public key from the response data based on the
+        configured output public key size. If no public key size is specified,
+        an empty key is set.
+
+        :param response_data: Raw response data bytes received from target.
         """
         if self.output_public_key_size > 0:
             self.public_key = response_data[: self.output_public_key_size]
@@ -2189,9 +2913,12 @@ class EleMessagePublicKeyExport(EleMessage):
             self.public_key = b""
 
     def response_info(self) -> str:
-        """Print specific information about public key export response.
+        """Get formatted information about public key export response.
 
-        :return: Information about the exported public key.
+        Provides detailed information about the exported public key including key store handle,
+        key ID, size, and the actual key data with format specifications for different key types.
+
+        :return: Formatted string containing comprehensive public key export information.
         """
         ret = f"Key store handle: 0x{self.key_store_handle:08X}\n"
         ret += f"Key ID: 0x{self.key_id:08X}\n"
@@ -2207,9 +2934,13 @@ class EleMessagePublicKeyExport(EleMessage):
         return ret
 
     def info(self) -> str:
-        """Print information including live data.
+        """Get information about the Public Key Export Command message.
 
-        :return: Information about the message.
+        Provides detailed information about the command including key store handle,
+        key ID, output buffer size, and operational details. If response data is
+        available, includes response information as well.
+
+        :return: Formatted string containing comprehensive message information.
         """
         ret = super().info()
         ret += "\nPublic Key Export Command:\n"
@@ -2241,11 +2972,15 @@ class EleMessagePublicKeyExport(EleMessage):
 class EleMessageKeyStoreClose(EleMessage):
     """ELE Message Key Store Close.
 
-    Key store close command is used to close a key store service flow identified by its handle.
-    Key store context and content is deleted from the EdgeLock Secure Enclave internal memory.
-    Any update not written in the NVM will be lost.
+    EdgeLock Enclave message for closing a key store service flow identified by its handle.
+    This command deletes the key store context and content from the EdgeLock Secure Enclave
+    internal memory, with any updates not written to NVM being lost. The command can only
+    be called after having opened a valid key store service.
 
-    User can call Key store close command only after having opened a valid key store service.
+    :cvar CMD: Message command identifier for key store close request.
+    :cvar VERSION: HSM API version (0x07).
+    :cvar COMMAND_PAYLOAD_WORDS_COUNT: Number of payload words in command (1).
+    :cvar RESPONSE_PAYLOAD_WORDS_COUNT: Number of payload words in response (0).
     """
 
     CMD = MessageIDs.KEY_STORE_CLOSE_REQ.tag
@@ -2254,7 +2989,7 @@ class EleMessageKeyStoreClose(EleMessage):
     RESPONSE_PAYLOAD_WORDS_COUNT = 0  # No response payload
 
     def __init__(self, key_store_handle: int) -> None:
-        """Class object initialized.
+        """Initialize key store service close message.
 
         :param key_store_handle: Handle identifying the key store service flow to close
         """
@@ -2262,7 +2997,14 @@ class EleMessageKeyStoreClose(EleMessage):
         self.key_store_handle = key_store_handle
 
     def export(self) -> bytes:
-        """Exports message to final bytes array."""
+        """Export message to bytes array.
+
+        Converts the ELE message structure into a binary format suitable for transmission.
+        The exported format includes a header with version, word count, command ID, and tag,
+        followed by the payload containing the key store handle.
+
+        :return: Binary representation of the ELE message.
+        """
         # Header: Version(07) | Word size(02) | Command ID(31) | Tag(17)
         header = pack(
             self.HEADER_FORMAT, self.VERSION, self.command_words_count, self.command, self.TAG
@@ -2276,8 +3018,12 @@ class EleMessageKeyStoreClose(EleMessage):
     def decode_response(self, response: bytes) -> None:
         """Decode response from target.
 
-        :param response: Data of response.
-        :raises SPSDKParsingError: Response parse detect some error.
+        Parses and validates the response message header and extracts status information.
+        The method verifies message tag, command, size, and version fields, then decodes
+        the status word containing response indicator and abort code.
+
+        :param response: Raw response data bytes from target device.
+        :raises SPSDKParsingError: Invalid response format or header field mismatch.
         """
         # Decode and validate header
         (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
@@ -2298,7 +3044,13 @@ class EleMessageKeyStoreClose(EleMessage):
         ) = unpack(LITTLE_ENDIAN + UINT8 + UINT8 + UINT16, response[4:8])
 
     def info(self) -> str:
-        """Print information including live data."""
+        """Get formatted information about the key store close command.
+
+        Provides detailed information about the key store close operation including
+        the key store handle and important warnings about data loss.
+
+        :return: Formatted string containing command information and live data.
+        """
         ret = super().info()
         ret += "\nKey Store Close Command:\n"
         ret += f"- Key store handle: 0x{self.key_store_handle:08X}\n"
@@ -2307,7 +3059,13 @@ class EleMessageKeyStoreClose(EleMessage):
         return ret
 
     def response_info(self) -> str:
-        """Print response information."""
+        """Get response information as formatted string.
+
+        Formats the key store close response information including status and handle details
+        into a human-readable string representation.
+
+        :return: Formatted string containing response status and key store handle information.
+        """
         ret = "Key Store Close Response:\n"
         ret += f"- Status: {self.status_string}\n"
         ret += f"- Key store handle 0x{self.key_store_handle:08X} closed successfully\n"

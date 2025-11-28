@@ -184,32 +184,39 @@ features:
     # AHAB extra images
     ddr_alignments: [0x8000, 0x4000, 0x8000, 0]
     ddr_fw_alignment: 0x4
+    ddr_image_size_alignment: 0x400
 
     spl_ddr_load_address: 0x2049A000
     spl_ddr_core_id: cortex-a55
     spl_ddr_meta_data_start_cpu_id: 2
+    spl_ddr_image_size_alignment: 0x400
 
     atf_load_address: 0x204E0000
     atf_core_id: cortex-a55
     atf_meta_data_start_cpu_id: 2
+    atf_image_size_alignment: 0x400
 
     uboot_load_address: 0x80200000
     uboot_core_id: cortex-a55
     uboot_meta_data_start_cpu_id: 2
+    uboot_image_size_alignment: 0x400
 
     tee_load_address: 0x96000000
     tee_core_id: cortex-a55
     tee_meta_data_start_cpu_id: 2
+    tee_image_size_alignment: 0x400
 
     kernel_load_address: 0x80400000
     kernel_core_id: cortex-a55
     kernel_meta_data_start_cpu_id: 2
+    kernel_image_size_alignment: 0x400
 
     dtb_load_address: 0x83000000
     dtb_entry_point: 0x0
     dtb_core_id: cortex-a55
     dtb_meta_data_start_cpu_id: 0
     dtb_image_type: data
+    dtb_image_size_alignment: 0x400
 
     extra_images: ["spl_ddr", "atf", "uboot", "tee", "kernel", "dtb"]
 

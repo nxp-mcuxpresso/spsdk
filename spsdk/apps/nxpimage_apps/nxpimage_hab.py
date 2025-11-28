@@ -4,7 +4,11 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Nxpimage HAB group."""
+"""SPSDK NXP Image HAB (High Assurance Boot) command-line interface.
+
+This module provides CLI commands for managing HAB-related operations including
+template generation, image export, format conversion, and parsing of HAB images.
+"""
 
 import os
 

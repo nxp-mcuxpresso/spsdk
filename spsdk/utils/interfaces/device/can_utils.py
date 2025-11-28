@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""CAN utils."""
+"""SPSDK CAN communication utilities.
+
+This module provides utility classes for handling CAN bus communication
+in SPSDK context, including buffered data reading and FIFO queue management
+for CAN message processing.
+"""
+
 from queue import Empty, Queue
 from typing import Any, Optional
 
@@ -16,12 +22,17 @@ from spsdk.exceptions import SPSDKConnectionError
 
 
 class ByteFIFO:
-    """FIFO Queue for buffering incoming data."""
+    """Byte-oriented FIFO queue for buffering incoming data streams.
+
+    This class provides a thread-safe buffer for storing and retrieving individual bytes
+    from incoming data streams with configurable timeout support. It manages byte-level
+    queuing operations commonly used in communication interfaces.
+    """
 
     def __init__(self, timeout: int) -> None:
-        """FIFO Queue for buffering incoming data.
+        """Initialize FIFO Queue for buffering incoming CAN data.
 
-        :param timeout: timeout in ms
+        :param timeout: Timeout value in milliseconds for queue operations.
         """
         self.buffer: Queue = Queue()
         self.timeout = timeout
@@ -29,7 +40,10 @@ class ByteFIFO:
     def put(self, data: bytes) -> None:
         """Put data into buffer.
 
-        :param data: bytes
+        The method iterates through the provided bytes and puts each byte
+        individually into the internal buffer.
+
+        :param data: Byte data to be stored in the buffer.
         """
         for byte in data:
             self.buffer.put(byte)
@@ -37,8 +51,10 @@ class ByteFIFO:
     def get(self, length: int) -> Optional[bytes]:
         """Get data from buffer.
 
-        :param length: length in bytes
-        :return: bytes data
+        Retrieves the specified number of bytes from the internal buffer with timeout handling.
+
+        :param length: Number of bytes to retrieve from buffer.
+        :return: Retrieved bytes data if successful, None if timeout occurs.
         """
         data = bytearray()
         try:
@@ -50,17 +66,23 @@ class ByteFIFO:
 
 
 class BytesBufferedReader(Listener):  # pylint: disable=abstract-method
-    """A BytesBufferedReader is a subclass of Listener implementing buffer.
+    """Buffered message reader for CAN communication.
 
-    When the BytesBufferedReader instance is notified of a new
-    message, it pushes it into a queue of bytes waiting to be serviced. The
-    data can then be fetched with the get() method.
-
-    :attr is_stopped: ``True`` if the reader has been stopped
+    This class extends the Listener interface to provide buffered reading of CAN
+    messages. Incoming messages are queued in a FIFO buffer and can be retrieved
+    on demand, enabling asynchronous message processing in SPSDK CAN operations.
     """
 
     def __init__(self, timeout: int, *args: Any, **kwargs: Any) -> None:
-        """Constructor."""
+        """Initialize CAN utility interface.
+
+        Sets up the CAN communication interface with a timeout-based buffer and
+        initializes the stopped state flag.
+
+        :param timeout: Timeout value in milliseconds for buffer operations.
+        :param args: Additional positional arguments passed to parent class.
+        :param kwargs: Additional keyword arguments passed to parent class.
+        """
         super().__init__(*args, **kwargs)
         self.buffer = ByteFIFO(timeout)
         self.is_stopped: bool = False
@@ -68,8 +90,8 @@ class BytesBufferedReader(Listener):  # pylint: disable=abstract-method
     def on_message_received(self, msg: Message) -> None:
         """Append a message to the buffer.
 
-        :raises: SPSDKConnectionError
-            if the reader has already been stopped
+        :param msg: CAN message to be appended to the buffer.
+        :raises SPSDKConnectionError: If the reader has already been stopped.
         """
         if self.is_stopped:
             raise SPSDKConnectionError("Reader has already been stopped")
@@ -78,18 +100,26 @@ class BytesBufferedReader(Listener):  # pylint: disable=abstract-method
     def get(self, length: int) -> Optional[bytes]:
         """Get message from the buffer.
 
-        :param length: length of the data to be read.
-        :return: data or None in case data cannot be fetched in time.
+        :param length: Length of the data to be read.
+        :return: Data bytes if available, None if data cannot be fetched in time.
         """
         return self.buffer.get(length)
 
     def on_error(self, exc: Exception) -> None:
-        """This method is called to handle any exception in the receive thread.
+        """Handle exceptions that occur in the receive thread.
 
-        :param exc: The exception causing the thread to stop
+        This method is called when an exception occurs in the receive thread and
+        converts it to an SPSDKConnectionError for proper error handling.
+
+        :param exc: The exception that caused the thread to stop.
+        :raises SPSDKConnectionError: Always raised with details about the original exception.
         """
         raise SPSDKConnectionError(f"Error in buffer reader: {exc}") from exc
 
     def stop(self) -> None:
-        """Prohibits any more additions to this reader."""
+        """Stop the reader and prohibit any more additions.
+
+        This method sets the internal stopped state to prevent further data
+        from being added to the reader instance.
+        """
         self.is_stopped = True

@@ -5,4 +5,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""This module contains IEE (In-Line Encryption Engine) related code."""
+"""SPSDK IEE (In-Line Encryption Engine) support module.
+
+This module provides functionality for handling IEE operations including
+encryption, decryption, and key management for NXP MCUs with IEE capabilities.
+"""

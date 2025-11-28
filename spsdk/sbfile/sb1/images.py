@@ -5,7 +5,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Secure Boot Image Class."""
+"""SPSDK Secure Binary version 1 image handling.
+
+This module provides functionality for creating and managing Secure Binary v1 images
+in SPSDK context, including image generation, validation, and manipulation.
+"""
 
 from datetime import datetime
 from typing import Optional, Sequence
@@ -23,10 +27,16 @@ from spsdk.utils.misc import align
 
 
 ########################################################################################################################
-# Secure Boot Image Class (Version 1.x)
+# Secure Binary Image Class (Version 1.x)
 ########################################################################################################################
 class SecureBootV1(BaseClass):
-    """SB file 1.x."""
+    """Secure Binary file format version 1.x container.
+
+    This class represents and manages SB (Secure Binary) file format version 1.x,
+    providing functionality to create, validate, and export secure boot images
+    for NXP MCUs. It handles the complete structure including headers, sections,
+    and cryptographic elements required for secure boot operations.
+    """
 
     def __init__(
         self,
@@ -40,21 +50,25 @@ class SecureBootV1(BaseClass):
         digest: bytes = b"\0" * 20,
         timestamp: Optional[datetime] = None,
     ):
-        """Initialize Secure Boot Image V1.x.
+        """Initialize Secure Binary Image V1.x.
 
-        :param version: string in format #.#
-            Major version of the boot image format, currently 1.
-            Minor version of the boot image format, currently 1 or 2.
-        :param flags: for the header, 0 by default: Flags associated with the entire image.
-        :param product_version: Product version.
-        :param component_version: Component version.
-        :param drive_tag: For header: identifier for the disk drive or partition containing this image.
-        :param dek: DEK key for encrypted SB file; this is not supported yet
-        :param mac: MAC for encrypted SB file, this is not supported yet
-        :param digest: SHA-1 digest of all fields of the header (it will be updated before export anyway)
-            The first 16 bytes (of 20 total) also act as the initialization vector for CBC-encrypted regions.
-        :param timestamp: datetime of the file creation, use None for current date/time
-            Fixed value should be used only for regression testing to generate same results
+        Creates a new instance of SecureBootImageV1 with specified parameters for boot image
+        generation. The image supports both version 1.1 and 1.2 formats with optional encryption
+        capabilities.
+
+        :param version: Version string in format #.# (major.minor), currently supports 1.1 or 1.2.
+        :param flags: Header flags associated with the entire image, defaults to 0.
+        :param drive_tag: Identifier for the disk drive or partition containing this image.
+        :param product_version: Product version in BCD format.
+        :param component_version: Component version in BCD format.
+        :param dek: DEK key for encrypted SB file (encryption not yet supported), generates random
+            if None.
+        :param mac: MAC for encrypted SB file (encryption not yet supported), generates random
+            if None.
+        :param digest: SHA-1 digest of header fields, updated before export. First 16 bytes serve
+            as IV for CBC-encrypted regions.
+        :param timestamp: File creation timestamp, uses current time if None. Fixed values should
+            only be used for regression testing.
         """
         self._dek = dek if dek else random_bytes(32)
         self._mac = mac if mac else random_bytes(32)
@@ -73,18 +87,35 @@ class SecureBootV1(BaseClass):
 
     @property
     def first_boot_section_id(self) -> int:
-        """Return id of first boot section."""
+        """Get the ID of the first boot section.
+
+        :return: ID of the first boot section.
+        """
         return self._header.first_boot_section_id
 
     @first_boot_section_id.setter
     def first_boot_section_id(self, value: int) -> None:
+        """Set the first boot section ID.
+
+        This method sets the identifier of the first section to be executed during boot.
+        The value must be within the valid range of existing sections.
+
+        :param value: The section ID to set as first boot section, must be <= number of sections.
+        :raises SPSDKError: If the section ID exceeds the number of available sections.
+        """
         if value > len(self._sections):
             raise SPSDKError("Invalid length of section")
         self._header.first_boot_section_id = value
 
     @property
     def size(self) -> int:
-        """Return size of the binary representation in bytes."""
+        """Return size of the binary representation in bytes.
+
+        Calculates the total size by summing the header size, all section header sizes,
+        all section sizes, and the authentication data size (32 bytes).
+
+        :return: Total size in bytes of the binary representation.
+        """
         result = self._header.size
         for sect_hdr in self._sections_hdr_table:
             result += sect_hdr.size
@@ -94,10 +125,22 @@ class SecureBootV1(BaseClass):
         return result
 
     def __repr__(self) -> str:
-        return f"Secure Boot 1, {len(self._sections)} sections"
+        """Return string representation of the Secure Binary 1 image.
+
+        Provides a concise summary showing the image type and number of sections contained.
+
+        :return: String representation in format "Secure Binary 1, X sections".
+        """
+        return f"Secure Binary 1, {len(self._sections)} sections"
 
     def __str__(self) -> str:
-        """Return text info about the instance, multi-line string."""
+        """Return text representation of the SB1 image instance.
+
+        Provides a detailed multi-line string containing information about the SB1 image
+        structure including header, sections header table, and all sections.
+
+        :return: Multi-line string with detailed SB1 image information.
+        """
         result = "[SB]\n"
         result += "[SB-header]\n"
         result += str(self._header)
@@ -113,27 +156,39 @@ class SecureBootV1(BaseClass):
 
     @property
     def sections(self) -> Sequence[BootSectionV1]:
-        """Return sequence of all sections on the SB file."""
+        """Return sequence of all sections in the SB file.
+
+        :return: Sequence containing all boot sections present in the SB file.
+        """
         return self._sections
 
     def append(self, section: BootSectionV1) -> None:
         """Add section into the SB file.
 
-        :param section: to be added
+        :param section: Boot section to be added to the file
+        :raises AssertionError: If section is not an instance of BootSectionV1
         """
         assert isinstance(section, BootSectionV1)
         self._sections.append(section)
 
     def validate(self) -> None:
-        """Validate settings.
+        """Validate the image settings for consistency.
 
-        :raises SPSDKError: If the settings is not consistent
+        Ensures that the image configuration is valid and contains all required
+        sections before processing.
+
+        :raises SPSDKError: If no sections are defined or settings are inconsistent.
         """
         if not self._sections:
             raise SPSDKError("At least one section must be defined")
 
     def update(self) -> None:
-        """Update content."""
+        """Update the secure boot file content.
+
+        This method synchronizes all internal structures including header section count,
+        ROM_LAST_TAG flags for bootable sections, section header table with proper
+        offsets and block counts, and overall image size in blocks.
+        """
         # update header
         self._header.section_count = len(self._sections)
 
@@ -166,13 +221,17 @@ class SecureBootV1(BaseClass):
         header_padding8: Optional[bytes] = None,
         auth_padding: Optional[bytes] = None,
     ) -> bytes:
-        """Serialization to binary form.
+        """Export the SB1 image to binary format.
 
-        :param header_padding8: optional header padding, 8-bytes; recommended to use None to apply random value
-        :param auth_padding: optional padding used after authentication; recommended to use None to apply random value
-        :return: Exported the instance into binary data
-        :raises SPSDKError: Invalid section data
-        :raises SPSDKError: Invalid padding length
+        The method serializes the complete SB1 image including header, section table,
+        sections data, authentication hash, and padding to create the final binary output.
+
+        :param header_padding8: Optional header padding, 8-bytes; recommended to use None
+            to apply random value
+        :param auth_padding: Optional padding used after authentication; recommended to use
+            None to apply random value
+        :return: Binary representation of the SB1 image
+        :raises SPSDKError: Invalid section data or invalid padding length
         """
         self.update()
         self.validate()
@@ -201,12 +260,15 @@ class SecureBootV1(BaseClass):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Convert binary data into the instance (deserialization).
+        """Parse binary data into SecureBoot image instance.
 
-        :param data: given binary data to be converted
-        :return: converted instance
-        :raises SPSDKError: raised when digest does not match
-        :raises SPSDKError: Raised when section is invalid
+        Deserializes binary data by parsing the secure boot header, section header table,
+        boot sections, and validates the authentication digest.
+
+        :param data: Binary data to be deserialized into SecureBoot image instance.
+        :return: Parsed SecureBoot image instance.
+        :raises SPSDKError: Invalid section positioning detected.
+        :raises SPSDKError: Authentication failure when digest does not match.
         """
         obj = cls()
         cur_pos = 0

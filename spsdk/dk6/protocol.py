@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2024 NXP
+# Copyright 2022-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""DK6 Communication protocol."""
+
+"""SPSDK DK6 communication protocol implementation.
+
+This module provides the core communication protocol for DK6 devices,
+including ISP mode handling and low-level command/response processing.
+"""
+
 import logging
 import struct
 import time
@@ -37,7 +43,11 @@ DEFAULT_KEY = b"\x11\x22\x33\x44\x55\x66\x77\x88\x11\x22\x33\x44\x55\x66\x77\x88
 
 
 class IspMode(SpsdkEnum):
-    """DK6 ISP modes."""
+    """DK6 ISP (In-System Programming) mode enumeration.
+
+    This enumeration defines the available ISP modes for DK6 protocol operations,
+    including default mode, ISP functionality control, and device unlock operations.
+    """
 
     DEFAULT = (0x00, "default", "Default")
     START_ISP = (0x01, "start_isp", "Start ISP Functionality")
@@ -46,23 +56,32 @@ class IspMode(SpsdkEnum):
 
 
 class DK6Protocol:
-    """Class implementing communication protocol for the DK6 devices."""
+    """DK6 communication protocol handler.
+
+    This class provides a high-level interface for communicating with DK6 devices
+    over UART, implementing the complete protocol for device operations including
+    ISP unlocking, memory operations, and device information retrieval.
+
+    :cvar MAX_PAYLOAD_SIZE: Maximum payload size supported by device buffer.
+    """
 
     MAX_PAYLOAD_SIZE = 512  # max size of the payload, depends on the device buffer size
 
     def __init__(self, device: Uart) -> None:
-        """DK6Protocol constructor.
+        """Initialize DK6Protocol with UART device.
 
-        :param device: serial device that will be used for communication.
+        :param device: Serial device that will be used for communication.
+        :type device: Uart
         """
         self.uart = device
 
     def unlock_isp_default(self) -> IspUnlockResponse:
-        """Sends unlock ISP sequence in default mode.
+        """Unlock ISP sequence in default mode.
 
-        It means that only Get device info command will work.
+        Sends the unlock ISP command sequence using default mode, which restricts
+        functionality to only allow the Get device info command to work.
 
-        :return: IspUnlockResponse
+        :return: Response object containing the unlock operation result.
         """
         self.uart.write(CommandTag.UNLOCK_ISP, b"\x00")
         response = self.uart.read()
@@ -73,13 +92,14 @@ class DK6Protocol:
     def unlock_isp(
         self, mode: IspMode = IspMode.START_ISP, key: bytes = DEFAULT_KEY
     ) -> IspUnlockResponse:
-        """Unlocks ISP with the key.
+        """Unlock ISP (In-System Programming) mode with authentication key.
 
-        If the key is not provided, default will be used.
+        The method sends an unlock command to enable ISP functionality on the target device.
+        If no key is provided, the default authentication key will be used.
 
-        :param mode: Unlock ISP mode, defaults to IspMode.START_ISP
-        :param key: default key or signed unlock key, defaults to DEFAULT_KEY
-        :return: IspUnlockResponse
+        :param mode: ISP unlock mode specifying the operation type
+        :param key: Authentication key for ISP unlock, either default or signed unlock key
+        :return: Response object containing the unlock operation result
         """
         data = struct.pack(
             f"<B{len(key)}B",
@@ -94,9 +114,12 @@ class DK6Protocol:
         return response
 
     def get_device_information(self) -> GetChipIdResponse:
-        """Get device information.
+        """Get device information from the connected device.
 
-        :return: GetChipIdResponse containing chip ID and chip (ROM) version
+        Retrieves chip identification and ROM version information by sending a GET_CHIPID
+        command to the device via UART communication.
+
+        :return: GetChipIdResponse containing chip ID and chip (ROM) version information.
         """
         self.uart.write(CommandTag.GET_CHIPID, None)
         response = self.uart.read()
@@ -105,10 +128,13 @@ class DK6Protocol:
         return response
 
     def mem_get_info(self, memory_id: Union[MemoryId, int] = MemoryId.FLASH) -> MemGetInfoResponse:
-        """Get memory info about specified memory ID.
+        """Get memory information for the specified memory ID.
 
-        :param memory_id: memory ID, defaults to MemoryId.FLASH
-        :return: MemGetInfoResponse containing information like size, length etc.
+        Retrieves detailed memory information such as size, length, and other properties
+        for the given memory identifier through the DK6 protocol.
+
+        :param memory_id: Memory identifier to query information for.
+        :return: Memory information response containing size, length and other properties.
         """
         memory_id = memory_id if isinstance(memory_id, int) else memory_id.tag
         data = struct.pack(
@@ -129,9 +155,12 @@ class DK6Protocol:
     ) -> MemOpenResponse:
         """Open given memory in the specified access mode.
 
-        :param memory_id: memory that will be opened, defaults to MemoryId.FLASH
-        :param access: access mode, defaults to MemoryAccessValues.READ
-        :return: MemOpenResponse containing handle
+        The method prepares and sends a memory open command packet to the target device
+        and returns the response containing the memory handle.
+
+        :param memory_id: Memory that will be opened, defaults to MemoryId.FLASH
+        :param access: Access mode for the memory, defaults to MemoryAccessValues.WRITE
+        :return: MemOpenResponse containing the memory handle
         """
         data = struct.pack(
             "<BB",
@@ -148,13 +177,16 @@ class DK6Protocol:
     def mem_read(
         self, address: int, length: int, handle: int = 0, mode: int = 0
     ) -> MemReadResponse:
-        """Read from memory.
+        """Read data from memory at specified address.
 
-        :param address: start address
-        :param length: length of data to be read in bytes
-        :param handle: handle that was returned by mem_open, defaults to 0
-        :param mode: Read mode, defaults to 0
-        :return: MemReadResponse containing read data
+        Reads a block of memory data from the target device using the specified
+        handle and mode parameters.
+
+        :param address: Start address to read from.
+        :param length: Number of bytes to read.
+        :param handle: Memory handle returned by mem_open operation.
+        :param mode: Memory read mode to use.
+        :return: MemReadResponse object containing the read data.
         """
         data = struct.pack("<BBII", handle, mode, address, length)
         packet = CmdPacket(data)
@@ -167,14 +199,17 @@ class DK6Protocol:
     def mem_write(
         self, address: int, length: int, data: bytes, handle: int = 0, mode: int = 0
     ) -> MemWriteResponse:
-        """Write to memory.
+        """Write data to memory at specified address.
 
-        :param address: start address
-        :param length: number of bytes to be written
-        :param data: data to be written
-        :param handle: handle returned by open memory command, defaults to 0
-        :param mode: write mode, defaults to 0
-        :return: MemWriteResponse
+        This method writes the provided data to the target memory location using
+        the DK6 protocol communication interface.
+
+        :param address: Start address where data will be written.
+        :param length: Number of bytes to be written.
+        :param data: Binary data to be written to memory.
+        :param handle: Memory handle returned by open memory command, defaults to 0.
+        :param mode: Write operation mode, defaults to 0.
+        :return: Memory write response containing operation status.
         """
         frame = struct.pack(f"<BBII{len(data)}B", handle, mode, address, length, *data)
         packet = CmdPacket(frame)
@@ -186,10 +221,13 @@ class DK6Protocol:
         return response
 
     def mem_close(self, handle: int = 0) -> MemCloseResponse:
-        """Close the memory. Finalize writing of the memory.
+        """Close the memory and finalize writing operations.
 
-        :param handle: handle returned by open memory command, defaults to 0
-        :return: MemCloseResponse
+        This method sends a memory close command to finalize any pending write operations
+        and properly close the memory handle that was previously opened.
+
+        :param handle: Memory handle returned by open memory command, defaults to 0
+        :return: Response object containing the result of the memory close operation
         """
         self.uart.write(CommandTag.MEM_CLOSE, handle.to_bytes(1, Endianness.BIG.value))
         response = self.uart.read()
@@ -200,13 +238,15 @@ class DK6Protocol:
     def mem_erase(
         self, address: int, length: int, handle: int = 0, mode: int = 0
     ) -> MemEraseResponse:
-        """This command erases a region of the selected memory.
+        """Erase a region of the selected memory.
 
-        :param address: start address
-        :param length: number of bytes to be erased
-        :param handle: handle returned by open memory command, defaults to 0
-        :param mode: erase mode, defaults to 0
-        :return: MemEraseResponse
+        This command sends a memory erase request to the target device through UART communication.
+
+        :param address: Start address of the memory region to erase.
+        :param length: Number of bytes to be erased from the specified address.
+        :param handle: Handle returned by open memory command, defaults to 0.
+        :param mode: Erase mode specification, defaults to 0.
+        :return: Memory erase response containing operation status and details.
         """
         frame = struct.pack("<BBII", handle, mode, address, length)
         packet = CmdPacket(frame)
@@ -218,13 +258,16 @@ class DK6Protocol:
     def mem_blank_check(
         self, address: int, length: int, handle: int = 0, mode: int = 0
     ) -> MemBlankCheckResponse:
-        """This command checks if a region of the selected memory has been erased.
+        """Check if a region of the selected memory has been erased.
 
-        :param address: start address
-        :param length: number of bytes to be erased
-        :param handle: handle returned by open memory command, defaults to 0
-        :param mode: erase mode, defaults to 0
-        :return: MemEraseResponse
+        This command verifies whether the specified memory region is in an erased state
+        by performing a blank check operation on the target memory area.
+
+        :param address: Start address of the memory region to check.
+        :param length: Number of bytes to check for blank state.
+        :param handle: Handle returned by open memory command, defaults to 0.
+        :param mode: Blank check mode, defaults to 0.
+        :return: MemBlankCheckResponse object containing the result of the blank check operation.
         """
         frame = struct.pack("<BBII", handle, mode, address, length)
         packet = CmdPacket(frame)
@@ -235,9 +278,12 @@ class DK6Protocol:
         return response
 
     def set_baud_rate(self, baudrate: int) -> None:
-        """Sets baudrate.
+        """Set the UART communication baud rate.
 
-        :param baudrate: int value of baudrate to be set
+        This method configures the baud rate for UART communication by sending
+        a SET_BAUD command packet to the device and waiting for the change to take effect.
+
+        :param baudrate: The baud rate value to be set for UART communication.
         """
         data = struct.pack(
             "<BI",
@@ -249,9 +295,11 @@ class DK6Protocol:
         time.sleep(0.1)
 
     def reset(self) -> GenericResponse:
-        """Resets device.
+        """Reset the device.
 
-        :return: GenericResponse
+        Sends a reset command to the device via UART communication and waits for the response.
+
+        :return: Response from the device after reset command execution.
         """
         self.uart.write(CommandTag.RESET, None)
         response = self.uart.read()
@@ -260,12 +308,13 @@ class DK6Protocol:
         return response
 
     def execute(self, address: int) -> GenericResponse:
-        """This command executes (runs) code in flash or RAM.
+        """Execute code at specified memory address.
 
-        The response is sent before execution jumps to the provided address.
+        This command executes (runs) code in flash or RAM. The response is sent before
+        execution jumps to the provided address.
 
-        :param address: Memory address to start execution from
-        :return: GenericResponse
+        :param address: Memory address to start execution from.
+        :return: Generic response from the device.
         """
         data = struct.pack("<I", address)
         packet = CmdPacket(data)

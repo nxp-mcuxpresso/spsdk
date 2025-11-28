@@ -6,6 +6,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
+"""SPSDK symmetric cryptography tests.
+
+This module contains unit tests for symmetric encryption and decryption
+functionality provided by the SPSDK crypto.symmetric module, including
+AES key wrapping/unwrapping, AES CTR mode operations, and SM4 CBC encryption.
+"""
+
 from binascii import unhexlify
 
 from spsdk.crypto.symmetric import (
@@ -18,7 +25,12 @@ from spsdk.crypto.symmetric import (
 )
 
 
-def test_aes_key_wrap():
+def test_aes_key_wrap() -> None:
+    """Test AES key wrap functionality.
+
+    Verifies that the AES key wrap algorithm correctly wraps a plain key using
+    a key encryption key (KEK) and produces the expected wrapped key result.
+    """
     kek = unhexlify("000102030405060708090A0B0C0D0E0F")
     plain_key = unhexlify("00112233445566778899AABBCCDDEEFF")
     wrapped_key = unhexlify("1FA68B0A8112B447AEF34BD8FB5A7B829D3E862371D2CFE5")
@@ -26,7 +38,13 @@ def test_aes_key_wrap():
     assert calc_wrapped_key == wrapped_key
 
 
-def test_aes_key_unwrap():
+def test_aes_key_unwrap() -> None:
+    """Test AES key unwrapping functionality.
+
+    Verifies that the aes_key_unwrap function correctly unwraps a wrapped AES key
+    using a known key encryption key (KEK) and validates the result against
+    the expected plain key value.
+    """
     kek = unhexlify("000102030405060708090A0B0C0D0E0F")
     plain_key = unhexlify("00112233445566778899AABBCCDDEEFF")
     wrapped_key = unhexlify("1FA68B0A8112B447AEF34BD8FB5A7B829D3E862371D2CFE5")
@@ -34,7 +52,13 @@ def test_aes_key_unwrap():
     assert calc_plain_key == plain_key
 
 
-def test_aes_ctr_encrypt():
+def test_aes_ctr_encrypt() -> None:
+    """Test AES CTR mode encryption functionality.
+
+    Verifies that the AES CTR encryption implementation produces the expected
+    cipher text output for a given key, plaintext, and nonce combination.
+    Uses predefined test vectors to validate the encryption algorithm.
+    """
     key = b"1234567812345678"
     nonce = b"\x00" * 16
     plain_text = b"\x0a" * 16
@@ -43,7 +67,14 @@ def test_aes_ctr_encrypt():
     assert calc_cipher_text == cipher_text
 
 
-def test_aes_ctr_decrypt():
+def test_aes_ctr_decrypt() -> None:
+    """Test AES CTR mode decryption functionality.
+
+    Verifies that the AES CTR decryption function correctly decrypts cipher text
+    using a known key and nonce, comparing the result against expected plain text.
+
+    :raises AssertionError: When decrypted text doesn't match expected plain text.
+    """
     key = b"1234567812345678"
     nonce = b"\x00" * 16
     plain_text = b"\x0a" * 16
@@ -52,7 +83,15 @@ def test_aes_ctr_decrypt():
     assert calc_plain_text == plain_text
 
 
-def test_aes_sm4_encrypt():
+def test_aes_sm4_encrypt() -> None:
+    """Test AES SM4 encryption functionality.
+
+    Verifies that the SM4 CBC encryption algorithm produces the expected
+    cipher text when encrypting a known plain text with a predefined key
+    and nonce. This test ensures the correctness of the SM4 encryption
+    implementation by comparing the calculated result against a reference
+    cipher text value.
+    """
     key = b"1234567812345678"
     nonce = b"\x00" * 16
     plain_text = b"\x0a" * 16
@@ -61,7 +100,15 @@ def test_aes_sm4_encrypt():
     assert calc_cipher_text == cipher_text
 
 
-def test_aes_sm4_decrypt():
+def test_aes_sm4_decrypt() -> None:
+    """Test SM4 CBC decryption functionality.
+
+    Verifies that the SM4 CBC decryption function correctly decrypts a known
+    cipher text using a predefined key and nonce, and produces the expected
+    plain text output.
+
+    :raises AssertionError: If decrypted plain text doesn't match expected result.
+    """
     key = b"1234567812345678"
     nonce = b"\x00" * 16
     plain_text = b"\x0a" * 16

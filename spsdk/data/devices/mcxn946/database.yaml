@@ -287,82 +287,98 @@ features:
         field0B0:
           bitfields:
             field0B0-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field0B4:
           bitfields:
             field0B4-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field0B8:
           bitfields:
             field0B8-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field0BC:
           bitfields:
             field0BC-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field0C0:
           bitfields:
             field0C0-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field0C4:
           bitfields:
             field0C4-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field0C8:
           bitfields:
             field0C8-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field0CC:
           bitfields:
             field0CC-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field0D0:
           bitfields:
             field0D0-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field0D4:
           bitfields:
             field0D4-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field0D8:
           bitfields:
             field0D8-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field0DC:
           bitfields:
             field0DC-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field0E0:
           bitfields:
             field0E0-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field0E4:
           bitfields:
             field0E4-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field0E8:
           bitfields:
             field0E8-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
         field0EC:
           bitfields:
             field0EC-bits8-31:
-              config_processor: SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
+              config_processor:
+                SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address
                 IPED region. In config file use full 32b address.
 
   # ======== FCB section ========
@@ -443,18 +459,21 @@ features:
   # ======== DICE configuration ========
   dice:
     buffer_address: 0x2002_0050
+    buffer_size: 0x1000
     csr_address: 0x0100_0100
     csr_length: 208
     response_length: 324
+    rkth_length: 32
+    rkth_truncated_length: 32
     need_reset: true
 
   # ======== EL2GO TP section ========
   el2go_tp:
     el2go_name: MCXN
-    prov_method: fw_user_config
+    prov_method: dispatch_fw
+    dispatch_method: sb_only
     use_additional_data: true
-    fw_read_address: 0x2000_0000
-    user_data_address: 0x2000_0100
+    fw_read_address: 0x2000_0100
     ignored_otp_ranges: [11, 22]
     clean_method: erase_cmpa
     validation_method: max_count=16;max_total_size=16384

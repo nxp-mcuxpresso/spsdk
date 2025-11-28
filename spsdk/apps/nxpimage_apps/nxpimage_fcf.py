@@ -4,7 +4,11 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Nxpimage FCF group."""
+"""SPSDK NXP Image FCF (Flash Configuration Field) command-line interface.
+
+This module provides CLI commands for managing Flash Configuration Fields,
+including template generation, export, and parsing functionality for NXP MCUs.
+"""
 
 import logging
 

@@ -10,6 +10,9 @@ This user’s guide describes how to interface with the *MCU bootloader* using *
 
 The *blhost* application is a command-line utility used on the host computer to initiate communication and issue commands to the *MCU bootloader*. The application only sends one command per invocation.
 
+.. note::
+    Consider *rblhost* as a faster alternative. Implemented in Rust, *rblhost* offers similar functionality for interacting with MCU bootloader. For more information and usage examples, visit the rblhost tool on `GitHub <https://github.com/nxp-mcuxpresso/rblhost>`__ or `Crates <https://crates.io/crates/rblhost>`__.
+
 -------------
 Communication
 -------------

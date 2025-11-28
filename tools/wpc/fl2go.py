@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""EL2GO mock-up."""
+"""SPSDK EL2GO mock server implementation.
+
+This module provides a Flask-based mock server that simulates the EL2GO
+(EdgeLock 2GO) service for testing and development purposes within the SPSDK
+ecosystem. It handles product unit certificate requests and generates
+appropriate certificate responses for client applications.
+"""
 
 import base64
 import os
@@ -28,10 +34,15 @@ APP = Flask(__name__)
 
 @APP.route("/api/v1/wpc/product-unit-certificate/<qi_id>/request-puc", methods=["POST"])
 def request_product_unit_certificate(qi_id: str) -> tuple[Response, int]:
-    """Request for product Unit certificate.
+    """Request product unit certificate from WPC provisioning service.
 
-    :param qi_id: QI ID
-    :return: TODO
+    This method handles the certificate request process by validating the QI ID, authenticating
+    the request using API key, processing the CSR (Certificate Signing Request), and generating
+    a product unit certificate signed by the manufacturer's private key.
+
+    :param qi_id: QI (Qi Interface) identifier for the wireless power device.
+    :raises SPSDKError: Invalid QI ID, authentication failure, or certificate generation error.
+    :return: Tuple containing JSON response with certificate data and HTTP status code.
     """
     man_dir = os.path.join(FILES_DIR, str(int(qi_id)))
     if not os.path.isdir(man_dir):

@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module used for generation SecureBinary V3.1."""
+"""SPSDK SecureBinary V3.1 image generation and management.
+
+This module provides functionality for creating, parsing, and managing
+SecureBinary V3.1 format images used in NXP MCU secure boot process.
+"""
+
 import logging
 import os
 from datetime import datetime
@@ -39,10 +44,20 @@ logger = logging.getLogger(__name__)
 
 
 ########################################################################################################################
-# Secure Boot Image Class (Version 3.1)
+# Secure Binary Image Class (Version 3.1)
 ########################################################################################################################
 class SecureBinary31Header(BaseClass):
-    """Header of the SecureBinary V3.1 (Block 0)."""
+    """SecureBinary V3.1 header representation for NXP MCU secure boot files.
+
+    This class manages the header structure (Block 0) of SecureBinary format version 3.1,
+    including metadata such as firmware version, hash algorithms, certificate blocks,
+    and container properties for secure provisioning operations.
+
+    :cvar MAGIC: Magic bytes identifier for SB v3.1 format.
+    :cvar FORMAT_VERSION: Version string for this SecureBinary format.
+    :cvar HEADER_SIZE: Size of the header structure in bytes.
+    :cvar DESCRIPTION_LENGTH: Maximum length for description field.
+    """
 
     HEADER_FORMAT = "<4s2H3LQ4L16s"
     HEADER_SIZE = calcsize(HEADER_FORMAT)
@@ -62,13 +77,14 @@ class SecureBinary31Header(BaseClass):
     ) -> None:
         """Initialize the SecureBinary V3.1 Header.
 
-        :param hash_type: Hash type used in commands binary block
         :param firmware_version: Firmware version (must be bigger than current CMPA record)
+        :param hash_type: Hash type used in commands binary block
         :param cert_block: Certificate block v2.1 for the Block 0, defaults to None
         :param description: Custom description up to 16 characters long, defaults to None
-        :param timestamp: Timestamp (number of seconds since Jan 1st, 200), if None use current time
+        :param timestamp: Timestamp (number of seconds since Jan 1st, 2000), if None use current time
         :param is_nxp_container: NXP provisioning SB file, defaults to False
         :param flags: Flags for SB file, defaults to 0
+        :raises SPSDKValueError: Invalid hash type provided
         """
         self.flags = flags
         if hash_type not in [EnumHashAlgorithm.SHA256, EnumHashAlgorithm.SHA384]:
@@ -86,7 +102,14 @@ class SecureBinary31Header(BaseClass):
         self.cert_block: Optional[CertBlockV21] = cert_block
 
     def _adjust_description(self, description: Optional[str] = None) -> bytes:
-        """Format the description."""
+        """Format the description to fixed-length byte array.
+
+        Converts string description to ASCII bytes and pads or truncates to DESCRIPTION_LENGTH.
+        If no description provided, returns zero-filled byte array.
+
+        :param description: Optional description string to format.
+        :return: Fixed-length byte array of DESCRIPTION_LENGTH size.
+        """
         if not description:
             return bytes(self.DESCRIPTION_LENGTH)
         desc = bytes(description, encoding="ascii")
@@ -96,19 +119,46 @@ class SecureBinary31Header(BaseClass):
 
     @property
     def cert_block_offset(self) -> int:
-        """Calculate the offset to the Certification block."""
+        """Calculate the offset to the Certification block.
+
+        The offset is computed based on the fixed structure layout: 1 field of 8 bytes,
+        9 fields of 4 bytes each, 16 bytes of additional data, plus the hash length
+        determined by the hash type.
+
+        :return: Offset in bytes to the Certification block.
+        """
         return 1 * 8 + 9 * 4 + 16 + get_hash_length(self.hash_type)
 
     @property
     def block_size(self) -> int:
-        """Calculate the the data block size."""
+        """Calculate the data block size.
+
+        The method computes the total size of a data block by adding the fixed overhead
+        (4 bytes) plus signature size (256 bytes) plus the hash length based on the
+        configured hash type.
+
+        :return: Total data block size in bytes.
+        """
         return 4 + 256 + get_hash_length(self.hash_type)
 
     def __repr__(self) -> str:
+        """Return string representation of SB3.1 Header.
+
+        Provides a human-readable string representation showing the header type and timestamp.
+
+        :return: String representation containing header type and timestamp.
+        """
         return f"SB3.1 Header, Timestamp: {self.timestamp}"
 
     def __str__(self) -> str:
-        """Get info of SB v31 as a string."""
+        """Get string representation of SB v31 image information.
+
+        Provides a formatted string containing all key properties of the SB v31 image
+        including magic number, version, flags, block information, firmware version,
+        timestamps, and certificate block status.
+
+        :return: Formatted string with detailed SB v31 image information.
+        """
         info = str()
         info += f" Magic:                       {self.MAGIC.decode('ascii')}\n"
         info += f" Version:                     {self.FORMAT_VERSION}\n"
@@ -130,9 +180,13 @@ class SecureBinary31Header(BaseClass):
         return info
 
     def update(self, commands: "SecureBinary31Commands") -> None:
-        """Updates the volatile fields in header by real commands and certification block data.
+        """Update the volatile fields in header by real commands and certification block data.
 
-        :param commands: SB3.1 Commands block
+        The method calculates and sets the block count and total image length based on the
+        provided commands and existing certification block. It accounts for header size,
+        hash size, optional certification block size, and signature size.
+
+        :param commands: SB3.1 Commands block containing the command data.
         """
         hash_size = get_hash_length(self.hash_type)
         self.block_count = commands.block_count
@@ -147,9 +201,13 @@ class SecureBinary31Header(BaseClass):
         self.image_total_length += signature_size
 
     def export(self) -> bytes:
-        """Export the SB file to bytes.
+        """Export the SB 3.1 file to binary format.
 
-        :return: Packed binary representation of the SB 3.1 header
+        Converts the SB 3.1 header structure into its packed binary representation using the
+        predefined header format. The method processes the format version string and packs all
+        header fields according to the SB 3.1 specification.
+
+        :return: Packed binary representation of the SB 3.1 header.
         """
         major_format_version, minor_format_version = [
             int(v) for v in self.FORMAT_VERSION.split(".")
@@ -171,12 +229,13 @@ class SecureBinary31Header(BaseClass):
         )
 
     def export_full_block0(self) -> bytes:
-        """Export the complete Block 0 data (header + hash + cert block).
+        """Export the complete Block 0 data including header, hash, and certificate block.
 
-        This data is used for signature calculation.
+        This data is used for signature calculation and contains all necessary components
+        of Block 0 except the signature itself.
 
-        :return: Binary data of Block 0 (without signature)
-        :raises SPSDKError: If cert_block is required but not set
+        :return: Binary data of Block 0 without signature.
+        :raises SPSDKError: If cert_block is required but not set.
         """
         data = self.export()  # Export header
         data += self.next_block_hash  # Add hash of next block
@@ -204,7 +263,14 @@ class SecureBinary31Header(BaseClass):
     def parse(cls, data: bytes) -> Self:
         """Parse binary data into SecureBinary31Header.
 
-        :raises SPSDKError: Unable to parse SB31 Header.
+        Parses the provided binary data and creates a SecureBinary31Header instance with
+        validated header fields including magic number, version, block configuration,
+        and hash type determination.
+
+        :param data: Binary data containing the SB31 header to parse.
+        :raises SPSDKError: Invalid input size, magic mismatch, unsupported version,
+                           invalid block size, or header validation failure.
+        :return: Parsed SecureBinary31Header instance.
         """
         if len(data) < cls.HEADER_SIZE:
             raise SPSDKError("Invalid input header binary size.")
@@ -256,7 +322,12 @@ class SecureBinary31Header(BaseClass):
         return obj
 
     def validate(self) -> None:
-        """Validate the settings of class members.
+        """Validate the settings of SB3.1 header blob class members.
+
+        Performs comprehensive validation of all required class members including flags, block count,
+        hash type, block size, image type, firmware version, timestamp, image total length,
+        certification block offset, description, and next block hash. Optionally validates the
+        certificate block if present.
 
         :raises SPSDKError: Invalid configuration of SB3.1 header blob class members.
         """
@@ -294,7 +365,17 @@ class SecureBinary31Header(BaseClass):
 
 
 class SecureBinary31Commands(BaseClass):
-    """Blob containing SB3.1 commands."""
+    """SB3.1 Commands Container.
+
+    This class manages a collection of SB3.1 (Secure Binary 3.1) commands that form
+    the executable payload of a secure binary file. It handles command organization,
+    encryption, hashing, and serialization for NXP MCU secure boot operations.
+
+    :cvar FEATURE: Database feature identifier for SB3.1.
+    :cvar SB_COMMANDS_NAME: Human-readable name for SB3.1 commands.
+    :cvar SUPPORTED_HASHES: List of supported hash algorithms.
+    :cvar PCK_SIZES: Supported Part Common Key sizes in bits.
+    """
 
     FEATURE = DatabaseManager.SB31
     SB_COMMANDS_NAME = "SB3.1"
@@ -310,14 +391,11 @@ class SecureBinary31Commands(BaseClass):
     ) -> None:
         """Initialize container for SB3.1 commands.
 
-        :param family: Device family
-        :param hash_type: Hash type used in commands binary block
-        :param is_encrypted: Indicate whether commands should be encrypted or not, defaults to True
-        :param pck: Part Common Key (needed if `is_encrypted` is True), defaults to None
-        :param timestamp: Timestamp used for encryption (needed if `is_encrypted` is True), defaults to None
-        :param kdk_access_rights: Key Derivation Key access rights (needed if `is_encrypted` is True), defaults to None
-        :raises SPSDKError: Key derivation arguments are not provided if `is_encrypted` is True
-        :raises SPSDKValueError: Invalid hash type
+        :param family: Device family and revision information.
+        :param hash_type: Hash algorithm type used in commands binary block.
+        :param timestamp: Timestamp used for encryption, defaults to current timestamp if None.
+        :param encryption_provider: Encryption provider instance, defaults to NoEncryption.
+        :raises SPSDKValueError: Invalid hash type not supported by the family.
         """
         super().__init__()
         self.family = family
@@ -336,6 +414,15 @@ class SecureBinary31Commands(BaseClass):
 
     @staticmethod
     def _get_key_length(hash_type: EnumHashAlgorithm) -> int:
+        """Get the key length in bits for the specified hash algorithm.
+
+        Returns the appropriate key length based on the hash algorithm type.
+        SHA256 uses 128-bit keys, while SHA384 and SHA512 use 256-bit keys.
+
+        :param hash_type: Hash algorithm enumeration value.
+        :raises KeyError: Unsupported hash algorithm type.
+        :return: Key length in bits for the specified hash algorithm.
+        """
         return {
             EnumHashAlgorithm.SHA256.label.lower(): 128,
             EnumHashAlgorithm.SHA384.label.lower(): 256,
@@ -344,11 +431,20 @@ class SecureBinary31Commands(BaseClass):
 
     @property
     def is_encrypted(self) -> bool:
-        """Check if commands are encrypted."""
+        """Check if commands are encrypted.
+
+        :return: True if commands are encrypted, False otherwise.
+        """
         return self.encryption_provider.is_encrypted
 
     def add_command(self, command: Union[BaseCmd, list[BaseCmd]]) -> None:
-        """Add Secure Binary command."""
+        """Add Secure Binary command to the image.
+
+        The method accepts either a single command or a list of commands and adds them
+        to the internal commands collection.
+
+        :param command: Single command or list of commands to be added to the image.
+        """
         if isinstance(command, list):
             logger.info(f"Adding list ({len(command)}): {command}")
             self.commands.extend(command)
@@ -356,24 +452,34 @@ class SecureBinary31Commands(BaseClass):
             self.commands.append(command)
 
     def insert_command(self, index: int, command: BaseCmd) -> None:
-        """Insert Secure Binary command."""
+        """Insert Secure Binary command at specified index.
+
+        :param index: Position where to insert the command. Use -1 to append at the end.
+        :param command: The Secure Binary command to insert.
+        """
         if index == -1:
             self.commands.append(command)
         else:
             self.commands.insert(index, command)
 
     def set_commands(self, commands: list[BaseCmd]) -> None:
-        """Set all Secure Binary commands at once."""
+        """Set all Secure Binary commands at once.
+
+        :param commands: List of BaseCmd objects to be set as the commands for this instance.
+        """
         self.commands = commands.copy()
 
     @classmethod
     def load_pck(cls, pck_src: str, search_paths: Optional[list[str]] = None) -> bytes:
         """Load Part Common Key from source.
 
-        :param pck_src: Path or string containing PCK
-        :param search_paths: Optional list of additional search paths
-        :return: Parsed PCK bytes
-        :raises SPSDKError: If PCK cannot be loaded
+        The method tries to load PCK with different supported sizes and returns the first
+        successfully parsed key bytes.
+
+        :param pck_src: Path to file or hex string containing the Part Common Key.
+        :param search_paths: List of additional directories to search for PCK file.
+        :return: Parsed PCK as bytes.
+        :raises SPSDKError: If PCK cannot be loaded with any supported size.
         """
         pck = None
         for size in cls.PCK_SIZES:
@@ -395,12 +501,16 @@ class SecureBinary31Commands(BaseClass):
     ) -> Self:
         """Load SecureBinary commands from configuration.
 
-        :param config: Config object with configuration fields.
-        :param hash_type: Hash algorithm to use for command block hashing, defaults to SHA256.
-        :param timestamp: Timestamp value to use in commands, defaults to None (automatic).
-        :param load_just_commands: Flag to control whether to load only commands or full configuration,
+        Creates a SecureBinary31Commands instance from configuration data, including encryption
+        setup and command loading. Handles timestamp resolution and encryption provider
+        configuration based on the provided settings.
+
+        :param config: Configuration object containing SecureBinary settings and commands.
+        :param hash_type: Hash algorithm for command block hashing, defaults to SHA256.
+        :param timestamp: Timestamp for commands, defaults to None (uses current time).
+        :param load_just_commands: If True, loads only commands without encryption setup,
             defaults to False.
-        :return: Instance of the SecureBinary commands class.
+        :return: Configured SecureBinary31Commands instance with loaded commands.
         """
         family = FamilyRevision.load_from_config(config)
         cfg_timestamp = timestamp
@@ -447,8 +557,10 @@ class SecureBinary31Commands(BaseClass):
         """Create configuration of the SecureBinary4 feature.
 
         Generates a configuration object representing the current state of the SecureBinary4 instance.
+        If encryption is enabled, writes the key derivation key to a file in the specified data path.
 
         :param data_path: Path to store the data files of configuration.
+        :return: Configuration object with current SecureBinary4 settings.
         """
         ret = Config()
         ret["isEncrypted"] = self.is_encrypted
@@ -477,7 +589,14 @@ class SecureBinary31Commands(BaseClass):
         return ret
 
     def get_cmd_blocks_to_export(self) -> list[bytes]:
-        """Export commands as bytes."""
+        """Export command blocks as byte chunks for SB3.1 file generation.
+
+        This method processes all commands in the section, creates a section header,
+        and splits the combined data into appropriately sized blocks. The last block
+        is aligned if fixed block length is required.
+
+        :return: List of byte blocks containing the exported command section data.
+        """
         commands_bytes = b"".join([command.export() for command in self.commands])
         section_header = CmdSectionHeader(length=len(commands_bytes))
         total = section_header.export() + commands_bytes
@@ -493,14 +612,27 @@ class SecureBinary31Commands(BaseClass):
         return data_blocks
 
     def _encrypt_block(self, block_number: int, block_data: bytes) -> bytes:
-        """Encrypt single block."""
+        """Encrypt single block using the configured encryption provider.
+
+        :param block_number: Sequential number of the block to encrypt.
+        :param block_data: Raw data bytes to be encrypted.
+        :return: Encrypted block data as bytes.
+        """
         encrypted_block = self.encryption_provider.encrypt_block(
             block_number=block_number, data=block_data
         )
         return encrypted_block
 
     def process_cmd_blocks_to_export(self, data_blocks: list[bytes]) -> bytes:
-        """Process given data blocks for export."""
+        """Process given data blocks for export to SB3.1 format.
+
+        This method takes a list of data blocks and processes them for export by encrypting each block,
+        adding block numbers and hash chains, and combining them into the final exportable format.
+        The blocks are processed in reverse order to build the hash chain correctly.
+
+        :param data_blocks: List of byte arrays representing the data blocks to be processed.
+        :return: Final processed data ready for export as bytes.
+        """
         self.block_count = len(data_blocks)
         next_block_hash = bytes(get_hash_length(self.hash_type))
 
@@ -524,15 +656,34 @@ class SecureBinary31Commands(BaseClass):
         return final_data
 
     def export(self) -> bytes:
-        """Export commands as bytes."""
+        """Export commands as bytes.
+
+        The method retrieves command blocks to export and processes them into a byte representation
+        suitable for serialization or transmission.
+
+        :return: Serialized command data as bytes.
+        """
         data_blocks = self.get_cmd_blocks_to_export()
         return self.process_cmd_blocks_to_export(data_blocks)
 
     def __repr__(self) -> str:
+        """Return string representation of the commands collection.
+
+        Provides a formatted string showing the command type name and the total number
+        of commands in the collection.
+
+        :return: String representation in format "{COMMAND_NAME} Commands[#{count}]".
+        """
         return f"{self.SB_COMMANDS_NAME} Commands[#{len(self.commands)}]"
 
     def __str__(self) -> str:
-        """Get string information for commands in the container."""
+        """Get string information for commands in the container.
+
+        Returns a formatted string containing the number of commands and details
+        about each command in the container.
+
+        :return: Formatted string with commands information.
+        """
         info = str()
         info += "COMMANDS:\n"
         info += f"Number of commands: {len(self.commands)}\n"
@@ -550,6 +701,9 @@ class SecureBinary31Commands(BaseClass):
         hash_type: EnumHashAlgorithm,
     ) -> tuple[int, int, bytes, bytes]:
         """Parse the block header from the input data and verify its integrity.
+
+        The method extracts block information including block number, next block hash, and encrypted
+        data from the binary block data. It also performs hash verification to ensure block integrity.
 
         :param block_data: Binary data of the block
         :param offset: Offset in the data where the header begins
@@ -593,16 +747,20 @@ class SecureBinary31Commands(BaseClass):
     ) -> Self:
         """Parse binary data into SecureBinary31Commands.
 
+        This method reconstructs SecureBinary31Commands from binary SB31 format by parsing blocks,
+        decrypting if needed, and extracting individual commands. Blocks are processed in reverse
+        order and commands are parsed according to their specific types.
+
         :param data: Binary data containing SB31 commands.
         :param family: FamilyRevision instance with device family information.
-        :param block_size: Size of each command block in bytes.
-        :param pck: Part Common Key (bytes) required for decryption.
-        :param block1_hash: Hash of the first block (bytes).
-        :param hash_type: EnumHashAlgorithm specifying the hash algorithm used in the binary data.
+        :param block_size: Size of each command block in bytes, defaults to 256.
+        :param pck: Part Common Key string required for decryption of encrypted data.
+        :param block1_hash: Hash bytes of the first block for validation.
+        :param hash_type: EnumHashAlgorithm specifying hash algorithm used in binary data.
         :param kdk_access_rights: Key Derivation Key access rights, defaults to 0.
-        :param timestamp: Optional timestamp used for decryption (required for encrypted commands).
-        :return: Initialized SecureBinary31Commands object.
-        :raises SPSDKError: When parsing fails or data is invalid.
+        :param timestamp: Timestamp integer used for decryption (required for encrypted commands).
+        :return: Initialized SecureBinary31Commands object with parsed commands.
+        :raises SPSDKError: When parsing fails, data is invalid, or required parameters missing.
         :raises SPSDKValueError: When an invalid hash type is provided.
         """
         if not (family and block1_hash and hash_type and timestamp):
@@ -729,7 +887,11 @@ class SecureBinary31Commands(BaseClass):
     def validate_command_rules(self) -> None:
         """Validate commands against device-specific rules.
 
-        :raises SPSDKError: When command validation rules are violated
+        This method retrieves command validation rules from the device database and
+        applies them to verify that all commands in the image comply with the
+        device-specific requirements and constraints.
+
+        :raises SPSDKError: When command validation rules are violated.
         """
         command_rules: list[dict] = get_db(family=self.family).get_list(
             self.FEATURE, "command_rules", []
@@ -739,7 +901,15 @@ class SecureBinary31Commands(BaseClass):
 
 
 class SecureBinary31(FeatureBaseClass):
-    """Secure Binary SB3.1 class."""
+    """Secure Binary v3.1 container for NXP MCU secure provisioning.
+
+    This class represents a complete SB3.1 secure binary file that contains
+    encrypted commands and data for secure device provisioning. It manages
+    the creation, validation, and export of SB3.1 containers with proper
+    certification blocks, signatures, and command sequences.
+
+    :cvar FEATURE: Database feature identifier for SB3.1 support.
+    """
 
     FEATURE = DatabaseManager.SB31
 
@@ -757,16 +927,20 @@ class SecureBinary31(FeatureBaseClass):
     ) -> None:
         """Constructor for Secure Binary v3.1 data container.
 
-        :param family: Device family
-        :param cert_block: Certification block.
-        :param firmware_version: Firmware version (must be bigger than current CMPA record).
-        :param sb_commands: SecureBinary31Commands object containing commands
-        :param description: Custom description up to 16 characters long, defaults to None
-        :param is_nxp_container: NXP provisioning SB file, defaults to False
-        :param flags: Flags for SB file, defaults to 0
-        :param signature_provider: Signature provider for final sign of SB3.1 image, defaults to None
-        :param signature: Raw signature bytes (if signature_provider is not provided), defaults to None
-        :raises SPSDKError: If neither signature_provider nor signature is provided
+        Initializes a new Secure Binary v3.1 container with the provided configuration,
+        commands, and signing information. The container requires either a signature
+        provider or a pre-computed signature for authentication.
+
+        :param family: Device family revision information.
+        :param cert_block: Certificate block for authentication.
+        :param firmware_version: Firmware version (must be greater than current CMPA record).
+        :param sb_commands: SecureBinary31Commands object containing the commands to execute.
+        :param description: Custom description up to 16 characters long, defaults to None.
+        :param is_nxp_container: Whether this is an NXP provisioning SB file, defaults to False.
+        :param flags: Additional flags for the SB file, defaults to 0.
+        :param signature_provider: Signature provider for signing the SB3.1 image, defaults to None.
+        :param signature: Pre-computed signature bytes if signature_provider not used, defaults to None.
+        :raises SPSDKError: If neither signature_provider nor signature is provided.
         """
         self.family = family
         self.signature_provider = signature_provider
@@ -813,7 +987,7 @@ class SecureBinary31(FeatureBaseClass):
     def get_rkth(self) -> bytes:
         """Get the Root Key Table Hash (RKTH) from the certificate block.
 
-        :return: RKTH as bytes if available, None otherwise
+        :return: RKTH as bytes if available, empty bytes otherwise.
         """
         if not self.sb_header.cert_block:
             return b""
@@ -822,10 +996,14 @@ class SecureBinary31(FeatureBaseClass):
 
     @classmethod
     def get_commands_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Create the list of validation schemas.
+        """Create the list of validation schemas for SB3.1 commands.
 
-        :param family: Family description.
-        :return: List of validation schemas.
+        The method retrieves the base SB3.1 schema and customizes it based on the target family's
+        capabilities. It filters out unsupported commands and adjusts compression-related properties
+        if the family doesn't support compression features.
+
+        :param family: Family description containing device-specific configuration.
+        :return: List of validation schemas customized for the specified family.
         """
         sb3_sch_cfg = get_schema_file(DatabaseManager.SB31)
         db = get_db(family)
@@ -848,10 +1026,14 @@ class SecureBinary31(FeatureBaseClass):
 
     @classmethod
     def get_devhsm_commands_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Create the list of validation schemas.
+        """Create the list of validation schemas for DevHSM commands.
 
-        :param family: Family description.
-        :return: List of validation schemas.
+        The method retrieves the base SB3 schema and filters commands based on what's
+        supported by the specific device family. It also makes the 'commands' field
+        optional for device HSM configurations.
+
+        :param family: Family description containing device-specific information.
+        :return: List of validation schemas with filtered commands for the family.
         """
         sb3_sch_cfg = get_schema_file(DatabaseManager.SB31)
         db = get_db(family)
@@ -871,10 +1053,14 @@ class SecureBinary31(FeatureBaseClass):
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Create the list of validation schemas.
+        """Create the list of validation schemas for SB3.1 image configuration.
 
-        :param family: Family description.
-        :return: List of validation schemas.
+        The method retrieves and combines validation schemas from multiple sources including
+        MBI, SB3.1, and general configuration schemas, along with command-specific schemas
+        for the specified family.
+
+        :param family: Family description containing chip family and revision information.
+        :return: List of validation schema dictionaries for configuration validation.
         """
         mbi_sch_cfg = get_schema_file(DatabaseManager.MBI)
         sb3_sch_cfg = get_schema_file(DatabaseManager.SB31)
@@ -894,8 +1080,12 @@ class SecureBinary31(FeatureBaseClass):
     def load_from_config(cls, config: Config) -> Self:
         """Creates an instance of SecureBinary31 from configuration.
 
-        :param config: Input standard configuration.
-        :return: Instance of Secure Binary V3.1 class
+        The method parses the configuration to extract all necessary parameters including
+        family revision, certificate block, commands, and signature provider to create
+        a complete Secure Binary V3.1 instance.
+
+        :param config: Input standard configuration containing SB3.1 parameters.
+        :return: Instance of Secure Binary V3.1 class.
         """
         family = FamilyRevision.load_from_config(config)
         is_nxp_container = config.get("isNxpContainer", False)
@@ -929,10 +1119,13 @@ class SecureBinary31(FeatureBaseClass):
         return sb3
 
     def get_config(self, data_path: str = "./") -> Config:
-        """Create configuration of the Feature.
+        """Create configuration of the SB3.1 image.
+
+        The method generates a complete configuration dictionary containing all SB3.1 image
+        properties including header information, certificate block, and commands configuration.
 
         :param data_path: Path to store the data files of configuration.
-        :return: Configuration dictionary.
+        :return: Configuration object with SB3.1 image settings.
         """
         # Create a base configuration object
         ret = Config()
@@ -965,7 +1158,13 @@ class SecureBinary31(FeatureBaseClass):
     def validate(self) -> None:
         """Validate the settings of class members.
 
-        :raises SPSDKError: Invalid configuration of SB3.1 class members.
+        This method performs comprehensive validation of SB3.1 configuration including
+        signature provider verification, raw signature length validation, and validation
+        of header and commands components.
+
+        :raises SPSDKError: Invalid configuration of SB3.1 class members, invalid
+            signature provider, missing certificate block for public key verification,
+            invalid signature length, or missing signature configuration.
         """
         # If we have a signature provider, validate it
         if self.signature_provider is not None:
@@ -995,6 +1194,11 @@ class SecureBinary31(FeatureBaseClass):
     def export(self) -> bytes:
         """Generate binary output of SB3.1 file.
 
+        The method validates the file structure, exports commands to get their hash, updates the header
+        with block count and total length, sets the next block hash, and assembles the final binary
+        data including header, certificate block, signature, and command blocks.
+
+        :raises AssertionError: When signature is not provided and signature provider is not used.
         :return: Content of SB3.1 file in bytes.
         """
         self.validate()
@@ -1028,12 +1232,22 @@ class SecureBinary31(FeatureBaseClass):
         return final_data
 
     def __repr__(self) -> str:
+        """Return string representation of the SB3.1 image.
+
+        Provides a human-readable string containing the SB version and timestamp
+        information for debugging and logging purposes.
+
+        :return: String representation showing SB version and timestamp.
+        """
         return f"SB3.1, TimeStamp: {self.sb_commands.timestamp}"
 
     def __str__(self) -> str:
-        """Create string information about SB3.1 loaded file.
+        """Create string representation of SB3.1 loaded file.
 
-        :return: Text information about SB3.1.
+        The method validates the file structure and returns formatted information
+        about the SB3.1 header and commands blob.
+
+        :return: Text information about SB3.1 file structure.
         """
         self.validate()
         ret = ""
@@ -1054,13 +1268,16 @@ class SecureBinary31(FeatureBaseClass):
         pck: Optional[str] = None,
         kdk_access_rights: int = 0,
     ) -> Self:
-        """Parse object from bytes array.
+        """Parse SecureBinary31 object from binary data.
 
-        :param data: Binary data to parse
-        :param family: Family revision information, defaults to None
-        :param pck: Part Common Key needed for decryption, defaults to None
-        :param kdk_access_rights: Key Derivation Key access rights, defaults to 0
-        :return: Constructed SecureBinary31 object
+        This method reconstructs a complete SecureBinary31 object by parsing the binary
+        representation, including header, certificate block, signature, and commands sections.
+
+        :param data: Binary data containing the complete SB3.1 file to parse
+        :param family: Family revision information required for proper parsing
+        :param pck: Part Common Key needed for decrypting encrypted sections
+        :param kdk_access_rights: Key Derivation Key access rights for key derivation
+        :return: Constructed SecureBinary31 object with all parsed components
         :raises SPSDKError: When parsing fails or data is invalid
         """
         if not family:
@@ -1118,8 +1335,11 @@ class SecureBinary31(FeatureBaseClass):
     def validate_header(binary: bytes) -> None:
         """Validate SB3.1 header in binary data.
 
-        :param binary: Binary data to be validate
-        :raises SPSDKError: Invalid header of SB3.1 data
+        This method parses the SB3.1 header from the provided binary data and validates
+        its structure and content to ensure it conforms to the SB3.1 specification.
+
+        :param binary: Binary data containing the SB3.1 header to be validated.
+        :raises SPSDKError: Invalid header of SB3.1 data.
         """
         sb31_header = SecureBinary31Header.parse(binary)
         sb31_header.validate()

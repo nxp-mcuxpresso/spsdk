@@ -5,7 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""NXP MCU Image tool."""
+"""NXP MCU Image tool.
+
+This module provides a command-line interface for creating, manipulating, and managing
+various types of NXP MCU images including AHAB containers and Boot Configuration Area (BCA)
+configurations.
+"""
+
 import logging
 import sys
 

@@ -4,14 +4,13 @@
 # Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Implementation of AHAB container signature support.
+"""SPSDK AHAB container signature implementation.
 
 This module provides functionality for creating, parsing, and verifying signatures
-in AHAB containers. It supports both SRK table-based signatures and CMAC signatures,
-allowing for secure image signing with or without an SRK table. The CMAC signature
-type is specifically used in Device HSM procedures where hardware security modules
-handle the cryptographic operations.
+in AHAB containers. It supports both SRK table-based signatures and CMAC signatures
+for secure image signing operations.
 """
+
 import logging
 from struct import pack, unpack
 from typing import Optional
@@ -32,9 +31,15 @@ logger = logging.getLogger(__name__)
 
 
 class ContainerSignature(HeaderContainer):
-    """Class representing the signature in AHAB container as part of the signature block.
+    """AHAB Container Signature representation.
 
-    Signature::
+    This class represents a signature within an AHAB (Advanced High Assurance Boot) container
+    as part of the signature block. It handles signature data management, formatting, and
+    export operations for secure boot verification.
+
+    :cvar TAG: AHAB signature tag identifier.
+    :cvar VERSION: Signature format version.
+    Signature Format::
 
         +-----+--------------+--------------+----------------+----------------+
         |Off  |    Byte 3    |    Byte 2    |      Byte 1    |     Byte 0     |
@@ -61,9 +66,9 @@ class ContainerSignature(HeaderContainer):
     ) -> None:
         """Initialize ContainerSignature object.
 
-        :param signature_data: Signature data.
-        :param signature_provider: Signature provider used to sign the image.
-        :param signature_type: Type of signature (default is SRK_TABLE).
+        :param signature_data: Raw signature data bytes, defaults to empty bytes if not provided.
+        :param signature_provider: Signature provider instance used to sign the container image.
+        :param signature_type: Type of signature to use, defaults to SRK_TABLE.
         """
         super().__init__(tag=self.TAG, length=-1, version=self.VERSION)
         self._signature_data = signature_data or b""
@@ -72,6 +77,15 @@ class ContainerSignature(HeaderContainer):
         self.length = len(self)
 
     def __eq__(self, other: object) -> bool:
+        """Check equality of two ContainerSignature objects.
+
+        Compares this ContainerSignature instance with another object to determine if they are equal.
+        Two ContainerSignature objects are considered equal if their parent class attributes,
+        signature data, and signature types are all identical.
+
+        :param other: Object to compare with this ContainerSignature instance.
+        :return: True if objects are equal, False otherwise.
+        """
         if isinstance(other, ContainerSignature):
             if (
                 super().__eq__(other)
@@ -83,6 +97,14 @@ class ContainerSignature(HeaderContainer):
         return False
 
     def __len__(self) -> int:
+        """Get the total length of the AHAB signature block.
+
+        Calculates the length including the base signature block size plus the actual
+        signature data length. If signature data is not available but a signature provider
+        exists, uses the provider's expected signature length instead.
+
+        :return: Total length in bytes of the signature block, or 0 if no signature data or provider.
+        """
         if (not self._signature_data or len(self._signature_data) == 0) and self.signature_provider:
             return super().__len__() + self.signature_provider.signature_length
 
@@ -93,9 +115,20 @@ class ContainerSignature(HeaderContainer):
         return super().__len__() + sign_data_len
 
     def __repr__(self) -> str:
+        """Return string representation of AHAB Container Signature.
+
+        :return: String representation of the signature object.
+        """
         return "AHAB Container Signature"
 
     def __str__(self) -> str:
+        """Get string representation of AHAB container signature.
+
+        Provides a formatted string containing signature provider information,
+        signature type, and signature data in a human-readable format.
+
+        :return: Formatted string representation of the AHAB container signature.
+        """
         return (
             "AHAB Container Signature:\n"
             f"  Signature provider: {self.signature_provider.info() if self.signature_provider else 'Not available'}\n"
@@ -107,7 +140,7 @@ class ContainerSignature(HeaderContainer):
     def signature_data(self) -> bytes:
         """Get the signature data.
 
-        :return: Signature data.
+        :return: Signature data as bytes.
         """
         return self._signature_data
 
@@ -115,7 +148,8 @@ class ContainerSignature(HeaderContainer):
     def signature_data(self, value: bytes) -> None:
         """Set the signature data.
 
-        :param value: Signature data.
+        :param value: Signature data bytes to be stored.
+        :raises SPSDKValueError: If the signature data is invalid or empty.
         """
         self._signature_data = value
         self.length = len(self)
@@ -124,12 +158,19 @@ class ContainerSignature(HeaderContainer):
     def format(cls) -> str:
         """Get format of binary representation.
 
+        Returns the struct format string for AHAB signature binary data including
+        signature type, reserved fields, and additional padding bytes.
+
         :return: Format string for struct operations.
         """
         return super().format() + UINT8 + UINT8 + UINT16  # signature type, reserved, reserved
 
     def sign(self, data_to_sign: bytes) -> None:
         """Sign the data and store signature into class.
+
+        The method generates a signature for the provided data using the configured
+        signature provider. CMAC signature types are skipped as they don't require
+        explicit signing. The generated signature is stored internally in the class.
 
         :param data_to_sign: Data to be signed by stored private key.
         :raises SPSDKError: Missing private key or raw signature data.
@@ -148,6 +189,10 @@ class ContainerSignature(HeaderContainer):
 
     def export(self) -> bytes:
         """Export signature data that is part of Signature Block.
+
+        The method serializes the signature header and signature data into a binary format
+        suitable for inclusion in an AHAB container signature block. Returns empty bytes
+        if no signature data is present.
 
         :return: Bytes representing container signature content.
         """
@@ -172,10 +217,24 @@ class ContainerSignature(HeaderContainer):
     def verify(self) -> Verifier:
         """Verify container signature data.
 
-        :return: Verifier object with verification results.
+        Performs comprehensive verification of the AHAB container signature including
+        header validation, signature type checking, and signature data integrity.
+        The verification checks for missing data, insufficient length, dummy signatures,
+        and validates the parsed header structure.
+
+        :return: Verifier object containing detailed verification results and status.
         """
 
         def verify_data() -> None:
+            """Verify signature data integrity and validity.
+
+            Performs comprehensive validation of the signature data including existence check,
+            minimum length verification, and dummy signature detection. Results are recorded
+            in the verification result object.
+
+            :raises SPSDKValueError: If signature data validation fails due to missing data or
+                insufficient length.
+            """
             if self._signature_data is None:
                 ret.add_record("Data", VerifierResult.ERROR, "Not exists signature data")
             elif len(self._signature_data) < 16:  # Minimum signature length check
@@ -205,10 +264,15 @@ class ContainerSignature(HeaderContainer):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Parse input binary chunk to the container object.
+        """Parse input binary chunk to the container signature object.
+
+        The method parses binary data containing a Container signature block, validates the
+        container header, extracts signature data and type, and reconstructs the
+        ContainerSignature object with all necessary attributes.
 
         :param data: Binary data with Container signature block to parse.
-        :return: Object recreated from the binary data.
+        :raises SPSDKError: Invalid container header or parsing error.
+        :return: ContainerSignature object recreated from the binary data.
         """
         ContainerSignature.check_container_head(data).validate()
         fix_len = ContainerSignature.fixed_length()
@@ -228,8 +292,11 @@ class ContainerSignature(HeaderContainer):
     def get_dummy_signature(size: int) -> bytes:
         """Get dummy signature used as placeholder.
 
-        :param size: Size of signature.
-        :return: Dummy signature in bytes.
+        The method generates a dummy signature with incremental pattern that can be used
+        as a placeholder during image construction before the actual signature is applied.
+
+        :param size: Size of signature in bytes.
+        :return: Dummy signature with incremental pattern.
         """
         return BinaryPattern("inc").get_block(size)
 
@@ -239,7 +306,11 @@ class ContainerSignature(HeaderContainer):
         config: Config,
         srk_table: Optional[SRKTable] = None,
     ) -> Self:
-        """Convert the configuration options into a ContainerSignature object.
+        """Create ContainerSignature object from configuration options.
+
+        The method processes AHAB container configuration to create a signature object.
+        It either sets up a signature provider from the signer configuration or creates
+        a dummy signature placeholder when no signing resources are defined.
 
         :param config: Array of AHAB containers configuration dictionaries.
         :param srk_table: SRK table, used to determine length of the signature if the

@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2023,2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""SB31 module of sbfile."""
+
+"""SPSDK SB3.1 secure boot file format implementation.
+
+This module provides comprehensive support for creating, parsing, and manipulating
+SB3.1 (Secure Binary version 3.1) files used in NXP MCU secure boot process.
+It includes command definitions, parsing utilities, and constants for the SB3.1 format.
+"""
 
 from spsdk.sbfile.sb31.commands import (
     CmdCall,

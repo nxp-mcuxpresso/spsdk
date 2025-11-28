@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module for operation with WIC files."""
+"""SPSDK WIC (Wic Image Creator) file manipulation utilities.
+
+This module provides functionality for working with WIC image files, including
+U-Boot bootloader detection, replacement, and tag generation for proper image
+handling in SPSDK workflows.
+"""
 
 import logging
 import os
@@ -26,6 +31,9 @@ READ_LIMIT = 0x800000
 def generate_tag(end_address: int) -> bytes:
     """Generate a tag with the provided end address.
 
+    The method creates a formatted tag string containing a fixed prefix pattern
+    and the specified end address, then encodes it to ASCII bytes.
+
     :param end_address: The end address to be included in the tag.
     :return: The tag as a byte string.
     """
@@ -35,11 +43,14 @@ def generate_tag(end_address: int) -> bytes:
 def match_uboot_tag(binary_data: bytes, pattern: bytes = UBOOT_END_PATTERN) -> int:
     """Match U-Boot end tag in WIC file.
 
-    :param binary_data: input data (without offset to U-Boot)
-    :param pattern: pattern to match, defaults to UBOOT_END_PATTERN
-    :return: end address inside tag
-    :raises SPSDKError if data cannot be matched.
-    :raises SPSDKError if the end address does not match tag position
+    This method searches for a U-Boot end pattern in binary data and validates that the
+    extracted end address matches the pattern's position in the data.
+
+    :param binary_data: Input binary data without offset to U-Boot.
+    :param pattern: Pattern to match, defaults to UBOOT_END_PATTERN.
+    :return: End address inside tag.
+    :raises SPSDKError: If pattern cannot be found in the binary data.
+    :raises SPSDKError: If the end address does not match tag position.
     """
     match = re.search(pattern, binary_data)
 
@@ -61,11 +72,13 @@ def replace_uboot(input_binary: str, uboot_path: str) -> int:
 
     This function reads the WIC binary file, finds the position of the UBOOT_END_PATTERN,
     calculates the new end address based on the size of the new U-Boot binary, and replaces
-    the existing U-Boot binary with the new one. It also updates the tag with the new end address.
+    the existing U-Boot binary with the new one. It also updates the tag with the new end
+    address.
 
     :param input_binary: Path to the WIC binary file.
     :param uboot_path: Path to the new U-Boot binary file.
-    :return: new end address,
+    :raises SPSDKError: If the input binary file does not exist.
+    :return: New end address of the replaced U-Boot binary.
     """
     if not os.path.exists(input_binary):
         raise SPSDKError(f"File {input_binary} does not exist.")

@@ -1,16 +1,30 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024 NXP
+# Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""ELE message tests."""
+"""ELE message functionality tests.
+
+This module contains unit tests for ELE (EdgeLock Enclave) message classes
+and their functionality in SPSDK context. Tests cover message creation,
+serialization, and communication with ELE hardware.
+"""
+
 from spsdk.ele.ele_message import EleMessageGetInfo, EleMessageReadCommonFuse, EleMessageWriteFuse
 from spsdk.utils.misc import value_to_bytes, value_to_int
 
 
-def test_ele_write_fuse():
+def test_ele_write_fuse() -> None:
+    """Test ELE write fuse message functionality.
+
+    This test verifies the EleMessageWriteFuse class by creating a message with
+    specific parameters, validating the exported message format, decoding a
+    response, and asserting the correct status and response values.
+
+    :raises AssertionError: If any of the message properties don't match expected values.
+    """
     msg = EleMessageWriteFuse(128 * 32, 32, False, 0x4E219CB1)
     assert msg.bit_length == 32
     assert msg.bit_position == 4096
@@ -22,7 +36,13 @@ def test_ele_write_fuse():
     assert msg.processed_idx == 128
 
 
-def test_ele_read_fuse():
+def test_ele_read_fuse() -> None:
+    """Test ELE read fuse message functionality.
+
+    This test verifies the EleMessageReadCommonFuse class by creating a message
+    with fuse ID 128, validating the exported message format, decoding a response,
+    and asserting the correct indication, status, and abort code values.
+    """
     msg = EleMessageReadCommonFuse(128)
     assert value_to_int(msg.export()) == 0x0602971780000000
     msg.decode_response(value_to_bytes(0x060397E1D6000000B19C214E))
@@ -31,7 +51,12 @@ def test_ele_read_fuse():
     assert msg.abort_code == 0
 
 
-def test_ele_get_info():
+def test_ele_get_info() -> None:
+    """Test ELE get info message functionality.
+
+    Validates the EleMessageGetInfo class by decoding a real response from MX93
+    and verifying that the parsed information fields match expected values.
+    """
     msg = EleMessageGetInfo()
     # Real response from MX93
     response_data = b"""\xda\x01\\\x00\x00\x93\x00\xa0\x10\x00\x04\x00\xf2\xa6\x01v\xff0DG\

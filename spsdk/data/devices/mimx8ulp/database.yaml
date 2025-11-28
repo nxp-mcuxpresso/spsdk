@@ -165,38 +165,46 @@ features:
     upower_load_address: 0x28300200
     upower_core_id: cortex-a53
     upower_meta_data_start_cpu_id: 0
+    upower_image_size_alignment: 0x400
 
     spl_load_address: 0x22020000
     spl_core_id: cortex-a55
     spl_meta_data_start_cpu_id: 2
+    spl_ddr_image_size_alignment: 0x400
 
     atf_load_address: 0x20040000
     atf_core_id: cortex-a55
     atf_meta_data_start_cpu_id: 0
+    atf_image_size_alignment: 0x400
 
     uboot_load_address: 0x80200000
     uboot_core_id: cortex-a55
     uboot_meta_data_start_cpu_id: 0
+    uboot_image_size_alignment: 0x400
 
     tee_load_address: 0xa6000000
     tee_core_id: cortex-a55
     tee_meta_data_start_cpu_id: 0
+    tee_image_size_alignment: 0x400
 
     mcu_load_address: 0x1ffc2000
     mcu_core_id: cortex-m33
     mcu_meta_data_start_cpu_id: 0
+    mcu_image_size_alignment: 0x400
 
     kernel_load_address: 0x80400000
     kernel_core_id: cortex-a55
     kernel_meta_data_start_cpu_id: 0
     kernel_chunk_size: 0x700000
     kernel_revisions_to_split: [a0]
+    kernel_image_size_alignment: 0x400
 
     dtb_load_address: 0x83000000
     dtb_core_id: cortex-a55
     dtb_meta_data_start_cpu_id: 0
     dtb_entry_point: 0x0
     dtb_image_type: data
+    dtb_image_size_alignment: 0x400
 
     extra_images: [upower, spl, atf, uboot, tee, mcu, kernel, dtb]
 

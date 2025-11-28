@@ -5,6 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""SPSDK SB2.1 Image Header API tests.
+
+This module contains unit tests for the ImageHeaderV2 class functionality,
+including validation of header creation, serialization, and error handling
+for invalid configurations.
+"""
+
 import pytest
 
 from spsdk.crypto.rng import random_bytes
@@ -12,7 +19,15 @@ from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb2.headers import ImageHeaderV2
 
 
-def test_image_header_v2():
+def test_image_header_v2() -> None:
+    """Test ImageHeaderV2 class initialization and basic operations.
+
+    Validates default values, string representation, export/parse functionality,
+    and equality comparison for ImageHeaderV2 objects. Tests error handling
+    for incomplete headers and successful round-trip serialization.
+
+    :raises SPSDKError: When exporting header without required nonce value.
+    """
     header = ImageHeaderV2()
     assert header.nonce is None
     assert header.version == "2.0"
@@ -46,7 +61,15 @@ def test_image_header_v2():
     assert header != header_parsed
 
 
-def test_image_header_v2_invalid():
+def test_image_header_v2_invalid() -> None:
+    """Test ImageHeaderV2 export method with invalid parameters.
+
+    Validates that the ImageHeaderV2.export() method properly raises SPSDKError
+    exceptions when called with invalid padding length or when the header size
+    is corrupted.
+
+    :raises SPSDKError: When padding length is invalid (not 16 bytes) or header size is invalid.
+    """
     header = ImageHeaderV2(nonce=bytes(16))
     with pytest.raises(SPSDKError, match="Invalid length of padding"):
         header.export(padding=bytes(9))

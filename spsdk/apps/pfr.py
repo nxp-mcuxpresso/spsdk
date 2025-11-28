@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Console script for pfr."""
+"""SPSDK PFR (Protected Flash Region) command-line application.
+
+This module provides a command-line interface for managing Protected Flash Regions
+on NXP MCU devices. It supports operations like parsing, exporting, writing,
+reading, and erasing CMPA (Customer Manufacturing Programming Area) data.
+"""
 
 import logging
 import sys

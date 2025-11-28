@@ -5,9 +5,16 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Test FCB part of nxpimage app."""
+"""Test module for FCB functionality in nxpimage application.
+
+This module contains comprehensive tests for the FCB (Flexspi Configuration Block)
+related features of the nxpimage command-line tool, including export operations,
+CLI parsing, template generation, and error handling scenarios.
+"""
+
 import filecmp
 import os
+from typing import Any
 
 import pytest
 
@@ -15,8 +22,8 @@ from spsdk.apps import nxpimage
 from spsdk.exceptions import SPSDKError
 from spsdk.image.fcb.fcb import FCB
 from spsdk.image.mem_type import MemoryType
-from spsdk.utils.misc import use_working_directory
 from spsdk.utils.family import FamilyRevision
+from spsdk.utils.misc import use_working_directory
 from tests.cli_runner import CliRunner
 
 
@@ -33,7 +40,21 @@ from tests.cli_runner import CliRunner
         ("mcxn9xx", "flexspi_nor"),
     ],
 )
-def test_nxpimage_fcb_export(cli_runner: CliRunner, tmpdir, data_dir, family, mem_type):
+def test_nxpimage_fcb_export(
+    cli_runner: CliRunner, tmpdir: Any, data_dir: str, family: str, mem_type: str
+) -> None:
+    """Test FCB export functionality using CLI runner.
+
+    This test verifies that the FCB (Flash Configuration Block) export command
+    works correctly by comparing the exported binary file with the expected
+    reference file.
+
+    :param cli_runner: CLI runner instance for executing commands.
+    :param tmpdir: Temporary directory for output files.
+    :param data_dir: Path to test data directory containing reference files.
+    :param family: Target MCU family name.
+    :param mem_type: Memory type for FCB configuration.
+    """
     with use_working_directory(data_dir):
         config_file = os.path.join(data_dir, "fcb", family, f"fcb_{family}_{mem_type}.yaml")
         out_file = os.path.join(tmpdir, f"fcb_{family}_exported.bin")
@@ -63,7 +84,22 @@ def test_nxpimage_fcb_export(cli_runner: CliRunner, tmpdir, data_dir, family, me
         ("mcxn9xx", "flexspi_nor"),
     ],
 )
-def test_nxpimage_fcb_parse_cli(cli_runner: CliRunner, tmpdir, data_dir, family, mem_type):
+def test_nxpimage_fcb_parse_cli(
+    cli_runner: CliRunner, tmpdir: Any, data_dir: str, family: str, mem_type: str
+) -> None:
+    """Test FCB parse CLI command functionality.
+
+    This test verifies that the FCB (Flash Configuration Block) parse command
+    works correctly through the CLI interface. It creates a temporary output
+    file, runs the parse command with specified family and memory type parameters,
+    and validates that the output configuration file is generated successfully.
+
+    :param cli_runner: Click CLI test runner for invoking commands
+    :param tmpdir: Temporary directory for test output files
+    :param data_dir: Base directory containing test data files
+    :param family: Target MCU family name for FCB parsing
+    :param mem_type: Memory type specification for FCB configuration
+    """
     with use_working_directory(data_dir):
         data_folder = os.path.join(data_dir, "fcb", family)
         binary_path = os.path.join(data_folder, "fcb.bin")
@@ -107,7 +143,19 @@ def test_nxpimage_fcb_parse_cli(cli_runner: CliRunner, tmpdir, data_dir, family,
         ("mimxrt798s", ["xspi_nor"]),
     ],
 )
-def test_nxpimage_fcb_template_cli(cli_runner: CliRunner, tmpdir, family, mem_types):
+def test_nxpimage_fcb_template_cli(
+    cli_runner: CliRunner, tmpdir: Any, family: str, mem_types: list[str]
+) -> None:
+    """Test FCB template CLI command functionality.
+
+    Verifies that the bootable-image fcb get-templates command correctly generates
+    FCB template files for the specified family and memory types.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for output files.
+    :param family: Target MCU family name.
+    :param mem_types: List of memory types to verify template generation for.
+    """
     cmd = f"bootable-image fcb get-templates -f {family} --output {tmpdir}"
     cli_runner.invoke(nxpimage.main, cmd.split())
 
@@ -134,7 +182,19 @@ def test_nxpimage_fcb_template_cli(cli_runner: CliRunner, tmpdir, family, mem_ty
         ("mimxrt1189", MemoryType.FLEXSPI_NOR),
     ],
 )
-def test_fcb_parse_invalid(binary, fail, family, mem_type):
+def test_fcb_parse_invalid(binary: bytes, fail: bool, family: str, mem_type: MemoryType) -> None:
+    """Test FCB parsing with invalid binary data.
+
+    This test function validates the FCB (Flash Configuration Block) parsing behavior
+    when provided with potentially invalid binary data. It checks whether parsing
+    should fail or succeed based on the expected outcome.
+
+    :param binary: Binary data to be parsed as FCB.
+    :param fail: Flag indicating whether parsing is expected to fail.
+    :param family: Target MCU family identifier string.
+    :param mem_type: Memory type specification for FCB parsing.
+    :raises SPSDKError: When fail is True and parsing encounters an error (expected behavior).
+    """
     if fail:
         with pytest.raises(SPSDKError):
             FCB.parse(binary, family=FamilyRevision(family), mem_type=mem_type)
@@ -150,7 +210,21 @@ def test_fcb_parse_invalid(binary, fail, family, mem_type):
         ("mimxrt798s", None, True),
     ],
 )
-def test_default_memory_type(cli_runner: CliRunner, tmpdir, data_dir, family, mem_type, is_valid):
+def test_default_memory_type(
+    cli_runner: CliRunner, tmpdir: Any, data_dir: str, family: str, mem_type: str, is_valid: bool
+) -> None:
+    """Test default memory type handling in FCB parse command.
+
+    This test verifies that the FCB parse command correctly handles different memory types
+    and validates the expected behavior for both valid and invalid memory type configurations.
+
+    :param cli_runner: CLI test runner instance for executing commands.
+    :param tmpdir: Temporary directory for test output files.
+    :param data_dir: Base directory containing test data files.
+    :param family: Target MCU family name for FCB parsing.
+    :param mem_type: Memory type parameter to test (empty string for default).
+    :param is_valid: Expected validity of the command execution.
+    """
     binary_path = os.path.join(data_dir, "fcb", family, "fcb.bin")
     cmd = f"bootable-image fcb parse -f {family} -b {binary_path} -o {tmpdir}/output.yaml"
     if mem_type:

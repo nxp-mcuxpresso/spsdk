@@ -4,7 +4,7 @@
 # Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Implementation of AHAB (Advanced High Assurance Boot) container Image Array Entry support.
+"""SPSDK AHAB Image Array Entry implementation.
 
 This module provides classes for handling image array entries within AHAB containers,
 supporting various image types, encryption, and hash verification for NXP secure boot.
@@ -22,7 +22,6 @@ from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.exceptions import SPSDKError
 from spsdk.image.ahab.ahab_abstract_interfaces import Container, HeaderContainerData
 from spsdk.image.ahab.ahab_data import (
-    BINARY_IMAGE_ALIGNMENTS,
     INT32,
     RESERVED,
     UINT32,
@@ -56,12 +55,11 @@ logger = logging.getLogger(__name__)
 
 
 class ImageArrayEntry(Container):
-    """Class representing an image array entry as part of the image array in the AHAB container.
+    """AHAB Image Array Entry representation.
 
     An image array entry contains information about a firmware/software component within
     the AHAB container, including its location, size, load address, entry point, and security
     attributes like hash and encryption status.
-
     Image Array Entry content structure::
 
         +-----+---------------------------------------------------------------+
@@ -89,6 +87,7 @@ class ImageArrayEntry(Container):
         +-----+---------------------------------------------------------------+
         |0x60 |                        IV (256 bits)                          |
         +-----+---------------------------------------------------------------+
+
     """
 
     IMAGE_OFFSET_LEN = 4
@@ -107,6 +106,8 @@ class ImageArrayEntry(Container):
     FLAGS_HASH_SIZE = 3
     FLAGS_IS_ENCRYPTED_OFFSET = 11
     FLAGS_IS_ENCRYPTED_SIZE = 1
+    FLAGS_IMAGE_DESCRIPTOR_OFFSET = 13  # New: Image descriptor flag at bit 13
+    FLAGS_IMAGE_DESCRIPTOR_SIZE = 1
     FLAGS_BOOT_FLAGS_OFFSET = 16
     FLAGS_BOOT_FLAGS_SIZE = 15
     METADATA_START_CPU_ID_OFFSET = 0
@@ -134,57 +135,66 @@ class ImageArrayEntry(Container):
         already_encrypted_image: bool = False,
         image_name: Optional[str] = None,
         gap_after_image: int = 0,
-        image_size_alignment: Optional[int] = None,
+        image_size_alignment: int = 1,
     ) -> None:
         """Initialize an Image Array Entry object.
 
+        Creates an AHAB Image Array Entry with specified configuration parameters for secure boot
+        container. Handles image data, addressing, encryption settings, and metadata configuration.
+
         :param chip_config: Ahab container chip configuration providing target-specific parameters
         :param image: Binary image data, defaults to None
-        :param image_offset: Offset in bytes from start of container to beginning of image, defaults to 0
-        :param load_address: Address where the image will be loaded in memory
-            (absolute address in system memory map), defaults to 0
-        :param entry_point: Entry point of image (absolute address), only valid for
-            executable image types, defaults to 0
-        :param flags: Configuration flags controlling image type, core ID, hash type,
-             and encryption status, defaults to 0
-        :param image_meta_data: Image metadata containing CPU and partition information, defaults to 0
-        :param image_hash: SHA hash of image (512 bits) in big endian,
-            left-aligned and padded for smaller hashes, defaults to None
-        :param image_iv: SHA256 of plain text image (256 bits) in big endian used for encryption, defaults to None
-        :param already_encrypted_image: Whether the input image is already encrypted, defaults to False
+        :param image_offset: Offset in bytes from start of container to beginning of image,
+            defaults to 0
+        :param load_address: Address where the image will be loaded in memory (absolute address
+            in system memory map), defaults to 0
+        :param entry_point: Entry point of image (absolute address), only valid for executable
+            image types, defaults to 0
+        :param flags: Configuration flags controlling image type, core ID, hash type, and
+            encryption status, defaults to 0
+        :param image_meta_data: Image metadata containing CPU and partition information,
+            defaults to 0
+        :param image_hash: SHA hash of image (512 bits) in big endian, left-aligned and padded
+            for smaller hashes, defaults to None
+        :param image_iv: SHA256 of plain text image (256 bits) in big endian used for encryption,
+            defaults to None
+        :param already_encrypted_image: Whether the input image is already encrypted,
+            defaults to False
         :param image_name: Optional name/identifier for the image, defaults to None
-        :param gap_after_image: Size of gap (in bytes) to add after the image in container, defaults to 0
-        :param image_size_alignment: Optional override for standard image size alignment, defaults to None
+        :param gap_after_image: Size of gap (in bytes) to add after the image in container,
+            defaults to 0
+        :param image_size_alignment: Optional override for standard image size alignment,
+            defaults to None
         """
         self._image_offset = 0
         self.chip_config = chip_config
         self.flags = flags
-        self.already_encrypted_image = already_encrypted_image
-        self.image = image if image else b""
-        self.image_offset = image_offset
         self.image_size_alignment = image_size_alignment
-        self.image_size = self._get_valid_size(self.image)
+        self.plain_image = b""
+        self.encrypted_image = b""
+        self.already_encrypted_image = already_encrypted_image
+
+        self.image_offset = image_offset
         self.load_address = load_address
         self.entry_point = entry_point
         self.image_meta_data = image_meta_data
         self.image_hash = image_hash
+        self.image_name = image_name or repr(self)
+        self.image = image if image else b""
+        self.image_size = self._get_valid_size(self.image)
+
         self.image_iv = (
-            image_iv
-            or get_hash(
-                extend_block(self.plain_image, self._get_valid_size(self.plain_image)),
-                algorithm=EnumHashAlgorithm.SHA256,
-            )
+            image_iv or get_hash(self.plain_image, algorithm=EnumHashAlgorithm.SHA256)
             if self.flags_is_encrypted
             else bytes(self.IV_LEN)
         )
         self.gap_after_image = gap_after_image
-        self.image_name = image_name
 
     @property
     def image_offset(self) -> int:
         """Get the absolute image offset within the container.
 
-        :return: Image offset in bytes relative to the start of the container
+        :return: Image offset in bytes relative to the start of the container.
         """
         return self._image_offset + self.chip_config.container_offset
 
@@ -192,17 +202,21 @@ class ImageArrayEntry(Container):
     def image_offset(self, offset: int) -> None:
         """Set the image offset.
 
-        :param offset: Absolute image offset to set (will be adjusted for container_offset)
+        The method adjusts the provided absolute offset by subtracting the container offset
+        from the chip configuration to calculate the relative image offset.
+
+        :param offset: Absolute image offset to set (will be adjusted for container_offset).
         """
         self._image_offset = offset - self.chip_config.container_offset
 
     def __eq__(self, other: object) -> bool:
         """Compare two ImageArrayEntry objects for equality.
 
-        Two entries are considered equal if all their attributes match.
+        Two entries are considered equal if all their attributes match including image offset,
+        size, load address, entry point, flags, metadata, hash, and IV.
 
-        :param other: Object to compare with
-        :return: True if objects are equal, False otherwise
+        :param other: Object to compare with this ImageArrayEntry instance.
+        :return: True if objects are equal, False otherwise.
         """
         if isinstance(other, type(self)):
             if (
@@ -223,14 +237,18 @@ class ImageArrayEntry(Container):
     def __repr__(self) -> str:
         """Get string representation of the object.
 
-        :return: String representation with load address
+        :return: String representation with load address in hexadecimal format.
         """
         return f"AHAB Image Array Entry, load address({hex(self.load_address)})"
 
     def __str__(self) -> str:
-        """Get detailed string representation of the object.
+        """Get detailed string representation of the AHAB Image Array Entry.
 
-        :return: Formatted string with all relevant attributes
+        Returns a formatted multi-line string containing all relevant attributes including
+        image size, offset, entry point, load address, flags, metadata, hash, IV, and
+        various decoded flag values.
+
+        :return: Formatted string with all AHAB Image Array Entry attributes.
         """
         ret = (
             "AHAB Image Array Entry:\n"
@@ -258,8 +276,8 @@ class ImageArrayEntry(Container):
 
         The class determines by flags whether encrypted or plain data should be returned.
 
-        :raises SPSDKError: When image is flagged as encrypted but not actually encrypted yet
-        :return: Image bytes (encrypted or plain based on flags)
+        :raises SPSDKError: When image is flagged as encrypted but not actually encrypted yet.
+        :return: Image bytes (encrypted or plain based on flags).
         """
         # if self.flags_is_encrypted and not self.already_encrypted_image:
         #     raise SPSDKError("Image is NOT encrypted, yet.")
@@ -272,24 +290,33 @@ class ImageArrayEntry(Container):
     def image(self, data: bytes) -> None:
         """Set the image data for this Image array entry.
 
-        The class decides based on flags whether to store encrypted or plain data.
+        The class decides based on flags whether to store encrypted or plain data. The image data
+        is aligned to minimal SD card block size for unlocked containers or to the configured
+        container image size alignment for locked containers.
 
-        :param data: Binary image data to set
+        :param data: Binary image data to set.
         """
-        input_image = align_block(
-            data,
-            1 if self.chip_config.locked else self.chip_config.base.container_image_size_alignment,
-            padding=RESERVED,
-        )  # align to minimal SD card block if not locked container
-        self.plain_image = input_image if not self.already_encrypted_image else b""
-        self.encrypted_image = input_image if self.already_encrypted_image else b""
+        image_len = len(data)
+        valid_size = self._get_valid_size(data)
+        if image_len != valid_size:
+            logger.info(
+                f"Image ({self.image_name}) size {image_len} bytes adjusted to {valid_size} bytes"
+            )
+            data = extend_block(data, valid_size, padding=RESERVED)
+
+        self.plain_image = data if not self.already_encrypted_image else b""
+        self.encrypted_image = data if self.already_encrypted_image else b""
 
     @classmethod
     def format(cls, signed_offset: bool = False) -> str:
         """Get the format string for binary representation.
 
+        The method constructs a struct format string that defines the binary layout
+        of the image authentication entry, including image offset, size, load address,
+        entry point, flags, metadata, hash, and input vector fields.
+
         :param signed_offset: Whether the image offset should be treated as signed
-        :return: Format string for struct pack/unpack
+        :return: Format string for struct pack/unpack operations
         """
         offset_format = INT32 if signed_offset else UINT32
         return (
@@ -332,10 +359,10 @@ class ImageArrayEntry(Container):
         - mu_cpu_id: bits 10-19
         - start_partition_id: bits 20-27
 
-        :param start_cpu_id: ID of CPU to start, defaults to 0
-        :param mu_cpu_id: ID of Message Unit (MU) for the selected CPU to start, defaults to 0
-        :param start_partition_id: ID of partition to start, defaults to 0
-        :return: Combined image meta data field as a 32-bit integer
+        :param start_cpu_id: ID of CPU to start, defaults to 0.
+        :param mu_cpu_id: ID of Message Unit (MU) for the selected CPU to start, defaults to 0.
+        :param start_partition_id: ID of partition to start, defaults to 0.
+        :return: Combined image meta data field as a 32-bit integer.
         """
         meta_data = start_cpu_id
         meta_data |= mu_cpu_id << 10
@@ -350,27 +377,31 @@ class ImageArrayEntry(Container):
         hash_type: AHABSignHashAlgorithm,
         is_encrypted: bool = False,
         boot_flags: int = 0,
+        is_image_descriptor: bool = False,
     ) -> int:
-        """Create a flags field by combining multiple configuration settings.
+        """Create flags field by combining multiple configuration settings.
 
         The flags field is constructed by placing each value in its proper bit position:
         - image_type: bits 0-3
         - core_id: bits 4-7
         - hash_type: bits 8-10 (or 8-11 in v2)
         - is_encrypted: bit 11 (or 12 in v2)
+        - is_image_descriptor: bit 13
         - boot_flags: bits 16-30
 
-        :param image_type: Type of image (executable, data, etc.)
-        :param core_id: Target processor core ID
-        :param hash_type: Hash algorithm used (SHA256, SHA384, etc.)
-        :param is_encrypted: Whether the image is encrypted, defaults to False
-        :param boot_flags: Boot flags controlling the SCFW boot, defaults to 0
-        :return: Combined flags field as a 32-bit integer
+        :param image_type: Type of image (executable, data, etc.).
+        :param core_id: Target processor core ID.
+        :param hash_type: Hash algorithm used (SHA256, SHA384, etc.).
+        :param is_encrypted: Whether the image is encrypted, defaults to False.
+        :param boot_flags: Boot flags controlling the SCFW boot, defaults to 0.
+        :param is_image_descriptor: Whether this is an image descriptor, defaults to False.
+        :return: Combined flags field as a 32-bit integer.
         """
         flags_data = image_type
         flags_data |= core_id << cls.FLAGS_CORE_ID_OFFSET
         flags_data |= hash_type.tag << cls.FLAGS_HASH_OFFSET
         flags_data |= 1 << cls.FLAGS_IS_ENCRYPTED_OFFSET if is_encrypted else 0
+        flags_data |= 1 << cls.FLAGS_IMAGE_DESCRIPTOR_OFFSET if is_image_descriptor else 0
         flags_data |= boot_flags << cls.FLAGS_BOOT_FLAGS_OFFSET
 
         return flags_data
@@ -381,8 +412,8 @@ class ImageArrayEntry(Container):
         Extracts the hash type bits from the flags and converts them to the
         corresponding EnumHashAlgorithm value.
 
-        :param flags: Value of flags field
-        :return: Corresponding hash algorithm enum
+        :param flags: Value of flags field.
+        :return: Corresponding hash algorithm enum.
         """
         hash_val = (flags >> self.FLAGS_HASH_OFFSET) & ((1 << self.FLAGS_HASH_SIZE) - 1)
         return EnumHashAlgorithm.from_label(
@@ -397,9 +428,9 @@ class ImageArrayEntry(Container):
         determines the correct image type group from the mapping in the chip
         configuration.
 
-        :param chip_config: Container chip configuration
-        :param core_id: Core ID to get image types for
-        :return: Enumeration of image types supported by the specified core
+        :param chip_config: Container chip configuration.
+        :param core_id: Core ID to get image types for.
+        :return: Enumeration of image types supported by the specified core.
         """
         image_type_group = "application"
         for k, v in chip_config.base.image_types_mapping.items():
@@ -414,7 +445,7 @@ class ImageArrayEntry(Container):
         Extracts the image type bits from the flags and converts them to the
         corresponding image type enum value.
 
-        :return: Image type as an enum value
+        :return: Image type as an enum value.
         """
         return self.get_image_types(self.chip_config, self.flags_core_id.tag).from_tag(
             (self.flags >> self.FLAGS_TYPE_OFFSET) & ((1 << self.FLAGS_TYPE_SIZE) - 1)
@@ -426,7 +457,7 @@ class ImageArrayEntry(Container):
 
         Convenience property that returns the string label of the image type.
 
-        :return: Image type name as a string
+        :return: Image type name as a string.
         """
         return self.flags_image_type.label
 
@@ -437,7 +468,7 @@ class ImageArrayEntry(Container):
         Extracts the core ID bits from the flags and converts them to the
         corresponding core ID enum value.
 
-        :return: Core ID as an enum value
+        :return: Core ID as an enum value.
         """
         return self.chip_config.base.core_ids.from_tag(
             (self.flags >> self.FLAGS_CORE_ID_OFFSET) & ((1 << self.FLAGS_CORE_ID_SIZE) - 1)
@@ -449,17 +480,18 @@ class ImageArrayEntry(Container):
 
         Convenience property that returns the string label of the core ID.
 
-        :return: Core ID name as a string
+        :return: Core ID name as a string.
         """
         return self.flags_core_id.label
 
     @property
     def flags_is_encrypted(self) -> bool:
-        """Get the encryption status from the flags field.
+        """Get encryption status from flags field.
 
-        Extracts the encryption bit from the flags.
+        Extracts the encryption bit from the flags field to determine if the image
+        is marked as encrypted.
 
-        :return: True if the image is flagged as encrypted, False otherwise
+        :return: True if the image is flagged as encrypted, False otherwise.
         """
         return bool(
             (self.flags >> self.FLAGS_IS_ENCRYPTED_OFFSET)
@@ -470,13 +502,27 @@ class ImageArrayEntry(Container):
     def flags_boot_flags(self) -> int:
         """Get the boot flags from the flags field.
 
-        Extracts the boot flags bits from the flags. These control System Controller
-        Firmware (SCFW) boot behavior.
+        Extracts the boot flags bits from the flags field using bitwise operations.
+        These flags control System Controller Firmware (SCFW) boot behavior.
 
-        :return: Boot flags as an integer
+        :return: Boot flags as an integer value.
         """
         return (self.flags >> self.FLAGS_BOOT_FLAGS_OFFSET) & (
             (1 << self.FLAGS_BOOT_FLAGS_SIZE) - 1
+        )
+
+    @property
+    def flags_is_image_descriptor(self) -> bool:
+        """Get the image descriptor status from the flags field.
+
+        Extracts the image descriptor bit from the flags to determine if this entry
+        represents an image descriptor.
+
+        :return: True if this is flagged as an image descriptor, False otherwise.
+        """
+        return bool(
+            (self.flags >> self.FLAGS_IMAGE_DESCRIPTOR_OFFSET)
+            & ((1 << self.FLAGS_IMAGE_DESCRIPTOR_SIZE) - 1)
         )
 
     @property
@@ -486,7 +532,7 @@ class ImageArrayEntry(Container):
         Extracts the CPU ID bits from the metadata. This identifies which CPU
         should start executing the image.
 
-        :return: Start CPU ID as an integer
+        :return: Start CPU ID as an integer.
         """
         return (self.image_meta_data >> self.METADATA_START_CPU_ID_OFFSET) & (
             (1 << self.METADATA_START_CPU_ID_SIZE) - 1
@@ -499,7 +545,7 @@ class ImageArrayEntry(Container):
         Extracts the MU CPU ID bits from the metadata. This identifies the Message Unit
         for the selected CPU to start.
 
-        :return: MU CPU ID as an integer
+        :return: MU CPU ID as an integer.
         """
         return (self.image_meta_data >> self.METADATA_MU_CPU_ID_OFFSET) & (
             (1 << self.METADATA_MU_CPU_ID_SIZE) - 1
@@ -512,23 +558,22 @@ class ImageArrayEntry(Container):
         Extracts the partition ID bits from the metadata. This identifies which
         partition should be started.
 
-        :return: Start partition ID as an integer
+        :return: Start partition ID as an integer.
         """
         return (self.image_meta_data >> self.METADATA_START_PARTITION_ID_OFFSET) & (
             (1 << self.METADATA_START_PARTITION_ID_SIZE) - 1
         )
 
     def export(self) -> bytes:
-        """Export the container object into bytes in little-endian format.
+        """Export the image array entry into bytes in little-endian format.
 
         Packs all fields of the image array entry into a binary representation.
         The hash and IV values maintain their big-endian form as required by the
         AHAB container format.
-
         Note: For hash values shorter than 512 bits, they are left-aligned and
         padded with zeros due to the '64s' format specifier.
 
-        :return: Bytes representing the container content
+        :return: Bytes representing the image array entry content.
         """
         # hash: fixed at 512 bits, left aligned and padded with zeros for hash below 512 bits.
         # In case the hash is shorter, the pack() (in little endian mode) should grant, that the
@@ -557,10 +602,9 @@ class ImageArrayEntry(Container):
         3. Verifies all flag fields (image type, core ID, hash algorithm)
         4. Validates metadata fields
         5. Verifies image hash matches the calculated hash of the image
-
         The verification is hierarchical, with sub-verifiers for flags and metadata.
 
-        :return: Verifier object containing detailed verification results
+        :return: Verifier object containing detailed verification results.
         """
 
         def verify_image() -> None:
@@ -568,6 +612,8 @@ class ImageArrayEntry(Container):
 
             Checks if the image exists, has correct size, and validates special
             cases like zero-length images for v2x_dummy.
+
+            :raises SPSDKError: When image validation fails with critical errors.
             """
             if self.image is None:
                 ret.add_record("Image", VerifierResult.ERROR, "Doesn't exists")
@@ -586,11 +632,30 @@ class ImageArrayEntry(Container):
             else:
                 ret.add_record("Image", VerifierResult.SUCCEEDED)
 
+        def verify_offset() -> None:
+            """Verify the image offset within the container.
+
+            Performs validation checks on the image offset:
+                - Checks the offset range
+                - Handles signed/unsigned offset configurations
+                - Logs verification results
+            """
+            ver_offset = Verifier("Offset in container")
+            ver_offset.add_record_bit_range("Range", self._image_offset)
+            if not self.chip_config.base.iae_has_signed_offsets:
+                ver_offset.add_record(
+                    "Signed offset",
+                    VerifierResult.SUCCEEDED if self._image_offset >= 0 else VerifierResult.ERROR,
+                    f"Offset value: {self._image_offset}",
+                )
+            ret.add_child(ver_offset)
+
         def verify_flags() -> None:
             """Verify the flags field and its component parts.
 
-            Creates a sub-verifier to validate image type, core ID,
-            hash algorithm, boot flags, and encryption status.
+            Creates a sub-verifier to validate image type, core ID, hash algorithm, boot flags,
+            and encryption status. The verification results are added as child records to the
+            parent verifier.
             """
             ver_flags = Verifier("Flags")
             ver_flags.add_record_bit_range("Range", self.flags)
@@ -604,13 +669,16 @@ class ImageArrayEntry(Container):
             ver_flags.add_record_enum("Hash algorithm", hash_val, self.FLAGS_HASH_ALGORITHM_TYPE)
             ver_flags.add_record("Boot flags", VerifierResult.SUCCEEDED, self.flags_boot_flags)
             ver_flags.add_record("Is encrypted", VerifierResult.SUCCEEDED, self.flags_is_encrypted)
+            ver_flags.add_record(
+                "Is image descriptor", VerifierResult.SUCCEEDED, self.flags_is_image_descriptor
+            )
             ret.add_child(ver_flags)
 
         def verify_metadata() -> None:
             """Verify the metadata field and its component parts.
 
-            Creates a sub-verifier to validate start partition ID,
-            MU CPU ID, and start CPU ID.
+            Creates a sub-verifier to validate start partition ID, MU CPU ID, and start CPU ID.
+            The verification results are added as child records to the parent verifier.
             """
             ver_metadata = Verifier("Metadata")
             ver_metadata.add_record_bit_range("Range", self.image_meta_data)
@@ -626,9 +694,12 @@ class ImageArrayEntry(Container):
         def verify_hash_format() -> None:
             """Verify the image hash value.
 
-            Checks if the hash exists, has correct length, and matches
-            the calculated hash of the image. Also handles special cases
-            like empty hashes which are allowed for certain configurations.
+            Validates the image hash by checking its existence, length, and correctness against
+            the calculated hash. Handles special cases like empty hashes which may be allowed
+            based on chip configuration settings.
+
+            :raises SPSDKError: When hash validation fails due to missing hash, invalid length,
+                or hash mismatch.
             """
             if self.image_hash is None:
                 ret.add_record("Image hash", VerifierResult.ERROR, "Doesn't exists")
@@ -658,7 +729,7 @@ class ImageArrayEntry(Container):
 
         ret = Verifier(name=repr(self), description="")
         verify_image()
-        ret.add_record_bit_range("Offset in container", self._image_offset)
+        verify_offset()
         ret.add_record_bit_range("Image Size [B]", self.image_size)
         ret.add_record_bit_range("Load address", self.load_address, 64)
         ret.add_record_bit_range("Entry point", self.entry_point, 64)
@@ -677,11 +748,11 @@ class ImageArrayEntry(Container):
         handling is adjusted based on the AHAB image start as required for
         non-XIP containers.
 
-        :param data: Binary data containing the Image Array Entry block to parse
-        :param chip_config: AHAB container chip configuration
-        :raises SPSDKLengthError: If the input data has invalid length
-        :raises SPSDKValueError: If the hash is invalid for the image
-        :return: New ImageArrayEntry object initialized from the binary data
+        :param data: Binary data containing the Image Array Entry block to parse.
+        :param chip_config: AHAB container chip configuration.
+        :raises SPSDKLengthError: If the input data has invalid length.
+        :raises SPSDKValueError: If the hash is invalid for the image.
+        :return: New ImageArrayEntry object initialized from the binary data.
         """
         # Validate the input length and format
         cls._check_fixed_input_length(data).validate()
@@ -735,12 +806,15 @@ class ImageArrayEntry(Container):
         The configuration can include various parameters such as image path, offset, load address,
         entry point, image type, core ID, encryption status, etc.
 
-        :param chip_config: Chip-specific container configuration
-        :param config: Configuration dictionary containing ImageArray parameters
-        :return: Fully initialized Container Header Image Array Entry object
+        :param chip_config: Chip-specific container configuration.
+        :param config: Configuration dictionary containing ImageArray parameters.
+        :return: Fully initialized Container Header Image Array Entry object.
         """
-        image_size_alignment = config.get("image_size_alignment")
+        image_size_alignment = config.get(
+            "image_size_alignment", chip_config.base.target_memory.image_size_alignment
+        )
         is_encrypted = config.get("is_encrypted", False)
+        is_image_descriptor = config.get("is_image_descriptor", False)
         meta_data = cls.create_meta(
             config.get_int("meta_data_start_cpu_id", 0),
             config.get_int("meta_data_mu_cpu_id", 0),
@@ -757,11 +831,15 @@ class ImageArrayEntry(Container):
             core_id=core_id,
             hash_type=cls.FLAGS_HASH_ALGORITHM_TYPE.from_label(config.get("hash_type", "sha256")),
             is_encrypted=is_encrypted,
+            is_image_descriptor=is_image_descriptor,
             boot_flags=config.get_int("boot_flags", 0),
         )
 
         # For serial downloader, image offset is always 0
-        if chip_config.base.target_memory == AhabTargetMemory.TARGET_MEMORY_SERIAL_DOWNLOADER:
+        if (
+            chip_config.base.target_memory.memory_type
+            == AhabTargetMemory.TARGET_MEMORY_SERIAL_DOWNLOADER
+        ):
             image_offset = 0
         else:
             image_offset = config.get_int("image_offset", 0)
@@ -787,10 +865,10 @@ class ImageArrayEntry(Container):
         Exports the current state of the ImageArrayEntry into a configuration dictionary
         that can be used to recreate the entry. Also writes associated image files to disk.
 
-        :param index: Container index for filename generation
-        :param image_index: Image index within the container for filename generation
-        :param data_path: Directory path where image files should be stored
-        :return: Configuration dictionary with all parameters of this image array entry
+        :param index: Container index for filename generation.
+        :param image_index: Image index within the container for filename generation.
+        :param data_path: Directory path where image files should be stored.
+        :return: Configuration dictionary with all parameters of this image array entry.
         """
         ret_cfg = Config()
         image_name = None
@@ -823,6 +901,7 @@ class ImageArrayEntry(Container):
         ret_cfg["image_type"] = self.flags_image_type_name
         ret_cfg["core_id"] = self.flags_core_id_name
         ret_cfg["is_encrypted"] = bool(self.flags_is_encrypted)
+        ret_cfg["is_image_descriptor"] = bool(self.flags_is_image_descriptor)
         ret_cfg["boot_flags"] = self.flags_boot_flags
         ret_cfg["meta_data_start_cpu_id"] = self.metadata_start_cpu_id
         ret_cfg["meta_data_mu_cpu_id"] = self.metadata_mu_cpu_id
@@ -838,28 +917,41 @@ class ImageArrayEntry(Container):
         For example, ELE images use 4-byte alignment, while other types use
         the greater of 1024 bytes or the target memory's required alignment.
 
-        :return: Required alignment in bytes for this image
+        :return: Required alignment in bytes for this image.
         """
-        if self.flags_image_type_name == "ele":
-            return 4
+        alignment = self.chip_config.base.target_memory.image_offset_alignment
+        return max(alignment, self.chip_config.base.valid_offset_minimal_alignment)
 
-        return max([BINARY_IMAGE_ALIGNMENTS[self.chip_config.base.target_memory], 1024])
+    def _get_image_size_alignment(self) -> int:
+        """Determine the appropriate image size alignment based on image type and memory target.
+
+        :return: Image size alignment in bytes
+        """
+        alignment = 1 if self.chip_config.locked else self.image_size_alignment
+        if self.flags_is_encrypted and not self.already_encrypted_image:
+            if alignment < 16:
+                logger.debug("Adjusting image size alignment to 16 bytes for encryption")
+                alignment = 16
+            elif alignment % 16 != 0:
+                raise SPSDKError(
+                    f"Encrypted image must be aligned to 16 bytes, current alignment is {alignment}"
+                )
+
+        return alignment
 
     def _get_valid_size(self, image: Optional[bytes]) -> int:
         """Calculate the valid image size that should be stored in the container.
 
-        Applies appropriate alignment rules based on image type and
-        configured alignment. If a custom image_size_alignment is specified,
-        it takes precedence over the default rules.
+        Applies appropriate alignment rules based on image type and configured alignment. If a custom
+        image_size_alignment is specified, it takes precedence over the default rules.
 
-        :param image: Image data to calculate size for
-        :return: Valid aligned size in bytes (0 if image is None)
+        :param image: Image data to calculate size for.
+        :return: Valid aligned size in bytes (0 if image is None).
         """
         if not image:
             return 0
-        if self.image_size_alignment:
-            return align(len(image), self.image_size_alignment)
-        return align(len(image), 4 if self.flags_image_type_name == "ele" else 1)
+
+        return align(len(image), self._get_image_size_alignment())
 
     def get_valid_offset(self, original_offset: int) -> int:
         """Adjust an offset to comply with AHAB container alignment requirements.
@@ -867,21 +959,22 @@ class ImageArrayEntry(Container):
         Ensures that image offsets within the container meet the alignment
         requirements of both the image type and the chip configuration.
 
-        :param original_offset: Original requested offset
-        :return: Adjusted offset that meets alignment requirements
+        :param original_offset: Original requested offset.
+        :return: Adjusted offset that meets alignment requirements.
         """
-        alignment = self.get_valid_alignment()
-        alignment = max(alignment, self.chip_config.base.valid_offset_minimal_alignment)
-        return align(original_offset, alignment)
+        return align(original_offset, self.get_valid_alignment())
 
 
 class ImageArrayEntryV2(ImageArrayEntry):
-    """Class representing image array entry for AHAB container version 2.
+    """AHAB container image array entry for version 2.
 
-    This extends the base ImageArrayEntry with V2-specific modifications:
-    - Expanded hash field size (4 bits instead of 3)
-    - Relocated encryption flag due to hash field expansion
-    - Support for more hash algorithms through AHABSignHashAlgorithmV2
+    This class represents an image array entry specifically designed for AHAB container
+    version 2, extending the base ImageArrayEntry with enhanced capabilities and
+    modified field layouts to support additional hash algorithms and improved security features.
+
+    :cvar FLAGS_HASH_SIZE: Size of hash field in bits (4 bits for V2).
+    :cvar FLAGS_IS_ENCRYPTED_OFFSET: Bit offset for encryption flag (relocated to bit 12).
+    :cvar FLAGS_HASH_ALGORITHM_TYPE: Hash algorithm enumeration for V2 containers.
     """
 
     # The bits for HASH description has been expanded to 4 bits
@@ -896,13 +989,16 @@ IAE_TYPE = TypeVar("IAE_TYPE", Type[ImageArrayEntry], Type[ImageArrayEntryV2])
 
 
 class ImageArrayEntryTemplates:
-    """Base class to handle standard templates for AHAB Image array entries.
+    """AHAB Image Array Entry Template Factory.
 
-    This class and its subclasses provide factory methods to create standardized
-    image array entries for various types of images (SPL, U-Boot, ATF, etc.).
-    Each template handles the specific configuration needs of different image types.
+    This class provides factory methods to create standardized image array entries
+    for various types of images in AHAB containers (SPL, U-Boot, ATF, etc.).
+    Each template subclass handles specific configuration requirements for different
+    image types through predefined settings and database lookups.
 
-    Subclasses define their own KEY and IMAGE_NAME to identify the template type.
+    :cvar IMAGE_NAME: Human-readable name of the image type handled by template.
+    :cvar KEY: Database key prefix used for retrieving template-specific values.
+    :cvar DEFAULT_OFFSET: Default offset value for image placement.
     """
 
     IMAGE_NAME: str = "None"
@@ -923,11 +1019,11 @@ class ImageArrayEntryTemplates:
         If not found or if config is None, falls back to retrieving from the database
         using a key formed by combining the template's KEY with the provided key_name.
 
-        :param database: Database containing default values
-        :param key_name: Name of the key to retrieve
-        :param config: Optional configuration dictionary to check first
-        :param default: Default value to return if not found in config or database
-        :return: Retrieved value or the default value
+        :param database: Database containing default values.
+        :param key_name: Name of the key to retrieve.
+        :param config: Optional configuration dictionary to check first.
+        :param default: Default value to return if not found in config or database.
+        :return: Retrieved value or the default value.
         """
         if config:
             ret = config.get(key_name)
@@ -947,11 +1043,11 @@ class ImageArrayEntryTemplates:
 
         Uses _load_value to retrieve the raw value and converts it to an integer.
 
-        :param database: Database containing default values
-        :param key_name: Name of the key to retrieve
-        :param config: Optional configuration dictionary to check first
-        :param default: Default value to return if not found
-        :return: Retrieved value as an integer
+        :param database: Database containing default values.
+        :param key_name: Name of the key to retrieve.
+        :param config: Optional configuration dictionary to check first.
+        :param default: Default value to return if not found.
+        :return: Retrieved value as an integer.
         """
         return value_to_int(
             cls._load_value(database=database, key_name=key_name, config=config, default=default)
@@ -967,13 +1063,14 @@ class ImageArrayEntryTemplates:
     ) -> bool:
         """Load a boolean value from configuration or database.
 
-        Uses _load_value to retrieve the raw value and converts it to a boolean.
+        Uses _load_value to retrieve the raw value and converts it to a boolean using value_to_bool
+        function.
 
-        :param database: Database containing default values
-        :param key_name: Name of the key to retrieve
-        :param config: Optional configuration dictionary to check first
-        :param default: Default value to return if not found
-        :return: Retrieved value as a boolean
+        :param database: Database containing default values.
+        :param key_name: Name of the key to retrieve.
+        :param config: Optional configuration dictionary to check first.
+        :param default: Default value to return if not found.
+        :return: Retrieved value as a boolean.
         """
         return value_to_bool(
             cls._load_value(database=database, key_name=key_name, config=config, default=default)
@@ -991,12 +1088,12 @@ class ImageArrayEntryTemplates:
 
         Uses _load_value to retrieve the raw value and ensures it's a string.
 
-        :param database: Database containing default values
-        :param key_name: Name of the key to retrieve
-        :param config: Optional configuration dictionary to check first
-        :param default: Default value to return if not found
-        :return: Retrieved value as a string
-        :raises AssertionError: If the retrieved value is not a string
+        :param database: Database containing default values.
+        :param key_name: Name of the key to retrieve.
+        :param config: Optional configuration dictionary to check first.
+        :param default: Default value to return if not found.
+        :return: Retrieved value as a string.
+        :raises AssertionError: If the retrieved value is not a string.
         """
         ret = cls._load_value(database=database, key_name=key_name, config=config, default=default)
         assert isinstance(ret, str)
@@ -1014,12 +1111,12 @@ class ImageArrayEntryTemplates:
 
         Uses _load_value to retrieve the raw value and ensures it's either a string or integer.
 
-        :param database: Database containing default values
-        :param key_name: Name of the key to retrieve
-        :param config: Optional configuration dictionary to check first
-        :param default: Default value to return if not found
-        :return: Retrieved value as either a string or integer
-        :raises AssertionError: If the retrieved value is neither a string nor an integer
+        :param database: Database containing default values.
+        :param key_name: Name of the key to retrieve.
+        :param config: Optional configuration dictionary to check first.
+        :param default: Default value to return if not found.
+        :return: Retrieved value as either a string or integer.
+        :raises AssertionError: If the retrieved value is neither a string nor an integer.
         """
         ret = cls._load_value(database=database, key_name=key_name, config=config, default=default)
         assert isinstance(ret, (str, int))
@@ -1036,13 +1133,16 @@ class ImageArrayEntryTemplates:
         """Create an image array entry from binary data and configuration.
 
         Builds an ImageArrayEntry (or V2) instance using values from the configuration
-        and database, combined with the provided binary image data.
+        and database, combined with the provided binary image data. The method extracts
+        various parameters like load address, entry point, core ID, and image type from
+        the database and configuration, then constructs the appropriate image array entry.
 
         :param iae_cls: ImageArrayEntry class type to instantiate
-        :param binary: Binary image data
-        :param chip_config: AHAB chip container configuration
+        :param binary: Binary image data to be included in the entry
+        :param chip_config: AHAB chip container configuration object
         :param config: Configuration dictionary with override values
-        :return: Fully initialized image array entry
+        :raises SPSDKError: When required configuration values are missing or invalid
+        :return: Fully initialized image array entry instance
         """
         family = chip_config.base.family
         # get DB for family
@@ -1088,7 +1188,7 @@ class ImageArrayEntryTemplates:
         try:
             image_size_alignment = cls._load_int(database, "image_size_alignment", config=config)
         except SPSDKError:
-            image_size_alignment = None
+            image_size_alignment = 1  # Default fallback if not specified in database
 
         return iae_cls(
             chip_config=chip_config,
@@ -1111,8 +1211,8 @@ class ImageArrayEntryTemplates:
         formats them into a text description. This is useful for documentation
         and user guidance about what settings are applied by default.
 
-        :param family: Chip family revision to get settings for
-        :return: Formatted string containing default settings description
+        :param family: Chip family revision to get settings for.
+        :return: Formatted string containing default settings description.
         """
 
         def get_image_types() -> Type[SpsdkSoftEnum]:
@@ -1121,7 +1221,7 @@ class ImageArrayEntryTemplates:
             Looks up the image type group based on the core ID in the database
             mapping, then retrieves the corresponding enumeration.
 
-            :return: Appropriate image type enumeration class
+            :return: Appropriate image type enumeration class.
             """
             image_type_group = "application"
             db_image_types_mapping = database.get_dict(DatabaseManager.AHAB, "image_types_mapping")
@@ -1191,14 +1291,13 @@ class ImageArrayEntryTemplates:
         This is the base implementation that loads binary data from the
         specified file path (using the template's KEY) and creates a
         single image array entry with appropriate configuration.
-
         Subclasses may override this method to provide specialized behavior
         for different image types.
 
-        :param iae_cls: ImageArrayEntry class type to instantiate
-        :param chip_config: AHAB container chip configuration
-        :param config: Configuration dictionary with settings
-        :return: List containing a single image array entry
+        :param iae_cls: ImageArrayEntry class type to instantiate.
+        :param chip_config: AHAB container chip configuration.
+        :param config: Configuration dictionary with settings.
+        :return: List containing a single image array entry.
         """
         return [
             cls._create_image_array_entry(
@@ -1221,15 +1320,14 @@ class ImageArrayEntryTemplates:
         This method processes a list of configuration dictionaries and creates
         image array entries for each one. It handles both direct image_path
         entries and template-based entries (identified by template KEY).
-
         For each configuration item, it either:
         1. Loads directly using load_from_config if "image_path" is specified
         2. Finds a matching template class and uses create_image_array_entry
 
-        :param iae_cls: ImageArrayEntry class type to instantiate
-        :param chip_config: AHAB container chip configuration
-        :param config: List of configuration dictionaries
-        :return: List of image array entries created from all configurations
+        :param iae_cls: ImageArrayEntry class type to instantiate.
+        :param chip_config: AHAB container chip configuration.
+        :param config: List of configuration dictionaries.
+        :return: List of image array entries created from all configurations.
         """
         config_loaders = ImageArrayEntryTemplates.__subclasses__()
         image_array: list = []
@@ -1261,11 +1359,15 @@ class ImageArrayEntryTemplates:
 
 
 class IaeDoubleAuthentication(ImageArrayEntryTemplates):
-    """Template for NXP images requiring double authentication (by NXP and OEM).
+    """Template for NXP images requiring double authentication by NXP and OEM.
 
-    This template handles special processing for NXP firmware images that
-    need to be authenticated both by NXP and the OEM. It extracts ELE firmware
-    and optionally V2X firmware from a combined NXP container.
+    This template handles special processing for NXP firmware images that need to be
+    authenticated both by NXP and the OEM. It extracts ELE firmware and optionally
+    V2X firmware from a combined NXP container, enabling OEMs to sign NXP-provided
+    firmware components with their own keys while preserving original NXP signatures.
+
+    :cvar IMAGE_NAME: Human-readable name for this template type.
+    :cvar KEY: Configuration key identifier for double authentication.
     """
 
     IMAGE_NAME: str = "Double Authentication for NXP images"
@@ -1285,15 +1387,14 @@ class IaeDoubleAuthentication(ImageArrayEntryTemplates):
         2. Extracts the ELE firmware container
         3. Optionally extracts the V2X firmware container if present
         4. Creates image array entries for each extracted container
+        This enables OEMs to sign NXP-provided firmware components with their own keys while
+        preserving the original NXP signatures.
 
-        This enables OEMs to sign NXP-provided firmware components with
-        their own keys while preserving the original NXP signatures.
-
-        :param iae_cls: ImageArrayEntry class type to instantiate
-        :param chip_config: AHAB container chip configuration
-        :param config: Configuration dictionary
-        :return: List of image array entries for extracted firmware components
-        :raises SPSDKError: If the NXP container is invalid or version mismatch
+        :param iae_cls: ImageArrayEntry class type to instantiate.
+        :param chip_config: AHAB container chip configuration.
+        :param config: Configuration dictionary containing input file and settings.
+        :raises SPSDKError: If the NXP container is invalid or version mismatch.
+        :return: List of image array entries for extracted firmware components.
         """
         ret = []
         # Load the NXP firmware image
@@ -1347,11 +1448,15 @@ class IaeDoubleAuthentication(ImageArrayEntryTemplates):
 
 
 class IaeSPLDDR(ImageArrayEntryTemplates):
-    """Template for U-Boot SPL combined with DDR tuning images.
+    """AHAB Image Array Entry template for U-Boot SPL with DDR tuning images.
 
-    This template handles the creation of a special boot image that combines
-    the U-Boot SPL (Secondary Program Loader) with DDR (DRAM) tuning parameters
-    required for initializing memory on the target device.
+    This template creates specialized boot images that combine U-Boot SPL (Secondary
+    Program Loader) with LPDDR tuning parameters required for proper memory
+    initialization on the target device. It handles loading, aligning, and combining
+    multiple DDR tuning binaries according to device-specific requirements.
+
+    :cvar IMAGE_NAME: Human-readable name for this image type.
+    :cvar KEY: Configuration key identifier for SPL with DDR images.
     """
 
     IMAGE_NAME: str = "U-Boot SPL with DDR tunning images"
@@ -1372,11 +1477,11 @@ class IaeSPLDDR(ImageArrayEntryTemplates):
         3. Combines them with the SPL binary
         4. Checks if the resulting image fits in the device OCRAM
 
-        :param iae_cls: ImageArrayEntry class type to instantiate
-        :param chip_config: AHAB container chip configuration
-        :param config: Configuration dictionary with file paths
-        :return: List containing a single image array entry for the combined SPL+DDR image
-        :raises SPSDKError: If required files can't be loaded
+        :param iae_cls: ImageArrayEntry class type to instantiate.
+        :param chip_config: AHAB container chip configuration.
+        :param config: Configuration dictionary with file paths.
+        :return: List containing a single image array entry for the combined SPL+DDR image.
+        :raises SPSDKError: If required files can't be loaded.
         """
         family = chip_config.base.family
         # get DB for family
@@ -1423,11 +1528,14 @@ class IaeSPLDDR(ImageArrayEntryTemplates):
 
 
 class IaeUPower(ImageArrayEntryTemplates):
-    """Template for μPower firmware.
+    """Template for μPower firmware in AHAB containers.
 
     The μPower (micropower) subsystem is a low-power microcontroller used for
     system power management on certain NXP SoCs. This template handles the
     inclusion of μPower firmware in AHAB containers.
+
+    :cvar IMAGE_NAME: Default image name for μPower firmware.
+    :cvar KEY: Configuration key identifier for μPower entries.
     """
 
     IMAGE_NAME: str = "uPower"
@@ -1440,6 +1548,9 @@ class IaeSPL(ImageArrayEntryTemplates):
     This template handles the inclusion of the U-Boot Secondary Program Loader
     without additional DDR initialization data (unlike IaeSPLDDR). This is used
     when DDR parameters are either not needed or provided through other means.
+
+    :cvar IMAGE_NAME: Human-readable name for the U-Boot SPL image type.
+    :cvar KEY: Configuration key identifier for SPL template selection.
     """
 
     IMAGE_NAME: str = "U-Boot SPL"
@@ -1449,9 +1560,13 @@ class IaeSPL(ImageArrayEntryTemplates):
 class IaeOEIDDR(ImageArrayEntryTemplates):
     """Template for OEI DDR initialization firmware.
 
-    OEI (On-chip External Interface) DDR handles memory initialization
-    at an early boot stage. This template processes the OEI firmware
-    and associated DDR parameters, with optional support for QuickBoot.
+    OEI (Optionally Executable Image) DDR handles memory initialization at an early boot stage.
+    This template processes the OEI firmware and associated DDR parameters, with optional
+    support for QuickBoot functionality.
+
+    :cvar IMAGE_NAME: Display name for OEI DDR image type.
+    :cvar KEY: Configuration key identifier for OEI DDR entries.
+    :cvar QB_DATA_SIZE: Size of QuickBoot data section in bytes.
     """
 
     IMAGE_NAME: str = "OEI DDR"
@@ -1474,19 +1589,22 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
         4. Combines all components into a single binary
         5. Adds a separate QuickBoot data entry if needed
 
-        :param iae_cls: ImageArrayEntry class type to instantiate
-        :param chip_config: AHAB container chip configuration
-        :param config: Configuration dictionary with file paths
-        :return: List of image array entries (main OEI DDR and optional QB data)
-        :raises SPSDKError: If required files can't be loaded
+        :param iae_cls: ImageArrayEntry class type to instantiate.
+        :param chip_config: AHAB container chip configuration.
+        :param config: Configuration dictionary with file paths.
+        :return: List of image array entries (main OEI DDR and optional QB data).
+        :raises SPSDKError: If required files can't be loaded.
         """
 
         def create_fw_header(imem: bytes, dmem: bytes) -> bytes:
             """Create firmware header with size information.
 
-            :param imem: IMEM binary data
-            :param dmem: DMEM binary data
-            :return: 8-byte header containing IMEM and DMEM sizes
+            The method creates an 8-byte header by concatenating the sizes of IMEM and DMEM
+            data in little-endian format.
+
+            :param imem: IMEM binary data.
+            :param dmem: DMEM binary data.
+            :return: 8-byte header containing IMEM and DMEM sizes in little-endian format.
             """
             return len(imem).to_bytes(4, "little") + len(dmem).to_bytes(4, "little")
 
@@ -1567,18 +1685,21 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
                     gap_after_image=gap_after_image,
                     image_size_alignment=64 * 1024,
                 )
-                qb_iae.image_size = 0
                 ret.append(qb_iae)
 
         return ret
 
 
 class IaeOEITCM(ImageArrayEntryTemplates):
-    """Template for OEI TCM firmware.
+    """Template for OEI TCM firmware in AHAB containers.
 
-    OEI (On-chip External Interface) TCM handles the Tightly Coupled Memory
-    configuration at boot time. This template handles the inclusion of
-    OEI TCM firmware in AHAB containers.
+    OEI (Optionally Executable Image) TCM handles the Tightly Coupled Memory
+    configuration at boot time. This template manages the inclusion of
+    OEI TCM firmware components within AHAB container structures for secure
+    boot operations.
+
+    :cvar IMAGE_NAME: Human-readable name for OEI TCM image type.
+    :cvar KEY: Configuration key identifier for OEI TCM entries.
     """
 
     IMAGE_NAME: str = "OEI TCM"
@@ -1586,11 +1707,15 @@ class IaeOEITCM(ImageArrayEntryTemplates):
 
 
 class IaeSystemManager(ImageArrayEntryTemplates):
-    """Template for System Manager firmware.
+    """AHAB Image Array Entry template for System Manager firmware.
 
-    The System Manager is a firmware component responsible for managing
-    system-level operations on certain NXP SoCs. This template handles
-    the inclusion of System Manager firmware in AHAB containers.
+    This class provides a template for including System Manager firmware components
+    in AHAB (Advanced High Assurance Boot) containers. The System Manager is a
+    firmware component responsible for managing system-level operations on certain
+    NXP SoCs.
+
+    :cvar IMAGE_NAME: Human-readable name for the System Manager image type.
+    :cvar KEY: Configuration key identifier for System Manager entries.
     """
 
     IMAGE_NAME: str = "System manager"
@@ -1598,11 +1723,14 @@ class IaeSystemManager(ImageArrayEntryTemplates):
 
 
 class IaeCortexM33_2App(ImageArrayEntryTemplates):
-    """Template for Cortex-M33 core 2 application.
+    """SPSDK Image Array Entry template for Cortex-M33 core 2 applications.
 
-    This template handles applications designed to run on the second Cortex-M33
-    core when the SoC has multiple M33 cores. It configures the appropriate
-    load address, core ID, and other parameters specific to this core.
+    This template manages configuration and parameters for applications designed to run on the
+    second Cortex-M33 core in multi-core SoC environments. It handles core-specific settings
+    including load addresses, core identification, and execution parameters.
+
+    :cvar IMAGE_NAME: Human-readable description of the image type.
+    :cvar KEY: Configuration key identifier for this template.
     """
 
     IMAGE_NAME: str = "Additional Cortex M33 application running on core 2"
@@ -1610,11 +1738,14 @@ class IaeCortexM33_2App(ImageArrayEntryTemplates):
 
 
 class IaeCortexM7App(ImageArrayEntryTemplates):
-    """Template for Cortex-M7 application.
+    """SPSDK Image Array Entry template for Cortex-M7 applications.
 
-    This template handles applications designed to run on the Cortex-M7 core.
-    It configures the appropriate load address, core ID, and other parameters
-    specific to this core.
+    This template manages the configuration and parameters for applications designed
+    to run on the Cortex-M7 core, including load address, core ID, and other
+    core-specific settings within the AHAB image array structure.
+
+    :cvar IMAGE_NAME: Human-readable name for the Cortex-M7 application template.
+    :cvar KEY: Configuration key identifier for this template type.
     """
 
     IMAGE_NAME: str = "Additional Cortex M7 application"
@@ -1622,11 +1753,14 @@ class IaeCortexM7App(ImageArrayEntryTemplates):
 
 
 class IaeCortexM7_2App(ImageArrayEntryTemplates):
-    """Template for Cortex-M7 core 2 application.
+    """AHAB Image Array Entry template for Cortex-M7 core 2 applications.
 
-    This template handles applications designed to run on the second Cortex-M7
-    core when the SoC has multiple M7 cores. It configures the appropriate
-    load address, core ID, and other parameters specific to this core.
+    This template manages configuration and parameters for applications designed to run on the
+    second Cortex-M7 core in multi-core SoC environments. It handles core-specific settings
+    including load addresses, core identification, and execution parameters.
+
+    :cvar IMAGE_NAME: Human-readable description of the image type.
+    :cvar KEY: Configuration key identifier for this template.
     """
 
     IMAGE_NAME: str = "Additional Cortex M7 application running on core 2"
@@ -1634,11 +1768,14 @@ class IaeCortexM7_2App(ImageArrayEntryTemplates):
 
 
 class IaeATF(ImageArrayEntryTemplates):
-    """Template for ARM Trusted Firmware.
+    """SPSDK Image Array Entry template for ARM Trusted Firmware.
 
-    ARM Trusted Firmware (ATF) provides a reference implementation of secure
-    software for ARMv8-A processors. This template handles the inclusion
-    of ATF in AHAB containers for secure boot on NXP platforms.
+    This template manages the configuration and inclusion of ARM Trusted Firmware (ATF)
+    components in AHAB containers for secure boot operations on NXP ARMv8-A platforms.
+    ATF provides reference implementation of secure software for processor security.
+
+    :cvar IMAGE_NAME: Human-readable name for ATF image type.
+    :cvar KEY: Configuration key identifier for ATF entries.
     """
 
     IMAGE_NAME: str = "ATF - ARM Trusted Firmware"
@@ -1646,12 +1783,15 @@ class IaeATF(ImageArrayEntryTemplates):
 
 
 class IaeKernel(ImageArrayEntryTemplates):
-    """Template for Linux Kernel Image.
+    """AHAB Image Array Entry template for Linux Kernel images.
 
-    This template handles the inclusion of Linux kernel executable images
-    (typically Image.bin) in AHAB containers. The kernel image is loaded
-    and executed as part of the boot sequence after earlier boot stages
-    like U-Boot have completed system initialization.
+    This template manages the inclusion and processing of Linux kernel executable
+    images (typically Image.bin) in AHAB containers. It handles kernel image
+    loading, optional splitting for specific chip revisions with memory constraints,
+    and creation of appropriate image array entries for the boot sequence.
+
+    :cvar IMAGE_NAME: Human-readable name for the Linux kernel image type.
+    :cvar KEY: Configuration key identifier for kernel image processing.
     """
 
     IMAGE_NAME: str = "Linux Kernel Image"
@@ -1663,22 +1803,20 @@ class IaeKernel(ImageArrayEntryTemplates):
     ) -> list[Union[ImageArrayEntry, ImageArrayEntryV2]]:
         """Create image array entries for Linux Kernel Image.
 
-        This specialized implementation:
-        1. Checks if the chip revision requires kernel splitting
-        2. If splitting is not required, delegates to parent implementation
-        3. If splitting is required, loads the kernel binary and splits it into chunks
-        4. Creates multiple image array entries with sequential load addresses
-        5. Each chunk is configured with appropriate load and entry point addresses
+        This specialized implementation checks if the chip revision requires kernel splitting.
+        If splitting is not required, delegates to parent implementation. If splitting is
+        required, loads the kernel binary and splits it into chunks, creating multiple image
+        array entries with sequential load addresses. Each chunk is configured with
+        appropriate load and entry point addresses.
+        Kernel splitting is necessary on certain chip revisions due to memory layout
+        constraints or boot ROM limitations that prevent loading large contiguous kernel
+        images.
 
-        Kernel splitting is necessary on certain chip revisions due to memory
-        layout constraints or boot ROM limitations that prevent loading large
-        contiguous kernel images.
-
-        :param iae_cls: ImageArrayEntry class type to instantiate
-        :param chip_config: AHAB container chip configuration
-        :param config: Configuration dictionary with file paths
-        :return: List of image array entries (single entry if no splitting, multiple if split)
-        :raises SPSDKError: If required files can't be loaded
+        :param iae_cls: ImageArrayEntry class type to instantiate.
+        :param chip_config: AHAB container chip configuration.
+        :param config: Configuration dictionary with file paths.
+        :return: List of image array entries (single entry if no splitting, multiple if split).
+        :raises SPSDKError: If required files can't be loaded.
         """
         revision = chip_config.base.family.get_real_revision()
         db = get_db(chip_config.base.family)
@@ -1710,12 +1848,14 @@ class IaeKernel(ImageArrayEntryTemplates):
 
 
 class IaeDTB(ImageArrayEntryTemplates):
-    """Template for Device Tree Blob.
+    """AHAB Image Array Entry template for Device Tree Blob files.
 
-    This template handles the inclusion of Device Tree Blob (DTB) files
-    in AHAB containers. The DTB contains hardware description information
-    that the Linux kernel uses to understand the hardware configuration
-    of the target device.
+    This template manages the inclusion of Device Tree Blob (DTB) files in AHAB
+    containers, providing hardware description information that the Linux kernel
+    uses to understand the target device's hardware configuration.
+
+    :cvar IMAGE_NAME: Human-readable name for the DTB image type.
+    :cvar KEY: Configuration key identifier for DTB entries.
     """
 
     IMAGE_NAME: str = "Device Tree Blob"
@@ -1723,11 +1863,15 @@ class IaeDTB(ImageArrayEntryTemplates):
 
 
 class IaeUBoot(ImageArrayEntryTemplates):
-    """Template for U-Boot firmware.
+    """Template for U-Boot firmware in AHAB containers.
 
-    U-Boot is a widely used bootloader for embedded systems. This template
-    handles the inclusion of the main U-Boot firmware (not SPL) in AHAB
-    containers, with the addition of an SPSDK signature.
+    This class handles the creation of Image Array Entries for U-Boot bootloader
+    firmware within AHAB (Advanced High Assurance Boot) containers. It automatically
+    appends an SPSDK signature to the U-Boot binary for identification and version
+    tracking purposes.
+
+    :cvar IMAGE_NAME: Human-readable name for U-Boot firmware.
+    :cvar KEY: Configuration key identifier for U-Boot entries.
     """
 
     IMAGE_NAME: str = "U-Boot Firmware"
@@ -1746,15 +1890,14 @@ class IaeUBoot(ImageArrayEntryTemplates):
         1. Loads the U-Boot binary
         2. Appends an SPSDK signature and padding to the binary
         3. Creates an image array entry with the modified binary
-
         The SPSDK signature is added for identification purposes and
         includes the SPSDK version used to create the image.
 
-        :param iae_cls: ImageArrayEntry class type to instantiate
-        :param chip_config: AHAB container chip configuration
-        :param config: Configuration dictionary with file paths
-        :return: List containing a single image array entry for U-Boot
-        :raises SPSDKError: If required files can't be loaded
+        :param iae_cls: ImageArrayEntry class type to instantiate.
+        :param chip_config: AHAB container chip configuration.
+        :param config: Configuration dictionary with file paths.
+        :return: List containing a single image array entry for U-Boot.
+        :raises SPSDKError: If required files can't be loaded.
         """
         binary_image = load_binary(config.get_input_file_name(cls.KEY))
         spsdk_signature = "SPSDK " + version
@@ -1769,14 +1912,15 @@ class IaeUBoot(ImageArrayEntryTemplates):
 
 
 class IaeTEE(ImageArrayEntryTemplates):
-    """Template for U-Boot TEE (Trusted Execution Environment).
+    """Template for U-Boot TEE (Trusted Execution Environment) in AHAB containers.
 
-    The TEE provides a secure environment for executing sensitive code,
-    isolated from the normal operating system. This template handles
-    the inclusion of TEE firmware in AHAB containers.
+    This class manages the configuration and inclusion of TEE firmware within AHAB
+    (Advanced High Assurance Boot) containers. The TEE provides a secure environment
+    for executing sensitive code, isolated from the normal operating system and works
+    alongside the main U-Boot firmware to provide secure services.
 
-    TEE firmware typically works alongside the main U-Boot firmware to
-    provide secure services and protect sensitive operations.
+    :cvar IMAGE_NAME: Human-readable name for the TEE image type.
+    :cvar KEY: Configuration key identifier for TEE entries.
     """
 
     IMAGE_NAME: str = "U-Boot TEE - Trusted Execution Environment"
@@ -1784,11 +1928,14 @@ class IaeTEE(ImageArrayEntryTemplates):
 
 
 class IaeV2XDummy(ImageArrayEntryTemplates):
-    """Template for V2X core Dummy record.
+    """Template for V2X core dummy image array entry.
 
-    V2X (Vehicle-to-Everything) is a communication technology for vehicles.
-    This template creates a dummy record for V2X core which is required in
-    certain boot configurations even when no actual V2X firmware is needed.
+    This class manages the creation of dummy V2X (Vehicle-to-Everything) core records
+    that are required in certain AHAB boot configurations even when no actual V2X
+    firmware is present. The dummy entry ensures proper boot sequence compatibility.
+
+    :cvar IMAGE_NAME: Display name for the V2X dummy record.
+    :cvar KEY: Configuration key identifier for V2X dummy entries.
     """
 
     IMAGE_NAME: str = "V2X core Dummy record"
@@ -1807,15 +1954,14 @@ class IaeV2XDummy(ImageArrayEntryTemplates):
         1. Checks the configuration setting
         2. Issues a warning that the setting doesn't affect presence in IAE table
         3. Creates an empty (zero-length) image array entry
-
         The V2X dummy entry is included in the image array table regardless
         of the configuration setting - the presence in configuration merely
         enables it, it doesn't control whether it appears in the table.
 
-        :param iae_cls: ImageArrayEntry class type to instantiate
-        :param chip_config: AHAB container chip configuration
-        :param config: Configuration dictionary
-        :return: List containing a single empty image array entry
+        :param iae_cls: ImageArrayEntry class type to instantiate.
+        :param chip_config: AHAB container chip configuration.
+        :param config: Configuration dictionary.
+        :return: List containing a single empty image array entry.
         """
         if not config["v2x_dummy"]:
             logger.warning(
@@ -1833,7 +1979,15 @@ class IaeV2XDummy(ImageArrayEntryTemplates):
 
 
 class IaeMCU(ImageArrayEntryTemplates):
-    """Template for MCU Image."""
+    """AHAB Image Array Entry template for MCU firmware images.
+
+    This class provides a specialized template for creating MCU firmware entries
+    in AHAB (Advanced High Assurance Boot) image arrays, defining the specific
+    configuration and metadata required for MCU firmware components.
+
+    :cvar IMAGE_NAME: Human-readable name for MCU firmware images.
+    :cvar KEY: Configuration key identifier for MCU entries.
+    """
 
     IMAGE_NAME: str = "MCU Firmware"
     KEY: str = "mcu"

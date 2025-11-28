@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""This module contains CSF commands related code."""
+"""SPSDK HAB CSF commands implementation.
+
+This module provides Command Sequence File (CSF) command implementations
+for High Assurance Boot (HAB) functionality, including authentication,
+data checking, initialization, key installation, and utility commands.
+"""
 
 from spsdk.image.hab.commands.cmd_auth_data import CmdAuthData
 from spsdk.image.hab.commands.cmd_check_data import CmdCheckData

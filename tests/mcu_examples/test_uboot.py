@@ -5,13 +5,16 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""SPSDK U-Boot integration test module.
+
+This module contains tests for U-Boot bootloader integration with SPSDK,
+specifically focusing on IMX93 platform examples and bootable image
+configuration validation.
+"""
+
 import os
-import filecmp
 
 from spsdk import SPSDK_EXAMPLES_FOLDER
-from spsdk.apps import nxpimage
-from spsdk.utils.misc import load_binary, use_working_directory, write_file
-from tests.cli_runner import CliRunner
 
 IMX93_EXAMPLE_DIR = os.path.join(SPSDK_EXAMPLES_FOLDER, "imx93")
 IMX93_BOOTABLE_CONFIG = "u-boot-bootable.yaml"

@@ -4,7 +4,11 @@
 # Copyright 2024-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""LPCxxx ISP UART communication interface."""
+"""SPSDK LPCxxx ISP UART communication interface.
+
+This module provides the communication interface for LPCxxx microcontrollers
+using In-System Programming (ISP) protocol over UART connection.
+"""
 
 import logging
 import time
@@ -18,7 +22,19 @@ logger = logging.getLogger(__name__)
 
 
 class LPCProgInterface:
-    """LPCxxx ISP UART communication interface."""
+    """LPCxxx ISP UART communication interface.
+
+    This class provides a communication layer for LPC microcontrollers using the
+    In-System Programming (ISP) protocol over UART. It handles synchronization,
+    command transmission, and response processing for LPC device programming
+    operations.
+
+    :cvar NEW_LINE: Line terminator sequence for UART communication.
+    :cvar START_SYNC: Initial synchronization character.
+    :cvar SYNC_STRING: Synchronization command string.
+    :cvar SYNC_VERIFIED_STRING: Expected synchronization response.
+    :cvar RC_SLEEP: Sleep interval for return code operations.
+    """
 
     NEW_LINE = "\r\n"
     START_SYNC = "?"
@@ -30,7 +46,7 @@ class LPCProgInterface:
     def __init__(self, device: SerialDevice) -> None:
         """Initialize the LPCProgInterface.
 
-        :param device: Serial device
+        :param device: Serial device to be used for communication.
         """
         self.device = device
         # echo means that the command is send back to the host
@@ -40,7 +56,7 @@ class LPCProgInterface:
     def open(self) -> None:
         """Open the UART interface.
 
-        :raises SPSDKError: In any case of fail of UART open operation.
+        :raises SPSDKConnectionError: When UART interface cannot be opened.
         """
         try:
             self.device.open()
@@ -50,7 +66,7 @@ class LPCProgInterface:
     def close(self) -> None:
         """Close the UART interface.
 
-        :raises SPSDKError: In any case of fail of UART close operation.
+        :raises SPSDKConnectionError: In any case of fail of UART close operation.
         """
         try:
             self.device.close()
@@ -60,9 +76,13 @@ class LPCProgInterface:
     def read_line(self, decode: bool = True) -> str:
         """Read line from the device.
 
-        :raises SPSDKError: When read fails
-        :raises TimeoutError: Time-out
-        :return: Data read from the device
+        The method reads a line of data from the connected device and optionally decodes it as UTF-8.
+        If decoding fails, an empty string is returned instead of raising an exception.
+
+        :param decode: Whether to decode the data as UTF-8 string, defaults to True
+        :raises SPSDKError: When read operation fails
+        :raises SPSDKTimeoutError: When no data is received (timeout)
+        :return: Data read from the device as string (decoded or hex format)
         """
         try:
             data = self.device._device.readline()
@@ -82,10 +102,13 @@ class LPCProgInterface:
         return data
 
     def read_all(self) -> bytes:
-        """Read all data from the device.
+        """Read all available data from the device.
 
-        :raises SPSDKError: When read fails
-        :raises TimeoutError: Time-out
+        This method retrieves all pending data from the connected device buffer.
+        If no data is available, a timeout error is raised.
+
+        :raises SPSDKError: When read operation fails
+        :raises SPSDKTimeoutError: When no data is available to read
         :return: Data read from the device
         """
         try:
@@ -98,12 +121,15 @@ class LPCProgInterface:
         return data
 
     def _read(self, length: int) -> bytes:
-        """Read 'length' amount for bytes from device.
+        """Read specified number of bytes from device.
 
-        :param length: Number of bytes to read
-        :return: Data read from the device
-        :raises TimeoutError: Time-out
-        :raises SPSDKError: When reading data from device fails
+        The method reads data from the underlying device and provides debug logging
+        of the received data in hexadecimal format.
+
+        :param length: Number of bytes to read from the device.
+        :raises SPSDKTimeoutError: When no data is received from device.
+        :raises SPSDKError: When reading data from device fails.
+        :return: Data read from the device.
         """
         try:
             data = self.device._device.read(length)
@@ -117,7 +143,7 @@ class LPCProgInterface:
     def write(self, data: bytes) -> None:
         """Send data to device.
 
-        :param data: Data to send
+        :param data: Data to send to the device
         :raises SPSDKError: When sending the data fails
         """
         logger.debug(f"->WRITE DATA({len(data)}): [{' '.join(f'{b:02x}' for b in data)}]")
@@ -129,13 +155,22 @@ class LPCProgInterface:
     def write_string(self, data: str) -> None:
         """Write string to serial device.
 
-        :param data: string data
+        :param data: String data to be written to the serial device.
+        :raises SPSDKError: If writing to the serial device fails.
         """
         logger.debug(f"->WRITE STRING: {data}")
         self.write(bytes(data, "utf-8"))
 
     def _get_return_code(self) -> int:
-        """Get return code from the device."""
+        """Get return code from the device.
+
+        Reads a line from the device and parses it as an integer return code. If echo is enabled,
+        the method discards the first echoed line and reads the actual response.
+
+        :raises SPSDKConnectionError: Timeout while waiting for response or cannot decode response
+                                     as return code.
+        :return: Return code from the device as integer.
+        """
         try:
             resp = self.read_line()
             if self.echo:  # discard echo
@@ -150,7 +185,15 @@ class LPCProgInterface:
         return rc
 
     def send_command(self, command: str, expect_rc: bool = True) -> Optional[int]:
-        """Writes command."""
+        """Send command to the device and optionally wait for return code.
+
+        Writes the specified command string to the device with a newline terminator.
+        If expect_rc is True, waits for and retrieves the return code from the device.
+
+        :param command: Command string to send to the device.
+        :param expect_rc: Whether to wait for and return the device return code.
+        :return: Return code from device if expect_rc is True, None otherwise.
+        """
         self.write_string(command + self.NEW_LINE)
         if expect_rc:
             time.sleep(self.RC_SLEEP)
@@ -158,21 +201,33 @@ class LPCProgInterface:
         return None
 
     def clear_serial(self) -> None:
-        """Flush buffers."""
+        """Clear serial communication buffers.
+
+        This method flushes all pending data in the serial device buffers including
+        input and output buffers to ensure clean communication state.
+
+        :raises SPSDKError: If buffer clearing operation fails.
+        """
         self.device._device.flush()
         self.device._device.reset_input_buffer()
         self.device._device.reset_output_buffer()
 
     def sync_connection(self, frequency: int, retries: int = 10) -> None:
-        """Synchronize connection.
+        """Synchronize connection with the target device.
 
-        :param frequency: Frequency of the crystal
-        :param retries: Number of retries for synchronization (10 default)
+        Establishes communication by exchanging synchronization messages and setting
+        the crystal frequency. The method implements a retry mechanism to handle
+        communication failures during the synchronization process.
 
         1. Send ? to get baud rate
         2. Receive "Synchronized" message
         3. Send "Synchronized" message
         4. Receive "OK" message
+
+        :param frequency: Frequency of the crystal in Hz.
+        :param retries: Number of synchronization attempts, defaults to 10.
+        :raises SPSDKError: Invalid retries parameter (must be positive).
+        :raises SPSDKConnectionError: Synchronization failed or invalid response.
         """
         if self.synced:
             return

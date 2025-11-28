@@ -1,9 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2024 NXP
+# Copyright 2020-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
+"""SPSDK Certificate module unit tests.
+
+This module contains comprehensive unit tests for the SPSDK Certificate class
+and related certificate management functionality. Tests cover certificate loading,
+parsing, validation, and basic certificate operations to ensure reliable
+certificate handling across NXP MCU portfolio.
+"""
 
 import os
 from datetime import datetime
@@ -12,7 +20,14 @@ from spsdk.crypto.certificate import Certificate, SPSDKName
 
 
 def test_basics(data_dir: str) -> None:
-    """Test basic features of the Certificate class"""
+    """Test basic functionality of the Certificate class.
+
+    This test validates core Certificate class features including version detection,
+    CA status, self-signed verification, serial number extraction, signature
+    algorithm identification, public key hashing, and certificate export functionality.
+
+    :param data_dir: Path to directory containing test certificate files.
+    """
     cert = Certificate.load(os.path.join(data_dir, "selfsign_2048_v3.der.crt"))
 
     #
@@ -23,6 +38,8 @@ def test_basics(data_dir: str) -> None:
     assert cert.self_signed
     #
     assert cert.serial_number == 0x3CC30000BABADEDA
+    #
+    assert cert.signature_hash_algorithm
     #
     assert cert.signature_hash_algorithm.name == "sha256"
     #

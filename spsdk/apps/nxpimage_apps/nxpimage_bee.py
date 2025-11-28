@@ -4,7 +4,12 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Nxpimage BEE group."""
+"""SPSDK NXP Image BEE (Bus Encryption Engine) command-line interface.
+
+This module provides CLI commands for managing BEE encryption functionality,
+including exporting BEE configurations and generating configuration templates
+for NXP microcontrollers.
+"""
 
 import logging
 

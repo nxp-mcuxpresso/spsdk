@@ -5,6 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""SPSDK nxpcrypto command-line tool test suite.
+
+This module contains comprehensive tests for the nxpcrypto CLI application,
+covering cryptographic operations, key management, certificate handling,
+and signature operations within the SPSDK framework.
+"""
+
 import filecmp
 import glob
 import hashlib
@@ -12,7 +19,7 @@ import logging
 import os
 import shutil
 from itertools import zip_longest
-from typing import Optional
+from typing import Optional, Type, Union
 from unittest.mock import patch
 
 import pytest
@@ -20,30 +27,42 @@ from click.testing import Result
 
 from spsdk.apps import nxpcrypto
 from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.crc import Crc, CrcAlg, from_crc_algorithm
 from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import (
     IS_DILITHIUM_SUPPORTED,
     IS_OSCCA_SUPPORTED,
     ECDSASignature,
+    PrivateKey,
     PrivateKeyRsa,
     PublicKey,
-    PublicKeyRsa,
     PublicKeyDilithium,
+    PublicKeyRsa,
 )
-from spsdk.crypto.crc import Crc, CrcAlg, from_crc_algorithm
 from spsdk.exceptions import SPSDKError, SPSDKIndexError, SPSDKKeyError, SPSDKSyntaxError
 from spsdk.utils.misc import Endianness, load_binary, load_text, use_working_directory, write_file
 from tests.cli_runner import CliRunner
 from tests.misc import GetPassMock
 
 if IS_DILITHIUM_SUPPORTED:
-    from spsdk_pqc.wrapper import KEY_INFO, DILITHIUM_LEVEL
+    from spsdk_pqc.wrapper import DILITHIUM_LEVEL, KEY_INFO
 
     from spsdk.crypto.keys import PrivateKeyDilithium
 
 
-def run_nxpcrypto(cli_runner: CliRunner, cmd: str, cwd: str, expected_code=0) -> Result:
+def run_nxpcrypto(cli_runner: CliRunner, cmd: str, cwd: str, expected_code: int = 0) -> Result:
+    """Run nxpcrypto CLI command in specified working directory.
+
+    This function executes a nxpcrypto command using the provided CLI runner
+    within a specific working directory context and validates the exit code.
+
+    :param cli_runner: Click CLI runner instance for command execution.
+    :param cmd: Command string to be executed (will be split on spaces).
+    :param cwd: Working directory path where the command should be executed.
+    :param expected_code: Expected exit code for command validation.
+    :return: Click Result object containing command execution details.
+    """
     with use_working_directory(cwd):
         logging.debug(f"Running {cmd}")
         result = cli_runner.invoke(nxpcrypto.main, cmd.split(), expected_code=expected_code)
@@ -63,7 +82,18 @@ def run_nxpcrypto(cli_runner: CliRunner, cmd: str, cwd: str, expected_code=0) ->
 )
 def test_nxpcrypto_key_verify(
     cli_runner: CliRunner, data_dir: str, key1: str, key2: str, expected_result: int
-):
+) -> None:
+    """Test nxpcrypto key verification command functionality.
+
+    This test verifies that the nxpcrypto CLI key verify command works correctly
+    by comparing two keys and checking the expected result code.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param data_dir: Directory path containing test data files.
+    :param key1: First key file path or identifier for comparison.
+    :param key2: Second key file path or identifier for comparison.
+    :param expected_result: Expected exit code from the command execution.
+    """
     cmd = f"key verify -k1 {key1} -k2 {key2}"
     run_nxpcrypto(cli_runner, cmd, data_dir, expected_result)
 
@@ -81,7 +111,22 @@ def test_nxpcrypto_key_verify(
 )
 def test_nxpcrypto_key_convert(
     cli_runner: CliRunner, data_dir: str, tmpdir: str, key: str, transform: str, expected: str
-):
+) -> None:
+    """Test nxpcrypto key conversion functionality.
+
+    This test validates the key conversion command by converting a key using the specified
+    transformation and comparing the output with the expected result. Different validation
+    methods are used based on the transformation type: raw conversions compare integer
+    values to handle padding differences, DER conversions use direct file comparison,
+    and PEM conversions compare line-by-line to handle line-ending differences.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param data_dir: Directory containing test data files.
+    :param tmpdir: Temporary directory for output files.
+    :param key: Input key identifier or filename.
+    :param transform: Transformation type to apply (raw, der, or pem).
+    :param expected: Expected output filename for comparison.
+    """
     src_key = f"{data_dir}/{expected}"
     dst_key = f"{tmpdir}/{expected}"
     cmd = f"key convert -i {key} {transform} -o {dst_key}"
@@ -118,7 +163,21 @@ def test_nxpcrypto_key_convert(
 )
 def test_nxpcrypto_extract_puk(
     cli_runner: CliRunner, data_dir: str, tmpdir: str, key: str, encoding: str, expected: str
-):
+) -> None:
+    """Test extraction of public key from private key using nxpcrypto CLI.
+
+    This test verifies that the nxpcrypto key convert command can successfully
+    extract a public key from a private key file and that the extracted public
+    key matches the expected public key component of the original private key.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param data_dir: Directory containing test data files.
+    :param tmpdir: Temporary directory for output files.
+    :param key: Input key file name or identifier.
+    :param encoding: Key encoding format for conversion.
+    :param expected: Expected output file name.
+    :raises AssertionError: If extracted public key doesn't match expected key.
+    """
     src_key = f"{data_dir}/{expected}"
     dst_key = f"{tmpdir}/{expected}"
     cmd = f"key convert -i {key} -e {encoding} --puk -o {dst_key}"
@@ -129,20 +188,44 @@ def test_nxpcrypto_extract_puk(
     dst_key_data = load_binary(dst_key)
     puk = nxpcrypto.reconstruct_key(dst_key_data)
     try:
-        assert prk.get_public_key() == puk
+        if isinstance(prk, PrivateKey):
+            assert prk.get_public_key() == puk
+        else:
+            assert prk == puk
     except AttributeError:  # in case input key is public
         assert prk == puk
 
 
-def test_nxpcrypto_convert_rsa_raw_not_supported(cli_runner: CliRunner, data_dir: str, tmpdir: str):
+def test_nxpcrypto_convert_rsa_raw_not_supported(
+    cli_runner: CliRunner, data_dir: str, tmpdir: str
+) -> None:
+    """Test that RSA key conversion to raw format is not supported.
+
+    This test verifies that attempting to convert an RSA key to raw binary format
+    fails with the expected error code and exception type, as raw format conversion
+    is not supported for RSA keys.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param data_dir: Directory path containing test data files.
+    :param tmpdir: Temporary directory path for output files.
+    """
     dst_key = f"{tmpdir}/prk_rsa4096.bin"
     cmd = f"key convert -i prk_rsa4096.pem -e raw -o {dst_key}"
     result = run_nxpcrypto(cli_runner, cmd, data_dir, expected_code=1)
-    assert result.exc_info[0] is SPSDKError
+    if result.exc_info is not None:
+        assert result.exc_info[0] is SPSDKError
 
 
-def test_generate_rsa_key(cli_runner: CliRunner, tmpdir) -> None:
-    """Test generate rsa key pair."""
+def test_generate_rsa_key(cli_runner: CliRunner, tmpdir: str) -> None:
+    """Test RSA key pair generation functionality.
+
+    This test verifies that the nxpcrypto CLI can successfully generate RSA key pairs,
+    create both private and public key files, and that the generated keys have the
+    correct properties and can be loaded properly.
+
+    :param cli_runner: Click CLI runner instance for executing commands.
+    :param tmpdir: Temporary directory path for storing generated key files.
+    """
 
     cmd = f'{os.path.join(tmpdir, "key_rsa.pem")}'
     run_nxpcrypto(cli_runner, f"key generate -k rsa2048 -o {cmd}", tmpdir)
@@ -157,8 +240,15 @@ def test_generate_rsa_key(cli_runner: CliRunner, tmpdir) -> None:
     assert priv_key_from_file.key_size == 2048
 
 
-def test_generate_invalid_key(cli_runner: CliRunner, tmpdir) -> None:
-    """Test generate invalid key pair."""
+def test_generate_invalid_key(cli_runner: CliRunner, tmpdir: str) -> None:
+    """Test generate invalid key pair command.
+
+    Verifies that the key generation command fails appropriately when provided
+    with an invalid key type and ensures no output files are created.
+
+    :param cli_runner: Click CLI runner for executing commands.
+    :param tmpdir: Temporary directory path for test files.
+    """
 
     cmd = f'key generate -k invalid-key-type -o {os.path.join(tmpdir, "key_invalid.pem")}'
     run_nxpcrypto(cli_runner, cmd, tmpdir, expected_code=-1)
@@ -166,7 +256,17 @@ def test_generate_invalid_key(cli_runner: CliRunner, tmpdir) -> None:
     assert not os.path.isfile(os.path.join(tmpdir, "key_invalid.pub"))
 
 
-def test_force_actual_dir(cli_runner: CliRunner, tmpdir):
+def test_force_actual_dir(cli_runner: CliRunner, tmpdir: str) -> None:
+    """Test force flag functionality for key generation in actual directory.
+
+    This test verifies that the --force flag works correctly when generating keys
+    in a real directory. It checks that key generation fails when attempting to
+    overwrite an existing key without the force flag, and succeeds when the force
+    flag is provided.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param tmpdir: Temporary directory path for test file operations.
+    """
     run_nxpcrypto(cli_runner, "key generate -k rsa2048 -o key", tmpdir)
     # attempt to rewrite the key should fail
     run_nxpcrypto(cli_runner, "key generate -k rsa2048 -o key", tmpdir, expected_code=1)
@@ -182,7 +282,18 @@ def test_force_actual_dir(cli_runner: CliRunner, tmpdir):
         ("secp521r1", True),
     ],
 )
-def test_key_types(cli_runner: CliRunner, tmpdir, key, valid):
+def test_key_types(cli_runner: CliRunner, tmpdir: str, key: str, valid: bool) -> None:
+    """Test key generation functionality for different key types.
+
+    This test verifies that the nxpcrypto CLI tool can generate cryptographic keys
+    for valid key types and properly handles invalid key types with appropriate
+    error codes.
+
+    :param cli_runner: CLI test runner instance for executing commands
+    :param tmpdir: Temporary directory path for output files
+    :param key: Key type string to test (e.g., 'rsa2048', 'secp256r1')
+    :param valid: Boolean flag indicating if the key type should be valid
+    """
     if valid:
         run_nxpcrypto(cli_runner, f"key generate -k {key} -o my_key_{key}.pem", tmpdir)
         assert os.path.isfile(os.path.join(tmpdir, f"my_key_{key}.pem"))
@@ -318,7 +429,21 @@ def test_nxpcrypto_rot_calc_hash(
     family: str,
     ref_rotkth: str,
     base64: bool,
-):
+) -> None:
+    """Test NXP Crypto ROT hash calculation command.
+
+    This test verifies the 'rot calculate-hash' command functionality by running it with
+    specified parameters and validating the generated hash output against a reference value.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param data_dir: Directory path containing test data files.
+    :param tmpdir: Temporary directory path for output files.
+    :param keys: List of key file paths to be used for hash calculation.
+    :param family: Target MCU family name for the operation.
+    :param ref_rotkth: Reference ROT key table hash value for validation.
+    :param base64: Flag indicating whether to use base64 encoding for output.
+    :raises AssertionError: If output file is not created or hash doesn't match reference.
+    """
     out_file = os.path.join(tmpdir, "rot_hash.bin")
     cmd = f"rot calculate-hash -f {family} -o {out_file}"
     for key in keys:
@@ -374,7 +499,20 @@ def test_nxpcrypto_rot_calc_hash(
 )
 def test_nxpcrypto_rot_export(
     cli_runner: CliRunner, data_dir: str, tmpdir: str, keys: list, family: str, ref_rot: str
-):
+) -> None:
+    """Test NXP crypto ROT (Root of Trust) export functionality.
+
+    This test verifies that the ROT export command correctly generates a binary file
+    containing the Root of Trust table from provided keys and matches the expected
+    reference output.
+
+    :param cli_runner: Click CLI test runner for executing commands
+    :param data_dir: Directory path containing test data files
+    :param tmpdir: Temporary directory path for output files
+    :param keys: List of key file paths to include in ROT table
+    :param family: Target MCU family name for ROT generation
+    :param ref_rot: Reference ROT file name for comparison
+    """
     out_file = os.path.join(tmpdir, "rot_table.bin")
     ref_file = os.path.join(data_dir, ref_rot)
     cmd = f"rot export -f {family} -o {out_file}"
@@ -385,8 +523,60 @@ def test_nxpcrypto_rot_export(
     assert load_binary(out_file) == load_binary(ref_file)
 
 
-def test_npxcrypto_cert_get_template(cli_runner: CliRunner, tmpdir):
-    """Test NXPCRYPTO CLI - Generation of template."""
+@pytest.mark.parametrize(
+    "keys, family, ref_rot",
+    [
+        (
+            [
+                "ec_secp256r1_cert0.pem",
+                "ec_secp256r1_cert1.pem",
+                "ec_secp256r1_cert2.pem",
+                "ec_secp256r1_cert3.pem",
+            ],
+            "mimxrt1189",
+            "rot_mimxrt1189.bin",
+        ),
+    ],
+)
+def test_nxpcrypto_rot_parse(
+    cli_runner: CliRunner, data_dir: str, tmpdir: str, keys: list, family: str, ref_rot: str
+) -> None:
+    """Test nxpcrypto rot parse command."""
+    ref_file = os.path.join(data_dir, ref_rot)
+
+    # Test the parse command
+    parse_output_dir = os.path.join(tmpdir, "parsed_keys")
+    parse_cmd = f"rot parse -f {family} -b {ref_file} -o {parse_output_dir}"
+
+    result = run_nxpcrypto(cli_runner, parse_cmd, data_dir)
+
+    # Verify parse command succeeded
+    assert result.exit_code == 0
+    assert os.path.isdir(parse_output_dir)
+
+    # Verify public keys were extracted
+    expected_key_files = [f"public_key_{i}.pem" for i in range(len(keys))]
+    for key_file in expected_key_files:
+        key_path = os.path.join(parse_output_dir, key_file)
+        assert os.path.isfile(key_path), f"Expected key file {key_file} not found"
+
+    # Verify correct number of keys extracted
+    extracted_files = [f for f in os.listdir(parse_output_dir) if f.startswith("public_key_")]
+    assert len(extracted_files) == len(
+        keys
+    ), f"Expected {len(keys)} keys, found {len(extracted_files)}"
+
+
+def test_npxcrypto_cert_get_template(cli_runner: CliRunner, tmpdir: str) -> None:
+    """Test NXPCRYPTO CLI certificate template generation functionality.
+
+    Verifies that the 'cert get-template' command successfully creates a certificate
+    template file at the specified output location.
+
+    :param cli_runner: CLI test runner instance for invoking commands
+    :param tmpdir: Temporary directory path for test file output
+    :raises AssertionError: If the expected certificate template file is not created
+    """
     cmd = ["cert", "get-template", "--output", f"{tmpdir}/cert.yml"]
     cli_runner.invoke(nxpcrypto.main, cmd)
     assert os.path.isfile(f"{tmpdir}/cert.yml")
@@ -401,11 +591,26 @@ def test_npxcrypto_cert_get_template(cli_runner: CliRunner, tmpdir):
 def test_nxpcrypto_cert_generate(
     cli_runner: CliRunner,
     data_dir: str,
-    tmpdir,
+    tmpdir: str,
     key_type: str,
     password: Optional[str],
     encoding: str,
-):
+) -> None:
+    """Test certificate generation workflow using nxpcrypto CLI commands.
+
+    This test validates the complete certificate lifecycle including key generation,
+    certificate creation, verification, and format conversion between PEM and DER.
+    It tests both subject and issuer key pair generation, certificate generation
+    from configuration, certificate verification against public key, and certificate
+    format conversion operations.
+
+    :param cli_runner: Click CLI test runner for invoking nxpcrypto commands
+    :param data_dir: Directory containing test data files including cert.yaml configuration
+    :param tmpdir: Temporary directory for storing generated files during test execution
+    :param key_type: Type of cryptographic key to generate (e.g., 'rsa2048', 'secp256r1')
+    :param password: Optional password for protecting the issuer private key
+    :param encoding: Certificate encoding format ('PEM' or 'DER')
+    """
     # Generate subject key pair
     subject_key = os.path.join(tmpdir, "subject_key.pem")
     subject_public_key = os.path.join(tmpdir, "subject_key.pub")
@@ -448,8 +653,17 @@ SIGNATURE_NOT_MATCHING = "Signature IS NOT matching the public key"
 SIGNATURE_MATCHING = "Signature IS matching the public key"
 
 
-def get_key_path(data_dir: str, key_type: str):
-    """Get paths to pre-generated key pairs."""
+def get_key_path(data_dir: str, key_type: str) -> tuple[str, str]:
+    """Get paths to pre-generated key pairs.
+
+    This method constructs file paths for private and public key files based on the
+    key type and validates that both files exist in the signature tool directory.
+
+    :param data_dir: Base directory containing test data files.
+    :param key_type: Type of cryptographic key (e.g., 'sm2', 'dil*', or standard types).
+    :raises AssertionError: If private or public key files do not exist.
+    :return: Tuple containing paths to private key file and public key file.
+    """
     sign_data_dir = os.path.join(data_dir, "signature_tool")
     private_ext = "pem"
     if key_type == "sm2":
@@ -465,8 +679,23 @@ def get_key_path(data_dir: str, key_type: str):
 
 
 def run_signature(
-    cli_runner: CliRunner, data_dir: str, tmpdir: str, key_type: str, algorithm: EnumHashAlgorithm
+    cli_runner: CliRunner,
+    data_dir: str,
+    tmpdir: str,
+    key_type: str,
+    algorithm: Optional[EnumHashAlgorithm],
 ) -> None:
+    """Run signature creation and verification test.
+
+    Tests the nxpcrypto signature creation command with specified key type and hash algorithm,
+    then verifies the generated signature using the corresponding public key.
+
+    :param cli_runner: CLI runner instance for executing commands.
+    :param data_dir: Directory containing test data files and keys.
+    :param tmpdir: Temporary directory for output files.
+    :param key_type: Type of cryptographic key to use for signing.
+    :param algorithm: Hash algorithm to use for signature creation, None for default.
+    """
     priv_key, pub_key = get_key_path(data_dir, key_type)
 
     input_file = os.path.join(data_dir, "data_to_sign.bin")
@@ -500,10 +729,21 @@ def run_signature(
 def test_nxpcrypto_create_signature_algorithm_mandatory(
     cli_runner: CliRunner,
     data_dir: str,
-    tmpdir,
+    tmpdir: str,
     key_type: str,
     algorithms: list[Optional[EnumHashAlgorithm]],
-):
+) -> None:
+    """Test nxpcrypto signature algorithm creation with mandatory parameters.
+
+    This test method iterates through a list of hash algorithms and runs signature
+    tests for each algorithm using the specified key type and test environment.
+
+    :param cli_runner: Click CLI test runner for executing command-line operations.
+    :param data_dir: Directory path containing test data files.
+    :param tmpdir: Temporary directory path for test output files.
+    :param key_type: Type of cryptographic key to use for signature testing.
+    :param algorithms: List of hash algorithms to test, may contain None values.
+    """
     for algorithm in algorithms:
         run_signature(cli_runner, data_dir, tmpdir, key_type, algorithm)
 
@@ -522,16 +762,40 @@ def test_nxpcrypto_create_signature_algorithm_mandatory(
 def test_nxpcrypto_create_signature_algorithm_optional(
     cli_runner: CliRunner,
     data_dir: str,
-    tmpdir,
+    tmpdir: str,
     key_type: str,
     algorithms: list[Optional[EnumHashAlgorithm]],
-):
+) -> None:
+    """Test nxpcrypto signature creation with optional algorithm parameter.
+
+    This test function iterates through a list of hash algorithms (including None values)
+    and runs signature operations for each one to verify that the nxpcrypto functionality
+    works correctly with optional algorithm specifications.
+
+    :param cli_runner: Click CLI test runner for executing command-line operations.
+    :param data_dir: Directory path containing test data files.
+    :param tmpdir: Temporary directory path for test output files.
+    :param key_type: Type of cryptographic key to use for signature generation.
+    :param algorithms: List of hash algorithms to test, may contain None values.
+    """
     for algorithm in algorithms:
         run_signature(cli_runner, data_dir, tmpdir, key_type, algorithm)
 
 
 @pytest.mark.skipif(not IS_OSCCA_SUPPORTED, reason="OSCCA support is not installed")
-def test_nxpcrypto_create_signature_algorithm_oscca(cli_runner: CliRunner, data_dir: str, tmpdir):
+def test_nxpcrypto_create_signature_algorithm_oscca(
+    cli_runner: CliRunner, data_dir: str, tmpdir: str
+) -> None:
+    """Test NXPCRYPTO signature creation with OSCCA SM3 algorithm.
+
+    This test verifies that the NXPCRYPTO CLI can successfully create a digital signature
+    using the SM3 hash algorithm (part of the OSCCA cryptographic standards) and validate
+    the signature using the corresponding public key.
+
+    :param cli_runner: Click CLI test runner for executing command line operations.
+    :param data_dir: Directory path containing test data files including keys and input data.
+    :param tmpdir: Temporary directory path for storing test output files.
+    """
     input_file = os.path.join(data_dir, "data_to_sign.bin")
     output_file = os.path.join(tmpdir, "signature.bin")
     priv_key, pub_key = get_key_path(data_dir, "sm2")
@@ -552,7 +816,19 @@ def test_nxpcrypto_create_signature_algorithm_oscca(cli_runner: CliRunner, data_
 )  # this would fail on ImportError if not handled when pqc is not installed
 def test_nxpcrypto_create_signature_algorithm_dilithium(
     cli_runner: CliRunner, data_dir: str, tmpdir: str, level: int
-):
+) -> None:
+    """Test Dilithium signature creation algorithm functionality.
+
+    This test verifies that the nxpcrypto CLI can successfully create a digital signature
+    using the Dilithium post-quantum cryptographic algorithm at the specified security level.
+    It validates the signature creation process, output file generation, and signature
+    verification using the corresponding public key.
+
+    :param cli_runner: Click CLI test runner for executing command-line operations.
+    :param data_dir: Directory path containing test data files including keys and input data.
+    :param tmpdir: Temporary directory path for storing test output files.
+    :param level: Dilithium security level parameter for key selection and validation.
+    """
     input_file = os.path.join(data_dir, "data_to_sign.bin")
     output_file = os.path.join(tmpdir, "signature.bin")
     priv_key, pub_key = get_key_path(data_dir, f"dil{level}")
@@ -616,7 +892,21 @@ def test_nxpcrypto_signature_create_signature_encoding(
     key_type: str,
     encoding: SPSDKEncoding,
     tmpdir: str,
-):
+) -> None:
+    """Test signature creation with different encodings using nxpcrypto CLI.
+
+    This test verifies that the nxpcrypto signature create command properly handles
+    different signature encodings for various key types (ECDSA, RSA, Dilithium).
+    It creates a signature file and validates the encoding format and size based
+    on the key type used.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param data_dir: Directory path containing test data files.
+    :param signature_provider: Flag indicating whether to use signature provider format.
+    :param key_type: Type of cryptographic key to use for signing.
+    :param encoding: SPSDK encoding format for the signature output.
+    :param tmpdir: Temporary directory path for output files.
+    """
     priv_key, _ = get_key_path(data_dir, key_type)
 
     input_file = os.path.join(data_dir, "data_to_sign.bin")
@@ -645,7 +935,18 @@ def test_nxpcrypto_signature_create_signature_encoding(
 )
 def test_nxpcrypto_create_signature_password(
     cli_runner: CliRunner, data_dir: str, key_type: str, tmpdir: str
-):
+) -> None:
+    """Test nxpcrypto signature creation with password-protected keys.
+
+    This test verifies that the nxpcrypto CLI can create digital signatures using
+    password-protected private keys. It tests both command-line password input
+    and interactive password prompting scenarios.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param data_dir: Directory path containing test data files.
+    :param key_type: Type of cryptographic key to generate for testing.
+    :param tmpdir: Temporary directory path for test file operations.
+    """
     password = "test1234"
     priv_key_path = os.path.join(tmpdir, "key.pem")
 
@@ -694,7 +995,20 @@ def test_nxpcrypto_create_signature_regions_rsa(
     regions: list[str],
     signature: str,
     tmpdir: str,
-):
+) -> None:
+    """Test RSA signature creation and verification with regions.
+
+    This test verifies the complete workflow of creating an RSA signature with specific
+    regions and then verifying it. It tests both negative case (verification without
+    regions should fail) and positive case (verification with matching regions should succeed).
+
+    :param cli_runner: Click CLI runner for executing commands.
+    :param data_dir: Directory containing test data files.
+    :param key_type: Type of cryptographic key to use for signing.
+    :param regions: List of region specifications for signature creation.
+    :param signature: Expected signature value in hexadecimal format.
+    :param tmpdir: Temporary directory for output files.
+    """
     priv_key, pub_key = get_key_path(data_dir, key_type)
 
     input_file = os.path.join(data_dir, "data_to_sign.bin")
@@ -729,8 +1043,24 @@ def test_nxpcrypto_create_signature_regions_rsa(
     ],
 )
 def test_nxpcrypto_create_signature_regions_rsa_invalid(
-    cli_runner: CliRunner, data_dir: str, tmpdir: str, regions: list[str], exception
-):
+    cli_runner: CliRunner,
+    data_dir: str,
+    tmpdir: str,
+    regions: list[str],
+    exception: Optional[Type[Exception]],
+) -> None:
+    """Test RSA signature creation with invalid region parameters.
+
+    This test verifies that the nxpcrypto signature creation command properly handles
+    invalid region specifications when using RSA keys, ensuring appropriate error
+    handling and exit codes.
+
+    :param cli_runner: Click CLI test runner for command execution.
+    :param data_dir: Directory containing test data files.
+    :param tmpdir: Temporary directory for output files.
+    :param regions: List of region specifications to test.
+    :param exception: Expected exception type, None if no exception expected.
+    """
     priv_key, _ = get_key_path(data_dir, "secp521r1")
     out = os.path.join(tmpdir, "signature.bin")
 
@@ -741,7 +1071,7 @@ def test_nxpcrypto_create_signature_regions_rsa_invalid(
     expected_code = 1 if exception else 0
     result = run_nxpcrypto(cli_runner, cmd, tmpdir, expected_code=expected_code)
     if exception:
-        assert type(result.exception) == exception
+        assert isinstance(result.exception, exception)
 
 
 @pytest.mark.parametrize(
@@ -784,7 +1114,19 @@ def test_nxpcrypto_create_signature_regions_rsa_invalid(
 )
 def test_nxpcrypto_verify_signature(
     cli_runner: CliRunner, data_dir: str, key_type: str, encoding: SPSDKEncoding, tmpdir: str
-):
+) -> None:
+    """Test nxpcrypto signature verification functionality.
+
+    This test verifies that the nxpcrypto CLI can correctly create and verify digital signatures
+    using different key types and encodings. It tests both positive case (signature matches)
+    and negative case (signature doesn't match when data is modified).
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param data_dir: Directory path containing test data files.
+    :param key_type: Type of cryptographic key to use for signing.
+    :param encoding: Encoding format for the signature output.
+    :param tmpdir: Temporary directory path for test output files.
+    """
     priv_key, pub_key = get_key_path(data_dir, key_type)
 
     input_file = os.path.join(data_dir, "data_to_sign.bin")
@@ -806,7 +1148,18 @@ def test_nxpcrypto_verify_signature(
     assert SIGNATURE_NOT_MATCHING in result.output
 
 
-def test_nxpcrypto_digest(cli_runner: CliRunner, data_dir: str, tmpdir: str):
+def test_nxpcrypto_digest(cli_runner: CliRunner, data_dir: str, tmpdir: str) -> None:
+    """Test nxpcrypto digest command functionality.
+
+    Tests the digest command with various scenarios including direct hash comparison,
+    file-based comparison, negative testing, and SSL format support. Verifies that
+    the digest command correctly computes SHA256 hashes and performs comparisons
+    against expected values in different formats.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param data_dir: Directory containing test data files.
+    :param tmpdir: Temporary directory for test output files.
+    """
     # Setup test environment
     input_file = os.path.join(data_dir, "data_to_digest.bin")
     output_digest_file = os.path.join(tmpdir, "output_digest.txt")
@@ -868,7 +1221,22 @@ def test_nxpcrypto_pki_tree(
     encoding: str,
     key_number: int,
     ca: bool,
-):
+) -> None:
+    """Test PKI tree generation and extension functionality.
+
+    This test verifies the creation of PKI trees for different types (AHAB/HAB),
+    key types, encodings, and configurations. It validates the generated directory
+    structure, counts the expected number of keys and certificates, and tests
+    tree extension capabilities for both PKI types.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param pki_type: Type of PKI tree to generate ('ahab' or 'hab').
+    :param tmpdir: Temporary directory path for test output files.
+    :param key_type: Type of cryptographic keys to generate.
+    :param encoding: File encoding format for generated keys and certificates.
+    :param key_number: Number of SRK keys to generate in the PKI tree.
+    :param ca: Flag indicating whether to generate Certificate Authority structure.
+    """
     ca_flag = "-ca" if ca else ""
     cmd = f"pki-tree {pki_type} -k {key_type} -o {tmpdir}/tree_{key_type}_{encoding} -e {encoding} {ca_flag} -n {key_number}"
     result = run_nxpcrypto(cli_runner, cmd, tmpdir)
@@ -942,7 +1310,15 @@ CRC_TEST_VECTORS = [
     "alg,ref_crc",
     CRC_TEST_VECTORS,
 )
-def test_nxpcrypto_crc_calculate(alg, ref_crc):
+def test_nxpcrypto_crc_calculate(alg: Union[CrcAlg, str], ref_crc: int) -> None:
+    """Test CRC calculation functionality with specified algorithm and reference value.
+
+    Validates that the CRC calculation using the provided algorithm produces
+    the expected reference CRC value for a predefined test data sequence.
+
+    :param alg: CRC algorithm to test, either as CrcAlg enum or string identifier
+    :param ref_crc: Expected CRC value to validate against
+    """
     data = bytes.fromhex("123ABC")
     crc_obj = from_crc_algorithm(alg)
     crc = crc_obj.calculate(data)
@@ -953,7 +1329,15 @@ def test_nxpcrypto_crc_calculate(alg, ref_crc):
     "alg,ref_crc",
     CRC_TEST_VECTORS,
 )
-def test_nxpcrypto_crc_verify(alg, ref_crc):
+def test_nxpcrypto_crc_verify(alg: Union[CrcAlg, str], ref_crc: int) -> None:
+    """Test CRC verification functionality with given algorithm and reference value.
+
+    Verifies that the CRC calculation using the specified algorithm matches
+    the provided reference CRC value for test data.
+
+    :param alg: CRC algorithm to use for verification, either as CrcAlg enum or string identifier
+    :param ref_crc: Expected CRC value to verify against
+    """
     data = bytes.fromhex("123ABC")
     crc_obj = from_crc_algorithm(alg)
     is_matching = crc_obj.verify(data, ref_crc)
@@ -970,7 +1354,18 @@ def test_nxpcrypto_crc_verify(alg, ref_crc):
         ("invalid", SPSDKKeyError),
     ],
 )
-def test_nxpcrypto_crc_from_alg(alg, exception):
+def test_nxpcrypto_crc_from_alg(
+    alg: Union[CrcAlg, str], exception: Optional[Type[Exception]]
+) -> None:
+    """Test CRC object creation from algorithm specification.
+
+    This test function verifies that the from_crc_algorithm function correctly
+    creates CRC objects from algorithm specifications or raises appropriate
+    exceptions for invalid inputs.
+
+    :param alg: CRC algorithm specification, either as CrcAlg enum or string name.
+    :param exception: Expected exception type to be raised, or None if no exception expected.
+    """
     if exception:
         with pytest.raises(exception):
             from_crc_algorithm(alg)
@@ -982,7 +1377,16 @@ def test_nxpcrypto_crc_from_alg(alg, exception):
 @pytest.mark.parametrize(
     "verification_key", ["issuer_private_secp256.pem", "issuer_public_secp256.pem"]
 )
-def test_signature(cli_runner: CliRunner, data_dir: str, verification_key: str):
+def test_signature(cli_runner: CliRunner, data_dir: str, verification_key: str) -> None:
+    """Test certificate verification with signature validation.
+
+    This test verifies that the nxpcrypto CLI can successfully validate a certificate
+    signature using the specified verification key.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param data_dir: Directory path containing test data files.
+    :param verification_key: Name of the verification key file to use for signature validation.
+    """
     cmd = f"cert verify -c cert/cert_secp256.crt --sign cert/{verification_key}"
     run_nxpcrypto(cli_runner, cmd, data_dir)
 
@@ -990,7 +1394,16 @@ def test_signature(cli_runner: CliRunner, data_dir: str, verification_key: str):
 @pytest.mark.parametrize(
     "verification_key", ["subject_public_secp256.pem", "subject_private_secp256.pem"]
 )
-def test_puk(cli_runner: CliRunner, data_dir: str, verification_key: str):
+def test_puk(cli_runner: CliRunner, data_dir: str, verification_key: str) -> None:
+    """Test certificate verification using public key file.
+
+    This test verifies that the nxpcrypto CLI can successfully validate a certificate
+    using a separate public key file for verification.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param data_dir: Directory path containing test data files.
+    :param verification_key: Filename of the public key file used for verification.
+    """
     cmd = f"cert verify -c cert/cert_secp256.crt --puk cert/{verification_key}"
     run_nxpcrypto(cli_runner, cmd, data_dir)
 
@@ -998,7 +1411,18 @@ def test_puk(cli_runner: CliRunner, data_dir: str, verification_key: str):
 @pytest.mark.parametrize(
     "verification_key", ["subject_public_secp256.pem", "subject_private_secp256.pem"]
 )
-def test_signature_incorrect_key(cli_runner: CliRunner, data_dir: str, verification_key: str):
+def test_signature_incorrect_key(
+    cli_runner: CliRunner, data_dir: str, verification_key: str
+) -> None:
+    """Test certificate verification with incorrect signature key.
+
+    This test verifies that the certificate verification command fails appropriately
+    when provided with an incorrect verification key for the signature.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param data_dir: Directory path containing test data files.
+    :param verification_key: Path to the verification key file to use for testing.
+    """
     cmd = f"cert verify -c cert_secp256.crt --sign {verification_key}"
     run_nxpcrypto(cli_runner, cmd, data_dir, expected_code=-1)
 
@@ -1006,12 +1430,30 @@ def test_signature_incorrect_key(cli_runner: CliRunner, data_dir: str, verificat
 @pytest.mark.parametrize(
     "verification_key", ["issuer_private_secp256.pem", "issuer_public_secp256.pem"]
 )
-def test_puk_incorrect_key(cli_runner: CliRunner, data_dir: str, verification_key: str):
+def test_puk_incorrect_key(cli_runner: CliRunner, data_dir: str, verification_key: str) -> None:
+    """Test certificate verification with incorrect public key.
+
+    This test verifies that the certificate verification command fails appropriately
+    when provided with an incorrect public key for verification.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param data_dir: Directory path containing test data files.
+    :param verification_key: Incorrect public key to use for verification.
+    """
     cmd = f"cert verify -c cert_secp256.crt --puk {verification_key}"
-    result = run_nxpcrypto(cli_runner, cmd, data_dir, expected_code=-1)
+    run_nxpcrypto(cli_runner, cmd, data_dir, expected_code=-1)
 
 
-def test_incorrect_cert_format(cli_runner: CliRunner, data_dir: str):
+def test_incorrect_cert_format(cli_runner: CliRunner, data_dir: str) -> None:
+    """Test certificate verification with incorrect certificate format.
+
+    This test verifies that the nxpcrypto cert verify command properly handles
+    and reports errors when provided with an incorrectly formatted certificate file.
+    It expects the command to fail and checks that the error message contains "ECDSA".
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param data_dir: Path to the test data directory containing certificate files.
+    """
     cmd = "cert verify -c cert/satyr.crt --sign cert/subject_public_secp256.pem"
     result = run_nxpcrypto(cli_runner, cmd, data_dir, expected_code=-1)
     assert "ECDSA" in str(result.exception)

@@ -4,7 +4,12 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Nxpimage Trustzone group."""
+"""SPSDK TrustZone configuration management for nxpimage application.
+
+This module provides CLI commands for managing TrustZone configurations,
+including exporting configurations, generating templates, and parsing
+TrustZone settings for NXP MCU devices.
+"""
 
 import click
 

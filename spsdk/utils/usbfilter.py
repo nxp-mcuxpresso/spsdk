@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module defining a USB filtering class."""
+"""SPSDK USB device filtering utilities.
+
+This module provides functionality for filtering and identifying USB devices,
+with specialized support for NXP USB devices. It includes classes for creating
+device filters based on various USB properties and NXP-specific device identification.
+"""
+
 import platform
 import re
 from typing import Any, Optional
@@ -15,63 +21,38 @@ from spsdk.utils.misc import get_hash
 
 
 class USBDeviceFilter:
-    """Generic USB Device Filtering class.
+    """USB device filtering utility for cross-platform device identification.
 
-    Create a filtering instance. This instance holds the USB ID you are interested
-    in during USB HID device search and allows you to compare, whether
-    provided USB HID object is the one you are interested in.
-    The allowed format of `usb_id` string is following:
+    This class provides filtering capabilities for USB HID devices across different operating
+    systems. It parses various USB identifier formats including VID/PID pairs, platform-specific
+    device paths, and instance IDs to enable precise device matching during enumeration.
 
-    vid or pid - vendor ID or product ID. String holding hex or dec number.
-    Hex number must be preceded by 0x or 0X. Number of characters after 0x is
-    1 - 4. Mixed upper & lower case letters is allowed. e.g. "0xaB12", "0XAB12",
-    "0x1", "0x0001".
-    The decimal number is restricted only to have 1 - 5 digits, e.g. "65535"
-    It's allowed to set the USB filter ID to decimal number "99999", however, as
-    the USB VID number is four-byte hex number (max value is 65535), this will
-    lead to zero results. Leading zeros are not allowed e.g. 0001. This will
-    result as invalid match.
+    Supported USB ID formats:
 
-    The user may provide a single number as usb_id. In such a case the number
-    may represent either VID or PID. By default, the filter expects this number
-    to be a VID. In rare cases the user may want to filter based on PID.
-    Initialize the `search_by_pid` parameter to True in such cases.
+    VID or PID - Vendor ID or product ID as hex or decimal number:
+    - Hex: "0x1234", "0XAB12", "0x1" (1-4 chars after 0x, case insensitive)
+    - Decimal: "4660", "65535" (1-5 digits, no leading zeros except "0")
+    - Single number defaults to VID unless search_by_pid=True
 
-    vid/pid - string of vendor ID & product ID separated by ':' or ','
-    Same rules apply to the number format as in VID case, except, that the
-    string consists of two numbers separated by ':' or ','. It's not allowed
-    to mix hex and dec numbers, e.g. "0xab12:12345" is not allowed.
-    Valid vid/pid strings:
-    "0x12aB:0xabc", "1,99999"
+    VID/PID pairs - Two numbers separated by ':' or ',':
+    - "0x1fc9:0x0025", "1234,5678"
+    - Both numbers must use same format (hex or decimal)
 
-    Windows specific:
-    instance ID - String in following format "HID\\VID_<HEX>&PID_<HEX>\\<instance_id>",
-    see instance ID in device manager under Windows OS.
+    Platform-specific formats:
 
-    Linux specific:
-    USB device path - HID API returns path in following form:
-    '0003:0002:00'
+    Windows - Instance ID from Device Manager:
+    - "HID\\VID_<HEX>&PID_<HEX>\\<instance_id>"
 
-    The first number represents the Bus, the second Device and the third interface. The Bus:Device
-    number is unique so interface is not necessary and Bus:Device should be sufficient.
+    Linux - Bus and device numbers from lsusb:
+    - "<bus>#<device>" format (e.g., "3#11")
+    - Bus:Device numbers are decimal, interface not required
 
-    The Bus:Device can be observed using 'lsusb' command. The interface can be observed using
-    'lsusb -t'. lsusb returns the Bus and Device as a 3-digit number.
-    It has been agreed, that the expected input is:
-    <Bus in dec>#<Device in dec>, e.g. 3#11
+    macOS - IOService device path or partial path:
+    - Full: "IOService:/AppleACPIPlatformExpert/PCI0@0/..."
+    - Partial: "SE Blank RT Family @14200000" (device name + location ID)
 
-    Mac specific:
-    USB device path - HID API returns path in roughly following form:
-    'IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/XHC1@14/XHC1@14000000/HS01@14100000/SE
-    Blank RT Family @14100000/IOUSBHostInterface@0/AppleUserUSBHostHIDDevice'
-
-    This path can be found using the 'ioreg' utility or using 'IO Hardware Registry Explorer' tool.
-    However, using the system report from 'About This MAC -> System Report -> USB' a partial path
-    can also be gathered. Using the name of USB device from the 'USB Device Tree' and appending
-    the 'Location ID' should work. The name can be 'SE Blank RT Family' and the 'Location ID' is
-    in form <hex> / <dec>, e.g. '0x14200000 / 18'.
-    So the 'usb_id' name should be 'SE Blank RT Family @14200000' and the filter should be able to
-    filter out such device.
+    The filter supports both vendor ID and product ID based filtering, with configurable
+    search modes for single number inputs.
     """
 
     def __init__(
@@ -81,21 +62,23 @@ class USBDeviceFilter:
     ):
         """Initialize the USB Device Filtering.
 
-        :param usb_id: usb_id string
-        :param search_by_pid: if true, expects usb_id to be a PID number, VID otherwise.
+        :param usb_id: USB identifier string (VID or PID depending on search_by_pid flag).
+        :param search_by_pid: If True, usb_id is treated as PID number, otherwise as VID.
         """
         self.usb_id = usb_id
         self.search_by_pid = search_by_pid
 
     def compare(self, usb_device_object: dict[str, Any]) -> bool:
-        """Compares the internal `usb_id` with provided `usb_device_object`.
+        """Compare internal USB ID with provided USB device object.
 
         The provided USB ID during initialization may be VID or PID, VID/PID pair,
-        or a path. See private methods for details.
+        or a path. The method performs matching against various device attributes
+        including vendor ID, product ID, serial number, device name, and USB path.
 
-        :param usb_device_object: Libusbsio/HID_API device object (dictionary)
-
-        :return: True on match, False otherwise
+        :param usb_device_object: Libusbsio/HID_API device object dictionary containing
+                                 device information such as vendor_id, product_id,
+                                 serial_number, device_name, and path
+        :return: True if device matches the filter criteria, False otherwise
         """
         # Determine, whether given device matches one of the expected criterion
         if self.usb_id is None:
@@ -130,13 +113,14 @@ class USBDeviceFilter:
         return False
 
     def _is_path(self, usb_path: str) -> bool:
-        """Compares the internal usb_id with provided path.
+        """Check if USB path matches the internal USB ID.
 
-        If the path is a substring of the usb_id, this is considered as a match
-        and True is returned.
+        The method performs a case-insensitive substring comparison to determine if the
+        internal usb_id is contained within the provided USB path. An empty usb_id is
+        treated as no match.
 
-        :param usb_path: path to be compared with usd_id.
-        :return: true on a match, false otherwise.
+        :param usb_path: USB path to be compared with internal USB ID.
+        :return: True if USB ID matches the path, False otherwise.
         """
         # we check the len of usb_id, because usb_id = "" is considered
         # to be always in the string returning True, which is not expected
@@ -149,6 +133,15 @@ class USBDeviceFilter:
         return False
 
     def _is_vid_or_pid(self, vid: Optional[int], pid: Optional[int]) -> bool:
+        """Check if USB ID matches given vendor ID or product ID.
+
+        The method validates the USB ID format using regex and compares it against
+        the provided VID or PID based on the search mode configuration.
+
+        :param vid: Vendor ID to match against, can be None.
+        :param pid: Product ID to match against, can be None.
+        :return: True if USB ID matches the specified VID or PID, False otherwise.
+        """
         # match anything starting with 0x or 0X followed by 0-9 or a-f or
         # match either 0 or decimal number not starting with zero
         # this regex is the same for vid and pid => xid
@@ -166,11 +159,15 @@ class USBDeviceFilter:
         return False
 
     def _is_vid_pid(self, vid: int, pid: int) -> bool:
-        """If usb_id corresponds to VID/PID pair, compares it with provided vid/pid.
+        """Check if USB ID corresponds to VID/PID pair and matches provided values.
 
-        :param vid: vendor ID to compare.
-        :param pid: product ID to compare.
-        :return: true on a match, false otherwise.
+        The method validates if the stored USB ID string matches the VID/PID format
+        (either hexadecimal with 0x prefix or decimal) and compares it with the
+        provided vendor and product IDs.
+
+        :param vid: Vendor ID to compare against the USB ID.
+        :param pid: Product ID to compare against the USB ID.
+        :return: True if USB ID matches VID/PID format and values, False otherwise.
         """
         # match anything starting with 0x or 0X followed by 0-9 or a-f or
         # match either 0 or decimal number not starting with zero
@@ -187,17 +184,16 @@ class USBDeviceFilter:
 
     @staticmethod
     def convert_usb_path(hid_api_usb_path: bytes) -> str:
-        """Converts the Libusbsio/HID_API path into string, which can be observed from OS.
+        """Convert USB device path from HID API format to OS-observable format.
 
-        DESIGN REMARK: this function is not part of the USBLogicalDevice, as the
-        class intention is to be just a simple container. But to help the class
-        to get the required inputs, this helper method has been provided. Additionally,
-        this method relies on the fact that the provided path comes from the Libusbsio/HID_API.
-        This method will most probably fail or provide improper results in case
-        path from different USB API is provided.
+        Converts Libusbsio/HID_API USB device paths into platform-specific string formats
+        that can be observed from the operating system. The conversion handles Windows,
+        Linux, and macOS platforms differently based on their respective USB path conventions.
+        Note: This function is designed specifically for Libusbsio/HID_API paths and may
+        fail or provide incorrect results if used with paths from other USB APIs.
 
-        :param hid_api_usb_path: USB device path from Libusbsio/HID_API
-        :return: Libusbsio/HID_API path converted for given platform
+        :param hid_api_usb_path: Raw USB device path bytes from Libusbsio/HID_API
+        :return: Platform-specific USB device path string, empty string for unsupported OS
         """
         if platform.system() == "Windows":
             device_manager_path = hid_api_usb_path.decode("utf-8").upper()
@@ -228,13 +224,14 @@ class USBDeviceFilter:
 
 
 class NXPUSBDeviceFilter(USBDeviceFilter):
-    """NXP Device Filtering class.
+    """NXP USB Device Filter for SPSDK operations.
 
-    Extension of the generic USB device filter class to support filtering
-    based on NXP devices. Modifies the way, how single number is handled.
-    By default, if single value is provided, it's content is expected to be VID.
-    However, legacy tooling were expecting PID, so from this perspective if
-    a single number is provided, we expect that VID is out of range NXP_VIDS.
+    Extension of the generic USB device filter class to support filtering based on NXP devices.
+    Modifies the way single number filtering is handled - when a single value is provided, it
+    checks if the VID is within NXP's vendor ID range, maintaining compatibility with legacy
+    tooling that expected PID-based filtering.
+
+    :cvar NXP_VIDS: List of official NXP vendor IDs for device identification.
     """
 
     NXP_VIDS = [0x1FC9, 0x15A2, 0x0471, 0x0D28]
@@ -246,21 +243,22 @@ class NXPUSBDeviceFilter(USBDeviceFilter):
     ):
         """Initialize the USB Device Filtering.
 
-        :param usb_id: usb_id string
-        :param nxp_device_names: Dictionary holding NXP device vid/pid {"device_name": [vid(int), pid(int)]}
+        :param usb_id: USB device identifier string for filtering specific device.
+        :param nxp_device_names: Dictionary mapping NXP device names to their USB identifiers,
+            format: {"device_name": [UsbId objects]}.
         """
         super().__init__(usb_id=usb_id, search_by_pid=True)
         self.nxp_device_names = nxp_device_names or {}
 
     def compare(self, usb_device_object: Any) -> bool:
-        """Compares the internal `usb_id` with provided `usb_device_object`.
+        """Compare USB device with internal USB ID and NXP device registry.
 
         Extends the comparison by USB names - dictionary of device name and
-        corresponding VID/PID.
+        corresponding VID/PID. Falls back to checking if device is any NXP device
+        when no specific USB ID is configured.
 
-        :param usb_device_object: lpcusbsio USB HID device object
-
-        :return: True on match, False otherwise
+        :param usb_device_object: USB HID device object containing vendor_id and product_id
+        :return: True if device matches internal USB ID or is recognized NXP device, False otherwise
         """
         vendor_id = usb_device_object["vendor_id"]
         product_id = usb_device_object["product_id"]
@@ -274,12 +272,30 @@ class NXPUSBDeviceFilter(USBDeviceFilter):
         return self._is_nxp_device(vendor_id)
 
     def _is_vid_or_pid(self, vid: Optional[int], pid: Optional[int]) -> bool:
+        """Check if the device matches NXP vendor ID and optionally product ID.
+
+        This method validates that the vendor ID belongs to NXP's registered VIDs
+        before delegating to the parent class for further validation.
+
+        :param vid: Vendor ID to check against NXP VIDs, None if not specified.
+        :param pid: Product ID to check, None if not specified.
+        :return: True if vid is valid NXP VID and passes parent validation, False otherwise.
+        """
         if vid and vid in NXPUSBDeviceFilter.NXP_VIDS:
             return super()._is_vid_or_pid(vid, pid)
 
         return False
 
     def _is_nxp_device_name(self, vid: int, pid: int) -> bool:
+        """Check if device with given VID/PID matches NXP device name.
+
+        This method verifies whether the provided vendor ID and product ID combination
+        corresponds to a known NXP device based on the current USB ID filter.
+
+        :param vid: Vendor ID to check.
+        :param pid: Product ID to check.
+        :return: True if the VID/PID matches a known NXP device, False otherwise.
+        """
         assert isinstance(self.usb_id, str)
         if self.usb_id in self.nxp_device_names:
             for usb_cfg in self.nxp_device_names[self.usb_id]:
@@ -289,4 +305,12 @@ class NXPUSBDeviceFilter(USBDeviceFilter):
 
     @staticmethod
     def _is_nxp_device(vid: int) -> bool:
+        """Check if a vendor ID belongs to NXP.
+
+        This method verifies whether the provided vendor ID is in the list of known
+        NXP vendor IDs.
+
+        :param vid: Vendor ID to check.
+        :return: True if the vendor ID belongs to NXP, False otherwise.
+        """
         return vid in NXPUSBDeviceFilter.NXP_VIDS

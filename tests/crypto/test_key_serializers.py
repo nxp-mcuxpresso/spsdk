@@ -5,6 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""SPSDK cryptographic key serializers test module.
+
+This module contains comprehensive tests for cryptographic key serialization
+and deserialization functionality across different key types and encoding formats
+supported by SPSDK, including ECC, RSA, SM2, and Dilithium keys.
+"""
+
 import pytest
 
 from spsdk.crypto.keys import (
@@ -24,13 +31,21 @@ if IS_OSCCA_SUPPORTED:
 if IS_DILITHIUM_SUPPORTED:
     from spsdk.crypto.keys import PrivateKeyDilithium
 
+from spsdk.exceptions import SPSDKUnsupportedOperation
+
 PRIVATE_ENCODINGS = [SPSDKEncoding.DER, SPSDKEncoding.PEM]
 PUBLIC_ENCODINGS = [SPSDKEncoding.DER, SPSDKEncoding.PEM, SPSDKEncoding.NXP]
 
-from spsdk.exceptions import SPSDKUnsupportedOperation
-
 
 def test_ecc_serializer(tmpdir: str) -> None:
+    """Test ECC key serialization and deserialization across all supported curves and encodings.
+
+    This test verifies that ECC private and public keys can be properly saved to and loaded from
+    files using various encoding formats. It ensures data integrity by comparing the original
+    keys with the loaded keys for equality.
+
+    :param tmpdir: Temporary directory path for storing test key files during serialization tests.
+    """
     for curve in EccCurve:
         prk = PrivateKeyEcc.generate_key(curve_name=curve)
         puk = prk.get_public_key()
@@ -49,6 +64,15 @@ def test_ecc_serializer(tmpdir: str) -> None:
 
 
 def test_rsa_serializer(tmpdir: str) -> None:
+    """Test RSA key serialization and deserialization functionality.
+
+    This test verifies that RSA private and public keys can be correctly saved
+    to and loaded from files using various encoding formats. It tests all
+    supported RSA key sizes and encoding combinations to ensure serialization
+    roundtrip integrity.
+
+    :param tmpdir: Temporary directory path for storing test key files during the test.
+    """
     for key_size in PrivateKeyRsa.SUPPORTED_KEY_SIZES:
         prk = PrivateKeyRsa.generate_key(key_size=key_size)
         puk = prk.get_public_key()
@@ -68,6 +92,13 @@ def test_rsa_serializer(tmpdir: str) -> None:
 
 @pytest.mark.skipif(not IS_OSCCA_SUPPORTED, reason="OSCCA support is not installed")
 def test_sm2_serializer(tmpdir: str) -> None:
+    """Test SM2 key serialization and deserialization functionality.
+
+    Validates that SM2 private and public keys can be properly saved to and loaded from
+    DER format files, ensuring data integrity through round-trip serialization.
+
+    :param tmpdir: Temporary directory path for storing test key files.
+    """
     prk = PrivateKeySM2.generate_key()
     puk = prk.get_public_key()
 
@@ -82,6 +113,14 @@ def test_sm2_serializer(tmpdir: str) -> None:
 
 @pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed")
 def test_dilithium_serializer(tmpdir: str) -> None:
+    """Test Dilithium key serialization and deserialization functionality.
+
+    This test verifies that Dilithium private keys can be generated, saved to files,
+    and loaded back correctly for all supported security levels. It also tests
+    public key extraction, serialization, and deserialization when supported.
+
+    :param tmpdir: Temporary directory path for storing test key files.
+    """
     for level in PrivateKeyDilithium.SUPPORTED_LEVELS:
         prk = PrivateKeyDilithium.generate_key(level=level)
 

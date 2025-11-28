@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Base class for HTTP Clients."""
+"""SPSDK HTTP client utilities.
+
+This module provides base classes and error handling for HTTP client
+implementations used across SPSDK for secure provisioning operations.
+"""
+
 import abc
 import inspect
 import json
@@ -30,10 +35,11 @@ if sys.version_info < (3, 11):
 
     # This is a simplified backport from Python 3.11 'http' package
     class HTTPMethod(Enum):
-        """HTTP methods and descriptions.
+        """HTTP method enumeration for standardized request types.
 
-        Methods from the following RFCs are all observed:
-
+        This enumeration provides constants for standard HTTP methods as defined
+        in RFC specifications, ensuring consistent usage across SPSDK HTTP operations.
+        Methods from the following RFCs are supported:
             * RFC 7231: Hypertext Transfer Protocol (HTTP/1.1), obsoletes 2616
             * RFC 5789: PATCH Method for HTTP
         """
@@ -53,17 +59,35 @@ else:
 
 
 class SPSDKHTTPClientError(SPSDKError):
-    """HTTP Error raised when processing requests and responses."""
+    """SPSDK HTTP Client Error exception.
+
+    This exception is raised when HTTP operations fail during communication
+    with remote services, providing detailed error information including
+    status codes and response data for debugging and error handling.
+    """
 
     def __init__(self, status_code: int, response: dict, desc: Optional[str] = None) -> None:
-        """Initialize HTTP Client Error object."""
+        """Initialize HTTP Client Error object.
+
+        :param status_code: HTTP status code from the failed request.
+        :param response: Response data dictionary from the failed HTTP request.
+        :param desc: Optional description of the error, defaults to None.
+        """
         super().__init__(desc)
         self.status_code = status_code
         self.response = response
 
 
 class HTTPClientBase(abc.ABC):
-    """Base class for creating HTTP clients."""
+    """SPSDK HTTP Client Base Class.
+
+    Abstract base class for implementing HTTP clients that communicate with SPSDK-compatible
+    servers. Provides common functionality for HTTP operations, session management, and
+    configuration handling across different HTTP client implementations.
+
+    :cvar Method: Type alias for HTTPMethod enumeration.
+    :cvar Status: Type alias for HTTPStatus enumeration.
+    """
 
     api_version: str
     #: Helper alias for HTTP Methods
@@ -83,12 +107,16 @@ class HTTPClientBase(abc.ABC):
     ) -> None:
         """Initialize HTTP Client.
 
+        Creates a new HTTP client instance for communicating with SPSDK-compatible servers.
+        Automatically configures the base URL, headers, and connection parameters.
+
         :param host: HTTP Server address, defaults to "localhost"
         :param port: HTTP server port, defaults to 8000
         :param url_prefix: Prefix for API routes, defaults to "api"
-        :param timeout: Timeout for API call, defaults to 60
+        :param timeout: Timeout for API call in seconds, defaults to 60
         :param use_ssl: Use SSL (https) connection, defaults to False
-        :param raise_exceptions: Raise exception in case response status code is >= 400, defaults to True
+        :param raise_exceptions: Raise exception when response status code is >= 400, defaults to True
+        :param kwargs: Additional keyword arguments for HTTP client configuration
         """
         super().__init__()
         self.base_url = host
@@ -111,6 +139,14 @@ class HTTPClientBase(abc.ABC):
         self.session = requests.Session()
 
     def __init_subclass__(cls) -> None:
+        """Initialize subclass with API version validation.
+
+        Validates that non-abstract subclasses have the required 'api_version' attribute set.
+        This ensures all concrete HTTP client implementations specify their API version.
+
+        :param cls: The subclass being initialized.
+        :raises SPSDKError: If the subclass is not abstract and lacks 'api_version' attribute.
+        """
         if not inspect.isabstract(cls) and not hasattr(cls, "api_version"):
             raise SPSDKError(f"{cls.__name__}.api_version is not set")
         return super().__init_subclass__()
@@ -124,11 +160,15 @@ class HTTPClientBase(abc.ABC):
     ) -> requests.Response:
         """Handle REST API request.
 
-        :param url: REST API endpoint URL
-        :param data: JSON payload data, defaults to None
-        :raises HTTPClientError: HTTP Error during API request if error raising is enabled
-        :raises SPSDKError: Invalid response data (not a valid dictionary)
-        :return: REST API data response as dictionary and status code
+        The method constructs the full URL, prepares request parameters and JSON payload,
+        sends the HTTP request using the specified method, and logs the request/response details.
+
+        :param method: HTTP method to use for the request.
+        :param url: REST API endpoint URL (must start with '/').
+        :param param_data: URL parameters for the request, defaults to None.
+        :param json_data: JSON payload data for request body, defaults to None.
+        :raises SPSDKError: URL does not start with '/'.
+        :return: HTTP response object from the API request.
         """
         if not url.startswith("/"):
             raise SPSDKError("URL shall start with '/'")
@@ -164,10 +204,15 @@ class HTTPClientBase(abc.ABC):
     ) -> dict:
         """Check if the response contains required data.
 
-        :param response: Response to check
-        :param names_types: Name and type of required response members
-        :raises SPSDKError: Response doesn't contain required member
-        :raises SPSDKError: Responses' member has incorrect type
+        Validates HTTP response status and verifies that the JSON response contains all required
+        members with correct types.
+
+        :param response: HTTP response object to validate.
+        :param names_types: List of tuples containing name and expected type of required response
+            members.
+        :raises SPSDKError: Response doesn't contain required member.
+        :raises SPSDKError: Response member has incorrect type.
+        :return: Validated JSON response data as dictionary.
         """
         response.raise_for_status()
         response_data = response.json()
@@ -182,14 +227,23 @@ class HTTPClientBase(abc.ABC):
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Get JSON schema for validating configuration data."""
+        """Get JSON schema for validating configuration data.
+
+        :param family: Family revision to get validation schemas for.
+        :raises NotImplementedError: Method must be implemented by subclasses.
+        :return: List of JSON schema dictionaries for configuration validation.
+        """
         raise NotImplementedError()
 
     @classmethod
     def validate_config(cls, config: Config) -> None:
         """Validate configuration data using JSON schema specific to this class.
 
-        :param config: Configuration data
+        The method retrieves validation schemas for the family revision specified in the
+        configuration and performs comprehensive validation including unknown properties check.
+
+        :param config: Configuration data to be validated.
+        :raises SPSDKError: Invalid configuration data or schema validation failure.
         """
         schemas = cls.get_validation_schemas(FamilyRevision.load_from_config(config))
         config.check(schemas, check_unknown_props=True)
@@ -198,10 +252,11 @@ class HTTPClientBase(abc.ABC):
     def load_from_config(cls, config: Config) -> Self:
         """Create instance of this class based on configuration data.
 
-        __init__ method of this class will be called with data from config_data.
+        The method validates the provided configuration and initializes a new instance
+        using the configuration parameters as keyword arguments to the constructor.
 
-        :param config: Configuration data
-        :return: Instance of this class
+        :param config: Configuration data containing initialization parameters.
+        :return: Instance of this class initialized with the provided configuration.
         """
         cls.validate_config(config)
         return cls(**config)
@@ -213,7 +268,16 @@ class HTTPClientBase(abc.ABC):
         schemas: Optional[list[dict]] = None,
         title: Optional[str] = None,
     ) -> str:
-        """Generate configuration YAML template."""
+        """Generate configuration YAML template.
+
+        Creates a YAML configuration template for the class using provided or default validation schemas.
+        The template includes commented configuration options based on the schemas.
+
+        :param family: Target family and revision for configuration template.
+        :param schemas: Optional list of validation schemas to use for template generation.
+        :param title: Optional custom title for the configuration template.
+        :return: YAML configuration template as string.
+        """
         schemas = schemas or cls.get_validation_schemas(family)
         yaml_data = CommentedConfig(
             main_title=title or f"{cls.__name__} class configuration template",

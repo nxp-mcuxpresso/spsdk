@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Programmer for LPC8xx parts."""
+"""SPSDK LPC microcontroller programming utility.
+
+This module provides a command-line interface for programming and managing
+LPC8xx series microcontrollers. It supports flash programming, memory operations,
+sector management, and device communication through ISP protocol.
+"""
 
 import sys
 from typing import Optional

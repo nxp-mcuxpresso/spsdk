@@ -5,7 +5,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Helper script for generating Release Notes."""
+"""SPSDK Release Notes generation utilities.
+
+This module provides functionality for automatically generating release notes
+by analyzing Git commit messages and extracting JIRA ticket information.
+"""
 
 import argparse
 import json
@@ -28,7 +32,12 @@ JIRA_SERVER = "https://jira.sw.nxp.com"
 
 
 class RNParams(NamedTuple):
-    """Release Notes Parameters."""
+    """Release Notes Parameters container.
+
+    This NamedTuple holds all configuration parameters required for generating
+    release notes, including version range, output options, and authentication
+    settings for repository access.
+    """
 
     since: str
     till: str
@@ -41,7 +50,13 @@ class RNParams(NamedTuple):
 
 
 class TicketRecord(NamedTuple):
-    """JIRA Ticket Record."""
+    """JIRA Ticket Record for release notes generation.
+
+    This NamedTuple represents a standardized ticket record extracted from JIRA issues,
+    containing essential information needed for generating release notes. It provides
+    a simplified and consistent interface for handling ticket data across different
+    JIRA issue types and configurations.
+    """
 
     issue_id: str
     issue_type: str
@@ -50,7 +65,16 @@ class TicketRecord(NamedTuple):
 
     @staticmethod
     def from_jira_issue(issue: Issue) -> "TicketRecord":
-        """Coverts JIRA Issue into TicketRecord."""
+        """Convert JIRA Issue into TicketRecord.
+
+        Creates a TicketRecord instance from a JIRA Issue object, extracting relevant
+        fields and normalizing issue types and component information. Issue types are
+        unified where 'Bug' becomes 'Bugfix' and all others become 'Task'. If no
+        component is assigned, 'N/A' is used as default.
+
+        :param issue: JIRA Issue object to convert.
+        :return: TicketRecord instance with extracted issue information.
+        """
         # ticket may not have a component assigned, in that case use 'N/A'
         try:
             component_name = issue.fields.components[0].name
@@ -68,41 +92,103 @@ class TicketRecord(NamedTuple):
 
 
 class RecordsList(list[TicketRecord]):
-    """JIRA records list."""
+    """SPSDK JIRA ticket records collection.
+
+    This class extends the built-in list to provide specialized functionality
+    for managing and manipulating collections of JIRA ticket records. It offers
+    filtering, attribute extraction, and persistence capabilities for release
+    note generation workflows.
+    """
 
     def get_components(self) -> list[str]:
-        """Get component names from data."""
+        """Get component names from data.
+
+        Retrieves a list of all unique component names found in the release notes data
+        by extracting the 'component' attribute from all entries.
+
+        :return: List of component names extracted from the data.
+        """
         return self.get_attributes("component")
 
     def get_types(self) -> list[str]:
-        """Get issue type names from data."""
+        """Get issue type names from data.
+
+        Retrieves a list of all unique issue type names that are present
+        in the collected data.
+
+        :return: List of issue type names found in the data.
+        """
         return self.get_attributes("issue_type")
 
     def get_attributes(self, attribute_name: str) -> list[str]:
-        """Get all attributes with `attribute_name` from data."""
+        """Get all unique attributes with specified name from collection items.
+
+        Extracts the specified attribute from each item in the collection, removes duplicates,
+        and returns them in sorted order.
+
+        :param attribute_name: Name of the attribute to extract from each item.
+        :raises AttributeError: If any item in the collection doesn't have the specified attribute.
+        :return: Sorted list of unique attribute values.
+        """
         group = [getattr(item, attribute_name) for item in self]
         return sorted(list(set(group)))
 
     def filter(self, attrib_name: str, attrib_value: str) -> "RecordsList":
-        """Filter records based on attribute name and its value."""
+        """Filter records based on attribute name and its value.
+
+        Creates a new RecordsList containing only the records where the specified
+        attribute matches the given value.
+
+        :param attrib_name: Name of the attribute to filter by.
+        :param attrib_value: Value that the attribute must match.
+        :raises AttributeError: If the specified attribute does not exist on record items.
+        :return: New RecordsList containing filtered records.
+        """
         return RecordsList([item for item in self if getattr(item, attrib_name) == attrib_value])
 
     def save(self, file_path: str) -> None:
-        """Store data for later custom re-use/inspection."""
+        """Save ticket records to a JSON file for later reuse or inspection.
+
+        The method serializes all ticket records in the collection to a JSON file
+        with proper formatting and UTF-8 encoding.
+
+        :param file_path: Path to the output JSON file where data will be saved.
+        :raises OSError: If the file cannot be created or written to.
+        :raises PermissionError: If there are insufficient permissions to write the file.
+        """
         # to load data back, use object_hook=lambda x: TicketRecord(**x)
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump([x._asdict() for x in self], f, indent=2)
 
     @classmethod
     def load(cls, file_path: str) -> "RecordsList":
-        """Load previously saved RecordList."""
+        """Load previously saved RecordsList from a JSON file.
+
+        This method deserializes a JSON file containing ticket records and reconstructs
+        a RecordsList instance with the loaded data.
+
+        :param file_path: Path to the JSON file containing the saved records.
+        :raises FileNotFoundError: If the specified file does not exist.
+        :raises json.JSONDecodeError: If the file contains invalid JSON data.
+        :raises TypeError: If the JSON data cannot be converted to TicketRecord objects.
+        :return: New RecordsList instance populated with loaded ticket records.
+        """
         with open(file_path, encoding="utf-8") as f:
             data = json.load(f, object_hook=lambda x: TicketRecord(**x))
         return cls(data)
 
 
 def parse_inputs(input_args: Optional[list[str]] = None) -> RNParams:
-    """Parse user inputs."""
+    """Parse command line arguments for release notes generation.
+
+    This function sets up and processes command line arguments for the release notes
+    utility, including Git commit range specification, JIRA authentication options,
+    output formatting preferences, and caching configuration.
+
+    :param input_args: Optional list of command line arguments to parse. If None,
+                      arguments are taken from sys.argv.
+    :return: Parsed parameters as RNParams object containing all configuration options.
+    """
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="This utility is meant to help compiling Release notes.",
@@ -176,7 +262,16 @@ def parse_inputs(input_args: Optional[list[str]] = None) -> RNParams:
 
 
 def get_commit_messages(since: str, till: str) -> str:
-    """Get git commit messages delimited by `since` and `till` commit-ids/tags."""
+    """Get git commit messages between two commits or tags.
+
+    Retrieves commit messages from git log using the specified range delimited
+    by since and till commit-ids or tags.
+
+    :param since: Starting commit-id or tag for the range.
+    :param till: Ending commit-id or tag for the range.
+    :raises subprocess.CalledProcessError: Git command execution failed.
+    :return: Git commit messages as a string with newline separators.
+    """
     logging.info("Getting git information")
     cmd = f'git log --pretty="%s" {since}..{till}'
     logging.debug(f"Running: {cmd}")
@@ -186,7 +281,14 @@ def get_commit_messages(since: str, till: str) -> str:
 
 
 def get_jira_ids(git_output: str) -> list[str]:
-    """Parse text for JIRA ids. see: `TICKET_REGEX`."""
+    """Parse text for JIRA ticket IDs using the configured regex pattern.
+
+    Extracts and deduplicates JIRA ticket identifiers from git commit messages
+    or other text input. The extraction pattern is defined by TICKET_REGEX constant.
+
+    :param git_output: Text content to search for JIRA ticket IDs, typically git log output.
+    :return: Sorted list of unique JIRA ticket IDs found in the input text.
+    """
     logging.info("Extracting JIRA ticket ids from commit messages")
     ids = re.findall(TICKET_REGEX, git_output)
     ids = sorted(list(set(ids)))
@@ -195,11 +297,16 @@ def get_jira_ids(git_output: str) -> list[str]:
 
 
 def ticket_info_hasher(args: tuple, kwargs: dict) -> str:
-    """Helper function providing hash value of arguments for `get_ticket_info` function.
+    """Generate MD5 hash for ticket information arguments.
 
-    To optimize caching persistent caching, we need function with consistent return values.
+    Helper function providing hash value of arguments for `get_ticket_info` function.
+    To optimize persistent caching, we need function with consistent return values.
     As the built-in hash function doesn't compute same values across multiple runs,
     we use MD5 hashing.
+
+    :param args: Positional arguments tuple containing ticket information.
+    :param kwargs: Keyword arguments dictionary that may contain 'ticket' key.
+    :return: MD5 hash string of the ticket parameter.
     """
     to_hash: str = kwargs["ticket"] if "ticket" in kwargs else args[0]
     digest = hashes.Hash(hashes.MD5())  # nosec
@@ -211,9 +318,14 @@ def ticket_info_hasher(args: tuple, kwargs: dict) -> str:
 
 @cachier(hash_func=ticket_info_hasher)
 def get_ticket_info(ticket: str, jira: Optional[JIRA]) -> TicketRecord:
-    """Extract info for `ticket` from JIRA.
+    """Extract ticket information from JIRA.
 
-    The `@cachier` decorator produces persistent cache to alleviate load on JIRA server.
+    The @cachier decorator produces persistent cache to alleviate load on JIRA server.
+
+    :param ticket: JIRA ticket identifier to fetch information for.
+    :param jira: JIRA instance for API communication, None for offline mode.
+    :raises SPSDKError: When JIRA instance is None and ticket info is not pre-recorded.
+    :return: Ticket record containing extracted JIRA issue information.
     """
     if not jira:
         raise SPSDKError(f"Info for {ticket} is not pre-recorded, can't work in offline mode")
@@ -223,7 +335,18 @@ def get_ticket_info(ticket: str, jira: Optional[JIRA]) -> TicketRecord:
 
 
 def main() -> None:
-    """Main function."""
+    """Main entry point for the release notes generation tool.
+
+    Parses command line arguments, retrieves commit messages from Git repository,
+    extracts JIRA ticket IDs, fetches ticket information (online or offline mode),
+    and generates formatted release notes grouped by issue type and component.
+    The function handles authentication for JIRA access either through username/password
+    or .netrc file, supports offline mode using cached data, and outputs release notes
+    in a structured format.
+
+    :raises SystemExit: When no tickets are found in commit messages or when .netrc
+        file is missing but netrc authentication is selected.
+    """
     args = parse_inputs()
     logging.basicConfig(level=args.log_level)
     logging.debug(f"Input args: {args}")

@@ -2,11 +2,17 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2024 NXP
+# Copyright 2019-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Error codes defined by the SDP protocol."""
+"""SDP protocol error codes and status information.
+
+This module defines error codes, status codes, and HAB (High Assurance Boot)
+related error information used in the Serial Download Protocol (SDP) communication.
+It provides enumerations for status codes, HAB status information, error reasons,
+and error contexts to facilitate proper error handling and debugging.
+"""
 
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -15,7 +21,12 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 # SDP Status Codes (Errors)
 ########################################################################################################################
 class StatusCode(SpsdkEnum):
-    """SDP status codes."""
+    """SDP status codes enumeration.
+
+    This enumeration defines all possible status codes returned by Serial Download Protocol (SDP)
+    operations, providing standardized error reporting and success indication for SDP communication
+    with NXP MCU devices.
+    """
 
     SUCCESS = (0, "Success", "Success")
     CMD_FAILURE = (1, "CommandFailure", "Command Failure")
@@ -32,7 +43,11 @@ class StatusCode(SpsdkEnum):
 # HAB Status Codes (Errors)
 ########################################################################################################################
 class HabStatusInfo(SpsdkEnum):
-    """HAB status codes."""
+    """HAB status information enumeration.
+
+    This enumeration defines the High Assurance Boot (HAB) status codes used
+    to indicate the result of HAB operations in NXP secure boot processes.
+    """
 
     UNKNOWN = (0x00, "UNKNOWN", "Unknown")
     WARNING = (0x69, "WARNING", "Warning")
@@ -41,7 +56,12 @@ class HabStatusInfo(SpsdkEnum):
 
 
 class HabErrorReason(SpsdkEnum):
-    """HAB Error Reason."""
+    """HAB Error Reason enumeration for NXP MCU secure boot operations.
+
+    This enumeration defines standardized error reason codes returned by the High Assurance Boot (HAB)
+    authentication process. Each error code includes a numeric value, symbolic name, and human-readable
+    description to facilitate debugging and error handling in secure provisioning workflows.
+    """
 
     UNKNOWN = (0x00, "UNKNOWN", "Unknown Reason")
     ENGINE_FAILURE = (0x30, "ENGINE_FAILURE", "Engine Failure")
@@ -77,7 +97,12 @@ class HabErrorReason(SpsdkEnum):
 
 
 class HabErrorContext(SpsdkEnum):
-    """HAB Error Context."""
+    """HAB Error Context enumeration for Secure Provisioning operations.
+
+    This enumeration defines context codes used by the High Assurance Boot (HAB)
+    system to identify where security events occurred during the boot process.
+    Each context represents a specific HAB function or operation stage.
+    """
 
     HAB_CTX_ANY = (0x00, "HAB_CTX_ANY", "Match any context in hab_rvt.report_event()")
     HAB_FAB_TEST = (0xFF, "HAB_FAB_TEST", "Event logged in hab_fab_test()")

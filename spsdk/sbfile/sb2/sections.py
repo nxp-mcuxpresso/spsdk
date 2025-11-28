@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Sections within SBfile."""
+"""SPSDK SB2 file sections implementation.
+
+This module provides section classes for SB2 (Secure Binary version 2) file format,
+including boot sections and certificate sections with encryption and authentication
+capabilities.
+"""
 
 from struct import unpack_from
 from typing import Iterator, Optional
@@ -30,26 +35,58 @@ from spsdk.utils.abstract import BaseClass
 
 
 class BootSectionV2(BaseClass):
-    """Boot Section V2."""
+    """Boot Section V2 for Secure Binary file format.
+
+    This class represents a boot section in the SB2.x file format, managing
+    commands, HMAC authentication data, and section metadata. It provides
+    functionality for building bootable sections with cryptographic integrity
+    protection.
+
+    :cvar HMAC_SIZE: Size of HMAC in bytes (32).
+    """
 
     HMAC_SIZE = 32
 
     @property
     def uid(self) -> int:
-        """Boot Section UID."""
+        """Get Boot Section UID.
+
+        :return: The unique identifier of the boot section.
+        """
         return self._header.address
 
     @uid.setter
     def uid(self, value: int) -> None:
+        """Set the unique identifier for the section.
+
+        The UID is stored in the header address field and is used to identify
+        this specific section within the SB2 file structure.
+
+        :param value: The unique identifier value to assign to this section.
+        """
         self._header.address = value
 
     @property
     def is_last(self) -> bool:
-        """Check whether the section is the last one."""
+        """Check whether the section is the last one.
+
+        This method examines the section header flags to determine if the current
+        section is marked as the last section in the sequence.
+
+        :return: True if this is the last section, False otherwise.
+        """
         return self._header.flags & EnumSectionFlag.LAST_SECT.tag != 0
 
     @is_last.setter
     def is_last(self, value: bool) -> None:
+        """Set the last section flag for this section.
+
+        This method configures the section header flags to mark whether this section
+        is the last section in the SB2 file. The bootable flag is always set, and
+        the last section flag is conditionally added based on the input parameter.
+
+        :param value: True if this is the last section, False otherwise.
+        """
         assert isinstance(value, bool)
         self._header.flags = EnumSectionFlag.BOOTABLE.tag
         if value:
@@ -57,7 +94,14 @@ class BootSectionV2(BaseClass):
 
     @property
     def hmac_count(self) -> int:
-        """Number of HMACs."""
+        """Calculate the number of HMACs required for the section.
+
+        The method determines the HMAC count based on the total raw size of all commands
+        in the section. It calculates the number of 16-byte blocks needed and returns
+        the minimum between the configured HMAC count and the actual block count.
+
+        :return: Number of HMACs required for this section.
+        """
         raw_size = 0
         hmac_count = 0
         for cmd in self._commands:
@@ -69,7 +113,13 @@ class BootSectionV2(BaseClass):
 
     @property
     def raw_size(self) -> int:
-        """Raw size of section."""
+        """Get the raw size of the section in bytes.
+
+        Calculates the total size including command header, HMAC data, all commands,
+        and padding to ensure 16-byte alignment.
+
+        :return: Total raw size of the section in bytes.
+        """
         size = CmdHeader.SIZE + self.HMAC_SIZE
         size += self.hmac_count * self.HMAC_SIZE
         for cmd in self._commands:
@@ -87,10 +137,10 @@ class BootSectionV2(BaseClass):
     ) -> None:
         """Initialize BootSectionV2.
 
-        :param uid: section unique identification
-        :param commands: List of commands
-        :param hmac_count: The number of HMAC entries
-        :param zero_filling: If true, the section is zero-filled
+        :param uid: Section unique identification number.
+        :param commands: Variable number of command objects to include in the section.
+        :param hmac_count: The number of HMAC entries, defaults to 1.
+        :param zero_filling: If True, the section will be zero-filled, defaults to False.
         """
         self._header = CmdHeader(
             EnumCmdTag.TAG.tag, EnumSectionFlag.BOOTABLE.tag, zero_filling=zero_filling
@@ -106,27 +156,62 @@ class BootSectionV2(BaseClass):
         self.uid = uid
 
     def __len__(self) -> int:
+        """Get the number of commands in the section.
+
+        :return: Number of commands stored in this section.
+        """
         return len(self._commands)
 
     def __getitem__(self, key: int) -> CmdBaseClass:
+        """Get command at specified index.
+
+        :param key: Index of the command to retrieve.
+        :return: Command object at the specified index.
+        """
         return self._commands[key]
 
     def __setitem__(self, key: int, value: CmdBaseClass) -> None:
+        """Set command at specified index in the commands list.
+
+        :param key: Index position where to set the command.
+        :param value: Command object to be set at the specified index.
+        """
         self._commands[key] = value
 
     def __iter__(self) -> Iterator[CmdBaseClass]:
+        """Return iterator over commands in the section.
+
+        :return: Iterator yielding command objects from the internal commands collection.
+        """
         return self._commands.__iter__()
 
     def append(self, cmd: CmdBaseClass) -> None:
-        """Add command to section."""
+        """Add command to section.
+
+        :param cmd: Command object to be added to the section.
+        :raises AssertionError: If cmd is not an instance of CmdBaseClass.
+        """
         assert isinstance(cmd, CmdBaseClass)
         self._commands.append(cmd)
 
     def __repr__(self) -> str:
+        """Return string representation of BootSectionV2 object.
+
+        Provides a human-readable string showing the class name and number of commands
+        contained in this boot section.
+
+        :return: String representation in format "BootSectionV2: X commands."
+        """
         return f"BootSectionV2: {len(self)} commands."
 
     def __str__(self) -> str:
-        """Get object info."""
+        """Get string representation of the section with all commands.
+
+        The method iterates through all commands in the section and formats them
+        as a numbered list for display purposes.
+
+        :return: Formatted string containing indexed list of all commands in the section.
+        """
         nfo = ""
         for index, cmd in enumerate(self._commands):
             nfo += f" {index}) {str(cmd)}\n"
@@ -139,13 +224,17 @@ class BootSectionV2(BaseClass):
         mac: bytes = b"",
         counter: Optional[Counter] = None,
     ) -> bytes:
-        """Export Boot Section object.
+        """Export Boot Section object to encrypted binary format.
 
-        :param dek: The DEK value in bytes (required)
-        :param mac: The MAC value in bytes (required)
-        :param counter: The counter object (required)
-        :return: Exported bytes
-        :raises SPSDKError: raised when dek, mac, counter have invalid format or no commands
+        The method encrypts the section header and commands using AES-CTR encryption,
+        calculates HMAC for integrity protection, and returns the complete encrypted
+        section data ready for secure boot file generation.
+
+        :param dek: Data Encryption Key used for AES-CTR encryption of header and commands
+        :param mac: Message Authentication Code key for HMAC calculation
+        :param counter: Counter object for AES-CTR mode encryption, gets incremented during process
+        :return: Encrypted section data containing header, HMAC data, and encrypted commands
+        :raises SPSDKError: Invalid parameter types or missing commands in section
         """
         if not isinstance(dek, bytes):
             raise SPSDKError("Invalid type of dek, should be bytes")
@@ -203,14 +292,18 @@ class BootSectionV2(BaseClass):
     ) -> "BootSectionV2":
         """Parse Boot Section from bytes.
 
-        :param data: Raw data of parsed image
-        :param offset: The offset of input data
-        :param plain_sect: If the sections are not encrypted; It is used for debugging only, not supported by ROM code
-        :param dek: The DEK value in bytes (required)
-        :param mac: The MAC value in bytes (required)
-        :param counter: The counter object (required)
-        :return: exported bytes
-        :raises SPSDKError: raised when dek, mac, counter have invalid format
+        Decrypts and parses a boot section from raw binary data, validating HMAC integrity
+        and extracting commands. The method handles encrypted sections with proper counter
+        management and HMAC verification.
+
+        :param data: Raw binary data containing the boot section to parse.
+        :param offset: Starting offset within the data buffer for parsing.
+        :param plain_sect: Whether sections are unencrypted (debugging only, not ROM supported).
+        :param dek: Data Encryption Key as bytes for decryption.
+        :param mac: Message Authentication Code as bytes for HMAC verification.
+        :param counter: Counter object for AES-CTR decryption state management.
+        :return: Parsed BootSectionV2 object containing the extracted commands.
+        :raises SPSDKError: Invalid parameter types or HMAC verification failure.
         """
         if not isinstance(dek, bytes):
             raise SPSDKError("Invalid type of dek, should be bytes")
@@ -270,19 +363,35 @@ class BootSectionV2(BaseClass):
 
 
 class CertSectionV2(BaseClass):
-    """Certificate Section V2 class."""
+    """SB2 Certificate Section V2 representation.
+
+    This class manages certificate sections in Secure Binary 2.0 files, handling
+    certificate block data with proper HMAC validation and section formatting.
+
+    :cvar HMAC_SIZE: Size of HMAC in bytes (32).
+    :cvar SECT_MARK: Section marker identifier for certificate sections.
+    """
 
     HMAC_SIZE = 32
     SECT_MARK = unpack_from("<L", b"sign")[0]
 
     @property
     def cert_block(self) -> CertBlockV1:
-        """Return certification block."""
+        """Get certification block.
+
+        :return: Certification block instance.
+        """
         return self._cert_block
 
     @property
     def raw_size(self) -> int:
-        """Calculate raw size of section."""
+        """Calculate raw size of section in bytes.
+
+        The method calculates the total size including section header, HMAC values
+        for both header and certificate block, and the certificate block itself.
+
+        :return: Total raw size of the section in bytes.
+        """
         # Section header size
         size = CmdHeader.SIZE
         # Header HMAC 32 bytes + Certificate block HMAC 32 bytes
@@ -292,7 +401,14 @@ class CertSectionV2(BaseClass):
         return size
 
     def __init__(self, cert_block: CertBlockV1):
-        """Initialize CertBlockV1."""
+        """Initialize certificate block section.
+
+        Creates a new certificate block section with proper header configuration
+        including section flags and address marking.
+
+        :param cert_block: Certificate block to be wrapped in this section.
+        :raises AssertionError: If cert_block is not an instance of CertBlockV1.
+        """
         assert isinstance(cert_block, CertBlockV1)
         self._header = CmdHeader(
             EnumCmdTag.TAG.tag, EnumSectionFlag.CLEARTEXT.tag | EnumSectionFlag.LAST_SECT.tag
@@ -303,23 +419,33 @@ class CertSectionV2(BaseClass):
         self._cert_block = cert_block
 
     def __repr__(self) -> str:
+        """Return string representation of CertSectionV2 object.
+
+        :return: String containing class name and length information.
+        """
         return f"CertSectionV2: Length={self._header.count * 16}"
 
     def __str__(self) -> str:
-        """Get object info."""
+        """Get string representation of the object.
+
+        :return: String representation of the certificate block.
+        """
         return str(self.cert_block)
 
     def export(
         self, dek: bytes = b"", mac: bytes = b"", counter: Optional[Counter] = None
     ) -> bytes:
-        """Export Certificate Section object.
+        """Export Certificate Section object to binary format.
 
-        :param dek: The DEK value in bytes (required)
-        :param mac: The MAC value in bytes (required)
-        :param counter: The counter object (required)
-        :return: Exported bytes
-        :raises SPSDKError: raised when dek, mac, counter have invalid format
-        :raises SPSDKError: Raised size of exported bytes is invalid
+        The method encrypts the header using AES-CTR, generates HMAC for authentication,
+        and combines all components into the final binary representation.
+
+        :param dek: Data Encryption Key in bytes format for AES-CTR encryption.
+        :param mac: Message Authentication Code key in bytes for HMAC generation.
+        :param counter: Counter object used for AES-CTR encryption mode.
+        :return: Binary representation of the certificate section.
+        :raises SPSDKError: Invalid parameter type for dek, mac, or counter.
+        :raises SPSDKError: Exported data size doesn't match expected raw size.
         """
         if not isinstance(dek, bytes):
             raise SPSDKError("DEK value is not in bytes")
@@ -352,15 +478,18 @@ class CertSectionV2(BaseClass):
     ) -> "CertSectionV2":
         """Parse Certificate Section from bytes array.
 
-        :param data: Raw data of parsed image
-        :param offset: The offset of input data
-        :param dek: The DEK value in bytes (required)
-        :param mac: The MAC value in bytes (required)
-        :param counter: The counter object (required)
-        :return: parsed cert section v2 object
-        :raises SPSDKError: Raised when dek, mac, counter are not valid
-        :raises SPSDKError: Raised when there is invalid header HMAC, TAG, FLAGS, Mark
-        :raises SPSDKError: Raised when there is invalid certificate block HMAC
+        Parses and validates an encrypted certificate section with HMAC verification,
+        decrypts the header, and extracts the certificate block.
+
+        :param data: Raw data of parsed image.
+        :param offset: The offset of input data.
+        :param dek: The DEK value in bytes (required).
+        :param mac: The MAC value in bytes (required).
+        :param counter: The counter object (required).
+        :return: Parsed cert section v2 object.
+        :raises SPSDKError: Raised when dek, mac, counter are not valid.
+        :raises SPSDKError: Raised when there is invalid header HMAC, TAG, FLAGS, Mark.
+        :raises SPSDKError: Raised when there is invalid certificate block HMAC.
         """
         if not isinstance(dek, bytes):
             raise SPSDKError("DEK value has invalid format")

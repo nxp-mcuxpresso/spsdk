@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module implementing the SDPS communication protocol."""
+"""SPSDK Serial Download Protocol Stream (SDPS) communication implementation.
+
+This module provides functionality for secure communication with NXP MCU bootloaders
+using the SDPS protocol. It includes command packet handling, ROM information management,
+and secure provisioning operations.
+"""
 
 import logging
 from dataclasses import dataclass
@@ -25,28 +30,45 @@ logger = logging.getLogger(__name__)
 
 
 class CommandSignature(SpsdkEnum):
-    """Command signature enum."""
+    """SDP command signature enumeration.
+
+    This enumeration defines the signature values used to identify different types
+    of SDP (Serial Download Protocol) command block wrappers in secure provisioning
+    operations.
+    """
 
     CBW_BLTC_SIGNATURE = (0x43544C42, "CbwBlts", "Command Block Wrapper BLTC")
     CBW_PITC_SIGNATURE = (0x43544950, "CbwPits", "Command Block Wrapper PITC")
 
 
 class CommandFlag(SpsdkEnum):
-    """Command flag enum."""
+    """SDP command flag enumeration for data transfer direction.
+
+    This enumeration defines the direction flags used in SDP (Serial Download Protocol)
+    commands to specify whether data flows from device to host or from host to device.
+    """
 
     DEVICE_TO_HOST_DIR = (0x80, "DataOut", "Data Out")
     HOST_TO_DEVICE_DIR = (0x00, "DataIn", "Data In")
 
 
 class CommandTag(SpsdkEnum):
-    """Command tag enum."""
+    """SDP command tag enumeration.
+
+    This enumeration defines the available command tags used in the Serial Download Protocol (SDP)
+    for communication with NXP MCU devices during secure provisioning operations.
+    """
 
     FW_DOWNLOAD = (2, "FwDownload", "Firmware download")
 
 
 @dataclass
 class RomInfo:
-    """Rom information."""
+    """ROM information container for SDP communication parameters.
+
+    This class holds configuration data about ROM capabilities and communication
+    settings used during Serial Download Protocol (SDP) operations.
+    """
 
     no_cmd: bool
     hid_ep1: bool
@@ -54,23 +76,32 @@ class RomInfo:
 
 
 class SDPS:
-    """Secure Serial Downloader Protocol."""
+    """SDPS communication interface for NXP MCU devices.
+
+    This class provides a high-level interface for communicating with NXP MCU devices
+    using the Serial Downloader Protocol Stream (SDPS). It manages device connections,
+    protocol parameters, and ROM-specific configurations across the supported MCU family
+    portfolio.
+    """
 
     def __init__(self, interface: SDPDeviceTypes, family: FamilyRevision) -> None:
         """Initialize SDPS object.
 
-        :param device: USB device
-        :param device_name: target platform name used to determine ROM settings
+        :param interface: SDP device interface for communication.
+        :param family: Target platform family and revision information.
         """
         self._interface = interface
         self.family = family
 
     @staticmethod
     def get_supported_families(include_predecessors: bool = False) -> list[FamilyRevision]:
-        """Get supported devices.
+        """Get supported families for SDPS protocol.
 
-        :param include_predecessors: The list will contains also predecessors names
-        :return: List of supported devices
+        Retrieves a list of device families that support the SDPS (Serial Download Protocol Stream)
+        communication protocol. Optionally includes predecessor device families for backward compatibility.
+
+        :param include_predecessors: Include predecessor family names in the result list.
+        :return: List of family revisions that support SDPS protocol.
         """
         ret = [
             dev
@@ -84,7 +115,13 @@ class SDPS:
 
     @property
     def rom_info(self) -> RomInfo:
-        """Rom information property."""
+        """Get ROM information for the current device family.
+
+        Retrieves ROM protocol parameters from the device database including command
+        support, HID endpoint configuration, and packet size settings.
+
+        :return: ROM information object containing protocol parameters.
+        """
         device = DatabaseManager().db.devices.get(self.family.name)
         return RomInfo(
             no_cmd=device.info.isp.rom.protocol_params.get("no_cmd", True),
@@ -94,47 +131,88 @@ class SDPS:
 
     @property
     def family(self) -> FamilyRevision:
-        """Device name."""
+        """Get device family and revision information.
+
+        :return: Family and revision details of the connected device.
+        """
         return self._family
 
     @family.setter
     def family(self, value: FamilyRevision) -> None:
-        """Device name setter."""
+        """Set device family for SDP communication.
+
+        Validates that the specified family is supported before setting the internal
+        family value.
+
+        :param value: Device family revision to set.
+        :raises SPSDKValueError: If the specified device family is not supported.
+        """
         if value not in self.get_supported_families(True):
             raise SPSDKValueError(f"Device family is not supported {value}")
         self._family = value
 
     def __enter__(self) -> "SDPS":
+        """Enter the runtime context of the SDPS object.
+
+        This method is used as part of the context manager protocol to initialize
+        the SDPS connection when entering a 'with' statement block.
+
+        :return: The SDPS instance itself for use within the context block.
+        """
         self.open()
         return self
 
     def __exit__(self, *args: Any, **kwargs: Any) -> None:
+        """Close the SDP connection and clean up resources.
+
+        This method is called automatically when exiting a context manager (with statement)
+        and ensures proper cleanup of the SDP connection.
+
+        :param args: Variable length argument list (unused).
+        :param kwargs: Arbitrary keyword arguments (unused).
+        """
         self.close()
 
     def open(self) -> None:
-        """Connect to i.MX device."""
+        """Connect to i.MX device.
+
+        Establishes connection to the i.MX device through the configured interface if not already connected.
+        Logs the connection attempt with interface details.
+
+        :raises SPSDKError: If the interface fails to open or connect to the device.
+        """
         if not self.is_opened:
             logger.info(f"Connect: {str(self._interface)}")
             self._interface.open()
 
     def close(self) -> None:
-        """Disconnect i.MX device."""
+        """Close the connection to the i.MX device.
+
+        This method properly disconnects from the i.MX device and releases any
+        associated resources through the underlying interface.
+
+        :raises SPSDKError: If there's an error during the disconnection process.
+        """
         self._interface.close()
 
     @property
     def is_opened(self) -> bool:
-        """Indicates whether the underlying interface is open.
+        """Check interface open status.
 
-        :return: True if device is open, False if it's closed
+        :return: True if device is open, False if it's closed.
         """
         return self._interface.is_opened
 
     def write_file(self, data: bytes) -> None:
-        """Write data to the target.
+        """Write data to the target device.
 
-        :param data: The boot image data in binary format
-        :raises SdpConnectionError: Timeout or Connection error
-        :raises SPSDKError: Fail in middle of transfer
+        This method configures the interface and sends the boot image data to the target
+        device. It handles command packet creation and data transmission according to the
+        ROM information settings.
+
+        :param data: The boot image data in binary format.
+        :raises SdpConnectionError: Timeout or connection error during data transfer.
+        :raises SPSDKError: Failure occurred in middle of transfer process.
         """
         try:
             self._interface.configure(
@@ -166,20 +244,30 @@ class SDPS:
 
 
 class CmdPacket(CmdPacketBase):
-    """Class representing a command packet to be sent to device."""
+    """SDP Command Packet for device communication.
+
+    This class represents a command packet structure used in Serial Download Protocol (SDP)
+    communication with NXP devices. It encapsulates command data including signature, flags,
+    and command type for reliable device interaction.
+
+    :cvar FORMAT: Binary format string for packet serialization.
+    """
 
     FORMAT = "<3IB2xbI11x"
 
     def __init__(
         self, signature: int, length: int, flags: CommandFlag, command: CommandTag, tag: int = 1
     ):
-        """Initialize the struct.
+        """Initialize the SDP command structure.
 
-        :param tag: Tag number representing the command
-        :param address: Address used by the command
-        :param pformat: Format of the data: 8 = byte, 16 = half-word, 32 = word
-        :param count: Count used by individual command
-        :param value: Value to use in a particular command, defaults to 0
+        Creates a new SDP (Serial Download Protocol) command with the specified parameters
+        for communication with the target device.
+
+        :param signature: Command signature for validation
+        :param length: Length of the command data
+        :param flags: Command flags defining behavior and options
+        :param command: Command tag specifying the operation type
+        :param tag: Tag number representing the command, defaults to 1
         """
         self.signature = signature
         self.tag = tag
@@ -188,14 +276,24 @@ class CmdPacket(CmdPacketBase):
         self.cdb_command = command
 
     def __str__(self) -> str:
-        """String representation of the command packet."""
+        """String representation of the command packet.
+
+        :return: Formatted string containing signature, tag, length, flags, and CDB command values.
+        """
         return (
             f"Signature={self.signature}, Tag=0x{self.tag},"
             f" Length={self.length}, Flags={self.flags}, CdbCommand=0x{self.cdb_command}"
         )
 
     def export(self, padding: bool = True) -> bytes:
-        """Return command packet as bytes."""
+        """Export command packet as bytes.
+
+        Serializes the command packet structure into a binary format using the
+        defined FORMAT string for transmission or storage.
+
+        :param padding: Whether to include padding in the exported packet.
+        :return: Binary representation of the command packet.
+        """
         return pack(
             self.FORMAT,
             self.signature,

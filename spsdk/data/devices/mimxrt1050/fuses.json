@@ -360,8 +360,11 @@
       "registers": [
         {
           "id": "fuse1",
-          "name": "LOT_NO_ENC[42:11]",
+          "name": "LOT_NO_ENC1",
           "description": "NXP-wide unique, encoded LOT ID STD II/SJC CHALLENGE/ Unique ID",
+          "deprecated_names": [
+            "LOT_NO_ENC[42:11]"
+          ],
           "offset_int": "0x0410",
           "index_int": "0x0001",
           "lock": {
@@ -380,8 +383,11 @@
         },
         {
           "id": "fuse2",
-          "name": "LOT_NO_ENC[10:0]",
+          "name": "LOT_NO_ENC0_WAFER_COORD",
           "description": "NXP-wide unique, encoded LOT ID STD II/SJC CHALLENGE/ Unique ID",
+          "deprecated_names": [
+            "LOT_NO_ENC[10:0]"
+          ],
           "offset_int": "0x0420",
           "index_int": "0x0002",
           "lock": {
@@ -418,8 +424,11 @@
         },
         {
           "id": "fuse3",
-          "name": "SI_REV[3:0]",
-          "description": "Fuse SI_REV[3:0]",
+          "name": "SI_REV",
+          "description": "Fuse SI_REV",
+          "deprecated_names": [
+            "SI_REV[3:0]"
+          ],
           "offset_int": "0x0430",
           "index_int": "0x0003",
           "lock": {
@@ -876,8 +885,11 @@
             {
               "width": 4,
               "id": "fuse6-bits-8-11",
-              "name": "SDRAM_CONFIG[7:0]",
-              "description": "TBD  (SDRAM config options)"
+              "name": "SDRAM_CONFIG",
+              "description": "TBD  (SDRAM config options)",
+              "deprecated_names": [
+                "SDRAM_CONFIG[7:0]"
+              ]
             },
             {
               "width": 2,
@@ -1727,14 +1739,20 @@
             {
               "width": 16,
               "id": "fuse15-bits-0-15",
-              "name": "USB_VID[31:0]",
-              "description": "USB VID"
+              "name": "USB_VID",
+              "description": "USB VID",
+              "deprecated_names": [
+                "USB_VID[31:0]"
+              ]
             },
             {
               "width": 16,
               "id": "fuse15-bits-16-31",
-              "name": "USB_PID[31:0]",
-              "description": "USB PID"
+              "name": "USB_PID",
+              "description": "USB PID",
+              "deprecated_names": [
+                "USB_PID[31:0]"
+              ]
             }
           ]
         }
@@ -1863,120 +1881,56 @@
           "name": "SRK_HASH[255:224]",
           "description": "SRK key, no HW visible lines. NO HW Visible signals available",
           "offset_int": "0x0580",
-          "index_int": "0x0018",
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse24-bits-0-31",
-              "name": "SRK_HASH[255:224]",
-              "description": "SRK key, no HW visible lines. NO HW Visible signals available"
-            }
-          ]
+          "index_int": "0x0018"
         },
         {
           "id": "fuse25",
           "name": "SRK_HASH[223:192]",
           "description": "SRK key, no HW visible lines. NO HW Visible signals available",
           "offset_int": "0x0590",
-          "index_int": "0x0019",
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse25-bits-0-31",
-              "name": "SRK_HASH[223:192]",
-              "description": "SRK key, no HW visible lines. NO HW Visible signals available"
-            }
-          ]
+          "index_int": "0x0019"
         },
         {
           "id": "fuse26",
           "name": "SRK_HASH[191:160]",
           "description": "SRK key, no HW visible lines. NO HW Visible signals available",
           "offset_int": "0x05A0",
-          "index_int": "0x001A",
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse26-bits-0-31",
-              "name": "SRK_HASH[191:160]",
-              "description": "SRK key, no HW visible lines. NO HW Visible signals available"
-            }
-          ]
+          "index_int": "0x001A"
         },
         {
           "id": "fuse27",
           "name": "SRK_HASH[159:128]",
           "description": "SRK key, no HW visible lines. NO HW Visible signals available",
           "offset_int": "0x05B0",
-          "index_int": "0x001B",
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse27-bits-0-31",
-              "name": "SRK_HASH[159:128]",
-              "description": "SRK key, no HW visible lines. NO HW Visible signals available"
-            }
-          ]
+          "index_int": "0x001B"
         },
         {
           "id": "fuse28",
           "name": "SRK_HASH[127:96]",
           "description": "SRK key, no HW visible lines. NO HW Visible signals available",
           "offset_int": "0x05C0",
-          "index_int": "0x001C",
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse28-bits-0-31",
-              "name": "SRK_HASH[127:96]",
-              "description": "SRK key, no HW visible lines. NO HW Visible signals available"
-            }
-          ]
+          "index_int": "0x001C"
         },
         {
           "id": "fuse29",
           "name": "SRK_HASH[95:64]",
           "description": "SRK key, no HW visible lines. NO HW Visible signals available",
           "offset_int": "0x05D0",
-          "index_int": "0x001D",
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse29-bits-0-31",
-              "name": "SRK_HASH[95:64]",
-              "description": "SRK key, no HW visible lines. NO HW Visible signals available"
-            }
-          ]
+          "index_int": "0x001D"
         },
         {
           "id": "fuse30",
           "name": "SRK_HASH[63:32]",
           "description": "SRK key, no HW visible lines. NO HW Visible signals available",
           "offset_int": "0x05E0",
-          "index_int": "0x001E",
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse30-bits-0-31",
-              "name": "SRK_HASH[63:32]",
-              "description": "SRK key, no HW visible lines. NO HW Visible signals available"
-            }
-          ]
+          "index_int": "0x001E"
         },
         {
           "id": "fuse31",
           "name": "SRK_HASH[31:0]",
           "description": "SRK key, no HW visible lines. NO HW Visible signals available",
           "offset_int": "0x05F0",
-          "index_int": "0x001F",
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse31-bits-0-31",
-              "name": "SRK_HASH[31:0]",
-              "description": "SRK key, no HW visible lines. NO HW Visible signals available"
-            }
-          ]
+          "index_int": "0x001F"
         }
       ]
     },
@@ -1988,8 +1942,11 @@
       "registers": [
         {
           "id": "fuse32",
-          "name": "SJC_RESP[31:0]",
+          "name": "SJC_RESP0",
           "description": "Response reference value for the secure JTAG controller",
+          "deprecated_names": [
+            "SJC_RESP[31:0]"
+          ],
           "offset_int": "0x0600",
           "index_int": "0x0020",
           "lock": {
@@ -2009,8 +1966,11 @@
         },
         {
           "id": "fuse33",
-          "name": "SJC_RESP[55:32]",
+          "name": "SJC_RESP1",
           "description": "Response reference value for the secure JTAG controller",
+          "deprecated_names": [
+            "SJC_RESP[55:32]"
+          ],
           "offset_int": "0x0610",
           "index_int": "0x0021",
           "lock": {
@@ -2041,8 +2001,11 @@
       "registers": [
         {
           "id": "fuse34",
-          "name": "MAC1_ADDR[47:16]",
+          "name": "MAC1_ADDR1",
           "description": "Ethernet MAC Address",
+          "deprecated_names": [
+            "MAC1_ADDR[47:16]"
+          ],
           "offset_int": "0x0620",
           "index_int": "0x0022",
           "lock": {
@@ -2061,8 +2024,11 @@
         },
         {
           "id": "fuse35",
-          "name": "MAC1_ADDR[15:0]",
+          "name": "MAC1_ADDR0",
           "description": "Ethernet MAC Address",
+          "deprecated_names": [
+            "MAC1_ADDR[15:0]"
+          ],
           "offset_int": "0x0630",
           "index_int": "0x0023",
           "lock": {
@@ -2100,15 +2066,7 @@
             "register_id": "fuse0",
             "write_lock_int": "0x04000000",
             "operation_lock_int": "0x08000000"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse36-bits-0-31",
-              "name": "GP3[31:0]",
-              "description": "General Purpose fuse register #3"
-            }
-          ]
+          }
         },
         {
           "id": "Reserved37",
@@ -2133,15 +2091,7 @@
             "register_id": "fuse0",
             "write_lock_int": "0x0400",
             "operation_lock_int": "0x0800"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse38-bits-0-31",
-              "name": "GP1[31:0]",
-              "description": "General Purpose fuse register #1"
-            }
-          ]
+          }
         },
         {
           "id": "fuse39",
@@ -2153,15 +2103,7 @@
             "register_id": "fuse0",
             "write_lock_int": "0x1000",
             "operation_lock_int": "0x2000"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse39-bits-0-31",
-              "name": "GP2[31:0]",
-              "description": "General Purpose fuse register #2"
-            }
-          ]
+          }
         }
       ]
     },
@@ -2182,15 +2124,7 @@
             "write_lock_int": "0x00010000",
             "read_lock_int": "0x00800000",
             "operation_lock_int": "0x00010000"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse40-bits-0-31",
-              "name": "SW_GP1[31:0]",
-              "description": "SW general purpose key"
-            }
-          ]
+          }
         },
         {
           "id": "fuse41",
@@ -2203,15 +2137,7 @@
             "write_lock_int": "0x00200000",
             "read_lock_int": "0x00800000",
             "operation_lock_int": "0x00200000"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse41-bits-0-31",
-              "name": "SW_GP2[127:96]",
-              "description": "SW general purpose key"
-            }
-          ]
+          }
         },
         {
           "id": "fuse42",
@@ -2224,15 +2150,7 @@
             "write_lock_int": "0x00200000",
             "read_lock_int": "0x00800000",
             "operation_lock_int": "0x00200000"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse42-bits-0-31",
-              "name": "SW_GP2[95:64]",
-              "description": "SW general purpose key"
-            }
-          ]
+          }
         },
         {
           "id": "fuse43",
@@ -2245,15 +2163,7 @@
             "write_lock_int": "0x00200000",
             "read_lock_int": "0x00800000",
             "operation_lock_int": "0x00200000"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse43-bits-0-31",
-              "name": "SW_GP2[63:32]",
-              "description": "SW general purpose key"
-            }
-          ]
+          }
         },
         {
           "id": "fuse44",
@@ -2266,15 +2176,7 @@
             "write_lock_int": "0x00200000",
             "read_lock_int": "0x00800000",
             "operation_lock_int": "0x00200000"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse44-bits-0-31",
-              "name": "SW_GP2[31:0]",
-              "description": "SW general purpose key"
-            }
-          ]
+          }
         }
       ]
     },

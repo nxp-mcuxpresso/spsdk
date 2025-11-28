@@ -1,7 +1,6 @@
 DK6 API
 ====================================
-
-This module contains support for programming DK6 devices.
+.. automodule:: spsdk.dk6
 
 Module with the DK6 commands
 ----------------------------------------------------------

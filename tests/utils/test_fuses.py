@@ -5,18 +5,25 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Test for fuses handling."""
+"""SPSDK fuses functionality test module.
+
+This module contains unit tests for the SPSDK fuses handling functionality,
+specifically testing the FuseScript class and related fuse operations.
+"""
+
 from spsdk import version as spsdk_version
+from spsdk.fuses.fuses import FuseScript
 from spsdk.utils.database import DatabaseManager
-
-
 from spsdk.utils.family import FamilyRevision
 
-from spsdk.fuses.fuses import FuseScript
 
+def test_fuse_script() -> None:
+    """Test the FuseScript class functionality.
 
-def test_fuse_script():
-    """Test FuseScript class."""
+    Validates FuseScript initialization with family revision and database manager,
+    verifies family properties, operator functionality, script naming, and file
+    header generation with proper formatting and version information.
+    """
     fuse_script = FuseScript(FamilyRevision("mimx9352", "a0"), DatabaseManager.AHAB)
     assert fuse_script.family.name == "mimx9352"
     assert fuse_script.family.revision == "a0"

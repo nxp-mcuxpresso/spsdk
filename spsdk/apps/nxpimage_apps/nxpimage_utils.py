@@ -4,7 +4,13 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Nxpimage utils group."""
+"""SPSDK NXP Image utilities for binary manipulation and conversion.
+
+This module provides command-line utilities for creating, exporting, extracting,
+converting, and manipulating binary images in the SPSDK context. It includes
+functionality for image alignment, padding, format conversion between binary
+and hex formats, and template generation.
+"""
 
 import logging
 import os

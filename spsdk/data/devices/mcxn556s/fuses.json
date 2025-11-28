@@ -1075,7 +1075,7 @@
                 },
                 {
                   "name": "EN_RESET",
-                  "value": 0,
+                  "value": 1,
                   "description": "EN_RESET(O/QSPI device reset pin is connected to a GPIO (QSPI_RESET_PIN).)"
                 }
               ]
@@ -2048,7 +2048,7 @@
         },
         {
           "id": "Reserved10",
-          "name": "Reserved 0xa",
+          "name": "Reserved 0xA",
           "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
           "index_int": "0x000A",
           "is_reserved": true,
@@ -2069,218 +2069,122 @@
         {
           "id": "fuse11",
           "name": "ROTKH[31:0]",
-          "description": "Root of trust keys configuration",
+          "description": "Root of trust keys configuration. Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage.",
           "index_int": "0x000B",
           "lock": {
             "register_id": "fuse0",
             "write_lock_int": "0x0200"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse11-bits-0-31",
-              "name": "ROTKH[31:0]",
-              "description": "Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage ."
-            }
-          ]
+          }
         },
         {
           "id": "fuse12",
           "name": "ROTKH[63:32]",
-          "description": "Root of trust keys configuration",
+          "description": "Root of trust keys configuration. Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage.",
           "index_int": "0x000C",
           "lock": {
             "register_id": "fuse0",
             "write_lock_int": "0x0200"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse12-bits-0-31",
-              "name": "ROTKH[63:32]",
-              "description": "Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage ."
-            }
-          ]
+          }
         },
         {
           "id": "fuse13",
           "name": "ROTKH[95:64]",
-          "description": "Root of trust keys configuration",
+          "description": "Root of trust keys configuration. Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage.",
           "index_int": "0x000D",
           "lock": {
             "register_id": "fuse0",
             "write_lock_int": "0x0200"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse13-bits-0-31",
-              "name": "ROTKH[95:64]",
-              "description": "Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage ."
-            }
-          ]
+          }
         },
         {
           "id": "fuse14",
           "name": "ROTKH[127:96]",
-          "description": "Root of trust keys configuration",
+          "description": "Root of trust keys configuration. Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage.",
           "index_int": "0x000E",
           "lock": {
             "register_id": "fuse0",
             "write_lock_int": "0x0200"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse14-bits-0-31",
-              "name": "ROTKH[127:96]",
-              "description": "Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage ."
-            }
-          ]
+          }
         },
         {
           "id": "fuse15",
           "name": "ROTKH[159:128]",
-          "description": "Root of trust keys configuration",
+          "description": "Root of trust keys configuration. Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage.",
           "index_int": "0x000F",
           "lock": {
             "register_id": "fuse0",
             "write_lock_int": "0x0200"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse15-bits-0-31",
-              "name": "ROTKH[159:128]",
-              "description": "Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage ."
-            }
-          ]
+          }
         },
         {
           "id": "fuse16",
           "name": "ROTKH[191:160]",
-          "description": "Root of trust keys configuration",
+          "description": "Root of trust keys configuration. Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage.",
           "index_int": "0x0010",
           "lock": {
             "register_id": "fuse0",
             "write_lock_int": "0x0200"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse16-bits-0-31",
-              "name": "ROTKH[191:160]",
-              "description": "Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage ."
-            }
-          ]
+          }
         },
         {
           "id": "fuse17",
           "name": "ROTKH[223:192]",
-          "description": "Root of trust keys configuration",
+          "description": "Root of trust keys configuration. Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage.",
           "index_int": "0x0011",
           "lock": {
             "register_id": "fuse0",
             "write_lock_int": "0x0200"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse17-bits-0-31",
-              "name": "ROTKH[223:192]",
-              "description": "Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage ."
-            }
-          ]
+          }
         },
         {
           "id": "fuse18",
           "name": "ROTKH[255:224]",
-          "description": "Root of trust keys configuration",
+          "description": "Root of trust keys configuration. Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage.",
           "index_int": "0x0012",
           "lock": {
             "register_id": "fuse0",
             "write_lock_int": "0x0200"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse18-bits-0-31",
-              "name": "ROTKH[255:224]",
-              "description": "Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage ."
-            }
-          ]
+          }
         },
         {
           "id": "fuse19",
           "name": "ROTKH[287:256]",
-          "description": "Root of trust keys configuration",
+          "description": "Root of trust keys configuration. Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage.",
           "index_int": "0x0013",
           "lock": {
             "register_id": "fuse0",
             "write_lock_int": "0x0200"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse19-bits-0-31",
-              "name": "ROTKH[287:256]",
-              "description": "Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage ."
-            }
-          ]
+          }
         },
         {
           "id": "fuse20",
           "name": "ROTKH[319:288]",
-          "description": "Root of trust keys configuration",
+          "description": "Root of trust keys configuration. Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage.",
           "index_int": "0x0014",
           "lock": {
             "register_id": "fuse0",
             "write_lock_int": "0x0200"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse20-bits-0-31",
-              "name": "ROTKH[319:288]",
-              "description": "Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage ."
-            }
-          ]
+          }
         },
         {
           "id": "fuse21",
           "name": "ROTKH[351:320]",
-          "description": "Root of trust keys configuration",
+          "description": "Root of trust keys configuration. Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage.",
           "index_int": "0x0015",
           "lock": {
             "register_id": "fuse0",
             "write_lock_int": "0x0200"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse21-bits-0-31",
-              "name": "ROTKH[351:320]",
-              "description": "Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage ."
-            }
-          ]
+          }
         },
         {
           "id": "fuse22",
           "name": "ROTKH[383:352]",
-          "description": "Root of trust keys configuration",
+          "description": "Root of trust keys configuration. Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage.",
           "index_int": "0x0016",
           "lock": {
             "register_id": "fuse0",
             "write_lock_int": "0x0200"
-          },
-          "bitfields": [
-            {
-              "width": 32,
-              "id": "fuse22-bits-0-31",
-              "name": "ROTKH[383:352]",
-              "description": "Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage ."
-            }
-          ]
+          }
         }
       ]
     },
@@ -2624,7 +2528,7 @@
         },
         {
           "id": "Reserved42",
-          "name": "Reserved 0x2a",
+          "name": "Reserved 0x2A",
           "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
           "index_int": "0x002A",
           "is_reserved": true,

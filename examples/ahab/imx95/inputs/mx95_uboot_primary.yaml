@@ -14,7 +14,7 @@
 family: mimx9596
 # -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
 # Description: Revision of silicon
-revision: b0
+revision: latest
 # ----------------------------------===== Target memory [Conditionally required] =====----------------------------------
 # Description: Target memory for AHAB container
 # Possible options: <serial_downloader, standard, nand_2k, nand_4k>

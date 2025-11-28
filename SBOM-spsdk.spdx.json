@@ -2,15 +2,20 @@
   "SPDXID": "SPDXRef-DOCUMENT",
   "spdxVersion": "SPDX-2.3",
   "creationInfo": {
-    "created": "2025-10-23T09:23:12Z",
+    "created": "2025-11-27T11:15:15Z",
     "creators": [
       "Organization: NXP"
     ],
     "licenseListVersion": "3.20"
   },
-  "name": "spsdk-3.4.0",
+  "name": "spsdk-3.5.0",
   "dataLicense": "CC0-1.0",
   "hasExtractedLicensingInfos": [
+    {
+      "licenseId": "LicenseRef-19bd4215-a4d4-4ffe-8e54-fcd9558d4e96",
+      "extractedText": "Expat License\n=============\n\nCopyright (c) 1998, 1999, 2000 Thai Open Source Software Center Ltd\n                               and Clark Cooper\nCopyright (c) 2001, 2002, 2003, 2004, 2005, 2006 Expat maintainers.\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of\nthis software and associated documentation files (the \"Software\"), to deal in the\nSoftware without restriction, including without limitation the rights to use,\ncopy, modify, merge, publish, distribute, sublicense, and/or sell copies of the\nSoftware, and to permit persons to whom the Software is furnished to do so,\nsubject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS\nFOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR\nCOPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN\nAN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION\nWITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.",
+      "name": "Expat License"
+    },
     {
       "licenseId": "LicenseRef-c9bdcbe3-de95-46a0-9fd9-9be02f4ef8c4",
       "extractedText": "NONE",
@@ -22,43 +27,56 @@
       "name": "Public Domain"
     }
   ],
-  "documentNamespace": "https://nxp.com/spdx/0e69b3f7-b429-4629-af80-3a0559ffc213",
+  "documentNamespace": "https://nxp.com/spdx/1dba7938-9378-4095-befb-704ed38cc937",
   "packages": [
     {
-      "SPDXID": "SPDXRef-package-03d11c4b-7d34-4592-a9db-2c6998c36a16",
-      "name": "spsdk-pyocd",
-      "versionInfo": "0.3.2",
-      "licenseConcluded": "BSD-3-Clause",
-      "licenseDeclared": "BSD-3-Clause",
-      "downloadLocation": "NOASSERTION",
-      "originator": "Organization: spsdk-pyocd",
-      "supplier": "NOASSERTION",
-      "externalRefs": [],
-      "filesAnalyzed": false
-    },
-    {
-      "SPDXID": "SPDXRef-package-05bf5e17-d6f7-4066-b270-27811552602c",
-      "name": "libusbsio",
-      "versionInfo": "2.1.13",
-      "licenseConcluded": "BSD-3-Clause",
-      "licenseDeclared": "BSD-3-Clause",
-      "homepage": "https://pypi.org/project/libusbsio/",
-      "downloadLocation": "https://pypi.org/project/libusbsio/2.1.13",
+      "SPDXID": "SPDXRef-package-06838682-c8b8-40b9-b687-cd9a2537cebf",
+      "name": "py-filelock",
+      "versionInfo": "3.19.1",
+      "licenseConcluded": "Unlicense",
+      "licenseDeclared": "Unlicense",
+      "homepage": "https://github.com/benediktschmitt/py-filelock",
+      "downloadLocation": "https://pypi.org/project/filelock/3.19.1",
       "originator": "Organization: pypi",
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "OTHER",
-          "referenceLocator": "3c287145-fa30-4449-b9b7-a1ef2301786e",
-          "referenceType": "BlackDuck-ComponentOrigin"
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:pypi/filelock@3.19.1",
+          "referenceType": "purl"
         },
         {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/libusbsio@2.1.13",
-          "referenceType": "purl"
+          "referenceCategory": "OTHER",
+          "referenceLocator": "f0e0fe6e-08e6-4138-93c0-b5559ea54ae4",
+          "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
       "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-075dd663-a0e4-4c35-9d7e-aa70307923d6",
+      "name": "platformdirs",
+      "versionInfo": "4.4.0",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "https://github.com/platformdirs/platformdirs",
+      "downloadLocation": "https://pypi.org/project/platformdirs/4.4.0",
+      "originator": "Organization: pypi",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:pypi/platformdirs@4.4.0",
+          "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "e33b464d-1055-42b3-a987-5bf79e85d894",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseComments": "https://github.com/tox-dev/platformdirs?tab=MIT-1-ov-file#readme"
     },
     {
       "SPDXID": "SPDXRef-package-0b4a0fde-4936-4f54-9904-1ccb90ac8856",
@@ -82,18 +100,6 @@
           "referenceType": "purl"
         }
       ],
-      "filesAnalyzed": false
-    },
-    {
-      "SPDXID": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
-      "name": "spsdk",
-      "versionInfo": "3.4.0",
-      "licenseConcluded": "(BSD-3-Clause)",
-      "licenseDeclared": "(BSD-3-Clause)",
-      "downloadLocation": "https://github.com/nxp-mcuxpresso/spsdk/releases/tag/v3.4.0",
-      "originator": "Organization: NXP",
-      "supplier": "NOASSERTION",
-      "externalRefs": [],
       "filesAnalyzed": false
     },
     {
@@ -145,6 +151,66 @@
       "filesAnalyzed": false
     },
     {
+      "SPDXID": "SPDXRef-package-190fd968-c4c7-4460-ad96-9f0069e297bd",
+      "name": "python-bincopy",
+      "versionInfo": "17.14.5",
+      "licenseConcluded": "LicenseRef-19bd4215-a4d4-4ffe-8e54-fcd9558d4e96",
+      "licenseDeclared": "LicenseRef-19bd4215-a4d4-4ffe-8e54-fcd9558d4e96",
+      "homepage": "https://github.com/eerimoq/bincopy",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: opensuse",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "e1bbd585-9c3f-4fea-b091-9ee349fd4050",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:rpm/opensuse/python-bincopy@17.14.5-1.3?arch=noarch",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
+      "name": "spsdk",
+      "versionInfo": "3.5.0",
+      "licenseConcluded": "(BSD-3-Clause)",
+      "licenseDeclared": "(BSD-3-Clause)",
+      "downloadLocation": "https://pypi.org/project/spsdk/",
+      "originator": "Organization: NXP",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-1f2011af-4d63-41b5-9466-dadfc7345d94",
+      "name": "mavlink2rest",
+      "versionInfo": "0.2.0",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "https://github.com/patrickelectric/mavlink2rest",
+      "downloadLocation": "https://crates.io/crates/mavlink2rest/0.2.0",
+      "originator": "Organization: crates",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:cargo/mavlink2rest@0.2.0",
+          "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "4c7e4c8f-be7b-45b7-9890-942ebb6915d4",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
       "SPDXID": "SPDXRef-package-20da15bf-dc06-4b98-a917-bf420448f499",
       "name": "importlib_metadata",
       "versionInfo": "6.11.0",
@@ -156,43 +222,14 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "OTHER",
-          "referenceLocator": "df7b98a2-c186-4ed5-b068-6bb1f07c5f50",
-          "referenceType": "BlackDuck-ComponentOrigin"
-        },
-        {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceLocator": "pkg:pypi/importlib-metadata@6.11.0",
           "referenceType": "purl"
-        }
-      ],
-      "filesAnalyzed": false
-    },
-    {
-      "SPDXID": "SPDXRef-package-22fdd37c-0f4a-4b4a-b83d-cf9579ef7f9f",
-      "name": "PyYAML",
-      "versionInfo": "6.0.3",
-      "licenseConcluded": "MIT",
-      "licenseDeclared": "MIT",
-      "homepage": "https://pyyaml.org/",
-      "downloadLocation": "NOASSERTION",
-      "originator": "Organization: PyYAML",
-      "supplier": "NOASSERTION",
-      "externalRefs": [
-        {
-          "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:pyyaml:pyyaml:6.0.3:*:*:*:*:*:*:*",
-          "referenceType": "cpe23Type"
         },
         {
-          "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:pyyaml_project:pyyaml:6.0.3:*:*:*:*:*:*:*",
-          "referenceType": "cpe23Type"
-        },
-        {
-          "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:yaml:pyyaml:6.0.3:*:*:*:*:*:*:*",
-          "referenceType": "cpe23Type"
+          "referenceCategory": "OTHER",
+          "referenceLocator": "df7b98a2-c186-4ed5-b068-6bb1f07c5f50",
+          "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
       "filesAnalyzed": false
@@ -222,32 +259,16 @@
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-2d5139d4-b85d-46f0-899a-7a58c77edb7b",
-      "name": "ruamel-yaml",
-      "versionInfo": "0.18.15",
-      "licenseConcluded": "MIT",
-      "licenseDeclared": "MIT",
-      "homepage": "https://pypi.org/project/ruamel.yaml/",
-      "downloadLocation": "https://pypi.org/project/ruamel.yaml/0.18.15",
-      "originator": "Organization: pypi",
+      "SPDXID": "SPDXRef-package-24344fa6-dfdc-4e8d-84f4-7831d0dbf0d2",
+      "name": "spsdk_plugins_pyocd",
+      "versionInfo": "0.3.4",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "https://github.com/nxp-mcuxpresso/spsdk_plugins/tree/main/pyocd",
+      "downloadLocation": "https://github.com/nxp-mcuxpresso/spsdk_plugins/tree/v3.5.0/pyocd",
+      "originator": "Organization: NXP",
       "supplier": "NOASSERTION",
-      "externalRefs": [
-        {
-          "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:ruamel.yaml_project:ruamel.yaml:0.18.15:*:*:*:*:*:*:*",
-          "referenceType": "cpe23Type"
-        },
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/ruamel-yaml@0.18.15",
-          "referenceType": "purl"
-        },
-        {
-          "referenceCategory": "OTHER",
-          "referenceLocator": "26a88045-83d1-46a2-b4b0-9bad13125313",
-          "referenceType": "BlackDuck-ComponentOrigin"
-        }
-      ],
+      "externalRefs": [],
       "filesAnalyzed": false
     },
     {
@@ -262,14 +283,14 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/oscrypto@1.3.0",
-          "referenceType": "purl"
-        },
-        {
           "referenceCategory": "OTHER",
           "referenceLocator": "32d81481-6481-45e2-af40-e65ca13958e6",
           "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:pypi/oscrypto@1.3.0",
+          "referenceType": "purl"
         }
       ],
       "filesAnalyzed": false
@@ -284,29 +305,6 @@
       "originator": "Organization: spsdk-mcu-link",
       "supplier": "NOASSERTION",
       "externalRefs": [],
-      "filesAnalyzed": false
-    },
-    {
-      "SPDXID": "SPDXRef-package-42d7d547-744e-40f8-b42f-e658dd7163d7",
-      "name": "libuuu",
-      "versionInfo": "1.5.182.post1",
-      "licenseConcluded": "BSD-3-Clause",
-      "licenseDeclared": "BSD-3-Clause",
-      "downloadLocation": "https://pypi.org/project/libuuu/1.5.182.post1",
-      "originator": "Organization: pypi",
-      "supplier": "NOASSERTION",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/libuuu@1.5.182.post1",
-          "referenceType": "purl"
-        },
-        {
-          "referenceCategory": "OTHER",
-          "referenceLocator": "eb556b36-1367-4cf4-850d-75e76071108c",
-          "referenceType": "BlackDuck-ComponentOrigin"
-        }
-      ],
       "filesAnalyzed": false
     },
     {
@@ -334,6 +332,35 @@
       "filesAnalyzed": false
     },
     {
+      "SPDXID": "SPDXRef-package-48739d89-2678-4199-b409-afcaf5b4ce24",
+      "name": "ruamel-yaml",
+      "versionInfo": "0.18.16",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "https://pypi.org/project/ruamel.yaml/",
+      "downloadLocation": "https://pypi.org/project/ruamel.yaml/0.18.16",
+      "originator": "Organization: pypi",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "0d737085-c0db-4c59-af19-f69eddb45f3f",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:ruamel.yaml_project:ruamel.yaml:0.18.16:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:pypi/ruamel-yaml@0.18.16",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
       "SPDXID": "SPDXRef-package-4b581fbd-dc24-4668-a3e5-9dfdd298ec64",
       "name": "psf-requests",
       "versionInfo": "2.32.5",
@@ -351,6 +378,11 @@
         },
         {
           "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:python:requests:2.32.5:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
           "referenceLocator": "cpe:2.3:a:pypi_package:requests:2.32.5:*:*:*:*:*:*:*",
           "referenceType": "cpe23Type"
         },
@@ -358,11 +390,6 @@
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceLocator": "pkg:pypi/requests@2.32.5",
           "referenceType": "purl"
-        },
-        {
-          "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:python:requests:2.32.5:*:*:*:*:*:*:*",
-          "referenceType": "cpe23Type"
         }
       ],
       "filesAnalyzed": false
@@ -379,14 +406,14 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "OTHER",
-          "referenceLocator": "4eeb1280-e5d8-4a9b-877b-a4480e1a569e",
-          "referenceType": "BlackDuck-ComponentOrigin"
-        },
-        {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceLocator": "pkg:pypi/ruamel-yaml-clib@0.2.14",
           "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "4eeb1280-e5d8-4a9b-877b-a4480e1a569e",
+          "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
       "filesAnalyzed": false
@@ -403,6 +430,11 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "4c1d97fe-3531-43d6-b898-047860946fa0",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
           "referenceCategory": "SECURITY",
           "referenceLocator": "cpe:2.3:a:python:setuptools:80.9.0:*:*:*:*:*:*:*",
           "referenceType": "cpe23Type"
@@ -416,11 +448,6 @@
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceLocator": "pkg:pypi/setuptools@80.9.0",
           "referenceType": "purl"
-        },
-        {
-          "referenceCategory": "OTHER",
-          "referenceLocator": "4c1d97fe-3531-43d6-b898-047860946fa0",
-          "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
       "filesAnalyzed": false
@@ -430,25 +457,48 @@
       "name": "setuptools_scm",
       "versionInfo": "9.2.2",
       "licenseConcluded": "MIT",
-      "licenseDeclared": "NOASSERTION",
+      "licenseDeclared": "MIT",
       "homepage": "https://github.com/pypa/setuptools_scm",
       "downloadLocation": "https://pypi.org/project/setuptools-scm/9.2.2",
       "originator": "Organization: pypi",
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "OTHER",
-          "referenceLocator": "9250bb89-e78a-4650-a934-4bb45b382857",
-          "referenceType": "BlackDuck-ComponentOrigin"
-        },
-        {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceLocator": "pkg:pypi/setuptools-scm@9.2.2",
           "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "9250bb89-e78a-4650-a934-4bb45b382857",
+          "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
       "filesAnalyzed": false,
       "licenseComments": "https://github.com/pypa/setuptools-scm?tab=MIT-1-ov-file#readme"
+    },
+    {
+      "SPDXID": "SPDXRef-package-6f6b6511-b973-42ce-b7ef-9765c27f840f",
+      "name": "libusbsio",
+      "versionInfo": "2.2.0",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "downloadLocation": "https://pypi.org/project/libusbsio/2.2.0",
+      "originator": "Organization: pypi",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:pypi/libusbsio@2.2.0",
+          "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "f12ba473-84eb-498b-9819-3f27ad96ea8c",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        }
+      ],
+      "filesAnalyzed": false
     },
     {
       "SPDXID": "SPDXRef-package-70a75646-5890-4929-86d2-fd07b2e63365",
@@ -462,14 +512,14 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "OTHER",
-          "referenceLocator": "7de7de65-0d66-4f36-ae2e-12ecbb65f1de",
-          "referenceType": "BlackDuck-ComponentOrigin"
-        },
-        {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceLocator": "pkg:pypi/x690@1.0.0.post1",
           "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "7de7de65-0d66-4f36-ae2e-12ecbb65f1de",
+          "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
       "filesAnalyzed": false
@@ -493,30 +543,6 @@
         {
           "referenceCategory": "OTHER",
           "referenceLocator": "78c37399-f36c-4a81-bf47-4dc593f76856",
-          "referenceType": "BlackDuck-ComponentOrigin"
-        }
-      ],
-      "filesAnalyzed": false
-    },
-    {
-      "SPDXID": "SPDXRef-package-7c74ba60-582f-4f9a-83f7-2f7bfc96d08b",
-      "name": "pyOCD",
-      "versionInfo": "0.37.0",
-      "licenseConcluded": "Apache-2.0",
-      "licenseDeclared": "Apache-2.0",
-      "homepage": "https://github.com/mbedmicro/pyOCD",
-      "downloadLocation": "https://pypi.org/project/pyocd/0.37.0",
-      "originator": "Organization: pypi",
-      "supplier": "NOASSERTION",
-      "externalRefs": [
-        {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/pyocd@0.37.0",
-          "referenceType": "purl"
-        },
-        {
-          "referenceCategory": "OTHER",
-          "referenceLocator": "85a9694a-2465-437a-a0aa-9f29382f9bad",
           "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
@@ -583,37 +609,60 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "2741b088-7f99-4e2b-a3cd-ba75389f2e77",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceLocator": "pkg:pypi/fastjsonschema@2.21.2",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-8d40e743-428f-44d3-9ec5-a049d3570b7e",
+      "name": "libuuu",
+      "versionInfo": "1.5.239",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "downloadLocation": "https://pypi.org/project/libuuu/1.5.239",
+      "originator": "Organization: pypi",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:pypi/libuuu@1.5.239",
           "referenceType": "purl"
         },
         {
           "referenceCategory": "OTHER",
-          "referenceLocator": "2741b088-7f99-4e2b-a3cd-ba75389f2e77",
+          "referenceLocator": "c73942b0-0c56-4d11-8c06-765234259d7d",
           "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-9e519e9d-66c0-428f-a300-8771fe083618",
-      "name": "py-filelock",
-      "versionInfo": "3.20.0",
-      "licenseConcluded": "Unlicense",
-      "licenseDeclared": "Unlicense",
-      "homepage": "https://github.com/benediktschmitt/py-filelock",
-      "downloadLocation": "https://pypi.org/project/filelock/3.20.0",
+      "SPDXID": "SPDXRef-package-90534279-6299-4665-ac9f-a4dfb68d0421",
+      "name": "Click - Python Command Line Utility",
+      "versionInfo": "8.1.8",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "http://click.pocoo.org/",
+      "downloadLocation": "https://pypi.org/project/click/8.1.8",
       "originator": "Organization: pypi",
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
           "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/filelock@3.20.0",
+          "referenceLocator": "pkg:pypi/click@8.1.8",
           "referenceType": "purl"
         },
         {
           "referenceCategory": "OTHER",
-          "referenceLocator": "b49c3d93-5f0a-486d-8acd-afd776976f17",
+          "referenceLocator": "bb4a9a94-30b1-4fb5-a5c4-768cd2778787",
           "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
@@ -661,14 +710,14 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "OTHER",
-          "referenceLocator": "eabe1adf-a6f5-4207-a13f-b6d5d402c877",
-          "referenceType": "BlackDuck-ComponentOrigin"
-        },
-        {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceLocator": "pkg:pypi/prettytable@3.16.0",
           "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "eabe1adf-a6f5-4207-a13f-b6d5d402c877",
+          "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
       "filesAnalyzed": false
@@ -709,37 +758,13 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/pyasn1@0.6.1",
-          "referenceType": "purl"
-        },
-        {
           "referenceCategory": "OTHER",
           "referenceLocator": "3d753839-2455-4f99-8fa5-2e0411c428d1",
           "referenceType": "BlackDuck-ComponentOrigin"
-        }
-      ],
-      "filesAnalyzed": false
-    },
-    {
-      "SPDXID": "SPDXRef-package-b44ea7f0-d23e-4b99-b165-e7775e860319",
-      "name": "Click - Python Command Line Utility",
-      "versionInfo": "8.3.0",
-      "licenseConcluded": "BSD-3-Clause",
-      "licenseDeclared": "BSD-3-Clause",
-      "homepage": "http://click.pocoo.org/",
-      "downloadLocation": "https://pypi.org/project/click/8.3.0",
-      "originator": "Organization: pypi",
-      "supplier": "NOASSERTION",
-      "externalRefs": [
-        {
-          "referenceCategory": "OTHER",
-          "referenceLocator": "573645e2-1950-4f68-966a-31345d62587c",
-          "referenceType": "BlackDuck-ComponentOrigin"
         },
         {
           "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/click@8.3.0",
+          "referenceLocator": "pkg:pypi/pyasn1@0.6.1",
           "referenceType": "purl"
         }
       ],
@@ -770,6 +795,30 @@
       "filesAnalyzed": false
     },
     {
+      "SPDXID": "SPDXRef-package-c2c69838-04ed-445b-b986-74cf85c7e22a",
+      "name": "rust-lang/cargo",
+      "versionInfo": "1.0.0",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "https://github.com/rust-lang/cargo",
+      "downloadLocation": "https://crates.io/crates/type_of_var/1.0.0",
+      "originator": "Organization: crates",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "93c7e605-e479-44a8-b578-73509b5cceb4",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:cargo/type_of_var@1.0.0",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
       "SPDXID": "SPDXRef-package-c37a84f7-3f04-4654-868e-c3b29d6f713f",
       "name": "pyca/cryptography",
       "versionInfo": "46.0.3",
@@ -781,23 +830,13 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "OTHER",
-          "referenceLocator": "84211bec-a0e0-488d-b674-37ced92efa6d",
-          "referenceType": "BlackDuck-ComponentOrigin"
-        },
-        {
-          "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:cryptography:python-cryptography:46.0.3:*:*:*:*:*:*:*",
-          "referenceType": "cpe23Type"
-        },
-        {
           "referenceCategory": "SECURITY",
           "referenceLocator": "cpe:2.3:a:pypi_package:cryptography:46.0.3:*:*:*:*:*:*:*",
           "referenceType": "cpe23Type"
         },
         {
           "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:python-cryptography_project:python-cryptography:46.0.3:*:*:*:*:*:*:*",
+          "referenceLocator": "cpe:2.3:a:cryptography_project:cryptography:46.0.3:*:*:*:*:*:*:*",
           "referenceType": "cpe23Type"
         },
         {
@@ -807,13 +846,23 @@
         },
         {
           "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:cryptography_project:cryptography:46.0.3:*:*:*:*:*:*:*",
+          "referenceLocator": "cpe:2.3:a:cryptography:python-cryptography:46.0.3:*:*:*:*:*:*:*",
           "referenceType": "cpe23Type"
         },
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceLocator": "pkg:pypi/cryptography@46.0.3",
           "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "84211bec-a0e0-488d-b674-37ced92efa6d",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:python-cryptography_project:python-cryptography:46.0.3:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
         }
       ],
       "filesAnalyzed": false
@@ -877,37 +926,37 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/packaging@25.0",
-          "referenceType": "purl"
-        },
-        {
           "referenceCategory": "OTHER",
           "referenceLocator": "81491b61-e29f-46bb-b7a3-ffe86add9e74",
           "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:pypi/packaging@25.0",
+          "referenceType": "purl"
         }
       ],
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-d99a2c96-9858-4de5-9a7b-4c1a6dcdee4d",
-      "name": "platformdirs",
-      "versionInfo": "4.5.0",
+      "SPDXID": "SPDXRef-package-e1499c2e-dbd3-41f6-81be-25620b0ddb4d",
+      "name": "posix-acl",
+      "versionInfo": "0.5.0",
       "licenseConcluded": "MIT",
       "licenseDeclared": "MIT",
-      "homepage": "https://github.com/platformdirs/platformdirs",
-      "downloadLocation": "https://pypi.org/project/platformdirs/4.5.0",
-      "originator": "Organization: pypi",
+      "homepage": "https://github.com/intgr/posix-acl",
+      "downloadLocation": "https://crates.io/crates/posix-acl/0.5.0",
+      "originator": "Organization: crates",
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
           "referenceCategory": "OTHER",
-          "referenceLocator": "8bac0570-dfc5-4e57-93b1-e1b8cecf18c7",
+          "referenceLocator": "353f795b-493e-4885-9f3c-500712f6895f",
           "referenceType": "BlackDuck-ComponentOrigin"
         },
         {
           "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:pypi/platformdirs@4.5.0",
+          "referenceLocator": "pkg:cargo/posix-acl@0.5.0",
           "referenceType": "purl"
         }
       ],
@@ -925,14 +974,14 @@
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
-          "referenceCategory": "OTHER",
-          "referenceLocator": "3a5602d1-3d5e-4ccc-93fa-571c0cbfa635",
-          "referenceType": "BlackDuck-ComponentOrigin"
-        },
-        {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceLocator": "pkg:pypi/bitstring@4.3.1",
           "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "3a5602d1-3d5e-4ccc-93fa-571c0cbfa635",
+          "referenceType": "BlackDuck-ComponentOrigin"
         }
       ],
       "filesAnalyzed": false
@@ -945,9 +994,20 @@
       "licenseDeclared": "Apache-2.0",
       "homepage": "https://github.com/pyocd/libusb-package",
       "downloadLocation": "NOASSERTION",
-      "originator": "Organization: libusb-package",
+      "originator": "Organization: pypi",
       "supplier": "NOASSERTION",
-      "externalRefs": [],
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:pypi/libusb-package@1.0.26.3",
+          "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "6781f44e-1835-42a4-8b58-006e358ef632",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        }
+      ],
       "filesAnalyzed": false
     },
     {
@@ -977,197 +1037,207 @@
   ],
   "relationships": [
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-03d11c4b-7d34-4592-a9db-2c6998c36a16"
+      "relatedSpdxElement": "SPDXRef-package-06838682-c8b8-40b9-b687-cd9a2537cebf"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-05bf5e17-d6f7-4066-b270-27811552602c"
+      "relatedSpdxElement": "SPDXRef-package-075dd663-a0e4-4c35-9d7e-aa70307923d6"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-0b4a0fde-4936-4f54-9904-1ccb90ac8856"
     },
     {
-      "spdxElementId": "SPDXRef-DOCUMENT",
-      "relationshipType": "DESCRIBES",
-      "relatedSpdxElement": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-1655902b-68da-427d-9929-69a877510187"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-18f06123-7a02-4df4-b8ba-9e818cfa1b44"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-190fd968-c4c7-4460-ad96-9f0069e297bd"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-1f2011af-4d63-41b5-9466-dadfc7345d94"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-20da15bf-dc06-4b98-a917-bf420448f499"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-22fdd37c-0f4a-4b4a-b83d-cf9579ef7f9f"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-240f5676-15cc-4790-a68f-d24cd9f09e27"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-2d5139d4-b85d-46f0-899a-7a58c77edb7b"
+      "relatedSpdxElement": "SPDXRef-package-24344fa6-dfdc-4e8d-84f4-7831d0dbf0d2"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-3286e08b-1bcf-4d4a-9158-ed23dc34bcd0"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-3ef11001-38e4-4c36-99c2-e0d416e27bc6"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-42d7d547-744e-40f8-b42f-e658dd7163d7"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-42f96553-bd96-4720-b927-0855a9cf402c"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-48739d89-2678-4199-b409-afcaf5b4ce24"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-4b581fbd-dc24-4668-a3e5-9dfdd298ec64"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-4d2213b8-9ab1-49f5-a15d-4232a1b95142"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-4d242126-4913-47f9-84ff-5adbb2518159"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-5a8c7ab1-bba2-4846-9aa3-b026a51359ed"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-6f6b6511-b973-42ce-b7ef-9765c27f840f"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-70a75646-5890-4929-86d2-fd07b2e63365"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-751af2ed-0097-4bbb-9c15-b46e442281e4"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-7c74ba60-582f-4f9a-83f7-2f7bfc96d08b"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-7eba05f1-cb1e-4a10-90f4-5ac36221ec3f"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-85e64f81-3d8c-4586-b87f-38564bb48690"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-8c03ebd5-ee97-4207-a7a6-f95706cd27a7"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-9e519e9d-66c0-428f-a300-8771fe083618"
+      "relatedSpdxElement": "SPDXRef-package-8d40e743-428f-44d3-9ec5-a049d3570b7e"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-90534279-6299-4665-ac9f-a4dfb68d0421"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-a38f0668-44bd-4a89-b4fa-9fbaab920bad"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-a93c7f4b-1abe-45c6-bfdb-3c331057bf6d"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-ab3b11c1-f6cd-48df-8cc8-3af9907120a9"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-acacdb7f-c5f7-4849-8524-9ab53fa32dbf"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-b44ea7f0-d23e-4b99-b165-e7775e860319"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-bf874d5c-156c-4104-a801-bcd3e185ecf3"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-c2c69838-04ed-445b-b986-74cf85c7e22a"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-c37a84f7-3f04-4654-868e-c3b29d6f713f"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-ca6780ed-0b2a-4e99-8f2f-f84f404f0a88"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-cb96019c-d494-4cb7-a169-081d19f1df59"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-d58a27a6-bae7-4758-a981-c7daabde9e3b"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-d99a2c96-9858-4de5-9a7b-4c1a6dcdee4d"
+      "relatedSpdxElement": "SPDXRef-package-e1499c2e-dbd3-41f6-81be-25620b0ddb4d"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-f1108f35-d6eb-45cc-a57e-cc3a78473285"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-f4046be8-5787-4f40-bd0a-50c81e4d6800"
     },
     {
-      "spdxElementId": "SPDXRef-package-0e69b3f7-b429-4629-af80-3a0559ffc213",
+      "spdxElementId": "SPDXRef-package-1dba7938-9378-4095-befb-704ed38cc937",
       "relationshipType": "DYNAMIC_LINK",
       "relatedSpdxElement": "SPDXRef-package-f6c73d2f-e044-4aba-ae8d-814f9af59d19"
     }

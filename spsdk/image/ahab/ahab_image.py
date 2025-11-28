@@ -4,26 +4,21 @@
 # Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Implementation of AHAB image support.
+"""SPSDK AHAB (Advanced High Assurance Boot) image management utilities.
 
 This module provides functionality for creating, parsing, validating, and exporting AHAB
-(Advanced High Assurance Boot) images used in NXP secure boot process. AHAB images consist
-of multiple containers that include headers, image arrays, and digital signatures to ensure
-secure boot functionality.
-
-The module supports different container types (V1, V1forV2, V2) and various target memory
-configurations. It enables operations such as adding containers, updating container fields,
-verifying container configurations, and exporting complete AHAB images to binary format.
-
-Additionally, it provides utilities for loading AHAB images from configurations, parsing
-binary data into AHAB image objects, and generating validation schemas for configuration
-validation.
+images used in NXP secure boot process. AHAB images consist of multiple containers that
+include headers, image arrays, and digital signatures to ensure secure boot functionality.
+The module supports different container types and various target memory configurations,
+enabling operations such as adding containers, updating container fields, verifying
+configurations, and exporting complete AHAB images to binary format.
 """
 
 import logging
 from copy import deepcopy
 from typing import Any, Optional, Type, Union
 
+from prettytable import PrettyTable
 from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKError, SPSDKLengthError, SPSDKParsingError, SPSDKValueError
@@ -51,9 +46,15 @@ logger = logging.getLogger(__name__)
 
 
 class AHABImage(FeatureBaseClass):
-    """Class representing an AHAB image.
+    """AHAB Image representation for secure boot operations.
 
-    The image consists of multiple AHAB containers.
+    This class manages AHAB (Advanced High Assurance Boot) images consisting of
+    multiple AHAB containers. It provides functionality for creating, configuring,
+    and manipulating secure boot images for NXP MCU devices with support for
+    different target memory types and container versions.
+
+    :cvar FEATURE: Database feature identifier for AHAB operations.
+    :cvar SUB_FEATURE: Sub-feature identifier for AHAB image operations.
     """
 
     FEATURE = DatabaseManager.AHAB
@@ -67,9 +68,14 @@ class AHABImage(FeatureBaseClass):
     ) -> None:
         """Initialize AHAB Image object.
 
-        :param family: Name of device family.
-        :param target_memory: Target memory for AHAB image [serial_downloader, standard, nand], defaults to "standard".
-        :param ahab_containers: List of initial AHAB containers to include, defaults to None.
+        Creates a new AHAB (Advanced High Assurance Boot) image instance with the specified
+        device family configuration and optional containers.
+
+        :param family: Device family and revision specification.
+        :param target_memory: Target memory type for AHAB image deployment, options include
+            serial_downloader, standard, or nand, defaults to "standard".
+        :param ahab_containers: List of AHAB containers to initialize the image with,
+            defaults to None.
         :raises SPSDKValueError: Invalid input configuration.
         """
         self.chip_config = create_chip_config(family=family, target_memory=target_memory)
@@ -81,12 +87,20 @@ class AHABImage(FeatureBaseClass):
 
     @property
     def family(self) -> FamilyRevision:
-        """Just public family member."""
+        """Get the family revision information.
+
+        Returns the family revision configuration from the chip configuration.
+
+        :return: Family revision information for the AHAB image.
+        """
         return self.chip_config.family
 
     @family.setter
     def family(self, value: FamilyRevision) -> None:
-        """Just public family member."""
+        """Set the family revision for the chip configuration.
+
+        :param value: The family revision to set for the chip configuration.
+        """
         self.chip_config.family = value
 
     @property
@@ -109,7 +123,10 @@ class AHABImage(FeatureBaseClass):
 
     @property
     def start_recommended_image_address(self) -> int:
-        """Start recommended address for data images.
+        """Get the recommended start address for data images.
+
+        The method determines the appropriate start address based on the target memory type,
+        using different addresses for NAND memory types versus other memory types.
 
         :return: Start address for data images based on target memory type.
         :raises SPSDKError: If no containers are defined.
@@ -120,17 +137,22 @@ class AHABImage(FeatureBaseClass):
             )
         return (
             self.ahab_containers[0].START_IMAGE_ADDRESS_NAND
-            if self.chip_config.target_memory
-            in [
-                AhabTargetMemory.TARGET_MEMORY_NAND_2K.label,
-                AhabTargetMemory.TARGET_MEMORY_NAND_4K.label,
-            ]
+            if self.chip_config.target_memory.is_nand
             else self.ahab_containers[0].START_IMAGE_ADDRESS
         )
 
     @property
     def start_real_image_address(self) -> int:
-        """Start data images address."""
+        """Get the start address for real data images.
+
+        Calculates the minimum aligned address where data images should start based on
+        the recommended image address and container image start addresses. The address
+        is aligned to container alignment requirements.
+
+        :raises SPSDKError: When no AHAB containers are defined and container version
+            cannot be determined.
+        :return: Aligned start address for data images.
+        """
         if len(self.ahab_containers) == 0:
             raise SPSDKError(
                 "Cannot determine the Start data images address without defined container version."
@@ -141,13 +163,24 @@ class AHABImage(FeatureBaseClass):
         return align(min(all_offsets), CONTAINER_ALIGNMENT)
 
     def __repr__(self) -> str:
+        """Return string representation of AHAB Image.
+
+        :return: String representation containing the chip family name.
+        """
         return f"AHAB Image for {self.chip_config.family}"
 
     def __str__(self) -> str:
+        """Get string representation of AHAB Image.
+
+        Provides a formatted string containing key information about the AHAB image
+        including chip family, target memory, container limits, and current container count.
+
+        :return: Formatted string with AHAB image details.
+        """
         return (
             "AHAB Image:\n"
             f"  Family:             {self.chip_config.family}\n"
-            f"  Target memory:      {self.chip_config.target_memory.label}\n"
+            f"  Target memory:      {self.chip_config.target_memory.memory_type.label}\n"
             f"  Max cont. count:    {self.chip_config.containers_max_cnt}"
             f"  Max image. count:   {self.chip_config.images_max_cnt}"
             f"  Containers count:   {len(self.ahab_containers)}"
@@ -155,6 +188,9 @@ class AHABImage(FeatureBaseClass):
 
     def add_container(self, container: Union[AHABContainer, AHABContainerV2]) -> None:
         """Add new container into AHAB Image.
+
+        The method validates container count limits, type compatibility, and family support.
+        V2 and V1forV2 containers can be mixed together, but V1 containers must all be the same type.
 
         :param container: AHAB container to be added to the image.
         :raises SPSDKLengthError: If maximum container count is reached.
@@ -183,32 +219,107 @@ class AHABImage(FeatureBaseClass):
         self.ahab_containers.append(container)
 
     def clear(self) -> None:
-        """Clear list of containers."""
+        """Clear the list of AHAB containers.
+
+        This method removes all containers from the ahab_containers list, effectively
+        resetting the image to an empty state.
+        """
         self.ahab_containers.clear()
 
     def update_fields(self, update_offsets: bool = True) -> None:
-        """Automatically updates all volatile fields in every AHAB container.
+        """Update all volatile fields in AHAB containers and optionally adjust image offsets.
 
-        :param update_offsets: Update also offsets for serial_downloader.
+        This method updates volatile fields in all AHAB containers and can optionally update
+        image offsets for serial downloader mode. When updating offsets, it eliminates gaps
+        between images while respecting locked configurations and existing non-zero offsets.
+        The method also signs all container headers after updates.
+
+        :param update_offsets: If True, updates image offsets to eliminate gaps and logs
+            the changes in a detailed table format.
         """
         for ahab_container in self.ahab_containers:
             ahab_container.update_fields()
+            if update_offsets:
+                # Update the Image offsets to be without gaps
+                offset = self.start_recommended_image_address
 
-        if update_offsets:
-            # Update the Image offsets to be without gaps
-            offset = self.start_recommended_image_address
-            for ahab_container in self.ahab_containers:
-                for image in ahab_container.image_array:
-                    if ahab_container.chip_config.locked or image.image_offset > 0:
-                        offset = image.image_offset
-                    else:
-                        image.image_offset = offset
-                    offset = image.get_valid_offset(
-                        offset + image.image_size + image.gap_after_image
+                # Collect offset update information for logging
+                offset_updates = []
+                for container_idx, ahab_container in enumerate(self.ahab_containers):
+                    for image_idx, image in enumerate(ahab_container.image_array):
+                        old_offset = image.image_offset
+                        offset_changed = False
+                        if ahab_container.chip_config.locked or image.image_offset > 0:
+                            offset = image.image_offset
+                            action = "PRESERVED" if image.image_offset > 0 else "LOCKED"
+                        else:
+                            image.image_offset = offset
+                            offset_changed = True
+                            action = "UPDATED"
+
+                        # Store information for logging
+                        offset_updates.append(
+                            {
+                                "container": container_idx,
+                                "image": image_idx,
+                                "old_offset": old_offset,
+                                "new_offset": image.image_offset,
+                                "size": image.image_size,
+                                "gap": image.gap_after_image,
+                                "action": action,
+                                "changed": offset_changed,
+                            }
+                        )
+
+                        offset = image.get_valid_offset(
+                            offset + image.image_size + image.gap_after_image
+                        )
+
+                    ahab_container.chip_config.locked = True
+                # Log the offset updates table if any changes were made
+                if any(update["changed"] for update in offset_updates):
+                    logger.info("AHAB Image Offset has been updated in serial downloader mode.")
+
+                    table = PrettyTable()
+                    table.field_names = [
+                        "Container",
+                        "Image",
+                        "Old Offset",
+                        "New Offset",
+                        "Image Size",
+                        "Gap After",
+                        "Action",
+                    ]
+
+                    for update in offset_updates:
+                        table.add_row(
+                            [
+                                update["container"],
+                                update["image"],
+                                f"0x{update['old_offset']:X}",
+                                f"0x{update['new_offset']:X}",
+                                f"0x{update['size']:X}",
+                                f"0x{update['gap']:X}",
+                                update["action"],
+                            ]
+                        )
+
+                    logger.info("AHAB Image Offset Updates:")
+                    for line in str(table).split("\n"):
+                        logger.info(line)
+
+                    # Summary information
+                    updated_count = sum(1 for update in offset_updates if update["changed"])
+                    preserved_count = sum(
+                        1 for update in offset_updates if update["action"] == "PRESERVED"
+                    )
+                    locked_count = sum(
+                        1 for update in offset_updates if update["action"] == "LOCKED"
                     )
 
-                ahab_container.chip_config.locked = True
-
+                    logger.info(
+                        f"Summary: {updated_count} updated, {preserved_count} preserved, {locked_count} locked"
+                    )
         # Sign the image header
         for ahab_container in self.ahab_containers:
             ahab_container.sign_itself()
@@ -216,41 +327,37 @@ class AHABImage(FeatureBaseClass):
     def __len__(self) -> int:
         """Get maximal size of AHAB Image.
 
-        :return: Size in Bytes of AHAB Image.
+        The method calculates the maximum size by examining all containers and their image arrays,
+        finding the largest aligned offset plus image size, and then aligning the result based on
+        the target memory type configuration.
+
+        :return: Size in bytes of AHAB Image.
         """
         lengths = [0]
         for container in self.ahab_containers:
-            lengths.extend([align(x.image_offset + x.image_size) for x in container.image_array])
-        return align(
-            max(lengths),
-            (
-                CONTAINER_ALIGNMENT
-                if self.chip_config.target_memory
-                == AhabTargetMemory.TARGET_MEMORY_SERIAL_DOWNLOADER
-                else self.chip_config.container_image_size_alignment
-            ),
-        )
+            lengths.extend([x.image_offset + x.image_size for x in container.image_array])
+        return max(lengths)
 
     def export(self) -> bytes:
-        """Export AHAB Image.
+        """Export AHAB Image to binary format.
 
-        :raises SPSDKValueError: mismatch between number of containers and offsets.
-        :raises SPSDKValueError: number of images mismatch.
-        :return: bytes AHAB  Image.
+        :raises SPSDKValueError: Mismatch between number of containers and offsets.
+        :raises SPSDKValueError: Number of images mismatch.
+        :return: Binary representation of AHAB Image.
         """
         return self.image_info().export()
 
     def image_info(self) -> BinaryImage:
-        """Get Image info object."""
+        """Get AHAB image information as a structured binary image object.
+
+        Creates a hierarchical BinaryImage structure containing the complete AHAB image layout,
+        including all containers and their associated data images with proper offsets and metadata.
+
+        :return: Binary image object with complete AHAB image structure and layout information.
+        """
         ret = BinaryImage(
             name="AHAB Image",
             size=len(self),
-            alignment=(
-                CONTAINER_ALIGNMENT
-                if self.chip_config.target_memory
-                == AhabTargetMemory.TARGET_MEMORY_SERIAL_DOWNLOADER
-                else self.chip_config.container_image_size_alignment
-            ),
             offset=0,
             description=f"AHAB Image for {self.chip_config.family}",
             pattern=BinaryPattern("zeros"),
@@ -294,20 +401,23 @@ class AHABImage(FeatureBaseClass):
     def verify(self) -> Verifier:
         """Perform comprehensive verification of the AHAB image.
 
-        Validates multiple aspects of the AHAB image:
-        - Container counts and offsets
-        - Image counts per container
-        - Image offsets and alignments
-        - Serial downloader mode requirements
-        - Checks for overlapping images
-
-        The verification results are organized hierarchically in the returned Verifier object,
-        including SUCCESS, WARNING, and ERROR status for each checked item.
+        Validates multiple aspects of the AHAB image including container counts and offsets,
+        image counts per container, image offsets and alignments, serial downloader mode
+        requirements, and checks for overlapping images. The verification results are
+        organized hierarchically in the returned Verifier object, including SUCCESS,
+        WARNING, and ERROR status for each checked item.
 
         :return: Verifier object containing the detailed verification results.
         """
 
         def verify_container_offsets(container: AHABContainer) -> None:
+            """Verify container offsets against expected values.
+
+            Validates that the container offset stored in the chip configuration matches
+            the calculated offset based on the container's position in the AHAB containers list.
+
+            :param container: AHAB container to verify offsets for.
+            """
             # Verify the container offset
             for ix, cnt in enumerate(self.ahab_containers):
                 offset = container.get_container_offset(ix)
@@ -366,17 +476,15 @@ class AHABImage(FeatureBaseClass):
                     ver_img.add_record(
                         "Alignment",
                         VerifierResult.WARNING,
-                        f"Invalid Image Offset alignment for target memory '{self.chip_config.target_memory.label}': "
+                        "Invalid Image Offset alignment for target memory "
+                        f"'{self.chip_config.target_memory.memory_type.label}': "
                         f"{hex(image.image_offset)} "
                         f"should be with alignment {hex(alignment)}.",
                     )
                 else:
                     ver_img.add_record("Alignment", VerifierResult.SUCCEEDED)
 
-                if (
-                    self.chip_config.target_memory
-                    == AhabTargetMemory.TARGET_MEMORY_SERIAL_DOWNLOADER
-                ):
+                if self.chip_config.target_memory.force_no_gaps:
                     if offset != image.image_offset and not container.chip_config.locked:
                         ver_img.add_record(
                             "Serial Downloader mode offset",
@@ -411,7 +519,10 @@ class AHABImage(FeatureBaseClass):
         return ret
 
     def post_export(self, output_path: str) -> list[str]:
-        """Write scripts for fuses.
+        """Write scripts for fuses after image export.
+
+        The method processes all AHAB containers and generates their post-export files,
+        typically fuse scripts and configuration data files.
 
         :param output_path: Path to store the data files of configuration.
         :return: List of generated files.
@@ -424,23 +535,28 @@ class AHABImage(FeatureBaseClass):
 
     @staticmethod
     def _parse_container_type(
-        data: bytes,
+        data: bytes, ignore_length: bool = False
     ) -> Union[Type[AHABContainer], Type[AHABContainerV1forV2], Type[AHABContainerV2]]:
         """Recognize container type from binary data.
 
-        :param data: Binary data
+        Analyzes the provided binary data to determine which AHAB container type
+        it represents by checking container headers against known formats.
+
+        :param data: Binary data containing AHAB container information.
         :raises SPSDKParsingError: In case of invalid data detected.
-        :return: Container type
+        :return: Container class type (AHABContainer, AHABContainerV1forV2, or AHABContainerV2).
         """
-        if not AHABContainer.check_container_head(data).has_errors:
+        if not AHABContainer.check_container_head(data, ignore_length=ignore_length).has_errors:
             logger.debug("Detected AHAB container classic version in parsed data.")
             return AHABContainer
-        if not AHABContainerV1forV2.check_container_head(data).has_errors:
+        if not AHABContainerV1forV2.check_container_head(
+            data, ignore_length=ignore_length
+        ).has_errors:
             logger.debug(
                 "Detected AHAB container classic version but with offsets for PQC version in parsed data."
             )
             return AHABContainerV1forV2
-        if not AHABContainerV2.check_container_head(data).has_errors:
+        if not AHABContainerV2.check_container_head(data, ignore_length=ignore_length).has_errors:
             logger.debug("Detected AHAB container PQC version in parsed data.")
             return AHABContainerV2
 
@@ -449,11 +565,15 @@ class AHABImage(FeatureBaseClass):
     def _container_type_from_config(
         self, config: Config
     ) -> Union[Type[AHABContainer], Type[AHABContainerV1forV2], Type[AHABContainerV2]]:
-        """Recognize container type from config data.
+        """Recognize container type from configuration data.
 
-        :param config: Configuration data
+        The method determines the appropriate AHAB container type based on chip configuration,
+        forced container version from config, or previously set container type. Falls back to
+        the default container type if no specific type is determined.
+
+        :param config: Configuration data containing container settings.
         :raises SPSDKParsingError: In case of invalid data detected.
-        :return: Container type
+        :return: Container class type (AHABContainer, AHABContainerV1forV2, or AHABContainerV2).
         """
         cnt_types_dict = {1: AHABContainer, 2: AHABContainerV2}
         if len(self.chip_config.container_types) == 1:
@@ -474,14 +594,16 @@ class AHABImage(FeatureBaseClass):
 
     @classmethod
     def load_from_config(cls, config: Config) -> Self:
-        """Converts the configuration option into an AHAB image object.
+        """Create AHAB image object from configuration.
 
-        "config" content array of containers configurations.
+        Converts the configuration containing array of containers configurations into
+        an initialized AHAB image object. Supports both binary containers and
+        configuration-based containers.
 
-        :param config: array of AHAB containers configuration dictionaries.
-        :raises SPSDKValueError: if the count of AHAB containers is invalid.
+        :param config: Configuration object containing AHAB containers setup.
+        :raises SPSDKValueError: If the count of AHAB containers is invalid.
         :raises SPSDKParsingError: Cannot parse input binary AHAB container.
-        :return: Initialized AHAB Image.
+        :return: Initialized AHAB Image object.
         """
         containers_config = config.get_list_of_configs("containers")
         family = FamilyRevision.load_from_config(config)
@@ -534,12 +656,16 @@ class AHABImage(FeatureBaseClass):
     ) -> Self:
         """Parse input binary chunk to the container object.
 
-        :param data: Binary data to parse
-        :param family: The MCU family
-        :param target_memory: AHAB container target memory.
+        This method analyzes binary data to extract AHAB containers, validates container types
+        against family support, and creates a parsed container object with all found containers.
 
-        :raises SPSDKError: No AHAB container found in binary data.
-        :raises SPSDKValueError: Family doesn't support the detected container type.
+        :param data: Binary data to parse into AHAB containers.
+        :param family: The MCU family revision for validation and configuration.
+        :param target_memory: AHAB container target memory type.
+        :raises SPSDKError: No AHAB container found in binary data or container parsing failed.
+        :raises SPSDKValueError: Missing family parameter or family doesn't support detected
+            container type.
+        :return: Parsed AHAB image object containing all found containers.
         """
         if family is None:
             raise SPSDKValueError("Missing family parameter to parse AHAB")
@@ -594,16 +720,14 @@ class AHABImage(FeatureBaseClass):
 
     @staticmethod
     def pre_parse_verify(data: bytes) -> Verifier:
-        """Pre-Parse verify of AHAB Image.
+        """Pre-parse verify of AHAB Image.
 
         This method performs a preliminary validation of binary data to determine if it appears
         to be a valid AHAB Image. It tries to identify the container type (V1, V1forV2, or V2)
         and then checks for the presence of valid containers at expected offsets.
-
         Unlike full parsing, this method only examines container headers without processing
         the entire content, making it faster for initial validation before committing to more
         resource-intensive operations.
-
         The returned Verifier object contains hierarchical validation results for each detected
         container, including information about detected errors or warnings.
 
@@ -638,10 +762,16 @@ class AHABImage(FeatureBaseClass):
 
     @classmethod
     def get_image_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Get list of image validation schemas.
+        """Get list of image validation schemas for AHAB container images.
 
-        :param family: Family for which the validation schema should be generated.
-        :return: List of image validation schemas.
+        This method retrieves and processes validation schemas for different types of AHAB container
+        images based on the specified family. It combines general image properties with family-specific
+        configurations, including core IDs, image types, and hash algorithms. The method also
+        incorporates extra image templates and their default settings.
+
+        :param family: Family revision for which the validation schema should be generated.
+        :return: List of dictionaries containing image validation schemas with processed properties
+                 and templates.
         """
         db = get_db(family)
         container_type = db.get_list(DatabaseManager.AHAB, "container_types", [])
@@ -710,10 +840,14 @@ class AHABImage(FeatureBaseClass):
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Get list of validation schemas.
+        """Get list of validation schemas for AHAB image configuration.
 
-        :param family: Family for which the validation schema should be generated.
-        :return: Validation list of schemas.
+        This method generates validation schemas based on the specified family's capabilities,
+        including container types, certificate support, and image-specific schemas. The schemas
+        are used to validate AHAB image configuration files.
+
+        :param family: Family revision for which the validation schema should be generated.
+        :return: List containing family and AHAB image validation schemas.
         """
         db = get_db(family)
         container_type = db.get_list(DatabaseManager.AHAB, "container_types", [])
@@ -756,8 +890,11 @@ class AHABImage(FeatureBaseClass):
     def get_signing_validation_schemas(family: FamilyRevision) -> list[dict[str, Any]]:
         """Get list of validation schemas for signing the container.
 
+        This method retrieves validation schemas specifically configured for container signing
+        by removing image-related properties and requirements from the base validation schemas.
+
         :param family: Family for which the validation schema should be generated.
-        :return: list of schemas for signing the container.
+        :return: List of schemas for signing the container.
         """
         schemas = AHABImage.get_validation_schemas(family)
         # Remove images property from the container
@@ -778,7 +915,7 @@ class AHABImage(FeatureBaseClass):
         """Get AHAB configuration template for signing the containers.
 
         :param family: Family for which the template should be generated.
-        :return: Dictionary of individual templates (key is name of template, value is template itself).
+        :return: AHAB configuration template as a string.
         """
         schemas = AHABImage.get_signing_validation_schemas(family)
         return cls._get_config_template(family, schemas)
@@ -786,13 +923,16 @@ class AHABImage(FeatureBaseClass):
     def get_config(self, data_path: str = "./") -> Config:
         """Create configuration of the AHAB Image.
 
+        The method generates a configuration dictionary containing family information, target memory
+        settings, and container configurations for the AHAB image.
+
         :param data_path: Path to store the data files of configuration.
-        :return: Configuration dictionary.c
+        :return: Configuration dictionary with AHAB image settings.
         """
         cfg = Config()
         cfg["family"] = self.chip_config.family.name
         cfg["revision"] = self.chip_config.family.revision
-        cfg["target_memory"] = self.chip_config.target_memory.label
+        cfg["target_memory"] = self.chip_config.target_memory.memory_type.label
         cfg["output"] = "N/A"
         cfg_containers = []
         for cnt_ix, container in enumerate(self.ahab_containers):
@@ -803,28 +943,46 @@ class AHABImage(FeatureBaseClass):
 
     @staticmethod
     def find_offset_of_ahab(binary: bytes, do_detail_search: bool = False) -> int:
-        """Try to find the start of the AHAB Image in data blob.
+        """Find the start of the AHAB Image in binary data.
 
-        :param binary: Data  to be used to find AHAB container.
-        :param do_detail_search: Do also the detail search (slow, by precise).
-        :return: Offset in data to new data container.
+        Searches for AHAB container header by checking data at regular intervals.
+        First performs a fast search every 0x400 bytes, then optionally does a
+        detailed search every 4 bytes if enabled.
+
+        :param binary: Binary data to search for AHAB container.
+        :param do_detail_search: Enable detailed search every 4 bytes (slower but more precise).
+        :return: Offset in binary data where AHAB container starts.
+        :raises SPSDKError: AHAB container not found in the provided binary data.
         """
 
         class DummyContainer(HeaderContainer):
-            """Dummy container class to use fast checking the base format."""
+            """AHAB dummy container for fast format validation.
+
+            This class provides a lightweight container implementation used for quickly
+            checking the basic AHAB container format without full processing overhead.
+            It inherits from HeaderContainer and defines minimal required attributes
+            for format validation.
+
+            :cvar VERSION: Container format version [0, 2].
+            :cvar TAG: Container header tag identifier.
+            """
 
             VERSION = [0, 2]
-            TAG = AHABTags.CONTAINER_HEADER.tag
+            TAG = [AHABTags.CONTAINER_HEADER.tag, AHABTags.CONTAINER_HEADER_V1_WITH_V2.tag]
 
         logger.debug("Trying to find AHAB container on every 0x400 bytes")
         for offset in range(0, len(binary), 0x400):
-            if not DummyContainer.check_container_head(binary[offset:]).has_errors:
+            if not DummyContainer.check_container_head(
+                binary[offset:], ignore_length=True
+            ).has_errors:
                 return offset
 
         if do_detail_search:
             logger.debug("Trying to find AHAB container on every 4 bytes")
             for offset in range(0, len(binary), 4):
-                if not DummyContainer.check_container_head(binary[offset:]).has_errors:
+                if not DummyContainer.check_container_head(
+                    binary[offset:], ignore_length=True
+                ).has_errors:
                     return offset
         raise SPSDKError("The AHAB container has not been found in given binary data")
 
@@ -836,8 +994,11 @@ class AHABImage(FeatureBaseClass):
     ) -> None:
         """Validate that the family supports the given container type.
 
-        :param container_type: Container type to validate
-        :raises SPSDKValueError: If container type is not supported by the family
+        This method checks if the specified AHAB container type is supported by the current
+        chip family configuration and raises an error if not supported.
+
+        :param container_type: AHAB container class type to validate against family support
+        :raises SPSDKValueError: If container type is unknown or not supported by the family
         """
         if container_type == AHABContainerV2:
             required_version = 2

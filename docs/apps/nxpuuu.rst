@@ -4,13 +4,81 @@ User Guide - nxpuuu
 
 nxpuuu
 -------
-The `nxpuuu` CLI application is designed for image deployment based on the libUUU (universal update utility). This guide provides instructions on how to use the various commands available in the application.
+The `nxpuuu` CLI application is designed for image deployment based on the libUUU (universal update utility). This powerful tool enables flashing bootloaders, kernels, file systems, and complete disk images to various storage devices on NXP processors. It supports multiple protocols including Serial Download Protocol (SDP) and Fastboot.
 
+Overview
+--------
+nxpuuu provides a unified interface for:
+
+- Loading and executing bootloaders
+- Flashing Linux kernels and device trees
+- Deploying complete disk images (.wic files)
+- Writing to various storage devices (eMMC, SD, QSPI, NAND)
+- Executing custom UUU scripts
+- Running individual UUU commands
 
 Usage
 -----
-The `nxpuuu` CLI application provides several subcommands. Below are the available commands and their usage.
+The `nxpuuu` CLI application provides several subcommands for different deployment scenarios.
 
+Basic syntax:
+
+.. code-block:: bash
+
+    nxpuuu [OPTIONS] COMMAND [ARGS]...
+
+Global Options
+--------------
+
+**Timeout and Timing Options:**
+
+- `-t, --wait-timeout INTEGER`: Timeout for waiting in seconds (default: 5)
+- `-T, --wait-next-timeout INTEGER`: Timeout for waiting for the next device in seconds (default: 5)
+- `-pp, --poll-period INTEGER`: Polling period in milliseconds (default: 200)
+
+**Device Filtering Options:**
+
+- `-up, --usbpath USB_PATH`: Filter UUU devices by USB path
+- `-us, --usbserial SERIAL_NUMBER`: Filter UUU devices by USB serial number
+
+**Verbosity and Information Options:**
+
+- `-v, --verbose`: Print more detailed information
+- `-vv, --debug`: Display more debugging information
+- `--version`: Show the version and exit
+- `--help`: Show help message and exit
+
+**Global Options Examples:**
+
+Increase timeout for slow operations:
+
+.. code-block:: bash
+
+    nxpuuu -t 30 write -b emmc_all -f imx8ulp large-image.wic
+
+Filter by specific USB device:
+
+.. code-block:: bash
+
+    nxpuuu -us "1234567890ABCDEF" run "SDP: boot -f u-boot-spl.bin"
+
+Use specific USB path:
+
+.. code-block:: bash
+
+    nxpuuu -up "1:2" write -b emmc -f imx8ulp u-boot-spl.bin u-boot.img
+
+Enable verbose output:
+
+.. code-block:: bash
+
+    nxpuuu -v run "FB: flash kernel zImage"
+
+Enable debug output for troubleshooting:
+
+.. code-block:: bash
+
+    nxpuuu -vv script deploy.uuu
 
 Run Command
 -----------
@@ -100,6 +168,12 @@ Here are some example usages of the `nxpuuu` CLI application:
     .. code-block:: bash
 
         nxpuuu list-devices
+
+5. Complete eMMC Image
+
+    .. code-block:: bash
+
+        nxpuuu write -b emmc_all -f imx8mm core-image-minimal.wic
 
 Conclusion
 ----------

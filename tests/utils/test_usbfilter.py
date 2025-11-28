@@ -1,9 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2024 NXP
+# Copyright 2021-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
+"""SPSDK USB device filtering utilities tests.
+
+This module contains comprehensive test cases for USB device filtering functionality
+across different operating systems (Windows, macOS, Linux). Tests cover both generic
+USB device filtering and NXP-specific device filtering scenarios, ensuring proper USB
+device identification and filtering behavior across supported platforms.
+"""
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -49,7 +58,7 @@ mac_use_cases = common_use_cases + [
         "SE Blank RT Family @14200000",
         "0x413c",
         "0x301a",
-        b"IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/XHC1@14/XHC1@14000000/HS02@14200000/SE Blank RT Family @14200000",
+        b"IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/XHC1@14/XHC1@14000000/HS02@14200000/SE Blank RT Family @14200000",  # pylint: disable=line-too-long
         False,
         True,
     ),
@@ -73,7 +82,20 @@ linux_use_cases = [
 @pytest.mark.parametrize("filter_usb_id,vid,pid,path,search_by_pid,expected", win_use_cases)
 def test_usb_match_win(
     filter_usb_id: str, vid: str, pid: str, path: str, search_by_pid: bool, expected: bool
-):
+) -> None:
+    """Test USB device filtering on Windows platform.
+
+    This test verifies that the USBDeviceFilter correctly matches USB devices
+    on Windows systems by comparing filter criteria against device properties.
+    The test uses mocking to simulate Windows platform detection.
+
+    :param filter_usb_id: USB identifier string used for device filtering
+    :param vid: Vendor ID as string (supports hex format with 0x prefix)
+    :param pid: Product ID as string (supports hex format with 0x prefix)
+    :param path: Device path string for USB device identification
+    :param search_by_pid: Flag indicating whether to search by product ID
+    :param expected: Expected boolean result of the filter comparison
+    """
     with patch("platform.system", MagicMock(return_value="Windows")):
         usb_filter = USBDeviceFilter(usb_id=filter_usb_id, search_by_pid=search_by_pid)
         g_virtual_hid_device = {"vendor_id": int(vid, 0), "product_id": int(pid, 0), "path": path}
@@ -84,7 +106,20 @@ def test_usb_match_win(
 @pytest.mark.parametrize("filter_usb_id,vid,pid,path,search_by_pid,expected", mac_use_cases)
 def test_usb_match_mac(
     filter_usb_id: str, vid: str, pid: str, path: str, search_by_pid: bool, expected: bool
-):
+) -> None:
+    """Test USB device filtering on macOS platform.
+
+    This test verifies that the USBDeviceFilter correctly matches USB devices
+    on macOS (Darwin) platform based on vendor ID, product ID, and device path.
+    The test uses mocking to simulate the macOS environment.
+
+    :param filter_usb_id: USB device identifier string for filtering
+    :param vid: Vendor ID as string (supports hex format with 0x prefix)
+    :param pid: Product ID as string (supports hex format with 0x prefix)
+    :param path: USB device path string
+    :param search_by_pid: Flag to enable searching by product ID only
+    :param expected: Expected boolean result of the comparison
+    """
     with patch("platform.system", MagicMock(return_value="Darwin")):
         usb_filter = USBDeviceFilter(usb_id=filter_usb_id, search_by_pid=search_by_pid)
         g_virtual_hid_device = {"vendor_id": int(vid, 0), "product_id": int(pid, 0), "path": path}
@@ -95,7 +130,19 @@ def test_usb_match_mac(
 @pytest.mark.parametrize("filter_usb_id,vid,pid,path,search_by_pid,expected", linux_use_cases)
 def test_usb_match_linux(
     filter_usb_id: str, vid: str, pid: str, path: str, search_by_pid: bool, expected: bool
-):
+) -> None:
+    """Test USB device filtering on Linux platform.
+
+    This test verifies that the USBDeviceFilter correctly matches USB devices
+    on Linux systems based on vendor ID, product ID, and path criteria.
+
+    :param filter_usb_id: USB ID string used to initialize the filter
+    :param vid: Vendor ID string (can be hex or decimal format)
+    :param pid: Product ID string (can be hex or decimal format)
+    :param path: USB device path string
+    :param search_by_pid: Flag indicating whether to search by product ID
+    :param expected: Expected boolean result of the filter comparison
+    """
     with patch("platform.system", MagicMock(return_value="Linux")):
         usb_filter = USBDeviceFilter(usb_id=filter_usb_id, search_by_pid=search_by_pid)
         g_virtual_hid_device = {"vendor_id": int(vid, 0), "product_id": int(pid, 0), "path": path}
@@ -146,7 +193,7 @@ mac_use_cases_nxp = common_use_cases_nxp + [
         "SE Blank RT Family @14200000",
         "0x413c",
         "0x301a",
-        b"IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/XHC1@14/XHC1@14000000/HS02@14200000/SE Blank RT Family @14200000",
+        b"IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/XHC1@14/XHC1@14000000/HS02@14200000/SE Blank RT Family @14200000",  # pylint: disable=line-too-long
         True,
     ),
 ]
@@ -167,7 +214,21 @@ linux_use_cases_nxp = [
 
 
 @pytest.mark.parametrize("filter_usb_id,vid,pid,path,expected", win_use_cases_nxp)
-def test_usb_match_win_nxp(filter_usb_id: str, vid: str, pid: str, path: str, expected: bool):
+def test_usb_match_win_nxp(
+    filter_usb_id: str, vid: str, pid: str, path: str, expected: bool
+) -> None:
+    """Test USB device matching on Windows platform with NXP filter.
+
+    This test verifies that the NXPUSBDeviceFilter correctly matches USB devices
+    on Windows platform by comparing vendor ID, product ID, and device path
+    against the filter criteria.
+
+    :param filter_usb_id: USB ID string used to initialize the NXP USB device filter.
+    :param vid: Vendor ID string (can be hex or decimal format).
+    :param pid: Product ID string (can be hex or decimal format).
+    :param path: USB device path string.
+    :param expected: Expected boolean result of the filter comparison.
+    """
     with patch("platform.system", MagicMock(return_value="Windows")):
         usb_filter = NXPUSBDeviceFilter(usb_id=filter_usb_id)
         g_virtual_hid_device = {"vendor_id": int(vid, 0), "product_id": int(pid, 0), "path": path}
@@ -176,7 +237,21 @@ def test_usb_match_win_nxp(filter_usb_id: str, vid: str, pid: str, path: str, ex
 
 
 @pytest.mark.parametrize("filter_usb_id,vid,pid,path,expected", mac_use_cases_nxp)
-def test_usb_match_mac_nxp(filter_usb_id: str, vid: str, pid: str, path: str, expected: bool):
+def test_usb_match_mac_nxp(
+    filter_usb_id: str, vid: str, pid: str, path: str, expected: bool
+) -> None:
+    """Test USB device filtering on macOS with NXP USB device filter.
+
+    This test verifies that the NXPUSBDeviceFilter correctly matches or rejects
+    USB devices on macOS (Darwin) platform based on the provided filter criteria
+    and device properties.
+
+    :param filter_usb_id: USB ID filter string to configure the NXPUSBDeviceFilter
+    :param vid: Vendor ID string (can be hex or decimal format)
+    :param pid: Product ID string (can be hex or decimal format)
+    :param path: USB device path string
+    :param expected: Expected boolean result of the filter comparison
+    """
     with patch("platform.system", MagicMock(return_value="Darwin")):
         usb_filter = NXPUSBDeviceFilter(usb_id=filter_usb_id)
         g_virtual_hid_device = {"vendor_id": int(vid, 0), "product_id": int(pid, 0), "path": path}
@@ -185,7 +260,21 @@ def test_usb_match_mac_nxp(filter_usb_id: str, vid: str, pid: str, path: str, ex
 
 
 @pytest.mark.parametrize("filter_usb_id,vid,pid,path,expected", linux_use_cases_nxp)
-def test_usb_match_linux_nxp(filter_usb_id: str, vid: str, pid: str, path: str, expected: bool):
+def test_usb_match_linux_nxp(
+    filter_usb_id: str, vid: str, pid: str, path: str, expected: bool
+) -> None:
+    """Test USB device matching on Linux platform with NXP USB filter.
+
+    This test verifies that the NXPUSBDeviceFilter correctly matches or rejects
+    USB devices on Linux systems based on the provided filter criteria and device
+    characteristics.
+
+    :param filter_usb_id: USB ID filter string used to create the NXPUSBDeviceFilter.
+    :param vid: Vendor ID string (supports hex format with 0x prefix).
+    :param pid: Product ID string (supports hex format with 0x prefix).
+    :param path: USB device path string.
+    :param expected: Expected boolean result of the filter comparison.
+    """
     with patch("platform.system", MagicMock(return_value="Linux")):
         usb_filter = NXPUSBDeviceFilter(usb_id=filter_usb_id)
         g_virtual_hid_device = {"vendor_id": int(vid, 0), "product_id": int(pid, 0), "path": path}
@@ -200,7 +289,20 @@ def test_usb_match_linux_nxp(filter_usb_id: str, vid: str, pid: str, path: str, 
         ("Nonsense", "0x1FC9", "0x0025", b"//", False),
     ],
 )
-def test_device_name_win(filter_usb_id: str, vid: str, pid: str, path: str, expected: bool):
+def test_device_name_win(filter_usb_id: str, vid: str, pid: str, path: str, expected: bool) -> None:
+    """Test device name filtering on Windows platform.
+
+    This test verifies that the NXPUSBDeviceFilter correctly identifies devices
+    on Windows by comparing a virtual HID device against the filter criteria.
+    The test mocks the platform system to return "Windows" and validates the
+    filter's compare method behavior.
+
+    :param filter_usb_id: USB ID string used to initialize the device filter
+    :param vid: Vendor ID as string (supports hex format with 0x prefix)
+    :param pid: Product ID as string (supports hex format with 0x prefix)
+    :param path: Device path string for the virtual HID device
+    :param expected: Expected boolean result from the filter comparison
+    """
     with patch("platform.system", MagicMock(return_value="Windows")):
         usb_filter = NXPUSBDeviceFilter(
             usb_id=filter_usb_id, nxp_device_names=MbootUSBInterface.get_devices()
@@ -217,7 +319,20 @@ def test_device_name_win(filter_usb_id: str, vid: str, pid: str, path: str, expe
         ("Nonsense", "0x1FC9", "0x0025", b"//", False),
     ],
 )
-def test_device_name_mac(filter_usb_id: str, vid: str, pid: str, path: str, expected: bool):
+def test_device_name_mac(filter_usb_id: str, vid: str, pid: str, path: str, expected: bool) -> None:
+    """Test device name filtering functionality on macOS platform.
+
+    This test verifies that the NXPUSBDeviceFilter correctly identifies and filters
+    USB devices based on device names when running on macOS (Darwin). It mocks the
+    platform system to simulate macOS environment and tests the filter's compare
+    method against a virtual HID device with specified vendor ID, product ID, and path.
+
+    :param filter_usb_id: USB identifier string used for device filtering
+    :param vid: Vendor ID as string (supports hex format with 0x prefix)
+    :param pid: Product ID as string (supports hex format with 0x prefix)
+    :param path: Device path identifier for the virtual HID device
+    :param expected: Expected boolean result of the filter comparison
+    """
     with patch("platform.system", MagicMock(return_value="Darwin")):
         usb_filter = NXPUSBDeviceFilter(
             usb_id=filter_usb_id, nxp_device_names=MbootUSBInterface.get_devices()
@@ -234,7 +349,21 @@ def test_device_name_mac(filter_usb_id: str, vid: str, pid: str, path: str, expe
         ("Nonsense", "0x1FC9", "0x0025", b"0:0", False),
     ],
 )
-def test_device_name_linux(filter_usb_id: str, vid: str, pid: str, path: str, expected: bool):
+def test_device_name_linux(
+    filter_usb_id: str, vid: str, pid: str, path: str, expected: bool
+) -> None:
+    """Test device name filtering functionality on Linux platform.
+
+    This test verifies that the NXPUSBDeviceFilter correctly identifies and filters
+    USB devices based on the provided USB ID when running on a Linux system. It uses
+    a mocked platform system call and virtual HID device to simulate the filtering process.
+
+    :param filter_usb_id: USB ID string used for device filtering
+    :param vid: Vendor ID as string (supports hex format with 0x prefix)
+    :param pid: Product ID as string (supports hex format with 0x prefix)
+    :param path: Device path identifier for the virtual HID device
+    :param expected: Expected boolean result of the filtering comparison
+    """
     with patch("platform.system", MagicMock(return_value="Linux")):
         usb_filter = NXPUSBDeviceFilter(
             usb_id=filter_usb_id, nxp_device_names=MbootUSBInterface.get_devices()
@@ -248,7 +377,16 @@ def test_device_name_linux(filter_usb_id: str, vid: str, pid: str, path: str, ex
     "filter_usb_id, name, expected",
     [("MKL27", "MKL27", True), ("Nonsense", "MKL27", False)],
 )
-def test_general_device_name(filter_usb_id: str, name: str, expected: bool):
+def test_general_device_name(filter_usb_id: str, name: str, expected: bool) -> None:
+    """Test USB device filter with general device name matching.
+
+    This test verifies that the USBDeviceFilter correctly compares a device
+    with a given device name against the specified USB ID filter criteria.
+
+    :param filter_usb_id: USB ID string used to create the filter
+    :param name: Device name to be tested against the filter
+    :param expected: Expected boolean result of the comparison
+    """
     usb_filter = USBDeviceFilter(usb_id=filter_usb_id)
     g_virtual_hid_device = {"device_name": name}
 
@@ -259,7 +397,16 @@ def test_general_device_name(filter_usb_id: str, name: str, expected: bool):
     "filter_usb_id, serial, expected",
     [("1234567", "1234567", True), ("Nonsense", "1234567", False)],
 )
-def test_general_device_serial_number(filter_usb_id: str, serial: str, expected: bool):
+def test_general_device_serial_number(filter_usb_id: str, serial: str, expected: bool) -> None:
+    """Test USB device filter with serial number matching.
+
+    Verifies that the USB device filter correctly matches or rejects devices
+    based on their serial numbers when compared against the filter criteria.
+
+    :param filter_usb_id: USB ID string used to create the device filter
+    :param serial: Serial number of the virtual HID device to test against
+    :param expected: Expected boolean result of the comparison operation
+    """
     usb_filter = USBDeviceFilter(usb_id=filter_usb_id)
     g_virtual_hid_device = {"serial_number": serial}
 

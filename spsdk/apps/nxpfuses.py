@@ -5,7 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Fuse Tool CLI interface."""
+"""SPSDK NXP fuses management command-line interface.
+
+This module provides a comprehensive CLI tool for reading, writing, and managing
+NXP MCU fuses. It supports fuse operations across NXP's MCU portfolio with
+safety features and configuration templates.
+"""
 
 import logging
 import sys

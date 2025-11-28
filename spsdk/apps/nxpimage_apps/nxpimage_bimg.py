@@ -4,7 +4,12 @@
 # Copyright 2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Nxpimage Bootable Image group."""
+"""SPSDK NXP Image bootable image management commands.
+
+This module provides CLI commands for creating, parsing, verifying and managing
+bootable images, FCB (Flash Configuration Block), XMCD (External Memory
+Configuration Data), and related components for NXP microcontrollers.
+"""
 
 import logging
 import os
