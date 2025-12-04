@@ -341,6 +341,7 @@ class HttpProxySP(HTTPClientBase, SignatureProvider):
         url_prefix: str = "api",
         timeout: int = 60,
         prehash: Optional[str] = None,
+        hash_alg: Optional[EnumHashAlgorithm] = None,
         **kwargs: Union[str, int, bool],
     ) -> None:
         """Initialize Http Proxy Signature Provider.
@@ -350,6 +351,7 @@ class HttpProxySP(HTTPClientBase, SignatureProvider):
         :param url_prefix: REST API prefix, defaults to "api"
         :param timeout: REST API timeout in seconds, defaults to 60
         :param prehash: Name of the hashing algorithm to pre-hash data before sending to signing service
+        :param hash_alg: Hash algorithm (accepted for API compatibility, not used by proxy)
         :param kwargs: Additional keyword arguments passed to parent class
         """
         super().__init__(
@@ -362,6 +364,7 @@ class HttpProxySP(HTTPClientBase, SignatureProvider):
             **kwargs,
         )
         self.prehash = prehash
+        # hash_alg is intentionally not stored/used - the proxy server handles algorithm selection
 
     def sign(self, data: bytes) -> bytes:
         """Sign data using the signature provider.

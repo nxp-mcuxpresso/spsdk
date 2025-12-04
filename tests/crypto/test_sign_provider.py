@@ -25,6 +25,7 @@ import pytest
 import requests
 
 from spsdk.crypto.crypto_types import SPSDKEncoding
+from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import (
     IS_OSCCA_SUPPORTED,
     ECDSASignature,
@@ -472,6 +473,43 @@ def test_proxy_sp_signature_length_metadata() -> None:
     with pytest.raises(AttributeError):
         with patch("requests.sessions.Session.send", my_thing):
             sp.signature_length
+
+
+def test_proxy_sp_hash_alg_parameter() -> None:
+    """Test HTTP proxy signature provider handles hash_alg parameter correctly.
+
+    Verifies that HttpProxySP accepts hash_alg parameter for API compatibility
+    but does not pass it to the parent HTTPClientBase class, preventing JSON
+    serialization errors. The hash_alg enum should be filtered out from kwargs
+    to avoid serialization issues when making HTTP requests.
+
+    :raises AssertionError: If hash_alg appears in kwargs or JSON serialization fails.
+    """
+    # Test with hash_alg parameter
+    sp = HttpProxySP(host="localhost", port="8000", hash_alg=EnumHashAlgorithm.SHA256)
+
+    # Verify hash_alg is not in kwargs (to prevent JSON serialization errors)
+    assert "hash_alg" not in sp.kwargs, "hash_alg should not be passed to HTTPClientBase"
+
+    # Verify kwargs can be serialized to JSON (this would fail if hash_alg was in kwargs)
+    json_str = json.dumps(sp.kwargs)
+    assert json_str == "{}", f"Expected empty kwargs, got: {json_str}"
+
+    # Test with hash_alg and additional parameters
+    sp2 = HttpProxySP(
+        host="localhost",
+        port="8000",
+        hash_alg=EnumHashAlgorithm.SHA384,
+        prehash="sha256",
+        custom_param="value",
+    )
+    assert "hash_alg" not in sp2.kwargs
+    assert "custom_param" in sp2.kwargs
+    assert sp2.prehash == "sha256"
+
+    # Verify JSON serialization still works with other kwargs
+    json_str2 = json.dumps(sp2.kwargs)
+    assert "custom_param" in json_str2
 
 
 def test_convert_params_valid() -> None:
