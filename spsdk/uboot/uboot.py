@@ -548,9 +548,6 @@ class UbootFastboot:
         :param timeout: Timeout in seconds for verification, defaults to 1 second.
         :return: True if connection is active, False otherwise.
         """
-        if not self.is_opened:
-            return False
-
         try:
             # Use the UUU instance to verify with short timeout
             return self.uuu.verify_fastboot_connection(timeout)

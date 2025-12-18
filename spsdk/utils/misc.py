@@ -1070,11 +1070,12 @@ def get_hash(text: Union[str, bytes]) -> str:
 
 
 def deep_update(d: dict, u: dict) -> dict:
-    """Deep update nested dictionaries.
+    """Deep update nested dictionaries and lists.
 
     Recursively merges two dictionaries, updating the first dictionary with values
     from the second. For nested dictionaries, the merge is performed recursively
-    rather than replacing the entire nested dictionary.
+    rather than replacing the entire nested dictionary. For lists containing
+    dictionaries, the dictionaries are also merged recursively.
 
     :param d: Dictionary that will be updated.
     :param u: Dictionary with update information.

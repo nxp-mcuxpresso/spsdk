@@ -15,6 +15,7 @@ acmd
 ACMD
 ACPI
 ACPIPCI
+ACTIV
 addoption
 ADDRINC
 Adesto
@@ -153,6 +154,7 @@ BOOTABLE
 BOOTCFG
 bootcmd
 bootdevice
+BOOTEN
 bootfailure
 bootimage
 bootimg
@@ -246,6 +248,7 @@ CMDV
 cmpa
 Cmpa
 CMPA
+CMPT
 cmsis
 cmsisdap
 CMSISDAP
@@ -258,6 +261,7 @@ codemirror
 colorama
 comalg
 COMMANDFAILURE
+COMMANDSET
 commentjson
 condimentum
 configfile
@@ -411,6 +415,7 @@ DUCKB
 DUKB
 DUMMYPROBEFAILED
 dunder
+DVCFG
 DWNLD
 dynlib
 EAAQ
@@ -434,6 +439,7 @@ eeprom
 Eeprom
 EEPROM
 efff
+EFLASH
 efuse
 EFUSE
 efuses
@@ -584,6 +590,7 @@ GLBAC
 GLBL
 gmac
 gmssl
+GOLOG
 GOTP
 gpio
 GPIO
@@ -600,6 +607,7 @@ hexbin
 hexdata
 hexdump
 hexstring
+HHLLBBBB
 HIDAPI
 hidraw
 HIFI
@@ -632,8 +640,10 @@ IDEVID
 idlecommand
 idna
 ifile
+IFLASH
 ihex
 ikbek
+IKEV
 iled
 imem
 IMEM
@@ -652,7 +662,6 @@ inquirerpy
 intelhex
 interruptible
 intervaltree
-interruptible
 intf
 Intf
 intfs
@@ -716,6 +725,7 @@ KEYEN
 KEYFLUSH
 keygen
 keyid
+KEYPAIR
 keysource
 keystream
 keywrap
@@ -864,6 +874,7 @@ mmcpart
 mmcroot
 mnew
 modindex
+MONTDH
 morbi
 moredelay
 moriginal
@@ -931,6 +942,7 @@ nonsecure
 NONSECURE
 Noord
 nopadding
+NOSTKY
 notime
 npxcrypto
 nsacr
@@ -1243,6 +1255,7 @@ Roznov
 RPMB
 rpmsg
 RRAM
+RSAES
 rsassa
 RSASSA
 rsid
@@ -1274,6 +1287,7 @@ sbkd
 sbkdp
 sbkek
 SBKEK
+SBLOADER
 SBMR
 sbvx
 scandir
@@ -1386,6 +1400,7 @@ SPINOR
 SPINORSFDP
 spki
 SPLDDR
+SPLL
 SPNIDEN
 spreg
 SPSCK
@@ -1503,7 +1518,6 @@ TRDC
 trgt
 TRINPROG
 tristique
-Trmac
 trng
 Trng
 TRNG
@@ -1584,6 +1598,7 @@ userkek
 USERKEK
 userkey
 usermod
+UTEST
 uuu
 UUULsUsbDevices
 Uxxx
@@ -1643,6 +1658,7 @@ xacy
 xamples
 xbce
 xbfffffffu
+XCBC
 xcdbo
 xdffd
 xdist
@@ -1679,3 +1695,9 @@ Zeroize
 ZEROIZE
 zeroized
 zipp
+# 952 new words
+CYCLEDELAY
+SWRST
+datapath
+VROMPATCH
+ROMPATCH

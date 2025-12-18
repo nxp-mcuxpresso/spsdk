@@ -16,14 +16,14 @@ info:
     rom:
       protocol: sdps
       usb:
-        vid: 0xDEAD
-        pid: 0xBEEF
+        - vid: 0xDEAD
+          pid: 0xBEEF
     flashloader:
       protocol: mboot
       interfaces: ["usb"]
       usb:
-        vid: 0x1234
-        pid: 0x5678
+        - vid: 0x1234
+          pid: 0x5678
 
 features:
   # ======== Feature 1 ========

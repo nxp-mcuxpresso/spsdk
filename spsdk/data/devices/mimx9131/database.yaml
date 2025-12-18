@@ -63,8 +63,8 @@ info:
       protocol: sdps
       interfaces: ["usb"]
       usb:
-        vid: 0x1FC9
-        pid: 0x0159
+        - vid: 0x1FC9
+          pid: 0x0159
       protocol_params:
         no_cmd: True
         hid_ep1: True

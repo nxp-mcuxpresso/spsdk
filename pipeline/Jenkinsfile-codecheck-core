@@ -27,7 +27,7 @@ pipeline {
         stage('Codecheck') {
             steps {
                 withVenv(
-                    'tox --recreate -e py39,py313 -x "testenv.extras=" -- --info-check gitcov'
+                    'tox --recreate -e py310,py313 -x "testenv.extras=" -- --info-check gitcov'
                 )
             }
         }
@@ -35,7 +35,7 @@ pipeline {
 
     post {
         always {
-                archiveArtifacts artifacts: 'reports_py39/**/*.txt, reports_py313/**/*.txt', fingerprint: true
+                archiveArtifacts artifacts: 'reports_py310/**/*.txt, reports_py313/**/*.txt', fingerprint: true
 
         emailext(body: '${DEFAULT_CONTENT}', mimeType: 'text/html',
             replyTo: '$DEFAULT_REPLYTO', subject: '${DEFAULT_SUBJECT}',

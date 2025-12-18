@@ -250,7 +250,7 @@ def pfr_export(
     root_of_trust, rotkh = get_keys_or_rotkh_from_certblock_config(rot_config, pfr_obj.family)
     if secret_file:
         root_of_trust = secret_file
-    if pfr_obj.SUB_FEATURE == "cmpa" and root_of_trust:
+    if pfr_obj.SUB_FEATURE in ["cmpa", "cfpa_cmpa"] and root_of_trust:
         keys = extract_public_keys(root_of_trust, password)
 
     data = pfr_obj.export(add_seal=add_seal, keys=keys, rotkh=rotkh)
@@ -301,8 +301,18 @@ def write(
         if family != pfr_obj.family:
             raise SPSDKAppError("Family in configuration doesn't match family from CLI.")
         data = pfr_obj.export()
-    pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE, [pfr_obj.SUB_FEATURE, "address"])
+
+    pfr_page_name = pfr_obj.__class__.__name__
     pfr_page_length = pfr_obj.binary_size
+    pfr_page_address = pfr_obj.db.get_int(
+        pfr_obj.FEATURE, [pfr_obj.SUB_FEATURE, "address"], default=-1
+    )
+    if pfr_page_address == -1:
+        pfr_page_address = pfr_obj.db.get_int(
+            pfr_obj.FEATURE, [pfr_obj.SUB_FEATURE, "write_address"], default=-1
+        )
+    if pfr_page_address == -1:
+        raise SPSDKError(f"Unable to determine {pfr_page_name} page write address for {family}")
 
     click.echo(
         f"The {pfr_obj.__class__.__name__} page for {family.name} is located at "
@@ -314,10 +324,24 @@ def write(
             f"PFR page length is {pfr_page_length}. Provided binary has {size_fmt(len(data))}."
         )
     if pfr_obj.WRITE_METHOD == "write_memory":
+        db = get_db(family)
         with McuBoot(interface=interface, cmd_exception=True, family=family) as mboot:
             try:
+                requires_scratch_erase = db.get_bool(
+                    DatabaseManager.PFR, "requires_scratch_erase", default=False
+                )
+                if requires_scratch_erase:
+                    scratch_page_address = db.get_int(DatabaseManager.PFR, "scratch_page_address")
+                    scratch_page_size = db.get_int(DatabaseManager.PFR, "scratch_page_size")
+                    logger.info(
+                        f"Erasing scratch area ({scratch_page_address:#x}) before writing configuration."
+                    )
+                    mboot.flash_erase_region(address=scratch_page_address, length=scratch_page_size)
+
+                logger.info(f"Writing configuration data to {pfr_page_address:#x}")
                 mboot.write_memory(address=pfr_page_address, data=data)
-                requires_reset = get_db(family).get_bool(DatabaseManager.PFR, "requires_reset")
+
+                requires_reset = db.get_bool(DatabaseManager.PFR, "requires_reset", default=False)
                 if requires_reset:
                     logger.info(
                         "The configuration will be applied after reset. Resetting the device."
@@ -363,9 +387,17 @@ def read(
 ) -> None:
     """Read PFR page from the device."""
     pfr_obj = get_ifr_pfr_class(area, family)(family=family)
-    pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE, [pfr_obj.SUB_FEATURE, "address"])
-    pfr_page_length = pfr_obj.binary_size
     pfr_page_name = pfr_obj.__class__.__name__
+    pfr_page_length = pfr_obj.binary_size
+    pfr_page_address = pfr_obj.db.get_int(
+        pfr_obj.FEATURE, [pfr_obj.SUB_FEATURE, "address"], default=-1
+    )
+    if pfr_page_address == -1:
+        pfr_page_address = pfr_obj.db.get_int(
+            pfr_obj.FEATURE, [pfr_obj.SUB_FEATURE, "read_address"], default=-1
+        )
+    if pfr_page_address == -1:
+        raise SPSDKError(f"Unable to determine {pfr_page_name} page read address for {family}")
 
     click.echo(f"{pfr_page_name} page address on {family} is {pfr_page_address:#x}")
 

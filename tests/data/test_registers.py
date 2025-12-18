@@ -22,6 +22,23 @@ from typing import Optional
 import pytest
 
 
+def _is_reserved_bitfield_with_minimal_keys(bitfield: dict) -> bool:
+    """Check if bitfield is a reserved bitfield with only minimal keys.
+
+    Reserved bitfields can have:
+    - "width" (mandatory)
+    - "access" (optional)
+
+    :param bitfield: Dictionary representing a bitfield configuration to check.
+    :return: True if bitfield is reserved with minimal keys, False otherwise.
+    """
+    if not isinstance(bitfield, dict):
+        return False
+
+    keys = set(bitfield.keys())
+    return "width" in bitfield and keys <= {"width", "access"}
+
+
 def validate_register_names_without_reserved(data: dict) -> dict:
     """Validate register names with 'reserved' have is_reserved=true.
 
@@ -45,7 +62,8 @@ def validate_register_names_without_reserved(data: dict) -> dict:
                         errors[name] = (
                             f"Register '{name}' contains 'reserved' but is_reserved is not True"
                         )
-
+                    if "/" in name:
+                        errors[name] = f"Register '{name}' contains a forbidden character: '/'"
     return errors
 
 
@@ -56,8 +74,10 @@ def validate_register_width_and_bitfields(data: dict) -> dict:
     defined and their sum matches the declared register width. Validates both
     individual bitfield properties and overall register consistency.
 
-    :param data: Dictionary containing register configuration with groups, registers, and bitfields structure.
-    :return: Dictionary mapping register names or bitfield names to error descriptions, empty if no errors found.
+    :param data: Dictionary containing register configuration with groups, registers,
+                 and bitfields structure.
+    :return: Dictionary mapping register names or bitfield names to error descriptions,
+             empty if no errors found.
     """
     errors: dict[str, str] = {}
 
@@ -113,9 +133,10 @@ def validate_register_and_bitfield_name_uniqueness(data: dict) -> dict:
     Checks for duplicate register names across the entire data structure, duplicate
     bitfield names within each register, and duplicate value names within each bitfield.
 
-    :param data: Dictionary containing register groups with registers, bitfields, and values structure.
-    :return: Dictionary with validation errors where keys are error identifiers
-        and values are error descriptions, empty dict if no errors found.
+    :param data: Dictionary containing register groups with registers, bitfields, and values
+        structure.
+    :return: Dictionary with validation errors where keys are error identifiers and values
+        are error descriptions, empty dict if no errors found.
     """
     errors = {}
 
@@ -142,7 +163,7 @@ def validate_register_and_bitfield_name_uniqueness(data: dict) -> dict:
 
                         for bitfield in register["bitfields"]:
                             # Skip name uniqueness check if the bitfield only has a width key
-                            if set(bitfield.keys()) == {"width"}:
+                            if _is_reserved_bitfield_with_minimal_keys(bitfield):
                                 continue
 
                             bitfield_name = bitfield.get("name", "")
@@ -214,7 +235,8 @@ def validate_bitfield_names_without_reserved(data: dict) -> dict:
     Bitfields with only a width key are skipped during validation.
 
     :param data: Dictionary containing register groups with registers and bitfields structure.
-    :return: Dictionary mapping register_name.bitfield_name to error descriptions, empty if no errors found.
+    :return: Dictionary mapping register_name.bitfield_name to error descriptions, empty if no
+             errors found.
     """
     errors: dict[str, str] = {}
 
@@ -228,10 +250,16 @@ def validate_bitfield_names_without_reserved(data: dict) -> dict:
                     if "bitfields" in register:
                         for bitfield in register["bitfields"]:
                             # Skip check if the bitfield only has a width key
-                            if set(bitfield.keys()) == {"width"}:
+                            if _is_reserved_bitfield_with_minimal_keys(bitfield):
                                 continue
 
-                            bitfield_name = bitfield.get("name", "")
+                            bitfield_name = bitfield.get("name")
+                            # Check if name contains reserved but is_reserved is not True
+                            if bitfield_name is None:
+                                bf_key = f"{register_name}.Unknown bitfield"
+                                errors[bf_key] = (
+                                    f"Register '{register_name}' has a bitfield with no name and is not reserved!"
+                                )
 
                             # Check if name contains "reserved" (case insensitive) but is_reserved is not True
 
@@ -239,7 +267,12 @@ def validate_bitfield_names_without_reserved(data: dict) -> dict:
                                 bf_key = f"{register_name}.{bitfield_name}"
                                 errors[bf_key] = (
                                     f"Register '{register_name}', bitfield '{bitfield_name}' "
-                                    "contains 'reserved' but is_reserved is not True"
+                                    "contains 'reserved' but this is not allowed"
+                                )
+                            if "/" in bitfield_name:
+                                errors[f"{register_name}.{bitfield_name}"] = (
+                                    f"Register '{register_name}', bitfield '{bitfield_name}' "
+                                    "contains a forbidden character: '/'"
                                 )
 
     return errors
@@ -248,12 +281,14 @@ def validate_bitfield_names_without_reserved(data: dict) -> dict:
 def validate_register_and_bitfield_names_no_double_spaces(data: dict) -> dict:
     """Validate register and bitfield names don't contain double spaces.
 
-    This function traverses through the data structure containing register groups
-    and validates that neither register names nor bitfield names contain consecutive
-    spaces, which could indicate formatting issues or data corruption.
+    This function traverses through the data structure containing register groups and validates
+    that neither register names nor bitfield names contain consecutive spaces, which could
+    indicate formatting issues or data corruption.
 
-    :param data: Dictionary containing register configuration with groups, registers, and bitfields.
-    :return: Dictionary mapping problematic names to error descriptions, empty if no errors found.
+    :param data: Dictionary containing register configuration with groups, registers, and
+                 bitfields.
+    :return: Dictionary mapping problematic names to error descriptions, empty if no errors
+             found.
     """
 
     errors: dict[str, str] = {}
@@ -273,7 +308,7 @@ def validate_register_and_bitfield_names_no_double_spaces(data: dict) -> dict:
                     if "bitfields" in register:
                         for bitfield in register["bitfields"]:
                             # Skip check if the bitfield only has a width key (unnamed/reserved bitfields)
-                            if set(bitfield.keys()) == {"width"}:
+                            if _is_reserved_bitfield_with_minimal_keys(bitfield):
                                 continue
 
                             bitfield_name = bitfield.get("name", "")
@@ -360,6 +395,7 @@ def validate_default_value_within_register_mask(data: dict) -> dict:
     max value of 255 (2^8 - 1). Supports both integer and string (hex/decimal) formats.
 
     :param data: Dictionary containing register groups with registers and bitfields configuration.
+    :return: Dictionary with validation errors, empty if no errors found.
     """
     errors: dict[str, str] = {}
 
@@ -485,10 +521,13 @@ def validate_access_rights_consistency(data: dict) -> dict:
     """Validate that register and bitfield access rights are consistent.
 
     Checks if register access does not allow read, there should be no readable bit-fields.
-    Based on schema enum: ["RW", "WO", "RO", "WRITE_CONST", "none"].
+    Based on schema enum: ["RW", "WO", "RO", "WRITE_CONST", "none"]. The function validates
+    that when a register has non-readable access (WO, WRITE_CONST, none), its bitfields
+    should not have readable access types (RW, RO).
 
     :param data: Dictionary containing register groups with registers and bitfields data.
-    :return: Dictionary with identifier as key and error description as value, empty if no errors.
+    :return: Dictionary with identifier as key and error description as value, empty if no
+             errors found.
     """
     errors: dict[str, str] = {}
 
@@ -556,10 +595,13 @@ def validate_access_rights_consistency(data: dict) -> dict:
 def validate_write_access_rights_consistency(data: dict) -> dict:
     """Validate that register and bitfield write access rights are consistent.
 
-    If register access does not allow write, there should be no writable bit-fields.
-    Based on schema enum: ["RW", "WO", "RO", "WRITE_CONST", "none"].
+    The method checks if register access permissions are consistent with their bitfield
+    access permissions. If a register has non-writable access (RO, none), none of its
+    bitfields should have writable access (RW, WO, WRITE_CONST). Based on schema enum:
+    ["RW", "WO", "RO", "WRITE_CONST", "none"].
 
-    :param data: Dictionary containing register groups data structure.
+    :param data: Dictionary containing register groups data structure with registers
+        and their bitfields.
     :return: Dictionary with validation errors where keys are error identifiers and
         values are error descriptions, empty dict if no errors found.
     """
@@ -631,6 +673,8 @@ def validate_lock_functional_consistency(data: dict) -> dict:
 
     Validates that lock configurations are functionally consistent across register definitions.
     This includes checking access permissions, lock register existence, and bitfield alignment.
+    Performs comprehensive validation of lock mechanisms including write-only register constraints,
+    lock register accessibility, and proper bitfield positioning within lock registers.
 
     :param data: Register configuration data containing groups of registers with lock definitions
     :return: Dictionary mapping error identifiers to error descriptions, empty if no errors found
@@ -781,7 +825,7 @@ def validate_lock_functional_consistency(data: dict) -> dict:
                     ):
                         # Acceptable for write lock scenarios
                         pass
-                    elif set(bitfield.keys()) == {"width"}:
+                    elif _is_reserved_bitfield_with_minimal_keys(bitfield):
                         # Unnamed/reserved bitfield - might be acceptable
                         pass
                     else:
@@ -848,14 +892,6 @@ def validate_lock_functional_consistency(data: dict) -> dict:
                     else:
                         lock_register_info = register_map[lock_register_id]
                         lock_register = lock_register_info["register"]
-                        lock_reg_access = lock_register_info["access"]
-
-                        # Check if lock register is writable
-                        if lock_reg_access in ["RO", "none"]:
-                            errors[f"lock_register_not_writable_{reg_name}"] = (
-                                f"Register '{reg_name}' references lock register '{lock_register_id}' "
-                                f"which has access '{lock_reg_access}' (not writable)"
-                            )
 
                         # Validate each lock type bitfield exists
                         lock_types = [
@@ -883,6 +919,8 @@ def validate_calculated_reserved_default_value(data: dict) -> dict:
 
     Validates that if any bitfield is calculated and any other bitfield is reserved
     or not writable, then the default value must be specified for the register.
+    This ensures proper initialization when mixing calculated fields with reserved
+    or read-only fields that cannot be modified after initialization.
 
     :param data: Register configuration data containing groups and registers.
     :return: Dictionary with validation errors where keys are error identifiers
@@ -904,36 +942,17 @@ def validate_calculated_reserved_default_value(data: dict) -> dict:
         """
         return isinstance(bitfield, dict) and "calculated" in bitfield
 
-    def is_bitfield_reserved(bitfield: dict) -> bool:
-        """Check if bitfield is reserved.
-
-        Determines whether a bitfield dictionary represents a reserved field by checking
-        multiple criteria: explicit is_reserved flag, unnamed fields with only width,
-        or names containing "reserved".
-
-        :param bitfield: Dictionary containing bitfield configuration data.
-        :return: True if the bitfield is considered reserved, False otherwise.
-        """
-        if not isinstance(bitfield, dict):
-            return False
-
-        # Check explicit is_reserved flag
-        if bitfield.get("is_reserved", False):
-            return True
-
-        # Check if bitfield only has width (unnamed/reserved bitfield)
-        if set(bitfield.keys()) == {"width"}:
-            return True
-
-        # Check if name contains "reserved" (case insensitive)
-        bf_name = bitfield.get("name", "")
-        if bf_name and "reserved" in bf_name.lower():
-            return True
-
-        return False
-
     def is_bitfield_not_writable(bitfield: dict) -> bool:
-        """Check if bitfield is not writable based on access."""
+        """Check if bitfield is not writable based on access.
+
+        Determines whether a bitfield dictionary has non-writable access permissions.
+        The method checks the 'access' field and compares it against known non-writable
+        access types (RO, none). If no access field is present, it returns False as
+        the access is inherited from the register level.
+
+        :param bitfield: Dictionary containing bitfield configuration with potential 'access' key.
+        :return: True if bitfield has non-writable access, False otherwise.
+        """
         if not isinstance(bitfield, dict):
             return False
 
@@ -946,7 +965,14 @@ def validate_calculated_reserved_default_value(data: dict) -> dict:
         return bf_access in non_writable_access
 
     def has_default_value(register: dict) -> bool:
-        """Check if register or any of its bitfields has a default value."""
+        """Check if register or any of its bitfields has a default value.
+
+        The method examines both register-level and bitfield-level default values to determine
+        if any default configuration exists.
+
+        :param register: Dictionary containing register configuration data.
+        :return: True if register or any bitfield has default value, False otherwise.
+        """
         if not isinstance(register, dict):
             return False
 
@@ -993,7 +1019,7 @@ def validate_calculated_reserved_default_value(data: dict) -> dict:
                     has_calculated_bitfield = True
 
                 # Check if this bitfield is reserved or not writable
-                if is_bitfield_reserved(bitfield):
+                if _is_reserved_bitfield_with_minimal_keys(bitfield):
                     has_reserved_or_not_writable_bitfield = True
                 elif is_bitfield_not_writable(bitfield):
                     has_reserved_or_not_writable_bitfield = True
@@ -1028,7 +1054,15 @@ def validate_lock_bitfield_naming(data: dict) -> dict:
         return errors
 
     def is_lock_bit_with_exceptions(bf_name: str) -> bool:
-        """Check if bitfield name is a lock bit subject to validation rules."""
+        """Check if bitfield name is a lock bit subject to validation rules.
+
+        This method determines whether a given bitfield name represents a lock bit that should be
+        subject to validation rules. It identifies lock bits by their naming convention and excludes
+        specific exceptions that are not subject to standard lock validation rules.
+
+        :param bf_name: The bitfield name to check for lock bit classification.
+        :return: True if the bitfield is a lock bit subject to validation rules, False otherwise.
+        """
         if not isinstance(bf_name, str):
             return False
 
@@ -1077,7 +1111,7 @@ def validate_lock_bitfield_naming(data: dict) -> dict:
                         continue
 
                     # Skip bitfields that only have width
-                    if set(bitfield.keys()) == {"width"}:
+                    if _is_reserved_bitfield_with_minimal_keys(bitfield):
                         continue
 
                     bitfield_name = bitfield.get("name", "")
@@ -1118,33 +1152,13 @@ def validate_calculated_register_constraints(data: dict) -> dict:
     2. Register cannot be marked as reserved
     3. Register cannot contain any reserved bitfields
 
-    :param data: Dictionary containing register groups and their register definitions
-    :return: Dictionary mapping error identifiers to error descriptions, empty if no errors found
+    :param data: Dictionary containing register groups and their register definitions.
+    :return: Dictionary mapping error identifiers to error descriptions, empty if no errors found.
     """
     errors: dict[str, str] = {}
 
     if not isinstance(data, dict) or "groups" not in data:
         return errors
-
-    def is_bitfield_reserved(bitfield: dict) -> bool:
-        """Check if bitfield is reserved."""
-        if not isinstance(bitfield, dict):
-            return False
-
-        # Check explicit is_reserved flag
-        if bitfield.get("is_reserved", False):
-            return True
-
-        # Check if bitfield only has width (unnamed/reserved bitfield)
-        if set(bitfield.keys()) == {"width"}:
-            return True
-
-        # Check if name contains "reserved" (case insensitive)
-        bf_name = bitfield.get("name", "")
-        if bf_name and "reserved" in bf_name.lower():
-            return True
-
-        return False
 
     for group in data["groups"]:
         if not isinstance(group, dict) or "registers" not in group:
@@ -1188,7 +1202,7 @@ def validate_calculated_register_constraints(data: dict) -> dict:
                     if not isinstance(bitfield, dict):
                         continue
 
-                    if is_bitfield_reserved(bitfield):
+                    if _is_reserved_bitfield_with_minimal_keys(bitfield):
                         bf_name = bitfield.get("name", "unnamed")
                         errors[f"calculated_reserved_bitfield_{reg_name}.{bf_name}"] = (
                             f"Calculated register '{reg_name}' contains reserved bitfield '{bf_name}' "
@@ -1206,33 +1220,13 @@ def validate_reserved_register_constraints(data: dict) -> dict:
     starting with "Reserved", use "none" for individual_write_lock, and contain
     only reserved bitfields.
 
-    :param data: Dictionary containing register groups and their configurations
-    :return: Dictionary mapping error identifiers to error descriptions, empty if no errors found
+    :param data: Dictionary containing register groups and their configurations.
+    :return: Dictionary mapping error identifiers to error descriptions, empty if no errors found.
     """
     errors: dict[str, str] = {}
 
     if not isinstance(data, dict) or "groups" not in data:
         return errors
-
-    def is_bitfield_reserved(bitfield: dict) -> bool:
-        """Check if bitfield is reserved."""
-        if not isinstance(bitfield, dict):
-            return False
-
-        # Check explicit is_reserved flag
-        if bitfield.get("is_reserved", False):
-            return True
-
-        # Check if bitfield only has width (unnamed/reserved bitfield)
-        if set(bitfield.keys()) == {"width"}:
-            return True
-
-        # Check if name contains "reserved" (case insensitive)
-        bf_name = bitfield.get("name", "")
-        if bf_name and "reserved" in bf_name.lower():
-            return True
-
-        return False
 
     for group in data["groups"]:
         if not isinstance(group, dict) or "registers" not in group:
@@ -1271,7 +1265,7 @@ def validate_reserved_register_constraints(data: dict) -> dict:
                     if not isinstance(bitfield, dict):
                         continue
 
-                    if not is_bitfield_reserved(bitfield):
+                    if not _is_reserved_bitfield_with_minimal_keys(bitfield):
                         bf_name = bitfield.get("name", f"bitfield_{i}")
                         errors[f"reserved_non_reserved_bitfield_{reg_name}.{bf_name}"] = (
                             f"Reserved register '{reg_name}' contains non-reserved bitfield '{bf_name}' "
@@ -1288,8 +1282,8 @@ def validate_enum_default_value_match(data: dict) -> dict:
     is specified for the register, there must be an enum value that matches
     the extracted bitfield portion of the register default value.
 
-    :param data: Register configuration data containing groups, registers, and bitfields
-    :return: Dictionary mapping error identifiers to error descriptions, empty if no errors found
+    :param data: Register configuration data containing groups, registers, and bitfields.
+    :return: Dictionary mapping error identifiers to error descriptions, empty if no errors found.
     """
     errors: dict[str, str] = {}
 
@@ -1297,7 +1291,15 @@ def validate_enum_default_value_match(data: dict) -> dict:
         return errors
 
     def parse_int_value(value_str: str) -> Optional[int]:
-        """Parse integer value from string (hex or decimal)."""
+        """Parse integer value from string (hex or decimal).
+
+        The method supports both hexadecimal (0x prefix) and decimal formats,
+        including signed values with + or - prefixes.
+
+        :param value_str: String representation of integer value to parse.
+        :raises ValueError: Invalid decimal string format.
+        :return: Parsed integer value or None if input is invalid or not a string.
+        """
         if not isinstance(value_str, str):
             return None
 
@@ -1318,7 +1320,17 @@ def validate_enum_default_value_match(data: dict) -> dict:
     def extract_bitfield_value_from_register_default(
         register_default: Optional[int], bitfield_offset: int, bitfield_width: int
     ) -> Optional[int]:
-        """Extract bitfield value from register default value."""
+        """Extract bitfield value from register default value.
+
+        Extracts a specific bitfield from a register's default value using the provided
+        offset and width parameters. The method handles bit manipulation to isolate
+        the desired bitfield portion from the complete register value.
+
+        :param register_default: Default value of the register, None if not available.
+        :param bitfield_offset: Starting bit position of the bitfield in the register.
+        :param bitfield_width: Number of bits that comprise the bitfield.
+        :return: Extracted bitfield value, or None if register_default is None.
+        """
         if register_default is None:
             return None
 
@@ -1331,7 +1343,15 @@ def validate_enum_default_value_match(data: dict) -> dict:
         return bitfield_value
 
     def calculate_bitfield_offset(bitfields: list, target_bitfield_index: int) -> int:
-        """Calculate the bit offset of a bitfield within the register."""
+        """Calculate the bit offset of a bitfield within the register.
+
+        Iterates through the list of bitfields and calculates the cumulative bit offset
+        up to the target bitfield index by summing the widths of preceding bitfields.
+
+        :param bitfields: List of bitfield dictionaries containing width information.
+        :param target_bitfield_index: Index of the target bitfield to calculate offset for.
+        :return: Bit offset of the target bitfield within the register.
+        """
         offset = 0
         for i, bf in enumerate(bitfields):
             if i == target_bitfield_index:
@@ -1459,7 +1479,7 @@ def validate_register_and_bitfield_id_uniqueness(data: dict) -> dict:
 
                         for bitfield in register["bitfields"]:
                             # Skip ID uniqueness check if the bitfield only has a width key
-                            if set(bitfield.keys()) == {"width"}:
+                            if _is_reserved_bitfield_with_minimal_keys(bitfield):
                                 continue
 
                             bitfield_name = bitfield.get("name", "")
@@ -1501,8 +1521,10 @@ def validate_id_naming_patterns(data: dict) -> dict:
     - Bitfield ID (single bit): {reg_id}-bit{bit_index} (e.g., "field000-bit0")
     - Bitfield ID (multi-bit): {reg_id}-bits{start}-{end} (e.g., "field000-bits0-31")
 
-    :param data: Dictionary containing register groups with registers and bitfields structure.
-    :return: Dictionary mapping error identifiers to error descriptions, empty if no errors found.
+    :param data: Dictionary containing register groups with registers and bitfields
+        structure.
+    :return: Dictionary mapping error identifiers to error descriptions, empty if no
+        errors found.
     """
     errors: dict[str, str] = {}
 
@@ -1513,7 +1535,19 @@ def validate_id_naming_patterns(data: dict) -> dict:
         return errors
 
     def validate_register_id(reg_id: str, reg_name: str, offset_int: str, is_reserved: bool) -> str:
-        """Validate register ID pattern and return error message if invalid."""
+        """Validate register ID pattern and return error message if invalid.
+
+        Validates that a register ID follows the correct naming pattern based on whether it's a
+        reserved register or standard register. For reserved registers, expects "Reserved{hex_offset}"
+        pattern. For standard registers, expects one of the allowed prefixes followed by hex offset.
+        Also validates that the offset in the ID matches the provided offset value.
+
+        :param reg_id: Register ID string to validate
+        :param reg_name: Name of the register for error reporting
+        :param offset_int: Expected offset value as string (hex or decimal)
+        :param is_reserved: True if this is a reserved register, False for standard register
+        :return: Empty string if valid, error message string if invalid
+        """
         if not reg_id:
             return ""  # Empty ID is allowed
 
@@ -1580,7 +1614,20 @@ def validate_id_naming_patterns(data: dict) -> dict:
     def validate_bitfield_id(
         bf_id: str, bf_name: str, bf_pos: int, reg_id: str, reg_name: str, bf_width: int
     ) -> str:
-        """Validate bitfield ID pattern and return error message if invalid."""
+        """Validate bitfield ID pattern and return error message if invalid.
+
+        Validates that a bitfield ID follows the correct naming convention based on its width
+        and position within a register. Single-bit fields should use 'reg_id-bit{index}' pattern,
+        while multi-bit fields should use 'reg_id-bits{start}-{end}' pattern.
+
+        :param bf_id: The bitfield ID to validate
+        :param bf_name: Name of the bitfield for error reporting
+        :param bf_pos: Position of the bitfield in the register
+        :param reg_id: ID of the parent register
+        :param reg_name: Name of the parent register for error reporting
+        :param bf_width: Width of the bitfield in bits
+        :return: Empty string if valid, error message if invalid
+        """
         if not bf_id:
             return ""  # Empty ID is allowed
 
@@ -1663,7 +1710,7 @@ def validate_id_naming_patterns(data: dict) -> dict:
                         continue
 
                     # Skip bitfields that only have width (unnamed/reserved)
-                    if set(bitfield.keys()) == {"width"}:
+                    if _is_reserved_bitfield_with_minimal_keys(bitfield):
                         bf_width = bitfield["width"]
                         bf_pos += bf_width
                         continue
@@ -1684,12 +1731,13 @@ def validate_id_naming_patterns(data: dict) -> dict:
 def validate_bitfield_enum_no_reserved_values(data: dict) -> dict:
     """Validate that bitfield enum values don't contain "RESERVED".
 
-    This function checks all bitfield enum values and their deprecated names
-    to ensure they don't contain the word "reserved" (case insensitive).
+    This function checks all bitfield enum values and their deprecated names to ensure they don't
+    contain the word "reserved" (case insensitive). Reserved values in enum definitions are not
+    allowed in register specifications.
 
     :param data: Register data dictionary containing groups with registers and bitfields.
-    :return: Dictionary with validation errors where keys are error identifiers and
-        values are error descriptions. Empty dictionary if no errors found.
+    :return: Dictionary with validation errors where keys are error identifiers and values are
+        error descriptions. Empty dictionary if no errors found.
     """
     errors: dict[str, str] = {}
 
@@ -1714,7 +1762,7 @@ def validate_bitfield_enum_no_reserved_values(data: dict) -> dict:
                     continue
 
                 # Skip bitfields that only have width (unnamed/reserved)
-                if set(bitfield.keys()) == {"width"}:
+                if _is_reserved_bitfield_with_minimal_keys(bitfield):
                     continue
 
                 bf_name = bitfield.get("name", "unnamed")
@@ -1752,7 +1800,6 @@ def validate_bitfield_enum_no_reserved_values(data: dict) -> dict:
                                     f"enum value named '{deprecated_name}' "
                                     "which contains 'reserved' and is not allowed"
                                 )
-
     return errors
 
 
@@ -1760,7 +1807,7 @@ def get_device_folders(base_path: str) -> list:
     """Get all folder names in the given base path for test parametrization.
 
     The method scans the specified directory for subdirectories and returns their paths
-    relative to the base directory. Some MCU/MPU names are excluded based on internal exceptions.
+    relative to the base directory.
 
     :param base_path: Path to the directory containing device folders.
     :return: List of folder paths that can be used for parametrization, sorted alphabetically.
@@ -1792,8 +1839,8 @@ def test_data_files(test_path: str) -> None:
     name uniqueness, access rights consistency, default values, and various other
     constraints specific to SPSDK register definitions.
 
-    :param test_path: Relative path to the directory containing JSON files to validate
-    :raises RuntimeError: Error processing JSON file or test execution failure
+    :param test_path: Relative path to the directory containing JSON files to validate.
+    :raises RuntimeError: Error processing JSON file or test execution failure.
     """
     # Get the current file's directory
     current_dir = Path(__file__).parent
@@ -1828,6 +1875,34 @@ def test_data_files(test_path: str) -> None:
         validate_id_naming_patterns,
         validate_bitfield_enum_no_reserved_values,
     ]
+    # Define file patterns and their ignored validation functions
+    # Key: file pattern (glob-style), Value: list of validation function names to ignore
+    ignore_rules = {
+        "tz.json": [
+            "validate_register_names_without_reserved",
+        ],
+        "tz_*.json": [
+            "validate_register_names_without_reserved",
+        ],
+    }
+
+    def should_ignore_test(file_path: Path, test_func_name: str) -> bool:
+        """Check if a test should be ignored for a specific file.
+
+        :param file_path: Path to the file being tested
+        :param test_func_name: Name of the validation function
+        :return: True if the test should be ignored, False otherwise
+        """
+        file_name = file_path.name
+
+        for pattern, ignored_tests in ignore_rules.items():
+            # Use fnmatch for glob-style pattern matching
+            from fnmatch import fnmatch
+
+            if fnmatch(file_name, pattern):
+                if test_func_name in ignored_tests:
+                    return True
+        return False
 
     # Final error log: {file_name: {test_name: {identifier: error_description}}}
     final_error_log = {}
@@ -1849,6 +1924,9 @@ def test_data_files(test_path: str) -> None:
         file_errors = {}
 
         for test_func in list_of_tests:
+            # Check if this test should be ignored for this file
+            if should_ignore_test(json_file, test_func.__name__):
+                continue
             try:
                 # Each test returns: {identifier: error_description} or {} if no errors
                 test_result = test_func(data)

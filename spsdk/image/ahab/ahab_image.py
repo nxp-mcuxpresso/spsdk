@@ -703,7 +703,7 @@ class AHABImage(FeatureBaseClass):
                         offset=container_type.get_container_offset(i),
                     )
                     ret.ahab_containers.append(container)
-            except SPSDKError as exc:
+            except (SPSDKError, IndexError) as exc:
                 logger.debug(f"AHAB Container parsing index {i} failed: {str(exc)}")
                 if not ver_header.has_errors:
                     pre_ver = container_type.pre_parse_verify(

@@ -1475,7 +1475,7 @@
             {
               "width": 1,
               "id": "fuse7-bit-13",
-              "name": "Override HYS bit for SD/MMC pads",
+              "name": "Override HYS bit for SD-MMC pads",
               "description": "Once this fuse be blown, the [HYS] bit of  IOMUXC_SW_PAD_CTL_PAD_SDx_CLK(x is the SD port which the ROM boot from), IOMUXC_SW_PAD_CTL_PAD_SDx_CMD, IOMUXC_SW_PAD_CTL_PAD_SDx_DAT0-n(n will be 0, 3, or 7, depends on the bus width selected) will be set.   ",
               "values": [
                 {

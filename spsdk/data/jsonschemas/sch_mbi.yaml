@@ -447,16 +447,18 @@ image_type:
           signed-encrypted,
           signed-nxp,
           nxp_signed,
+          nbu-signed,
           Plain,
           CRC,
           Signed,
           Encrypted + Signed,
           NXP Signed,
           NXP signed,
+          NBU Signed,
           encrypted,
         ]
       enum_template:
-        ["plain", "crc", "signed", "signed-encrypted", "signed-nxp"]
+        ["plain", "crc", "signed", "signed-encrypted", "signed-nxp","nbu-signed"]
       template_value: plain
 
   required: [outputImageExecutionTarget, outputImageAuthenticationType]

@@ -166,14 +166,14 @@ class DebugCredentialCertificate(FeatureBaseClass):
     def export_rot_pub(self) -> bytes:
         """Export RoT public key as bytes.
 
-        :return: Binary representing the RoT key.
+        :return: binary representing the RoT key
         """
 
     @abc.abstractmethod
     def export_dck_pub(self) -> bytes:
         """Export Debugger public key (DCK) as bytes.
 
-        :return: Binary representing the DCK key.
+        :return: binary representing the DCK key
         """
 
     @abc.abstractmethod

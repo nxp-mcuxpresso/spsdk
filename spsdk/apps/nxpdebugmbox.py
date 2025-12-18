@@ -819,6 +819,35 @@ def send_dar(
         raise SPSDKAppError(f"The send Debug Authentication Response failed: {str(exc)}") from exc
 
 
+@cmd_group.command(name="set-bricked-mode", no_args_is_help=False)
+@click.pass_obj
+def set_bricked_mode_command(pass_obj: dict) -> None:
+    """Set Bricked mode."""
+    set_bricked_mode(
+        pass_obj["family"], pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"]
+    )
+    click.echo("Set bricked mode succeeded")
+
+
+def set_bricked_mode(
+    family: FamilyRevision,
+    debug_probe_params: DebugProbeParams,
+    debug_mailbox_params: DebugMailboxParams,
+) -> None:
+    """Start DebugMailBox.
+
+    :param family: Device family
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
+    try:
+        with _open_debugmbox(family, debug_probe_params, debug_mailbox_params) as mail_box:
+            dm_commands.SetBrickedMode(dm=mail_box).run()
+    except Exception as e:
+        raise SPSDKAppError(f"Set bricked mode failed: {e}") from e
+
+
 @main.group("famode-image", cls=CommandsTreeGroup)
 def famode_image_group() -> None:
     """Group of sub-commands related to Fault Analysis Mode Image (related to some families)."""

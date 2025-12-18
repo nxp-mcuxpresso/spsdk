@@ -55,13 +55,13 @@ info:
     rom:
       protocol: sdp
       usb:
-        vid: 0x1FC9
-        pid: 0x0130
+        - vid: 0x1FC9
+          pid: 0x0130
     flashloader:
       protocol: mboot
       usb:
-        vid: 0x15A2
-        pid: 0x0073
+        - vid: 0x15a2
+          pid: 0x0073
 
 features:
   # ======== Blhost section ========

@@ -24,6 +24,7 @@ from spsdk.apps.nxpimage_apps.nxpimage_bimg import bootable_image_group
 from spsdk.apps.nxpimage_apps.nxpimage_cert_block import cert_block_group
 from spsdk.apps.nxpimage_apps.nxpimage_fcf import fcf_group
 from spsdk.apps.nxpimage_apps.nxpimage_hab import hab_group
+from spsdk.apps.nxpimage_apps.nxpimage_hse import hse_group
 from spsdk.apps.nxpimage_apps.nxpimage_iee import iee_group
 from spsdk.apps.nxpimage_apps.nxpimage_lpcprog import lpcprog_group
 from spsdk.apps.nxpimage_apps.nxpimage_mbi import mbi_group
@@ -66,6 +67,7 @@ main.add_command(bee_group)
 main.add_command(tz_group)
 main.add_command(signed_msg_group)
 main.add_command(otfad_group)
+main.add_command(hse_group)
 
 
 @catch_spsdk_error

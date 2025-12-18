@@ -1345,17 +1345,17 @@
                   "description": "Same as cold boot"
                 },
                 {
-                  "name": "CFPA/CMPA & CRC32",
+                  "name": "CFPA-CMPA & CRC32",
                   "value": 1,
                   "description": "CRC check for CFPA/CMPA & CRC32 check of active image. Uses AHB_CRC image type to check image CRC and loads TZ-M preset data if present before jumping to the image"
                 },
                 {
-                  "name": "CFPA/CMPA & vector addr",
+                  "name": "CFPA-CMPA & vector addr",
                   "value": 2,
                   "description": "CRC check for CFPA/CMPA & jump to vector address specified in CFPA"
                 },
                 {
-                  "name": "CFPA/CMPA & CMAC",
+                  "name": "CFPA-CMPA & CMAC",
                   "value": 3,
                   "description": "CRC check for CFPA/CMPA & CMAC check of active image. Uses AHB_CRC image type to check image CRC and loads TZ-M preset data if present before jumping to the image"
                 }

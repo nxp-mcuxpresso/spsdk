@@ -134,13 +134,13 @@ tz_v2:
             title: Mask for register write/read operation
             description: Bit mask to control which bits of the register will be modified during Trust Zone configuration
             format: number
-            template_value: "0xFFFFFFFF"
+            template_value: "0x00000007"
           value:
             type: [number, string]
             title: Value for register write/read operation
             description: Value to be written to the specified address with the given mask
             format: number
-            template_value: "0xFFFFFFFF"
+            template_value: "0x00000007"
           skip_write:
             type: boolean
             title: Skip Write Operation

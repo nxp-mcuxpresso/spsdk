@@ -16,7 +16,7 @@ description = "My Signature Provider plugin for SPSDK."
 
 entry-points = { "spsdk.sp" = { mysp = "spsdk_sasp.provider" } }
 
-requires-python = ">= 3.9"
+requires-python = ">= 3.10"
 dependencies = ["spsdk>2.1"]
 authors = [{ name = "NXP" }]
 maintainers = [{ name = "NXP", email = "spsdk@nxp.com" }]
@@ -28,10 +28,10 @@ classifiers = [
     "License :: OSI Approved :: BSD License",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 
 [tool.pytest.ini_options]
@@ -40,7 +40,7 @@ junit_family = "xunit1"
 
 [tool.black]
 line-length = 100
-target-version = ["py39", "py310", "py311", "py312"]
+target-version = ["py310", "py311", "py312"]
 include = '\.pyi?$'
 
 [tool.isort]

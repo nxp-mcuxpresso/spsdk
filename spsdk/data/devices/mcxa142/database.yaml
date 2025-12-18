@@ -28,13 +28,10 @@ info:
       protocol: mboot
       interfaces: ["usb", "uart", "spi", "i2c"]
       usb:
-        vid: 0x1FC9
-        pid: 0x0155
+        - vid: 0x1FC9
+          pid: 0x0155
 
 features:
-  # ======== Blhost section ========
-  blhost: {}
-
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x2000_0000

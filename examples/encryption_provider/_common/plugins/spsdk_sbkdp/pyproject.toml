@@ -16,5 +16,5 @@ description = "My Secure Binary Key Derivation Provider plugin for SPSDK."
 
 entry-points = { "spsdk.sb31kdp" = { mysbkdp = "spsdk_sbkdp.provider" } }
 
-requires-python = ">= 3.9"
+requires-python = ">= 3.10"
 dependencies = ["spsdk>3.0"]

@@ -65,6 +65,8 @@ class DebugMailboxCommandID(SpsdkEnum):
     )
     NXP_EXEC_PROV_FW = (0x15, "NXP_EXEC_PROV_FW", "Execute Provisioning NXP Firmware")
 
+    SET_BRICKED_MODE = (0x16, "SET_BRICKED_MODE", "Set device bricked mode")
+
 
 class DebugMailboxCommandID2(SpsdkEnum):
     """Debug Mailbox Command ID enumeration for specific device implementations.
@@ -388,6 +390,12 @@ class EnterBlankDebugAuthentication(DebugMailboxCommand):
         :param dm: Debug mailbox instance to be used for command execution.
         """
         super().__init__(dm, paramlen=8)
+
+
+class SetBrickedMode(DebugMailboxCommand):
+    """Class for SetBrickedMode."""
+
+    CMD = DebugMailboxCommandID.SET_BRICKED_MODE  # Cmd ID: 0x16
 
 
 class WriteToFlash(DebugMailboxCommand):

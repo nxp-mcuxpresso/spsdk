@@ -96,14 +96,14 @@ info:
     rom:
       protocol: mboot
       usb:
-        vid: 0x1FC9
-        pid: 0x014C
+        - vid: 0x1FC9
+          pid: 0x014C
     flashloader:
       protocol: mboot
       interfaces: [uart, usb, spi]
       usb:
-        vid: 0x15A2
-        pid: 0x0073
+        - vid: 0x15a2
+          pid: 0x0073
 
 features:
   # ======== Blhost section ========

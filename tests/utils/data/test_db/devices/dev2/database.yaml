@@ -22,13 +22,14 @@ info:
     rom:
       protocol: mboot
       usb:
-        pid: 0xBBBB
+        - vid: 0xAAAA
+          pid: 0xBBBB
     flashloader:
       protocol: sdp
       interfaces: ["usb", "uart"]
       usb:
-        vid: 0xFEDC
-        pid: 0xBA98
+        - vid: 0xFEDC
+          pid: 0xBA98
 features:
   # ======== Feature 1 ========
   feature1:

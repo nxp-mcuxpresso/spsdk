@@ -57,5 +57,5 @@ info:
     rom:
       protocol: sdp
       usb:
-        vid: 0x1FC9
-        pid: 0x0135
+        - vid: 0x1FC9
+          pid: 0x0135

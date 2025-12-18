@@ -46,8 +46,8 @@ info:
       protocol: mboot
       interfaces: ["usb", "uart", "spi", "i2c"]
       usb:
-        vid: 0x1FC9
-        pid: 0x0025
+        - vid: 0x1FC9
+          pid: 0x0025
 
 features:
   # ======== Blhost section ========

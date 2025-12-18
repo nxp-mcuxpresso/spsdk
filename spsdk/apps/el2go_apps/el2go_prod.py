@@ -223,7 +223,7 @@ def prod_provision_device(
     """Execute EdgeLock 2GO product-based provisioning process."""
     client = EL2GOTPClient.load_from_config(config)
     secure_object = _retrieve_secure_objects(database, remote_database, secure_objects_file)
-    interface.write_secure_objects_prod(
+    interface.write_secure_objects(
         client=client, secure_objects=secure_object, workspace=workspace, clean=clean
     )
     report = interface.run_batch_provisioning(client=client, dry_run=dry_run)

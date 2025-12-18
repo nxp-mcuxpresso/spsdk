@@ -148,13 +148,13 @@ def test_generate_cmpa_validate_export(cli_runner: CliRunner, data_dir: str, tmp
 def test_generate_cmpa(cli_runner: CliRunner, data_dir: str, tmpdir: str) -> None:
     """Test PFR CLI command for generating CMPA binary output.
 
-    Validates that the PFR export command correctly generates a CMPA (Customer Manufacturing Programming Area)
-    binary file by comparing the generated output against expected reference data. The test uses a 96MHz
-    configuration with RSA2048 private key for signing.
+    Validates that the PFR export command correctly generates a CMPA (Customer Manufacturing
+    Programming Area) binary file by comparing the generated output against expected reference
+    data. The test uses a 96MHz configuration with RSA2048 private key for signing.
 
-    :param cli_runner: Click CLI test runner for invoking commands
-    :param data_dir: Directory path containing test input files and expected outputs
-    :param tmpdir: Temporary directory path for generated test outputs
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param data_dir: Directory path containing test input files and expected outputs.
+    :param tmpdir: Temporary directory path for generated test outputs.
     """
     cmd = [
         "export",
@@ -213,9 +213,12 @@ def test_generate_cmpa_with_elf2sb_lpc55s3x(data_dir: str, tmpdir: str) -> None:
     for LPC55S3x devices. The test compares the generated output with a reference file
     to ensure correctness.
 
-    :param data_dir: Directory path containing test data files including configuration files and reference binary
-    :param tmpdir: Temporary directory path where the generated output file will be created
-    :raises AssertionError: If the CLI command fails or generated file doesn't match reference file
+    :param data_dir: Directory path containing test data files including configuration
+                     files and reference binary.
+    :param tmpdir: Temporary directory path where the generated output file will be
+                   created.
+    :raises AssertionError: If the CLI command fails or generated file doesn't match
+                            reference file.
     """
     new = f"{tmpdir}/new.bin"
     org = "cmpa_lpc55s3x.bin"
@@ -344,16 +347,16 @@ def test_parse(cli_runner: CliRunner, data_dir: str, tmpdir: str) -> None:
     ],
 )
 def test_user_config(cli_runner: CliRunner, tmpdir: str, family: str, type: str) -> None:
-    """Test PFR CLI generation of CMPA user configuration template.
+    """Test PFR CLI generation of user configuration template.
 
     This test verifies that the PFR CLI can successfully generate a user configuration
     template file and that the generated configuration contains the expected family
     and type values.
 
-    :param cli_runner: Click CLI test runner for invoking CLI commands
-    :param tmpdir: Temporary directory path for output files
-    :param family: Target MCU family name for PFR configuration
-    :param type: PFR configuration type (e.g., CMPA, CFPA)
+    :param cli_runner: Click CLI test runner for invoking CLI commands.
+    :param tmpdir: Temporary directory path for output files.
+    :param family: Target MCU family name for PFR configuration.
+    :param type: PFR configuration type (e.g., CMPA, CFPA).
     """
     cmd = [
         "get-template",
@@ -440,10 +443,10 @@ def test_generate_cmpa_certblock_lpc55s3x(
     binary file for LPC55S3x device using elf2sb tool. Verifies that the generated binary matches
     the expected reference file.
 
-    :param cli_runner: Click CLI test runner for invoking commands
-    :param data_dir: Directory path containing test data files
-    :param tmpdir: Temporary directory path for output files
-    :param secret: Secret/password string for encryption
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param data_dir: Directory path containing test data files.
+    :param tmpdir: Temporary directory path for output files.
+    :param secret: Secret/password string for encryption.
     """
     new = f"{tmpdir}/new.bin"
     org = "cmpa_lpc55s3x.bin"
