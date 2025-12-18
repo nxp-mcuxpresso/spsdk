@@ -33,5 +33,5 @@ info:
     rom:
       protocol: mboot
       usb:
-        vid: 0x1FC9
-        pid: 0x0021
+        - vid: 0x1FC9
+          pid: 0x0021

@@ -86,3 +86,7 @@ features:
   # ======== EdgeLock Enclave section ========
   ele:
     ele_device: mboot
+
+  # ======== Hardware Security Engine ===  =====
+  hse:
+    sub_features: [hse_attribute, key_import, key_catalog]

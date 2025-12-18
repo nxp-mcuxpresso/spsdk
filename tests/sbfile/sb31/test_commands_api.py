@@ -22,6 +22,7 @@ from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb31.commands import (
     BaseCmd,
     CmdCall,
+    CmdCheckLifecycle,
     CmdConfigureMemory,
     CmdCopy,
     CmdErase,
@@ -305,10 +306,9 @@ def test_cmd_copy() -> None:
 def test_parse_invalid_cmd_copy_cmd_tag() -> None:
     """Test CmdCopy command parsing with invalid command tag.
 
-    This test verifies that parsing fails correctly when a CmdCopy command
-    has an invalid CMD_TAG value. It creates a CmdCopy command, modifies its
-    tag to an incompatible value (CALL), exports the data, and ensures that
-    parsing with CmdLoadCmac raises an SPSDKError.
+    This test verifies that parsing fails correctly when a CmdCopy command has an invalid
+    CMD_TAG value. It creates a CmdCopy command, modifies its tag to an incompatible value
+    (CALL), exports the data, and ensures that parsing with CmdLoadCmac raises an SPSDKError.
 
     :raises SPSDKError: Expected exception when parsing invalid command data.
     """
@@ -483,7 +483,7 @@ def test_cmd_fillmemory() -> None:
 
 
 def test_parse_invalid_cmd_fillmemory_cmd_tag() -> None:
-    """Test that CmdFillMemory.parse() raises SPSDKError when given data with invalid command tag.
+    """Test invalid command tag parsing for CmdFillMemory.
 
     This test verifies that the parse method properly validates the command tag
     and raises an appropriate exception when attempting to parse data that was
@@ -581,7 +581,7 @@ def test_section_cmd_header_info() -> None:
 
 
 def test_section_cmd_header_offset() -> None:
-    """Test that CmdSectionHeader.parse() raises SPSDKError when given insufficient data.
+    """Test CmdSectionHeader.parse() error handling with insufficient data.
 
     This test verifies that parsing a section header command fails appropriately
     when the provided data buffer is too small (truncated to 50 bytes instead
@@ -955,3 +955,60 @@ def test_cmd_write_ifr_invalid_config() -> None:
     config = Config({"type": "CFPA"})
     with pytest.raises(SPSDKError):
         CmdWriteIfr.load_from_config(config)
+
+
+def test_cmd_check_lc() -> None:
+    """Test export and parsing of CmdCheckLifecycle command.
+
+    Verifies that CmdCheckLifecycle command can be properly created, exported to binary format,
+    and parsed back from binary data while maintaining all properties and equality.
+
+    :raises AssertionError: If any of the command properties don't match expected values or
+        if parsed command doesn't equal original command.
+    """
+    cmd = CmdCheckLifecycle(lifecycle=CmdCheckLifecycle.Lifecycle.DEVELOP2)
+    assert cmd.address == 0
+    assert cmd.length == 0
+    assert cmd.lifecycle == CmdCheckLifecycle.Lifecycle.DEVELOP2
+    assert str(cmd)
+
+    data = cmd.export()
+    assert len(data) == 16
+
+    cmd_parsed = CmdCheckLifecycle.parse(data=data)
+    assert cmd == cmd_parsed
+    assert cmd.lifecycle == cmd_parsed.lifecycle
+
+
+def test_cmd_check_lc_load_from_config() -> None:
+    """Test loading CmdCheckLifecycle from configuration.
+
+    Verifies that CmdCheckLifecycle command can be properly loaded from configuration
+    with valid lifecycle values and raises appropriate exceptions for invalid values.
+
+    :raises KeyError: When an unknown lifecycle value is provided in configuration.
+    """
+    # Test with direct value
+    config = Config({"lifecycle": CmdCheckLifecycle.Lifecycle.NXP_PROVISIONED.label})
+    cmd = CmdCheckLifecycle.load_from_config(config)[0]
+    assert cmd.lifecycle == CmdCheckLifecycle.Lifecycle.NXP_PROVISIONED
+    config = Config({"lifecycle": "UNKNOWN"})
+    with pytest.raises(KeyError):
+        CmdCheckLifecycle.load_from_config(config)
+
+
+def test_cmd_check_lc_get_config_context(tmpdir: str) -> None:
+    """Test getting configuration context from CmdCheckLifecycle.
+
+    This test verifies that the CmdCheckLifecycle command can properly generate
+    a configuration context and that the lifecycle value is correctly set in
+    the returned configuration.
+
+    :param tmpdir: Temporary directory path for test files.
+    """
+    # Create a temporary directory for data files
+    cmd = CmdCheckLifecycle(lifecycle=CmdCheckLifecycle.Lifecycle.IN_FIELD_RETURN)
+    # Get configuration context
+    config = cmd.get_config_context(data_path="")
+    # Verify configuration
+    assert config.get_str("lifecycle") == CmdCheckLifecycle.Lifecycle.IN_FIELD_RETURN.label

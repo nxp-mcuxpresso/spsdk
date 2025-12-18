@@ -160,9 +160,23 @@ class MasterBootImage(FeatureBaseClass):
             target = get_key_by_val(
                 config["outputImageExecutionTarget"], MAP_IMAGE_TARGETS["targets"]
             )
+        except (KeyError, SPSDKValueError) as exc:
+            raise SPSDKUnsupportedImageType(
+                f"Execution target '{config.get('outputImageExecutionTarget')}' is not supported. "
+                f"Supported targets are: {', '.join([v[0] for v in MAP_IMAGE_TARGETS['targets'].values()])}"
+            ) from exc
+
+        try:
             authentication = get_key_by_val(
                 config["outputImageAuthenticationType"], MAP_AUTHENTICATIONS
             )
+        except (KeyError, SPSDKValueError) as exc:
+            raise SPSDKUnsupportedImageType(
+                f"Authentication type '{config.get('outputImageAuthenticationType')}' is not supported. "
+                f"Supported authentication types are: {', '.join([v[0] for v in MAP_AUTHENTICATIONS.values()])}"
+            ) from exc
+
+        try:
             cls_name = db.get_str(DatabaseManager.MBI, ["images", target, authentication])
         except (KeyError, SPSDKValueError) as exc:
             raise SPSDKUnsupportedImageType(

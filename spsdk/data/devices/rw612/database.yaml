@@ -34,8 +34,8 @@ info:
     rom:
       protocol: mboot
       usb:
-        vid: 0x1FC9
-        pid: 0x0020
+        - vid: 0x1FC9
+          pid: 0x0020
 
 features:
   # ======== Blhost section ========

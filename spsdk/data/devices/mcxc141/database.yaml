@@ -31,8 +31,8 @@ info:
       interfaces: ["uart", "usb", "spi", "i2c"]
       protocol: mboot
       usb:
-        vid: 0x15a2
-        pid: 0x0073
+        - vid: 0x15a2
+          pid: 0x0073
 
 features:
   # ======== Blhost section ========
@@ -41,9 +41,6 @@ features:
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x2000_0000
-
-  # ======== Blhost section ========
-  blhost: {}
 
   # ======== BCA section ========
   bca:

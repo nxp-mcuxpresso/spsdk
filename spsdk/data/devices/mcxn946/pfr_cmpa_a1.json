@@ -479,7 +479,7 @@
               "width": 4,
               "id": "field010-bits7-10",
               "name": "FLEXSPI_DUMMY_CYCLES",
-              "description": "Quad/Octal-SPI dummy cycles for read command. If a non-zero value is programmed in this field, then the value is used to override the default number of dummy cycles for a fast read command read from the serial flash’s SFDP information. Note: this field is only used if FLEXSPI_AUTO_PROBE_EN is set"
+              "description": "Quad/Octal-SPI dummy cycles for read command. If a non-zero value is programmed in this field, then the value is used to override the default number of dummy cycles for a fast read command read from the serial flash\u2019s SFDP information. Note: this field is only used if FLEXSPI_AUTO_PROBE_EN is set"
             },
             {
               "width": 3,
@@ -1265,7 +1265,7 @@
               "width": 3,
               "id": "field038-bits16-18",
               "name": "EXT_XTAL_CLK",
-              "description": "USB PHY input clock frequency. For USB high speed PHY external XTAL input is needed. This field specifies the frequency of XTAL used on board. • 000b - 24MHz input clock (Divide by 20) • 001b - 30MHz input clock (Divide by 16) • 010b - 32MHz input clock (Divide by 15) • 011b - Reserved • 100b - 20MHz input clock (Divide by 24) • 101b - 19.2MHz input clock (Divide by 25) • 110b - 16MHz input clock (Divide by 30) - Default option when CMPA is blank. • 111b - 12MHz input clock (Divide by 40)",
+              "description": "USB PHY input clock frequency. For USB high speed PHY external XTAL input is needed. This field specifies the frequency of XTAL used on board. \u2022 000b - 24MHz input clock (Divide by 20) \u2022 001b - 30MHz input clock (Divide by 16) \u2022 010b - 32MHz input clock (Divide by 15) \u2022 011b - Reserved \u2022 100b - 20MHz input clock (Divide by 24) \u2022 101b - 19.2MHz input clock (Divide by 25) \u2022 110b - 16MHz input clock (Divide by 30) - Default option when CMPA is blank. \u2022 111b - 12MHz input clock (Divide by 40)",
               "values": [
                 {
                   "name": "XTAL_24MHZ",

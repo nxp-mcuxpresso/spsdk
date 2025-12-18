@@ -17,8 +17,8 @@ info:
       protocol: sdp
       interfaces: ["usb"]
       usb:
-        vid: 0x1FC9
-        pid: 0x0134
+        - vid: 0x1FC9
+          pid: 0x0134
       protocol_params:
         no_cmd: True
         hid_ep1: True

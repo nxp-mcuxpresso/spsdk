@@ -5,11 +5,10 @@ description = "Open Source Secure Provisioning SDK for NXP MCU/MPU"
 readme = "README.md"
 authors = [{ name = "NXP", email = "spsdk@nxp.com" }]
 license = "BSD-3-Clause"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -89,7 +88,7 @@ requires = ["setuptools_scm<8.2", "setuptools>=77", "wheel"]
 
 [tool.black]
 line-length = 100
-target-version = ['py39', 'py310', 'py311', 'py312', 'py313']
+target-version = ['py310', 'py311', 'py312', 'py313']
 include = '\.pyi?$'
 force-exclude = '''
 '''
@@ -255,6 +254,7 @@ checkers = [
 
 
 [tool.release-tools]
+disabled = ["scr"]
 
 [tool.release-tools.docs]
 install_hook = [
@@ -268,9 +268,6 @@ disable_jira_upload = true
 install_hook = ['uv pip install ".[all]" --force-reinstall']
 check_directories = ["spsdk", "tests", "tools", "examples"]
 excluded_files = ["spsdk/__version__.py"]
-
-[tool.release-tools.scr]
-scr_file = "SW_Content_Register_SPSDK.txt"
 
 [tool.release-tools.testpypi]
 test_cmd = "spsdk --version"

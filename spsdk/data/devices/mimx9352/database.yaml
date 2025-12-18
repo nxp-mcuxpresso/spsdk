@@ -92,8 +92,8 @@ info:
         hid_ep1: True
         hid_pack_size: 1020
       usb:
-        vid: 0x1FC9
-        pid: 0x014E
+        - vid: 0x1FC9
+          pid: 0x014E
 
 features:
   # ======== Fuses description section ========

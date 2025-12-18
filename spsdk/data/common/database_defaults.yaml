@@ -164,6 +164,7 @@ features:
         offset: -1
         max_size: 0
     requires_reset: False
+    requires_scratch_erase: False
 
   # ======== Bootable image section ========
   bootable_image:
@@ -474,3 +475,6 @@ features:
 
   # ===== TLV =====
   tlv_blob: {}
+
+  # ======== Hardware Security Engine section ========
+  hse: {}

@@ -21,8 +21,8 @@ info:
       protocol: mboot
       interfaces: ["uart", "usb"]
       usb:
-        vid: 0x15A2
-        pid: 0x0073
+        - vid: 0x15a2
+          pid: 0x0073
 
 features:
   # ======== Blhost section ========

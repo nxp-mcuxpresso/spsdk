@@ -743,18 +743,25 @@ class SecureBinary4(FeatureBaseClass):
         # Extract description from descriptor
         description = sb_descriptor.description.decode("ascii").rstrip("\x00")
 
-        # Parse commands data
-        commands_data = data[commands_offset:]
-        sb_commands = SecureBinary4Commands.parse(
-            data=commands_data,
-            family=family,
-            block_size=sb_descriptor.block1_length,
-            pck=pck,
-            block1_hash=sb_descriptor.block1_hash,
-            hash_type=hash_type,
-            kdk_access_rights=kdk_access_rights,
-            timestamp=sb_descriptor.timestamp,
-        )
+        try:
+            # Parse commands data
+            commands_data = data[commands_offset:]
+            sb_commands = SecureBinary4Commands.parse(
+                data=commands_data,
+                family=family,
+                block_size=sb_descriptor.block1_length,
+                pck=pck,
+                block1_hash=sb_descriptor.block1_hash,
+                hash_type=hash_type,
+                kdk_access_rights=kdk_access_rights,
+                timestamp=sb_descriptor.timestamp,
+            )
+        except SPSDKError as exc:
+            logger.error(f"Cannot parse SB4 commands, probably invalid file or PCK key. {str(exc)}")
+            sb_commands = SecureBinary4Commands(
+                family=family, hash_type=hash_type, timestamp=sb_descriptor.timestamp
+            )
+
         # Create and return SB4 object
         sb4_obj = cls(
             family=family, container=container, sb_commands=sb_commands, description=description

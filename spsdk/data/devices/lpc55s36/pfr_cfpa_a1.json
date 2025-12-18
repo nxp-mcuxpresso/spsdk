@@ -19,7 +19,7 @@
           "name": "CFPA_PAGE_Version",
           "description": "CFPA Page Version. Write '0xFFFF_FFFF' to auto increment current CFPA page version value (by ROM).",
           "offset_int": "0x0004",
-          "default_value_int": "0"
+          "default_value_int": "0xFFFFFFFF"
         },
         {
           "id": "field008",
@@ -47,49 +47,49 @@
           "name": "MCTR_INT_IV_CTR0",
           "description": "Erase count for internal Prince region 0 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.",
           "offset_int": "0x0014",
-          "default_value_int": "0"
+          "default_value_int": "0xFFFFFFFF"
         },
         {
           "id": "field018",
           "name": "MCTR_INT_IV_CTR1",
           "description": "Erase count for internal Prince region 1 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.",
           "offset_int": "0x0018",
-          "default_value_int": "0"
+          "default_value_int": "0xFFFFFFFF"
         },
         {
           "id": "field01C",
           "name": "MCTR_INT_IV_CTR2",
           "description": "Erase count for internal Prince region 2 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.",
           "offset_int": "0x001C",
-          "default_value_int": "0"
+          "default_value_int": "0xFFFFFFFF"
         },
         {
           "id": "field020",
           "name": "IPED_IV_CTR0",
           "description": "Erase count for external Prince region 0 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.",
           "offset_int": "0x0020",
-          "default_value_int": "0"
+          "default_value_int": "0xFFFFFFFF"
         },
         {
           "id": "field024",
           "name": "IPED_IV_CTR1",
           "description": "Erase count for external Prince region 1 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.",
           "offset_int": "0x0024",
-          "default_value_int": "0"
+          "default_value_int": "0xFFFFFFFF"
         },
         {
           "id": "field028",
           "name": "IPED_IV_CTR2",
           "description": "Erase count for external Prince region 2 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.",
           "offset_int": "0x0028",
-          "default_value_int": "0"
+          "default_value_int": "0xFFFFFFFF"
         },
         {
           "id": "field02C",
           "name": "IPED_IV_CTR3",
           "description": "Erase count for external Prince region 3 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.",
           "offset_int": "0x002C",
-          "default_value_int": "0"
+          "default_value_int": "0xFFFFFFFF"
         },
         {
           "id": "field030",

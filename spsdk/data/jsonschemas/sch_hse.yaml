@@ -1,0 +1,264 @@
+# Copyright 2025 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+key_info:
+  type: object
+  title: HSE Key Information
+  required: [output, keyType, keyBitLen]
+  properties:
+    output:
+      type: string
+      title: Output file name
+      description: Output Key Info file name
+      format: file_name
+      template_value: key_info.bin
+
+    keyType:
+      type: string
+      title: Key Type
+      description: Type of the cryptographic key
+      enum: [SHE, AES, HMAC, SHARED_SECRET, SIPHASH, ECC_PAIR, ECC_PUB, ECC_PUB_EXT,
+             RSA_PAIR, RSA_PUB, RSA_PUB_EXT, DH_PAIR, DH_PUB]
+      template_value: AES
+
+    keyBitLen:
+      type: number
+      title: Key Bit Length
+      description: Length of the key in bits
+      format: number
+      enum: [0, 64, 128, 160, 192, 224, 240, 256, 320, 384, 512, 521, 638, 1024, 2048, 3072, 4096]
+      template_value: 256
+
+    keyCounter:
+      type: [number, string]
+      title: Key Counter
+      description: Counter value for rollback protection (0 to 0xFFFFFFFE)
+      format: number
+      minimum: 0
+      maximum: 0xFFFFFFFE
+      template_value: 0
+
+    keyFlags:
+      type: array
+      title: Key Flags
+      description: |
+        Flags defining key properties and usage restrictions:
+        - USAGE_ENCRYPT: Key is used to encrypt data (including keys if USAGE_KEY_PROVISION is set)
+        - USAGE_DECRYPT: Key is used to decrypt data (including keys if USAGE_KEY_PROVISION is set)
+        - USAGE_SIGN: Key is used to generate digital signatures or MACs of any data (including keys if USAGE_KEY_PROVISION is set)
+        - USAGE_VERIFY: Key is used to verify digital signatures or MACs of any data (including keys if USAGE_KEY_PROVISION is set)
+        - USAGE_EXCHANGE: Key may be used for key exchange operations
+        - USAGE_DERIVE: Key may be used as a base key for deriving other keys
+        - USAGE_KEY_PROVISION: Key used for key provisioning operation. Provision keys can only be NVM keys. This flag along with encrypt/decrypt/sign/verify flags specifies which operations can be performed on a key using this provisioning key
+        - USAGE_AUTHORIZATION: Key can be used for system authorization. Can be set only for NVM keys. This key should have the verify flag set, but the sign flag NOT set
+        - USAGE_SMR_DECRYPT: The key is used for SMR decryption. If this flag is set during key installation, HSE will set the USAGE_DECRYPT flag to zero
+        - ACCESS_WRITE_PROT: The key is write protected and cannot change anymore. For RAM keys, this flag is forced to zero
+        - ACCESS_DEBUG_PROT: The key is disabled when a debugger is attached. For RAM keys, this flag is forced to zero
+        - ACCESS_EXPORTABLE: The key can be exported in any format. Ignored when used in combination with USAGE_KEY_PROVISION or USAGE_AUTHORIZATION (provision/authorization keys are NOT exportable)
+        - USAGE_XTS_TWEAK: This is used as a tweak key in XTS AES encryption; no other flag shall be set
+        - USAGE_OTFAD_DECRYPT: The key is used just in OTFAD decryption; no other flag shall be set
+      items:
+        type: string
+        enum: [USAGE_ENCRYPT, USAGE_DECRYPT, USAGE_SIGN, USAGE_VERIFY, USAGE_EXCHANGE,
+               USAGE_DERIVE, USAGE_KEY_PROVISION, USAGE_AUTHORIZATION, USAGE_SMR_DECRYPT,
+               ACCESS_WRITE_PROT, ACCESS_DEBUG_PROT, ACCESS_EXPORTABLE, USAGE_XTS_TWEAK,
+               USAGE_OTFAD_DECRYPT]
+        template_value: [USAGE_ENCRYPT, USAGE_DECRYPT]
+      enum_template:  [USAGE_ENCRYPT, USAGE_DECRYPT, USAGE_SIGN, USAGE_VERIFY, USAGE_EXCHANGE,
+                      USAGE_DERIVE, USAGE_KEY_PROVISION, USAGE_AUTHORIZATION, USAGE_SMR_DECRYPT,
+                      ACCESS_WRITE_PROT, ACCESS_DEBUG_PROT, ACCESS_EXPORTABLE, USAGE_XTS_TWEAK,
+                      USAGE_OTFAD_DECRYPT]
+
+    smrFlags:
+      type: array
+      title: SMR Flags
+      description: Secure Memory Region flags that must be verified before key usage
+      items:
+        type: integer
+        minimum: 0
+        maximum: 31
+        minItems: 1 # At least one item
+        maxItems: 32 # At most 32 items (since range is 0-31)
+        uniqueItems: true # No duplicates allowed
+        template_value: []
+      enum_template: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]
+
+    specificData:
+      title: Key-Specific Data
+      description: Additional data specific to the key type
+      oneOf:
+        - type: object
+          title: ECC Key Specific Data
+          description: Specific data for ECC keys
+          required: [eccCurveId]
+          properties:
+            eccCurveId:
+              type: string
+              title: ECC Curve ID
+              description: Elliptic curve to use with ECC keys
+              enum: [NONE, SEC_SECP256R1, SEC_SECP384R1, SEC_SECP521R1, BRAINPOOL_P256R1,
+                     BRAINPOOL_P320R1, BRAINPOOL_P384R1, BRAINPOOL_P512R1,
+                     ED25519, CURVE25519, ED448, CURVE448, USER_CURVE1, USER_CURVE2, USER_CURVE3]
+              template_value: SEC_SECP256R1
+
+        - type: object
+          title: RSA Key Specific Data
+          description: Specific data for RSA keys
+          required: [pubExponentSize]
+          properties:
+            pubExponentSize:
+              type: [number, string]
+              title: RSA Public Exponent Size
+              description: Size of RSA public exponent in bytes (must be less than 16)
+              format: number
+              template_value: 3
+
+        - type: object
+          title: AES Key Specific Data
+          description: Specific data for AES keys
+          required: [aesBlockModeMask]
+          properties:
+            aesBlockModeMask:
+              type: array
+              title: AES Block Mode Mask
+              description: Allowed block modes for AES keys
+              items:
+                type: string
+                enum: [BLOCK_MODE_XTS, BLOCK_MODE_CTR, BLOCK_MODE_CBC, BLOCK_MODE_ECB,
+                       BLOCK_MODE_CFB, BLOCK_MODE_OFB, BLOCK_MODE_CCM, BLOCK_MODE_GCM]
+                template_value: [BLOCK_MODE_CBC, BLOCK_MODE_CTR]
+
+key_catalog:
+  type: object
+  title: HSE Key Catalog Configuration
+  required: [output, nvmKeyGroups, ramKeyGroups]
+  properties:
+    output:
+      type: string
+      title: Output file name
+      description: Output Key Catalog Configuration file name
+      format: file_name
+      template_value: key_catalog.bin
+
+    nvmKeyGroups:
+      type: array
+      title: NVM Key Groups
+      description: Configuration for NVM key groups
+      minItems: 1
+      items:
+        type: object
+        properties:
+          muMask:
+            type: string
+            title: MU Mask
+            description: Specifies which Message Units can access this key group
+            enum: [NONE, MU0, MU1, MU2, MU3, ALL]
+            default: ALL
+            template_value: ALL
+
+          groupOwner:
+            type: string
+            title: Group Owner
+            description: Specifies the owner of the key group
+            enum: [ANY, CUST, OEM]
+            default: ANY
+            template_value: ANY
+
+          keyType:
+            type: string
+            title: Key Type
+            description: Type of keys in this group
+            enum: [SHE, AES, HMAC, SHARED_SECRET, SIPHASH, ECC_PAIR, ECC_PUB, ECC_PUB_EXT,
+                  RSA_PAIR, RSA_PUB, RSA_PUB_EXT, DH_PAIR, DH_PUB]
+            template_value: AES
+
+          numOfKeySlots:
+            type: [number, string]
+            title: Number of Key Slots
+            description: Number of key slots in this group
+            format: number
+            minimum: 1
+            maximum: 254
+            template_value: 10
+
+          maxKeyBitLen:
+            type: [string, number]
+            title: Maximum Key Bit Length
+            description: Maximum bit length for keys in this group
+            format: number
+            enum: [0, 64, 128, 160, 192, 224, 240, 256, 320, 384, 512, 521, 638, 1024, 2048, 3072, 4096]
+            template_value: 256
+        required: [keyType, numOfKeySlots, maxKeyBitLen]
+      template_value:
+        - muMask: ALL
+          groupOwner: ANY
+          keyType: SHE
+          numOfKeySlots: 10
+          maxKeyBitLen: 256
+        - muMask: ALL
+          groupOwner: CUST
+          keyType: AES
+          numOfKeySlots: 5
+          maxKeyBitLen: 256
+
+    ramKeyGroups:
+      type: array
+      title: RAM Key Groups
+      description: Configuration for RAM key groups
+      minItems: 1
+      items:
+        type: object
+        properties:
+          muMask:
+            type: string
+            title: MU Mask
+            description: Specifies which Message Units can access this key group
+            enum: [NONE, MU0, MU1, MU2, MU3, ALL]
+            default: ALL
+            template_value: ALL
+
+          groupOwner:
+            type: string
+            title: Group Owner
+            description: Specifies the owner of the key group
+            enum: [ANY, CUST, OEM]
+            default: ANY
+            template_value: ANY
+
+          keyType:
+            type: string
+            title: Key Type
+            description: Type of keys in this group
+            enum: [SHE, AES, HMAC, SHARED_SECRET, SIPHASH, ECC_PAIR, ECC_PUB, ECC_PUB_EXT,
+                  RSA_PAIR, RSA_PUB, RSA_PUB_EXT, DH_PAIR, DH_PUB]
+            template_value: AES
+
+          numOfKeySlots:
+            type: [number, string]
+            title: Number of Key Slots
+            description: Number of key slots in this group
+            format: number
+            minimum: 1
+            maximum: 254
+            template_value: 10
+
+          maxKeyBitLen:
+            type: [string, number]
+            title: Maximum Key Bit Length
+            description: Maximum bit length for keys in this group
+            format: number
+            enum: [0, 64, 128, 160, 192, 224, 240, 256, 320, 384, 512, 521, 638, 1024, 2048, 3072, 4096]
+            template_value: 256
+        required: [keyType, numOfKeySlots, maxKeyBitLen]
+      template_value:
+        - muMask: ALL
+          groupOwner: ANY
+          keyType: SHE
+          numOfKeySlots: 5
+          maxKeyBitLen: 256
+        - muMask: ALL
+          groupOwner: ANY
+          keyType: AES
+          numOfKeySlots: 5
+          maxKeyBitLen: 256

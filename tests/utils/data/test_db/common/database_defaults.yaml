@@ -14,7 +14,7 @@ info:
       interfaces: ["uart", "usb", "spi", "i2c"]
       protocol: mboot # Possible options:[mboot, sdps, sdp]
       usb:
-        vid: 0xAAAA
+        - vid: 0xAAAA
     flashloader: {}
 
 features:

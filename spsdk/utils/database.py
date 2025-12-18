@@ -385,6 +385,58 @@ class UsbId:
         return self.vid is not None and self.pid is not None
 
 
+class UsbIdArray(list[UsbId]):
+    """Collection of USB identifiers for device communication.
+
+    This class extends the built-in list to store and manage multiple UsbId objects,
+    providing convenient access methods for retrieving USB identifiers by index or
+    validating all identifiers in the collection.
+    """
+
+    def all_valid(self) -> bool:
+        """Check if all USB IDs in the collection are valid.
+
+        :return: True if all UsbId instances are valid, False otherwise.
+        """
+        return all(usb_id.is_valid() for usb_id in self)
+
+    @classmethod
+    def load(cls, usb_configs: list[dict]) -> Self:
+        """Create a UsbIdArray instance from a list of configuration dictionaries.
+
+        :param usb_configs: List of dictionaries containing 'vid' and/or 'pid' keys.
+        :return: New UsbIdArray instance with configured USB identifiers.
+        """
+        return cls(UsbId.load(config) for config in usb_configs)
+
+    def update(self, usb_configs: list[dict]) -> None:
+        """Update the USB ID array from a list of configuration dictionaries.
+
+        This method merges new USB IDs with existing ones. Only USB IDs that are
+        not already present in the array are added.
+
+        :param usb_configs: List of dictionaries containing 'vid' and/or 'pid' keys.
+        """
+        for config in usb_configs:
+            new_usb_id = UsbId.load(config)
+            if new_usb_id not in self:
+                self.append(new_usb_id)
+
+    def __str__(self) -> str:
+        """Return a string representation of the USB ID array."""
+        return ", ".join(str(usb_id) for usb_id in self)
+
+    def __contains__(self, item: object) -> bool:
+        """Check if a USB ID is in the collection.
+
+        :param item: UsbId instance to search for.
+        :return: True if the USB ID is found in the collection, False otherwise.
+        """
+        if not isinstance(item, UsbId):
+            return False
+        return any(usb_id == item for usb_id in self)
+
+
 class Bootloader:
     """SPSDK Bootloader representation.
 
@@ -398,14 +450,14 @@ class Bootloader:
         self,
         protocol: Optional[str],
         interfaces: list,
-        usb_id: UsbId,
+        usb_ids: UsbIdArray,
         protocol_params: dict,
     ) -> None:
         """Initialize a Bootloader instance.
 
         :param protocol: Name of the bootloader protocol (e.g., 'mboot', 'sdp', 'sdps', 'lpc')
         :param interfaces: List of supported interfaces
-        :param usb_id: USB identifier for the bootloader
+        :param usb_ids: USB identifiers for the bootloader
         :param protocol_params: Dictionary of protocol-specific parameters
         :raises SPSDKValueError: If an invalid protocol value is provided
         """
@@ -413,7 +465,7 @@ class Bootloader:
             raise SPSDKValueError(f"Invalid protocol value: {protocol}")
         self.protocol = protocol
         self.interfaces = interfaces
-        self.usb_id = usb_id
+        self.usb_ids = usb_ids
         self.protocol_params = protocol_params
 
     def __str__(self) -> str:
@@ -427,8 +479,8 @@ class Bootloader:
         ret = ""
         ret += f"Protocol:     {self.protocol or 'Not specified'}\n"
         ret += f"Interfaces:   {self.interfaces}"
-        if self.usb_id.vid:
-            ret += f"\nUSB ID:       {str(self.usb_id)}"
+        if self.usb_ids:
+            ret += f"\nUSB ID:       {str(self.usb_ids)}"
         return ret
 
     @classmethod
@@ -442,7 +494,7 @@ class Bootloader:
         return cls(
             protocol=config.get("protocol", None),
             interfaces=config.get("interfaces", []),
-            usb_id=UsbId.load(config.get("usb", {})),
+            usb_ids=UsbIdArray.load(config.get("usb", [])),
             protocol_params=config.get("protocol_params", {}),
         )
 
@@ -458,7 +510,7 @@ class Bootloader:
         self.protocol = config.get("protocol", self.protocol)
         self.interfaces = config.get("interfaces", self.interfaces)
         self.protocol_params = config.get("protocol_params", self.protocol_params)
-        self.usb_id.update(config.get("usb", {}))
+        self.usb_ids.update(config.get("usb", []))
 
 
 class MemBlock:
@@ -930,11 +982,11 @@ class IspCfg:
         :param protocol: Protocol name to search for in interfaces.
         :return: List of USB IDs supporting the specified protocol.
         """
-        usb_ids = []
-        if self.rom.protocol == protocol and self.rom.usb_id.is_valid():
-            usb_ids.append(self.rom.usb_id)
-        if self.flashloader.protocol == protocol and self.flashloader.usb_id.is_valid():
-            usb_ids.append(self.flashloader.usb_id)
+        usb_ids: list[UsbId] = []
+        if self.rom.protocol == protocol and self.rom.usb_ids.all_valid():
+            usb_ids.extend(self.rom.usb_ids)
+        if self.flashloader.protocol == protocol and self.flashloader.usb_ids.all_valid():
+            usb_ids.extend(self.flashloader.usb_ids)
         return usb_ids
 
 
@@ -1779,13 +1831,7 @@ class Database:
                         else:
                             logger.debug(f"Loaded database from cache: {db_cache_file_name}")
                             self.db_hash = db_hash
-                    except (
-                        SPSDKError,
-                        UnicodeDecodeError,
-                        FileNotFoundError,
-                        pickle.PickleError,
-                        MemoryError,
-                    ) as exc:
+                    except Exception as exc:
                         logger.error(f"Fail during load of database cache: {str(exc)}")
                         if os.path.exists(db_cache_file_name):
                             os.remove(db_cache_file_name)
@@ -2139,6 +2185,7 @@ class FeaturesEnum(SpsdkEnum):
     SBC = (36, "sbc", "sbc")
     SHE_SCEC = (37, "she_scec", "Secure Hardware Extension")
     TLV_BLOB = (38, "tlv_blob", "Type-Length-Value blobs")
+    HSE = (39, "hse", "Hardware Security Engine")
 
 
 class DatabaseManager:
@@ -2263,13 +2310,7 @@ class DatabaseManager:
                 logger.warning(
                     f"Existing cached quick DB ({db_cache_file_name}) has invalid hash. It will be erased."
                 )
-            except (
-                SPSDKError,
-                UnicodeDecodeError,
-                FileNotFoundError,
-                pickle.PickleError,
-                MemoryError,
-            ) as exc:
+            except Exception as exc:
                 logger.error(f"Cannot load database cache: {str(exc)}")
 
         quick_info = QuickDatabase.create(cls.get_db(complete_load=True))
@@ -2435,6 +2476,7 @@ class DatabaseManager:
     SBC = FeaturesEnum.SBC.label
     SHE_SCEC = FeaturesEnum.SHE_SCEC.label
     TLV_BLOB = FeaturesEnum.TLV_BLOB.label
+    HSE = FeaturesEnum.HSE.label
 
 
 def get_schema_file(feature: str) -> dict[str, Any]:

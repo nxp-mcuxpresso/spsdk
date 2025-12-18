@@ -45,9 +45,7 @@ def tz_data_dir(data_dir: str) -> str:
 
 @pytest.mark.parametrize(
     "config_file,output_file,reference_binary",
-    [
-        ("lpc55s6xA1.yaml", "lpc55s6xA1_tzFile.bin", "lpc55s6xA1_tzFile.bin"),
-    ],
+    [("lpc55s6xA1.yaml", "lpc55s6xA1_tzFile.bin", "lpc55s6xA1_tzFile.bin")],
 )
 def test_nxpimage_trustzone_basic(
     cli_runner: CliRunner,

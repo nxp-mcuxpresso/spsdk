@@ -11,13 +11,27 @@ operations including attribute management, firmware updates, boot data signing a
 verification, and key information handling.
 """
 
+import math
 from abc import abstractmethod
-from struct import calcsize, pack, unpack
-from typing import Mapping, Optional, Type, cast
+from dataclasses import dataclass
+from struct import calcsize, pack
+from typing import Optional, Type, Union, cast
 
+from spsdk.crypto.crypto_types import SPSDKEncoding
+from spsdk.crypto.keys import (
+    PrivateKey,
+    PrivateKeyEcc,
+    PrivateKeyRsa,
+    PublicKey,
+    PublicKeyEcc,
+    PublicKeyRsa,
+)
 from spsdk.ele.ele_constants import HseMessageIDs, HseResponseStatus, MessageIDs, ResponseStatus
 from spsdk.ele.ele_message import LITTLE_ENDIAN, UINT8, UINT16, UINT32, EleMessage
-from spsdk.exceptions import SPSDKParsingError, SPSDKValueError
+from spsdk.ele.hse_attrs import HseAttributeHandler, HseAttributeId
+from spsdk.exceptions import SPSDKValueError
+from spsdk.image.hse.key_info import KeyFormat, KeyHandle, KeyInfo, KeyType
+from spsdk.utils.database import DatabaseManager
 from spsdk.utils.misc import Endianness
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -31,11 +45,12 @@ class EleMessageHse(EleMessage):
     protocols within the SPSDK framework.
 
     :cvar CMD_ID_FORMAT: Format string for HSE command ID structure.
+    :cvar CMD_DESCRIPTOR_FORMAT: Format string for HSE descriptor structure.
     :cvar RESPONSE_HEADER_WORDS_COUNT: Number of words in HSE response header.
     :cvar MSG_IDS: HSE-specific message ID enumeration.
     """
 
-    CMD_ID_FORMAT: str = LITTLE_ENDIAN + UINT32 + UINT8 + UINT8 + UINT8 + UINT8
+    CMD_HEADER_FORMAT: str = LITTLE_ENDIAN + UINT32 + UINT8 + UINT8 + UINT8 + UINT8
     CMD_DESCRIPTOR_FORMAT: str
     RESPONSE_HEADER_WORDS_COUNT = 1
     MSG_IDS = cast(Type[MessageIDs], HseMessageIDs)
@@ -122,12 +137,12 @@ class EleMessageHse(EleMessage):
     def command_data_size(self) -> int:
         """Get the size of command data in bytes.
 
-        Calculates the total size by combining the command ID format size
-        and command descriptor format size using struct.calcsize().
+        Calculates the total size by combining the command ID format size and command descriptor format
+        size using struct.calcsize().
 
         :return: Size of command data in bytes.
         """
-        return calcsize(self.CMD_ID_FORMAT) + calcsize(self.CMD_DESCRIPTOR_FORMAT)
+        return calcsize(self.CMD_HEADER_FORMAT) + calcsize(self.CMD_DESCRIPTOR_FORMAT)
 
     @property
     def command_data(self) -> bytes:
@@ -139,7 +154,7 @@ class EleMessageHse(EleMessage):
 
         :return: Complete command data as bytes.
         """
-        header = pack(self.CMD_ID_FORMAT, self.service_id, 0, 0, 0, 0)
+        header = pack(self.CMD_HEADER_FORMAT, self.service_id, 0, 0, 0, 0)
         descriptor = self.get_srv_descriptor()
         return header + descriptor
 
@@ -199,165 +214,13 @@ class EleMessageHse(EleMessage):
         return self.service_id.to_bytes(4, Endianness.LITTLE.value)[3]
 
 
-class HseAttributeId(SpsdkEnum):
-    """HSE attribute identifier enumeration.
-
-    Defines the available attribute IDs that can be used with HSE (Hardware
-    Security Engine) attribute get/set operations for secure provisioning.
-    """
-
-    NONE = (0, "NONE")
-    FW_VERSION = (1, "FW_VERSION")
-
-
-class HseAttributeHandler:
-    """Base class for HSE attribute handlers.
-
-    Provides common functionality for handling HSE attributes including data validation,
-    size calculation, and format management. This class serves as a foundation for
-    specific HSE attribute implementations in the ELE messaging system.
-
-    :cvar FORMAT: Struct format string for attribute data packing/unpacking.
-    :cvar ATTR_ID: HSE attribute identifier this handler manages.
-    """
-
-    FORMAT: str
-    ATTR_ID: HseAttributeId
-
-    def __init__(self) -> None:
-        """Initialize the attribute handler.
-
-        Sets up the handler with its specific attribute ID and initializes internal data storage.
-        """
-        self.attr_id = self.ATTR_ID
-        self._data = bytes()
-
-    @property
-    def data(self) -> bytes:
-        """Get the raw attribute data.
-
-        :return: Raw attribute data as bytes.
-        """
-        return self._data
-
-    @data.setter
-    def data(self, value: bytes) -> None:
-        """Set the raw attribute data.
-
-        Validates that the data size matches the expected size for this attribute type.
-
-        :param value: Raw attribute data as bytes.
-        :raises ValueError: If the data size doesn't match the expected size.
-        """
-        if len(value) != self.size:
-            raise ValueError(
-                f"Invalid data size. Expected {self.size} bytes, got {len(value)} bytes."
-            )
-        self._data = value
-
-    @property
-    def size(self) -> int:
-        """Get the default size for this attribute type.
-
-        The method calculates the size in bytes using the struct format string
-        defined in the FORMAT attribute.
-
-        :return: Size in bytes.
-        """
-        return calcsize(self.FORMAT)
-
-    @abstractmethod
-    def __str__(self) -> str:
-        """Format a decoded value for display.
-
-        :return: Formatted string representation.
-        """
-
-    @abstractmethod
-    def decode(self) -> None:
-        """Decode the raw attribute data into structured fields.
-
-        This method processes the raw binary data stored in the attribute and
-        converts it into meaningful structured fields that can be accessed and
-        manipulated programmatically.
-
-        :raises SPSDKError: If the raw data cannot be decoded or is corrupted.
-        """
-
-    def _validate(self) -> None:
-        """Validate that the data is present and has the correct length.
-
-        :raises SPSDKParsingError: If data is missing or has invalid length.
-        """
-        if not self.data:
-            raise SPSDKParsingError(f"No data set for {self.__class__.__name__} object")
-        if len(self.data) < self.size:
-            raise SPSDKParsingError(f"Invalid data length for FW version: {len(self.data)}")
-
-
-class FwVersionAttributeHandler(HseAttributeHandler):
-    """HSE firmware version attribute handler.
-
-    This class handles the decoding and representation of HSE firmware version
-    attributes, extracting SoC type, firmware type, and version information
-    from binary data.
-
-    :cvar FORMAT: Binary format string for unpacking firmware version data.
-    :cvar ATTR_ID: HSE attribute identifier for firmware version.
-    """
-
-    FORMAT = LITTLE_ENDIAN + UINT8 + UINT8 + UINT16 + UINT8 + UINT8 + UINT16
-    ATTR_ID = HseAttributeId.FW_VERSION
-
-    def __init__(self) -> None:
-        """Initialize the firmware version attribute handler.
-
-        Sets all firmware version attributes (soc_type, fw_type, major, minor, patch) to None
-        and calls the parent class constructor.
-        """
-        super().__init__()
-        self.soc_type = self.fw_type = self.major = self.minor = self.patch = None
-
-    def decode(self) -> None:
-        """Decode the firmware version data into structured fields.
-
-        Extracts SoC type, firmware type, and version components from the raw data
-        and populates the corresponding instance attributes.
-
-        :raises SPSDKError: If data validation fails or data format is invalid.
-        """
-        self._validate()
-        _, self.soc_type, self.fw_type, self.major, self.minor, self.patch = unpack(
-            self.FORMAT, self.data
-        )
-
-    def __str__(self) -> str:
-        """Return string representation of firmware version information.
-
-        Provides a formatted string containing SoC type, firmware type, and version details
-        in a human-readable format.
-
-        :return: Formatted string with firmware version details.
-        """
-        ret = "Firmware Version:\n"
-        ret += f"SoC Type: {self.soc_type}\n"
-        ret += f"FW Type: {self.fw_type}\n"
-        ret += f"Version: {self.major}.{self.minor}.{self.patch}\n"
-        return ret
-
-
-HSE_ATTRIBUTE_HANDLER: Mapping[HseAttributeId, Type[HseAttributeHandler]] = {
-    HseAttributeId.FW_VERSION: FwVersionAttributeHandler
-}
-
-
 class EleMessageHseAttr(EleMessageHse):
     """Base class for HSE attribute operations.
 
     Provides common functionality for getting and setting HSE attributes,
     including attribute handler management and response processing.
 
-    :cvar CMD_DESCRIPTOR_FORMAT: Binary format string for service descriptor structure.
+    :cvar CMD_DESCRIPTOR_FORMAT: Binary format specification for command descriptor.
     """
 
     CMD_DESCRIPTOR_FORMAT = LITTLE_ENDIAN + UINT16 + UINT8 + UINT8 + UINT32 + UINT32
@@ -373,43 +236,64 @@ class EleMessageHseAttr(EleMessageHse):
         :param srv_version: Service version to use for this message.
         """
         super().__init__(srv_version)
-        self.attr_handler = self._get_attribute_handler(attr_id)
-        self.attr_id = attr_id
-        self.response_data_size = self.attr_handler.size
+        self.attr_handler_cls = HseAttributeHandler.get_attr_handler_cls(attr_id)
+
+    @abstractmethod
+    def get_srv_descriptor(self) -> bytes:
+        """Get service descriptor.
+
+        Retrieves the service descriptor as a byte sequence for HSE message processing.
+
+        :return: Service descriptor in bytes format.
+        """
+
+
+class EleMessageHseGetAttr(EleMessageHseAttr):
+    """ELE message for retrieving HSE (Hardware Security Engine) attributes.
+
+    This class implements the GET_ATTR command to request and decode specific HSE
+    attribute values from the EdgeLock Enclave. It handles the service descriptor
+    creation, response data decoding, and provides formatted output of the retrieved
+    attribute information.
+
+    :cvar CMD: HSE message command identifier for GET_ATTR operation.
+    """
+
+    CMD = HseMessageIDs.GET_ATTR.tag
+
+    def __init__(
+        self,
+        attr_id: HseAttributeId,
+        srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+    ) -> None:
+        """Initialize HSE attribute get message.
+
+        Creates a new HSE attribute get message with the specified attribute ID and service version.
+        The attribute value is initially set to None and will be populated when the response is received.
+
+        :param attr_id: HSE attribute identifier to retrieve.
+        :param srv_version: Service version for the HSE message, defaults to VERSION_0.
+        """
+        super().__init__(attr_id, srv_version)
+        self.attr_value: Optional[HseAttributeHandler] = None
+        self.response_data_size = self.attr_handler_cls.get_size()
 
     def get_srv_descriptor(self) -> bytes:
-        """Get service descriptor for HSE message.
+        """Get service descriptor.
 
-        Packs the service descriptor data into binary format using the command descriptor
-        format with attribute ID, handler size, and response data address.
+        Creates and returns a packed binary service descriptor containing the attribute handler
+        information, including attribute ID, size, and response data address.
 
-        :return: Packed binary service descriptor data.
+        :return: Packed binary service descriptor as bytes.
         """
         return pack(
             self.CMD_DESCRIPTOR_FORMAT,
-            self.attr_id.tag,
+            self.attr_handler_cls.ATTR_ID.tag,
             0,
             0,
-            self.attr_handler.size,
+            self.attr_handler_cls.get_size(),
             self.response_data_address,
         )
-
-    @classmethod
-    def _get_attribute_handler(cls, attr_id: HseAttributeId) -> HseAttributeHandler:
-        """Get HSE attribute handler for specified attribute ID.
-
-        Retrieves the appropriate handler class for the given HSE attribute ID and returns
-        an instance of that handler.
-
-        :param attr_id: HSE attribute identifier to get handler for.
-        :raises ValueError: Unsupported or unknown attribute ID.
-        :return: Instance of the HSE attribute handler for the specified attribute ID.
-        """
-        try:
-            handler_cls = HSE_ATTRIBUTE_HANDLER[attr_id]
-        except KeyError as e:
-            raise ValueError(f"Unsupported attribute ID: {attr_id}") from e
-        return handler_cls()
 
     def decode_response_data(self, response: bytes) -> None:
         """Decode the response data for this attribute.
@@ -418,49 +302,83 @@ class EleMessageHseAttr(EleMessageHse):
 
         :param response: Response data to decode.
         """
-        self.attr_handler.data = response
-        self.attr_handler.decode()
+        self.attr_value = self.attr_handler_cls.parse(response)
 
-    def response_info(self) -> str:
+    def info(self) -> str:
         """Get formatted information about the response.
 
-        :return: String representation of the attribute data.
+        :return: String representation of the attribute data or message if no attribute retrieved.
         """
-        return str(self.attr_handler)
-
-
-class EleMessageHseGetAttr(EleMessageHseAttr):
-    """ELE message for retrieving HSE (Hardware Security Engine) attributes.
-
-    This class implements the GET_ATTR command to request specific attribute
-    values from the HSE subsystem, enabling read access to HSE configuration
-    and status information.
-
-    :cvar CMD: HSE message command identifier for get attribute operation.
-    """
-
-    CMD = HseMessageIDs.GET_ATTR.tag
+        if not self.attr_value:
+            return "No attribute has been retrieved"
+        return str(self.attr_value)
 
 
 class EleMessageHseSetAttr(EleMessageHseAttr):
     """ELE message for setting HSE (Hardware Security Engine) attributes.
 
-    This class represents a command message used to set specific attributes
-    in the Hardware Security Engine through the EdgeLock Enclave interface.
+    This class handles the SET_ATTR command to modify HSE attribute values on the target
+    device. It extends the base HSE attribute message functionality with specific
+    support for setting attribute data through memory addresses.
 
-    :cvar CMD: Command identifier for HSE set attribute operation.
+    :cvar CMD: Command identifier for the SET_ATTR operation.
     """
 
     CMD = HseMessageIDs.SET_ATTR.tag
+
+    def __init__(
+        self,
+        attr_id: HseAttributeId,
+        value_addr: Optional[int] = None,
+        srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+    ) -> None:
+        """Initialize HSE attribute message for getting attribute value.
+
+        Creates a new HSE message instance for retrieving the value of a specified
+        HSE attribute. The message can optionally specify a memory address where
+        the attribute value should be stored.
+
+        :param attr_id: HSE attribute identifier to get value for.
+        :param value_addr: Optional memory address where attribute value will be stored.
+        :param srv_version: Service version for the HSE message.
+        """
+        super().__init__(attr_id, srv_version)
+        self.response_data_size = 0
+        self.value_addr = value_addr
+
+    def get_srv_descriptor(self) -> bytes:
+        """Get service descriptor.
+
+        Creates and returns a packed binary service descriptor containing the attribute ID,
+        reserved fields, size, and value address according to the command descriptor format.
+
+        :return: Packed binary service descriptor as bytes.
+        """
+        return pack(
+            self.CMD_DESCRIPTOR_FORMAT,
+            self.attr_handler_cls.ATTR_ID.tag,
+            0,
+            0,
+            self.attr_handler_cls.get_size(),
+            self.value_addr,
+        )
+
+    def decode_response_data(self, response: bytes) -> None:
+        """Decode the response data for this attribute.
+
+        Sets the response data in the attribute handler and triggers decoding.
+
+        :param response: Response data to decode.
+        """
 
 
 class EleMessageHseBootDataImageSign(EleMessageHse):
     """ELE message for HSE boot data image signing operations.
 
-    Handles signing of boot data images for different HSE variants. For HSE_H/M devices,
-    supports IVT/DCD/ST/LPDDR4(S32Z/E devices)/AppBSB image types. For HSE_B devices,
-    supports IVT/AppBSB image types. The class manages the signing process and extracts
-    authentication tags from the response data.
+    Handles cryptographic signing of boot data images for different HSE variants.
+    For HSE_H/M devices, supports IVT/DCD/ST/LPDDR4(S32Z/E devices)/AppBSB images.
+    For HSE_B devices, supports IVT/AppBSB images. The class manages the signing
+    process and extracts authentication tags from the HSE response.
     """
 
     CMD = HseMessageIDs.BOOT_DATA_IMAGE_SIGN.tag
@@ -491,11 +409,10 @@ class EleMessageHseBootDataImageSign(EleMessageHse):
     def get_srv_descriptor(self) -> bytes:
         """Get service descriptor for HSE message.
 
-        Constructs and returns the service descriptor bytes by packing the image address,
-        tag length, and response data address according to the command descriptor format.
+        Packs the image address, tag length, and response data address into a binary
+        service descriptor format using the predefined CMD_DESCRIPTOR_FORMAT.
 
-        :return: Packed service descriptor as bytes containing image address, tag length,
-                 and response data address.
+        :return: Binary service descriptor containing packed message parameters.
         """
         return pack(
             self.CMD_DESCRIPTOR_FORMAT,
@@ -507,9 +424,9 @@ class EleMessageHseBootDataImageSign(EleMessageHse):
     def decode_response_data(self, response: bytes) -> None:
         """Decode the response data for the boot data image sign operation.
 
-        Extracts the initial vector (if present) and GMAC value from the response.
-        The method processes different tag lengths: for 16-byte tags, only GMAC is extracted;
-        for 28-byte tags, both initial vector (12 bytes) and GMAC (16 bytes) are extracted.
+        Extracts the initial vector (if present) and GMAC value from the response based on tag length.
+        For tag_len=16, only GMAC value is extracted. For tag_len=28, both initial vector (12 bytes)
+        and GMAC value (16 bytes) are extracted.
 
         :param response: Response data bytes to decode containing IV and/or GMAC
         :raises SPSDKValueError: If tag_len is not supported (must be 16 or 28)
@@ -586,6 +503,9 @@ class EleMessageHseFirmwareUpdate(EleMessageHse):
     ):
         """Initialize the HSE firmware update message.
 
+        Creates a new HSE firmware update message with specified access mode and firmware parameters.
+        Validates stream length requirements for streaming modes (START/UPDATE).
+
         :param access_mode: The access mode for firmware update (ONE_PASS, START, UPDATE, FINISH)
         :param fw_file_addr: Address of the firmware file or chunk
         :param stream_length: Length of the firmware chunk in streaming mode (must be multiple of 64 bytes)
@@ -610,10 +530,10 @@ class EleMessageHseFirmwareUpdate(EleMessageHse):
     def get_srv_descriptor(self) -> bytes:
         """Get service descriptor for the firmware update command.
 
-        Creates and returns a packed binary service descriptor containing access mode,
-        stream length, and firmware file address for HSE firmware update operations.
+        Creates a packed binary service descriptor containing access mode, stream length,
+        and firmware file address for HSE firmware update operations.
 
-        :return: Packed service descriptor bytes in the expected binary format.
+        :return: Packed service descriptor bytes containing command parameters.
         """
         return pack(
             self.CMD_DESCRIPTOR_FORMAT,
@@ -628,8 +548,8 @@ class EleMessageHseFirmwareUpdate(EleMessageHse):
     def response_info(self) -> str:
         """Get formatted information about the response.
 
-        Returns a human-readable string describing the firmware update operation status based on
-        the response status code and access mode.
+        Returns a human-readable string describing the status of the firmware update operation,
+        indicating whether it was successful or failed.
 
         :return: String representation of the firmware update status.
         """
@@ -642,10 +562,10 @@ class EleMessageHseBootDataImageVerify(EleMessageHse):
     """HSE Boot Data Image Verification Message.
 
     Handles verification of boot data images including IVT, DCD, ST, LPDDR4 (S32Z/E devices),
-    and AppBSB components. For HSE_H/M variants, verifies all image types. For HSE_B variant,
+    and AppBSB components. For HSE_H/M devices, verifies all image types. For HSE_B devices,
     verifies IVT and AppBSB images only.
-    This message verifies GMAC authentication tags generated by the boot data image signing
-    service, ensuring boot image integrity and authenticity.
+    This message verifies GMAC tags generated by the EleMessageHseBootDataImageSign service,
+    ensuring boot data integrity and authenticity during secure boot process.
     """
 
     CMD = HseMessageIDs.BOOT_DATA_IMAGE_VERIFY.tag
@@ -681,8 +601,8 @@ class EleMessageHseBootDataImageVerify(EleMessageHse):
     def response_info(self) -> str:
         """Get formatted information about the response.
 
-        Returns a human-readable string indicating whether the Boot Data Image
-        verification was successful or failed based on the response status.
+        Returns a human-readable string indicating whether the Boot Data Image verification
+        was successful or failed based on the response status.
 
         :return: String representation of the image verification result.
         """
@@ -691,127 +611,12 @@ class EleMessageHseBootDataImageVerify(EleMessageHse):
         return "Boot Data Image verification failed"
 
 
-class HseKeyType(SpsdkEnum):
-    """HSE key type enumeration for Hardware Security Engine operations.
-
-    Defines the available cryptographic key types supported by HSE including
-    symmetric keys (AES, HMAC, SHE), asymmetric key pairs and public keys
-    (ECC, RSA, DH), and specialized keys (SipHash, shared secrets).
-    """
-
-    SHE = (0x11, "SHE", "SHE key")
-    AES = (0x12, "AES", "AES key")
-    HMAC = (0x20, "HMAC", "HMAC key")
-    SHARED_SECRET = (0x30, "SHARED_SECRET", "Shared secret key")
-    SIPHASH = (0x40, "SIPHASH", "SipHash key")
-    ECC_PAIR = (0x87, "ECC_PAIR", "ECC key pair")
-    ECC_PUB = (0x88, "ECC_PUB", "ECC public key")
-    ECC_PUB_EXT = (0x89, "ECC_PUB_EXT", "ECC public key external")
-    RSA_PAIR = (0x97, "RSA_PAIR", "RSA key pair")
-    RSA_PUB = (0x98, "RSA_PUB", "RSA public key")
-    RSA_PUB_EXT = (0x99, "RSA_PUB_EXT", "RSA public key external")
-    DH_PAIR = (0xA7, "DH_PAIR", "Diffie-Hellman key pair")
-    DH_PUB = (0xA8, "DH_PUB", "Diffie-Hellman public key")
-
-
-class HseKeyInfo:
-    """HSE Key Information structure.
-
-    Contains properties of a cryptographic key including flags, bit length, counter,
-    SMR flags, and key type. This class provides functionality to decode raw key
-    information data from HSE (Hardware Security Engine) into structured fields
-    for cryptographic operations.
-
-    :cvar FORMAT: Binary format string for packing/unpacking key information data.
-    """
-
-    FORMAT = LITTLE_ENDIAN + UINT32 + UINT16 + UINT32 + UINT32 + UINT8 + UINT8 + UINT8 + UINT8
-
-    def __init__(self) -> None:
-        """Initialize the key information structure with default values.
-
-        This constructor sets up a new HSE key information structure with all fields
-        initialized to their default values including key flags, bit length, counter,
-        SMR flags, key type, and reserved fields.
-        """
-        self.key_flags = 0
-        self.key_bit_len = 0
-        self.key_counter = 0
-        self.smr_flags = 0
-        self.key_type = 0
-        self.specific = bytes(4)  # Union field, 4 bytes for specific key type data
-        self.reserved = bytes(2)  # Reserved bytes
-
-    @property
-    def size(self) -> int:
-        """Get the size of the key info structure.
-
-        :return: Size in bytes.
-        """
-        return calcsize(self.FORMAT)
-
-    def decode(self, data: bytes) -> None:
-        """Decode the raw key info data into structured fields.
-
-        The method parses binary data and populates the object's key-related attributes
-        including flags, bit length, counter, SMR flags, key type, and specific bytes.
-
-        :param data: Raw key info data as bytes
-        :raises SPSDKParsingError: If data is missing or has invalid length
-        """
-        if not data:
-            raise SPSDKParsingError("No data set for key info")
-        if len(data) < self.size:
-            raise SPSDKParsingError(f"Invalid data length for key info: {len(data)}")
-
-        (
-            self.key_flags,
-            self.key_bit_len,
-            self.key_counter,
-            self.smr_flags,
-            self.key_type,
-            specific1,
-            specific2,
-            specific3,
-        ) = unpack(self.FORMAT, data[: self.size])
-        self.specific = bytes([specific1, specific2, specific3, 0])  # Pack specific bytes
-
-    def __str__(self) -> str:
-        """Format the key information for display.
-
-        Creates a human-readable string representation of HSE key information including
-        key flags, bit length, counter, SMR flags, key type, and specific data.
-
-        :return: Formatted string representation of the key information.
-        """
-        ret = "Key Information:\n"
-        ret += f"Key Flags: 0x{self.key_flags:08X}\n"
-
-        ret += f"  Flags: {self.key_flags}\n"
-        ret += f"Key Bit Length: {self.key_bit_len}\n"
-        ret += f"Key Counter: {self.key_counter}\n"
-        ret += f"SMR Flags: 0x{self.smr_flags:08X}\n"
-
-        # Decode key type
-        try:
-            key_type_str = HseKeyType.get_label(self.key_type)
-            ret += f"Key Type: {key_type_str} ({self.key_type})\n"
-        except ValueError:
-            ret += f"Key Type: Unknown ({self.key_type})\n"
-
-        ret += f"Specific Data: {self.specific.hex()}\n"
-        return ret
-
-
 class EleMessageHseGetKeyInfo(EleMessageHse):
     """HSE Get Key Info command message.
 
-    This class represents an ELE HSE message for retrieving key information and properties
-    using a key handle as input parameter. It handles the command formatting, response
-    decoding, and provides access to the retrieved key information.
-
-    :cvar CMD: Command identifier for the Get Key Info operation.
-    :cvar CMD_DESCRIPTOR_FORMAT: Binary format string for command descriptor packing.
+    This class represents an ELE HSE service message for retrieving key information
+    and properties using a key handle as input parameter. It handles the command
+    formatting, response parsing, and provides access to the retrieved key data.
     """
 
     CMD = HseMessageIDs.GET_KEY_INFO.tag
@@ -819,7 +624,7 @@ class EleMessageHseGetKeyInfo(EleMessageHse):
 
     def __init__(
         self,
-        key_handle: int,
+        key_handle: KeyHandle,
         srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
     ):
         """Initialize the HSE Get Key Info message.
@@ -829,17 +634,17 @@ class EleMessageHseGetKeyInfo(EleMessageHse):
         """
         super().__init__(srv_version)
         self.key_handle = key_handle
-        self.key_info = HseKeyInfo()
-        self.response_data_size = self.key_info.size
+        self.key_info: Optional[KeyInfo] = None
+        self.response_data_size = KeyInfo.get_size()
 
     def get_srv_descriptor(self) -> bytes:
         """Get service descriptor for the Get Key Info command.
 
-        :return: Packed service descriptor bytes containing key handle and response data address.
+        :return: Packed service descriptor bytes.
         """
         return pack(
             self.CMD_DESCRIPTOR_FORMAT,
-            self.key_handle,
+            self.key_handle.handle,
             self.response_data_address,
         )
 
@@ -849,18 +654,653 @@ class EleMessageHseGetKeyInfo(EleMessageHse):
         Extracts the key information from the response and stores it in the key_info attribute.
 
         :param response: Response data bytes to decode containing key information.
-        :raises SPSDKError: If response data cannot be decoded properly.
+        :raises SPSDKError: If response data cannot be parsed or is invalid.
         """
-        self.key_info.decode(response)
+        self.key_info = KeyInfo.parse(response)
 
     def response_info(self) -> str:
         """Get formatted information about the response.
 
-        Returns a string representation of the key information if the response status
-        indicates success, otherwise returns an error message.
+        Returns string representation of key information if the response status indicates success,
+        otherwise returns an error message indicating failure to retrieve key information.
 
-        :return: String representation of the key information on success, or error message on failure.
+        :return: String representation of the key information or error message.
         """
         if self.status == ResponseStatus.ELE_SUCCESS_IND.tag:
             return str(self.key_info)
         return "Failed to retrieve key information"
+
+
+class HseAccessMode(SpsdkEnum):
+    """HSE access mode enumeration for streaming operations.
+
+    Defines the available access modes that control how HSE (Hardware Security Engine)
+    operations are executed, supporting both single-pass and multi-step streaming workflows.
+    """
+
+    ONE_PASS = (0, "ONE_PASS", "One-pass mode - complete operation in one step")
+    START = (1, "START", "Start mode - begin streaming operation")
+    UPDATE = (2, "UPDATE", "Update mode - continue streaming operation")
+    FINISH = (3, "FINISH", "Finish mode - complete streaming operation")
+
+
+@dataclass
+class HseSmrCipherParams:
+    """HSE SMR cipher parameters container.
+
+    This class encapsulates the cryptographic parameters required for installing and
+    decrypting encrypted Secure Memory Regions (SMRs) in HSE operations, including
+    initialization vectors, GMAC authentication tags, and additional authenticated data.
+    """
+
+    iv_addr: int = 0
+    """Address of Initialization Vector/Nonce. The length of the IV is 16 bytes."""
+
+    gmac_tag_addr: int = 0
+    """Optional - Address of tag used for AEAD. The length for the GMAC tag is 16 bytes."""
+
+    aad_addr: int = 0
+    """Optional - Address of the AAD used for AEAD."""
+
+
+class EleMessageHseSmrEntryInstall(EleMessageHse):
+    """HSE Secure Memory Region Installation service.
+
+    This service installs or updates a Secure Memory Region (SMR) entry which needs
+    to be verified during boot or runtime phase. The installation can be done in
+    one-pass or streaming mode.
+
+    :cvar CMD: Command identifier for SMR entry installation service.
+    :cvar CMD_DESCRIPTOR_FORMAT: Binary format descriptor for the command structure.
+    """
+
+    CMD = HseMessageIDs.SMR_ENTRY_INSTALL.tag
+    CMD_DESCRIPTOR_FORMAT = (
+        LITTLE_ENDIAN
+        + UINT8
+        + UINT8
+        + UINT8
+        + UINT8
+        + UINT32
+        + UINT32
+        + UINT32
+        + UINT32
+        + UINT32
+        + UINT16
+        + UINT16
+        + UINT32
+        + UINT32
+        + UINT32
+    )
+
+    def __init__(
+        self,
+        access_mode: HseAccessMode,
+        entry_index: int,
+        smr_entry_addr: int,
+        smr_data_addr: int,
+        smr_data_length: int,
+        auth_tag_addr: tuple = (0, 0),
+        auth_tag_length: tuple = (0, 0),
+        cipher_params: Optional[HseSmrCipherParams] = None,
+        srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+    ):
+        """Initialize the SMR Entry Install message.
+
+        Creates a new SMR (Secure Memory Region) Entry Install message for HSE communication.
+        This message is used to install or update SMR entries in the HSE SMR table with
+        specified access modes and optional encryption parameters.
+
+        :param access_mode: The access mode for SMR installation (ONE_PASS, START, UPDATE, FINISH).
+        :param entry_index: Index of SMR entry in the SMR table to be installed/updated.
+        :param smr_entry_addr: Address of SMR entry structure containing configuration properties.
+        :param smr_data_addr: Address where SMR data to be installed is located.
+        :param smr_data_length: Length of the SMR data in bytes.
+        :param auth_tag_addr: Tuple of addresses where SMR authentication tags are located.
+        :param auth_tag_length: Tuple of lengths for the authentication tags.
+        :param cipher_params: Cipher parameters for encrypted SMR installation, defaults to None.
+        :param srv_version: Service version to use for this message.
+        """
+        super().__init__(srv_version)
+        self.access_mode = access_mode
+        self.entry_index = entry_index
+        self.smr_entry_addr = smr_entry_addr
+        self.smr_data_addr = smr_data_addr
+        self.smr_data_length = smr_data_length
+        self.auth_tag_addr = auth_tag_addr
+        self.auth_tag_length = auth_tag_length
+        self.cipher_params = cipher_params or HseSmrCipherParams()
+
+        # No response data expected for this command beyond status
+        self.response_data_size = 0
+
+    def get_srv_descriptor(self) -> bytes:
+        """Get service descriptor for the SMR Entry Install command.
+
+        Packs all the service descriptor fields into a binary format according to the
+        CMD_DESCRIPTOR_FORMAT specification for HSE SMR entry installation.
+
+        :return: Packed service descriptor bytes containing access mode, entry index,
+                 SMR entry/data addresses, authentication tags, and cipher parameters.
+        """
+        return pack(
+            self.CMD_DESCRIPTOR_FORMAT,
+            self.access_mode.tag,  # accessMode
+            self.entry_index,  # entryIndex
+            0,
+            0,  # reserved[2]
+            self.smr_entry_addr,  # pSmrEntry
+            self.smr_data_addr,  # pSmrData
+            self.smr_data_length,  # smrDataLength
+            self.auth_tag_addr[0],  # pAuthTag[0]
+            self.auth_tag_addr[1],  # pAuthTag[1]
+            self.auth_tag_length[0],  # authTagLength[0]
+            self.auth_tag_length[1],  # authTagLength[1]
+            self.cipher_params.iv_addr,  # cipher.pIV
+            self.cipher_params.gmac_tag_addr,  # cipher.pGmacTag
+            self.cipher_params.aad_addr,  # cipher.pAAD
+        )
+
+    def response_info(self) -> str:
+        """Get formatted information about the response.
+
+        Returns a human-readable string describing the SMR (Secure Memory Region) installation
+        result based on the response status and entry details.
+
+        :return: String representation of the SMR installation result including entry index,
+                 access mode, and success/failure status.
+        """
+        if self.status == ResponseStatus.ELE_SUCCESS_IND.tag:
+            return f"SMR entry {self.entry_index} installation ({self.access_mode.label.lower()}) successful"
+        return f"SMR entry {self.entry_index} installation failed"
+
+
+class HseCipherScheme:
+    """HSE Cipher Scheme structure.
+
+    This class represents a cipher scheme configuration for HSE (Hardware Security Engine)
+    operations, encapsulating algorithm type, mode, and additional cipher options for
+    cryptographic operations.
+    """
+
+    def __init__(self, algorithm: int = 0, mode: int = 0, options: bytes = bytes(4)):
+        """Initialize the cipher scheme structure.
+
+        :param algorithm: Cipher algorithm identifier.
+        :param mode: Cipher mode identifier.
+        :param options: Additional cipher options (4 bytes).
+        """
+        self.algorithm = algorithm
+        self.mode = mode
+        self.options = options
+
+    def pack(self) -> bytes:
+        """Pack the cipher scheme into bytes.
+
+        Serializes the cipher scheme object into a binary format using little-endian
+        byte ordering with algorithm, mode, padding bytes, and options.
+
+        :return: Packed cipher scheme as bytes in little-endian format.
+        """
+        return pack(
+            LITTLE_ENDIAN + UINT8 + UINT8 + UINT8 + UINT8 + UINT32,
+            self.algorithm,
+            self.mode,
+            0,
+            0,
+            int.from_bytes(self.options, byteorder=Endianness.LITTLE.value),
+        )
+
+
+class HseAuthScheme:
+    """HSE Authentication Scheme structure.
+
+    This class represents authentication parameters for HSE (Hardware Security Engine)
+    operations, encapsulating algorithm identifiers, modes, and additional options
+    required for secure authentication processes.
+    """
+
+    def __init__(self, algorithm: int = 0, mode: int = 0, options: bytes = bytes(4)):
+        """Initialize the authentication scheme structure.
+
+        :param algorithm: Authentication algorithm identifier.
+        :param mode: Authentication mode identifier.
+        :param options: Additional authentication options (4 bytes).
+        """
+        self.algorithm = algorithm
+        self.mode = mode
+        self.options = options
+
+    def pack(self) -> bytes:
+        """Pack the authentication scheme into bytes.
+
+        Serializes the authentication scheme object into a binary format using little-endian
+        byte order with specific field layout.
+
+        :return: Packed authentication scheme as bytes with algorithm, mode, padding, and options.
+        """
+        return pack(
+            LITTLE_ENDIAN + UINT8 + UINT8 + UINT8 + UINT8 + UINT32,
+            self.algorithm,
+            self.mode,
+            0,
+            0,
+            int.from_bytes(self.options, byteorder=Endianness.LITTLE.value),
+        )
+
+
+class EleMessageHseImportKey(EleMessageHse):
+    """HSE Import Key service message.
+
+    This class represents an ELE message for importing keys into the HSE key store.
+    Supports importing symmetric keys, asymmetric key pairs, and public keys in both
+    raw format and authenticated container format.
+
+    :cvar CMD: Command identifier for the HSE import key service.
+    :cvar CMD_DESCRIPTOR_FORMAT: Binary format structure for the command descriptor.
+    """
+
+    CMD = HseMessageIDs.IMPORT_KEY.tag
+    CMD_DESCRIPTOR_FORMAT = (
+        LITTLE_ENDIAN
+        + UINT32  # targetKeyHandle
+        + UINT32  # pKeyInfo
+        + UINT32  # pKey[0]
+        + UINT32  # pKey[1]
+        + UINT32  # pKey[2]
+        + UINT16  # keyLen[0]
+        + UINT16  # keyLen[1]
+        + UINT16  # keyLen[2]
+        + UINT8  # reserved[0]
+        + UINT8  # reserved[1]
+        + UINT32  # cipher.cipherKeyHandle
+        + UINT8  # cipher.cipherScheme.algorithm
+        + UINT8  # cipher.cipherScheme.mode
+        + UINT8  # cipher.cipherScheme.reserved[0]
+        + UINT8  # cipher.cipherScheme.reserved[1]
+        + UINT32  # cipher.cipherScheme.options
+        + UINT16  # keyContainer.keyContainerLen
+        + UINT8  # keyContainer.reserved[0]
+        + UINT8  # keyContainer.reserved[1]
+        + UINT32  # keyContainer.pKeyContainer
+        + UINT32  # keyContainer.authKeyHandle
+        + UINT8  # keyContainer.authScheme.algorithm
+        + UINT8  # keyContainer.authScheme.mode
+        + UINT8  # keyContainer.authScheme.reserved[0]
+        + UINT8  # keyContainer.authScheme.reserved[1]
+        + UINT32  # keyContainer.authScheme.options
+        + UINT16  # keyContainer.authLen[0]
+        + UINT16  # keyContainer.authLen[1]
+        + UINT32  # keyContainer.pAuth[0]
+        + UINT32  # keyContainer.pAuth[1]
+        + UINT8  # keyFormat
+        + UINT8  # keyFormat padding to align
+        + UINT16  # keyFormat padding to align
+    )
+
+    def __init__(
+        self,
+        key_handle: KeyHandle,
+        payload: "KeyImportPayload",
+        cipher_key_handle: int = 0xFFFFFFFF,  # HSE_INVALID_KEY_HANDLE
+        cipher_scheme: Optional[HseCipherScheme] = None,
+        key_container_len: int = 0,
+        key_container_addr: int = 0,
+        auth_key_handle: int = 0xFFFFFFFF,  # HSE_INVALID_KEY_HANDLE
+        auth_scheme: Optional[HseAuthScheme] = None,
+        auth_lengths: tuple = (0, 0),
+        auth_address: tuple = (0, 0),
+        key_format: Optional[KeyFormat] = None,
+        srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+    ):
+        """Initialize the HSE Import Key message.
+
+        Creates a new HSE (Hardware Security Engine) import key message with the specified
+        parameters for importing cryptographic keys into secure key slots.
+
+        :param key_handle: Handle of the key slot where the key will be imported
+        :param payload: Key import payload containing key data and metadata
+        :param cipher_key_handle: Handle of the key used for decryption if key is encrypted
+        :param cipher_scheme: Cipher scheme used for encrypted keys
+        :param key_container_len: Length of the key container in bytes
+        :param key_container_addr: Memory address of the key container
+        :param auth_key_handle: Handle of the key used for authentication verification
+        :param auth_scheme: Authentication scheme for key container verification
+        :param auth_lengths: Tuple of lengths for authentication tags (up to 2 elements)
+        :param auth_address: Tuple of addresses for authentication tags (up to 2 elements)
+        :param key_format: Format of the key being imported (defaults to RAW)
+        :param srv_version: Service version to use for this message
+        """
+        super().__init__(srv_version)
+        self.key_handle = key_handle
+        self.payload = payload
+        self.payload_address = 0
+
+        self.cipher_key_handle = cipher_key_handle
+        self.cipher_scheme = cipher_scheme or HseCipherScheme()
+
+        self.key_container_len = key_container_len
+        self.key_container_addr = key_container_addr
+        self.auth_key_handle = auth_key_handle
+        self.auth_scheme = auth_scheme or HseAuthScheme()
+
+        # Ensure auth_lengths and auth_address are tuples of length 2
+        if len(auth_lengths) < 2:
+            auth_lengths = tuple(list(auth_lengths) + [0] * (2 - len(auth_lengths)))
+        if len(auth_address) < 2:
+            auth_address = tuple(list(auth_address) + [0] * (2 - len(auth_address)))
+        self.auth_lengths = auth_lengths
+        self.auth_address = auth_address
+
+        self.key_format = key_format if key_format is not None else KeyFormat.RAW
+
+        # No response data expected for this command beyond status
+        self.response_data_size = 0
+
+    def get_srv_descriptor(self) -> bytes:
+        """Get service descriptor for the Import Key command.
+
+        Packs all the command parameters into a binary format according to the HSE
+        command descriptor structure for key import operations.
+
+        :return: Packed service descriptor bytes containing key handles, addresses,
+            cipher and authentication schemes, and other import parameters.
+        """
+        return pack(
+            self.CMD_DESCRIPTOR_FORMAT,
+            self.key_handle.handle,
+            self.payload_address,  # key_info_addr
+            (
+                self.payload_address + self.payload.key_offsets[0]
+                if self.payload.key_offsets[0] is not None
+                else 0
+            ),  # pKey[0]
+            (
+                self.payload_address + self.payload.key_offsets[1]
+                if self.payload.key_offsets[1] is not None
+                else 0
+            ),  # pKey[1]
+            (
+                self.payload_address + self.payload.key_offsets[2]
+                if self.payload.key_offsets[2] is not None
+                else 0
+            ),  # pKey[2]
+            self.payload.key_lengths[0] or 0,
+            self.payload.key_lengths[1] or 0,
+            self.payload.key_lengths[2] or 0,
+            0,  # reserved[0]
+            0,  # reserved[1]
+            self.cipher_key_handle,
+            self.cipher_scheme.algorithm,
+            self.cipher_scheme.mode,
+            0,  # cipher.cipherScheme.reserved[0]
+            0,  # cipher.cipherScheme.reserved[1]
+            int.from_bytes(self.cipher_scheme.options, byteorder=Endianness.LITTLE.value),
+            self.key_container_len,
+            0,  # keyContainer.reserved[0]
+            0,  # keyContainer.reserved[1]
+            self.key_container_addr,
+            self.auth_key_handle,
+            self.auth_scheme.algorithm,
+            self.auth_scheme.mode,
+            0,  # keyContainer.authScheme.reserved[0]
+            0,  # keyContainer.authScheme.reserved[1]
+            int.from_bytes(self.auth_scheme.options, byteorder=Endianness.LITTLE.value),
+            self.auth_lengths[0],
+            self.auth_lengths[1],
+            self.auth_address[0],
+            self.auth_address[1],
+            self.key_format.tag,
+            0,  # padding
+            0,  # padding
+        )
+
+    def response_info(self) -> str:
+        """Get formatted information about the response.
+
+        This method provides a human-readable string describing the result of the key import operation,
+        indicating success or failure along with the associated key handle.
+
+        :return: String representation of the key import result.
+        """
+        if self.status == ResponseStatus.ELE_SUCCESS_IND.tag:
+            return f"Key import successful for key handle 0x{self.key_handle:08X}"
+        return f"Key import failed for key handle 0x{self.key_handle:08X}"
+
+
+class KeyImportPayload:
+    """HSE Key Import Payload structure.
+
+    Manages cryptographic key data and metadata for importing keys into HSE (Hardware
+    Security Engine). This class encapsulates key information, converts keys to the
+    appropriate format, and handles payload structure for key import operations.
+
+    :cvar FEATURE: Database feature identifier for HSE operations.
+    :cvar SUB_FEATURE: Sub-feature identifier for key import operations.
+    """
+
+    FEATURE = DatabaseManager.HSE
+    SUB_FEATURE = "key_import"
+
+    def __init__(
+        self,
+        key_info: KeyInfo,
+        key: Union[PrivateKey, PublicKey, bytes],
+    ) -> None:
+        """Initialize the key import structure.
+
+        :param key_info: Key information structure containing key metadata and configuration.
+        :param key: The cryptographic key to import, can be private key, public key, or raw bytes.
+        """
+        self.key_info = key_info
+        self.key = key
+        self.key_data = self.convert_key(key, self.key_info.key_type)
+
+    @property
+    def key_lengths(self) -> list[Optional[int]]:
+        """Get the lengths of each key component.
+
+        :return: List of lengths for each key component, None for missing components.
+        """
+        key_lengths = [len(k) if k is not None else None for k in self.key_data]
+        return key_lengths
+
+    @property
+    def key_offsets(self) -> list[Optional[int]]:
+        """Calculate the offsets of each key component in the payload.
+
+        The offsets are calculated relative to the start of the payload, with the key_info structure
+        at the beginning followed by key components.
+
+        :return: List of offsets for each key component, None for missing components.
+        """
+        offsets: list[Optional[int]] = []
+        current_offset = self.key_info.size
+
+        for length in self.key_lengths:
+            if length is None:
+                offsets.append(None)
+            else:
+                offsets.append(current_offset)
+                current_offset += length
+
+        return offsets
+
+    @property
+    def size(self) -> int:
+        """Get the total size of the key import payload in bytes.
+
+        Includes the size of the key_info structure and all key components.
+
+        :return: Total size in bytes.
+        """
+        result = self.key_info.size
+        for key_chunk in self.key_data:
+            if key_chunk is not None:
+                result += len(key_chunk)
+        return result
+
+    def export(self) -> bytes:
+        """Export the key import structure to bytes.
+
+        The method serializes the key information and concatenates all non-null key data chunks
+        to create a complete binary representation of the key import structure.
+
+        :return: Serialized key import structure as bytes.
+        """
+        result = self.key_info.export()
+        for key_chunk in self.key_data:
+            if key_chunk is not None:
+                result += key_chunk
+        return result
+
+    @staticmethod
+    def convert_key(
+        key: Union["PrivateKey", "PublicKey", bytes], key_type: Optional[KeyType] = None
+    ) -> list[Optional[bytes]]:
+        """Convert an SPSDK key to HSE key format.
+
+        HSE key format consists of up to three chunks:
+        - pKey[0]: Public key data (modulus for RSA, X/Y coordinates for ECC, etc.)
+        - pKey[1]: Additional public key data (exponent for RSA, etc.)
+        - pKey[2]: Private key data (private exponent for RSA, private scalar for ECC,
+          symmetric key data)
+
+        :param key: SPSDK key object (from spsdk.crypto.keys) or raw key bytes
+        :param key_type: HSE key type, required when key is provided as raw bytes
+        :raises SPSDKValueError: Invalid key type, unsupported key format, or invalid key length
+        :return: List of up to three byte arrays representing the key components
+        """
+        # Initialize the three key parts
+        key_parts: list[Optional[bytes]] = [None, None, None]
+
+        # Handle raw bytes (for symmetric keys like AES)
+        if isinstance(key, bytes):
+            if not key_type:
+                raise SPSDKValueError("Key type must be specified when providing raw key bytes")
+            if key_type not in (
+                KeyType.AES,
+                KeyType.HMAC,
+                KeyType.SIPHASH,
+                KeyType.SHARED_SECRET,
+            ):
+                raise SPSDKValueError(f"Unsupported key type for raw bytes: {key_type}")
+                # Validate key length for AES keys
+            if key_type == KeyType.AES:
+                valid_lengths = [16, 24, 32]  # AES-128, AES-192, AES-256 (in bytes)
+                if len(key) not in valid_lengths:
+                    raise SPSDKValueError(
+                        f"Invalid AES key length: {len(key)} bytes. Must be one of {valid_lengths}"
+                    )
+
+            return [None, None, key]
+
+        # Handle RSA keys
+        if isinstance(key, (PrivateKeyRsa, PublicKeyRsa)):
+            # For RSA, pKey[0] is the modulus (n)
+            if isinstance(key, PrivateKeyRsa):
+                public_key_rsa = key.get_public_key()
+            else:
+                public_key_rsa = key
+
+            # RSA modulus (n) in big-endian
+            modulus_bytes = public_key_rsa.n.to_bytes(
+                math.ceil(public_key_rsa.n.bit_length() / 8), byteorder=Endianness.BIG.value
+            )
+            key_parts[0] = modulus_bytes
+
+            # RSA public exponent (e) in big-endian
+            exponent_bytes = public_key_rsa.e.to_bytes(
+                math.ceil(public_key_rsa.e.bit_length() / 8), byteorder=Endianness.BIG.value
+            )
+            key_parts[1] = exponent_bytes
+
+            # If it's a private key, add the private exponent (d)
+            if isinstance(key, PrivateKeyRsa):
+                private_exponent = key.key.private_numbers().d
+                private_exponent_bytes = private_exponent.to_bytes(
+                    key.key_size // 8, byteorder=Endianness.BIG.value
+                )
+                key_parts[2] = private_exponent_bytes
+
+        # Handle ECC keys
+        elif isinstance(key, (PrivateKeyEcc, PublicKeyEcc)):
+            # For ECC, pKey[0] contains the public point coordinates
+            if isinstance(key, PrivateKeyEcc):
+                public_key_ecc = key.get_public_key()
+            else:
+                public_key_ecc = key
+
+            # Raw format: X || Y
+            key_parts[0] = public_key_ecc.export(encoding=SPSDKEncoding.NXP)
+
+            # If it's a private key, add the private scalar (d)
+            if isinstance(key, PrivateKeyEcc):
+                private_scalar = key.d
+                private_scalar_bytes = private_scalar.to_bytes(
+                    public_key_ecc.coordinate_size, byteorder=Endianness.BIG.value
+                )
+                key_parts[2] = private_scalar_bytes
+
+        else:
+            raise SPSDKValueError(f"Unsupported key type: {type(key).__name__}")
+
+        return key_parts
+
+
+class EleMessageHseFormatKeyCatalogs(EleMessageHse):
+    """HSE Format Key Catalogs service.
+
+    This service configures NVM or RAM key catalogs for HSE Firmware operations.
+    The catalogs format is defined according to the total number of groups and
+    maximum available memory for NVM or RAM keys handled by the HSE Firmware.
+
+    :cvar CMD: HSE message command identifier for format key catalogs operation.
+    :cvar CMD_DESCRIPTOR_FORMAT: Binary format structure for service descriptor.
+    """
+
+    CMD = HseMessageIDs.FORMAT_KEY_CATALOGS.tag
+    CMD_DESCRIPTOR_FORMAT = (
+        LITTLE_ENDIAN + UINT32 + UINT32  # pNvmKeyCatalogCfg  # pRamKeyCatalogCfg
+    )
+
+    def __init__(
+        self,
+        srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+    ):
+        """Initialize the HSE Format Key Catalogs message.
+
+        This constructor sets up the message for formatting key catalogs in HSE,
+        initializing catalog addresses and response configuration.
+
+        :param srv_version: Service version to use for this message
+        :raises SPSDKValueError: If key catalog configuration is invalid
+        """
+        super().__init__(srv_version)
+
+        # Addresses will be set later
+        self.nvm_catalog_addr = 0
+        self.ram_catalog_addr = 0
+
+        # No response data expected for this command beyond status
+        self.response_data_size = 0
+
+    def get_srv_descriptor(self) -> bytes:
+        """Get service descriptor for the Format Key Catalogs command.
+
+        :return: Packed service descriptor bytes containing NVM and RAM catalog addresses.
+        """
+        return pack(
+            self.CMD_DESCRIPTOR_FORMAT,
+            self.nvm_catalog_addr,
+            self.ram_catalog_addr,
+        )
+
+    def response_info(self) -> str:
+        """Get formatted information about the response.
+
+        :return: String representation of the key catalog formatting result.
+        """
+        if self.status == ResponseStatus.ELE_SUCCESS_IND.tag:
+            return "Key catalogs formatting successful"
+        return "Key catalogs formatting failed"

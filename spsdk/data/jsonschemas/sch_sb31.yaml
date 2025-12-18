@@ -548,3 +548,32 @@ sb3_commands:
                 title: Reset
                 description: Resets the target
                 properties: {}
+
+          - type: object
+            required: [checkLifecycle]
+            properties:
+              checkLifecycle:
+                type: object
+                title: Check Lifecycle
+                description: Checks if the device is in the expected lifecycle state. The command will fail if the device is not in the specified state.
+                properties:
+                  lifecycle:
+                    type: string
+                    title: Lifecycle State
+                    description: The expected lifecycle state of the device.
+                    enum:
+                      [
+                        NXP_BLANK,
+                        NXP_FAB,
+                        DEVELOP,
+                        NXP_PROVISIONED,
+                        DEVELOP2,
+                        IN_FIELD,
+                        IN_FIELD_RETURN,
+                        NXP_FA,
+                        IN_FIELD_LOCKED,
+                        NXP_DEV,
+                        BRICKED
+                      ]
+                    template_value: IN_FIELD
+                required: [lifecycle]

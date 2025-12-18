@@ -174,7 +174,7 @@ class BaseCmd(BaseClass):
         """
         tag, address, length, cmd = unpack_from(cls.FORMAT, data)
         if tag != cls.TAG:
-            raise SPSDKError("TAG is not valid.")
+            raise SPSDKError(f"TAG is not valid. Expected: {hex(cls.TAG)}, got: {hex(tag)} ")
         return address, length, cmd
 
     @classmethod
@@ -189,7 +189,10 @@ class BaseCmd(BaseClass):
         """
         address, length, cmd = cls.header_parse_raw(data)
         if cmd != cls.CMD_TAG.tag:
-            raise SPSDKError("Values are not same.")
+            raise SPSDKError(
+                f"Command tag mismatch: expected {cls.CMD_TAG.name} (0x{cls.CMD_TAG.tag:08X}), "
+                f"found tag 0x{cmd:08X}."
+            )
         return address, length
 
     @classmethod
@@ -2030,6 +2033,70 @@ class CmdWriteIfr(BaseCmd):
         config_dict["file"] = file_name
 
         return Config(config_dict)
+
+
+class CmdCheckLifecycle(BaseCmd):
+    """Command to check device lifecycle state."""
+
+    CMD_TAG = EnumCmdTag.CHECK_LC
+
+    class Lifecycle(SpsdkEnum):
+        """Device lifecycle states."""
+
+        NXP_BLANK = (0xFF000000, "NXP_BLANK", "NXP Blank")
+        NXP_FAB = (0xFE000001, "NXP_FAB", "NXP Fab")
+        DEVELOP = (0xFC000003, "DEVELOP", "Develop")
+        NXP_PROVISIONED = (0xFC000003, "NXP_PROVISIONED", "NXP Provisioned")
+        DEVELOP2 = (0xF8000007, "DEVELOP2", "Develop2")
+        IN_FIELD = (0xF000000F, "IN_FIELD", "In Field")
+        IN_FIELD_RETURN = (0xE000001F, "IN_FIELD_RETURN", "In Field Return")
+        NXP_FA = (0x8000007F, "NXP_FA", "NXP FA")
+        IN_FIELD_LOCKED = (0x300000CF, "IN_FIELD_LOCKED", "In Field Locked")
+        NXP_DEV = (0x030000FC, "NXP_DEV", "NXP Dev")
+        BRICKED = (0x000000FF, "BRICKED", "Bricked")
+
+    def __init__(self, lifecycle: Lifecycle) -> None:
+        """Constructor for Command.
+
+        :param lifecycle: Lifecycle to be checked
+        """
+        super().__init__(address=0, length=0)
+        self.lifecycle = lifecycle
+
+    def __str__(self) -> str:
+        """Get info of command."""
+        return f"CHECK LIFECYCLE: LC=0x{self.lifecycle.description}"
+
+    def export(self) -> bytes:
+        """Export command as bytes."""
+        return pack(self.FORMAT, self.TAG, self.lifecycle.tag, 0, self.CMD_TAG.tag)
+
+    @classmethod
+    def parse(cls, data: bytes) -> Self:
+        """Parse command from bytes array.
+
+        :param data: Input data as bytes array
+        :return: CmdCheckLifecycle
+        """
+        lifecycle, _ = cls.header_parse(data=data)
+        return cls(lifecycle=cls.Lifecycle.from_tag(lifecycle))
+
+    @classmethod
+    def load_from_config(cls, config: Config) -> list[Self]:
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        :return: Command object loaded from configuration.
+        """
+        return [cls(lifecycle=cls.Lifecycle.from_label(config["lifecycle"]))]
+
+    def get_config_context(self, data_path: str = "./") -> Config:
+        """Create configuration for the CHECK_LC command.
+
+        :param data_path: Path to store any data files (not used for this command)
+        :return: Configuration object with command-specific settings
+        """
+        return Config({"lifecycle": self.lifecycle.label})
 
 
 class CmdSectionHeader(BaseClass):

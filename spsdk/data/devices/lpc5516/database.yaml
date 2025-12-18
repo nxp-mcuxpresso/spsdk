@@ -1,4 +1,4 @@
-# Copyright 2023-2024 NXP
+# Copyright 2023-2025 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,5 +14,5 @@ info:
       protocol: mboot
       interfaces: ["usb","uart", "spi", "i2c"]
       usb:
-        vid: 0x1FC9
-        pid: 0x0022
+        - vid: 0x1FC9
+          pid: 0x0022

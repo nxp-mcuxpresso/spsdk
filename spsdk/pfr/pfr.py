@@ -100,6 +100,14 @@ class BaseConfigArea(FeatureBaseClass):
         self.registers = self._load_registers(family)
         self._additional_data = bytes()
         self.registers_size = self._get_registers_size()
+        has_update_field = self.db.get_bool(self.FEATURE, "has_update_field", default=False)
+        if has_update_field:
+            update_field_id = self.db.get_str(self.FEATURE, "update_field_id")
+            update_field_value = self.db.get_int(
+                self.FEATURE, [self.SUB_FEATURE, "update_field_value"]
+            )
+            update_reg = self.registers.get_reg(update_field_id)
+            update_reg.set_value(update_field_value)
 
     def _get_registers_size(self) -> int:
         """Get binary size from database configuration.
@@ -559,7 +567,7 @@ class BaseConfigArea(FeatureBaseClass):
             return
 
         offset = self.additional_data_cfg(self.family).offset
-        size = self.additional_data_cfg(self.family).max_size
+        size = len(self.additional_data)
         logger.info(f"Adding customer defined data of {size} bytes")
 
         if offset == -1:
@@ -568,6 +576,11 @@ class BaseConfigArea(FeatureBaseClass):
         elif offset >= 0 and offset + size <= len(data):
             data[offset : offset + size] = self.additional_data
             logger.info(f"Additional customer data inserted at offset {offset}")
+        elif offset >= len(data):
+            padding_size = offset - len(data)
+            data.extend(b"\xff" * padding_size)
+            data.extend(self.additional_data)
+            logger.info(f"Additional customer data inserted with {padding_size} bytes of padding")
         else:
             raise SPSDKError(
                 f"Invalid offset {offset} for additional customer data (binary size: {len(data)})"
@@ -589,8 +602,12 @@ class BaseConfigArea(FeatureBaseClass):
             raise SPSDKPfrError("For PFR parse method the family parameter is mandatory")
         ret = cls(family)
         ret.registers.parse(data)
-        if ret.additional_data_cfg(ret.family).enabled and len(data) > ret.registers.size:
-            ret.additional_data = data[ret.registers.size :]
+        add_data_enabled = ret.additional_data_cfg(ret.family).enabled
+        add_data_offset = ret.additional_data_cfg(ret.family).offset
+        if add_data_offset == -1:
+            add_data_offset = ret.registers.size
+        if add_data_enabled and len(data) > add_data_offset:
+            ret.additional_data = data[add_data_offset:]
         return ret
 
     def __eq__(self, obj: Any) -> bool:

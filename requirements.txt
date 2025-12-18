@@ -3,8 +3,8 @@ bincopy<21,>=17.14.5
 bitstring<5,>=3.1
 click-command-tree<2
 click-option-group<1,>=0.3.0
-click!=8.1.4,<9,>=7.1
-click<8.3;python_version=="3.10" # remove once https://github.com/pallets/click/issues/3065 is fixed
+click!=8.1.4,!=8.3,<9,>=7.1
+click<8.3;python_version=="3.10" # command object is not deep-copyable
 colorama<1,>=0.4.6
 crcmod<2
 cryptography<47,>=43.0.0

@@ -25,12 +25,10 @@ info:
     rom:
       protocol: mboot
       usb:
-        vid: 0x1FC9
-        pid: 0x015e
+        - vid: 0x1FC9
+          pid: 0x015e
 
 features:
-  # ======== Blhost section ========
-  blhost: {}
 
   # ======== Communication buffer section ========
   comm_buffer:

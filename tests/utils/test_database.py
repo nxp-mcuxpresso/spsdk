@@ -409,9 +409,9 @@ def test_isp(  # pylint: disable=redefined-outer-name
     """
     dev_info = get_device(FamilyRevision(device)).info
     assert dev_info.isp.rom.protocol == rom_protocol
-    assert dev_info.isp.rom.usb_id == rom_usbid
+    assert rom_usbid in dev_info.isp.rom.usb_ids
     assert dev_info.isp.flashloader.protocol == flashloader_protocol
-    assert dev_info.isp.flashloader.usb_id == flashloader_usbid
+    assert flashloader_usbid in dev_info.isp.flashloader.usb_ids
 
 
 @pytest.mark.parametrize(

@@ -999,10 +999,6 @@ class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
         :param workspace: Optional workspace path for temporary files during operation.
         :param clean: Whether to clean up temporary files after operation.
         """
-        # Validate objects first
-        so_list = SecureObjects.parse(secure_objects)
-        so_list.validate(family=client.family)
-
         self.write_secure_objects_uboot(
             client=client, secure_objects=secure_objects, workspace=workspace, clean=clean
         )
@@ -1046,6 +1042,9 @@ class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
             saved locally.
         :param clean: Flag indicating whether to perform cleanup operations (currently unused).
         """
+        so_list = SecureObjects.parse(secure_objects)
+        so_list.validate(family=client.family)
+
         if workspace:
             write_file(secure_objects, os.path.join(workspace, "secure_objects.bin"), mode="wb")
 

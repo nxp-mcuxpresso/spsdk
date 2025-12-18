@@ -162,8 +162,8 @@ info:
     rom:
       protocol: mboot
       usb:
-        vid: 0x1FC9
-        pid: 0x0026
+        - vid: 0x1FC9
+          pid: 0x0026
   memory_map:
     # Memory map basic info
     xspi1:

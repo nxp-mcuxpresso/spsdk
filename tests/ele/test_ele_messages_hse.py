@@ -11,10 +11,26 @@ message functionality, focusing on boot data image signing operations
 and message encoding/decoding validation.
 """
 
+import os
+
 import pytest
 
-from spsdk.ele.ele_message_hse import EleMessageHse, EleMessageHseBootDataImageSign
+from spsdk.crypto.keys import PrivateKeyEcc, PrivateKeyRsa, PublicKeyEcc, PublicKeyRsa
+from spsdk.ele.ele_message_hse import (
+    EleMessageHse,
+    EleMessageHseBootDataImageSign,
+    KeyImportPayload,
+)
 from spsdk.exceptions import SPSDKValueError
+from spsdk.image.hse.common import HseKeyBits, KeyType
+from spsdk.image.hse.key_info import (
+    HseAesBlockModeMask,
+    HseEccCurveId,
+    HseKeyFlags,
+    HseSmrFlags,
+    KeyInfo,
+)
+from spsdk.utils.family import FamilyRevision
 
 
 # Mock implementation of EleMessageHse for testing
@@ -135,3 +151,240 @@ def test_ele_message_hse_boot_data_image_sign_response_info() -> None:
     assert "Image Signature:" in info
     assert "GMAC:" in info
     assert "Initial Vector:" in info
+
+
+@pytest.fixture
+def family() -> FamilyRevision:
+    """Return a family revision for testing."""
+    return FamilyRevision("mcxe31b")
+
+
+@pytest.fixture
+def aes_key_info(family: FamilyRevision) -> KeyInfo:
+    """Create an AES key info for testing."""
+    return KeyInfo(
+        family=family,
+        key_flags=HseKeyFlags.USAGE_ENCRYPT | HseKeyFlags.USAGE_DECRYPT,
+        key_type=KeyType.AES,
+        smr_flags=HseSmrFlags.SMR_0,
+        key_bit_len=HseKeyBits.KEY256_BITS,
+        specific_data={
+            "aesBlockModeMask": HseAesBlockModeMask.BLOCK_MODE_CBC
+            | HseAesBlockModeMask.BLOCK_MODE_GCM
+        },
+    )
+
+
+@pytest.fixture
+def ecc_key_info(family: FamilyRevision) -> KeyInfo:
+    """Create an ECC key info for testing."""
+    return KeyInfo(
+        family=family,
+        key_flags=HseKeyFlags.USAGE_SIGN | HseKeyFlags.USAGE_VERIFY,
+        key_type=KeyType.ECC_PAIR,
+        smr_flags=HseSmrFlags.SMR_0,
+        key_bit_len=HseKeyBits.KEY256_BITS,
+        specific_data={"eccCurveId": HseEccCurveId.SEC_SECP256R1.value},
+    )
+
+
+@pytest.fixture
+def rsa_key_info(family: FamilyRevision) -> KeyInfo:
+    """Create an RSA key info for testing."""
+    return KeyInfo(
+        family=family,
+        key_flags=HseKeyFlags.USAGE_SIGN | HseKeyFlags.USAGE_VERIFY,
+        key_type=KeyType.RSA_PAIR,
+        smr_flags=HseSmrFlags.SMR_0,
+        key_bit_len=HseKeyBits.KEY2048_BITS,
+        specific_data={"pubExponentSize": 3},
+    )
+
+
+def test_key_import_payload_init_with_aes_key(aes_key_info: KeyInfo) -> None:
+    """Test initializing KeyImportPayload with an AES key."""
+    # Create a 256-bit AES key
+    aes_key = bytes(32)  # 32 bytes = 256 bits
+
+    # Initialize payload
+    payload = KeyImportPayload(key_info=aes_key_info, key=aes_key)
+
+    # Check key data
+    assert payload.key_data[0] is None
+    assert payload.key_data[1] is None
+    assert payload.key_data[2] == aes_key
+
+    # Check key lengths
+    assert payload.key_lengths[0] is None
+    assert payload.key_lengths[1] is None
+    assert payload.key_lengths[2] == 32
+
+    # Check key offsets
+    assert payload.key_offsets[0] is None
+    assert payload.key_offsets[1] is None
+    assert payload.key_offsets[2] == aes_key_info.size
+
+    # Check total size
+    assert payload.size == aes_key_info.size + 32
+
+
+def test_key_import_payload_init_with_invalid_aes_key(aes_key_info: KeyInfo) -> None:
+    """Test initializing KeyImportPayload with an invalid AES key."""
+    # Create an invalid AES key (wrong size)
+    invalid_aes_key = bytes(20)  # Not a valid AES key size
+
+    # Should raise an error
+    with pytest.raises(SPSDKValueError, match="Invalid AES key length"):
+        KeyImportPayload(key_info=aes_key_info, key=invalid_aes_key)
+
+
+def test_key_import_payload_init_with_ecc_public_key(
+    tests_root_dir: str, ecc_key_info: KeyInfo
+) -> None:
+    """Test initializing KeyImportPayload with an ECC public key."""
+    # Create an ECC public key
+    public_key = PublicKeyEcc.load(
+        os.path.join(tests_root_dir, "_data/keys/ecc256/srk3_ecc256.pub")
+    )
+
+    # Initialize payload
+    payload = KeyImportPayload(key_info=ecc_key_info, key=public_key)
+
+    # Check key data
+    assert payload.key_data[0] is not None  # X || Y coordinates
+    assert payload.key_data[1] is None
+    assert payload.key_data[2] is None
+
+    # Check key lengths
+    assert payload.key_lengths[0] == 64  # 32 bytes X + 32 bytes Y
+    assert payload.key_lengths[1] is None
+    assert payload.key_lengths[2] is None
+
+    # Check key offsets
+    assert payload.key_offsets[0] == ecc_key_info.size
+    assert payload.key_offsets[1] is None
+    assert payload.key_offsets[2] is None
+
+    # Check total size
+    assert payload.size == ecc_key_info.size + 64
+
+
+def test_key_import_payload_init_with_ecc_private_key(
+    tests_root_dir: str, ecc_key_info: KeyInfo
+) -> None:
+    """Test initializing KeyImportPayload with an ECC private key."""
+    # Create an ECC private key
+    private_key = PrivateKeyEcc.load(
+        os.path.join(tests_root_dir, "_data/keys/ecc256/srk3_ecc256.pem")
+    )
+
+    # Initialize payload
+    payload = KeyImportPayload(key_info=ecc_key_info, key=private_key)
+
+    # Check key data
+    assert payload.key_data[0] is not None  # X || Y coordinates
+    assert payload.key_data[1] is None
+    assert payload.key_data[2] is not None  # Private scalar
+
+    # Check key lengths
+    assert payload.key_lengths[0] == 64  # 32 bytes X + 32 bytes Y
+    assert payload.key_lengths[1] is None
+    assert payload.key_lengths[2] == 32  # 32 bytes private scalar
+
+    # Check key offsets
+    assert payload.key_offsets[0] == ecc_key_info.size
+    assert payload.key_offsets[1] is None
+    assert payload.key_offsets[2] == ecc_key_info.size + 64
+
+    # Check total size
+    assert payload.size == ecc_key_info.size + 64 + 32
+
+
+def test_key_import_payload_init_with_rsa_public_key(
+    tests_root_dir: str, rsa_key_info: KeyInfo
+) -> None:
+    """Test initializing KeyImportPayload with an RSA public key."""
+    # Create an RSA public key
+    public_key = PublicKeyRsa.load(
+        os.path.join(tests_root_dir, "_data/keys/rsa2048/srk3_rsa2048.pub")
+    )
+    # Initialize payload
+    payload = KeyImportPayload(key_info=rsa_key_info, key=public_key)
+
+    # Check key data
+    assert payload.key_data[0] is not None  # Modulus
+    assert payload.key_data[1] is not None  # Public exponent
+    assert payload.key_data[2] is None
+
+    # Check key lengths
+    assert payload.key_lengths[0] == 256  # 2048-bit modulus
+    assert payload.key_lengths[1] == 3  # Public exponent (typically 3 bytes for 0x010001)
+    assert payload.key_lengths[2] is None
+
+    # Check key offsets
+    assert payload.key_offsets[0] == rsa_key_info.size
+    assert payload.key_offsets[1] == rsa_key_info.size + 256
+    assert payload.key_offsets[2] is None
+
+    # Check total size
+    assert payload.size == rsa_key_info.size + 256 + 3
+
+
+def test_key_import_payload_init_with_rsa_private_key(
+    tests_root_dir: str, rsa_key_info: KeyInfo
+) -> None:
+    """Test initializing KeyImportPayload with an RSA private key."""
+    # Create an RSA private key
+    private_key = PrivateKeyRsa.load(
+        os.path.join(tests_root_dir, "_data/keys/rsa2048/srk3_rsa2048.pem")
+    )
+    # Initialize payload
+    payload = KeyImportPayload(key_info=rsa_key_info, key=private_key)
+
+    # Check key data
+    assert payload.key_data[0] is not None  # Modulus
+    assert payload.key_data[1] is not None  # Public exponent
+    assert payload.key_data[2] is not None  # Private exponent
+
+    # Check key lengths
+    assert isinstance(payload.key_lengths[0], int)
+    assert payload.key_lengths[0] == 256  # 2048-bit modulus
+    assert isinstance(payload.key_lengths[1], int)
+    assert payload.key_lengths[1] > 0  # Public exponent
+    assert isinstance(payload.key_lengths[2], int)
+    assert payload.key_lengths[2] == 256  # 2048-bit private exponent
+
+    # Check key offsets
+    assert isinstance(payload.key_offsets[0], int)
+    assert payload.key_offsets[0] == rsa_key_info.size
+    assert isinstance(payload.key_offsets[1], int)
+    assert payload.key_offsets[1] == rsa_key_info.size + 256
+    assert isinstance(payload.key_offsets[2], int)
+    assert payload.key_offsets[2] == rsa_key_info.size + 256 + payload.key_lengths[1]
+
+
+def test_key_import_payload_export(aes_key_info: KeyInfo) -> None:
+    """Test exporting KeyImportPayload to binary."""
+    # Create a 256-bit AES key
+    aes_key = bytes(32)  # 32 bytes = 256 bits
+
+    # Initialize payload
+    payload = KeyImportPayload(key_info=aes_key_info, key=aes_key)
+
+    # Export to binary
+    exported_data = payload.export()
+
+    # Check exported data
+    assert len(exported_data) == payload.size
+    assert exported_data[: aes_key_info.size] == aes_key_info.export()
+    assert exported_data[aes_key_info.size :] == aes_key
+
+
+def test_key_import_payload_with_raw_bytes_no_key_type() -> None:
+    """Test KeyImportPayload with raw bytes but no key type."""
+    # Create a key without specifying key_type
+    key = bytes(32)
+
+    # Should raise an error when converting
+    with pytest.raises(SPSDKValueError, match="Key type must be specified"):
+        KeyImportPayload.convert_key(key)

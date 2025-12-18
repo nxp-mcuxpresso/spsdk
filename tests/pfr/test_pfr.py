@@ -188,7 +188,7 @@ def test_config_cmpa() -> None:
     This test validates the round-trip integrity of CMPA configuration
     data for the lpc55s3x family.
     """
-    family = FamilyRevision("lpc55s3x")
+    family = FamilyRevision(name="lpc55s3x", revision="a0")
     cmpa = CMPA(family)
     config = cmpa.get_config()
     config2 = cmpa.get_config()

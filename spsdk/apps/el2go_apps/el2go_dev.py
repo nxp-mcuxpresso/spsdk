@@ -613,7 +613,13 @@ def parse_uuid_db(output: str, input_db: str) -> None:
     type=click.Path(exists=True, dir_okay=False),
     help="Unclaim devices only in this database",
 )
-def unclaim(config: Config, database: str) -> None:
+@click.option(
+    "-y",
+    "--yes",
+    is_flag=True,
+    help="Assume yes to all prompts.",
+)
+def unclaim(config: Config, database: str, yes: bool) -> None:
     """Unclaim devices: Remove UUIDs from Device Group.
 
     If a database is specified, unclaim only UUIDs in database and remove Secure Objects from database.
@@ -634,11 +640,18 @@ def unclaim(config: Config, database: str) -> None:
         click.echo(f"Found {len(local_uuids)} UUIDs")
         uuids = uuids & set(local_uuids)
 
-    click.secho(
-        f"You're about to remove {len(uuids)} UUIDs from Device Group: {client.device_group_id}",
-        fg="yellow",
-    )
-    click.confirm("Are you sure you want to continue?", abort=True)
+    if yes:
+        answer = True
+    else:
+        click.secho(
+            f"You're about to remove {len(uuids)} UUIDs from Device Group: {client.device_group_id}",
+            fg="yellow",
+        )
+        answer = click.confirm("Are you sure you want to continue?", abort=True)
+
+    if answer is False:
+        click.echo("Un-claim operation cancelled.")
+        return
 
     client._unassign_device_from_group(device_id=list(uuids), wait_time=0)
 

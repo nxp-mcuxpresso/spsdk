@@ -14,7 +14,7 @@ chain validation, Trust Zone configurations, and multi-image handling.
 """
 
 import os
-from typing import List, Optional, Union
+from typing import List, Optional, Type, Union
 
 import pytest
 
@@ -22,6 +22,7 @@ from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.signature_provider import SignatureProvider
 from spsdk.exceptions import SPSDKError
 from spsdk.image.cert_block.cert_blocks import CertBlockV1
+from spsdk.image.exceptions import SPSDKUnsupportedImageType
 from spsdk.image.keystore import KeySourceType, KeyStore
 from spsdk.image.mbi.mbi import MasterBootImage
 from spsdk.image.mbi.mbi_mixin import Mbi_MixinRelocTable, MultipleImageEntry, MultipleImageTable
@@ -989,3 +990,198 @@ def test_parse_name(name: str, expected_auth: str, expected_target: str) -> None
     auth, target = MasterBootImage._parse_name(name)
     assert auth == expected_auth
     assert target == expected_target
+
+
+@pytest.mark.parametrize(
+    "config,expected_target,expected_auth,expected_exception",
+    [
+        # Valid configurations
+        (
+            {
+                "family": "rt6xx",
+                "outputImageExecutionTarget": "xip",
+                "outputImageAuthenticationType": "plain",
+            },
+            "xip",
+            "plain",
+            None,
+        ),
+        (
+            {
+                "family": "rt6xx",
+                "outputImageExecutionTarget": "load-to-ram",
+                "outputImageAuthenticationType": "signed",
+            },
+            "load-to-ram",
+            "signed",
+            None,
+        ),
+        (
+            {
+                "family": "lpc55s6x",
+                "outputImageExecutionTarget": "Internal flash (XIP)",
+                "outputImageAuthenticationType": "CRC",
+            },
+            "xip",
+            "crc",
+            None,
+        ),
+        # Test XIP aliases
+        (
+            {
+                "family": "rt6xx",
+                "outputImageExecutionTarget": "External Flash (XIP)",
+                "outputImageAuthenticationType": "plain",
+            },
+            "xip",
+            "plain",
+            None,
+        ),
+        # Test RAM aliases
+        (
+            {
+                "family": "rt6xx",
+                "outputImageExecutionTarget": "RAM",
+                "outputImageAuthenticationType": "plain",
+            },
+            "load-to-ram",
+            "plain",
+            None,
+        ),
+        (
+            {
+                "family": "rt6xx",
+                "outputImageExecutionTarget": "ram",
+                "outputImageAuthenticationType": "Plain",
+            },
+            "load-to-ram",
+            "plain",
+            None,
+        ),
+        # Test authentication aliases
+        (
+            {
+                "family": "rt6xx",
+                "outputImageExecutionTarget": "xip",
+                "outputImageAuthenticationType": "Signed",
+            },
+            "xip",
+            "signed",
+            None,
+        ),
+        # Invalid image type (not in IMAGE_TYPES)
+        (
+            {
+                "family": "rt6xx",
+                "outputImageExecutionTarget": "invalid_target_type",
+                "outputImageAuthenticationType": "plain",
+            },
+            None,
+            None,
+            SPSDKUnsupportedImageType,
+        ),
+        # Invalid execution target (not in MAP_IMAGE_TARGETS)
+        (
+            {
+                "family": "rt6xx",
+                "outputImageExecutionTarget": "flash",
+                "outputImageAuthenticationType": "plain",
+            },
+            None,
+            None,
+            SPSDKUnsupportedImageType,
+        ),
+        # Invalid authentication type (not in MAP_AUTHENTICATIONS)
+        (
+            {
+                "family": "rt6xx",
+                "outputImageExecutionTarget": "xip",
+                "outputImageAuthenticationType": "custom_auth",
+            },
+            None,
+            None,
+            SPSDKUnsupportedImageType,
+        ),
+        # Missing outputImageExecutionTarget
+        (
+            {
+                "family": "rt6xx",
+                "outputImageAuthenticationType": "plain",
+            },
+            None,
+            None,
+            SPSDKUnsupportedImageType,
+        ),
+        # Missing outputImageAuthenticationType - will fail at get_key_by_val
+        (
+            {
+                "family": "rt6xx",
+                "outputImageExecutionTarget": "xip",
+            },
+            None,
+            None,
+            SPSDKUnsupportedImageType,
+        ),
+        (
+            {
+                "family": "kw47xx",
+                "outputImageExecutionTarget": "xip",
+                "outputImageAuthenticationType": "nbu-signed",
+            },
+            "xip",
+            "nbu-signed",
+            None,
+        ),
+        (
+            {
+                "family": "kw47xx",
+                "outputImageExecutionTarget": "xip",
+                "outputImageAuthenticationType": "NBU Signed",
+            },
+            "xip",
+            "nbu-signed",
+            None,
+        ),
+        (
+            {
+                "family": "kw47xx",
+                "outputImageExecutionTarget": "Internal flash (XIP)",
+                "outputImageAuthenticationType": "nbu_signed",
+            },
+            "xip",
+            "nbu-signed",
+            None,
+        ),
+    ],
+)
+def test_get_mbi_class(
+    config: dict[str, str],
+    expected_target: Optional[str],
+    expected_auth: Optional[str],
+    expected_exception: Optional[Type[Exception]],
+) -> None:
+    """Test get_mbi_class method with various configurations.
+
+    This test validates the get_mbi_class method behavior for:
+    - Valid configurations with different execution targets and authentication types
+    - Various aliases for targets (xip, RAM, Internal/External Flash)
+    - Various aliases for authentication types (plain, CRC, signed)
+    - Invalid image types not in IMAGE_TYPES list
+    - Invalid execution targets not defined in MAP_IMAGE_TARGETS
+    - Invalid authentication types not defined in MAP_AUTHENTICATIONS
+    - Missing required configuration keys
+    - Unsupported target-authentication combinations for specific families
+
+    :param config: Configuration dictionary with family, target, and authentication
+    :param expected_target: Expected IMAGE_TARGET value for valid configs
+    :param expected_auth: Expected IMAGE_AUTHENTICATIONS value for valid configs
+    :param expected_exception: Expected exception type for invalid configs
+    :param expected_error_msg: Expected error message substring for invalid configs
+    """
+    if expected_exception:
+        with pytest.raises(expected_exception):
+            MasterBootImage.get_mbi_class(config)
+    else:
+        mbi_cls = MasterBootImage.get_mbi_class(config)
+        assert mbi_cls.IMAGE_TARGET == expected_target
+        assert mbi_cls.IMAGE_AUTHENTICATIONS == expected_auth

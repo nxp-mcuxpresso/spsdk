@@ -134,12 +134,24 @@ features:
           - Mbi_MixinImageSubType
           - Mbi_ExportMixinAppCertBlockManifest
           - Mbi_ExportMixinEccSign
+      nbu_signed_xip:
+        image_type: NBU_SIGNED_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinImageSubType
+          - Mbi_MixinCertBlockV21
+          - Mbi_MixinManifestDigest
+          - Mbi_ExportMixinAppCertBlockManifest
+          - Mbi_ExportMixinEccSign
     images:
       xip:
         plain: plain_xip
         crc: crc_xip
         signed: signed_xip
         nxp_signed: nxp_signed_xip
+        nbu_signed: nbu_signed_xip
 
   # ======== PFR section ========
   pfr:

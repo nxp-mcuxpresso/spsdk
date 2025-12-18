@@ -27,8 +27,8 @@ info:
       protocol: mboot
       interfaces: ["usb", "uart", "spi", "i2c", "can"]
       usb:
-        vid: 0x1FC9
-        pid: 0x014F
+        - vid: 0x1FC9
+          pid: 0x014F
 
 features:
   # ======== Blhost section ========
@@ -383,3 +383,13 @@ features:
           field024-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
         field028: # DCFG_CC_SOCU_NS_DFLT
           field028-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+
+  # ======== EL2GO TP section ========
+  el2go_tp:
+    el2go_name: MCXN
+    prov_method: dispatch_fw
+    dispatch_method: sb_only
+    use_additional_data: true
+    fw_read_address: 0x2000_0100
+    ignored_otp_ranges: [11, 22]
+    validation_method: max_count=16;max_total_size=16384

@@ -64,7 +64,7 @@ Supported OS
 Supported Environment
 =====================
 
-SPSDK is tested on *Python 3.9+* interpreter, old version 2.x is not supported.
+SPSDK is tested on *Python 3.10+* interpreter, old version 2.x is not supported.
 
 ===========
 Versioning
