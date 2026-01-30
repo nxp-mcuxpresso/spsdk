@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """HAB Set Command implementation module.
 
 This module provides implementation of the HAB SET command used to set the value
@@ -197,7 +198,7 @@ class CmdSet(CmdBase):
         :return: Parsed SET command object.
         """
         header = CmdHeader.parse(data, CmdTag.SET.tag)
-        (_, alg, eng, cfg) = unpack_from("4B", data, CmdHeader.SIZE)
+        _, alg, eng, cfg = unpack_from("4B", data, CmdHeader.SIZE)
         return cls(
             SetItmEnum.from_tag(header.param),
             EnumAlgorithm.from_tag(alg),

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK binary image utilities and visualization tools.
 
 This module provides functionality for handling binary images, including
@@ -17,11 +18,12 @@ import os
 import re
 import sys
 import textwrap
-from typing import Any, Optional
+from typing import Any, Generator, Optional
 
 import colorama
 from typing_extensions import Self
 
+from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.exceptions import SPSDKError, SPSDKOverlapError, SPSDKValueError
 from spsdk.utils.config import Config
 from spsdk.utils.database import get_schema_file
@@ -36,6 +38,12 @@ from spsdk.utils.misc import (
     write_file,
 )
 from spsdk.utils.schema_validator import CommentedConfig
+from spsdk.utils.sparse_image import (
+    SPARSE_DEFAULT_BLOCK_SIZE,
+    ChunkBuilderContext,
+    SparseChunkType,
+    SparseImage,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +148,7 @@ class BinaryImage:
         self.alignment = alignment
         self.parent = parent
         self.execution_start_address = execution_start_address
+        self.sparse_block_size = SPARSE_DEFAULT_BLOCK_SIZE
 
         if parent:
             assert isinstance(parent, BinaryImage)
@@ -633,6 +642,103 @@ class BinaryImage:
 
         return generated_files
 
+    def iter_blocks(self, block_size: int = 4096) -> Generator[bytes, None, None]:
+        """Iterate over the binary image data in blocks without loading entire image into memory.
+
+        This method generates the binary image data block by block, allowing for memory-efficient
+        processing of large images. Each block is constructed on-the-fly by determining which
+        sub-images or patterns contribute to that specific block range.
+
+        Usage example:
+            for block in binary_image.iter_blocks(block_size=8192):
+                process(block)
+
+        :param block_size: Size of each block in bytes, defaults to 4096.
+        :raises SPSDKValueError: When block_size is less than or equal to 0.
+        :return: Generator yielding bytes objects of up to block_size length.
+        """
+        if block_size <= 0:
+            raise SPSDKValueError(f"Block size must be positive, got {block_size}")
+
+        total_size = len(self)
+        if total_size == 0:
+            return
+
+        # Special case: if we have direct binary and no sub-images, just iterate over it
+        if self.binary and len(self.binary) == total_size and len(self.sub_images) == 0:
+            for i in range(0, total_size, block_size):
+                yield self.binary[i : i + block_size]
+            return
+
+        # Build a map of which sub-images cover which ranges
+        # This helps us efficiently determine what data to use for each block
+        sub_image_map: list[tuple[int, int, "BinaryImage"]] = []
+        for sub_image in self.sub_images:
+            start = sub_image.offset
+            end = start + len(sub_image)
+            sub_image_map.append((start, end, sub_image))
+
+        # Sort by start offset for efficient lookup
+        sub_image_map.sort(key=lambda x: x[0])
+
+        # Iterate through blocks
+        current_offset = 0
+        while current_offset < total_size:
+            # Determine the size of this block
+            remaining = total_size - current_offset
+            current_block_size = min(block_size, remaining)
+            block_end = current_offset + current_block_size
+
+            # Create the block buffer
+            if self.pattern:
+                block = bytearray(self.pattern.get_block(current_block_size))
+            else:
+                block = bytearray(current_block_size)
+
+            # Fill with base binary data if present
+            if self.binary:
+                binary_start = current_offset
+                binary_end = min(current_offset + current_block_size, len(self.binary))
+                if binary_start < len(self.binary):
+                    copy_size = binary_end - binary_start
+                    block[0:copy_size] = self.binary[binary_start:binary_end]
+
+            # Overlay sub-images that intersect with this block
+            for sub_start, sub_end, sub_image in sub_image_map:
+                # Check if this sub-image intersects with current block
+                if sub_end <= current_offset or sub_start >= block_end:
+                    continue  # No intersection
+
+                # Calculate the intersection
+                intersection_start = max(sub_start, current_offset)
+                intersection_end = min(sub_end, block_end)
+
+                # Calculate offsets
+                block_offset = intersection_start - current_offset
+                sub_image_offset = intersection_start - sub_start
+                intersection_size = intersection_end - intersection_start
+
+                # Get the sub-image data for this range
+                # We need to export the sub-image and extract the relevant portion
+                sub_data = sub_image.export()
+                block[block_offset : block_offset + intersection_size] = sub_data[
+                    sub_image_offset : sub_image_offset + intersection_size
+                ]
+
+            # Apply alignment padding if this is the last block
+            if current_offset + current_block_size >= total_size:
+                aligned_size = align(total_size, self.alignment)
+                if aligned_size > total_size:
+                    padding_size = aligned_size - total_size
+                    if self.pattern:
+                        padding = self.pattern.get_block(padding_size)
+                    else:
+                        padding = bytes(padding_size)
+                    block.extend(padding)
+
+            yield bytes(block)
+            current_offset += current_block_size
+
     @staticmethod
     def get_validation_schemas() -> list[dict[str, Any]]:
         """Get validation schemas list to check a supported configuration.
@@ -700,7 +806,7 @@ class BinaryImage:
         :raises SPSDKValueError: The file format is invalid.
         """
         file_format = file_format.upper()
-        if file_format.upper() not in ("BIN", "HEX", "S19", "SREC"):
+        if file_format.upper() not in ("BIN", "HEX", "S19", "SREC", "SPARSE"):
             raise SPSDKValueError(f"Invalid input file format: {file_format}")
 
         if file_format == "BIN":
@@ -711,6 +817,11 @@ class BinaryImage:
                 )
             data += self.export()
             write_file(data, path, mode="wb")
+            return
+
+        if file_format == "SPARSE":
+            sparse = self.export_sparse(calculate_crc=True)
+            sparse.save_to_file(path)
             return
 
         # Special handling for empty binary to SREC/HEX conversion
@@ -781,65 +892,340 @@ class BinaryImage:
         ).get_template()
 
     @staticmethod
-    def load_binary_image(
-        path: str,
-        name: Optional[str] = None,
-        size: int = 0,
-        offset: Optional[int] = None,
-        description: Optional[str] = None,
-        pattern: Optional[BinaryPattern] = None,
-        search_paths: Optional[list[str]] = None,
-        alignment: int = 1,
-        load_bin: bool = True,
-        parent_image: Optional["BinaryImage"] = None,
-    ) -> "BinaryImage":
-        """Load binary data file into BinaryImage object.
+    def load_sparse(sparse: SparseImage, name: str = "Sparse Image") -> "BinaryImage":
+        """Convert sparse image to BinaryImage object.
 
-        Supported formats are ELF, HEX, SREC and plain binary. The method automatically
-        detects the file format and loads it accordingly. If format detection fails,
-        it can fallback to binary loading if enabled.
+        This method efficiently converts the sparse image by creating sub-images for each chunk
+        without reconstructing the full binary data in memory. Consecutive RAW chunks are merged
+        into single sub-images, consecutive FILL chunks with the same pattern are merged, and
+        DONT_CARE chunks are represented as gaps (filled by parent's zero pattern).
 
-        :param path: Path to the binary file to load.
-        :param name: Name of the image, defaults to file name if not provided.
-        :param size: Expected image size in bytes, defaults to 0 for auto-detection.
-        :param offset: Additional image offset in parent image, defaults to None.
-        :param description: Text description of the image, defaults to auto-generated.
-        :param pattern: Optional binary pattern to apply to the image.
-        :param search_paths: List of paths where to search for the file.
-        :param alignment: Alignment requirement for the result image in bytes.
-        :param load_bin: Load as binary if other format loading fails.
-        :param parent_image: Optional parent image reference for offset computation.
-        :raises SPSDKError: The binary file cannot be loaded or accessed.
-        :return: Binary data represented as BinaryImage object.
+        :param sparse: SparseImage object to convert.
+        :param name: Name for the resulting BinaryImage.
+        :raises SPSDKError: If conversion fails or no header/chunks available.
+        :return: BinaryImage object containing the sparse image structure.
         """
-        path = find_file(path, search_paths=search_paths)
+        if not sparse.header:
+            raise SPSDKError("Cannot convert to BinaryImage: No sparse image header available")
+
+        if not sparse.chunks:
+            raise SPSDKError("Cannot convert to BinaryImage: No chunks available")
+
+        # Create parent image with zero pattern (for DONT_CARE chunks)
+        total_size = sparse.header.total_blocks * sparse.header.block_size
+        description = (
+            f"Image reconstructed from Android SPARSE format "
+            f"({sparse.header.total_chunks} chunks, "
+            f"{sparse.header.total_blocks} blocks of {sparse.header.block_size} bytes)"
+        )
+
+        binary_image = BinaryImage(
+            name=name,
+            size=total_size,
+            description=description,
+            pattern=BinaryPattern("zeros"),  # DONT_CARE chunks will use this
+        )
+
+        # Track current offset in the output image
+        current_offset = 0
+        raw_chunk_counter = 0
+        fill_chunk_counter = 0
+
+        i = 0
+        while i < len(sparse.chunks):
+            chunk = sparse.chunks[i]
+            chunk_size = chunk.chunk_blocks * sparse.header.block_size
+
+            if chunk.chunk_type == SparseChunkType.RAW:
+                # Merge consecutive RAW chunks into one sub-image
+                if not chunk.data:
+                    raise SPSDKError("RAW chunk missing data")
+
+                merged_data = bytearray(chunk.data)
+                merged_blocks = chunk.chunk_blocks
+                start_offset = current_offset
+
+                # Look ahead for consecutive RAW chunks
+                j = i + 1
+                while j < len(sparse.chunks) and sparse.chunks[j].chunk_type == SparseChunkType.RAW:
+                    next_chunk = sparse.chunks[j]
+                    if not next_chunk.data:
+                        raise SPSDKError("RAW chunk missing data")
+                    merged_data.extend(next_chunk.data)
+                    merged_blocks += next_chunk.chunk_blocks
+                    j += 1
+
+                binary_image.add_image(
+                    BinaryImage(
+                        name=f"RAW_Chunk_{raw_chunk_counter}",
+                        size=len(merged_data),
+                        offset=start_offset,
+                        binary=bytes(merged_data),
+                        description=f"RAW data chunk ({merged_blocks} blocks)",
+                    )
+                )
+                raw_chunk_counter += 1
+                current_offset += merged_blocks * sparse.header.block_size
+                i = j  # Skip merged chunks
+
+            elif chunk.chunk_type == SparseChunkType.FILL:
+                # Merge consecutive FILL chunks with the same pattern
+                if not chunk.data or len(chunk.data) != 4:
+                    raise SPSDKError("FILL chunk missing or invalid fill value")
+
+                fill_value = int.from_bytes(chunk.data, byteorder="big")
+                merged_blocks = chunk.chunk_blocks
+                start_offset = current_offset
+
+                # Look ahead for consecutive FILL chunks with same value
+                j = i + 1
+                while (
+                    j < len(sparse.chunks) and sparse.chunks[j].chunk_type == SparseChunkType.FILL
+                ):
+                    next_chunk = sparse.chunks[j]
+                    if not next_chunk.data or len(next_chunk.data) != 4:
+                        raise SPSDKError("FILL chunk missing or invalid fill value")
+                    next_fill_value = int.from_bytes(next_chunk.data, byteorder="big")
+                    if next_fill_value != fill_value:
+                        break  # Different fill value, stop merging
+                    merged_blocks += next_chunk.chunk_blocks
+                    j += 1
+
+                fill_pattern = BinaryPattern(f"0x{fill_value:08X}")
+                merged_size = merged_blocks * sparse.header.block_size
+
+                binary_image.add_image(
+                    BinaryImage(
+                        name=f"FILL_Chunk_{fill_chunk_counter}",
+                        size=merged_size,
+                        offset=start_offset,
+                        pattern=fill_pattern,
+                        description=f"FILL pattern chunk ({merged_blocks} blocks, value=0x{fill_value:08X})",
+                    )
+                )
+                fill_chunk_counter += 1
+                current_offset += merged_size
+                i = j  # Skip merged chunks
+
+            elif chunk.chunk_type == SparseChunkType.DONT_CARE:
+                # DONT_CARE chunks are represented as gaps - just advance offset
+                # The parent's zero pattern will fill these areas
+                current_offset += chunk_size
+                i += 1
+
+            elif chunk.chunk_type == SparseChunkType.CRC32:
+                # CRC32 chunks don't contribute to output data, skip them
+                i += 1
+            else:
+                # Unknown chunk type, skip it
+                i += 1
+
+        return binary_image
+
+    def export_sparse(self, calculate_crc: bool = False) -> SparseImage:
+        """Create sparse image from BinaryImage object.
+
+        This method efficiently converts a BinaryImage by analyzing its structure. If the image
+        has sub-images, it processes them individually to create optimized chunks. RAW sub-images
+        with binary data become RAW chunks, sub-images with non-zero patterns become FILL chunks,
+        and gaps between sub-images or zero-pattern sub-images become DONT_CARE chunks.
+
+        :param calculate_crc: If True, calculate and add CRC32 checksum to the sparse image.
+        :return: SparseImage object representing the binary image in sparse format.
+        """
+        ret = SparseImage(block_size=self.sparse_block_size, calculate_crc=calculate_crc)
+        # Create context for building chunks
+        context = ChunkBuilderContext()
+
+        # Calculate CRC if requested - use iterator to avoid loading entire image
+        image_checksum = None
+        if calculate_crc:
+            crc_obj = from_crc_algorithm(CrcAlg.CRC32)
+
+        # Process image data block by block using iterator
+        for block in self.iter_blocks(block_size=ret.block_size):
+            # Align block to block size if needed
+            if len(block) < ret.block_size:
+                block = align_block(block, ret.block_size)
+            if calculate_crc:
+                crc_obj.update(block)
+
+            # Add block to sparse image using context
+            ret._add_binary_chunks(block, context)
+
+        # Calculate final CRC if requested
+        if calculate_crc:
+            image_checksum = crc_obj.finalize()
+            logger.debug(f"Calculated image CRC32: 0x{image_checksum:08X}")
+        # Finalize the sparse image with context and checksum
+        ret.finalize_sparse_image(context, image_checksum)
+
+        return ret
+
+    @staticmethod
+    def detect_file_format(path: str) -> str:
+        """Detect the format of a binary file.
+
+        :param path: Path to the file to detect.
+        :return: Format_type in string and is one of
+                'SPARSE', 'ELF', 'SREC', 'HEX', or 'BIN'.
+        :raises SPSDKError: If file cannot be read.
+        """
         try:
             with open(path, "rb") as f:
-                data = f.read(4)
+                data = f.read(4096)  # Read more data for better detection
         except Exception as e:
             raise SPSDKError(f"Error loading file: {str(e)}") from e
 
-        # import bincopy only if needed to save startup time
+        # Check for SPARSE magic number
+        if len(data) >= 4:
+            magic = int.from_bytes(data[:4], byteorder="little")
+            if magic == 0xED26FF3A:  # SPARSE magic
+                return "SPARSE"
+
+        # Check for ELF magic
+        if data[:4] == b"\x7fELF":
+            return "ELF"
+
+        # Try to decode as text for HEX/SREC detection
+        try:
+            text_data = data.decode("ascii")
+
+            # Check for SREC format (starts with 'S')
+            first_line = text_data.split("\n")[0].strip()
+            if first_line and first_line[0] == "S":
+                # Import is_srec from bincopy to validate
+                try:
+                    from bincopy import is_srec
+
+                    if is_srec(text_data):
+                        return "SREC"
+                except Exception:
+                    pass
+
+            # Check for Intel HEX format (starts with ':')
+            if first_line and first_line[0] == ":":
+                # Import is_ihex from bincopy to validate
+                try:
+                    from bincopy import is_ihex
+
+                    if is_ihex(text_data):
+                        return "HEX"
+                except Exception:
+                    pass
+
+        except (UnicodeDecodeError, AttributeError):
+            # Not a text format, fall through to binary
+            pass
+
+        # Default to binary format
+        return "BIN"
+
+    @staticmethod
+    def _load_sparse_format(
+        path: str,
+        name: Optional[str],
+        offset: Optional[int],
+        description: Optional[str],
+        pattern: Optional[BinaryPattern],
+        alignment: int,
+        parent_image: Optional["BinaryImage"],
+    ) -> "BinaryImage":
+        """Load a SPARSE format file.
+
+        :param path: Path to the SPARSE file.
+        :param name: Name of the image.
+        :param offset: Image offset.
+        :param description: Image description.
+        :param pattern: Binary pattern.
+        :param alignment: Alignment requirement.
+        :param parent_image: Parent image reference.
+        :return: Loaded BinaryImage object.
+        """
+        sparse_image = SparseImage.load_from_file(path)
+        logger.debug(f"Loading file as SPARSE: {path}")
+
+        img_name = name or os.path.basename(path)
+        bin_image = BinaryImage.load_sparse(sparse_image, name=img_name)
+
+        # Apply offset
+        if offset is not None:
+            bin_image.offset = offset
+        elif parent_image:
+            bin_image.offset = parent_image.aligned_length(parent_image.alignment)
+            logger.warning(
+                f"Using parent image aligned size(0x{bin_image.offset:08X}) as a offset for {img_name}. "
+                "Use 'offset: 0' in configuration, if this is not desired."
+            )
+        else:
+            bin_image.offset = 0
+
+        if description:
+            bin_image.description = description
+        if pattern:
+            bin_image.pattern = pattern
+
+        bin_image.alignment = alignment
+        return bin_image
+
+    @staticmethod
+    def _load_bincopy_format(path: str, format_type: str) -> Any:
+        """Load a file using bincopy library.
+
+        :param path: Path to the file.
+        :param format_type: Detected format type ('ELF', 'SREC', 'HEX', or 'BIN').
+        :return: Loaded bincopy.BinFile object.
+        :raises SPSDKError: If file cannot be loaded.
+        """
         import bincopy  # pylint: disable=import-outside-toplevel
-        from bincopy import _Segment
 
         bin_file = bincopy.BinFile()
         try:
-            if data == b"\x7fELF":
+            if format_type == "ELF":
                 bin_file.add_elf_file(path)
                 logger.debug(f"Loading file as ELF: {path}")
+            elif format_type == "SREC":
+                bin_file.add_srec_file(path)
+                logger.debug(f"Loading file as SREC: {path}")
+            elif format_type == "HEX":
+                bin_file.add_ihex_file(path)
+                logger.debug(f"Loading file as Intel HEX: {path}")
+            elif format_type == "BIN":
+                bin_file.add_binary_file(path)
+                logger.debug(f"Loading file as binary: {path}")
             else:
-                try:
-                    bin_file.add_file(path)
-                    logger.debug(f"Loading file as HEX/SREC: {path}")
-                except (UnicodeDecodeError, bincopy.UnsupportedFileFormatError) as e:
-                    if load_bin:
-                        bin_file.add_binary_file(path)
-                        logger.debug(f"Loading file as binary: {path}")
-                    else:
-                        raise SPSDKError("Cannot load file as ELF, HEX or SREC") from e
+                raise SPSDKError(f"Unsupported format type: {format_type}")
         except Exception as e:
             raise SPSDKError(f"Error loading file: {str(e)}") from e
+
+        return bin_file
+
+    @staticmethod
+    def _create_image_from_bincopy(
+        bin_file: Any,
+        path: str,
+        name: Optional[str],
+        size: int,
+        offset: Optional[int],
+        description: Optional[str],
+        pattern: Optional[BinaryPattern],
+        alignment: int,
+        parent_image: Optional["BinaryImage"],
+    ) -> "BinaryImage":
+        """Create BinaryImage from bincopy BinFile object.
+
+        :param bin_file: Loaded bincopy.BinFile object.
+        :param path: Original file path.
+        :param name: Image name.
+        :param size: Image size.
+        :param offset: Image offset.
+        :param description: Image description.
+        :param pattern: Binary pattern.
+        :param alignment: Alignment requirement.
+        :param parent_image: Parent image reference.
+        :return: Created BinaryImage object.
+        """
+        from bincopy import _Segment
 
         img_name = name or os.path.basename(path)
         img_size = size or 0
@@ -854,7 +1240,7 @@ class BinaryImage:
                     "Use 'offset: 0' in configuration, if this is not desired."
                 )
             else:
-                used_offset = 0  # bin_file.minimum_address
+                used_offset = 0
 
         bin_image = BinaryImage(
             name=img_name,
@@ -879,6 +1265,110 @@ class BinaryImage:
                     alignment=alignment,
                 )
             )
-        # Optimize offsets in image
+
         bin_image.update_offsets()
         return bin_image
+
+    @staticmethod
+    def load_binary_image(
+        path: str,
+        name: Optional[str] = None,
+        size: int = 0,
+        offset: Optional[int] = None,
+        description: Optional[str] = None,
+        pattern: Optional[BinaryPattern] = None,
+        search_paths: Optional[list[str]] = None,
+        alignment: int = 1,
+        parent_image: Optional["BinaryImage"] = None,
+    ) -> "BinaryImage":
+        """Load binary data file into BinaryImage object.
+
+        Supported formats are ELF, HEX, SREC, SPARSE and plain binary. The method automatically
+        detects the file format and loads it accordingly. If format detection fails,
+        it can fallback to binary loading if enabled.
+
+        :param path: Path to the binary file to load.
+        :param name: Name of the image, defaults to file name if not provided.
+        :param size: Expected image size in bytes, defaults to 0 for auto-detection.
+        :param offset: Additional image offset in parent image, defaults to None.
+        :param description: Text description of the image, defaults to auto-generated.
+        :param pattern: Optional binary pattern to apply to the image.
+        :param search_paths: List of paths where to search for the file.
+        :param alignment: Alignment requirement for the result image in bytes.
+        :param parent_image: Optional parent image reference for offset computation.
+        :raises SPSDKError: The binary file cannot be loaded or accessed.
+        :return: Binary data represented as BinaryImage object.
+        """
+        path = find_file(path, search_paths=search_paths)
+
+        # Detect file format
+        format_type = BinaryImage.detect_file_format(path)
+
+        # Try SPARSE format first
+        if format_type == "SPARSE":
+            return BinaryImage._load_sparse_format(
+                path, name, offset, description, pattern, alignment, parent_image
+            )
+
+        # Load using bincopy for ELF, HEX, SREC, or binary
+        bin_file = BinaryImage._load_bincopy_format(path, format_type)
+
+        # Create and return BinaryImage
+        return BinaryImage._create_image_from_bincopy(
+            bin_file, path, name, size, offset, description, pattern, alignment, parent_image
+        )
+
+    def info(self, no_color: bool = False) -> str:
+        """Get comprehensive information about the binary image.
+
+        Provides detailed information including image structure, size, addresses,
+        sub-images count, and visual representation.
+
+        :param no_color: Disable color output in the visual representation.
+        :return: Formatted string with complete image information and visual diagram.
+        """
+        info_lines = []
+        info_lines.append("=" * 80)
+        info_lines.append("BINARY IMAGE INFORMATION")
+        info_lines.append("=" * 80)
+        info_lines.append("")
+
+        # Basic information
+        info_lines.append(f"Name:                    {self.name}")
+        if self.description:
+            info_lines.append(f"Description:             {self.description}")
+
+        # Size and address information
+        size = len(self)
+        info_lines.append(
+            f"Size:                    {size_fmt(size)} ({size:,} bytes, {hex(size)})"
+        )
+        info_lines.append(f"Offset:                  {hex(self.offset)} ({self.offset:,} bytes)")
+        info_lines.append(f"Absolute Address:        {hex(self.absolute_address)}")
+        info_lines.append(f"End Address:             {hex(self.absolute_address + size - 1)}")
+        info_lines.append(f"Alignment:               {self.alignment} bytes")
+
+        # Execution start address
+        if self.execution_start_address is not None:
+            info_lines.append(f"Execution Start Address: {hex(self.execution_start_address)}")
+
+        # Pattern information
+        if self.pattern:
+            info_lines.append(f"Pattern:                 {self.pattern.pattern}")
+
+        # Binary data information
+        if self.binary:
+            info_lines.append(f"Binary Data:             {len(self.binary):,} bytes")
+
+        # Sub-images information
+        if self.sub_images:
+            info_lines.append(f"Sub-images Count:        {len(self.sub_images)}")
+
+        # Add visual representation
+        info_lines.append("")
+        info_lines.append("=" * 80)
+        info_lines.append("VISUAL REPRESENTATION")
+        info_lines.append("=" * 80)
+        info_lines.append(self.draw(no_color=no_color))
+
+        return "\n".join(info_lines)

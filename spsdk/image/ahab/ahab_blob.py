@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK AHAB container encryption blob support.
 
 This module provides functionality for handling encryption blobs used in
 AHAB (Advanced High Assurance Boot) containers, enabling secure boot
 operations for NXP MCUs.
 """
-
 
 import logging
 import os

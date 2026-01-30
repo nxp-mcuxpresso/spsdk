@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """Command-line interface for HSE (Hardware Security Engine) related functionality.
 
 This module provides CLI commands for working with HSE features, including:
@@ -12,6 +13,7 @@ This module provides CLI commands for working with HSE features, including:
 
 The commands are organized in a hierarchical structure with 'hse' as the main group.
 """
+
 import click
 
 from spsdk.apps.utils.common_cli_options import (
@@ -22,6 +24,7 @@ from spsdk.apps.utils.common_cli_options import (
 )
 from spsdk.image.hse.key_catalog import KeyCatalogCfg
 from spsdk.image.hse.key_info import KeyInfo
+from spsdk.image.hse.smr import SmrEntry
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import get_printable_path, load_binary, write_file
@@ -171,5 +174,79 @@ def key_catalog_parse_command(binary: str, family: FamilyRevision, output: str) 
     ).get_config(cfg)
 
     write_file(yaml_data, output)
-
     click.echo(f"Success. (Key Catalog cfg: {binary} has been parsed and stored into {output} )")
+
+
+@hse_group.group(name="smr-entry", no_args_is_help=True, cls=CommandsTreeGroup)
+def smr_entry_group() -> None:  # pylint: disable=unused-argument
+    """Group of sub-commands related to SMR entry functionality."""
+
+
+@smr_entry_group.command(name="get-template", no_args_is_help=True)
+@spsdk_output_option(force=True)
+@spsdk_family_option(families=SmrEntry.get_supported_families())
+def smr_entry_get_template_command(output: str, family: FamilyRevision) -> None:
+    """Create template of SMR entry configuration in YAML format."""
+    smr_entry_get_template(output, family)
+
+
+def smr_entry_get_template(output: str, family: FamilyRevision) -> None:
+    """Create template of SMR entry configuration in YAML format.
+
+    :param output: Path to the output template file
+    :param family: Family revision
+    """
+    write_file(SmrEntry.get_config_template(family), output)
+    click.echo(f"The template file {get_printable_path(output)} has been created.")
+
+
+@smr_entry_group.command(name="export", no_args_is_help=True)
+@spsdk_config_option(klass=SmrEntry)
+def smr_entry_export_command(config: Config) -> None:
+    """Create SMR entry binary from YAML/JSON configuration."""
+    smr_entry_export(config)
+
+
+def smr_entry_export(config: Config) -> None:
+    """Generate SMR entry binary from YAML/JSON configuration.
+
+    :param config: Path to the YAML/JSON configuration
+    """
+    smr_entry = SmrEntry.load_from_config(config)
+    smr_entry_data = smr_entry.export()
+    output_file_path = config.get_output_file_name("output")
+    write_file(smr_entry_data, output_file_path, mode="wb")
+    click.echo(f"Success. (SMR Entry: {get_printable_path(output_file_path)} created.)")
+
+
+@smr_entry_group.command(name="parse", no_args_is_help=True)
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, readable=True, resolve_path=True),
+    required=True,
+    help="Path to binary with SMR entry.",
+)
+@spsdk_family_option(families=SmrEntry.get_supported_families())
+@spsdk_output_option()
+def smr_entry_parse_command(binary: str, family: FamilyRevision, output: str) -> None:
+    """Parse a binary SMR entry file and display its contents."""
+    data = load_binary(binary)
+    smr_entry_parse(data, family, output)
+    click.echo(f"Success. (Key Catalog cfg: {binary} has been parsed and stored into {output} )")
+
+
+def smr_entry_parse(data: bytes, family: FamilyRevision, output: str) -> None:
+    """Parse SMR entry binary into YAML/JSON configuration.
+
+    :param data: Path to the SMR entry binary
+    :param output: Path to the output file
+    :param family: Family revision
+    """
+    smr_entry = SmrEntry.parse(data, family)
+    cfg = smr_entry.get_config(data_path=output)
+    yaml_data = CommentedConfig(
+        main_title=("SME entry configuration:"),
+        schemas=smr_entry.get_validation_schemas(family),
+    ).get_config(cfg)
+    write_file(yaml_data, output)

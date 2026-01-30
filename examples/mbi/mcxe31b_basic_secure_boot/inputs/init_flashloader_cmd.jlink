@@ -1,0 +1,10 @@
+device S32K314  // Select S32K148 instead of MCXE245
+si SWD          // Select interface
+speed 4000      // Select speed
+connect
+reset
+halt
+loadfile ./inputs/flashloader_loader.elf
+loadfile ./inputs/flashloader.elf
+go
+exit

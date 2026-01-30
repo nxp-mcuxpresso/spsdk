@@ -18,6 +18,7 @@ ACPIPCI
 ACTIV
 addoption
 ADDRINC
+addrs
 Adesto
 ADESTO
 adipiscing
@@ -66,6 +67,7 @@ appdata
 appdirs
 appname
 APSEL
+APSR
 AQIR
 argparse
 armgcc
@@ -90,10 +92,12 @@ Backdor
 BACKUPAPPLICATIONINVALID
 BACKUPBOOTLOADERNOTREADY
 badc
+BASEPRI
 baudrate
 Baudrate
 BAUDRATE
 BBBBIIII
+BBBBL
 BBHH
 BBII
 BBIO
@@ -211,6 +215,7 @@ certopt
 certrequest
 certx
 CFBF
+CFBP
 cffi
 CFGF
 cfgs
@@ -264,9 +269,7 @@ COMMANDFAILURE
 COMMANDSET
 commentjson
 condimentum
-configfile
 configurememory
-conjuction
 consectetur
 CONTAINERENTRYINVALID
 CONTAINERENTRYNOTFOUND
@@ -285,6 +288,7 @@ CPFA
 cpha
 CPHA
 cppwr
+CPUID
 cpus
 crcmod
 crctest
@@ -317,10 +321,12 @@ CUST
 CVER
 CWDT
 Cxxx
+CYCLEDELAY
 dataauth
 datablob
 Datablob
 datablobs
+datapath
 datasheet
 datatable
 dateutil
@@ -350,6 +356,7 @@ Decap
 decodability
 decryptor
 deepmerge
+depup
 derivator
 Derivator
 descr
@@ -362,7 +369,6 @@ DEVATTEST
 devbuff
 DEVBUFF
 DEVCFG
-developement
 devhsm
 DEVHSM
 devicedescription
@@ -401,8 +407,7 @@ dnames
 docstrings
 docutils
 dolore
-donwloading
-downto
+DPIDR
 DPROT
 DRBG
 DROM
@@ -449,7 +454,6 @@ EHDR
 eiusmod
 EKIB
 eleapi
-elementum
 elftosb
 ELFTOSB
 elif
@@ -471,6 +475,7 @@ entrypointaddress
 ephem
 EPROT
 EPSCD
+EPSR
 ernad
 Errno
 ESBC
@@ -485,7 +490,6 @@ executescript
 extfile
 EZHV
 FACMDEN
-facs
 FALLTHRU
 famode
 FAMODE
@@ -496,6 +500,7 @@ fatls
 fatrm
 fatwrite
 faucibus
+FAULTMASK
 fbff
 fcfb
 FCFB
@@ -537,6 +542,7 @@ flshldr
 FOPT
 fornon
 FPROT
+FPSCR
 FPVIOL
 frdm
 FRDM
@@ -607,6 +613,7 @@ hexbin
 hexdata
 hexdump
 hexstring
+HHII
 HHLLBBBB
 HIDAPI
 hidraw
@@ -642,6 +649,7 @@ idna
 ifile
 IFLASH
 ihex
+IHHHHIIII
 ikbek
 IKEV
 iled
@@ -651,7 +659,6 @@ imgdata
 imgk
 imgkey
 imgm
-imperdiet
 importlib
 imxrt
 IMXRT
@@ -677,6 +684,7 @@ IOUSB
 ipcmd
 IPCMDERR
 IPED
+IPSR
 ipykernel
 ipynb
 ipython
@@ -983,6 +991,7 @@ nxpshe
 NXPUSB
 NXPUUU
 nxpwpc
+nzcvq
 OAEP
 objcopy
 ocotp
@@ -1043,7 +1052,6 @@ pcnp
 pcns
 pcsc
 pcscd
-pellentesque
 pemicro
 Pemicro
 periph
@@ -1103,6 +1111,7 @@ preparsed
 presection
 Presso
 prettytable
+PRIMASK
 printregs
 prodvers
 PROGFAIL
@@ -1234,10 +1243,12 @@ RKTH
 rlar
 RLOCK
 rmtree
+ROMBASE
 romcfg
 ROMCFG
 ROMCP
 ROMLDR
+ROMPATCH
 rootdir
 ROOTKEY
 rootwait
@@ -1273,9 +1284,7 @@ rustup
 RWDS
 RWXL
 rxid
-sagittis
 sahsm
-sapien
 sasp
 Sast
 saveconfig
@@ -1365,6 +1374,7 @@ SIGB
 signaturetimestamp
 SIGNK
 signkey
+simg
 singleboot
 SIPHASH
 skipfhdr
@@ -1470,6 +1480,7 @@ SWAPSYSTEMNOTREADY
 SWAPTEST
 swmodel
 SWMODEL
+SWRST
 SYSCON
 SYSRESET
 tagh
@@ -1626,6 +1637,7 @@ VMAPCTX
 VOLTAMPER
 volutpat
 VOUT
+VROMPATCH
 vrules
 VSEL
 VSYS
@@ -1679,6 +1691,7 @@ xmodem
 XOUT
 xpassed
 Xpresso
+XPSR
 xspi
 Xspi
 XSPI
@@ -1695,9 +1708,3 @@ Zeroize
 ZEROIZE
 zeroized
 zipp
-# 952 new words
-CYCLEDELAY
-SWRST
-datapath
-VROMPATCH
-ROMPATCH

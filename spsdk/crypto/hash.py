@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -44,6 +44,7 @@ class EnumHashAlgorithm(SpsdkEnum):
     SHA3_512 = (8, "sha3_512", "SHA3_512")
     SHAKE_128_256 = (9, "shake_128_256", "SHAKE128 with 256b output")
     SHAKE_256_512 = (10, "shake_256_512", "SHAKE256 with 512b output")
+    SHA224 = (11, "sha224", "SHA224")
     NONE = (254, "none", "NONE")
 
 

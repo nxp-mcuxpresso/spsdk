@@ -1,6 +1,7 @@
-# Copyright 2024 NXP
+# Copyright 2024,2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # =========================================  PFR CMPA configuration template  ==========================================
 
 # ======================================================================================================================
@@ -1081,14 +1082,14 @@ settings:
     # Possible options: <DISABLE, ENABLE>
     BEN31: DISABLE
   # -------------------------------------===== BLE_UNIQUE_ADDRESS0 [Optional] =====-------------------------------------
-  # Description: Offset: 0x00000050, Width: 32b; Bits 31 downto 0 of the BLE Unique Address to be used when
+  # Description: Offset: 0x00000050, Width: 32b; Bits 31 down to 0 of the BLE Unique Address to be used when
   # BLE_UNIQUE_ADDRESS_VALID field is equal to 0xC3A5
   BLE_UNIQUE_ADDRESS0: 0x12345678
   # -------------------------------------===== BLE_UNIQUE_ADDRESS1 [Optional] =====-------------------------------------
   # Description: Offset: 0x00000054, Width: 32b; BLE_UNIQUE_ADDRESS part 2
   BLE_UNIQUE_ADDRESS1:
     # ---------------------------------===== BLE_UNIQUE_ADDRESS_47_32 [Optional] =====----------------------------------
-    # Description: Offset: 0b, Width: 16b, Bits 47 downto 32 of the BLE Unique Address to be used when
+    # Description: Offset: 0b, Width: 16b, Bits 47 down to 32 of the BLE Unique Address to be used when
     # BLE_UNIQUE_ADDRESS_VALID field is equal to 0xC3A5
     BLE_UNIQUE_ADDRESS_47_32: 0
     # ---------------------------------===== BLE_UNIQUE_ADDRESS_VALID [Optional] =====----------------------------------

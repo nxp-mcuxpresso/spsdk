@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -277,6 +277,8 @@ def test_nxpimage_bimg_template_cli(
             reference_dir = os.path.join(reference_dir, config_dir)
         reference = load_configuration(os.path.join(reference_dir, "config.yaml"))
         generated.pop("post_export")
+        generated.pop("output_format")
+        generated.pop("output")
         assert sorted(generated.keys()) == sorted(reference.keys())
 
 
@@ -1149,3 +1151,337 @@ def test_verifier_add_record_range_malformed_input() -> None:
     # Test newline in hex string - should raise SPSDKError
     with pytest.raises(SPSDKError):
         verifier.add_record_range("Newline in hex", "0x10\n00")
+
+
+@pytest.mark.parametrize(
+    "family,expected_standard_templates,expected_extra_templates,expected_boards",
+    [
+        (
+            "mimx9352",
+            ["emmc_boot", "flexspi_nor", "serial_downloader", "emmc", "sd", "recovery_spi"],
+            ["imx_boot_flash_singleboot"],
+            ["imx93-11x11-lpddr4x-evk"],
+        ),
+        (
+            "mimx9596",
+            ["emmc_boot", "flexspi_nor", "serial_downloader", "emmc", "sd", "recovery_spi"],
+            ["imx_boot_flash_all"],
+            ["imx95-15x15-lpddr4x-evk", "imx95-19x19-lpddr5-evk", "imx95-19x19-verdin"],
+        ),
+    ],
+)
+def test_nxpimage_bimg_get_all_templates(
+    cli_runner: CliRunner,
+    tmpdir: str,
+    family: str,
+    expected_standard_templates: list[str],
+    expected_extra_templates: list[str],
+    expected_boards: list[str],
+) -> None:
+    """Test bootable-image get-templates command generates all templates.
+
+    This test verifies that the get-templates command without --template option
+    generates both standard memory type templates and all extra templates with
+    board-specific sub folders.
+
+    :param cli_runner: CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for output files.
+    :param family: Target MCU family name.
+    :param expected_standard_templates: List of expected standard template memory types.
+    :param expected_extra_templates: List of expected extra template names.
+    :param expected_boards: List of expected board names.
+    """
+    cmd = f"bootable-image get-templates -f {family} --output {tmpdir}"
+    result = cli_runner.invoke(nxpimage.main, cmd.split())
+
+    assert result.exit_code == 0, f"Command failed: {result.output}"
+
+    # 1. Verify standard templates are generated in root directory
+    for mem_type in expected_standard_templates:
+        template_file = os.path.join(tmpdir, f"bootimg_{family}_{mem_type}.yaml")
+        assert os.path.isfile(template_file), f"Standard template not found: {template_file}"
+
+        # Verify the template is valid YAML
+        config = load_configuration(template_file)
+        assert config["family"] == family
+        assert config["memory_type"] == mem_type
+
+    # 2. Verify extra templates are generated in sub folders
+    for template_name in expected_extra_templates:
+        template_dir = os.path.join(tmpdir, template_name)
+        assert os.path.isdir(template_dir), f"Template directory not found: {template_dir}"
+
+        # 3. Verify board-specific sub folders exist
+        for board in expected_boards:
+            board_dir = os.path.join(template_dir, board)
+            assert os.path.isdir(board_dir), f"Board directory not found: {board_dir}"
+
+            # 4. Verify bootable_image.yaml exists
+            bootable_image_file = os.path.join(board_dir, "bootable_image.yaml")
+            assert os.path.isfile(
+                bootable_image_file
+            ), f"bootable_image.yaml not found in {board_dir}"
+
+            # Verify the bootable image config is valid
+            config = load_configuration(bootable_image_file)
+            assert config["family"] == family
+
+            # 5. Verify inputs directory exists
+            inputs_dir = os.path.join(board_dir, "inputs")
+            assert os.path.isdir(inputs_dir), f"inputs directory not found in {board_dir}"
+
+            # 6. Verify container config files exist (at least one)
+            yaml_files = [
+                f
+                for f in os.listdir(board_dir)
+                if f.endswith(".yaml") and f != "bootable_image.yaml"
+            ]
+            assert len(yaml_files) > 0, f"No container config files found in {board_dir}"
+
+            # Verify at least one container config is valid
+            for yaml_file in yaml_files:
+                config_file = os.path.join(board_dir, yaml_file)
+                config = load_configuration(config_file)
+                assert config["family"] == family
+                assert "containers" in config
+
+
+@pytest.mark.parametrize(
+    "family,template,board",
+    [
+        ("mimx9352", "imx_boot_flash_singleboot", "imx93-11x11-lpddr4x-evk"),
+        ("mimx9596", "imx_boot_flash_all", "imx95-15x15-lpddr4x-evk"),
+        ("mimx9596", "imx_boot_flash_all", "imx95-19x19-lpddr5-evk"),
+        ("mimx9596", "imx_boot_flash_all", "imx95-19x19-verdin"),
+    ],
+)
+def test_nxpimage_bimg_get_specific_template_with_board(
+    cli_runner: CliRunner,
+    tmpdir: str,
+    family: str,
+    template: str,
+    board: str,
+) -> None:
+    """Test bootable-image get-templates with specific template and board.
+
+    This test verifies that the get-templates command with --template and --board
+    options generates the correct template structure for a specific board.
+
+    :param cli_runner: CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for output files.
+    :param family: Target MCU family name.
+    :param template: Template name to generate.
+    :param board: Board name for board-specific filenames.
+    """
+    cmd = f"bootable-image get-templates -f {family} --output {tmpdir} -t {template} -b {board}"
+    result = cli_runner.invoke(nxpimage.main, cmd.split())
+
+    assert result.exit_code == 0, f"Command failed: {result.output}"
+
+    # Verify bootable_image.yaml exists
+    bootable_image_file = os.path.join(tmpdir, "bootable_image.yaml")
+    assert os.path.isfile(bootable_image_file), "bootable_image.yaml not found"
+
+    # Verify the config is valid
+    config = load_configuration(bootable_image_file)
+    assert config["family"] == family
+
+    # Verify inputs directory exists
+    inputs_dir = os.path.join(tmpdir, "inputs")
+    assert os.path.isdir(inputs_dir), "inputs directory not found"
+
+    # Verify container config files exist
+    yaml_files = [
+        f for f in os.listdir(tmpdir) if f.endswith(".yaml") and f != "bootable_image.yaml"
+    ]
+    assert len(yaml_files) > 0, "No container config files found"
+
+    # Verify container configs are valid
+    for yaml_file in yaml_files:
+        config_file = os.path.join(tmpdir, yaml_file)
+        config = load_configuration(config_file)
+        assert config["family"] == family
+        assert "containers" in config
+
+
+@pytest.mark.parametrize(
+    "family,board,expected_templates",
+    [
+        ("mimx9352", "imx93-11x11-lpddr4x-evk", ["imx_boot_flash_singleboot"]),
+        ("mimx9596", "imx95-19x19-lpddr5-evk", ["imx_boot_flash_all"]),
+    ],
+)
+def test_nxpimage_bimg_get_all_templates_specific_board(
+    cli_runner: CliRunner,
+    tmpdir: str,
+    family: str,
+    board: str,
+    expected_templates: list[str],
+) -> None:
+    """Test bootable-image get-templates generates all templates for specific board.
+
+    This test verifies that when --board is specified without --template,
+    all extra templates are generated but only for the specified board.
+
+    :param cli_runner: CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for output files.
+    :param family: Target MCU family name.
+    :param board: Board name to generate templates for.
+    :param expected_templates: List of expected template names.
+    """
+    cmd = f"bootable-image get-templates -f {family} --output {tmpdir} -b {board}"
+    result = cli_runner.invoke(nxpimage.main, cmd.split())
+
+    assert result.exit_code == 0, f"Command failed: {result.output}"
+
+    # Verify each expected template exists with only the specified board
+    for template_name in expected_templates:
+        template_dir = os.path.join(tmpdir, template_name)
+        assert os.path.isdir(template_dir), f"Template directory not found: {template_dir}"
+
+        # Verify only the specified board directory exists
+        board_dir = os.path.join(template_dir, board)
+        assert os.path.isdir(board_dir), f"Board directory not found: {board_dir}"
+
+        # Verify no other board directories exist
+        subdirs = [
+            d for d in os.listdir(template_dir) if os.path.isdir(os.path.join(template_dir, d))
+        ]
+        assert subdirs == [board], f"Expected only {board}, found: {subdirs}"
+
+        # Verify bootable_image.yaml exists
+        bootable_image_file = os.path.join(board_dir, "bootable_image.yaml")
+        assert os.path.isfile(bootable_image_file), f"bootable_image.yaml not found in {board_dir}"
+
+
+@pytest.mark.parametrize(
+    "family",
+    ["mimx9352", "mimx9596"],
+)
+def test_nxpimage_bimg_get_templates_directory_structure(
+    cli_runner: CliRunner,
+    tmpdir: str,
+    family: str,
+) -> None:
+    """Test that get-templates creates correct directory structure.
+
+    This test verifies the complete directory structure created by the
+    get-templates command without any options.
+
+    :param cli_runner: CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for output files.
+    :param family: Target MCU family name.
+    """
+    cmd = f"bootable-image get-templates -f {family} --output {tmpdir}"
+    result = cli_runner.invoke(nxpimage.main, cmd.split())
+
+    assert result.exit_code == 0, f"Command failed: {result.output}"
+
+    # Verify standard templates in root
+    root_files = [f for f in os.listdir(tmpdir) if os.path.isfile(os.path.join(tmpdir, f))]
+    standard_templates = [f for f in root_files if f.startswith("bootimg_")]
+    assert len(standard_templates) > 0, "No standard templates found in root directory"
+
+    # Verify extra template directories
+    template_dirs = [d for d in os.listdir(tmpdir) if os.path.isdir(os.path.join(tmpdir, d))]
+    assert len(template_dirs) > 0, "No extra template directories found"
+
+    # Verify each template directory has board subdirectories
+    for template_dir in template_dirs:
+        template_path = os.path.join(tmpdir, template_dir)
+        board_dirs = [
+            d for d in os.listdir(template_path) if os.path.isdir(os.path.join(template_path, d))
+        ]
+        assert len(board_dirs) > 0, f"No board directories found in {template_dir}"
+
+        # Verify each board directory has required files
+        for board_dir in board_dirs:
+            board_path = os.path.join(template_path, board_dir)
+
+            # Check for bootable_image.yaml
+            assert os.path.isfile(
+                os.path.join(board_path, "bootable_image.yaml")
+            ), f"bootable_image.yaml not found in {board_path}"
+
+            # Check for inputs directory
+            assert os.path.isdir(
+                os.path.join(board_path, "inputs")
+            ), f"inputs directory not found in {board_path}"
+
+            # Check for at least one container config
+            yaml_files = [
+                f
+                for f in os.listdir(board_path)
+                if f.endswith(".yaml") and f != "bootable_image.yaml"
+            ]
+            assert len(yaml_files) > 0, f"No container configs found in {board_path}"
+
+
+def test_nxpimage_bimg_get_templates_verify_board_filenames(
+    cli_runner: CliRunner,
+    tmpdir: str,
+) -> None:
+    """Test that board-specific filenames are correctly applied in templates.
+
+    This test verifies that when generating templates for a specific board,
+    the generated configuration files use board-specific filenames from the database.
+
+    :param cli_runner: CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for output files.
+    """
+    family = "mimx9596"
+    template = "imx_boot_flash_all"
+    board = "imx95-19x19-lpddr5-evk"
+
+    cmd = f"bootable-image get-templates -f {family} --output {tmpdir} -t {template} -b {board}"
+    result = cli_runner.invoke(nxpimage.main, cmd.split())
+
+    assert result.exit_code == 0, f"Command failed: {result.output}"
+
+    # Load the generated container configs and verify board-specific filenames
+    yaml_files = [
+        f for f in os.listdir(tmpdir) if f.endswith(".yaml") and f != "bootable_image.yaml"
+    ]
+
+    # Expected board-specific filenames from database (with inputs/ prefix)
+    # Use os.path.join or normalize paths for cross-platform compatibility
+    expected_filenames = [
+        "lpddr5_imem_qb_v202409.bin",
+        "lpddr5_dmem_qb_v202409.bin",
+        "lpddr5_imem_v202409.bin",
+        "lpddr5_dmem_v202409.bin",
+        "oei-m33-ddr.bin",
+        "m33_image-mx95evk.bin",
+        "imx95-19x19-evk_m7_TCM_power_mode_switch.bin",
+        "u-boot-spl.bin-imx95-19x19-lpddr5-evk-sd",
+        "bl31-imx95.bin",
+        "u-boot-imx95-19x19-lpddr5-evk.bin-sd",
+        "tee.bin",
+    ]
+
+    # Check that board-specific filenames are present in configs
+    found_filenames = []
+    for yaml_file in yaml_files:
+        config_file = os.path.join(tmpdir, yaml_file)
+        config = load_configuration(config_file)
+
+        # Check containers for board-specific filenames
+        if "containers" in config:
+            for container in config["containers"]:
+                if "container" in container and "images" in container["container"]:
+                    for image in container["container"]["images"]:
+                        for _, value in image.items():
+                            if isinstance(value, str):
+                                # Normalize path separators and check if it contains inputs directory
+                                normalized_value = value.replace("\\", "/")
+                                if normalized_value.startswith("inputs/"):
+                                    # Extract just the filename part
+                                    filename = os.path.basename(normalized_value)
+                                    found_filenames.append(filename)
+
+    # Verify at least some expected filenames are found
+    assert len(found_filenames) > 0, "No board-specific filenames found in generated configs"
+
+    # Verify that found filenames match expected ones
+    for filename in found_filenames:
+        assert filename in expected_filenames, f"Unexpected filename: {filename}"

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK HAB Message Authentication Code utilities.
 
 This module provides functionality for handling MAC structures used in High Assurance Boot (HAB)
@@ -208,7 +209,7 @@ class MAC(BaseClass):
         :return: New HAB MAC instance created from the parsed data.
         """
         header = Header.parse(data, SegmentTag.MAC.tag)
-        (_, nonce_bytes, _, mac_bytes) = unpack_from(">4B", data, Header.SIZE)
+        _, nonce_bytes, _, mac_bytes = unpack_from(">4B", data, Header.SIZE)
         return cls(
             header.param,
             nonce_bytes,

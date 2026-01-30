@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +13,6 @@ The tests cover protocol version determination, RSA and ECC signature verificati
 credential export/parse operations, invalid data handling, and ROT metadata
 integration for various MCU families including LPC55S3x and ELEv2.
 """
-
 
 import os
 

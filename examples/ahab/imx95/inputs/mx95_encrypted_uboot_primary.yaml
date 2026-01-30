@@ -86,7 +86,7 @@ containers:
       # -------------------------------===== AHAB container signing key [Optional] =====--------------------------------
       # Description: Private key used for sign the container header. Header can be signed by SRK. The referenced SRK
       # must not have been revoked.
-      signer: ../../../_data/keys/ecc521/srk0_ecc521.pem
+      signer: ../../../_data/keys/ecc384/srk0_ecc384.pem
       # ------------------===== AHAB container signer for second signature (PQC only) [Optional] =====------------------
       # Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
       # private key used for second sign (PQC only) of the container header. Header can be signed by SRK. The referenced
@@ -190,7 +190,7 @@ containers:
         # Description: Hash algorithm used for SRK records. If not specified, default algorithm based on key type will
         # be used.
         # Possible options: <default, sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, sm3>
-        hash_algorithm: sha3_512
+        hash_algorithm: default
         # ------------------------------===== Super Root Key (SRK) table [Required] =====-------------------------------
         # Description: Table containing the used SRK records. All SRKs must be of the same type. Supported signing
         # algorithms are: RSA-PSS, ECDSA, Dilithium or SM2. Supported hash algorithms: sha256, sha384, sha512, sha3_256,
@@ -198,10 +198,10 @@ containers:
         # dilithium3, sm2. Certificate may be of Certificate Authority. Dilithium algorithms are supported just in new
         # type of AHAB container
         srk_array:
-          - ../../../_data/keys/ecc521/srk0_ecc521.pub
-          - ../../../_data/keys/ecc521/srk1_ecc521.pub
-          - ../../../_data/keys/ecc521/srk2_ecc521.pub
-          - ../../../_data/keys/ecc521/srk3_ecc521.pub
+          - ../../../_data/keys/ecc384/srk0_ecc384.pub
+          - ../../../_data/keys/ecc384/srk1_ecc384.pub
+          - ../../../_data/keys/ecc384/srk2_ecc384.pub
+          - ../../../_data/keys/ecc384/srk3_ecc384.pub
 
         # ==============================================================================================================
         #               == Configuration of AHAB SRK table in case that the double signing (ECC + PQC) ==               
@@ -218,7 +218,7 @@ containers:
           # Description: Hash algorithm used for SRK records. If not specified, default algorithm based on key type will
           # be used.
           # Possible options: <default, sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, sm3>
-          hash_algorithm: sha3_512
+          hash_algorithm: default
           # -----------------------------===== Super Root Key (SRK) table [Required] =====------------------------------
           # Description: Table containing the used SRK Dilithium records. All SRKs must be of the same type. Supported
           # signing algorithms are: Dilithium level 3. Supported hash algorithms: sha3_256, sha3_384, sha3_512.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -440,7 +440,8 @@ class KeyType(SpsdkEnum):
     HMAC = (0x1100, "HMAC", "Possible bit widths: 224/256/384/512")
     DERIVE = (0x1200, "Derived key", "Possible bit widths: 256/384")
     OEM_IMPORT_MK_SK = (0x9200, "OEM_IMPORT_MK_SK", "Possible bit widths: 128/192/256")
-    ECC = (0x7112, "ECC NIST", "Possible bit widths: 128/192/256")
+    ECC = (0x7112, "ECC NIST", "Possible bit widths: 256/384/521")
+    RSA = (0x7001, "RSA", "Possible bit widths: 2048/3072/4096")
 
 
 class LifeCycle(SpsdkEnum):

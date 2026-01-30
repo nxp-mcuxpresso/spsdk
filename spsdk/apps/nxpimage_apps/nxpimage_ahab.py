@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK AHAB (Advanced High Assurance Boot) image management utilities.
 
 This module provides command-line interface functionality for creating, parsing,
@@ -172,7 +173,7 @@ def ahab_parse_image(family: FamilyRevision, binary: bytes) -> AHABImage:
     "--binary",
     type=click.Path(exists=True, readable=True, resolve_path=True),
     required=True,
-    help="Path to binary AHAB image to update.",
+    help="Path to AHAB image to update.",
 )
 @click.option(
     "-k",

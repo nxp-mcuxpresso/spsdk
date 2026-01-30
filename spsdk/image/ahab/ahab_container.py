@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK AHAB container implementation for Advanced High-Assurance Boot.
 
 This module provides classes for creating, parsing, and manipulating AHAB containers
@@ -445,7 +446,7 @@ class AHABContainerBase(HeaderContainer):
         ret = cls.check_container_head(data)
         if ret.has_errors:
             return ret
-        (signature_block_offset, _) = unpack(LITTLE_ENDIAN + UINT16 + UINT16, data[0x0C:0x10])
+        signature_block_offset, _ = unpack(LITTLE_ENDIAN + UINT16 + UINT16, data[0x0C:0x10])
 
         ret.add_child(cls.SIGNATURE_BLOCK.pre_parse_verify(data[signature_block_offset:]))
         return ret
@@ -1329,7 +1330,7 @@ class AHABContainerV2(AHABContainer):
 
     IAE_TYPE = ImageArrayEntryV2
 
-    SIGNATURE_BLOCK = SignatureBlockV2  # type:ignore
+    SIGNATURE_BLOCK = SignatureBlockV2  # type: ignore
     CONTAINER_SIZE = 0x4000
     VERSION = 0x02
 

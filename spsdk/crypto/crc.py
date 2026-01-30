@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -65,6 +65,13 @@ class Crc:
         self.initial_value = config.initial_value
         self.final_xor = config.final_xor
         self.reverse = config.reverse
+        # Create crcmod.Crc instance for incremental calculation
+        self._crc_obj = crcmod.Crc(
+            poly=self.polynomial,
+            initCrc=self.initial_value,
+            rev=self.reverse,
+            xorOut=self.final_xor,
+        )
 
     def verify(self, data: bytes, crc: int) -> bool:
         """Verify if the given CRC matches the data.
@@ -88,6 +95,42 @@ class Crc:
             xorOut=self.final_xor,
         )
         return crc_func(data)
+
+    def update(self, data: bytes) -> None:
+        """Update the CRC calculation with additional data.
+
+        This method allows incremental CRC calculation by processing data in chunks.
+        The internal CRC state is updated with each call, allowing for memory-efficient
+        processing of large data streams.
+
+        Usage example:
+            crc = Crc(config)
+            crc.update(chunk1)
+            crc.update(chunk2)
+            result = crc.finalize()
+
+        :param data: Data chunk to include in CRC calculation.
+        """
+        self._crc_obj.update(data)
+
+    def finalize(self) -> int:
+        """Finalize the CRC calculation and return the result.
+
+        This method completes the CRC calculation and returns the computed checksum.
+        After calling this method, the internal state is reset to the initial value,
+        allowing the same instance to be reused for new calculations.
+
+        :return: Final CRC checksum value.
+        """
+        result = self._crc_obj.crcValue
+        # Reset the CRC object for potential reuse
+        self._crc_obj = crcmod.Crc(
+            poly=self.polynomial,
+            initCrc=self.initial_value,
+            rev=self.reverse,
+            xorOut=self.final_xor,
+        )
+        return result
 
 
 CRC_ALGORITHMS = {

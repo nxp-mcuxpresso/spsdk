@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK AHAB TLV (Type-Length-Value) data structure utilities.
 
 This module provides functionality for handling TLV data structures used in
@@ -21,7 +22,7 @@ from x690.types import TypeClass, TypeNature, X690Type, decode
 from spsdk.crypto.cmac import cmac
 from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.hkdf import hkdf
-from spsdk.crypto.keys import PrivateKeyEcc
+from spsdk.crypto.keys import PrivateKeyEcc, PrivateKeyRsa
 from spsdk.crypto.symmetric import aes_cbc_encrypt, aes_key_wrap
 from spsdk.exceptions import (
     SPSDKError,
@@ -43,6 +44,7 @@ from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, SpsdkEnum, get_schema_file
 from spsdk.utils.family import FamilyRevision, update_validation_schema_family
+from spsdk.utils.misc import align_block_iso7816
 from spsdk.utils.schema_validator import CommentedConfig
 from spsdk.utils.verifier import Verifier
 
@@ -407,11 +409,31 @@ class KeyImportTLV(TLV):
         )
         logger.info(f"Derived OEM_IMPORT_WRAP_SK: {oem_import_wrap_sk.hex()}")
         logger.info(f"Derived OEM_IMPORT_CMAC_SK: {oem_import_cmac_sk.hex()}")
+
+        # Check if key length is 8-byte aligned for RFC3394
         if self.wrapping_algorithm == WrappingAlgorithm.RFC3394:
-            self.wrapped_private_key = aes_key_wrap(kek=oem_import_wrap_sk, key_to_wrap=private_key)
+            if len(private_key) % 8 != 0:
+                logger.warning(
+                    f"The OEM key length ({len(private_key)} bytes) is not 8-byte aligned. "
+                    "Switching to AES-CBC with ISO7816-4 padding."
+                )
+                # Automatically switch to AES-CBC when key is not 8-byte aligned
+                self.wrapping_algorithm = WrappingAlgorithm.AES_CBC
+                # Apply ISO7816-4 padding (alignment to 16 bytes for AES block size)
+                padded_key = align_block_iso7816(private_key, alignment=16)
+                self.wrapped_private_key = aes_cbc_encrypt(
+                    key=oem_import_wrap_sk, plain_data=padded_key, iv_data=self.iv
+                )
+            else:
+                # Key is 8-byte aligned, use RFC3394
+                self.wrapped_private_key = aes_key_wrap(
+                    kek=oem_import_wrap_sk, key_to_wrap=private_key
+                )
         elif self.wrapping_algorithm == WrappingAlgorithm.AES_CBC:
+            # Apply ISO7816-4 padding for AES-CBC
+            padded_key = align_block_iso7816(private_key, alignment=16)
             self.wrapped_private_key = aes_cbc_encrypt(
-                key=oem_import_wrap_sk, plain_data=private_key, iv_data=self.iv
+                key=oem_import_wrap_sk, plain_data=padded_key, iv_data=self.iv
             )
         else:
             raise SPSDKError(f"Invalid wrapping algorithm: {self.wrapping_algorithm}")
@@ -848,6 +870,40 @@ class KeyImportTLV(TLV):
                 import_key = PrivateKeyEcc.load(
                     key_import.get_input_file_name("import_key")
                 ).export(encoding=SPSDKEncoding.NXP)
+            elif key_type == KeyType.RSA:
+                # Load RSA private key and extract modulus (n) and private exponent (d)
+
+                rsa_key = PrivateKeyRsa.load(key_import.get_input_file_name("import_key"))
+
+                # Get the RSA key components
+                rsa_numbers = rsa_key.key.private_numbers()
+                modulus = rsa_numbers.public_numbers.n
+                private_exponent = rsa_numbers.d
+
+                # Calculate the key size in bits if not explicitly provided
+                if key_size_bits == 0:
+                    key_size_bits = modulus.bit_length()
+                    ret.key_size_bits = key_size_bits
+
+                # Calculate byte length for modulus and exponent
+                modulus_bytes = (modulus.bit_length() + 7) // 8
+                exponent_bytes = (private_exponent.bit_length() + 7) // 8
+
+                # Ensure exponent has same length as modulus (pad if needed)
+                exponent_bytes = modulus_bytes
+
+                # Convert to big-endian bytes: modulus || private_exponent
+                modulus_bin = modulus.to_bytes(modulus_bytes, byteorder="big")
+                exponent_bin = private_exponent.to_bytes(exponent_bytes, byteorder="big")
+
+                # Concatenate: modulus followed by private exponent
+                import_key = modulus_bin + exponent_bin
+
+                logger.info(
+                    f"RSA key loaded: {key_size_bits} bits, "
+                    f"modulus: {len(modulus_bin)} bytes, "
+                    f"exponent: {len(exponent_bin)} bytes"
+                )
             else:
                 import_key = key_import.load_symmetric_key(
                     "import_key", expected_size=key_size_bits // 8

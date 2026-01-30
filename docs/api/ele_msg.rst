@@ -9,6 +9,13 @@ Module with the EdgeLock Enclave messages
    :undoc-members:
    :show-inheritance:
 
+Module with the HSE(Hardware Security Engine) EdgeLock Enclave messages
+-----------------------------------------------------------------------
+.. automodule:: spsdk.ele.ele_message_hse
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module with the EdgeLock Enclave message handler with mBoot
 -----------------------------------------------------------
 .. automodule:: spsdk.ele.ele_comm

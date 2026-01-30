@@ -2003,7 +2003,7 @@
               "width": 6,
               "id": "fuse45-bits-0-5",
               "name": "PAD_SETTINGS",
-              "description": "Used with conjuction of MMC/SD/Nand \"Override Pad Settings\" fuse value, as follow:\n'0' - Use IO default settings for boot device IO pads.\n'1' - Use \"Override\" value, as set by this register."
+              "description": "Used with conjunction of MMC/SD/Nand \"Override Pad Settings\" fuse value, as follow:\n'0' - Use IO default settings for boot device IO pads.\n'1' - Use \"Override\" value, as set by this register."
             },
             {
               "width": 1,

@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-## Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """HSE (Hardware Security Engine) specific mixins for Master Boot Image.
 
 This module provides HSE-specific implementations for the Master Boot Image (MBI),
@@ -23,7 +24,7 @@ from spsdk.image.mbi.mbi_mixin import Mbi_ExportMixin, Mbi_Mixin, Mbi_MixinApp
 from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision, get_db
-from spsdk.utils.misc import Endianness, align_block, extend_block
+from spsdk.utils.misc import Endianness, extend_block
 from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
 
@@ -626,10 +627,9 @@ class Mbi_MixinHseAppBootHeader(Mbi_Mixin):
     APP_BOOT_HEADER_IMAGE_NAME = "Boot Header"
     VALIDATION_SCHEMAS: list[str] = ["hse_app_boot_header"]
     NEEDED_MEMBERS: dict[str, Any] = {"hse_app_boot_header": None}
-
     ivt: Ivt
     hse_app_boot_header: AppBootHeader
-    app: Optional[bytes]
+    app: bytes
 
     def mix_len(self) -> int:
         """Compute length of individual HSE mixin.
@@ -652,16 +652,10 @@ class Mbi_MixinHseAppBootHeader(Mbi_Mixin):
         :param config: Configuration object containing HSE-specific fields including
                        outputImageAuthenticationType, inputImageFile, and appStartAddress.
         """
-        if not config.get_str("outputImageAuthenticationType").lower() == "signed":
+        if config.get_str("outputImageAuthenticationType").lower() != "signed":
             return
         self.hse_app_boot_header = AppBootHeader(FamilyRevision.load_from_config(config))
-        self.hse_app_boot_header.app_size = len(
-            align_block(
-                BinaryImage.load_binary_image(
-                    (config.get_input_file_name("inputImageFile"))
-                ).export()
-            )
-        )
+        self.hse_app_boot_header.app_size = len(self.app)
         self.hse_app_boot_header.start_address = config.get_int("appStartAddress")
 
     def mix_validate(self) -> None:

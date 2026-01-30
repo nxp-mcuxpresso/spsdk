@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,13 +13,15 @@ RoT implementations including HAB and AHAB certificate blocks with different
 versions and SRK table formats.
 """
 
-
+import logging
 from abc import abstractmethod
 from typing import Optional, Sequence, Type, Union
 
 from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import PrivateKey, PublicKey
-from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError
+from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKNotImplementedError, SPSDKValueError
+from spsdk.image.ahab.ahab_data import AHABSignHashAlgorithmV1, AHABSignHashAlgorithmV2
 from spsdk.image.ahab.ahab_srk import SRKRecord, SRKRecordV2
 from spsdk.image.ahab.ahab_srk import SRKTable as AhabSrkTable
 from spsdk.image.ahab.ahab_srk import SRKTableV2 as AhabSrkTableV2
@@ -29,6 +31,8 @@ from spsdk.image.hab.hab_srk import SrkTable as HabSrkTable
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db, get_families
 from spsdk.utils.misc import load_binary
+
+logger = logging.getLogger(__name__)
 
 
 class Rot:
@@ -46,6 +50,7 @@ class Rot:
         keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
         password: Optional[str] = None,
         search_paths: Optional[list[str]] = None,
+        hash_algorithm: Optional[EnumHashAlgorithm] = None,
     ) -> None:
         """Initialize Root of Trust object.
 
@@ -59,7 +64,10 @@ class Rot:
         :param search_paths: Optional list of directories to search for key/certificate files.
         """
         self.rot_obj = self.get_rot_class(family)(
-            keys_or_certs=keys_or_certs, password=password, search_paths=search_paths
+            keys_or_certs=keys_or_certs,
+            password=password,
+            search_paths=search_paths,
+            hash_algorithm=hash_algorithm,
         )
 
     def calculate_hash(self) -> bytes:
@@ -111,7 +119,10 @@ class Rot:
         :return: RoT class type for the specified family.
         """
         db = get_db(family)
-        rot_type = db.get_str(DatabaseManager.CERT_BLOCK, "rot_type")
+        try:
+            rot_type = db.get_str(DatabaseManager.CERT_BLOCK, "rot_type")
+        except SPSDKValueError as e:
+            raise SPSDKError(f"The RoT feature is not supported for family {family.name}") from e
         return RotBase.get_rot_class(rot_type)
 
 
@@ -127,6 +138,7 @@ class RotBase:
     """
 
     rot_type: Optional[str] = None
+    supports_custom_hash_algorithm = False
     _registry: dict[str, Type["RotBase"]] = {}
 
     def __init__(
@@ -134,6 +146,7 @@ class RotBase:
         keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
         password: Optional[str] = None,
         search_paths: Optional[list[str]] = None,
+        hash_algorithm: Optional[EnumHashAlgorithm] = None,
     ) -> None:
         """Initialize Root of Trust (RoT) with cryptographic keys or certificates.
 
@@ -148,6 +161,11 @@ class RotBase:
         self.keys_or_certs = keys_or_certs
         self.password = password
         self.search_paths = search_paths
+        self.hash_algorithm = hash_algorithm
+        if hash_algorithm is not None and not self.supports_custom_hash_algorithm:
+            logger.warning(
+                f"Custom hash algorithm is not supported for RoT type '{self.rot_type}'. "
+            )
 
     @classmethod
     def register(cls, rot_class: Type["RotBase"]) -> Type["RotBase"]:
@@ -232,6 +250,7 @@ class RotCertBlockv1(RotBase):
         keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
         password: Optional[str] = None,
         search_paths: Optional[list[str]] = None,
+        hash_algorithm: Optional[EnumHashAlgorithm] = None,
     ) -> None:
         """Initialize RoT certificate block version 1.
 
@@ -243,7 +262,7 @@ class RotCertBlockv1(RotBase):
         :param search_paths: Optional list of directories to search for key/certificate files.
         :raises SPSDKError: If RKHT creation fails or invalid keys/certificates provided.
         """
-        super().__init__(keys_or_certs, password, search_paths)
+        super().__init__(keys_or_certs, password, search_paths, hash_algorithm)
         self.rkht = RKHTv1.from_keys(self.keys_or_certs, self.password, self.search_paths)
 
     @classmethod
@@ -296,6 +315,7 @@ class RotCertBlockv21(RotBase):
         keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
         password: Optional[str] = None,
         search_paths: Optional[list[str]] = None,
+        hash_algorithm: Optional[EnumHashAlgorithm] = None,
     ) -> None:
         """Initialize RoT certificate block v21.
 
@@ -308,7 +328,7 @@ class RotCertBlockv21(RotBase):
         :param search_paths: Optional list of additional paths to search for key/cert files.
         :raises SPSDKError: If RKHT creation fails or invalid keys/certificates provided.
         """
-        super().__init__(keys_or_certs, password, search_paths)
+        super().__init__(keys_or_certs, password, search_paths, hash_algorithm)
         self.rkht = RKHTv21.from_keys(self.keys_or_certs, self.password, self.search_paths)
 
     @classmethod
@@ -350,12 +370,14 @@ class RotSrkTableAhab(RotBase):
     """
 
     rot_type = "srk_table_ahab"
+    supports_custom_hash_algorithm = True
 
     def __init__(
         self,
         keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
         password: Optional[str] = None,
         search_paths: Optional[list[str]] = None,
+        hash_algorithm: Optional[EnumHashAlgorithm] = None,
     ) -> None:
         """Initialize AHAB SRK table with provided keys or certificates.
 
@@ -369,10 +391,24 @@ class RotSrkTableAhab(RotBase):
         :param search_paths: Optional list of paths to search for key files.
         :raises SPSDKError: If the SRK table validation fails.
         """
-        super().__init__(keys_or_certs, password, search_paths)
+        super().__init__(keys_or_certs, password, search_paths, hash_algorithm)
+        try:
+            ahab_hash_algorithm = (
+                AHABSignHashAlgorithmV1.from_label(self.hash_algorithm.label)
+                if self.hash_algorithm
+                else None
+            )
+        except SPSDKKeyError as e:
+            raise SPSDKError(
+                f"Unsupported hash algorithm {self.hash_algorithm.label} for AHABv1 SRK table."  # type: ignore
+                f"Supported hash algorithms are {'',''.join(AHABSignHashAlgorithmV1.labels())}"
+            ) from e
         self.srk = AhabSrkTable(
             [
-                SRKRecord.create_from_key(RKHT.convert_key(key, password, search_paths))
+                SRKRecord.create_from_key(
+                    RKHT.convert_key(key, password, search_paths),
+                    hash_algorithm=ahab_hash_algorithm,
+                )
                 for key in keys_or_certs
             ]
         )
@@ -430,12 +466,14 @@ class RotSrkTableAhabV2(RotBase):
     """
 
     rot_type = "srk_table_ahab_v2"
+    supports_custom_hash_algorithm = True
 
     def __init__(
         self,
         keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
         password: Optional[str] = None,
         search_paths: Optional[list[str]] = None,
+        hash_algorithm: Optional[EnumHashAlgorithm] = None,
     ) -> None:
         """Initialize AHAB SRK table with provided keys or certificates.
 
@@ -448,11 +486,24 @@ class RotSrkTableAhabV2(RotBase):
         :param search_paths: Optional list of directory paths to search for key/certificate files.
         :raises SPSDKError: If the created SRK table fails validation.
         """
-        super().__init__(keys_or_certs, password, search_paths)
+        super().__init__(keys_or_certs, password, search_paths, hash_algorithm)
+        try:
+            ahab_hash_algorithm = (
+                AHABSignHashAlgorithmV2.from_label(self.hash_algorithm.label)
+                if self.hash_algorithm
+                else None
+            )
+        except SPSDKKeyError as e:
+            raise SPSDKError(
+                f"Unsupported hash algorithm {self.hash_algorithm.label} for AHABv2 SRK table."  # type: ignore
+                f"Supported hash algorithms are {','.join(AHABSignHashAlgorithmV2.labels())}"
+            ) from e
         self.srk = AhabSrkTableV2(
             [
                 SRKRecordV2.create_from_key(
-                    RKHT.convert_key(key, password, search_paths), srk_id=key_id
+                    RKHT.convert_key(key, password, search_paths),
+                    srk_id=key_id,
+                    hash_algorithm=ahab_hash_algorithm,
                 )
                 for key_id, key in enumerate(keys_or_certs)
             ]
@@ -534,6 +585,7 @@ class RotSrkTableHab(RotBase):
         keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
         password: Optional[str] = None,
         search_paths: Optional[list[str]] = None,
+        hash_algorithm: Optional[EnumHashAlgorithm] = None,
     ) -> None:
         """Initialize HAB SRK table with certificates or keys.
 
@@ -547,7 +599,7 @@ class RotSrkTableHab(RotBase):
         :raises SPSDKError: When unable to load certificate or when non-certificate object
             is provided
         """
-        super().__init__(keys_or_certs, password, search_paths)
+        super().__init__(keys_or_certs, password, search_paths, hash_algorithm)
         self.srk = HabSrkTable()
         for certificate in keys_or_certs:
             if isinstance(certificate, (str, bytes, bytearray)):

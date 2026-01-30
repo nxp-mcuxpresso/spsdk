@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -154,7 +154,7 @@ class MasterBootImageManifest:
         :raises SPSDKParsingError: Invalid header is detected during parsing.
         :return: Tuple containing firmware version, hash algorithm (always None), and extra data bytes.
         """
-        (magic, version, fw_version, total_length, _) = struct.unpack(
+        magic, version, fw_version, total_length, _ = struct.unpack(
             cls.FORMAT, data[: struct.calcsize(cls.FORMAT)]
         )
         cls._verify_manifest_data(data, magic, version, total_length)
@@ -261,7 +261,7 @@ class MasterBootImageManifestDigest(MasterBootImageManifest):
         :raises SPSDKParsingError: Invalid header is detected.
         :return: Tuple with fw version, hash type and image extra data.
         """
-        (magic, version, fw_version, total_length, flags) = struct.unpack(
+        magic, version, fw_version, total_length, flags = struct.unpack(
             cls.FORMAT, data[: struct.calcsize(cls.FORMAT)]
         )
         cls._verify_manifest_data(data, magic, version, total_length)
@@ -486,7 +486,7 @@ class MultipleImageEntry:
         :raises SPSDKParsingError: When the image size exceeds the available data length.
         :return: Parsed multiple image entry object with extracted image data and metadata.
         """
-        (src_addr, dst_addr, size, flags) = struct.unpack("<4I", data[: 4 * 4])
+        src_addr, dst_addr, size, flags = struct.unpack("<4I", data[: 4 * 4])
         if src_addr + size > len(data):
             raise SPSDKParsingError("The image doesn't fit into given data")
 
@@ -600,7 +600,7 @@ class MultipleImageTable:
         :raises SPSDKParsingError: The application table parsing fails.
         :return: Multiple Image Table instance if valid table detected, None otherwise.
         """
-        (marker, header_version, n_entries, start_address) = struct.unpack(
+        marker, header_version, n_entries, start_address = struct.unpack(
             "<4I", data[-struct.calcsize("<4I") :]
         )
         if marker != 0x4C54424C or header_version != MultipleImageTable().header_version:

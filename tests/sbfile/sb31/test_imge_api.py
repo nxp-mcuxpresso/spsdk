@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,7 +11,6 @@ This module contains comprehensive unit tests for the SecureBinary31 image API,
 covering header validation, command management, error handling, and parsing
 functionality in the SB31 secure boot format.
 """
-
 
 import pytest
 

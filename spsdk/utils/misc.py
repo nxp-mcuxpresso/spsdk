@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -31,7 +31,7 @@ import yaml
 
 from spsdk import SPSDK_SECRETS_PATH
 from spsdk.crypto.rng import random_bytes
-from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKValueError
 from spsdk.utils.exceptions import SPSDKTimeoutError
 
 # for generics
@@ -339,6 +339,27 @@ def write_file(
     logger.debug(f"Storing {'binary' if 'b' in mode else 'text'} file at {path}")
     with open(path, mode, encoding=None if "b" in mode else encoding) as f:
         return f.write(data)
+
+
+def file_extension(output_format: str = "bin", add_dot: bool = True) -> str:
+    """Get the file extension based on output format.
+
+    Converts the output format string to the corresponding file extension.
+    Supported formats include binary, hex, S-record, and sparse image formats.
+
+    :param output_format: Output format type ["bin", "hex", "srec", "sparse"], defaults to "bin"
+    :param add_dot: Whether to include the dot prefix in the extension, defaults to True
+    :return: File extension string (e.g., ".bin", ".hex", ".srec", ".simg" with dot,
+        or "bin", "hex", "srec", "simg" without)
+    """
+    ret = output_format.lower()
+    if ret == "sparse":
+        ret = "simg"
+    if ret not in ["bin", "hex", "srec", "simg"]:
+        ret = "bin"
+    if add_dot:
+        ret = "." + ret
+    return ret
 
 
 def get_abs_path(file_path: str, base_dir: Optional[str] = None) -> str:
@@ -1028,21 +1049,57 @@ def load_configuration(path: str, search_paths: Optional[list[str]] = None) -> d
         raise SPSDKError(f"Can't load configuration file: {str(exc)}") from exc
 
     config_data: Optional[dict] = None
+    json_error: Optional[Exception] = None
+    yaml_error: Optional[Exception] = None
     try:
         config_data = json.loads(config)
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as json_exc:
+        json_error = json_exc
         try:
             # SecretLoader inherits from SafeLoader, thus using yaml.load is OK
             config_data = yaml.load(config, Loader=SecretsLoader)  # nosec: yaml_load
-        except (yaml.YAMLError, UnicodeDecodeError):
-            pass
+        except (yaml.YAMLError, UnicodeDecodeError) as yaml_exc:
+            yaml_error = yaml_exc
 
     if not config_data:
-        raise SPSDKError(f"Can't parse configuration file: {path}")
+        error_to_show = _determine_primary_parsing_error(config, json_error, yaml_error)
+        raise SPSDKParsingError(
+            f"Can't parse configuration file: {path}: {error_to_show if error_to_show else 'Unknown error'}"
+        ) from error_to_show
     if not isinstance(config_data, dict):
         raise SPSDKError(f"Invalid configuration file: {path}")
 
     return config_data
+
+
+def _determine_primary_parsing_error(
+    config_content: str, json_error: Optional[Exception], yaml_error: Optional[Exception]
+) -> Optional[Exception]:
+    """Determine which parsing error is most relevant to show to the user.
+
+    If the content starts with '{' and ends with '}' or '[' and ends with ']', it's likely JSON.
+    Otherwise, assume it's YAML.
+
+    :param config_content: The raw configuration file content.
+    :param json_error: Exception from JSON parsing attempt.
+    :param yaml_error: Exception from YAML parsing attempt.
+    :return: Error message string to display to the user.
+    """
+    if not json_error and not yaml_error:
+        return None
+    # If only one parser failed, show that error
+    if json_error and not yaml_error:
+        return json_error
+    if yaml_error and not json_error:
+        return yaml_error
+
+    content_stripped = config_content.strip()
+    # Both parsers failed, determine format based on content structure
+    if (content_stripped.startswith("{") and content_stripped.endswith("}")) or (
+        content_stripped.startswith("[") and content_stripped.endswith("]")
+    ):
+        return json_error
+    return yaml_error
 
 
 def split_data(data: Union[bytearray, bytes], size: int) -> Generator[bytes, None, None]:
@@ -1297,3 +1354,22 @@ def swap_endianness(data: bytes, word_size: int = 4) -> bytes:
         struct.pack(big_format, struct.unpack(little_format, data[i : i + word_size])[0])
         for i in range(0, len(data), word_size)
     )
+
+
+def align_block_iso7816(data: bytes, alignment: int = 16) -> bytes:
+    """Align data block using ISO7816-4 padding.
+
+    ISO7816-4 padding adds a mandatory 0x80 byte followed by zero or more 0x00 bytes
+    to reach the desired alignment. This is commonly used in smart card applications.
+
+    :param data: Input data to be padded
+    :param alignment: Block size alignment in bytes, defaults to 16
+    :return: Padded data aligned to the specified block size
+    """
+    padding_len = alignment - (len(data) % alignment)
+    if padding_len == 0:
+        padding_len = alignment
+
+    # ISO7816-4: first byte is 0x80, rest are 0x00
+    padding = bytes([0x80]) + bytes(padding_len - 1)
+    return data + padding

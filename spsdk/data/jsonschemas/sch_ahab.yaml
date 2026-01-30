@@ -1,4 +1,4 @@
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -26,7 +26,7 @@ whole_ahab_image:
       type: string
       title: Output file format
       description: Output file format for AHAB image
-      enum: [bin, hex, srec]
+      enum: [bin, hex, srec, sparse]
       template_value: bin
     output_offset:
       type: [string, number]
@@ -270,6 +270,44 @@ whole_ahab_image:
                               title: Quick Boot Data
                               description: QB data - Optional Quick boot data, if defined a new empty record will be added just behind DDR FW entry
                               template_value: qb_data.bin
+                              format: file
+
+                        - type: object
+                          template_title: OEI with DDR tunning images
+                          image_identifier: oei_ddr_no_qb
+                          skip_in_template: True
+                          description: OEI with DDR PHY tunning images
+                          required: [oei_ddr, lpddr_imem, lpddr_dmem]
+                          properties:
+                            lpddr_imem:
+                              type: string
+                              title: LPDDR memory FW
+                              description: Firmware for LPDDR4/5 memory.
+                              template_value: lpddr4x_imem_v202409.bin
+                              format: file
+                            lpddr_imem_qb:
+                              type: string
+                              title: LPDDR memory FW for quick boot
+                              description: Firmware for LPDDR4/5 for quick boot.
+                              template_value: lpddr4x_imem_qb_v202409.bin
+                              format: file
+                            lpddr_dmem:
+                              type: string
+                              title: LPDDR memory data
+                              description: Data for LPDDR4/5 memory.
+                              template_value: lpddr4x_dmem_v202409.bin
+                              format: file
+                            lpddr_dmem_qb:
+                              type: string
+                              title: LPDDR memory data for quick boot
+                              description: Data for LPDDR4/5 memory in quick boot.
+                              template_value: lpddr4x_dmem_qb_v202409.bin
+                              format: file
+                            oei_ddr:
+                              type: string
+                              title: OEI
+                              description: OEI - Optional Executable Image firmware
+                              template_value: oei-m33-ddr.bin
                               format: file
 
                         - type: object

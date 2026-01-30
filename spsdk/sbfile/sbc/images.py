@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK Secure Binary Container (SBC) image generation and management.
 
 This module provides functionality for creating and handling Secure Binary Container
@@ -23,7 +24,7 @@ from spsdk.utils.abstract import BaseClass
 from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
-from spsdk.utils.family import FamilyRevision, update_validation_schema_family
+from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,7 @@ class SecureBinaryCHeader(BaseClass):
     DESCRIPTION_LENGTH = 16
     BLOCK_SIZE = 292
     CERT_OFFSET = 0x5C
+    MANIFEST_SIZE = 0xAC
 
     def __init__(
         self,
@@ -74,8 +76,7 @@ class SecureBinaryCHeader(BaseClass):
         self.image_type = image_type
         self.firmware_version = firmware_version
         self.timestamp = timestamp or SecureBinary31.get_current_timestamp()
-        manifest_size = 0xAC
-        self.sbc_block0_total_length = manifest_size
+        self.sbc_block0_total_length = self.MANIFEST_SIZE
         self.description = self._adjust_description(description)
         self.block_size = self.BLOCK_SIZE
         self.cert_offset = self.CERT_OFFSET
@@ -209,6 +210,16 @@ class SecureBinaryCHeader(BaseClass):
             raise SPSDKError("Invalid SBc header image description.")
 
 
+class SecureBinaryCHeaderV2(SecureBinaryCHeader):
+    """Secure Binary C Header Version 2.
+
+    This class represents version 2 of the SBC header with extended functionality
+    and additional validation rules compared to the base SecureBinaryCHeader.
+    """
+
+    MANIFEST_SIZE = 0xBC
+
+
 class SecureBinaryCCommands(SecureBinary31Commands):
     """Secure Binary Container (SBc) commands manager.
 
@@ -261,7 +272,10 @@ class SecureBinaryC(FeatureBaseClass):
         self.description = description
         self.flags = flags
 
-        self.sb_header = SecureBinaryCHeader(
+        sbc_header_version = get_db(family).get_int(DatabaseManager.SBC, "header_version", 1)
+        sbc_header_cls = SecureBinaryCHeaderV2 if sbc_header_version == 2 else SecureBinaryCHeader
+
+        self.sb_header = sbc_header_cls(
             firmware_version=self.firmware_version,
             description=self.description,
             timestamp=commands.timestamp,

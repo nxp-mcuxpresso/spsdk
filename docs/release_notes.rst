@@ -17,6 +17,62 @@
 Release Notes
 =============
 
+-----------------------
+3.7.0 (30-January-2026)
+-----------------------
+
+**New Product Introduction or Updates**
+
+* MCXE31
+* MCXN556S
+* i.MX952
+* i.MX95
+
+**New features**
+
+* Highlights:
+    - SPARSE file format support added
+    - Added support for the imx-bootloader, which simplifies bootloader creation compared to generic templates. When generating templates for a bootable image using the nxpimage bootable-image get-templates command, comprehensive templates are created, including SPL and U-Boot configurations. All required files can be copied directly to the inputs directory without modifying configuration files. Currently, i.MX95 and i.MX93 flash_all imx bootloaders are supported.
+
+* `nxpimage`_:
+    - implement SBc v2 support for MCXL20 new product introduction
+    - add support for RSA and ECC P-521 keys in TLV blob functionality
+    - implement SPARSE format support
+    - enable hash algorithm specification in nxpcrypto rot calculate-hash command
+    - move output and output-format options from command line to config in bootable image
+    - implement update-keyblob command with SPARSE support
+    - add missing memory type option for booting from eMMC boot0/1 partitions
+    - update MPU bootable-image with optional boot media input and workspace creation
+
+* `blhost`_:
+    - add SPARSE format support
+
+* :ref:`nxpele`:
+    - add MCX E31 set attribute command support for new product introduction
+    - implement secure memory region (SMR) based secure boot for MCX E31 device
+    - support multiple MU channels in HSE commands for MCX E31
+    - add optional parameter to get info command for retrieving specific attributes
+
+* create jupyter notebook describing basic secure boot feature
+
+**Bugfixes**
+
+* `nxpimage`_:
+    - fix trust zone template that was bricking MCXN556S devices
+    - resolve signed image boot failure due to incorrect firmware version check on MCXN556S
+    - fix authenticated image boot failure for MCXE3x devices
+    - correct CSF/IMG certificate issuer from CA to SRK for pki-tree command
+
+* :ref:`nxpwpc`:
+    - fix malformed signature in WPC CSR preventing verification by systems like EL2GO
+
+* :ref:`nxpele`:
+    - fix SRKH fuse BCF generation issue for i.MX952 device support
+    - resolve image order issue for SDP/Flash hash/eMMC fastboot on i.MX952
+    - fix export NXP production key failure for i.MX95 device support
+    - resolve i.MX95 B0 boot image parsing with SignatureBlockV2 version compatibility
+    - fix HSE firmware update exit code handling when update fails
+
 -------------------------
 3.6.0 (19-December-2025)
 -------------------------

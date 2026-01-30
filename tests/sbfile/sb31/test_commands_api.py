@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK SB3.1 commands API test suite.
 
 This module contains comprehensive tests for the SB3.1 (Secure Binary 3.1) command
@@ -11,7 +12,6 @@ API functionality, validating command creation, parsing, and error handling acro
 all supported command types including memory operations, security features, and
 configuration management.
 """
-
 
 import os
 from typing import Optional

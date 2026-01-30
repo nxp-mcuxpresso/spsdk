@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023, 2025 NXP
+# Copyright 2019-2023,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-
-
 """SPSDK self-test module for testing infrastructure validation.
 
 This module contains basic self-tests to verify that the testing infrastructure

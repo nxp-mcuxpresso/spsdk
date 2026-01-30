@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -567,7 +567,7 @@ def test_nxpcrypto_rot_parse(
     ), f"Expected {len(keys)} keys, found {len(extracted_files)}"
 
 
-def test_npxcrypto_cert_get_template(cli_runner: CliRunner, tmpdir: str) -> None:
+def test_nxpcrypto_cert_get_template(cli_runner: CliRunner, tmpdir: str) -> None:
     """Test NXPCRYPTO CLI certificate template generation functionality.
 
     Verifies that the 'cert get-template' command successfully creates a certificate
@@ -1297,6 +1297,126 @@ def test_nxpcrypto_pki_tree(
         assert len(srk_keys) == key_number * 2
         srk_certs = glob.glob(f"{tmpdir}/tree_{key_type}_{encoding}/crts/SRK*.pem")
         assert len(srk_certs) == key_number * 2
+
+
+def test_nxpcrypto_hab_pki_tree_hierarchy(
+    cli_runner: CliRunner,
+    tmpdir: str,
+) -> None:
+    """Test certificate hierarchy with multiple SRK certificates.
+
+    This test verifies that when multiple SRK certificates are generated,
+    each SRK is properly signed by the CA and can independently sign
+    its own CSF/IMG certificates.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param tmpdir: Temporary directory path for test output files.
+    """
+    key_type = "secp384r1"
+    encoding = "pem"
+    # Generate AHAB PKI tree with CA structure
+    tree_path = f"{tmpdir}/hab_tree_{key_type}_{encoding}"
+    cmd = f"pki-tree hab -k {key_type} -o {tree_path} -e {encoding} -ca -n 1"
+    result = run_nxpcrypto(cli_runner, cmd, tmpdir)
+    assert result.exit_code == 0, "HAB PKI Tree command failed"
+
+    # Load certificates for hierarchy validation
+    ca_cert_path = f"{tree_path}/crts/CA0_{key_type}_ca_cert.{encoding}"
+    srk_cert_path = f"{tree_path}/crts/SRK0_{key_type}_ca_cert.{encoding}"
+    csf_cert_path = f"{tree_path}/crts/CSF0_0_{key_type}_cert.{encoding}"
+    img_cert_path = f"{tree_path}/crts/IMG0_0_{key_type}_cert.{encoding}"
+
+    # Verify all certificate files exist
+    assert os.path.isfile(ca_cert_path), f"CA certificate not found: {ca_cert_path}"
+    assert os.path.isfile(srk_cert_path), f"SRK certificate not found: {srk_cert_path}"
+    assert os.path.isfile(csf_cert_path), f"CSF certificate not found: {csf_cert_path}"
+    assert os.path.isfile(img_cert_path), f"IMG certificate not found: {img_cert_path}"
+
+    # Load certificates
+    ca_cert = Certificate.load(ca_cert_path)
+    srk_cert = Certificate.load(srk_cert_path)
+    csf_cert = Certificate.load(csf_cert_path)
+    img_cert = Certificate.load(img_cert_path)
+
+    # Verify CA certificate properties
+    assert ca_cert.ca is True, "CA certificate should have CA flag set"
+    assert ca_cert.self_signed is True, "CA certificate should be self-signed"
+    assert ca_cert.subject == ca_cert.issuer, "CA certificate subject should equal issuer"
+
+    # Verify SRK certificate hierarchy: CA -> SRK
+    assert srk_cert.ca is True, "SRK certificate should have CA flag set"
+    assert srk_cert.self_signed is False, "SRK certificate should not be self-signed"
+    assert srk_cert.issuer == ca_cert.subject, "SRK certificate issuer should be CA subject"
+    assert srk_cert.validate(ca_cert), "SRK certificate should be signed by CA"
+
+    # Verify CSF certificate hierarchy: SRK -> CSF
+    assert csf_cert.ca is False, "CSF certificate should not have CA flag set"
+    assert csf_cert.self_signed is False, "CSF certificate should not be self-signed"
+    assert csf_cert.issuer == srk_cert.subject, "CSF certificate issuer should be SRK subject"
+    assert csf_cert.validate(srk_cert), "CSF certificate should be signed by SRK"
+
+    # Verify CSF certificate hierarchy: SRK -> IMG
+    assert img_cert.ca is False, "IMG certificate should not have CA flag set"
+    assert img_cert.self_signed is False, "IMG certificate should not be self-signed"
+    assert img_cert.issuer == srk_cert.subject, "IMG certificate issuer should be SRK subject"
+    assert img_cert.validate(srk_cert), "IMG certificate should be signed by SRK"
+
+
+def test_nxpcrypto_ahab_pki_tree_hierarchy(
+    cli_runner: CliRunner,
+    tmpdir: str,
+) -> None:
+    """Test AHAB certificate hierarchy validation for CA-SRK-SGK chain.
+
+    This test verifies that the AHAB PKI tree generation creates a proper certificate
+    hierarchy where CA signs SRK certificates, and SRK certificates sign SGK
+    certificates. It validates the issuer-subject relationships in the certificate
+    chain for AHAB PKI structure.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param tmpdir: Temporary directory path for test output files.
+    :param key_type: Type of cryptographic keys to generate.
+    :param encoding: File encoding format for generated keys and certificates.
+    """
+    key_type = "secp384r1"
+    encoding = "pem"
+    # Generate AHAB PKI tree with CA structure
+    tree_path = f"{tmpdir}/ahab_tree_{key_type}_{encoding}"
+    cmd = f"pki-tree ahab -k {key_type} -o {tree_path} -e {encoding} -ca -n 1"
+    result = run_nxpcrypto(cli_runner, cmd, tmpdir)
+    assert result.exit_code == 0, "AHAB PKI Tree command failed"
+
+    # Load certificates for hierarchy validation
+    ca_cert_path = f"{tree_path}/crts/CA0_{key_type}_ca_cert.{encoding}"
+    srk_cert_path = f"{tree_path}/crts/SRK0_{key_type}_ca_cert.{encoding}"
+    sgk_cert_path = f"{tree_path}/crts/SGK0_{key_type}_cert.{encoding}"
+
+    # Verify all certificate files exist
+    assert os.path.isfile(ca_cert_path), f"CA certificate not found: {ca_cert_path}"
+    assert os.path.isfile(srk_cert_path), f"SRK certificate not found: {srk_cert_path}"
+    assert os.path.isfile(sgk_cert_path), f"SGK certificate not found: {sgk_cert_path}"
+
+    # Load certificates
+    ca_cert = Certificate.load(ca_cert_path)
+    srk_cert = Certificate.load(srk_cert_path)
+    sgk_cert = Certificate.load(sgk_cert_path)
+
+    # Verify CA certificate properties
+    assert ca_cert.ca is True, "CA certificate should have CA flag set"
+    assert ca_cert.self_signed is True, "CA certificate should be self-signed"
+    assert ca_cert.subject == ca_cert.issuer, "CA certificate subject should equal issuer"
+
+    # Verify SRK certificate hierarchy: CA -> SRK
+    assert srk_cert.ca is True, "SRK certificate should have CA flag set"
+    assert srk_cert.self_signed is False, "SRK certificate should not be self-signed"
+    assert srk_cert.issuer == ca_cert.subject, "SRK certificate issuer should be CA subject"
+    assert srk_cert.validate(ca_cert), "SRK certificate should be signed by CA"
+
+    # Verify SGK certificate hierarchy: SRK -> SGK
+    assert sgk_cert.ca is False, "SGK certificate should not have CA flag set"
+    assert sgk_cert.self_signed is False, "SGK certificate should not be self-signed"
+    assert sgk_cert.issuer == srk_cert.subject, "SGK certificate issuer should be SRK subject"
+    assert sgk_cert.validate(srk_cert), "SGK certificate should be signed by SRK"
 
 
 CRC_TEST_VECTORS = [

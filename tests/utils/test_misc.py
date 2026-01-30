@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,13 +14,14 @@ endianness handling, bit manipulation, and timeout functionality.
 
 import filecmp
 import os
+import tempfile
 import time
 from typing import Any, Optional, Union
 from unittest.mock import patch
 
 import pytest
 
-from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKValueError
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.misc import (
     BinaryPattern,
@@ -35,6 +36,7 @@ from spsdk.utils.misc import (
     format_value,
     get_bytes_cnt_of_int,
     load_binary,
+    load_configuration,
     load_file,
     load_secret,
     reverse_bits,
@@ -719,3 +721,43 @@ def test_load_secret(data_dir: str) -> None:
         assert load_secret("$TEST_VAR") == "secret text"
     with patch.dict("os.environ", {"TEST_VAR": file_with_secret}):
         assert load_secret("$TEST_VAR") == "secret text"
+
+
+@pytest.mark.parametrize(
+    "file_content,file_extension,error_substring",
+    [
+        ('{"key": "value" "another": "value"}', ".json", "expecting ',' delimiter"),
+        ("key:\n  - value\n  invalid_indent", ".yaml", "scanning a simple key"),
+        ("key: [\n  value\n  missing_bracket", ".yaml", "parsing a flow sequence"),
+        ("key: 'unclosed string", ".yaml", "scanning a quoted scalar"),
+        ("key:\n\tvalue", ".yaml", "scanning for the next token"),  # Tab character in YAML
+        ("key: value\ninvalid: [unclosed", ".txt", "parsing a flow sequence"),
+    ],
+)
+def test_load_configuration_error_handling(
+    file_content: str, file_extension: str, error_substring: str
+) -> None:
+    """Test load_configuration error handling with invalid JSON and YAML files.
+
+    :param file_content: Invalid file content to test
+    :param file_extension: File extension to use
+    :param error_substring: Expected primary error format ("json" or "yaml")
+    """
+    with tempfile.NamedTemporaryFile(mode="w", suffix=file_extension, delete=False) as temp_file:
+        temp_file.write(file_content)
+        temp_file_path = temp_file.name
+
+    try:
+        with pytest.raises(SPSDKParsingError) as exc_info:
+            load_configuration(temp_file_path)
+
+        error_message = str(exc_info.value)
+
+        # Verify that the error message contains the file path
+        assert temp_file_path in error_message
+        assert "Can't parse configuration file" in error_message
+        assert error_substring in error_message.lower()
+
+    finally:
+        # Clean up the temporary file
+        os.unlink(temp_file_path)

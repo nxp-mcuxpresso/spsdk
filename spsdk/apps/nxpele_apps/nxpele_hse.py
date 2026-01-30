@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -29,12 +29,16 @@ from spsdk.ele.ele_constants import ResponseStatus
 from spsdk.ele.ele_message_hse import (
     EleMessageHseBootDataImageSign,
     EleMessageHseBootDataImageVerify,
+    EleMessageHseEraseFirmware,
+    EleMessageHseFirmwareIntegrityCheck,
     EleMessageHseFirmwareUpdate,
     EleMessageHseFormatKeyCatalogs,
     EleMessageHseGetAttr,
     EleMessageHseGetKeyInfo,
     EleMessageHseImportKey,
     EleMessageHseSetAttr,
+    EleMessageHseSmrEntryInstall,
+    HseAccessMode,
     KeyImportPayload,
 )
 from spsdk.ele.hse_attrs import (
@@ -45,8 +49,15 @@ from spsdk.ele.hse_attrs import (
     SecureLifecycleAttributeHandler,
 )
 from spsdk.exceptions import SPSDKError
+from spsdk.image.hse.common import KeyCatalogId, KeyHandle
 from spsdk.image.hse.key_catalog import KeyCatalogCfg
-from spsdk.image.hse.key_info import KeyCatalogId, KeyFormat, KeyHandle, KeyInfo
+from spsdk.image.hse.key_info import KeyFormat, KeyInfo
+from spsdk.image.hse.smr import (
+    EcdsaSignScheme,
+    EddsaSignScheme,
+    SmrEntry,
+    prepare_auth_tag_addr_tuple,
+)
 from spsdk.utils.config import Config
 from spsdk.utils.misc import load_binary, write_file
 
@@ -167,17 +178,13 @@ def fw_update(
         click.echo(f"Loaded {len(fw_data)} bytes of firmware to address 0x{fw_addr:08X}")
 
     # Create and send firmware update command
-    try:
-        cmd = EleMessageHseFirmwareUpdate(
-            access_mode=access_mode, fw_file_addr=fw_addr, stream_length=length
-        )
-        with ele_handler:
-            ele_handler.send_message(cmd)
+    cmd = EleMessageHseFirmwareUpdate(
+        access_mode=access_mode, fw_file_addr=fw_addr, stream_length=length
+    )
+    with ele_handler:
+        ele_handler.send_message(cmd)
 
-        click.echo(cmd.response_info())
-
-    except SPSDKError as e:
-        click.echo(f"Error: {str(e)}")
+    click.echo(cmd.response_info())
 
 
 @hse_group.command(name="img-verify", no_args_is_help=True)
@@ -350,6 +357,7 @@ def format_key_catalog(ele_handler: EleMessageHandler, key_catalog: str) -> None
         cmd.nvm_catalog_addr = cmd.free_space_address
         cmd.ram_catalog_addr = cmd.free_space_address + key_catalog_cfg.nvm_catalog_cfg_size
         ele_handler.send_message(cmd)
+    click.echo("Formatting of key catalog succeeded.")
 
 
 @hse_group.command(name="key-import", no_args_is_help=True)
@@ -390,7 +398,7 @@ def format_key_catalog(ele_handler: EleMessageHandler, key_catalog: str) -> None
     type=click.Choice(KeyFormat.labels(), case_sensitive=False),
     required=False,
     callback=lambda ctx, param, value: (
-        KeyCatalogId.from_label(value.lower()) if value is not None else None
+        KeyFormat.from_label(value.lower()) if value is not None else None
     ),
     help="Key format of the imported key. Applicable only for ECC keys.",
 )
@@ -412,6 +420,7 @@ def key_import(
     ]:
         try:
             key = parser(key_path)
+            break
         except SPSDKError:
             continue
     if key is None:
@@ -434,3 +443,137 @@ def key_import(
         ele_handler.device.write_memory(cmd.free_space_address, payload.export())
         ele_handler.send_message(cmd)
     click.echo(str(cmd.response_info()))
+
+
+@hse_group.command(name="smr-entry-install", no_args_is_help=True)
+@click.pass_obj
+@click.option(
+    "--entry-idx",
+    type=INT(),
+    required=True,
+    help="SMR entry index.",
+)
+@click.option(
+    "-e",
+    "--smr-entry",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+    help="Path to SMR entry binary data or config file.",
+)
+@click.option(
+    "-a",
+    "--auth-tag-addr",
+    type=INT(),
+    multiple=True,
+    required=False,
+    default=(0, 0),
+    help="Authentication tag address. For MAC and RSA signature, only one value is used. Both values are used for ECDSA and EDDSA signatures.",
+)
+@click.option(
+    "-l",
+    "--auth-tag-length",
+    type=INT(),
+    multiple=True,
+    required=False,
+    default=(0, 0),
+    help="Authentication tag length. For MAC and RSA signature, only one value is used. Both values are used for ECDSA and EDDSA signatures.",
+)
+def smr_entry_install(
+    ele_handler: EleMessageHandler,
+    entry_idx: int,
+    smr_entry: str,
+    auth_tag_addr: tuple,
+    auth_tag_length: tuple,
+) -> None:
+    """Install SMR (Secure Memory Region)."""
+    try:
+        smr_entry_obj = SmrEntry.load_from_config(Config.create_from_file(smr_entry))
+    except SPSDKError:
+        smr_entry_obj = SmrEntry.parse(load_binary(smr_entry))
+    two_values_required = isinstance(smr_entry_obj.auth_scheme, (EcdsaSignScheme, EddsaSignScheme))
+    valid_auth_tag_len = (
+        len(auth_tag_length) == 2 if two_values_required else len(auth_tag_length) == 1
+    )
+    if not valid_auth_tag_len:
+        raise SPSDKError(
+            f"Invalid number of authentication tag lengths provided: {len(auth_tag_length)}. Expected: {2 if two_values_required else 1}"
+        )
+    auth_tag_addr = prepare_auth_tag_addr_tuple(
+        smr_entry_obj.auth_scheme, auth_tag_addr, auth_tag_length
+    )
+    # currently only ONE_PASS access mode is supported
+    cmd = EleMessageHseSmrEntryInstall(
+        access_mode=HseAccessMode.ONE_PASS,
+        entry_index=entry_idx,
+        smr_data_addr=smr_entry_obj.smr_src_addr,
+        smr_data_length=smr_entry_obj.smr_size,
+        auth_tag_addr=auth_tag_addr,
+        auth_tag_length=auth_tag_length,
+    )
+    cmd.set_buffer_params(ele_handler.comm_buff_addr, ele_handler.comm_buff_size)
+
+    if cmd.free_space_size < smr_entry_obj.size:
+        raise SPSDKError(
+            f"Insufficient free space at address {cmd.free_space_address}: Required {smr_entry_obj.size}, Available {cmd.free_space_size}"
+        )
+    cmd.smr_entry_addr = cmd.free_space_address
+    with ele_handler:
+        ele_handler.device.write_memory(cmd.free_space_address, smr_entry_obj.export())
+
+    with ele_handler:
+        ele_handler.send_message(cmd)
+    click.echo(str(cmd.response_info()))
+
+
+@hse_group.command(name="fw-erase")
+@click.pass_obj
+@click.confirmation_option(
+    prompt="This will permanently erase the HSE firmware, SYS-IMG, and backup images. "
+    "This operation cannot be undone. Are you sure you want to continue?"
+)
+def fw_erase(ele_handler: EleMessageHandler) -> None:
+    """Erase HSE firmware from the device.
+
+    This service erases the HSE Firmware, SYS-IMG, and backup (if present)
+    from the secure flash on the device.
+
+    IMPORTANT RESTRICTIONS:
+    - Available for flash-based devices only (HSE_B variant)
+    - Can only be performed in CUST_DEL life cycle
+    - This is a DESTRUCTIVE operation that cannot be undone
+
+    The command will return an error if attempted in any life cycle other than CUST_DEL.
+    """
+    cmd = EleMessageHseEraseFirmware()
+
+    with ele_handler:
+        ele_handler.send_message(cmd)
+
+    click.echo(cmd.response_info())
+
+    if cmd.status != ResponseStatus.ELE_SUCCESS_IND.tag:
+        click.echo(cmd.response_status())
+
+
+@hse_group.command(name="fw-integrity-check")
+@click.pass_obj
+def fw_integrity_check(ele_handler: EleMessageHandler) -> None:
+    """Check HSE firmware integrity.
+
+    This service performs an integrity check of the HSE Firmware and SYS-IMG
+    inside HSE to verify they have not been corrupted or tampered with.
+
+    Notes:
+    - Available for HSE_B variant only
+    - Non-destructive operation - only checks integrity
+    - Returns success if firmware integrity is valid, failure otherwise
+    """
+    cmd = EleMessageHseFirmwareIntegrityCheck()
+
+    with ele_handler:
+        ele_handler.send_message(cmd)
+
+    click.echo(cmd.response_info())
+
+    if cmd.status != ResponseStatus.ELE_SUCCESS_IND.tag:
+        click.echo(cmd.response_status())

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,7 +11,6 @@ This module provides a command-line interface for managing WPC certificates
 and operations on NXP MCUs, including certificate insertion, retrieval,
 and WPC ID management.
 """
-
 
 import logging
 import sys

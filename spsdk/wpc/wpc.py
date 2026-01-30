@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -21,6 +21,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Optional, Type
 
+from pyasn1.codec.der.encoder import encode
+from pyasn1.type import univ
 from typing_extensions import Self
 
 from spsdk.crypto.certificate import Certificate, WPCQiAuthPolicy, WPCQiAuthRSID, x509
@@ -500,10 +502,24 @@ class WPCTarget(BaseWPCClass):
             raw_signature = self.sign(data=tbs_data)
 
             csr2_data = bytes(tbs_data)
+
             # ASN1 blob for signature algorithm
-            csr2_data += bytes.fromhex("30 0A 06 08 2A 86 48 CE 3D 04 03 02")
-            csr2_data += b"\03" + (len(raw_signature) + 1).to_bytes(1, byteorder="big") + b"\x00"
-            csr2_data += raw_signature
+            signature_oid = x509.SignatureAlgorithmOID.ECDSA_WITH_SHA256
+            sig_oid = univ.Sequence()
+            sig_oid[0] = univ.ObjectIdentifier(signature_oid.dotted_string)
+            encoded_signature_oid = encode(sig_oid)
+            csr2_data += encoded_signature_oid
+
+            # ASN1 blob for signature
+            r = raw_signature[: len(raw_signature) // 2]
+            s = raw_signature[len(raw_signature) // 2 :]
+            signature = univ.SequenceOf(componentType=univ.Integer())
+            signature[0] = int.from_bytes(r, byteorder="big")
+            signature[1] = int.from_bytes(s, byteorder="big")
+            encoded_signature: bytes = encode(signature)
+            signature_envelope = encode(univ.BitString(hexValue=encoded_signature.hex()))
+            csr2_data += signature_envelope
+
             csr2_data = b"\x30" + length_to_asn1(len(csr2_data)) + csr2_data
 
             csr2 = x509.load_der_x509_csr(data=csr2_data)

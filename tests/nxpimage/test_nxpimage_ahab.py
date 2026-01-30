@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -787,31 +787,94 @@ def test_nxpimage_signed_message_key_exchange(data_dir: str) -> None:
         signed_msg.verify().validate()
 
 
-def test_nxpimage_ahab_update_keyblob(cli_runner: CliRunner, tmpdir: str, data_dir: str) -> None:
-    """Test AHAB keyblob update functionality.
+@pytest.mark.parametrize(
+    "file_format",
+    [
+        "BIN",
+        "HEX",
+        "S19",
+        "SPARSE",
+    ],
+)
+def test_nxpimage_ahab_update_keyblob(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str, file_format: str
+) -> None:
+    """Test AHAB keyblob update functionality with different file formats.
 
     Verifies that the 'ahab update-keyblob' command correctly updates the encryption keyblob
-    in an existing encrypted AHAB container. Checks that the binary size remains unchanged
-    while confirming that the content has been properly modified with the new keyblob.
+    in an existing encrypted AHAB container across different file formats (BIN, HEX, S19, SPARSE).
+    Checks that the binary size remains unchanged while confirming that the content has been
+    properly modified with the new keyblob.
 
     :param cli_runner: CLI runner instance for executing nxpimage commands
     :param tmpdir: Temporary directory for test output files
     :param data_dir: Directory containing test data files and keyblobs
+    :param file_format: File format to test (BIN, HEX, S19, SPARSE)
     """
-    with use_working_directory(data_dir):
-        new_bin_path = f"{tmpdir}/cntr_encrypted_ctcm_cm33.bin"
-        ref_bin_path = "ahab/cntr_encrypted_ctcm_cm33.bin"
-        shutil.copyfile(ref_bin_path, new_bin_path)
+    from spsdk.apps.nxpimage_apps.nxpimage_utils import binary_convert
 
+    with use_working_directory(data_dir):
+        # Define file extension based on format
+        format_extensions = {
+            "BIN": ".bin",
+            "HEX": ".hex",
+            "S19": ".s19",
+            "SPARSE": ".simg",
+        }
+        file_ext = format_extensions[file_format]
+
+        # Paths for the test
+        ref_bin_path = "ahab/cntr_encrypted_ctcm_cm33.bin"
+        converted_file_path = f"{tmpdir}/cntr_encrypted_ctcm_cm33{file_ext}"
+        new_bin_path = f"{tmpdir}/cntr_encrypted_ctcm_cm33_modified{file_ext}"
+
+        # Convert the reference binary to the target format
+        if file_format != "BIN":
+            binary_convert(
+                input_file=ref_bin_path,
+                keep_padding=True,
+                split_image=False,
+                output_format=file_format,
+                output=converted_file_path,
+            )
+        else:
+            # For BIN format, just copy the file
+            shutil.copyfile(ref_bin_path, converted_file_path)
+
+        # Copy the converted file to the working file
+        shutil.copyfile(converted_file_path, new_bin_path)
+
+        # Load reference binary data for comparison
         ref_bin = load_binary(ref_bin_path)
 
+        # Execute the keyblob update command
         cmd = f"ahab update-keyblob -f mimxrt1189 -b {new_bin_path} -i 1 -k ahab/keyblobs/container1_dek_keyblob.bin"
         result = cli_runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
 
-        new_bin = load_binary(new_bin_path)
-        assert len(new_bin) == len(ref_bin)
-        assert new_bin != ref_bin
+        # For non-BIN formats, convert back to BIN for comparison
+        if file_format != "BIN":
+            comparison_bin_path = f"{tmpdir}/comparison.bin"
+            binary_convert(
+                input_file=new_bin_path,
+                keep_padding=True,
+                split_image=False,
+                output_format="BIN",
+                output=comparison_bin_path,
+            )
+            new_bin = load_binary(comparison_bin_path)
+        else:
+            new_bin = load_binary(new_bin_path)
+
+        # Verify that the binary size remains the same
+        if file_format != "SPARSE":
+            assert len(new_bin) == len(ref_bin)
+            # Verify that the content has been modified
+            assert new_bin != ref_bin
+        else:
+            assert len(new_bin) >= len(ref_bin)
+            # Verify that the content has been modified
+            assert new_bin[: len(ref_bin)] != ref_bin
 
 
 def test_nxpimage_ahab_update_keyblob_bootable(
@@ -842,8 +905,106 @@ def test_nxpimage_ahab_update_keyblob_bootable(
         assert result.exit_code == 0
 
         new_bin = load_binary(new_bin_path)
+
         assert len(new_bin) == len(ref_bin)
         assert new_bin != ref_bin
+
+
+@pytest.mark.parametrize(
+    "file_format",
+    [
+        "BIN",
+        "HEX",
+        "S19",
+        "SPARSE",
+    ],
+)
+def test_nxpimage_ahab_update_keyblob_bootable_formats(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str, file_format: str
+) -> None:
+    """Test AHAB keyblob update functionality for bootable images with different formats.
+
+    Verifies that the 'ahab update-keyblob' command correctly updates encryption keyblobs
+    in bootable images across different file formats (BIN, HEX, S19, SPARSE). Tests with
+    a NAND flash bootable image and confirms that the binary size remains the same while
+    the content is properly modified.
+
+    :param cli_runner: CLI runner instance for executing nxpimage commands
+    :param tmpdir: Temporary directory for test output files
+    :param data_dir: Directory containing test data files
+    :param file_format: File format to test (BIN, HEX, S19, SPARSE)
+    """
+    from spsdk.apps.nxpimage_apps.nxpimage_utils import binary_convert
+
+    with use_working_directory(data_dir):
+        # Define file extension based on format
+        format_extensions = {
+            "BIN": ".bin",
+            "HEX": ".hex",
+            "S19": ".s19",
+            "SPARSE": ".simg",
+        }
+        file_ext = format_extensions[file_format]
+
+        # Paths for the test
+        ref_bin_path = "ahab/evkmimxrt1180_rgpio_led_output_cm33_int_RAM_bootable_NAND.bin"
+        converted_file_path = (
+            f"{tmpdir}/evkmimxrt1180_rgpio_led_output_cm33_int_RAM_bootable_NAND{file_ext}"
+        )
+        new_bin_path = (
+            f"{tmpdir}/evkmimxrt1180_rgpio_led_output_cm33_int_RAM_bootable_NAND_modified{file_ext}"
+        )
+
+        # Convert the reference binary to the target format
+        if file_format != "BIN":
+            binary_convert(
+                input_file=ref_bin_path,
+                keep_padding=True,
+                split_image=False,
+                output_format=file_format,
+                output=converted_file_path,
+            )
+        else:
+            # For BIN format, just copy the file
+            shutil.copyfile(ref_bin_path, converted_file_path)
+
+        # Copy the converted file to the working file
+        shutil.copyfile(converted_file_path, new_bin_path)
+
+        # Load reference binary data for comparison
+        ref_bin = load_binary(ref_bin_path)
+
+        # Execute the keyblob update command
+        cmd = (
+            f"ahab update-keyblob -f mimxrt1189 -m flexspi_nand -b {new_bin_path}"
+            " -i 1 -k ahab/keyblobs/dek_keyblob.bin"
+        )
+        result = cli_runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0
+
+        # For non-BIN formats, convert back to BIN for comparison
+        if file_format != "BIN":
+            comparison_bin_path = f"{tmpdir}/comparison_bootable.bin"
+            binary_convert(
+                input_file=new_bin_path,
+                keep_padding=True,
+                split_image=False,
+                output_format="BIN",
+                output=comparison_bin_path,
+            )
+            new_bin = load_binary(comparison_bin_path)
+        else:
+            new_bin = load_binary(new_bin_path)
+
+        # Verify that the binary size remains the same
+        if file_format != "SPARSE":
+            assert len(new_bin) == len(ref_bin)
+            # Verify that the content has been modified
+            assert new_bin != ref_bin
+        else:
+            assert len(new_bin) >= len(ref_bin)
+            # Verify that the content has been modified
+            assert new_bin[: len(ref_bin)] != ref_bin
 
 
 @pytest.mark.parametrize(

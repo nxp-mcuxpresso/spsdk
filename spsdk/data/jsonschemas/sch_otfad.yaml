@@ -1,4 +1,4 @@
-# Copyright 2022-2023 NXP
+# Copyright 2022-2023,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -23,6 +23,13 @@ otfad_output:
       title: OTFAD output folder
       description: Path to directory where the OTFAD output will be generated
       template_value: "otfad_output"
+
+    output_format:
+      type: string
+      title: Output data file format's
+      description: Output file format for OTFAD image(s)
+      enum: [bin, hex, srec, sparse]
+      template_value: bin
 
     output_name:
       type: string

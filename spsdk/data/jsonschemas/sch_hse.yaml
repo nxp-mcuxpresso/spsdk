@@ -1,4 +1,4 @@
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -262,3 +262,359 @@ key_catalog:
           keyType: AES
           numOfKeySlots: 5
           maxKeyBitLen: 256
+
+smr:
+  type: object
+  title: HSE Secure Memory Region Entry
+  description: Configuration for a Secure Memory Region (SMR) entry that defines memory regions to be verified during boot or runtime
+  required: [output,smrSrcAddr, smrSize, authKeyHandle, authScheme]
+  properties:
+    output:
+      type: string
+      title: Output file name
+      description: Output SME entry file name
+      format: file_name
+      template_value: emr_entry.bin
+    smrSrcAddr:
+      type: [number, string]
+      title: SMR Source Address
+      description: Source address where the SMR needs to be loaded from. This address must be an absolute address.
+      format: number
+      template_value: "0x0040_0000"
+
+    smrSize:
+      type: [number, string]
+      title: SMR Size
+      description: The size in bytes of the SMR to be loaded/verified
+      format: number
+      minimum: 1
+      template_value: "0x0001_0000"
+
+    smrDest:
+      type: [number, string]
+      title: SMR Destination Address
+      description: |
+        Destination address of SMR (where to copy the SMR after authentication).
+        For HSE_B, if specified (non-zero), smrDest and (smrDest + smrSize) must be aligned to 16 bytes.
+        Set to 0 if no copy is needed.
+      format: number
+      template_value: "0x0"
+
+    configFlags:
+      type: string
+      title: Configuration Flags
+      description: Configuration flags of SMR entry
+      enum: [QSPI_FLASH, SD_FLASH, MMC_FLASH, INSTALL_AUTH, AUTH_AAD]
+      template_value: QSPI_FLASH
+
+    checkPeriod:
+      type: [number, string]
+      title: Check Period
+      description: |
+        If non-zero, HSE verifies the SMR entry periodically (in background).
+        Specifies the verification period in x100 milliseconds when HSE is running at maximum frequency.
+        The value 0xFFFFFFFF is invalid; the checkPeriod max value must be [MAX_UNSIGNED32_INT - 1].
+        If checkPeriod is non-zero, smrDest must be non-zero and configFlags must be zero.
+        Set to 0 to disable periodic verification.
+      format: number
+      minimum: 0
+      maximum: 0xFFFFFFFE
+      template_value: "0x0"
+
+    authKeyHandle:
+      type: object
+      title: Authentication Key Handle
+      description: |
+        The key handle used to check the authenticity of the plaintext SMR.
+        If INSTALL_AUTH flag is cleared, the authKeyHandle is used only in the Installation Phase.
+        The key flags must be configured with USAGE_VERIFY set and USAGE_SIGN NOT set.
+      required: [catalogId, groupIdx, slotIdx]
+      properties:
+        catalogId:
+          type: string
+          title: Key Catalog ID
+          description: Key catalog type (ROM, NVM, or RAM)
+          enum: [ROM, NVM, RAM]
+          template_value: NVM
+
+        groupIdx:
+          type: [number, string]
+          title: Group Index
+          description: Group index in catalog
+          format: number
+          minimum: 0
+          maximum: 254
+          template_value: 0
+
+        slotIdx:
+          type: [number, string]
+          title: Slot Index
+          description: Key slot index within the group
+          format: number
+          minimum: 0
+          maximum: 254
+          template_value: 0
+
+    authScheme:
+      title: Authentication Scheme
+      description: |
+        The authentication scheme used to verify the SMR either during the Installation Phase or Verification phase.
+        If INSTALL_AUTH flag is set, the same authentication scheme (installation TAG) can be used
+        to verify the authenticity of SMR during verification phase too; otherwise an internal authentication scheme is used.
+      oneOf:
+        - type: object
+          title: ECDSA Signature Scheme
+          description: ECDSA signature scheme for SMR authentication
+          required: [ecdsa]
+          properties:
+            ecdsa:
+              type: object
+              title: ECDSA Parameters
+              required: [hashAlgo]
+              properties:
+                hashAlgo:
+                  type: string
+                  title: Hash Algorithm
+                  description: Hash algorithm for ECDSA signature
+                  enum: [SHA_1, SHA224, SHA256, SHA384, SHA512, SHA512_224, SHA512_256,
+                         SHA3_224, SHA3_256, SHA3_384, SHA3_512, MP]
+                  template_value: SHA256
+
+        - type: object
+          title: EdDSA Signature Scheme
+          description: EdDSA signature scheme for SMR authentication
+          required: [eddsa]
+          properties:
+            eddsa:
+              type: object
+              title: EdDSA Parameters
+              properties:
+                preHashEddsa:
+                  type: boolean
+                  title: Pre-hash EdDSA
+                  description: Use pre-hashing for EdDSA scheme
+                  template_value: false
+
+                contextLength:
+                  type: [number, string]
+                  title: Context Length
+                  description: Length of context for EdDSA (0-255 bytes, maximum 16 bytes for SMR)
+                  format: number
+                  minimum: 0
+                  maximum: 16
+                  template_value: 0
+
+                contextAddr:
+                  type: [number, string]
+                  title: Context Address
+                  description: Address of context data for EdDSA (required if contextLength > 0)
+                  format: number
+                  template_value: 0
+
+        - type: object
+          title: RSASSA-PSS Signature Scheme
+          description: RSASSA-PSS signature scheme for SMR authentication
+          required: [rsassa_pss]
+          properties:
+            rsassa_pss:
+              type: object
+              title: RSASSA-PSS Parameters
+              required: [hashAlgo]
+              properties:
+                hashAlgo:
+                  type: string
+                  title: Hash Algorithm
+                  description: Hash algorithm for RSASSA-PSS signature
+                  enum: [SHA_1, SHA224, SHA256, SHA384, SHA512, SHA512_224, SHA512_256,
+                         SHA3_224, SHA3_256, SHA3_384, SHA3_512, MP]
+                  template_value: SHA256
+
+                saltLength:
+                  type: [number, string]
+                  title: Salt Length
+                  description: Salt length for RSASSA-PSS scheme
+                  format: number
+                  minimum: 0
+                  template_value: 32
+
+        - type: object
+          title: RSASSA-PKCS1-v1.5 Signature Scheme
+          description: RSASSA-PKCS1-v1.5 signature scheme for SMR authentication
+          required: [rsassa_pkcs1_v15]
+          properties:
+            rsassa_pkcs1_v15:
+              type: object
+              title: RSASSA-PKCS1-v1.5 Parameters
+              required: [hashAlgo]
+              properties:
+                hashAlgo:
+                  type: string
+                  title: Hash Algorithm
+                  description: Hash algorithm for RSASSA-PKCS1-v1.5 signature
+                  enum: [SHA_1, SHA224, SHA256, SHA384, SHA512, SHA512_224, SHA512_256,
+                         SHA3_224, SHA3_256, SHA3_384, SHA3_512, MP]
+                  template_value: SHA256
+
+        - type: object
+          title: CMAC Scheme
+          description: CMAC (AES-based) authentication scheme for SMR
+          required: [cmac]
+          properties:
+            cmac:
+              type: object
+              title: CMAC Parameters
+              properties:
+                cipherAlgo:
+                  type: string
+                  title: Cipher Algorithm
+                  description: Cipher algorithm for CMAC scheme (only AES is supported)
+                  enum: [AES]
+                  template_value: AES
+                  default: AES
+
+        - type: object
+          title: GMAC Scheme
+          description: GMAC (AES-GCM based) authentication scheme for SMR
+          required: [gmac]
+          properties:
+            gmac:
+              type: object
+              title: GMAC Parameters
+              required: [ivLength, ivAddr]
+              properties:
+                ivLength:
+                  type: [number, string]
+                  title: IV Length
+                  description: Length of initialization vector for GMAC scheme
+                  format: number
+                  minimum: 1
+                  template_value: 12
+
+                ivAddr:
+                  type: [number, string]
+                  title: IV Address
+                  description: Address of initialization vector for GMAC scheme
+                  format: number
+                  template_value: "0x0050_0000"
+
+        - type: object
+          title: XCBC-MAC Scheme
+          description: XCBC-MAC (AES128-based) authentication scheme for SMR
+          required: [xcbc_mac]
+          properties:
+            xcbc_mac:
+              type: object
+              title: XCBC-MAC Parameters
+              properties: {}
+
+        - type: object
+          title: HMAC Scheme
+          description: HMAC authentication scheme for SMR
+          required: [hmac]
+          properties:
+            hmac:
+              type: object
+              title: HMAC Parameters
+              required: [hashAlgo]
+              properties:
+                hashAlgo:
+                  type: string
+                  title: Hash Algorithm
+                  description: Hash algorithm for HMAC
+                  enum: [SHA_1, SHA224, SHA256, SHA384, SHA512, SHA512_224, SHA512_256,
+                         SHA3_224, SHA3_256, SHA3_384, SHA3_512, MP]
+                  template_value: SHA256
+
+    instAuthTagAddrs:
+      type: array
+      title: Installation Authentication Tag Addresses
+      description: |
+        Optional - The location in external flash of the initial proof of authenticity over SMR.
+        If INSTALL_AUTH flag is set, specifies the address(es) where the SMR original authentication TAG is located.
+        For MAC and RSA signature, only first address is used.
+        Both addresses are used for ECDSA and EDDSA signatures (r at index 0, s at index 1).
+      minItems: 2
+      maxItems: 2
+      items:
+        type: [number, string]
+        format: number
+        template_value: [0, 0]
+
+    smrDecrypt:
+      type: object
+      title: SMR Decryption Parameters
+      description: Specifies the parameters for SMR decryption (optional)
+      if:
+        properties:
+          aadLength:
+            not:
+              const: 0
+      then:
+        required: [decryptKeyHandle, aadAddr]
+      else:
+        required: [decryptKeyHandle]
+      properties:
+        decryptKeyHandle:
+          type: object
+          title: Decryption Key Handle
+          description: The key handle referencing the decryption key
+          required: [catalogId, groupIdx, slotIdx]
+          properties:
+            catalogId:
+              type: string
+              title: Key catalog type (ROM, NVM, or RAM)
+              enum: [ROM, NVM, RAM]
+              template_value: NVM
+
+            groupIdx:
+              type: [number, string]
+              title: Group Index
+              format: number
+              minimum: 0
+              maximum: 254
+              template_value: 0
+
+            slotIdx:
+              type: [number, string]
+              title: Key slot index within the group
+              format: number
+              minimum: 0
+              maximum: 254
+              template_value: 0
+
+        gmacTagAddr:
+          type: [number, string]
+          title: GMAC Tag Address
+          description: Address of the Tag used for GCM. If set to 0, AES-CTR is used for decryption.
+          format: number
+          template_value: 0
+
+        aadLength:
+          type: [number, string]
+          title: AAD Length
+          description: The length in bytes of the Authenticated Additional Data (AAD). Must be 0, 64, or 128 bytes.
+          format: number
+          enum: [0, 64, 128]
+          template_value: 0
+
+        aadAddr:
+          type: [number, string]
+          title: AAD Address
+          description: The address of AAD used for AEAD (required if aadLength > 0)
+          format: number
+          template_value: 0
+
+    versionOffset:
+      type: [number, string]
+      title: Version Offset
+      description: |
+        Optional - The offset in SMR where the image version can be found.
+        Provides anti-rollback protection for the image against attacks during update.
+        Set to 0 to disable version checking.
+        If used, must be a valid offset within the SMR in range [4, smrSize - 4].
+        Must be aligned to 4 bytes.
+        Once used, all subsequent updates must have a version GREATER than the previous one.
+        Not used for SHE based secure boot.
+      format: number
+      minimum: 0
+      template_value: 0

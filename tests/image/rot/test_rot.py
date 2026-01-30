@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,12 +13,13 @@ class instantiation across different MCU families.
 """
 
 import os
-from typing import List
+from typing import List, Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import PublicKey
 from spsdk.exceptions import SPSDKError
 from spsdk.image.cert_block.rot import Rot, RotBase, RotCertBlockv1, RotCertBlockv21
@@ -172,67 +173,100 @@ def test_get_rot_class_invalid() -> None:
 
 
 @pytest.mark.parametrize(
-    "rot_type, key_fixture, expected_hash",
+    "rot_type, key_fixture, hash_algorithm, expected_hash",
     [
         (
             "cert_block_1",
             "rsa2048_keys",
+            None,
             "749c019d97aaffc9bbcf566162c39e9c39572ab8243a0dafeb9aee0f465a8f4f",
         ),
         (
             "cert_block_21",
             "rsa2048_keys",
+            None,
             "749c019d97aaffc9bbcf566162c39e9c39572ab8243a0dafeb9aee0f465a8f4f",
         ),
         (
             "cert_block_21",
             "ecc256_keys",
+            None,
             "e2cca7cf09a45d2f1942969fda1c68ecaad78fad416d143292dad2f618291ddd",
         ),
         (
             "srk_table_ahab",
             "rsa2048_keys",
+            None,
             "cdad53aa483b4719ccd2319c4cb9ab82bcb399d23dcd9c523571cd3311e273fe",
         ),
         (
             "srk_table_ahab",
             "ecc256_keys",
+            None,
             "cb2cc774b2dcec92c840eca0646b78f8d3661d3a43ed265a490a13aca75e190a",
         ),
         (
             "srk_table_ahab",
             "rsa2048_keys",
+            None,
             "cdad53aa483b4719ccd2319c4cb9ab82bcb399d23dcd9c523571cd3311e273fe",
         ),
         (
             "srk_table_ahab_v2",
             "rsa2048_keys",
+            None,
             "2585044c7096bfbf35901436c1cada1df6a5e34cbeee4ac38610f1053a7714c8e9953c9a9fcc0de05d75110bb31dd5f31fe0c771452bbd27385d0093e9f29343",
         ),
         (
             "srk_table_ahab_v2",
             "ecc256_keys",
+            None,
             "412600fd846385bd8263770692fba46721d30c12aede0dc19cbaf54c5c473948179953bdaf43eb2a3cfdbfde7ae8f17bdcbb3ba79b675c2b5746c41c1f4d2d6b",
         ),
         (
             "srk_table_ahab_v2_48_bytes",
             "rsa2048_keys",
+            None,
             "2585044c7096bfbf35901436c1cada1df6a5e34cbeee4ac38610f1053a7714c8e9953c9a9fcc0de05d75110bb31dd5f3",
         ),
         (
             "srk_table_ahab_v2_48_bytes",
             "ecc256_keys",
+            None,
             "412600fd846385bd8263770692fba46721d30c12aede0dc19cbaf54c5c473948179953bdaf43eb2a3cfdbfde7ae8f17b",
         ),
         (
             "srk_table_hab",
             "rsa2048_crts",
+            None,
+            "e7be8a78ed297bbc862cf0b2a72ad37c34f8c1f401114c47f2bd3156f15af733",
+        ),
+        (
+            "srk_table_ahab",
+            "ecc256_keys",
+            EnumHashAlgorithm.SHA384,
+            "062da1600c7a2e8c988505e3b052e6491c4bba7f7dbae90c8c4c265955fb5b6d",
+        ),
+        (
+            "srk_table_ahab_v2",
+            "ecc256_keys",
+            EnumHashAlgorithm.SHA384,
+            "971998d586da32c81a7d60152724cccbf7ee731b219f3be584942769e29ea48e584884285fff753680cda2af9ccfee19191790631bb304c74c1f936183e44771",
+        ),
+        (
+            "srk_table_hab",
+            "rsa2048_crts",
+            EnumHashAlgorithm.SHA384,
             "e7be8a78ed297bbc862cf0b2a72ad37c34f8c1f401114c47f2bd3156f15af733",
         ),
     ],
 )
 def test_rot_cert_block_with_real_keys(
-    rot_type: str, key_fixture: str, expected_hash: str, request: pytest.FixtureRequest
+    rot_type: str,
+    key_fixture: str,
+    hash_algorithm: Optional[EnumHashAlgorithm],
+    expected_hash: str,
+    request: pytest.FixtureRequest,
 ) -> None:
     """Test RoT certificate block functionality with real cryptographic keys.
 
@@ -246,7 +280,7 @@ def test_rot_cert_block_with_real_keys(
     :raises AssertionError: When hash calculation or export validation fails.
     """
     keys = request.getfixturevalue(key_fixture)
-    rot = RotBase.get_rot_class(rot_type)(keys)
+    rot = RotBase.get_rot_class(rot_type)(keys, hash_algorithm=hash_algorithm)
     hash_result = rot.calculate_hash()
     assert isinstance(hash_result, bytes)
     assert hash_result.hex() == expected_hash

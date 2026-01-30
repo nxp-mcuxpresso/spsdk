@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK ELE HSE message implementation for Hardware Security Engine operations.
 
 This module provides specialized ELE message classes for HSE (Hardware Security Engine)
@@ -30,10 +31,20 @@ from spsdk.ele.ele_constants import HseMessageIDs, HseResponseStatus, MessageIDs
 from spsdk.ele.ele_message import LITTLE_ENDIAN, UINT8, UINT16, UINT32, EleMessage
 from spsdk.ele.hse_attrs import HseAttributeHandler, HseAttributeId
 from spsdk.exceptions import SPSDKValueError
-from spsdk.image.hse.key_info import KeyFormat, KeyHandle, KeyInfo, KeyType
+from spsdk.image.hse.common import KeyHandle
+from spsdk.image.hse.key_info import KeyFormat, KeyInfo, KeyType
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.misc import Endianness
 from spsdk.utils.spsdk_enum import SpsdkEnum
+
+
+class MuChannel(SpsdkEnum):
+    """HSE service message unit channel."""
+
+    CHANNEL_0 = (0, "channel0", "MU channel 0")
+    CHANNEL_1 = (1, "channel1", "MU channel 1")
+    CHANNEL_2 = (2, "channel2", "MU channel 2")
+    CHANNEL_3 = (3, "channel3", "MU channel 3")
 
 
 class EleMessageHse(EleMessage):
@@ -52,7 +63,6 @@ class EleMessageHse(EleMessage):
 
     CMD_HEADER_FORMAT: str = LITTLE_ENDIAN + UINT32 + UINT8 + UINT8 + UINT8 + UINT8
     CMD_DESCRIPTOR_FORMAT: str
-    RESPONSE_HEADER_WORDS_COUNT = 1
     MSG_IDS = cast(Type[MessageIDs], HseMessageIDs)
 
     class ServiceVersion(SpsdkEnum):
@@ -65,13 +75,18 @@ class EleMessageHse(EleMessage):
         VERSION_0 = (0, "ver0", "Hse service version 0")
         VERSION_1 = (1, "ver1", "Hse service version 1")
 
-    def __init__(self, srv_version: ServiceVersion = ServiceVersion.VERSION_0) -> None:
+    def __init__(
+        self,
+        srv_version: ServiceVersion = ServiceVersion.VERSION_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_0,
+    ) -> None:
         """Initialize the HSE message with the specified service version.
 
         :param srv_version: Service version to use for this message, defaults to VERSION_0.
         """
         super().__init__()
         self.srv_version = srv_version
+        self.mu_channel = mu_channel
 
     def decode_response(self, response: bytes) -> None:
         """Decode the HSE response data.
@@ -81,8 +96,10 @@ class EleMessageHse(EleMessage):
 
         :param response: Response data bytes to decode containing HSE status information.
         """
+        response_word = 4 * self.mu_channel.tag
+        response_cmd = response[response_word : response_word + 4]
         hse_response = HseResponseStatus.from_tag(
-            int.from_bytes(response[:4], byteorder=Endianness.LITTLE.value)
+            int.from_bytes(response_cmd, byteorder=Endianness.LITTLE.value)
         )
         if hse_response == HseResponseStatus.OK:
             self.status = ResponseStatus.ELE_SUCCESS_IND.tag
@@ -114,7 +131,30 @@ class EleMessageHse(EleMessage):
 
         :return: Command data address as 4-byte little-endian bytes.
         """
-        return self.command_data_address.to_bytes(4, byteorder=Endianness.LITTLE.value)
+        ret = bytes()
+        cmd_addr = self.command_data_address
+        for _ in range(self.mu_channel.tag):
+            ret += cmd_addr.to_bytes(4, byteorder=Endianness.LITTLE.value)
+            dummy_cmd_len = len(self._get_dummy_command())
+            cmd_addr += dummy_cmd_len
+        ret += cmd_addr.to_bytes(4, byteorder=Endianness.LITTLE.value)
+        return ret
+
+    def _get_dummy_command(self) -> "EleMessageHse":
+        """Get dummy command bytes for initialization.
+
+        :return: Dummy command as bytes.
+        """
+        return EleMessageHseGetAttr(HseAttributeId.FW_VERSION)
+
+    @property
+    def response_header_words_count(self) -> int:
+        """Get the number of words if the response header.
+
+        :return: The number of 32-bit words in the response header.
+        """
+        # when sending the command to non-zero channel, dummy commands are sent before the actual command
+        return 1 + self.mu_channel.tag
 
     @property
     def command_words_count(self) -> int:
@@ -122,7 +162,8 @@ class EleMessageHse(EleMessage):
 
         :return: Number of command words, always returns 1.
         """
-        return 1
+        # when sending the command to non-zero channel, dummy commands are sent before the actual command
+        return 1 + self.mu_channel.tag
 
     @abstractmethod
     def get_srv_descriptor(self) -> bytes:
@@ -142,7 +183,8 @@ class EleMessageHse(EleMessage):
 
         :return: Size of command data in bytes.
         """
-        return calcsize(self.CMD_HEADER_FORMAT) + calcsize(self.CMD_DESCRIPTOR_FORMAT)
+        dummy_len = len(self._get_dummy_command())
+        return dummy_len * self.mu_channel.tag + len(self)
 
     @property
     def command_data(self) -> bytes:
@@ -153,6 +195,20 @@ class EleMessageHse(EleMessage):
         concatenated with the service descriptor bytes.
 
         :return: Complete command data as bytes.
+        """
+        ret = bytes()
+        for _ in range(self.mu_channel.tag):
+            ret += self._get_dummy_command().export_command()
+        ret += self.export_command()
+        return ret
+
+    def export_command(self) -> bytes:
+        """Export the HSE command message as bytes.
+
+        This method serializes the HSE (Hardware Security Engine) command message
+        into a byte representation suitable for transmission to the ELE.
+
+        :return:  The serialized command message as bytes.
         """
         header = pack(self.CMD_HEADER_FORMAT, self.service_id, 0, 0, 0, 0)
         descriptor = self.get_srv_descriptor()
@@ -213,6 +269,9 @@ class EleMessageHse(EleMessage):
         """
         return self.service_id.to_bytes(4, Endianness.LITTLE.value)[3]
 
+    def __len__(self) -> int:
+        return calcsize(self.CMD_HEADER_FORMAT) + calcsize(self.CMD_DESCRIPTOR_FORMAT)
+
 
 class EleMessageHseAttr(EleMessageHse):
     """Base class for HSE attribute operations.
@@ -229,13 +288,14 @@ class EleMessageHseAttr(EleMessageHse):
         self,
         attr_id: HseAttributeId,
         srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_0,
     ):
         """Initialize the HSE attribute message.
 
         :param attr_id: The attribute ID to operate on.
         :param srv_version: Service version to use for this message.
         """
-        super().__init__(srv_version)
+        super().__init__(srv_version, mu_channel)
         self.attr_handler_cls = HseAttributeHandler.get_attr_handler_cls(attr_id)
 
     @abstractmethod
@@ -265,6 +325,7 @@ class EleMessageHseGetAttr(EleMessageHseAttr):
         self,
         attr_id: HseAttributeId,
         srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_0,
     ) -> None:
         """Initialize HSE attribute get message.
 
@@ -274,7 +335,7 @@ class EleMessageHseGetAttr(EleMessageHseAttr):
         :param attr_id: HSE attribute identifier to retrieve.
         :param srv_version: Service version for the HSE message, defaults to VERSION_0.
         """
-        super().__init__(attr_id, srv_version)
+        super().__init__(attr_id, srv_version, mu_channel)
         self.attr_value: Optional[HseAttributeHandler] = None
         self.response_data_size = self.attr_handler_cls.get_size()
 
@@ -331,6 +392,7 @@ class EleMessageHseSetAttr(EleMessageHseAttr):
         attr_id: HseAttributeId,
         value_addr: Optional[int] = None,
         srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_0,
     ) -> None:
         """Initialize HSE attribute message for getting attribute value.
 
@@ -342,7 +404,7 @@ class EleMessageHseSetAttr(EleMessageHseAttr):
         :param value_addr: Optional memory address where attribute value will be stored.
         :param srv_version: Service version for the HSE message.
         """
-        super().__init__(attr_id, srv_version)
+        super().__init__(attr_id, srv_version, mu_channel)
         self.response_data_size = 0
         self.value_addr = value_addr
 
@@ -389,6 +451,7 @@ class EleMessageHseBootDataImageSign(EleMessageHse):
         img_addr: int,
         tag_len: int = 28,
         srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_0,
     ):
         """Initialize the boot data image sign message.
 
@@ -397,7 +460,7 @@ class EleMessageHseBootDataImageSign(EleMessageHse):
         :param srv_version: Service version to use for this message.
         :raises SPSDKValueError: If tag_len is not 16 or 28.
         """
-        super().__init__(srv_version)
+        super().__init__(srv_version, mu_channel)
         self.img_addr = img_addr
         if tag_len not in [16, 28]:
             raise SPSDKValueError(f"Invalid tag length: {tag_len}. Must be 16 or 28.")
@@ -500,6 +563,7 @@ class EleMessageHseFirmwareUpdate(EleMessageHse):
         fw_file_addr: int,
         stream_length: int = 0,
         srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_0,
     ):
         """Initialize the HSE firmware update message.
 
@@ -512,7 +576,7 @@ class EleMessageHseFirmwareUpdate(EleMessageHse):
         :param srv_version: Service version to use for this message
         :raises SPSDKValueError: If stream_length is invalid for the specified access mode
         """
-        super().__init__(srv_version)
+        super().__init__(srv_version, mu_channel)
         self.access_mode = access_mode
         self.fw_file_addr = fw_file_addr
         self.stream_length = stream_length
@@ -575,13 +639,14 @@ class EleMessageHseBootDataImageVerify(EleMessageHse):
         self,
         img_addr: int,
         srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_0,
     ):
         """Initialize the boot data image verify message.
 
         :param img_addr: Address of the image to verify (includes the authentication TAG).
         :param srv_version: Service version to use for this message.
         """
-        super().__init__(srv_version)
+        super().__init__(srv_version, mu_channel)
         self.img_addr = img_addr
         # No response data expected for this command beyond status
         self.response_data_size = 0
@@ -626,13 +691,14 @@ class EleMessageHseGetKeyInfo(EleMessageHse):
         self,
         key_handle: KeyHandle,
         srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_0,
     ):
         """Initialize the HSE Get Key Info message.
 
         :param key_handle: The key handle to get information for.
         :param srv_version: Service version to use for this message.
         """
-        super().__init__(srv_version)
+        super().__init__(srv_version, mu_channel)
         self.key_handle = key_handle
         self.key_info: Optional[KeyInfo] = None
         self.response_data_size = KeyInfo.get_size()
@@ -737,13 +803,14 @@ class EleMessageHseSmrEntryInstall(EleMessageHse):
         self,
         access_mode: HseAccessMode,
         entry_index: int,
-        smr_entry_addr: int,
-        smr_data_addr: int,
-        smr_data_length: int,
+        smr_entry_addr: Optional[int] = None,
+        smr_data_addr: Optional[int] = None,
+        smr_data_length: Optional[int] = None,
         auth_tag_addr: tuple = (0, 0),
         auth_tag_length: tuple = (0, 0),
         cipher_params: Optional[HseSmrCipherParams] = None,
         srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_1,
     ):
         """Initialize the SMR Entry Install message.
 
@@ -761,12 +828,12 @@ class EleMessageHseSmrEntryInstall(EleMessageHse):
         :param cipher_params: Cipher parameters for encrypted SMR installation, defaults to None.
         :param srv_version: Service version to use for this message.
         """
-        super().__init__(srv_version)
+        super().__init__(srv_version, mu_channel)
         self.access_mode = access_mode
         self.entry_index = entry_index
         self.smr_entry_addr = smr_entry_addr
         self.smr_data_addr = smr_data_addr
-        self.smr_data_length = smr_data_length
+        self.smr_data_length = smr_data_length or 0
         self.auth_tag_addr = auth_tag_addr
         self.auth_tag_length = auth_tag_length
         self.cipher_params = cipher_params or HseSmrCipherParams()
@@ -783,6 +850,10 @@ class EleMessageHseSmrEntryInstall(EleMessageHse):
         :return: Packed service descriptor bytes containing access mode, entry index,
                  SMR entry/data addresses, authentication tags, and cipher parameters.
         """
+        if self.smr_entry_addr is None:
+            raise SPSDKValueError("SMR entry address must be provided")
+        if self.smr_data_addr is None:
+            raise SPSDKValueError("SMR data address must be provided")
         return pack(
             self.CMD_DESCRIPTOR_FORMAT,
             self.access_mode.tag,  # accessMode
@@ -952,6 +1023,7 @@ class EleMessageHseImportKey(EleMessageHse):
         auth_address: tuple = (0, 0),
         key_format: Optional[KeyFormat] = None,
         srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_1,
     ):
         """Initialize the HSE Import Key message.
 
@@ -971,7 +1043,7 @@ class EleMessageHseImportKey(EleMessageHse):
         :param key_format: Format of the key being imported (defaults to RAW)
         :param srv_version: Service version to use for this message
         """
-        super().__init__(srv_version)
+        super().__init__(srv_version, mu_channel)
         self.key_handle = key_handle
         self.payload = payload
         self.payload_address = 0
@@ -1161,6 +1233,7 @@ class KeyImportPayload:
         """Convert an SPSDK key to HSE key format.
 
         HSE key format consists of up to three chunks:
+
         - pKey[0]: Public key data (modulus for RSA, X/Y coordinates for ECC, etc.)
         - pKey[1]: Additional public key data (exponent for RSA, etc.)
         - pKey[2]: Private key data (private exponent for RSA, private scalar for ECC,
@@ -1267,6 +1340,7 @@ class EleMessageHseFormatKeyCatalogs(EleMessageHse):
     def __init__(
         self,
         srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_1,
     ):
         """Initialize the HSE Format Key Catalogs message.
 
@@ -1276,9 +1350,7 @@ class EleMessageHseFormatKeyCatalogs(EleMessageHse):
         :param srv_version: Service version to use for this message
         :raises SPSDKValueError: If key catalog configuration is invalid
         """
-        super().__init__(srv_version)
-
-        # Addresses will be set later
+        super().__init__(srv_version, mu_channel)
         self.nvm_catalog_addr = 0
         self.ram_catalog_addr = 0
 
@@ -1304,3 +1376,138 @@ class EleMessageHseFormatKeyCatalogs(EleMessageHse):
         if self.status == ResponseStatus.ELE_SUCCESS_IND.tag:
             return "Key catalogs formatting successful"
         return "Key catalogs formatting failed"
+
+
+class EleMessageHseEraseFirmware(EleMessageHse):
+    """HSE Erase Firmware service.
+
+    This service is used for erasing the HSE Firmware from flash-based devices (HSE_B variant).
+    It also erases the SYS-IMG and backup (if present) in the secure flash from the device.
+
+    Important restrictions:
+    - Available for flash based devices only (HSE_B variant)
+    - Can be performed only in CUST_DEL life cycle
+    - Will return HSE_SRV_RSP_NOT_ALLOWED error if performed in other life cycles
+
+    :cvar CMD: Command identifier for HSE firmware erase operation.
+    :cvar CMD_DESCRIPTOR_FORMAT: Binary format specification for command descriptor.
+    """
+
+    CMD = HseMessageIDs.ERASE_FW.tag
+    CMD_DESCRIPTOR_FORMAT = LITTLE_ENDIAN + UINT8 + UINT8 + UINT8 + UINT8  # reserved[4]
+
+    def __init__(
+        self,
+        srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_0,
+    ):
+        """Initialize the HSE Erase Firmware message.
+
+        Creates a new HSE firmware erase message. This operation will completely erase
+        the HSE firmware, SYS-IMG, and any backup images from the secure flash.
+
+        Warning: This is a destructive operation that cannot be undone. Use with caution.
+
+        :param srv_version: Service version to use for this message.
+        """
+        super().__init__(srv_version, mu_channel)
+
+        # No response data expected for this command beyond status
+        self.response_data_size = 0
+
+    def get_srv_descriptor(self) -> bytes:
+        """Get service descriptor for the Erase Firmware command.
+
+        Creates a packed binary service descriptor containing only reserved fields
+        as specified in the hseEraseFwSrv_t structure.
+
+        :return: Packed service descriptor bytes with 4 reserved bytes set to zero.
+        """
+        return pack(
+            self.CMD_DESCRIPTOR_FORMAT,
+            0,  # reserved[0]
+            0,  # reserved[1]
+            0,  # reserved[2]
+            0,  # reserved[3]
+        )
+
+    def response_info(self) -> str:
+        """Get formatted information about the response.
+
+        Returns a human-readable string describing the result of the HSE firmware
+        erase operation, indicating success or failure with appropriate messaging.
+
+        :return: String representation of the firmware erase operation result.
+        """
+        if self.status == ResponseStatus.ELE_SUCCESS_IND.tag:
+            return "HSE Firmware erase operation successful"
+        if self.indication == HseResponseStatus.NOT_ALLOWED.tag:
+            return "HSE Firmware erase failed - Operation not allowed (check life cycle state)"
+        return "HSE Firmware erase operation failed"
+
+
+class EleMessageHseFirmwareIntegrityCheck(EleMessageHse):
+    """HSE Firmware Integrity Check service.
+
+    This service performs an integrity check of the HSE Firmware and SYS-IMG inside HSE.
+    It verifies the cryptographic integrity and authenticity of the firmware components
+    to ensure they have not been corrupted or tampered with.
+
+    Important notes:
+    - Available for HSE_B variant only
+    - No input data structure required
+    - Returns success/failure status indicating firmware integrity state
+
+    :cvar CMD: Command identifier for HSE firmware integrity check operation.
+    :cvar CMD_DESCRIPTOR_FORMAT: Binary format specification for command descriptor.
+    """
+
+    CMD = HseMessageIDs.FW_INTEGRITY_CHECK.tag
+    CMD_DESCRIPTOR_FORMAT = (
+        LITTLE_ENDIAN + UINT8 + UINT8 + UINT8 + UINT8
+    )  # reserved[4] - no data structure used
+
+    def __init__(
+        self,
+        srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_0,
+    ):
+        """Initialize the HSE Firmware Integrity Check message.
+
+        Creates a new HSE firmware integrity check message. This operation will verify
+        the integrity of the HSE firmware and SYS-IMG components without modifying them.
+
+        :param srv_version: Service version to use for this message.
+        """
+        super().__init__(srv_version, mu_channel)
+
+        # No response data expected for this command beyond status
+        self.response_data_size = 0
+
+    def get_srv_descriptor(self) -> bytes:
+        """Get service descriptor for the Firmware Integrity Check command.
+
+        Creates a packed binary service descriptor. Since no data structure is used
+        for this service, the descriptor contains only reserved/padding bytes.
+
+        :return: Packed service descriptor bytes with reserved fields set to zero.
+        """
+        return pack(
+            self.CMD_DESCRIPTOR_FORMAT,
+            0,  # reserved[0]
+            0,  # reserved[1]
+            0,  # reserved[2]
+            0,  # reserved[3]
+        )
+
+    def response_info(self) -> str:
+        """Get formatted information about the response.
+
+        Returns a human-readable string describing the result of the HSE firmware
+        integrity check operation, indicating whether the firmware integrity is valid.
+
+        :return: String representation of the firmware integrity check result.
+        """
+        if self.status == ResponseStatus.ELE_SUCCESS_IND.tag:
+            return "HSE Firmware integrity check passed - Firmware is valid"
+        return "HSE Firmware integrity check failed - Firmware may be corrupted"

@@ -3332,7 +3332,7 @@
                 {
                     "id": "field050",
                     "name": "BLE_UNIQUE_ADDRESS0",
-                    "description": "Bits 31 downto 0 of the BLE Unique Address to be used when BLE_UNIQUE_ADDRESS_VALID field is equal to 0xC3A5",
+                    "description": "Bits 31 down to 0 of the BLE Unique Address to be used when BLE_UNIQUE_ADDRESS_VALID field is equal to 0xC3A5",
                     "offset_int": "0x0050",
                     "default_value_int": "0",
                     "individual_write_lock": "none"
@@ -3349,7 +3349,7 @@
                             "width": 16,
                             "id": "field054-bits0-15",
                             "name": "BLE_UNIQUE_ADDRESS_47_32",
-                            "description": "Bits 47 downto 32 of the BLE Unique Address to be used when BLE_UNIQUE_ADDRESS_VALID field is equal to 0xC3A5"
+                            "description": "Bits 47 down to 32 of the BLE Unique Address to be used when BLE_UNIQUE_ADDRESS_VALID field is equal to 0xC3A5"
                         },
                         {
                             "width": 16,

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK documentation table generation utilities.
 
 This module provides functionality for automatically generating various tables
@@ -693,7 +694,7 @@ def generate_nxpele_commands_table() -> None:
     """
     commands = nxpele_main.commands.keys()
     value_matrix = [
-        [command, nxpele_main.commands[command].__doc__.split("\n")[0]]  # type:ignore
+        [command, nxpele_main.commands[command].__doc__.split("\n")[0]]  # type: ignore
         for command in commands
     ]
     write_table(

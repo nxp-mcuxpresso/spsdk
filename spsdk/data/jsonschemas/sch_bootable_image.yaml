@@ -1,4 +1,4 @@
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -20,6 +20,21 @@ init_offset:
       title: Initial segment
       description: The segment name or the index of initial segment in exported image
       template_value: 0
+
+output_definition:
+  properties:
+    output:
+      type: string
+      title: Output file name
+      description: Bootable image output file name
+      format: file_name
+      template_value: bootable_image.bin
+    output_format:
+      type: string
+      title: Output file format
+      description: Output file format for Bootable image
+      enum: [bin, hex, srec, sparse]
+      template_value: bin
 
 keyblob:
   title: Bootable Segments definition
@@ -151,6 +166,15 @@ ahab_container:
 primary_image_container_set:
   title: Primary Executable Segment definition
   properties:
+    spl:
+      type: string
+      title: Primary Image Container Set
+      format: file
+      description:
+        This is primary Image Container Set that is validated by ROM and usually contains DDR initialization and SPL code.
+        It could be used as pre-prepared binary form of AHAB and also YAML configuration file for AHAB.
+        In case that YAML configuration file is used, the Bootable image tool build the AHAB itself.
+      template_value: spl.yaml
     primary_image_container_set:
       type: string
       title: Primary Image Container Set
@@ -159,12 +183,13 @@ primary_image_container_set:
         This is primary Image Container Set that is validated by ROM and usually contains DDR initialization and SPL code.
         It could be used as pre-prepared binary form of AHAB and also YAML configuration file for AHAB.
         In case that YAML configuration file is used, the Bootable image tool build the AHAB itself.
-      template_value: primary_image_container_set.yaml
+      template_value: spl.yaml
+      skip_in_template: True
 
 secondary_image_container_set:
   title: Secondary Executable Segment definition
   properties:
-    secondary_image_container_set:
+    uboot:
       oneOf:
         - type: string
           title: Secondary Image Container Set
@@ -173,7 +198,7 @@ secondary_image_container_set:
             This is secondary AHAB image that is validated by SPL from primary image.
             It could be used as pre-prepared binary form of AHAB and also YAML configuration file for AHAB.
             In case that YAML configuration file is used, the Bootable image tool build the AHAB itself.
-          template_value: secondary_image_container_set.yaml
+          template_value: uboot.yaml
         - type: object
           title: Secondary Image Container Set with custom offset
           properties:
@@ -190,6 +215,34 @@ secondary_image_container_set:
               description: Custom offset for the secondary image container set
           required: ["path"]
           skip_in_template: True
+    secondary_image_container_set:
+      skip_in_template: True
+      oneOf:
+        - type: string
+          title: Secondary Image Container Set
+          format: file
+          description: >
+            This is secondary AHAB image that is validated by SPL from primary image.
+            It could be used as pre-prepared binary form of AHAB and also YAML configuration file for AHAB.
+            In case that YAML configuration file is used, the Bootable image tool build the AHAB itself.
+          template_value: uboot.yaml
+        - type: object
+          title: Secondary Image Container Set with custom offset
+          properties:
+            path:
+              type: string
+              title: Secondary Image Container Set path
+              format: file
+              description: >
+                Path to the secondary AHAB image that is validated by SPL from primary image.
+            offset:
+              type: [number, string]
+              title: Custom offset
+              format: number
+              description: Custom offset for the secondary image container set
+          required: ["path"]
+          skip_in_template: True
+
 sb21:
   title: Secure Binary Executable Segment definition
   properties:

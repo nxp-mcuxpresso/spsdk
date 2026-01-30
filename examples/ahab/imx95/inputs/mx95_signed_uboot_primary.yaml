@@ -1,6 +1,7 @@
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ==========================  Advanced High-Assurance Boot Configuration template for mimx9596.  ===========================
 
 # ======================================================================================================================
@@ -28,8 +29,7 @@ container_version: 2
 # ------------------------------===== List of containers present in AHAB [Required] =====-------------------------------
 # Description: The order of containers in the list defines the order in AHAB.
 containers:
-  -
-    # -----------------------------------===== Binary AHAB container [Required] =====-----------------------------------
+  - # -----------------------------------===== Binary AHAB container [Required] =====-----------------------------------
     # Description: Binary Container format to add to AHAB image, Typically it could be used to add ELE Firmware.
     binary_container:
       # -----------------------------===== The AHAB container binary file [Required] =====------------------------------
@@ -50,7 +50,7 @@ containers:
       # -------------------------------------===== SRK revoke mask [Optional] =====-------------------------------------
       # Description: Bit-mask to indicate which SRKs to revoke. Bit set to 1 means revoke key. Bit 0 = revoke SRK_0, bit
       # 1 = revoke SRK_1 etc. Example of revocation SRK_0 and SRK_1 - the value should be 0x03
-      srk_revoke_mask: '0x00'
+      srk_revoke_mask: "0x00"
       # ----------------------------------===== GDET runtime behavior [Optional] =====----------------------------------
       # Description: This option defines runtime behavior of Glitch detector. Not supported by all devices and their ELE
       # firmware.
@@ -99,8 +99,7 @@ containers:
       # ---------------------------------------===== Image array [Required] =====---------------------------------------
       # Description: Array of image entries.
       images:
-        -
-          # OEI with DDR PHY tunning images
+        - # OEI with DDR PHY tunning images
           # Image array default settings. Can be override by defines that are hidden in template:
           # image_offset:                  0x00010400
           # load_address:                  0x000000001FFC0000
@@ -123,18 +122,6 @@ containers:
           # -----------------------------------------===== OEI [Required] =====-----------------------------------------
           # Description: OEI - Optional Executable Image firmware
           oei_ddr: ./oei-m33-ddr.bin
-
-          # OEI TCM settings (ECC etc.)
-          # Image array default settings. Can be override by defines that are hidden in template:
-          # image_offset:                  0x00010400
-          # load_address:                  0x000000001FFC0000
-          # entry_point:                   0x000000001FFC0001
-          # image_type:                    executable
-          # core_id:                       cortex-m33
-          # hash_type:                     SHA384
-          # -------------------------------------===== OEI TCM FW [Required] =====--------------------------------------
-          # Description: OEI(Optional Executable Image) TCM settings binary file.
-        - oei_tcm: ./oei-m33-tcm.bin
 
           # System booting image
           # Image array default settings. Can be override by defines that are hidden in template:

@@ -167,7 +167,18 @@
           "name": "Secure_FW_Version",
           "description": "Secure Firmware version. This monotonic counter field tracks the firmware version of secure partition. ROM uses this field to enforce anti-rollback checking during secure boot and secure update (SB3 header). For image authentication pass during secure boot the FW version in image manifest must be equal or greater than this value. During secure update and recovery boot the version number in SB3 header Must be equal or greater than the value in this field. Apart from SB3 header check, user can enforce anti-rollback check during SB3 processing by using 'kSB3_COMMAND_fwVersionCheck' SB command with 'kNBOOT_CNT_secure' counter ID parameter, in SB3 file.",
           "offset_int": "0x0008",
-          "default_value_int": "0"
+          "default_value_int": "0",
+          "bitfields": [
+            {
+              "width": 16,
+              "id": "field008-bits0-15",
+              "name": "Secure_firmware_version",
+              "description": "Secure Firmware version. This monotonic counter field tracks the firmware version of secure partition. ROM uses this field to enforce anti-rollback checking during secure boot and secure update (SB3 header). For image authentication pass during secure boot the FW version in image manifest must be equal or greater than this value. During secure update & recovery boot the version number in SB3 header Must be equal or greater than the value in this field. Apart from SB3 header check, user can enforce anti-rollback check during SB3 processing by using \"kSB3_COMMAND_fwVersionCheck\" SB command with 'kNBOOT_CNT_secure' counter ID parameter, in SB3 file"
+            },
+            {
+              "width": 16
+            }
+          ]
         },
         {
           "id": "field00C",

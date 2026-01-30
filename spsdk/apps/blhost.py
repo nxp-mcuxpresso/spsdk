@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -305,8 +305,18 @@ def flash_erase_all_unsecure(ctx: click.Context) -> None:
 @click.argument("image_file_path", metavar="FILE", type=str, required=True)
 @click.argument("erase", type=str, required=False, default="none")
 @click.argument("memory_id", type=INT(), required=False, default="0")
+@click.option(
+    "-o",
+    "--base-offset",
+    type=INT(),
+    required=False,
+    default="0",
+    help="Base offset for writing image. This offset will be added to all addresses in the image file.",
+)
 @click.pass_context
-def flash_image(ctx: click.Context, image_file_path: str, erase: str, memory_id: int) -> None:
+def flash_image(
+    ctx: click.Context, image_file_path: str, erase: str, memory_id: int, base_offset: int
+) -> None:
     """Write the formatted image in <FILE> to the memory specified by memoryID.
 
     \b
@@ -330,7 +340,7 @@ def flash_image(ctx: click.Context, image_file_path: str, erase: str, memory_id:
             ) from e
     if memory_id:
         mem_id = memory_id
-    bin_image = BinaryImage.load_binary_image(image_file_path)
+    bin_image = BinaryImage.load_binary_image(image_file_path, offset=base_offset)
     with McuBoot(ctx.obj["interface"]) as mboot:
         if erase == "erase":
             for segment in bin_image.sub_images:
@@ -909,7 +919,7 @@ def write_memory(ctx: click.Context, address: int, data_source: str, memory_id: 
     BYTE_COUNT  - if specified, load only first BYTE_COUNT number of bytes from file
     HEX-DATA    - string of hex values: {{112233}}, {{11 22 33}}
                 - when using Jupyter notebook, use [[ ]] instead of {{ }}: eg. [[11 22 33]]
-    MEMORY_ID   - id of memory to read from (default: 0)
+    MEMORY_ID   - id of memory to write to (default: 0)
     """
     try:
         data = parse_hex_data(data_source)

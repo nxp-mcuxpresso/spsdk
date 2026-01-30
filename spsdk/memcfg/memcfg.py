@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,7 +11,6 @@ This module provides functionality for handling memory configuration options,
 including flash configuration option words and memory interface management
 across NXP MCU portfolio.
 """
-
 
 import logging
 import os

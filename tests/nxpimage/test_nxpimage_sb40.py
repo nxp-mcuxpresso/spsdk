@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -197,14 +197,14 @@ def test_nxpimage_sb40_parse(
 
         # Check container version and other key fields
         assert parsed_config_obj.get("family") == orig_config.get("family"), "Family doesn't match"
+        firmware_version = parsed_config_obj.get_int("firmwareVersion")
+
         if "imageVersion" in orig_config:
-            assert parsed_config_obj.get("imageVersion") == orig_config.get(
-                "imageVersion"
-            ), "Image version doesn't match"
+            image_version = (firmware_version >> 8) & 0xFF
+            assert image_version == orig_config.get("imageVersion"), "Image version doesn't match"
         if "fuse_version" in orig_config:
-            assert parsed_config_obj.get("fuse_version") == orig_config.get(
-                "fuse_version"
-            ), "Fuse version doesn't match"
+            fuse_version = firmware_version & 0xFF
+            assert fuse_version == orig_config.get("fuse_version"), "Fuse version doesn't match"
 
 
 def test_nxpimage_sb40_get_template(cli_runner: CliRunner, tmpdir: str) -> None:

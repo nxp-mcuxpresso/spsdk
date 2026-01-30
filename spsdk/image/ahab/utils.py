@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +13,6 @@ block management.
 """
 
 import logging
-import os
 import struct
 from copy import deepcopy
 from typing import Optional
@@ -30,10 +29,12 @@ from spsdk.image.ahab.ahab_signature import ContainerSignature
 from spsdk.image.bootable_image.bimg import BootableImage
 from spsdk.image.bootable_image.segments import SegmentAhab
 from spsdk.image.mem_type import MemoryType
+from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import load_binary
+from spsdk.utils.universal_binary_file import UniversalBinaryFile
 
 logger = logging.getLogger(__name__)
 
@@ -51,16 +52,17 @@ def find_ahab_image_in_file(file_path: str, image_id: int = 0, start_offset: int
     :return: Offset of AHAB image by ID, otherwise value under zero if not found.
     """
     DATA_READ = 0x1000
-    file_size = os.path.getsize(file_path)
-    image_count = 0
-    container_count = 0
-    last_container_address = 0
-    container_size = 0
-    with open(file_path, "r+b") as f:
+    with UniversalBinaryFile().open(file_path, "r+b") as binary_file:
+        file_size = binary_file.get_file_size()
+        image_count = 0
+        container_count = 0
+        last_container_address = 0
+        container_size = 0
+
         for x in range(start_offset, file_size, DATA_READ):
             try:
-                f.seek(x)
-                data = f.read(DATA_READ)
+                binary_file.seek(x)
+                data = binary_file.read(DATA_READ)
                 container_offset = AHABImage.find_offset_of_ahab(binary=data)
                 container_address = x + container_offset
                 logger.debug(
@@ -137,9 +139,9 @@ def ahab_update_keyblob(
     if ahab_image_offset < 0:
         raise SPSDKError(f"AHAB Image ({image_id}) not found!")
 
-    keyblob_data = load_binary(keyblob)
+    keyblob_data = BinaryImage.load_binary_image(path=keyblob, name="Keyblob").export()
 
-    with open(binary, "r+b") as f:
+    with UniversalBinaryFile().open(binary, "r+b") as f:
         try:
             f.seek(ahab_image_offset)
             first_container = f.read(DATA_READ)

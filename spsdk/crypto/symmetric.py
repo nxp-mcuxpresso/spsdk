@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,7 +12,6 @@ and decryption operations using various AES modes and SM4 algorithm. It includes
 support for key wrapping, block cipher modes (ECB, CBC, CTR, XTS), and
 authenticated encryption modes (CCM, GCM).
 """
-
 
 # Used security modules
 from typing import Optional

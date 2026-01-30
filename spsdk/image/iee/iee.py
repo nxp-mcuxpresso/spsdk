@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -34,10 +34,10 @@ from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_
 from spsdk.utils.misc import (
     Endianness,
     align_block,
+    file_extension,
     reverse_bytes_in_longs,
     split_data,
     value_to_bytes,
-    value_to_int,
     write_file,
 )
 from spsdk.utils.spsdk_enum import SpsdkEnum
@@ -493,6 +493,7 @@ class Iee(FeatureBaseClass):
         keyblob_export_filepath: str = "iee_keyblob",
         generate_readme: bool = True,
         generate_fuse_script: bool = True,
+        output_format: str = "bin",
     ) -> None:
         """Initialize IEE (Inline Encryption Engine) configuration.
 
@@ -509,6 +510,7 @@ class Iee(FeatureBaseClass):
         :param keyblob_export_filepath: Output file path for standalone IEE keyblobs.
         :param generate_readme: Whether to generate documentation readme file.
         :param generate_fuse_script: Whether to generate fuse programming script.
+        :param output_format: Output format for generated files ["bin", "hex", "srec", "sparse"]. (default: "bin").
         :raises SPSDKValueError: Unsupported device family or invalid configuration.
         """
         self._key_blobs: list[IeeKeyBlob] = []
@@ -527,6 +529,7 @@ class Iee(FeatureBaseClass):
         self.keyblob_name = keyblob_export_filepath
         self.generate_readme = generate_readme
         self.generate_fuse_script = generate_fuse_script
+        self.output_format = output_format
 
         if key_blobs:
             for key_blob in key_blobs:
@@ -693,11 +696,12 @@ class Iee(FeatureBaseClass):
 
         binary_image = self.binary_image(keyblob_name=self.keyblob_name, image_name=self.iee_all)
         logger.info(binary_image.draw())
+        binary_image.offset = binary_image.offset - self.keyblob_address
 
         if self.iee_all == "":
             logger.info("Skipping export of IEE whole image")
         else:
-            write_file(binary_image.export(), self.iee_all, mode="wb")
+            binary_image.save_binary_image(path=self.iee_all, file_format=self.output_format)
             generated_files.append(self.iee_all)
 
         memory_map = (
@@ -709,7 +713,8 @@ class Iee(FeatureBaseClass):
 
         for image in binary_image.sub_images:
             if image.name != "":
-                write_file(image.export(), image.name, mode="wb")
+                image.offset = 0
+                image.save_binary_image(path=image.name, file_format=self.output_format)
                 generated_files.append(image.name)
                 logger.info(f"Created Encrypted IEE data blob {image.description}:\n{image.name}")
                 memory_map += f"\n{image.name}:\n{str(image)}"
@@ -767,16 +772,11 @@ class Iee(FeatureBaseClass):
         binaries: BinaryImage = deepcopy(self.binaries)
 
         for binary in binaries.sub_images:
-            if binary.binary:
-                binary.binary = self.encrypt_image(
-                    binary.binary, binary.absolute_address + self.keyblob_address
-                )
-            for segment in binary.sub_images:
-                if segment.binary:
-                    segment.binary = self.encrypt_image(
-                        segment.binary,
-                        segment.absolute_address + self.keyblob_address,
-                    )
+            binary.alignment = IeeKeyBlob._ENCRYPTION_BLOCK_SIZE
+            binary.binary = self.encrypt_image(
+                binary.export(), binary.absolute_address + self.keyblob_address
+            )
+            binary.sub_images = []
 
         binaries.validate()
         return binaries
@@ -818,14 +818,15 @@ class Iee(FeatureBaseClass):
         if self.generate_keyblob:
             # Add mandatory IEE keyblob
             iee_keyblobs = self.get_key_blobs() if plain_data else self.export_key_blobs()
-            iee.add_image(
-                BinaryImage(
-                    keyblob_name,
-                    offset=0,
-                    description=f"IEE keyblobs {self.family}",
-                    binary=iee_keyblobs,
-                )
+            iee_keyblob = BinaryImage(
+                name=keyblob_name,
+                offset=0,
+                description=f"IEE keyblobs {self.family}",
+                binary=iee_keyblobs,
             )
+            iee.sparse_block_size = 128
+            iee.add_image(iee_keyblob)
+
         binaries = self.export_image()
 
         if binaries:
@@ -903,18 +904,14 @@ class Iee(FeatureBaseClass):
             iee_config = config.get_list_of_configs("key_blobs")
         else:
             iee_config = [config.get_config("key_blob")]
-        start_address = min(
-            [value_to_int(addr.get("start_address", 0xFFFFFFFF)) for addr in iee_config]
-        )
+        start_address = min([addr.get_int("start_address", 0xFFFFFFFF) for addr in iee_config])
 
         binaries = None
         if "data_blobs" in config:
             # start address to calculate offset from keyblob, min from keyblob or data blob address
             # pylint: disable-next=nested-min-max
             data_blobs = config.get_list_of_configs("data_blobs")
-            start_address_data = min(
-                [value_to_int(addr.get("address", 0xFFFFFFFF)) for addr in data_blobs]
-            )
+            start_address_data = min([addr.get_int("address", 0xFFFFFFFF) for addr in data_blobs])
             if start_address_data < start_address:
                 start_address = start_address_data
             binaries = BinaryImage(
@@ -923,31 +920,49 @@ class Iee(FeatureBaseClass):
                     "encrypted_name",
                     "encrypted_blobs",
                     config["output_folder"],
+                    file_extension=file_extension(config.get_str("output_format", "bin")),
                 ),
                 offset=start_address - keyblob_address,
                 alignment=IeeKeyBlob._ENCRYPTION_BLOCK_SIZE,
             )
             for data_blob in data_blobs:
-                address = value_to_int(
-                    data_blob.get("address", 0), keyblob_address + binaries.offset
-                )
+                data_file_name = data_blob.get_input_file_name("data")
 
                 binary = BinaryImage.load_binary_image(
-                    path=data_blob["data"],
-                    search_paths=config.search_paths,
-                    offset=address - keyblob_address - binaries.offset,
+                    path=data_file_name,
+                    name=os.path.basename(data_file_name),
                     alignment=IeeKeyBlob._ENCRYPTION_BLOCK_SIZE,
                     size=0,
                 )
+                address = data_blob.get_int("address", binary.absolute_address)
+
+                if binary.offset != address - keyblob_address - binaries.offset:
+                    logger.warning(
+                        f"The data blob {data_file_name} has different offset {binary.offset}, "
+                        "than expected {address - keyblob_address - base all data binaries offset}"
+                    )
+                    binary.offset = address - keyblob_address - binaries.offset
 
                 binaries.add_image(binary)
 
+        if binaries is not None:
+            binaries.validate()
+
         output_folder = config.get_output_file_name("output_folder")
+        output_format = config.get("output_format", "bin")
         iee_export_filename = filepath_from_config(
-            config, "output_name", "iee_full_image", output_folder
+            config,
+            "output_name",
+            "iee_full_image",
+            output_folder,
+            file_extension=file_extension(config.get_str("output_format", "bin")),
         )
         keyblob_export_filename = filepath_from_config(
-            config, "keyblob_name", "iee_keyblob", output_folder
+            config,
+            "keyblob_name",
+            "iee_keyblob",
+            output_folder,
+            file_extension=file_extension(config.get_str("output_format", "bin")),
         )
         generate_readme = config.get("generate_readme", True)
         generate_fuse_script = config.get("generate_fuses_script", True)
@@ -962,6 +977,7 @@ class Iee(FeatureBaseClass):
             keyblob_export_filepath=keyblob_export_filename,
             generate_readme=generate_readme,
             generate_fuse_script=generate_fuse_script,
+            output_format=output_format,
         )
 
         for key_blob_cfg in iee_config:

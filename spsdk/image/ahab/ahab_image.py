@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK AHAB (Advanced High Assurance Boot) image management utilities.
 
 This module provides functionality for creating, parsing, validating, and exporting AHAB
@@ -15,6 +16,7 @@ configurations, and exporting complete AHAB images to binary format.
 """
 
 import logging
+import os
 from copy import deepcopy
 from typing import Any, Optional, Type, Union
 
@@ -39,6 +41,7 @@ from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
 from spsdk.utils.misc import BinaryPattern, align, load_binary
+from spsdk.utils.sparse_image import SPARSE_DEFAULT_BLOCK_SIZE
 from spsdk.utils.spsdk_enum import SpsdkSoftEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
 
@@ -361,6 +364,9 @@ class AHABImage(FeatureBaseClass):
             offset=0,
             description=f"AHAB Image for {self.chip_config.family}",
             pattern=BinaryPattern("zeros"),
+        )
+        ret.sparse_block_size = min(
+            max(self.chip_config.target_memory.image_offset_alignment, 4), SPARSE_DEFAULT_BLOCK_SIZE
         )
         ahab_containers = BinaryImage(
             name="AHAB Containers",
@@ -1015,3 +1021,300 @@ class AHABImage(FeatureBaseClass):
                 f"Family '{self.family}' does not support container type V{required_version}. "
                 f"Supported types: {supported_str}"
             )
+
+    @staticmethod
+    def _apply_filename_overrides(
+        field_name: str,
+        default_value: str,
+        board_filenames: Optional[dict[str, str]] = None,
+        input_dir: Optional[str] = None,
+    ) -> str:
+        """Apply board-specific filename overrides and input directory path.
+
+        This helper method applies filename overrides in the following order:
+        1. Board-specific filename override (if available)
+        2. Input directory prepending (if specified, as relative path to CWD)
+
+        :param field_name: Field name (e.g., 'oei_ddr', 'spl', 'lpddr_imem').
+        :param default_value: Default filename value from schema.
+        :param board_filenames: Optional dictionary mapping field names to board-specific filenames.
+        :param input_dir: Optional input directory path to prepend to filenames.
+        :return: Final filename with overrides applied.
+        """
+        value = default_value
+
+        # Apply board-specific filename override
+        if board_filenames and field_name in board_filenames:
+            value = board_filenames[field_name]
+            logger.debug(f"Applied board filename override for {field_name}: {value}")
+
+        # Prepend input directory if specified
+        if input_dir and isinstance(value, str) and not os.path.isabs(value):
+            # Get just the filename without any path
+            filename = os.path.basename(value)
+            # Create path relative to CWD
+            value = os.path.join(input_dir, filename)
+            logger.debug(f"Applied input directory to {field_name}: {value}")
+
+        return value
+
+    @classmethod
+    def generate_config_template_for_container(
+        cls,
+        family: FamilyRevision,
+        container_config: dict[str, Any],
+        board_filenames: Optional[dict[str, str]] = None,
+        input_dir: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Generate AHAB container configuration template with specified structure.
+
+        Creates a complete AHAB container configuration using validation schemas
+        and filtering for specific images from the database. Supports both regular
+        containers with images and binary containers. Optionally applies board-specific
+        filename overrides and input directory paths.
+
+        :param family: Target chip family and revision.
+        :param container_config: Container configuration dict with either:
+            - {"container": {"images": ["image1", "image2"]}} for regular container
+            - {"binary_container": {"path": "path/to/container.bin"}} for binary container
+        :param board_filenames: Optional dictionary mapping image types to board-specific filenames.
+        :param input_dir: Optional input directory path to prepend to filenames.
+        :return: Dictionary with container configuration (for regular) or binary container reference.
+        """
+        # Check if this is a binary container
+        if "binary_container" in container_config:
+            return cls._process_binary_container(container_config, board_filenames, input_dir)
+
+        # Process regular container with images
+        return cls._process_regular_container(family, container_config, board_filenames, input_dir)
+
+    @classmethod
+    def _process_binary_container(
+        cls,
+        container_config: dict[str, Any],
+        board_filenames: Optional[dict[str, str]],
+        input_dir: Optional[str],
+    ) -> dict[str, Any]:
+        """Process binary container configuration with filename overrides.
+
+        :param container_config: Container configuration containing binary_container path.
+        :param board_filenames: Optional board-specific filename mappings.
+        :param input_dir: Optional input directory path.
+        :return: Dictionary with processed binary container path.
+        """
+        path = container_config["binary_container"]["path"]
+
+        # Apply board-specific filename override
+        if board_filenames:
+            path = cls._apply_board_filename_to_path(path, board_filenames)
+
+        # Prepend input directory if specified
+        if input_dir and not os.path.isabs(path):
+            filename = os.path.basename(path)
+            path = os.path.join(input_dir, filename)
+            logger.debug(f"Applied input directory to binary container: {path}")
+
+        return {"binary_container": {"path": path}}
+
+    @classmethod
+    def _apply_board_filename_to_path(cls, path: str, board_filenames: dict[str, str]) -> str:
+        """Apply board filename override to a path if matching entry found.
+
+        :param path: Original path to check.
+        :param board_filenames: Dictionary of board-specific filenames.
+        :return: Updated path with board filename if match found, otherwise original path.
+        """
+        for field_name, board_filename in board_filenames.items():
+            if field_name in path or os.path.basename(path) == board_filename:
+                logger.debug(
+                    f"Applied board filename override for binary container: {board_filename}"
+                )
+                return board_filename
+        return path
+
+    @classmethod
+    def _process_regular_container(
+        cls,
+        family: FamilyRevision,
+        container_config: dict[str, Any],
+        board_filenames: Optional[dict[str, str]],
+        input_dir: Optional[str],
+    ) -> dict[str, Any]:
+        """Process regular container configuration with images.
+
+        :param family: Target chip family and revision.
+        :param container_config: Container configuration with images list.
+        :param board_filenames: Optional board-specific filename mappings.
+        :param input_dir: Optional input directory path.
+        :return: Dictionary with complete container configuration.
+        :raises SPSDKError: If container config is invalid or schema not found.
+        """
+        # Validate and extract container images
+        if "container" not in container_config or "images" not in container_config["container"]:
+            raise SPSDKError("Container config must have 'container' with 'images' list")
+
+        container_images = container_config["container"]["images"]
+
+        # Get and filter image schemas
+        ordered_schemas = cls._get_ordered_image_schemas(family, container_images)
+
+        # Build custom images configuration
+        custom_images = cls._build_custom_images(ordered_schemas, board_filenames, input_dir)
+
+        # Build final container configuration
+        container_cfg = cls._build_container_config(custom_images, container_config)
+
+        return {
+            "container": container_cfg,
+            "_schemas": ordered_schemas,
+            "_image_names": container_images,
+        }
+
+    @classmethod
+    def _get_ordered_image_schemas(
+        cls, family: FamilyRevision, container_images: list[str]
+    ) -> list[dict[str, Any]]:
+        """Get ordered image schemas based on requested images.
+
+        :param family: Target chip family and revision.
+        :param container_images: List of image names to include.
+        :return: List of ordered image schemas.
+        :raises SPSDKError: If container schema not found.
+        """
+        schemas = cls.get_validation_schemas(family)
+        modified_schemas = deepcopy(schemas)
+
+        # Navigate to container schema
+        whole_ahab_schema = modified_schemas[1]
+        container_items = whole_ahab_schema["properties"]["containers"]["items"]["oneOf"]
+
+        # Find the container configuration schema (not binary_container)
+        container_schema = cls._find_container_schema(container_items)
+
+        # Get all available image schemas
+        all_image_schemas = container_schema["properties"]["images"]["items"]["oneOf"]
+
+        # Filter and order image schemas based on requested images
+        return cls._filter_image_schemas(all_image_schemas, container_images)
+
+    @staticmethod
+    def _find_container_schema(container_items: list[dict[str, Any]]) -> dict[str, Any]:
+        """Find container configuration schema from container items.
+
+        :param container_items: List of container schema items.
+        :return: Container schema dictionary.
+        :raises SPSDKError: If container schema not found.
+        """
+        for item in container_items:
+            if "properties" in item and "container" in item["properties"]:
+                return deepcopy(item["properties"]["container"])
+
+        raise SPSDKError("Could not find container configuration schema")
+
+    @staticmethod
+    def _filter_image_schemas(
+        all_image_schemas: list[dict[str, Any]], container_images: list[str]
+    ) -> list[dict[str, Any]]:
+        """Filter and order image schemas based on requested images.
+
+        :param all_image_schemas: All available image schemas.
+        :param container_images: List of requested image names.
+        :return: Ordered list of matching image schemas.
+        """
+        ordered_schemas = []
+        for image_name in container_images:
+            for img_schema in all_image_schemas:
+                if img_schema.get("image_identifier") == image_name:
+                    schema_copy = deepcopy(img_schema)
+                    schema_copy["skip_in_template"] = False
+                    ordered_schemas.append(schema_copy)
+                    break
+        return ordered_schemas
+
+    @classmethod
+    def _build_custom_images(
+        cls,
+        ordered_schemas: list[dict[str, Any]],
+        board_filenames: Optional[dict[str, str]],
+        input_dir: Optional[str],
+    ) -> list[dict[str, Any]]:
+        """Build custom images configuration from schemas.
+
+        :param ordered_schemas: Ordered list of image schemas.
+        :param board_filenames: Optional board-specific filename mappings.
+        :param input_dir: Optional input directory path.
+        :return: List of custom image configurations.
+        """
+        custom_images = []
+        for schema in ordered_schemas:
+            image_obj = cls._process_image_schema(schema, board_filenames, input_dir)
+            custom_images.append(image_obj)
+        return custom_images
+
+    @classmethod
+    def _process_image_schema(
+        cls,
+        schema: dict[str, Any],
+        board_filenames: Optional[dict[str, str]],
+        input_dir: Optional[str],
+    ) -> dict[str, Any]:
+        """Process a single image schema to build image configuration.
+
+        :param schema: Image schema to process.
+        :param board_filenames: Optional board-specific filename mappings.
+        :param input_dir: Optional input directory path.
+        :return: Image configuration dictionary.
+        """
+        image_obj: dict[str, Any] = {}
+
+        if "properties" not in schema:
+            return image_obj
+
+        for field, prop in schema["properties"].items():
+            # Skip properties marked as skip_in_template
+            if prop.get("skip_in_template", False):
+                continue
+
+            # Skip if no template value is available
+            if "template_value" not in prop:
+                continue
+
+            value = prop["template_value"]
+
+            # Apply filename overrides to any field that looks like a file path
+            if isinstance(value, str) and "." in value:
+                value = cls._apply_filename_overrides(
+                    field_name=field,
+                    default_value=value,
+                    board_filenames=board_filenames,
+                    input_dir=input_dir,
+                )
+
+            image_obj[field] = value
+
+        return image_obj
+
+    @staticmethod
+    def _build_container_config(
+        custom_images: list[dict[str, Any]], container_config: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Build final container configuration.
+
+        :param custom_images: List of custom image configurations.
+        :param container_config: Original container configuration.
+        :return: Complete container configuration dictionary.
+        """
+        container_cfg = {
+            "srk_set": "none",
+            "fuse_version": 0,
+            "sw_version": 0,
+            "images": custom_images,
+        }
+
+        # Add any additional container-level config from input
+        if "container" in container_config:
+            for key, value in container_config["container"].items():
+                if key != "images":
+                    container_cfg[key] = value
+
+        return container_cfg

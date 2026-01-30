@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK cryptographic key management and operations.
 
 This module provides comprehensive functionality for handling cryptographic keys
@@ -1118,7 +1119,7 @@ class PublicKeyRsa(PublicKey):
                 return key
         except SPSDKError:
             public_numbers = PublicKeyRsa.recreate_public_numbers(data)
-            return PublicKeyRsa(public_numbers.public_key())  # type:ignore
+            return PublicKeyRsa(public_numbers.public_key())  # type: ignore
 
         raise SPSDKInvalidKeyType("Can't parse RSA public key from given data")
 
@@ -1587,7 +1588,7 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
             raise SPSDKUnsupportedEccCurve(f"Cannot recreate ECC curve with {data_length} length")
 
         data_length = len(data)
-        (curve, der_format) = get_curve(data_length, curve)
+        curve, der_format = get_curve(data_length, curve)
 
         if der_format:
             der = _load_der_public_key(data)

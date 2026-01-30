@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,13 +12,15 @@ bootable images across NXP MCU portfolio. It handles bootable image segments
 and provides the main BootableImage class for comprehensive image operations.
 """
 
-
 import logging
+import os
+from copy import deepcopy
 from typing import Any, Optional, Union
 
 from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError, SPSDKVerificationError
+from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.bootable_image.segments import (
     BootableImageSegment,
     Segment,
@@ -31,7 +33,8 @@ from spsdk.utils.binary_image import BinaryImage, BinaryPattern
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
-from spsdk.utils.misc import align, value_to_int
+from spsdk.utils.misc import align, value_to_int, write_file
+from spsdk.utils.schema_validator import CommentedConfig
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
@@ -248,7 +251,11 @@ class BootableImage(FeatureBaseClass):
 
         :return: Total length of the output binary in bytes.
         """
-        last_segment = self.segments[-1]
+        try:
+            last_segment = self.segments[-1]
+        except IndexError as exc:
+            raise SPSDKError("Cannot calculate length of empty bootable image.") from exc
+
         return self.get_segment_offset(last_segment) + len(last_segment)
 
     @property
@@ -483,7 +490,12 @@ class BootableImage(FeatureBaseClass):
             sch_family["properties"], bimg.get_supported_families(), family
         )
         sch_cfg["memory_type"]["properties"]["memory_type"]["template_value"] = mem_type.label
-        schemas = [sch_family, sch_cfg["memory_type"], sch_cfg["init_offset"]]
+        schemas = [
+            sch_family,
+            sch_cfg["memory_type"],
+            sch_cfg["output_definition"],
+            sch_cfg["init_offset"],
+        ]
         schemas.append(sch_cfg["post_export"])
         for segment in bimg._segments:
             try:
@@ -822,3 +834,267 @@ class BootableImage(FeatureBaseClass):
         :return: List of supported revision names for the given family.
         """
         return DatabaseManager().db.devices.get(family.name).revisions.revision_names(True)
+
+    @classmethod
+    def get_supported_templates(cls, family: FamilyRevision) -> list[str]:
+        """Get list of supported bootable image templates for a family.
+
+        :param family: Target chip family and revision.
+        :return: List of template names available for the family.
+        """
+        try:
+            database = get_db(family)
+            templates = database.get_dict(DatabaseManager.BOOTABLE_IMAGE, "templates")
+            return list(templates.keys())
+        except SPSDKError:
+            return []
+
+    @classmethod
+    def get_template_info(cls, family: FamilyRevision, template_name: str) -> dict[str, Any]:
+        """Get template configuration information.
+
+        :param family: Target chip family and revision.
+        :param template_name: Name of the template to retrieve.
+        :raises SPSDKKeyError: When template doesn't exist for the family.
+        :return: Dictionary containing template configuration.
+        """
+        database = get_db(family)
+        templates = database.get_dict(DatabaseManager.BOOTABLE_IMAGE, "templates")
+        if template_name not in templates:
+            raise SPSDKKeyError(
+                f"Template '{template_name}' not found for {family}. "
+                f"Available templates: {', '.join(templates.keys())}"
+            )
+        return templates[template_name]
+
+    @classmethod
+    def get_board_filenames(cls, family: FamilyRevision, board: str) -> dict[str, str]:
+        """Get board-specific filename mappings.
+
+        :param family: Target chip family and revision.
+        :param board: Board name to get filenames for.
+        :raises SPSDKKeyError: When board doesn't exist for the family.
+        :return: Dictionary mapping image types to filenames.
+        """
+        try:
+            database = get_db(family)
+            boards = database.get_dict(DatabaseManager.BOOTABLE_IMAGE, "boards")
+            if board not in boards:
+                raise SPSDKKeyError(
+                    f"Board '{board}' not found for {family}. "
+                    f"Available boards: {', '.join(boards.keys())}"
+                )
+            return boards[board]
+        except SPSDKError as exc:
+            raise SPSDKKeyError(f"No boards defined for {family}") from exc
+
+    @classmethod
+    def get_supported_boards(cls, family: FamilyRevision) -> list[str]:
+        """Get list of supported boards for a family.
+
+        :param family: Target chip family and revision.
+        :return: List of board names available for the family.
+        """
+        try:
+            database = get_db(family)
+            boards = database.get_dict(DatabaseManager.BOOTABLE_IMAGE, "boards")
+            return list(boards.keys())
+        except SPSDKError:
+            return []
+
+    @classmethod
+    def generate_extended_templates(
+        cls,
+        family: FamilyRevision,
+        template_name: str,
+        output_dir: str,
+        board: Optional[str] = None,
+        input_dir: Optional[str] = None,
+    ) -> list[str]:
+        """Generate configuration templates based on template definition.
+
+        Creates YAML configuration files for bootable image and AHAB containers
+        according to the template specification from the database.
+
+        :param family: Target chip family and revision.
+        :param template_name: Name of the template to generate.
+        :param output_dir: Directory where template files will be created.
+        :param board: Optional board name to use board-specific filenames.
+        :param input_dir: Optional input directory path to prepend to filenames.
+        :raises SPSDKError: When template generation fails.
+        :return: List of generated file paths.
+        """
+        template_info = cls.get_template_info(family, template_name)
+        mem_type = MemoryType.from_label(template_info.get("mem_type", "emmc_boot"))
+        generated_files = []
+
+        # Get board-specific filenames if board is specified
+        board_filenames = {}
+        if board:
+            board_filenames = cls.get_board_filenames(family, board)
+
+        # Track container set assignments for bootable image
+        container_set_assignments = {}
+
+        # Process each config section from template
+        for config_def in template_info.get("configs", []):
+            config_name = config_def.get("name")
+            config_type = config_def.get("type", "primary_image_container_set")
+
+            # Track this config file for the bootable image
+            config_file_name = f"{config_name}.yaml"
+            container_set_assignments[config_type] = config_file_name
+
+            # Collect all containers for this config
+            config_containers = []
+            all_ordered_schemas = []
+
+            # Process each container in this config
+            for container_def in config_def.get("containers", []):
+                # Check if this is a binary container or regular container
+                if "path" in container_def:
+                    # Binary container - apply board filename override if available
+                    path = container_def["path"]
+
+                    # Apply board-specific filename if available
+                    container_name = container_def.get("name", "")
+                    if board_filenames and container_name in board_filenames:
+                        path = board_filenames[container_name]
+
+                    # Prepend input directory if specified
+                    if input_dir and not os.path.isabs(path):
+                        filename = os.path.basename(path)
+                        path = os.path.join(input_dir, filename)
+
+                    config_containers.append({"binary_container": {"path": path}})
+
+                elif "images" in container_def:
+                    # Regular container - generate configuration
+                    images = container_def["images"]
+
+                    # Generate container config using the new structure
+                    container_config = {"container": {"images": images}}
+
+                    ahab_config_dict = AHABImage.generate_config_template_for_container(
+                        family=family,
+                        container_config=container_config,
+                        board_filenames=board_filenames,
+                        input_dir=input_dir,
+                    )
+
+                    # Extract schemas and image names for later use
+                    ordered_schemas = ahab_config_dict.pop("_schemas", [])
+                    image_names = ahab_config_dict.pop("_image_names", [])
+
+                    all_ordered_schemas.append({"schemas": ordered_schemas, "images": image_names})
+
+                    config_containers.append(ahab_config_dict)
+
+            # Generate a single YAML file for this config with all containers
+            if config_containers:
+                # Build full config structure with all containers
+                full_config = {
+                    "family": family.name,
+                    "revision": family.revision,
+                    "output": f"{config_name}.bin",
+                    "target_memory": "standard",
+                    "containers": config_containers,
+                }
+
+                # Get validation schemas
+                schemas = AHABImage.get_validation_schemas(family)
+
+                # Build note with all containers info
+                container_descriptions = []
+                for cont_def in config_def.get("containers", []):
+                    if "images" in cont_def:
+                        container_descriptions.append(
+                            f"{cont_def['name']}: {', '.join(cont_def['images'])}"
+                        )
+                    elif "path" in cont_def:
+                        container_descriptions.append(
+                            f"{cont_def['name']}: binary container from {cont_def['path']}"
+                        )
+
+                config_gen = CommentedConfig(
+                    main_title=f"{config_name} Configuration",
+                    schemas=schemas,
+                    note="\n".join(container_descriptions),
+                )
+
+                commented_map = config_gen.export(full_config)
+                yaml_output = CommentedConfig.convert_cm_to_yaml(commented_map)
+
+                # Save config file
+                config_file = os.path.join(output_dir, config_file_name)
+                write_file(yaml_output, config_file)
+                generated_files.append(config_file)
+
+        # Generate bootable image configuration
+        bimg_config = cls._generate_bootable_image_config_from_schema(
+            family=family,
+            mem_type=mem_type,
+            template_name=template_name,
+            container_set_assignments=container_set_assignments,
+        )
+
+        # Save bootable image configuration
+        bimg_file = os.path.join(output_dir, "bootable_image.yaml")
+        write_file(bimg_config, bimg_file)
+        generated_files.append(bimg_file)
+
+        return generated_files
+
+    @classmethod
+    def _generate_bootable_image_config_from_schema(
+        cls,
+        family: FamilyRevision,
+        mem_type: MemoryType,
+        template_name: str,
+        container_set_assignments: dict[str, str],
+    ) -> str:
+        """Generate bootable image configuration using validation schemas.
+
+        :param family: Target chip family and revision.
+        :param mem_type: Memory type for the bootable image.
+        :param template_name: Name of the template being generated.
+        :param container_set_assignments: Dictionary mapping container set types to config file paths.
+            Example: {"primary_image_container_set": "spl.yaml", "secondary_image_container_set": "uboot.yaml"}
+        :return: YAML configuration string for bootable image.
+        """
+        template_info = cls.get_template_info(family, template_name)
+        description = template_info.get("description", "")
+
+        # Get validation schemas for bootable image
+        schemas = cls.get_validation_schemas(family, mem_type)
+
+        # Modify schemas to include template values
+        modified_schemas = deepcopy(schemas)
+
+        # Find and update the container set schemas based on assignments
+        for schema in modified_schemas:
+            if "properties" not in schema:
+                continue
+
+            # Update each container set type from assignments
+            for container_set_type, config_file_path in container_set_assignments.items():
+                if container_set_type in schema["properties"]:
+                    schema["properties"][container_set_type]["template_value"] = config_file_path
+                    # schema["properties"][container_set_type]["skip_in_template"] = False
+
+        # Generate template using modified schemas
+        template = cls._get_config_template(family, modified_schemas)
+
+        # Add header
+        header_lines = [
+            "# ==========================================",
+            "# Bootable Image Configuration",
+            f"# Template: {template_name}",
+            f"# Description: {description}",
+            f"# Family: {family}",
+            f"# Memory Type: {mem_type.description}",
+            "# ==========================================",
+            "",
+        ]
+
+        return "\n".join(header_lines) + template

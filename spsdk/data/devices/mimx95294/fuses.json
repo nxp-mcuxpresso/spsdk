@@ -4723,6 +4723,102 @@
                     ]
                 },
                 {
+                    "id": "fuse136",
+                    "name": "OEM_SRKH8",
+                    "description": "HASH of OEM SRK table in container for boot image.",
+                    "index_int": "0x0088",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800",
+                        "operation_lock_int": "0x0400"
+                    }
+                },
+                {
+                    "id": "fuse137",
+                    "name": "OEM_SRKH9",
+                    "description": "HASH of OEM SRK table in container for boot image.",
+                    "index_int": "0x0089",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800",
+                        "operation_lock_int": "0x0400"
+                    }
+                },
+                {
+                    "id": "fuse138",
+                    "name": "OEM_SRKH10",
+                    "description": "HASH of OEM SRK table in container for boot image.",
+                    "index_int": "0x008A",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800",
+                        "operation_lock_int": "0x0400"
+                    }
+                },
+                {
+                    "id": "fuse139",
+                    "name": "OEM_SRKH11",
+                    "description": "HASH of OEM SRK table in container for boot image.",
+                    "index_int": "0x008B",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800",
+                        "operation_lock_int": "0x0400"
+                    }
+                },
+                {
+                    "id": "fuse140",
+                    "name": "OEM_SRKH12",
+                    "description": "HASH of OEM SRK table in container for boot image.",
+                    "index_int": "0x008C",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800",
+                        "operation_lock_int": "0x0400"
+                    }
+                },
+                {
+                    "id": "fuse141",
+                    "name": "OEM_SRKH13",
+                    "description": "HASH of OEM SRK table in container for boot image.",
+                    "index_int": "0x008D",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800",
+                        "operation_lock_int": "0x0400"
+                    }
+                },
+                {
+                    "id": "fuse142",
+                    "name": "OEM_SRKH14",
+                    "description": "HASH of OEM SRK table in container for boot image.",
+                    "index_int": "0x008E",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800",
+                        "operation_lock_int": "0x0400"
+                    }
+                },
+                {
+                    "id": "fuse143",
+                    "name": "OEM_SRKH15",
+                    "description": "HASH of OEM SRK table in container for boot image.",
+                    "index_int": "0x008F",
+                    "lock": {
+                        "register_id": "fuse8",
+                        "write_lock_int": "0x0200",
+                        "read_lock_int": "0x0800",
+                        "operation_lock_int": "0x0400"
+                    }
+                },
+                {
                     "id": "Reserved144",
                     "name": "Reserved 0x90",
                     "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
@@ -6874,7 +6970,7 @@
                     "description": "Hash of OEM PQC public keys in FW container",
                     "index_int": "0x01C0",
                     "shadow_reg_offset_int": "0x0700",
-                    "access": "RO",
+                    "access": "RW",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse8",
@@ -6897,7 +6993,7 @@
                     "description": "Hash of OEM PQC public keys in FW container",
                     "index_int": "0x01C1",
                     "shadow_reg_offset_int": "0x0704",
-                    "access": "RO",
+                    "access": "RW",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse8",
@@ -6920,7 +7016,7 @@
                     "description": "Hash of OEM PQC public keys in FW container",
                     "index_int": "0x01C2",
                     "shadow_reg_offset_int": "0x0708",
-                    "access": "RO",
+                    "access": "RW",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse8",
@@ -6943,7 +7039,7 @@
                     "description": "Hash of OEM PQC public keys in FW container",
                     "index_int": "0x01C3",
                     "shadow_reg_offset_int": "0x070C",
-                    "access": "RO",
+                    "access": "RW",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse8",
@@ -6966,7 +7062,7 @@
                     "description": "Hash of OEM PQC public keys in FW container",
                     "index_int": "0x01C4",
                     "shadow_reg_offset_int": "0x0710",
-                    "access": "RO",
+                    "access": "RW",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse8",
@@ -6989,7 +7085,7 @@
                     "description": "Hash of OEM PQC public keys in FW container",
                     "index_int": "0x01C5",
                     "shadow_reg_offset_int": "0x0714",
-                    "access": "RO",
+                    "access": "RW",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse8",
@@ -7012,7 +7108,7 @@
                     "description": "Hash of OEM PQC public keys in FW container",
                     "index_int": "0x01C6",
                     "shadow_reg_offset_int": "0x0718",
-                    "access": "RO",
+                    "access": "RW",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse8",
@@ -7035,7 +7131,7 @@
                     "description": "Hash of OEM PQC public keys in FW container",
                     "index_int": "0x01C7",
                     "shadow_reg_offset_int": "0x071C",
-                    "access": "RO",
+                    "access": "RW",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse8",
@@ -7058,7 +7154,7 @@
                     "description": "Hash of OEM PQC public keys in FW container",
                     "index_int": "0x01C8",
                     "shadow_reg_offset_int": "0x0720",
-                    "access": "RO",
+                    "access": "RW",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse8",
@@ -7081,7 +7177,7 @@
                     "description": "Hash of OEM PQC public keys in FW container",
                     "index_int": "0x01C9",
                     "shadow_reg_offset_int": "0x0724",
-                    "access": "RO",
+                    "access": "RW",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse8",
@@ -7104,7 +7200,7 @@
                     "description": "Hash of OEM PQC public keys in FW container",
                     "index_int": "0x01CA",
                     "shadow_reg_offset_int": "0x0728",
-                    "access": "RO",
+                    "access": "RW",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse8",
@@ -7127,7 +7223,7 @@
                     "description": "Hash of OEM PQC public keys in FW container",
                     "index_int": "0x01CB",
                     "shadow_reg_offset_int": "0x072C",
-                    "access": "RO",
+                    "access": "RW",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse8",
@@ -7150,7 +7246,7 @@
                     "description": "Hash of OEM PQC public keys in FW container",
                     "index_int": "0x01CC",
                     "shadow_reg_offset_int": "0x0730",
-                    "access": "RO",
+                    "access": "RW",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse8",
@@ -7173,7 +7269,7 @@
                     "description": "Hash of OEM PQC public keys in FW container",
                     "index_int": "0x01CD",
                     "shadow_reg_offset_int": "0x0734",
-                    "access": "RO",
+                    "access": "RW",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse8",
@@ -7196,7 +7292,7 @@
                     "description": "Hash of OEM PQC public keys in FW container",
                     "index_int": "0x01CE",
                     "shadow_reg_offset_int": "0x0738",
-                    "access": "RO",
+                    "access": "RW",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse8",
@@ -7219,7 +7315,7 @@
                     "description": "Hash of OEM PQC public keys in FW container",
                     "index_int": "0x01CF",
                     "shadow_reg_offset_int": "0x073C",
-                    "access": "RO",
+                    "access": "RW",
                     "individual_write_lock": "implicit",
                     "lock": {
                         "register_id": "fuse8",

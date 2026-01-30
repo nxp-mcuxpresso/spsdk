@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023,2025 NXP
+# Copyright 2022-2023,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,6 +14,7 @@ padding, alignment, and special handling conditions for empty binaries.
 
 import filecmp
 import os
+import struct
 from typing import Any, Optional
 
 import pytest
@@ -159,6 +160,7 @@ def test_nxpimage_binary_merge_s19(
         (["gcc.elf"], "gcc.bin"),
         (["iar.out", "iar.hex", "iar.srec"], "iar.bin"),
         (["keil.elf", "keil.hex"], "keil.bin"),
+        (["test_sparse.bin", "test_sparse.simg"], "test_sparse.bin"),
     ],
 )
 def test_nxpimage_binary_convert_bin(
@@ -179,9 +181,38 @@ def test_nxpimage_binary_convert_bin(
     with use_working_directory(os.path.join(data_dir, "utils", "binary", "convert")):
         out_file = os.path.join(tmpdir, bin_file)
         for input_file in inputs:
-            cmd = f"utils binary-image convert -i {input_file} -f BIN -o {out_file}"
+            cmd = f"utils binary-image convert -i {input_file} -f BIN -o {out_file} -p"
             cli_runner.invoke(nxpimage.main, cmd.split())
             assert filecmp.cmp(out_file, bin_file)
+
+
+@pytest.mark.parametrize(
+    "inputs,sparse_file",
+    [
+        (["test_sparse.bin", "test_sparse.simg"], "test_sparse.simg"),
+    ],
+)
+def test_nxpimage_binary_convert_sparse(
+    cli_runner: CliRunner, tmpdir: Any, data_dir: str, inputs: list[str], sparse_file: str
+) -> None:
+    """Test binary image conversion to SPARSE format using CLI.
+
+    This test verifies that the nxpimage CLI utility can successfully convert
+    various input image formats to SPARSE format. It compares the output file
+    with the expected binary file to ensure correct conversion.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for output files.
+    :param data_dir: Base directory containing test data files.
+    :param inputs: List of input file paths to be converted.
+    :param sparse_file: Expected output sparse file name for comparison.
+    """
+    with use_working_directory(os.path.join(data_dir, "utils", "binary", "convert")):
+        out_file = os.path.join(tmpdir, sparse_file)
+        for input_file in inputs:
+            cmd = f"utils binary-image convert -i {input_file} -f SPARSE -o {out_file} -p"
+            cli_runner.invoke(nxpimage.main, cmd.split())
+            assert filecmp.cmp(out_file, sparse_file)
 
 
 @pytest.mark.parametrize(
@@ -998,3 +1029,572 @@ def test_any_condition_fails_prevents_special_handling() -> None:
         )
 
         assert not conditions_met, f"Conditions should not all be met for case: {case_params}"
+
+
+def test_sparse_image_reader_basic(data_dir: str) -> None:
+    """Test basic SparseImageReader functionality.
+
+    This test verifies that SparseImageReader can open a sparse image file,
+    read its header, and perform basic read operations. It validates that
+    the reader correctly initializes and can read data from the beginning
+    of the image.
+
+    :param data_dir: Directory containing test data files.
+    """
+    from spsdk.utils.sparse_image import SparseImageReader
+
+    sparse_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.simg")
+
+    with SparseImageReader(sparse_file) as reader:
+        # Verify header was parsed
+        assert reader.header is not None
+        assert reader.header.magic == 0xED26FF3A
+
+        # Verify chunk index was built
+        assert len(reader.chunk_index) > 0
+
+        # Get total size
+        total_size = reader.get_total_size()
+        assert total_size > 0
+
+        # Read first 100 bytes
+        data = reader.read(offset=0, size=100)
+        assert len(data) == 100
+
+
+def test_sparse_image_reader_full_image(data_dir: str) -> None:
+    """Test reading entire sparse image and comparing with reference binary.
+
+    This test verifies that SparseImageReader can correctly reconstruct the
+    entire binary image from a sparse format by reading all data and comparing
+    it with the reference binary file.
+
+    :param data_dir: Directory containing test data files.
+    """
+    from spsdk.utils.sparse_image import SparseImageReader
+
+    sparse_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.simg")
+    binary_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.bin")
+
+    # Load reference binary
+    reference_data = load_binary(binary_file)
+
+    with SparseImageReader(sparse_file) as reader:
+        # Read entire image
+        total_size = reader.get_total_size()
+        reconstructed_data = reader.read(offset=0, size=total_size)
+
+        # Compare with reference
+        assert len(reconstructed_data) == len(reference_data)
+        assert reconstructed_data == reference_data
+
+
+def test_sparse_image_reader_partial_reads(data_dir: str) -> None:
+    """Test reading partial chunks from sparse image at various offsets.
+
+    This test verifies that SparseImageReader can correctly read data from
+    arbitrary offsets within the sparse image. It performs multiple partial
+    reads and validates them against the reference binary file.
+
+    :param data_dir: Directory containing test data files.
+    """
+    from spsdk.utils.sparse_image import SparseImageReader
+
+    sparse_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.simg")
+    binary_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.bin")
+
+    reference_data = load_binary(binary_file)
+
+    with SparseImageReader(sparse_file) as reader:
+        # Test various offset and size combinations
+        test_cases = [
+            (0, 100),  # Beginning
+            (100, 200),  # Middle
+            (len(reference_data) - 100, 100),  # End
+            (50, 150),  # Arbitrary offset
+            (1000, 500),  # Larger chunk
+        ]
+
+        for offset, size in test_cases:
+            if offset + size <= len(reference_data):
+                data = reader.read(offset=offset, size=size)
+                expected = reference_data[offset : offset + size]
+                assert data == expected, f"Mismatch at offset {offset}, size {size}"
+
+
+def test_sparse_image_reader_multiple_reads(data_dir: str) -> None:
+    """Test multiple sequential reads from the same SparseImageReader instance.
+
+    This test verifies that SparseImageReader can handle multiple read operations
+    on the same instance without issues, ensuring proper state management and
+    file handle positioning.
+
+    :param data_dir: Directory containing test data files.
+    """
+    from spsdk.utils.sparse_image import SparseImageReader
+
+    sparse_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.simg")
+    binary_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.bin")
+
+    reference_data = load_binary(binary_file)
+
+    with SparseImageReader(sparse_file) as reader:
+        # Perform multiple reads
+        data1 = reader.read(offset=0, size=100)
+        data2 = reader.read(offset=100, size=100)
+        data3 = reader.read(offset=0, size=100)  # Re-read first chunk
+
+        # Verify all reads
+        assert data1 == reference_data[0:100]
+        assert data2 == reference_data[100:200]
+        assert data3 == reference_data[0:100]
+        assert data1 == data3  # Re-reading should give same result
+
+
+def test_sparse_image_reader_chunk_boundaries(data_dir: str) -> None:
+    """Test reading across chunk boundaries in sparse image.
+
+    This test verifies that SparseImageReader correctly handles reads that
+    span multiple chunks, ensuring seamless data reconstruction across
+    chunk boundaries.
+
+    :param data_dir: Directory containing test data files.
+    """
+    from spsdk.utils.sparse_image import SparseImageReader
+
+    sparse_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.simg")
+    binary_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.bin")
+
+    reference_data = load_binary(binary_file)
+
+    with SparseImageReader(sparse_file) as reader:
+        # Get block size from header
+        assert reader.header is not None
+        block_size = reader.header.block_size
+
+        # Read across chunk boundary
+        # Start in middle of one chunk and read into next chunk
+        offset = block_size - 50
+        size = 100  # This should span two chunks
+
+        if offset + size <= len(reference_data):
+            data = reader.read(offset=offset, size=size)
+            expected = reference_data[offset : offset + size]
+            assert data == expected
+
+
+def test_sparse_image_reader_context_manager(data_dir: str) -> None:
+    """Test SparseImageReader context manager functionality.
+
+    This test verifies that SparseImageReader properly implements the context
+    manager protocol, ensuring that file handles are correctly opened and
+    closed when using the 'with' statement.
+
+    :param data_dir: Directory containing test data files.
+    """
+    from spsdk.utils.sparse_image import SparseImageReader
+
+    sparse_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.simg")
+
+    # Test context manager
+    with SparseImageReader(sparse_file) as reader:
+        assert reader.file_handle is not None
+        data = reader.read(offset=0, size=100)
+        assert len(data) == 100
+
+    # File should be closed after exiting context
+    assert reader.file_handle is None
+
+
+def test_sparse_image_reader_manual_close(data_dir: str) -> None:
+    """Test manual resource management with SparseImageReader.
+
+    This test verifies that SparseImageReader can be used without a context
+    manager by manually calling the close() method, and that the file handle
+    is properly released.
+
+    :param data_dir: Directory containing test data files.
+    """
+    from spsdk.utils.sparse_image import SparseImageReader
+
+    sparse_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.simg")
+
+    reader = SparseImageReader(sparse_file)
+    try:
+        assert reader.file_handle is not None
+        data = reader.read(offset=0, size=100)
+        assert len(data) == 100
+    finally:
+        reader.close()
+
+    assert reader.file_handle is None
+
+
+def test_sparse_image_reader_invalid_offset(data_dir: str) -> None:
+    """Test SparseImageReader error handling for invalid offset values.
+
+    This test verifies that SparseImageReader properly validates offset
+    parameters and raises appropriate exceptions when invalid offsets
+    are provided (negative or beyond image size).
+
+    :param data_dir: Directory containing test data files.
+    """
+    from spsdk.exceptions import SPSDKValueError
+    from spsdk.utils.sparse_image import SparseImageReader
+
+    sparse_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.simg")
+
+    with SparseImageReader(sparse_file) as reader:
+        total_size = reader.get_total_size()
+
+        # Test negative offset
+        with pytest.raises(SPSDKValueError):
+            reader.read(offset=-1, size=100)
+
+        # Test offset beyond image size
+        with pytest.raises(SPSDKValueError):
+            reader.read(offset=total_size + 1, size=100)
+
+
+def test_sparse_image_reader_invalid_size(data_dir: str) -> None:
+    """Test SparseImageReader error handling for invalid size values.
+
+    This test verifies that SparseImageReader properly validates size
+    parameters and raises appropriate exceptions when invalid sizes
+    are provided (zero or negative values).
+
+    :param data_dir: Directory containing test data files.
+    """
+    from spsdk.exceptions import SPSDKValueError
+    from spsdk.utils.sparse_image import SparseImageReader
+
+    sparse_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.simg")
+
+    with SparseImageReader(sparse_file) as reader:
+        # Test zero size
+        with pytest.raises(SPSDKValueError):
+            reader.read(offset=0, size=0)
+
+        # Test negative size
+        with pytest.raises(SPSDKValueError):
+            reader.read(offset=0, size=-100)
+
+
+def test_sparse_image_reader_size_adjustment(data_dir: str, caplog: Any) -> None:
+    """Test SparseImageReader automatic size adjustment when exceeding bounds.
+
+    This test verifies that SparseImageReader automatically adjusts the read
+    size when a request would exceed the image boundaries, and that it logs
+    an appropriate warning message.
+
+    :param data_dir: Directory containing test data files.
+    :param caplog: Pytest fixture for capturing log messages.
+    """
+    from spsdk.utils.sparse_image import SparseImageReader
+
+    sparse_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.simg")
+    binary_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.bin")
+
+    reference_data = load_binary(binary_file)
+
+    with SparseImageReader(sparse_file) as reader:
+        total_size = reader.get_total_size()
+
+        # Request more data than available
+        offset = total_size - 50
+        requested_size = 100  # This exceeds image bounds
+
+        data = reader.read(offset=offset, size=requested_size)
+
+        # Should return only available data
+        assert len(data) == 50
+        assert data == reference_data[offset:]
+
+        # Should log a warning
+        assert "Read size adjusted" in caplog.text
+
+
+def test_sparse_image_reader_chunk_types(data_dir: str) -> None:
+    """Test SparseImageReader handling of different chunk types.
+
+    This test verifies that SparseImageReader correctly processes all
+    chunk types (RAW, FILL, DONT_CARE) present in the sparse image
+    and reconstructs the data accurately.
+
+    :param data_dir: Directory containing test data files.
+    """
+    from spsdk.utils.sparse_image import SparseChunkType, SparseImageReader
+
+    sparse_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.simg")
+    binary_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.bin")
+
+    reference_data = load_binary(binary_file)
+
+    with SparseImageReader(sparse_file) as reader:
+        # Read data from each chunk type
+        for entry in reader.chunk_index:
+            if entry.chunk_type == SparseChunkType.CRC32:
+                continue  # Skip CRC chunks
+
+            # Read from this chunk
+            offset = entry.output_offset
+            size = min(100, entry.output_size)
+
+            if size > 0:
+                data = reader.read(offset=offset, size=size)
+                expected = reference_data[offset : offset + size]
+                assert data == expected, f"Mismatch in {entry.chunk_type.name} chunk"
+
+
+def test_sparse_image_reader_fill_chunk_alignment(data_dir: str) -> None:
+    """Test SparseImageReader handling of FILL chunks with non-aligned reads.
+
+    This test verifies that SparseImageReader correctly handles reads from
+    FILL chunks that don't align with the 4-byte fill pattern, ensuring
+    proper byte-level accuracy.
+
+    :param data_dir: Directory containing test data files.
+    """
+    from spsdk.utils.sparse_image import SparseChunkType, SparseImageReader
+
+    sparse_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.simg")
+    binary_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.bin")
+
+    reference_data = load_binary(binary_file)
+
+    with SparseImageReader(sparse_file) as reader:
+        # Find a FILL chunk
+        fill_chunk = None
+        for entry in reader.chunk_index:
+            if entry.chunk_type == SparseChunkType.FILL:
+                fill_chunk = entry
+                break
+
+        if fill_chunk and fill_chunk.output_size > 10:
+            # Read with non-aligned offset within the FILL chunk
+            offset = fill_chunk.output_offset + 1  # Start at byte 1
+            size = 7  # Read 7 bytes (not aligned to 4-byte pattern)
+
+            data = reader.read(offset=offset, size=size)
+            expected = reference_data[offset : offset + size]
+            assert data == expected
+
+
+def test_sparse_image_reader_get_total_size(data_dir: str) -> None:
+    """Test SparseImageReader get_total_size method.
+
+    This test verifies that the get_total_size method returns the correct
+    total size of the reconstructed binary image, matching the reference
+    binary file size.
+
+    :param data_dir: Directory containing test data files.
+    """
+    from spsdk.utils.sparse_image import SparseImageReader
+
+    sparse_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.simg")
+    binary_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.bin")
+
+    reference_data = load_binary(binary_file)
+
+    with SparseImageReader(sparse_file) as reader:
+        total_size = reader.get_total_size()
+        assert total_size == len(reference_data)
+
+
+def test_sparse_image_reader_repr(data_dir: str) -> None:
+    """Test SparseImageReader string representation.
+
+    This test verifies that the __repr__ method returns a meaningful
+    string representation containing file path, size, and chunk count.
+
+    :param data_dir: Directory containing test data files.
+    """
+    from spsdk.utils.sparse_image import SparseImageReader
+
+    sparse_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.simg")
+
+    with SparseImageReader(sparse_file) as reader:
+        repr_str = repr(reader)
+        assert "SparseImageReader" in repr_str
+        assert "test_sparse.simg" in repr_str
+        assert "size=" in repr_str
+        assert "chunks=" in repr_str
+
+
+def test_sparse_image_reader_sequential_access(data_dir: str) -> None:
+    """Test SparseImageReader with sequential access pattern.
+
+    This test simulates a sequential read pattern, reading the entire
+    image in fixed-size chunks from beginning to end, verifying that
+    all data is correctly reconstructed.
+
+    :param data_dir: Directory containing test data files.
+    """
+    from spsdk.utils.sparse_image import SparseImageReader
+
+    sparse_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.simg")
+    binary_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.bin")
+
+    reference_data = load_binary(binary_file)
+
+    with SparseImageReader(sparse_file) as reader:
+        chunk_size = 1024
+        reconstructed = bytearray()
+        offset = 0
+        total_size = reader.get_total_size()
+
+        while offset < total_size:
+            size = min(chunk_size, total_size - offset)
+            data = reader.read(offset=offset, size=size)
+            reconstructed.extend(data)
+            offset += size
+
+        assert bytes(reconstructed) == reference_data
+
+
+def test_sparse_image_reader_random_access(data_dir: str) -> None:
+    """Test SparseImageReader with random access pattern.
+
+    This test verifies that SparseImageReader can handle random access
+    reads efficiently, reading from various offsets in non-sequential
+    order and validating all results.
+
+    :param data_dir: Directory containing test data files.
+    """
+    from spsdk.utils.sparse_image import SparseImageReader
+
+    sparse_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.simg")
+    binary_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.bin")
+
+    reference_data = load_binary(binary_file)
+
+    with SparseImageReader(sparse_file) as reader:
+        total_size = reader.get_total_size()
+
+        # Random access pattern
+        offsets = [
+            total_size - 100,
+            0,
+            total_size // 2,
+            100,
+            total_size // 4,
+            total_size * 3 // 4,
+        ]
+
+        for offset in offsets:
+            if offset + 100 <= total_size:
+                data = reader.read(offset=offset, size=100)
+                expected = reference_data[offset : offset + 100]
+                assert data == expected, f"Mismatch at random offset {offset}"
+
+
+def test_sparse_image_reader_invalid_file(tmpdir: Any) -> None:
+    """Test SparseImageReader error handling for invalid files.
+
+    This test verifies that SparseImageReader raises appropriate exceptions
+    when attempting to open non-existent files or files with invalid
+    sparse image format.
+
+    :param tmpdir: Temporary directory for test files.
+    """
+    from spsdk.exceptions import SPSDKError
+    from spsdk.utils.sparse_image import SparseImageReader
+
+    # Test non-existent file
+    with pytest.raises(SPSDKError, match="Cannot open sparse image file"):
+        SparseImageReader("non_existent_file.simg")
+
+    # Test invalid sparse image (valid size but wrong magic number)
+    invalid_file = os.path.join(tmpdir, "invalid.simg")
+    # Create a 28-byte header with invalid magic (0xDEADBEEF instead of 0xED26FF3A)
+    invalid_header = struct.pack(
+        "<IHHHHIIII",
+        0xDEADBEEF,  # Invalid magic number
+        1,  # major_version
+        0,  # minor_version
+        28,  # file_hdr_sz
+        12,  # chunk_hdr_sz
+        4096,  # block_size
+        0,  # total_blocks
+        0,  # total_chunks
+        0,  # image_checksum
+    )
+    write_file(invalid_header, invalid_file, "wb")
+
+    with pytest.raises(SPSDKError, match="Invalid sparse image magic"):
+        SparseImageReader(invalid_file)
+
+
+def test_sparse_image_reader_chunk_index_binary_search(data_dir: str) -> None:
+    """Test SparseImageReader chunk index binary search efficiency.
+
+    This test verifies that the chunk index lookup uses binary search
+    by testing lookups at various positions and ensuring they all
+    return correct results efficiently.
+
+    :param data_dir: Directory containing test data files.
+    """
+    from spsdk.utils.sparse_image import SparseImageReader
+
+    sparse_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.simg")
+
+    with SparseImageReader(sparse_file) as reader:
+        # Test binary search at different positions
+        total_size = reader.get_total_size()
+
+        test_offsets = [
+            0,  # First chunk
+            total_size // 4,  # Quarter
+            total_size // 2,  # Middle
+            total_size * 3 // 4,  # Three quarters
+            total_size - 1,  # Last byte
+        ]
+
+        for offset in test_offsets:
+            chunk_idx = reader._find_chunk_for_offset(offset)
+            assert 0 <= chunk_idx < len(reader.chunk_index)
+
+            # Verify the found chunk contains the offset
+            entry = reader.chunk_index[chunk_idx]
+            assert entry.output_offset <= offset < entry.output_offset + entry.output_size
+
+
+def test_sparse_image_reader_edge_cases(data_dir: str) -> None:
+    """Test SparseImageReader edge cases and boundary conditions.
+
+    This test verifies that SparseImageReader correctly handles various
+    edge cases including reading single bytes, reading at exact chunk
+    boundaries, and reading the last byte of the image.
+
+    :param data_dir: Directory containing test data files.
+    """
+    from spsdk.utils.sparse_image import SparseImageReader
+
+    sparse_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.simg")
+    binary_file = os.path.join(data_dir, "utils", "binary", "convert", "test_sparse.bin")
+
+    reference_data = load_binary(binary_file)
+
+    with SparseImageReader(sparse_file) as reader:
+        total_size = reader.get_total_size()
+
+        # Read single byte at start
+        data = reader.read(offset=0, size=1)
+        assert data == reference_data[0:1]
+
+        # Read single byte at end
+        data = reader.read(offset=total_size - 1, size=1)
+        assert data == reference_data[-1:]
+
+        # Read at chunk boundaries
+        for entry in reader.chunk_index[:3]:  # Test first few chunks
+            if entry.output_size > 0:
+                # Read at chunk start
+                data = reader.read(offset=entry.output_offset, size=1)
+                assert data == reference_data[entry.output_offset : entry.output_offset + 1]
+
+                # Read at chunk end
+                if entry.output_size > 1:
+                    end_offset = entry.output_offset + entry.output_size - 1
+                    data = reader.read(offset=end_offset, size=1)
+                    assert data == reference_data[end_offset : end_offset + 1]

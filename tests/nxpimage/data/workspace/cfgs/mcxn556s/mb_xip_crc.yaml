@@ -1,4 +1,4 @@
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -37,7 +37,7 @@ outputImageExecutionAddress: 0
 # ----------------------------------------===== Image version. [Optional] =====-----------------------------------------
 # Description: Image version is used for dual boot. The boot ROM decides which image to boot first based on the image
 # version. It boots the one with the newer image version first, and in case of a failure, it boots the older one.
-imageVersion: 0
+imageVersion: 0x47
 # ======================================================================================================================
 #                                               == Trust Zone Settings ==
 # ======================================================================================================================

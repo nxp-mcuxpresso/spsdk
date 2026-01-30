@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK NXP Image utilities for binary manipulation and conversion.
 
 This module provides command-line utilities for creating, exporting, extracting,
@@ -35,6 +36,7 @@ from spsdk.utils.misc import (
     get_printable_path,
     load_binary,
     load_text,
+    size_fmt,
     value_to_int,
     write_file,
 )
@@ -110,7 +112,7 @@ def binary_create(size: int, pattern: str, output_format: str, output: str) -> N
     "-f",
     "--format",
     "output_format",
-    type=click.Choice(["BIN", "HEX", "S19"], case_sensitive=False),
+    type=click.Choice(["BIN", "HEX", "S19", "SREC", "SPARSE"], case_sensitive=False),
     default="BIN",
     help="Output format.",
 )
@@ -201,7 +203,7 @@ def binary_extract(binary: str, address: str, size: str, output: str) -> None:
     "--input-file",
     type=click.Path(exists=True, readable=True),
     required=True,
-    help="Path to BIN/HEX/S19/ELF file to be converted.",
+    help="Path to BIN/HEX/S19/ELF/SPARSE file to be converted.",
 )
 @click.option(
     "-p",
@@ -221,7 +223,7 @@ def binary_extract(binary: str, address: str, size: str, output: str) -> None:
     "-f",
     "--format",
     "output_format",
-    type=click.Choice(["BIN", "HEX", "S19"], case_sensitive=False),
+    type=click.Choice(["BIN", "HEX", "S19", "SREC", "SPARSE"], case_sensitive=False),
     required=True,
     help="Output format.",
 )
@@ -236,8 +238,23 @@ def binary_convert_command(
 def binary_convert(
     input_file: str, keep_padding: bool, split_image: bool, output_format: str, output: str
 ) -> None:
-    """Convert input data file into selected format."""
+    """Convert input data file into selected format.
+
+    Supports loading from BIN, HEX, S19, ELF, and SPARSE formats.
+    Supports saving to BIN, HEX, S19, and SPARSE formats.
+
+    :param input_file: Path to input file (BIN/HEX/S19/ELF/SPARSE).
+    :param keep_padding: Preserve initial padding before first image region.
+    :param split_image: Split output into individual sub-image files.
+    :param output_format: Output format (BIN/HEX/S19/SPARSE).
+    :param output: Path to output file.
+    :raises SPSDKError: If split image is used with non-BIN format or conversion fails.
+    """
+    if split_image and output_format.upper() != "BIN":
+        raise SPSDKError("Split image is only supported for BIN format.")
+
     image = BinaryImage.load_binary_image(input_file)
+
     if not keep_padding and not split_image:
         image.update_offsets()
         if image.offset:
@@ -404,6 +421,192 @@ def binary_pad(
         f"The '{input_file}' file has been padded to {len(binary)} ({hex(len(binary))}) byte size and "
         f"stored into '{output}'"
     )
+
+
+@bin_image_group.command(name="info", no_args_is_help=True)
+@click.option(
+    "-i",
+    "--input-file",
+    type=click.Path(exists=True, readable=True),
+    required=True,
+    help="Path to binary file to display information about.",
+)
+@click.option(
+    "-n",
+    "--no-color",
+    is_flag=True,
+    default=False,
+    help="Disable color output in visual representation.",
+)
+@click.option(
+    "-d",
+    "--details",
+    is_flag=True,
+    default=False,
+    help="Show detailed format-specific parsing information (for HEX, SREC, SPARSE formats).",
+)
+def binary_info_command(input_file: str, no_color: bool, details: bool) -> None:
+    """Display comprehensive information about a binary file.
+
+    Shows detailed information including size, addresses, sub-images,
+    and visual representation of the binary file structure.
+    """
+    binary_info(input_file, no_color, details)
+
+
+def binary_info(input_file: str, no_color: bool = False, details: bool = False) -> None:
+    """Display comprehensive information about a binary file.
+
+    :param input_file: Path to the binary file.
+    :param no_color: Disable color output.
+    :param details: Show detailed format-specific parsing information.
+    """
+    try:
+        # Get file size
+        file_size = os.path.getsize(input_file)
+
+        # Detect file format
+        format_type = BinaryImage.detect_file_format(input_file)
+
+        # Load the binary image
+        bin_image = BinaryImage.load_binary_image(input_file)
+
+        # Calculate binary data size
+        binary_data_size = len(bin_image)
+
+        # Calculate ratio
+        if file_size > 0:
+            ratio = (binary_data_size / file_size) * 100
+            overhead = file_size - binary_data_size
+        else:
+            ratio = 0
+            overhead = 0
+
+        # Display file information
+        click.echo("=" * 80)
+        click.echo("FILE INFORMATION")
+        click.echo("=" * 80)
+        click.echo(f"File Path:        {get_printable_path(input_file)}")
+        click.echo(
+            f"File Size:        {size_fmt(file_size)} ({file_size:,} bytes, {hex(file_size)})"
+        )
+        click.echo(f"File Format:      {format_type}")
+        click.echo(
+            f"Binary Data Size: {size_fmt(binary_data_size)} ({binary_data_size:,} bytes, {hex(binary_data_size)})"
+        )
+        click.echo(f"Data/File Ratio:  {ratio:.2f}%")
+        if overhead > 0:
+            click.echo(f"Format Overhead:  {size_fmt(overhead)} ({overhead:,} bytes)")
+        elif overhead < 0:
+            click.echo(f"Format Savings:   {size_fmt(abs(overhead))} ({abs(overhead):,} bytes)")
+        click.echo("")
+
+        # Show format-specific details if requested
+        if details:
+            click.echo("=" * 80)
+            click.echo("FORMAT DETAILS")
+            click.echo("=" * 80 + "\n")
+
+            if format_type == "SREC":
+                _show_srec_details(input_file, no_color)
+            elif format_type == "HEX":
+                _show_hex_details(input_file, no_color)
+            elif format_type == "SPARSE":
+                _show_sparse_details(input_file, no_color)
+            elif format_type in ["BIN", "ELF"]:
+                click.echo(f"No detailed parsing available for {format_type} format.\n")
+            else:
+                click.echo(f"Unknown format: {format_type}\n")
+
+        # Get and display the information
+        info_output = bin_image.info(no_color=no_color)
+        click.echo(info_output)
+
+    except SPSDKError as e:
+        raise SPSDKAppError(f"Failed to load or process binary file: {str(e)}") from e
+
+
+def _show_srec_details(input_file: str, no_color: bool) -> None:
+    """Show detailed SREC format parsing.
+
+    :param input_file: Path to the SREC file.
+    :param no_color: Disable color output.
+    """
+    try:
+        from bincopy import pretty_srec
+
+        with open(input_file, "r", encoding="utf-8") as f:
+            data = f.read()
+
+        click.echo("Motorola S-Record Format Details:\n")
+
+        if no_color:
+            # Show plain records without colors
+            for line in data.splitlines():
+                if line.strip():
+                    click.echo(line)
+        else:
+            # Show colorized records
+            for line in data.splitlines():
+                if line.strip():
+                    click.echo(pretty_srec(line))
+
+        click.echo("")
+
+    except Exception as e:
+        click.echo(f"Error parsing SREC details: {str(e)}\n")
+
+
+def _show_hex_details(input_file: str, no_color: bool) -> None:
+    """Show detailed Intel HEX format parsing.
+
+    :param input_file: Path to the HEX file.
+    :param no_color: Disable color output.
+    """
+    try:
+        from bincopy import pretty_ihex
+
+        with open(input_file, "r", encoding="utf-8") as f:
+            data = f.read()
+
+        click.echo("Intel HEX Format Details:\n")
+
+        if no_color:
+            # Show plain records without colors
+            for line in data.splitlines():
+                if line.strip():
+                    click.echo(line)
+        else:
+            # Show colorized records
+            for line in data.splitlines():
+                if line.strip():
+                    click.echo(pretty_ihex(line))
+
+        click.echo("")
+
+    except Exception as e:
+        click.echo(f"Error parsing Intel HEX details: {str(e)}\n")
+
+
+def _show_sparse_details(input_file: str, no_color: bool = False) -> None:
+    """Show detailed SPARSE format parsing.
+
+    :param input_file: Path to the SPARSE file.
+    :param no_color: Disable color output.
+    """
+    try:
+        from spsdk.utils.sparse_image import SparseImage
+
+        sparse = SparseImage.load_from_file(input_file)
+
+        click.echo("Android SPARSE Format Details:\n")
+
+        # Use the get_info method from SparseImage with no_color parameter
+        info = sparse.get_info(no_color=no_color)
+        click.echo(info)
+
+    except Exception as e:
+        click.echo(f"Error parsing SPARSE details: {str(e)}\n")
 
 
 @nxpimage_utils_group.group(name="convert", cls=CommandsTreeGroup)

@@ -1714,6 +1714,14 @@
       }
     },
     {
+      "home_page": "https://sourceforge.net/projects/ruamel-yaml-clibz/",
+      "name": "ruamel.yaml.clibz",
+      "package": {
+        "name": "ruamel.yaml.clibz",
+        "license": "MIT"
+      }
+    },
+    {
       "home_page": "https://github.com/arsenetar/send2trash",
       "name": "Send2Trash",
       "package": {

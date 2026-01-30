@@ -1,4 +1,4 @@
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,6 +11,13 @@ iee_output:
       title: IEE output directory
       description: Path to directory where the IEE output will be generated
       template_value: "iee_output"
+
+    output_format:
+      type: string
+      title: Output data file format's
+      description: Output file format for IEE image(s)
+      enum: [bin, hex, srec, sparse]
+      template_value: bin
 
     output_name:
       type: string

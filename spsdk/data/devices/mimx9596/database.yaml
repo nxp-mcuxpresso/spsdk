@@ -1,4 +1,4 @@
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -317,6 +317,13 @@ features:
     oei_ddr_image_size_alignment: 0x400
     oei_ddr_gap_after_image: 0x10000
 
+    oei_ddr_no_qb_load_address: 0x1ffc0000
+    oei_ddr_no_qb_entry_point: 0x1ffc0001
+    oei_ddr_no_qb_core_id: cortex-m33
+    oei_ddr_no_qb_image_type: oei
+    oei_ddr_no_qb_image_size_alignment: 0x400
+    oei_ddr_no_qb_gap_after_image: 0x10000
+
     oei_tcm_load_address: 0x1ffc0000
     oei_tcm_entry_point: 0x1ffc0001
     oei_tcm_core_id: cortex-m33
@@ -347,6 +354,7 @@ features:
     atf_core_id: cortex-a55
     atf_meta_data_start_cpu_id: 2
     atf_image_size_alignment: 0x400
+    atf_filename: bl31-imx95.bin
 
     uboot_load_address: 0x90200000
     uboot_core_id: cortex-a55
@@ -357,6 +365,7 @@ features:
     tee_core_id: cortex-a55
     tee_meta_data_start_cpu_id: 2
     tee_image_size_alignment: 0x400
+    tee_filename: tee.bin
 
     kernel_load_address: 0x90400000
     kernel_core_id: cortex-a55
@@ -375,7 +384,7 @@ features:
     extra_images:
       [
         double_authentication,
-        oei_ddr,
+        oei_ddr_no_qb,
         oei_tcm,
         system_manager,
         cortex_m7_app,
@@ -385,7 +394,7 @@ features:
         uboot,
         tee,
         kernel,
-        dtb
+        dtb,
       ]
   # ======== EdgeLock Enclave section ========
   ele: {}
@@ -408,6 +417,10 @@ features:
         segments:
           primary_image_container_set: 0x8_000
           secondary_image_container_set: -1 # Just behind previous segment
+      emmc_boot:
+        segments:
+          primary_image_container_set: 0x0
+          secondary_image_container_set: -1 # Just behind previous segment
       sd:
         segments:
           primary_image_container_set: 0x8_000
@@ -422,6 +435,64 @@ features:
         segments:
           primary_image_container_set: 0x00
           secondary_image_container_set: -1 # Just behind previous segment
+
+    # Template definitions for bootable image generation
+    templates:
+      imx_boot_flash_all:
+        description: "Complete imx-bootloader image"
+        mem_type: serial_downloader
+        configs:
+          - name: spl
+            type: spl
+            containers:
+              - name: nxp_container
+                path: "mx95b0-ahab-container.img"
+              - name: spl_container
+                images:
+                  [oei_ddr_no_qb, system_manager, cortex_m7_app, spl, v2x_dummy]
+          - name: uboot
+            type: uboot
+            containers:
+              - name: uboot_container
+                images: [atf, uboot, tee]
+
+    boards:
+      imx95-15x15-lpddr4x-evk:
+        lpddr_imem: lpddr4x_imem_v202409.bin
+        lpddr_dmem: lpddr4x_dmem_v202409.bin
+        lpddr_imem_qb: lpddr4x_imem_qb_v202409.bin
+        lpddr_dmem_qb: lpddr4x_dmem_qb_v202409.bin
+        oei_ddr: oei-m33-ddr.bin
+        system_manager: m33_image-mx95evk.bin
+        cortex_m7_app: imx95-15x15-evk_m7_TCM_power_mode_switch.bin
+        spl: u-boot-spl.bin-imx95-15x15-lpddr4x-evk-sd
+        atf: bl31-imx95.bin
+        uboot: u-boot-imx95-15x15-lpddr4x-evk.bin-sd
+        tee: tee.bin
+      imx95-19x19-lpddr5-evk:
+        lpddr_imem: lpddr5_imem_v202409.bin
+        lpddr_dmem: lpddr5_dmem_v202409.bin
+        lpddr_imem_qb: lpddr5_imem_qb_v202409.bin
+        lpddr_dmem_qb: lpddr5_dmem_qb_v202409.bin
+        oei_ddr: oei-m33-ddr.bin
+        system_manager: m33_image-mx95evk.bin
+        cortex_m7_app: imx95-19x19-evk_m7_TCM_power_mode_switch.bin
+        spl: u-boot-spl.bin-imx95-19x19-lpddr5-evk-sd
+        atf: bl31-imx95.bin
+        uboot: u-boot-imx95-19x19-lpddr5-evk.bin-sd
+        tee: tee.bin
+      imx95-19x19-verdin:
+        lpddr_imem: lpddr5_imem_v202409.bin
+        lpddr_dmem: lpddr5_dmem_v202409.bin
+        lpddr_imem_qb: lpddr5_imem_qb_v202409.bin
+        lpddr_dmem_qb: lpddr5_dmem_qb_v202409.bin
+        oei_ddr: oei-m33-ddr.bin
+        system_manager: m33_image-mx95evk.bin
+        cortex_m7_app: imx95-verdin-evk_m7_TCM_power_mode_switch.bin
+        spl: u-boot-spl.bin-imx95-19x19-verdin-sd
+        atf: bl31-imx95.bin
+        uboot: u-boot-imx95-19x19-verdin.bin-sd
+        tee: tee.bin
 
   # # ======== OTFAD section ========
   otfad:
@@ -448,7 +519,6 @@ features:
         The code must be still linked on secure base address 0x1400_0000 to proper run of OTFAD hardware.
 
         Same is for FlexSPI1, but instead of 0x3800_0000 base address, the 0x2800_0000 must be used in OTFAD configuration.
-
 
   #   # ======== Device Hardware Security Module (HSM) section ========
   # devhsm: EdgeLock 2 Go

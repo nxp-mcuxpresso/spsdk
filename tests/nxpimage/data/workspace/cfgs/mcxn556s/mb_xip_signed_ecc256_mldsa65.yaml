@@ -1,0 +1,113 @@
+# Copyright 2025-2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ============================  mbi Configuration template for mcxn556s, Revision: latest.  =============================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxn556s
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# --------------------------------------===== Application target [Required] =====---------------------------------------
+# Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+# Possible options: <xip, load-to-ram>
+outputImageExecutionTarget: xip
+# -------------------------------===== Type of boot image authentication [Required] =====-------------------------------
+# Description: Specification of final master boot image authentication.
+# Possible options: <signed, plain, crc>
+outputImageAuthenticationType: signed
+# ---------------------------------------===== Output Image name [Required] =====---------------------------------------
+# Description: The path for result binary file.
+masterBootOutputFile: ./workspace/output_images/mcxn556s/signed_mbi.bin
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image to by modified to Master Boot Image.
+inputImageFile: ./workspace/input_images/mcxn556s_led_blinky_unaligned.bin
+# --------------------------------===== Loading address of application [Optional] =====---------------------------------
+# Description: Application loading address in RAM if not XiP, otherwise address of load in XiP.
+outputImageExecutionAddress: 0
+# ---------------------------------------===== Firmware version. [Optional] =====---------------------------------------
+# Description: Value compared with Secure_FW_Version monotonic counter value stored in protected memory (MCU specific).
+# If value is lower than value in protected memory, then is image rejected (rollback protection).
+firmwareVersion: 0x47
+# ======================================================================================================================
+#                                               == Trust Zone Settings ==
+# ======================================================================================================================
+# ---------------------------===== TrustZone Customization file in version 2 [Optional] =====---------------------------
+# Description: Specification of Trust Zone configuration file for advanced settings. It could be as YAML TrustZone
+# configuration file as pre-prepared binary TrustZone configuration.
+# trustZonePresetFile: my_tz_custom.yaml
+# ======================================================================================================================
+#                                                == Additional Checks. ==
+# ======================================================================================================================
+# --------------------------------===== The additional CRC images check [Optional] =====--------------------------------
+# Description: If true, add additional CRC image that is computed from all data execution mage and optionally TrustZone.
+add_crc_check: true
+# ======================================================================================================================
+#                                 == AHAB Container format to add to ECC + PQC sign. ==
+# ======================================================================================================================
+# -----------------------------------===== Super Root Key (SRK) set [Required] =====------------------------------------
+# Description: Defines which set is used to authenticate the container.
+# Possible options: <oem, nxp>
+srk_set: oem
+# -------------------------------------------===== Used SRK [Required] =====--------------------------------------------
+# Description: Which key from SRK set is being used.
+used_srk_id: 0
+# -------------------------------------===== AHAB container signer [Optional] =====-------------------------------------
+# Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
+# private key used for sign the container header. Header can be signed by SRK. The referenced SRK must not have been
+# revoked.
+signer: ../../_data/keys/ecc256/imgkey_ecc256.pem
+# ---------------------===== AHAB container signer for second signature (PQC only) [Optional] =====---------------------
+# Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
+# private key used for second sign (PQC only) of the container header. Header can be signed by SRK. The referenced SRK
+# must not have been revoked.
+signer_#2: ../../_data/keys/mldsa65/imgkey_mldsa65.pem
+
+# ======================================================================================================================
+#                                         == Configuration of AHAB SRK table ==
+# ======================================================================================================================
+# -------------------------------------------===== SRK Table [Required] =====-------------------------------------------
+# Description: SRK (Super Root key) table definition.
+srk_table:
+  # ---------------------------------===== Super Root Key (SRK) table [Required] =====----------------------------------
+  # Description: Table containing the used SRK records. All SRKs must be of the same type. Supported signing algorithms
+  # are: RSA-PSS, ECDSA, Dilithium or SM2. Supported hash algorithms: sha256, sha384, sha512, sha3_256, sha3_384,
+  # sha3_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1, rsa2048, rsa4096, dilithium3, sm2.
+  # Certificate may be of Certificate Authority. Dilithium algorithms are supported just in new type of AHAB container
+  srk_array:
+    - ../../_data/keys/ecc256/srk0_ecc256.pub
+    - ../../_data/keys/ecc256/srk1_ecc256.pub
+    - ../../_data/keys/ecc256/srk2_ecc256.pub
+    - ../../_data/keys/ecc256/srk3_ecc256.pub
+
+  # ====================================================================================================================
+  #                  == Configuration of AHAB SRK table in case that the double signing (ECC + PQC) ==
+  # ====================================================================================================================
+  # --------------------------------------===== Second SRK Table [Optional] =====---------------------------------------
+  srk_table_#2:
+    # --------------------------------===== Super Root Key (SRK) table [Required] =====---------------------------------
+    # Description: Table containing the used SRK Dilithium records. All SRKs must be of the same type. Supported signing
+    # algorithms are: Dilithium level 3. Supported hash algorithms: sha3_256, sha3_384, sha3_512. Certificate may be of
+    # Certificate Authority.
+    srk_array:
+      - ../../_data/keys/mldsa65/srk0_mldsa65.pub
+      - ../../_data/keys/mldsa65/srk1_mldsa65.pub
+      - ../../_data/keys/mldsa65/srk2_mldsa65.pub
+      - ../../_data/keys/mldsa65/srk3_mldsa65.pub
+
+# ======================================================================================================================
+#              == Optional configuration of AHAB Container Certificate (if not used, erase the section) ==
+# ======================================================================================================================
+# -------------------------------------===== The AHAB certificate [Optional] =====--------------------------------------
+# Description: The file that contains AHAB certificate. It could be used already prepared binary form signed by SRK, or
+# it is possible to use configuration YAML file of certificate and the AHAB export process it will export it itself.
+# certificate: my_ahab_certificate.bin
