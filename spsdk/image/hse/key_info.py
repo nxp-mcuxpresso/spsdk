@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -570,118 +570,6 @@ class KeyInfo(FeatureBaseClass):
         """
         schemas = cls.get_validation_schemas(family)
         return cls._get_config_template(family, schemas)
-
-
-class KeyCatalogId(SpsdkEnum):
-    """HSE key catalog type.
-
-    A key catalog is a memory container that holds groups of keys.
-    The catalog defines the type of storage (volatile / non-volatile) and the visibility to the application (host).
-    """
-
-    ROM = (0, "ROM", "ROM key catalog (NXP keys)")
-    NVM = (1, "NVM", "NVM key catalog")
-    RAM = (2, "RAM", "RAM key catalog")
-
-
-class KeyHandle:
-    """HSE Key Handle.
-
-    All keys used in cryptographic operations are referenced by a unique key handle.
-    The key handle is a 32-bit integer: the key catalog(byte2), group index in catalog (byte1)
-    and key slot index (byte0).
-    """
-
-    ROM_KEY_AES256_KEY0 = 0x00000000
-    ROM_KEY_AES256_KEY1 = 0x00000001
-    ROM_KEY_AES256_KEY2 = 0x00000002
-    ROM_KEY_RSA3072_PUB_KEY0 = 0x00000100
-    ROM_KEY_RSA2048_PUB_KEY1 = 0x00000101
-    ROM_KEY_ECC256_PUB_KEY0 = 0x00000200
-
-    INVALID_KEY_HANDLE = 0xFFFFFFFF
-    INVALID_GROUP_IDX = 0xFF
-    INVALID_SLOT_IDX = 0xFF
-
-    def __init__(self, catalog_id: KeyCatalogId, group_idx: int, slot_idx: int) -> None:
-        """Initialize a key handle from its components.
-
-        :param catalog_id: Key catalog ID
-        :param group_idx: Group index in catalog
-        :param slot_idx: Key slot index within the group
-        """
-        self.catalog_id = catalog_id
-        self.group_idx = group_idx
-        self.slot_idx = slot_idx
-
-    @classmethod
-    def parse(cls, data: bytes) -> Self:
-        """Parse a key handle from bytes.
-
-        :param data: Raw key handle value as bytes (4 bytes)
-        :return: KeyHandle object
-        :raises SPSDKParsingError: If data length is invalid
-        """
-        if len(data) != 4:
-            raise SPSDKParsingError(
-                f"Invalid key handle data length: {len(data)}, expected 4 bytes"
-            )
-
-        handle = int.from_bytes(data, byteorder="little")
-        return cls.from_handle(handle)
-
-    @classmethod
-    def from_handle(cls, handle: int) -> Self:
-        """Create a KeyHandle object from a raw handle value.
-
-        :param handle: Raw key handle as integer
-        :return: KeyHandle object
-        """
-        catalog_id = (handle >> 16) & 0xFF
-        group_idx = (handle >> 8) & 0xFF
-        slot_idx = handle & 0xFF
-        return cls(KeyCatalogId.from_tag(catalog_id), group_idx, slot_idx)
-
-    def export(self) -> bytes:
-        """Export the key handle to bytes.
-
-        :return: Raw key handle as bytes (4 bytes)
-        """
-        return self.handle.to_bytes(4, byteorder="little")
-
-    @property
-    def handle(self) -> int:
-        """Get the raw key handle value.
-
-        :return: Raw key handle as integer
-        """
-        return (self.catalog_id.tag << 16) | (self.group_idx << 8) | self.slot_idx
-
-    def is_valid(self) -> bool:
-        """Check if the key handle is valid.
-
-        :return: True if valid, False otherwise
-        """
-        return (
-            self.handle != self.INVALID_KEY_HANDLE
-            and self.group_idx != self.INVALID_GROUP_IDX
-            and self.slot_idx != self.INVALID_SLOT_IDX
-        )
-
-    @property
-    def is_rom_key(self) -> bool:
-        """Check if the key handle refers to a ROM key.
-
-        :return: True if ROM key, False otherwise
-        """
-        return self.catalog_id == KeyCatalogId.ROM
-
-    def __str__(self) -> str:
-        """Format the key handle for display.
-
-        :return: Formatted string representation
-        """
-        return f"Key Handle: 0x{self.handle:08X} (Catalog: {self.catalog_id.label}, Group: {self.group_idx}, Slot: {self.slot_idx})"
 
 
 class KeyFormat(SpsdkEnum):

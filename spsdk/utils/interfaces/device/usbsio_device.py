@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -556,7 +556,7 @@ class UsbSioSPIDevice(UsbSioDevice):
         :raises SPSDKTimeoutError: When no data received or transfer result indicates failure.
         """
         try:
-            (data, result) = self.port.Transfer(
+            data, result = self.port.Transfer(
                 devSelectPort=self.spi_sselport,
                 devSelectPin=self.spi_sselpin,
                 txData=None,
@@ -583,7 +583,7 @@ class UsbSioSPIDevice(UsbSioDevice):
         """
         logger.debug(f"[{' '.join(f'{b:02x}' for b in data)}]")
         try:
-            (dummy, result) = self.port.Transfer(
+            dummy, result = self.port.Transfer(
                 devSelectPort=self.spi_sselport, devSelectPin=self.spi_sselpin, txData=data
             )
         except Exception as e:
@@ -661,7 +661,7 @@ class UsbSioI2CDevice(UsbSioDevice):
         :raises SPSDKTimeoutError: When no data received or operation times out.
         """
         try:
-            (data, result) = self.port.DeviceRead(devAddr=self.i2c_address, rxSize=length)
+            data, result = self.port.DeviceRead(devAddr=self.i2c_address, rxSize=length)
         except Exception as e:
             raise SPSDKConnectionError(str(e)) from e
         if result < 0 or not data:

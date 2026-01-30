@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023,2025 NXP
+# Copyright 2023,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,7 +12,6 @@ of SBX (Secure Binary) commands used in SPSDK secure provisioning operations.
 The tests ensure proper command creation, validation, and execution within
 the SPSDK SBX command framework.
 """
-
 
 from spsdk.sbfile.sb31.commands import CmdReset
 

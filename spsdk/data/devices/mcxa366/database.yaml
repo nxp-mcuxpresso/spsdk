@@ -1,4 +1,4 @@
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -27,9 +27,6 @@ info:
       interfaces: ["uart", "spi", "i2c"]
 
 features:
-  # ======== Blhost section ========
-  blhost: {}
-
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x2000_2000
@@ -74,8 +71,7 @@ features:
           width: 128
           config_as_hexstring: true
           reversed: false
-          description:
-            ERASE_TOKEN[127:0]
+          description: ERASE_TOKEN[127:0]
           sub_regs:
             - field0D0
             - field0D4
@@ -86,7 +82,7 @@ features:
   dat:
     dmbox_ap_ix: 1 # Typical Index of debug mailbox access port is 2
     non_standard_statuses: # dictionary of non standard return statuses from various commands
-      2:  # Command get_crp_level
+      2: # Command get_crp_level
         0xFFFF_FFFF: ROP_STATE = 0xFFFF_FFFF (erased FLASH value), no ROP. Default for blank state
         0xEEBA_04C3: ROP_STATE = 0xEEBA_04C3. Debug disabled and unlocked, can be modified by customer, only limited debug mailbox commands available
         0x4939_8D8B: ROP_STATE = 0x4939_8D8B. Debug disabled and locked, cannot be modified by customer, only limited debug mailbox commands available
@@ -96,7 +92,7 @@ features:
   blhost:
     sub_features: [overridden_properties]
     overridden_properties:
-       17: "life-cycle"
+      17: "life-cycle"
 
   # ======== Bootable image section ========
   bootable_image:

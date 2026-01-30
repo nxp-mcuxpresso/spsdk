@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,9 +11,10 @@ This module provides attribute handler classes for managing Hardware Security En
 attributes in NXP EdgeLock Enclave operations. It implements a comprehensive framework for
 reading, writing, parsing, and serializing various HSE configuration attributes.
 """
+
 from abc import abstractmethod
 from struct import calcsize, pack, unpack
-from typing import Any, Type
+from typing import Any, Optional, Type
 
 from typing_extensions import Self
 
@@ -32,6 +33,7 @@ class HseAttributeId(SpsdkEnum):
 
     FW_VERSION = (1, "FW_VERSION")
     CAPABILITIES = (2, "CAPABILITIES")
+    APP_DEBUG_KEY = (11, "APP_DEBUG_KEY")
     SECURE_LIFECYCLE = (12, "SECURE_LIFECYCLE")
     ENABLE_PUBLISH_KEYSTORE_RAM_TO_FLASH = (602, "ENABLE_PUBLISH_KEYSTORE_RAM_TO_FLASH")
 
@@ -148,6 +150,18 @@ class HseAttributeHandler(BaseClass):
         raise SPSDKValueError(f"Unsupported attribute ID: {attr_id}")
 
 
+class FwMemoryConfig(SpsdkEnum):
+    """HSE firmware memory configuration enumeration.
+
+    Defines the available memory configuration modes for HSE (Hardware Security Engine)
+    firmware operations. These configurations determine how the firmware manages memory
+    layout and swap operations for different operational scenarios.
+    """
+
+    FULL_MEMORY = (0, "FULL_MEMORY", "Full memory")
+    AB_SWAP = (1, "AB_SWAP", "AB swap")
+
+
 class FwVersionAttributeHandler(HseAttributeHandler):
     """HSE firmware version attribute handler.
 
@@ -172,6 +186,7 @@ class FwVersionAttributeHandler(HseAttributeHandler):
         major: int,
         minor: int,
         patch: int,
+        fw_memory_config: FwMemoryConfig,
     ) -> None:
         """Initialize the firmware version attribute handler.
 
@@ -183,6 +198,7 @@ class FwVersionAttributeHandler(HseAttributeHandler):
         :param major: Major version number of the firmware.
         :param minor: Minor version number of the firmware.
         :param patch: Patch version number of the firmware.
+        :param fw_memory_config: FW memory configuration.
         """
         super().__init__()
         self.soc_type = soc_type
@@ -190,6 +206,7 @@ class FwVersionAttributeHandler(HseAttributeHandler):
         self.major = major
         self.minor = minor
         self.patch = patch
+        self.fw_memory_config = fw_memory_config
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
@@ -200,8 +217,8 @@ class FwVersionAttributeHandler(HseAttributeHandler):
         :param data: Raw firmware version data bytes to be parsed.
         :return: Parsed firmware version object with extracted components.
         """
-        _, soc_type, fw_type, major, minor, patch = unpack(cls.FORMAT, data)
-        return cls(soc_type, fw_type, major, minor, patch)
+        mem_cfg, soc_type, fw_type, major, minor, patch = unpack(cls.FORMAT, data)
+        return cls(soc_type, fw_type, major, minor, patch, FwMemoryConfig.from_tag(mem_cfg))
 
     def export(self) -> bytes:
         """Export firmware version data into raw bytes.
@@ -212,8 +229,15 @@ class FwVersionAttributeHandler(HseAttributeHandler):
 
         :return: Packed binary data containing firmware version information.
         """
-        # Pack the data according to the FORMAT
-        return pack(self.FORMAT, 0, self.soc_type, self.fw_type, self.major, self.minor, self.patch)
+        return pack(
+            self.FORMAT,
+            self.fw_memory_config.tag,
+            self.soc_type,
+            self.fw_type,
+            self.major,
+            self.minor,
+            self.patch,
+        )
 
     def __str__(self) -> str:
         """Return string representation of firmware version information.
@@ -227,6 +251,7 @@ class FwVersionAttributeHandler(HseAttributeHandler):
         ret += f"SoC Type: {self.soc_type}\n"
         ret += f"FW Type: {self.fw_type}\n"
         ret += f"Version: {self.major}.{self.minor}.{self.patch}\n"
+        ret += f"FW Memory Config: {self.fw_memory_config.label}\n"
         return ret
 
     def __repr__(self) -> str:
@@ -237,6 +262,7 @@ class FwVersionAttributeHandler(HseAttributeHandler):
         return (
             f"FwVersion(soc_type={self.soc_type}, fw_type={self.fw_type},"
             f"version={self.major}.{self.minor}.{self.patch})"
+            f"fw_memory_config={self.fw_memory_config.label})"
         )
 
     def to_dict(self) -> dict:
@@ -248,7 +274,7 @@ class FwVersionAttributeHandler(HseAttributeHandler):
         :return: Dictionary containing attribute ID label and firmware version settings
                  including SoC type, firmware type, and version numbers (major, minor, patch).
         """
-        return {
+        cfg: dict = {
             "attr_id": self.ATTR_ID.label,
             "settings": {
                 "soc_type": self.soc_type,
@@ -256,8 +282,10 @@ class FwVersionAttributeHandler(HseAttributeHandler):
                 "major": self.major,
                 "minor": self.minor,
                 "patch": self.patch,
+                "fw_memory_config": self.fw_memory_config.label,
             },
         }
+        return cfg
 
 
 class CapabilityIndex(SpsdkEnum):
@@ -522,8 +550,7 @@ class SecureLifecycle(SpsdkEnum):
     direction. A reset is recommended after each lifecycle write-advance operation as the
     lifecycle is read/scanned by hardware during the reset phase.
 
-    Warning: The lifecycle can be advanced to OEM_PROD/IN_FIELD only if the
-    HSE_APP_DEBUG_KEY_ATTR_ID attribute was set before.
+    Warning: The lifecycle can be advanced to OEM_PROD/IN_FIELD only if the ADKP was set before.
     """
 
     CUST_DEL = (0x04, "CUST_DEL", "Customer Delivery lifecycle")
@@ -544,7 +571,7 @@ class SecureLifecycleAttributeHandler(HseAttributeHandler):
     Important notes:
     - Lifecycle is read by hardware during reset phase
     - Reset is recommended after each lifecycle write-advance operation
-    - Advancement to OEM_PROD/IN_FIELD requires HSE_APP_DEBUG_KEY_ATTR_ID to be set first
+    - Advancement to OEM_PROD/IN_FIELD requires ADKP to be set first
 
     :cvar FORMAT: Binary format specification for UINT8 encoding.
     :cvar ATTR_ID: HSE attribute identifier for secure lifecycle.
@@ -600,7 +627,7 @@ class SecureLifecycleAttributeHandler(HseAttributeHandler):
         ret += "\nWarnings:\n"
         ret += "  - Lifecycle can only be advanced in forward direction\n"
         ret += "  - Reset is recommended after each lifecycle write-advance operation\n"
-        ret += "  - Advancement to OEM_PROD/IN_FIELD requires HSE_APP_DEBUG_KEY_ATTR_ID to be set\n"
+        ret += "  - Advancement to OEM_PROD/IN_FIELD requires ADKP to be set\n"
         return ret
 
     def __repr__(self) -> str:
@@ -623,4 +650,156 @@ class SecureLifecycleAttributeHandler(HseAttributeHandler):
             "settings": {
                 "lifecycle": self.lifecycle.label,
             },
+        }
+
+
+class AppDebugKeyAttributeHandler(HseAttributeHandler):
+    """HSE Application Debug Key/Password attribute handler.
+
+    Manages the 128-bit Application Debug Key/Password (ADKP) that must be set by the host
+    in CUST_DEL lifecycle. This key is used for debug authentication and lifecycle advancement.
+
+    Important notes:
+    - Write: Accepts full 128-bit (16 bytes) debug key, can only be written once in CUST_DEL lifecycle
+    - Read: Returns first 16 bytes of SHA2_224(ADKP), not the actual key
+    - Keys with all 0x00 or all 0xFF bytes are rejected by HSE firmware
+    - Required to be set before advancing to OEM_PROD/IN_FIELD lifecycle
+
+    :cvar FORMAT: Binary format specification for 128-bit key (16 bytes).
+    :cvar ATTR_ID: HSE attribute identifier for application debug key.
+    :cvar ATTR_TYPE: One-time programmable attribute type.
+    """
+
+    FORMAT = LITTLE_ENDIAN + "16" + UINT8  # 16 bytes for 128-bit key
+    ATTR_ID = HseAttributeId.APP_DEBUG_KEY
+    ATTR_TYPE = HseAttributeType.NVM_READ_WRITE
+
+    def __init__(self, data: bytes, is_hash: bool = True) -> None:
+        """Initialize the application debug key attribute handler.
+
+        :param data: Either the actual 128-bit debug key or its SHA2_224 hash (first 16 bytes).
+        :param is_hash: True if data is the hash (from read), False if actual key (for write).
+        :raises SPSDKValueError: If data is not exactly 16 bytes.
+        """
+        super().__init__()
+        if len(data) != 16:
+            raise SPSDKValueError(f"Data must be exactly 16 bytes, got {len(data)}")
+
+        self.data = data
+        self.is_hash = is_hash
+
+        # Validate actual key if this is for writing
+        if not is_hash:
+            self._validate_debug_key(data)
+
+    def _validate_debug_key(self, debug_key: bytes) -> None:
+        """Validate the debug key for writing.
+
+        :param debug_key: The 128-bit debug key to validate.
+        :raises SPSDKValueError: If debug key is invalid (all zeros or all 0xFF).
+        """
+        # Check for rejected patterns (all 0x00 or all 0xFF)
+        if debug_key == b"\x00" * 16:
+            raise SPSDKValueError("Debug key cannot be all 0x00 bytes")
+        if debug_key == b"\xff" * 16:
+            raise SPSDKValueError("Debug key cannot be all 0xFF bytes")
+
+    @classmethod
+    def parse(cls, data: bytes) -> Self:
+        """Parse application debug key hash data from read response.
+
+        When reading APP_DEBUG_KEY attribute, HSE returns the first 16 bytes of SHA2_224(ADKP).
+        This method parses that hash data.
+
+        :param data: Raw byte data containing the key hash (16 bytes).
+        :return: New instance with parsed key hash.
+        :raises SPSDKValueError: If data is not exactly 16 bytes.
+        """
+        if len(data) < 16:
+            raise SPSDKValueError(
+                f"Invalid data length for APP_DEBUG_KEY: {len(data)}, expected 16 bytes"
+            )
+
+        key_hash = data[:16]
+        return cls(key_hash, is_hash=True)
+
+    def export(self) -> bytes:
+        """Export the data as bytes.
+
+        For read operations: Returns the SHA2_224 hash (first 16 bytes).
+        For write operations: Returns the actual 128-bit debug key.
+
+        :return: Serialized data as 16 bytes.
+        """
+        return pack(self.FORMAT, self.data)
+
+    @property
+    def debug_key(self) -> Optional[bytes]:
+        """Get the actual debug key if available.
+
+        :return: The actual debug key if this instance was created for writing, None if from read.
+        """
+        return self.data if not self.is_hash else None
+
+    @property
+    def key_hash(self) -> Optional[bytes]:
+        """Get the key hash if available.
+
+        :return: The SHA2_224 hash if this instance was created from read, None if for writing.
+        """
+        return self.data if self.is_hash else None
+
+    def __str__(self) -> str:
+        """Format the application debug key information for display.
+
+        Shows different information based on whether this contains the actual key or its hash.
+
+        :return: Formatted string representation of the debug key information.
+        """
+        ret = "Application Debug Key/Password:\n"
+
+        if self.is_hash:
+            ret += f"  Key Hash (SHA2_224 first 16 bytes): {self.data.hex().upper()}\n"
+            ret += "  Note: This is the hash returned by read operation, not the actual key\n"
+        else:
+            ret += f"  Debug Key: {self.data.hex().upper()}\n"
+            ret += "  Note: This is the actual key for write operation\n"
+
+        ret += "\nAttribute Properties:\n"
+        ret += "  - Can only be written once in CUST_DEL lifecycle\n"
+        ret += "  - Required before advancing to OEM_PROD/IN_FIELD lifecycle\n"
+        ret += "  - Keys with all 0x00 or all 0xFF bytes are rejected\n"
+        ret += "  - Read returns SHA2_224 hash, write accepts actual key\n"
+        return ret
+
+    def __repr__(self) -> str:
+        """Return a string representation of the application debug key attribute.
+
+        :return: String representation showing the data type and hex value.
+        """
+        data_type = "hash" if self.is_hash else "key"
+        return f"AppDebugKey({data_type}={self.data.hex().upper()})"
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the application debug key attribute to dictionary representation.
+
+        Creates a dictionary containing the attribute ID label and key data
+        for serialization purposes.
+
+        :return: Dictionary with attribute ID and key settings.
+        """
+        if self.is_hash:
+            settings = {
+                "key_hash": self.data.hex().upper(),
+                "note": "This is SHA2_224 hash from read operation",
+            }
+        else:
+            settings = {
+                "debug_key": self.data.hex().upper(),
+                "note": "This is actual key for write operation",
+            }
+
+        return {
+            "attr_id": self.ATTR_ID.label,
+            "settings": settings,
         }

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -460,7 +460,7 @@ class SectionHeaderItemV1(BaseClass):
         """
         if cls.SIZE > len(data):
             raise SPSDKError("Insufficient size")
-        (identifier, offset, length, flags) = unpack_from(cls.FORMAT, data)
+        identifier, offset, length, flags = unpack_from(cls.FORMAT, data)
         return cls(identifier, offset, length, SecureBootFlagsV1.from_tag(flags))
 
 

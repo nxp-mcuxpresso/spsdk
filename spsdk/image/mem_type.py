@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -40,3 +40,4 @@ class MemoryType(SpsdkEnum):
     RECOVERY_SPI_MBI = (15, "recovery_spi_mbi", "Recovery SPI with MBI")
     SERIAL_DOWNLOADER = (16, "serial_downloader", "Serial downloader")
     XSPI_RAM = (17, "xspi_ram", "XSPI RAM")
+    EMMC_BOOT = (18, "emmc_boot", "eMMC Boot area")

@@ -1,0 +1,75 @@
+# Copyright 2025-2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ============================  mbi Configuration template for mcxe31b, Revision: latest.  =============================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxe31b
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# --------------------------------------===== Application target [Required] =====---------------------------------------
+# Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+# Possible options: <xip>
+outputImageExecutionTarget: xip
+# -------------------------------===== Type of boot image authentication [Required] =====-------------------------------
+# Description: Specification of final master boot image authentication.
+# Possible options: <plain, signed>
+outputImageAuthenticationType: Signed
+# ---------------------------------------===== Output Image name [Required] =====---------------------------------------
+# Description: The path for result binary file.
+masterBootOutputFile: .\workspace\output_images\mcxe31b\mb_xip_signed_lc.bin
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image to by modified to Master Boot Image.
+inputImageFile: .\workspace\input_images\mcxe31b_app_red_blinky_with_ivt.bin
+# ======================================================================================================================
+#                                                 == HSE IVT Settings ==
+#                                   HSE Interrupt Vector Table configuration settings
+# ======================================================================================================================
+# -----------------------------------------===== APP SWT Init [Optional] =====------------------------------------------
+# Description: Application Software Tamper initialization
+appSwtInit: false
+# ======================================================================================================================
+#                                         == Application Boot Header Settings ==
+#                                         Configuration for the Application Boot
+# ======================================================================================================================
+# -----------------------------------------===== Start Address [Required] =====-----------------------------------------
+# Description: Start address of the application
+appStartAddress: '0x00401000'
+# --------------------------------===== Lifecycle Configuration Address [Optional] =====--------------------------------
+# Description: Address of lifecycle configuration data. If not set, the LC configuration will be placed after
+# application.
+# lcConfigAddr: '0x0'
+# -------------------------------------===== HSE Firmware Address [Optional] =====--------------------------------------
+# Description: Address of HSE firmware
+# hseFwAddr: '0x0'
+# ======================================================================================================================
+#                                              == HSE Signature settings ==
+#                                             Configuration of HSE signature
+# ======================================================================================================================
+# ----------------------------------------===== Initial Vector [Optional] =====-----------------------------------------
+# Description: Initial vector for encryption (12 bytes hexadecimal). If not specified, random value will be generated.
+initialVector: 000102030405060708090A0B
+# --------------------------------===== Application Debug/Key Password [Required] =====---------------------------------
+# Description: Key used for encryption (16 bytes hexadecimal)
+adkp: 000102030405060708090A0B0C0D0E0F
+# ======================================================================================================================
+#                                             == Lifecycle Configuration ==
+# Configuration for HSE lifecycle state. The lifecycle state determines the security level and available features of the
+#                  device. Each state has specific implications for device functionality and security.
+# ======================================================================================================================
+# ----------------------------------------===== Lifecycle State [Optional] =====----------------------------------------
+# Description: Defines the lifecycle state of the device: 'none' - default state with no lifecycle change, 'oem_prod' -
+# OEM production state with increased security, 'in_field' - deployed state with highest security level and restricted
+# debug access.
+# Possible options: <none, oem_prod, in_field>
+# lifecycle: none

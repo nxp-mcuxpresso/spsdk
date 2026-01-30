@@ -84,7 +84,7 @@ srk_table:
   # Description: Hash algorithm used for SRK records. If not specified, default algorithm based on key type will be
   # used.
   # Possible options: <default, sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, shake_128_256, shake_256_512, sm3>
-  hash_algorithm: sha3_512
+  hash_algorithm: default
   # ---------------------------------===== Super Root Key (SRK) table [Required] =====----------------------------------
   # Description: Table containing the used SRK records. All SRKs must be of the same type. Supported signing algorithms
   # are: RSA-PSS, ECDSA, Dilithium or SM2. Supported hash algorithms: sha256, sha384, sha512, sha3_256, sha3_384,
@@ -112,7 +112,7 @@ srk_table:
     # used.
     # Possible options: <default, sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, shake_128_256, shake_256_512,
     # sm3>
-    hash_algorithm: sha3_512
+    hash_algorithm: default
     # --------------------------------===== Super Root Key (SRK) table [Required] =====---------------------------------
     # Description: Table containing the used SRK Dilithium records. All SRKs must be of the same type. Supported signing
     # algorithms are: Dilithium level 3. Supported hash algorithms: sha3_256, sha3_384, sha3_512. Certificate may be of

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK Bus Encryption Engine (BEE) support module.
 
 This module provides comprehensive functionality for handling BEE encryption
@@ -11,7 +12,6 @@ used in NXP MCUs. It includes classes for managing BEE regions, protection
 blocks, key information blocks (KIB), and AES encryption modes for secure
 boot and runtime protection of code and data.
 """
-
 
 import logging
 from struct import calcsize, pack, unpack_from
@@ -268,7 +268,7 @@ class BeeFacRegion(BeeBaseClass):
         :raises SPSDKError: If reserved area contains non-zero values.
         """
         cls.check_data_to_parse(data)  # check size of the data
-        (start, end, protected_level, _reserved) = unpack_from(BeeFacRegion._struct_format(), data)
+        start, end, protected_level, _reserved = unpack_from(BeeFacRegion._struct_format(), data)
         if _reserved != b"\x00" * 20:
             raise SPSDKError("Reserved area is non-zero")
         return cls(start, end - start, protected_level)
@@ -643,7 +643,7 @@ class BeeKIB(BeeBaseClass):
         :return: BeeKIB instance created from the parsed binary data.
         """
         cls.check_data_to_parse(data)  # check size of the input data
-        (key, iv) = unpack_from(BeeKIB._struct_format(), data)
+        key, iv = unpack_from(BeeKIB._struct_format(), data)
         result = cls(key, iv)
         result.validate()
         return result

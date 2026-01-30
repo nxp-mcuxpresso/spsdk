@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -356,23 +356,49 @@ def ele_get_ele_fw_version(ele_handler: EleMessageHandler) -> None:
 
 
 @main.command(name="get-info", no_args_is_help=False)
+@click.option(
+    "-a",
+    "--attribute",
+    type=click.Choice(
+        ele_message.EleMessageGetInfo.get_available_attributes(),
+        case_sensitive=False,
+    ),
+    required=False,
+    help="Specific attribute to retrieve. If not specified, all information is displayed.",
+)
 @click.pass_obj
 def cmd_get_info(
     handler: EleMessageHandler,
+    attribute: Optional[str],
 ) -> None:
-    """Get information from EdgeLock Enclave."""
-    ele_get_info(handler)
+    """Get information from EdgeLock Enclave.
+
+    By default, displays all available information. Use --attribute to retrieve
+    a specific piece of information.
+    """
+    ele_get_info(handler, attribute)
 
 
-def ele_get_info(ele_handler: EleMessageHandler) -> None:
+def ele_get_info(ele_handler: EleMessageHandler, attribute: Optional[str] = None) -> None:
     """ELE Get Info command.
 
     :param ele_handler: ELE handler class
+    :param attribute: Optional specific attribute name to retrieve
     """
     get_info = ele_message.EleMessageGetInfo()
     with ele_handler:
         ele_handler.send_message(get_info)
-    click.echo(f"ELE get info ends successfully:\n{get_info.response_info()}")
+
+    if attribute:
+        # Get specific attribute
+        attr_value = get_info.get_attribute(attribute)
+        if attr_value:
+            click.echo(f"ELE get info ends successfully:\n{attr_value}")
+        else:
+            click.echo(f"Attribute '{attribute}' not available or has no value")
+    else:
+        # Get all information
+        click.echo(f"ELE get info ends successfully:\n{get_info.response_info()}")
 
 
 @main.command(name="ele-fw-auth", no_args_is_help=True)

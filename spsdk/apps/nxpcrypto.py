@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -244,12 +244,27 @@ def parse_rot(family: FamilyRevision, binary: str, output: str, encoding: str) -
     default=False,
     help="Apply base64 encoding on the final RoT hash.",
 )
+@click.option(
+    "-h",
+    "--hash-algorithm",
+    required=False,
+    type=click.Choice(list(EnumHashAlgorithm.labels()), case_sensitive=False),
+    help="Name of a hash algorithm to use.",
+    callback=lambda ctx, param, value: (
+        EnumHashAlgorithm.from_label(value.lower()) if value is not None else None
+    ),
+)
 @spsdk_output_option(required=False)
 def calculate_hash(
-    family: FamilyRevision, key: list[str], password: str, output: str, _base64: bool
+    family: FamilyRevision,
+    key: list[str],
+    password: str,
+    output: str,
+    _base64: bool,
+    hash_algorithm: Optional[EnumHashAlgorithm] = None,
 ) -> None:
     """Calculate RoT hash."""
-    _rot = Rot(family, keys_or_certs=key, password=password)
+    _rot = Rot(family, keys_or_certs=key, password=password, hash_algorithm=hash_algorithm)
     rot_hash = _rot.calculate_hash()
     if _base64:
         rot_hash = base64.b64encode(rot_hash)
@@ -1705,7 +1720,7 @@ def hab_extend_srk(
             password=password,
             duration=duration,
             serial=serial,
-            ca_issuer=srk_cert.issuer,
+            ca_issuer=srk_cert.subject,
             srk_private_key=srk_private_key,
             idx=srk_idx,
             print_func=click.echo,

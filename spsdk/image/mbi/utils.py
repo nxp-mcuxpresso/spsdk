@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,7 +10,6 @@
 This module provides utility functions for Master Boot Image (MBI) processing,
 including AHAB hash algorithm support and validation schema management.
 """
-
 
 from typing import Any
 

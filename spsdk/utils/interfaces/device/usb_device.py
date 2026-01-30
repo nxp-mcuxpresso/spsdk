@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -148,7 +148,7 @@ class UsbDevice(DeviceBase):
         if not self.is_opened:
             raise SPSDKConnectionError("Device is not opened for reading")
         try:
-            (data, result) = self._device.Read(length, timeout_ms=timeout)
+            data, result = self._device.Read(length, timeout_ms=timeout)
         except Exception as e:
             raise SPSDKConnectionError(str(e)) from e
         if not data:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -315,13 +315,11 @@ def test_certificate_generation(tmpdir: Any) -> None:
     assert path.isfile(path.join(tmpdir, "ca_private_key.pem"))
     assert path.isfile(path.join(tmpdir, "ca_pub_key.pem"))
 
-    data = yaml.safe_load(
-        """
+    data = yaml.safe_load("""
         COMMON_NAME: xyz
         DOMAIN_COMPONENT: [com, nxp, wbi]
         ORGANIZATIONAL_UNIT_NAME: [NXP, CZ, Managed Users, Developers]
-        """
-    )
+        """)
     subject = issuer = generate_name(data)
     ca_cert = Certificate.generate_certificate(
         subject,
@@ -335,16 +333,14 @@ def test_certificate_generation(tmpdir: Any) -> None:
     ca_cert.save(path.join(tmpdir, "ca_cert.pem"))
     assert path.isfile(path.join(tmpdir, "ca_cert.pem"))
 
-    data = yaml.safe_load(
-        """
+    data = yaml.safe_load("""
         - COMMON_NAME: ccccc
         - DOMAIN_COMPONENT: [com, nxp, wbi]
         - ORGANIZATIONAL_UNIT_NAME: NXP
         - ORGANIZATIONAL_UNIT_NAME: CZ
         - ORGANIZATIONAL_UNIT_NAME: Managed Users
         - ORGANIZATIONAL_UNIT_NAME: Developers
-        """
-    )
+        """)
     subject = issuer = generate_name(data)
     ca_cert1 = Certificate.generate_certificate(
         subject,

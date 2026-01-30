@@ -1,4 +1,4 @@
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -366,8 +366,8 @@ features:
         oei_tcm,
         system_manager,
         cortex_m7_app,
-        spl,
         v2x_dummy,
+        spl,
         atf,
         uboot,
         tee,

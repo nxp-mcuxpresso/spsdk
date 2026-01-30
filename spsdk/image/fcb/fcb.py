@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,7 +12,6 @@ which contain essential flash memory configuration parameters for NXP MCUs.
 The FCB class enables creation, validation, and manipulation of flash
 configuration data required for proper boot sequence initialization.
 """
-
 
 import logging
 from typing import Any

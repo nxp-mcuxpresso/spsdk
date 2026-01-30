@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK HAB Super Root Keys (SRK) implementation.
 
 This module provides comprehensive support for handling Super Root Keys in HAB
@@ -472,7 +473,7 @@ class SrkItemRSA(SrkItem):
         :return: SrkItemRSA object with parsed RSA key components.
         """
         Header.parse(data, EnumSRK.KEY_PUBLIC.tag)
-        (flag, modulus_len, exponent_len) = unpack_from(">B2H", data, Header.SIZE + 3)
+        flag, modulus_len, exponent_len = unpack_from(">B2H", data, Header.SIZE + 3)
         offset = 5 + Header.SIZE + 3
         modulus = data[offset : offset + modulus_len]
         offset += modulus_len
@@ -671,7 +672,7 @@ class SrkItemEcc(SrkItem):
         :return: SrkItemEcc object with parsed ECC key parameters.
         """
         Header.parse(data, EnumSRK.KEY_PUBLIC.tag)
-        (flag, curve_id, _, key_size) = unpack_from(">3BH", data, Header.SIZE + 3)
+        flag, curve_id, _, key_size = unpack_from(">3BH", data, Header.SIZE + 3)
         if curve_id not in list(cls.ECC_KEY_TYPE.values()):
             raise SPSDKError(f"Unknown curve with id {curve_id}")
         offset = 5 + Header.SIZE + 3

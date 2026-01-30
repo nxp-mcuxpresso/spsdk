@@ -187,3 +187,27 @@ Certification blocks - Root Of Trust (RoT)
    :members:
    :undoc-members:
    :show-inheritance:
+
+HSE Key Catalog
+------------------------------------------------
+
+.. automodule:: spsdk.image.hse.key_catalog
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+HSE Key Info
+------------------------------------------------
+
+.. automodule:: spsdk.image.hse.key_info
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+HSE Secure Memory Region
+------------------------------------------------
+
+.. automodule:: spsdk.image.hse.smr
+   :members:
+   :undoc-members:
+   :show-inheritance:

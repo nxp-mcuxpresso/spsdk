@@ -1,4 +1,4 @@
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -277,6 +277,10 @@ features:
         segments:
           primary_image_container_set: 0x8_000
           secondary_image_container_set: -1 # Just behind previous segment
+      emmc_boot:
+        segments:
+          primary_image_container_set: 0x0
+          secondary_image_container_set: -1 # Just behind previous segment
       sd:
         segments:
           primary_image_container_set: 0x8_000
@@ -291,6 +295,44 @@ features:
         segments:
           primary_image_container_set: 0x00
           secondary_image_container_set: -1 # Just behind previous segment
+
+    # Template definitions for bootable image generation
+    templates:
+      imx_boot_flash_singleboot:
+        description: "Complete imx-bootloader image"
+        mem_type: serial_downloader
+        configs:
+          - name: spl
+            type: spl
+            containers:
+              - name: nxp_containers
+                path: "mx93a1-ahab-container.img"
+              - name: spl_container
+                images: [spl_ddr]
+          - name: uboot
+            type: uboot
+            containers:
+              - name: uboot_container
+                images: [atf, uboot, tee]
+    boards:
+      imx93-11x11-lpddr4x-evk:
+        lpddr_imem_1d: lpddr4_imem_1d_v202201.bin
+        lpddr_dmem_1d: lpddr4_dmem_1d_v202201.bin
+        lpddr_imem_2d: lpddr4_imem_2d_v202201.bin
+        lpddr_dmem_2d: lpddr4_dmem_2d_v202201.bin
+        spl_ddr: u-boot-spl.bin-imx93-11x11-lpddr4x-evk-sd
+        atf: bl31-imx93.bin
+        uboot: u-boot-imx93-11x11-lpddr4x-evk.bin-sd
+        tee: tee.bin
+      imx93-9x9-lpddr4-qsb:
+        lpddr_imem_1d: lpddr4_imem_1d_v202201.bin
+        lpddr_dmem_1d: lpddr4_dmem_1d_v202201.bin
+        lpddr_imem_2d: lpddr4_imem_2d_v202201.bin
+        lpddr_dmem_2d: lpddr4_dmem_2d_v202201.bin
+        spl_ddr: u-boot-spl.bin-imx93-9x9-lpddr4-qsb-sd
+        atf: bl31-imx93.bin
+        uboot: u-boot-imx93-9x9-lpddr4-qsb.bin-sd
+        tee: tee.bin
 
   # ======== Misc signing section ========
   signing:

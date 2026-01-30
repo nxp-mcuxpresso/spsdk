@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,6 +18,7 @@ from typing import Any, Callable, Optional
 from typing_extensions import Self
 
 from spsdk.apps.utils.utils import format_raw_data
+from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.rng import random_bytes
 from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError
 from spsdk.image.cert_block.cert_blocks import CertificateBlockHeaderV2_2
@@ -42,7 +43,6 @@ class DevHsmSBc(DevHsm):
     SBc file creation with hardware security module integration.
 
     :cvar SIGNATURE_SIZE: Size of signature data in bytes (16).
-    :cvar OEM_SHARE_OUTPUT_SIZE: Size of OEM share output buffer in bytes (48).
     :cvar KEY_SIZE: Encryption key size in bytes (24).
     :cvar KEY_WRAPPING_OVERHEAD: Additional bytes required for key wrapping (8).
     """
@@ -51,7 +51,6 @@ class DevHsmSBc(DevHsm):
 
     # Buffer sizes and offsets
     SIGNATURE_SIZE = 16
-    OEM_SHARE_OUTPUT_SIZE = 48
     KEY_SIZE = 24
     KEY_WRAPPING_OVERHEAD = 8
 
@@ -97,6 +96,17 @@ class DevHsmSBc(DevHsm):
         if buffer_address is not None:
             self.devbuff_base = buffer_address
 
+        self.db = get_db(family=family)
+        self.oem_share_output_size = self.db.get_int(
+            DatabaseManager.DEVHSM,
+            "oem_share_output_size",
+            self.DEVBUFF_GEN_MASTER_ENC_SHARE_OUTPUT_SIZE,
+        )
+        self.oem_master_share_output_size = self.db.get_int(
+            DatabaseManager.DEVHSM,
+            "oem_master_share_output_size",
+            self.DEVBUFF_GEN_MASTER_ENC_MASTER_SHARE_OUTPUT_SIZE,
+        )
         # store input of OEM_SHARE_INPUT to workspace in case that is generated randomly
         self.store_temp_res("OEM_SHARE_INPUT.bin", self.oem_share_input)
 
@@ -304,9 +314,9 @@ class DevHsmSBc(DevHsm):
             oem_share_input_addr=self.devbuff_base,
             oem_share_input_size=self.DEVBUFF_GEN_MASTER_SHARE_INPUT_SIZE,
             oem_enc_share_output_addr=self.get_devbuff_base_address(1),
-            oem_enc_share_output_size=self.OEM_SHARE_OUTPUT_SIZE,
+            oem_enc_share_output_size=self.oem_share_output_size,
             oem_enc_master_share_output_addr=self.get_devbuff_base_address(2),
-            oem_enc_master_share_output_size=self.DEVBUFF_GEN_MASTER_ENC_MASTER_SHARE_OUTPUT_SIZE,
+            oem_enc_master_share_output_size=self.oem_master_share_output_size,
             oem_cust_cert_puk_output_addr=0,
             oem_cust_cert_puk_output_size=0,
         )
@@ -318,7 +328,7 @@ class DevHsmSBc(DevHsm):
 
         oem_enc_share = self.mboot.read_memory(
             self.get_devbuff_base_address(1),
-            self.OEM_SHARE_OUTPUT_SIZE,
+            self.oem_share_output_size,
         )
         if not oem_enc_share:
             raise SPSDKError(
@@ -338,6 +348,11 @@ class DevHsmSBc(DevHsm):
         :return: Data blob signature (64 bytes).
         """
         self.mboot.write_memory(self.get_devbuff_base_address(7), key)
+
+        pre_hash_name = self.db.get_str(DatabaseManager.DEVHSM, "prehash_data_for_sign", "none")
+        if pre_hash_name != "none":
+            hash_alg = EnumHashAlgorithm.from_label(pre_hash_name)
+            data_to_sign = get_hash(data_to_sign, hash_alg)
         if not self.mboot.write_memory(self.get_devbuff_base_address(8), data_to_sign):
             raise SPSDKError("Cannot write Data to sign into device.")
 

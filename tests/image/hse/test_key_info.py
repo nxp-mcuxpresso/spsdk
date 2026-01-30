@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,14 +14,12 @@ import pytest
 import yaml
 
 from spsdk.exceptions import SPSDKParsingError
-from spsdk.image.hse.common import HseKeyBits, KeyType
+from spsdk.image.hse.common import HseKeyBits, KeyCatalogId, KeyHandle, KeyType
 from spsdk.image.hse.key_info import (
     HseAesBlockModeMask,
     HseEccCurveId,
     HseKeyFlags,
     HseSmrFlags,
-    KeyCatalogId,
-    KeyHandle,
     KeyInfo,
 )
 from spsdk.utils.config import Config

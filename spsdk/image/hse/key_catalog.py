@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -386,15 +386,17 @@ class KeyCatalogCfg(FeatureBaseClass):
 
         # First, find the end of the NVM catalog (marked by a zero entry)
         nvm_end = 0
+        terminator_found = False
         while nvm_end + entry_size <= len(data):
             entry_data = data[nvm_end : nvm_end + entry_size]
             if all(b == 0 for b in entry_data):
                 # Found terminating zero entry
+                terminator_found = True
                 nvm_end += entry_size
                 break
             nvm_end += entry_size
 
-        if nvm_end == 0 or nvm_end > len(data):
+        if not terminator_found:
             raise SPSDKParsingError("Could not find NVM catalog terminator")
 
         # Split the data into NVM and RAM portions

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK documentation schema generation utilities.
 
 This module provides functionality for automatically generating schema documentation
@@ -186,8 +187,7 @@ def append_schema(
 
         if subtitle:
             f.write(f"### {subtitle}\n")
-        f.write(
-            f"""\n<details>
+        f.write(f"""\n<details>
 <summary>{title} JSON schema</summary>
 
 <a href="../{html_file}" target="_blank">Open it in full page</a>
@@ -195,12 +195,10 @@ def append_schema(
 <iframe title="JSON schema" width="100%" height="1000" src="../{html_file}" frameborder="0" allowfullscreen></iframe>
 
 </details>
-"""
-        )
+""")
         f.write("\n")
         f.write("\n")
-        f.write(
-            f"""<details>
+        f.write(f"""<details>
 <summary>{title} YAML configuration template</summary>
 
 ```yaml\n
@@ -210,8 +208,7 @@ def append_schema(
 
 </details>
 \n
-"""
-        )
+""")
 
     with open(os.path.join(HTML_SCHEMAS_PATH, html_file), "w", encoding="utf-8") as f:
         f.write(parsed)

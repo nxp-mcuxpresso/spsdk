@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -35,7 +35,7 @@ from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_
 from spsdk.utils.misc import (
     Endianness,
     align_block,
-    load_binary,
+    file_extension,
     reverse_bits,
     split_data,
     value_to_bytes,
@@ -428,6 +428,7 @@ class Otfad(FeatureBaseClass):
         otfad_all_name: str = "otfad_whole_image",
         generate_readme: bool = True,
         index: Optional[int] = None,
+        output_format: str = "bin",
     ) -> None:
         """Initialize OTFAD (On-The-Fly AES Decryption) configuration.
 
@@ -448,6 +449,7 @@ class Otfad(FeatureBaseClass):
         :param otfad_all_name: Output filename for complete OTFAD image.
         :param generate_readme: Whether to generate documentation readme file.
         :param index: OTFAD peripheral index for fuse configuration, defaults to None.
+        :param output_format: Output format for generated files ["bin", "hex", "srec", "sparse"]. (default: "bin").
         :raises SPSDKValueError: When family is unsupported, key scrambling parameters are
             incomplete, or database configuration is invalid.
         """
@@ -457,6 +459,7 @@ class Otfad(FeatureBaseClass):
         self.otfad_all_name = otfad_all_name
         self.generate_readme = generate_readme
         self.index = index
+        self.output_format = output_format
 
         if (key_scramble_align is None and key_scramble_mask) or (
             key_scramble_align and key_scramble_mask is None
@@ -736,29 +739,18 @@ class Otfad(FeatureBaseClass):
             return None
         binaries: BinaryImage = deepcopy(self.binaries)
         for binary in binaries.sub_images:
-            if binary.binary:
-                binary.binary = align_block(binary.binary, KeyBlob._ENCRYPTION_BLOCK_SIZE)
-            for segment in binary.sub_images:
-                if segment.binary:
-                    segment.binary = align_block(segment.binary, KeyBlob._ENCRYPTION_BLOCK_SIZE)
+            binary.alignment = KeyBlob._ENCRYPTION_BLOCK_SIZE
 
         binaries.validate()
 
         if not plain_data:
             for binary in binaries.sub_images:
-                if binary.binary:
-                    binary.binary = self.encrypt_image(
-                        binary.binary,
-                        table_address + binary.absolute_address,
-                        swap_bytes,
-                    )
-                for segment in binary.sub_images:
-                    if segment.binary:
-                        segment.binary = self.encrypt_image(
-                            segment.binary,
-                            segment.absolute_address + table_address,
-                            swap_bytes,
-                        )
+                binary.binary = self.encrypt_image(
+                    binary.export(),
+                    table_address + binary.absolute_address,
+                    swap_bytes,
+                )
+                binary.sub_images = []
 
         if join_sub_images:
             binaries.join_images()
@@ -783,6 +775,7 @@ class Otfad(FeatureBaseClass):
         :return: OTFAD in BinaryImage format
         """
         otfad = BinaryImage("OTFAD", offset=self.table_address)
+
         # Add mandatory OTFAD table
         otfad_table = (
             self.get_key_blobs()
@@ -794,18 +787,20 @@ class Otfad(FeatureBaseClass):
                 self.keyblob_byte_swap_cnt,
             )
         )
-        otfad.add_image(
-            BinaryImage(
-                otfad_table_name,
-                size=self.key_blob_rec_size * self.blobs_max_cnt,
-                offset=0,
-                description=f"OTFAD description table for {self.family}",
-                binary=otfad_table,
-                alignment=256,
-            )
-        )
-        binaries = self.export_image(table_address=self.table_address)
 
+        keyblob = BinaryImage(
+            otfad_table_name,
+            size=self.key_blob_rec_size * self.blobs_max_cnt,
+            offset=0,
+            description=f"OTFAD description table for {self.family}",
+            binary=otfad_table,
+            alignment=256,
+        )
+        # OTFAD table sparse block size, is used only when SPARSE format is used
+        keyblob.sparse_block_size = 256
+        otfad.add_image(keyblob)
+
+        binaries = self.export_image(table_address=self.table_address)
         if binaries:
             binaries.alignment = data_alignment
             binaries.validate()
@@ -926,27 +921,49 @@ class Otfad(FeatureBaseClass):
                     "encrypted_name",
                     "encrypted_blobs",
                     config["output_folder"],
+                    file_extension=file_extension(config.get_str("output_format", "bin")),
                 ),
                 offset=start_address - table_address,
             )
             for data_blob in data_blobs:
-                data = load_binary(data_blob.get_input_file_name("data"))
-                address = data_blob.get_int("address")
+                data_file_name = data_blob.get_input_file_name("data")
 
-                binary = BinaryImage(
-                    os.path.basename(data_blob["data"]),
-                    offset=address - table_address - binaries.offset,
-                    binary=data,
+                binary = BinaryImage.load_binary_image(
+                    data_file_name,
+                    name=os.path.basename(data_file_name),
                 )
+                address = data_blob.get_int("address", binary.absolute_address)
+
+                if binary.offset != address - table_address - binaries.offset:
+                    logger.warning(
+                        f"The data blob {data_file_name} has different offset {binary.offset}, "
+                        "than expected {address - keyblobs table address - base all data binaries offset}"
+                    )
+                    binary.offset = address - table_address - binaries.offset
+
                 binaries.add_image(binary)
         else:
             logger.warning("The OTFAD configuration has NOT any data blobs records!")
 
+        if binaries is not None:
+            binaries.validate()
+
         output_folder = config.get_output_file_name("output_folder")
+        output_format = config.get("output_format", "bin")
         otfad_table_name = filepath_from_config(
-            config, "keyblob_name", "OTFAD_Table", output_folder
+            config,
+            "keyblob_name",
+            "OTFAD_Table",
+            output_folder,
+            file_extension=file_extension(config.get_str("output_format", "bin")),
         )
-        otfad_all = filepath_from_config(config, "output_name", "otfad_whole_image", output_folder)
+        otfad_all = filepath_from_config(
+            config,
+            "output_name",
+            "otfad_whole_image",
+            output_folder,
+            file_extension=file_extension(config.get_str("output_format", "bin")),
+        )
         generate_readme = config.get("generate_readme", True)
         data_alignment = config.get_int("data_alignment", 512)
         try:
@@ -966,6 +983,7 @@ class Otfad(FeatureBaseClass):
             otfad_all_name=otfad_all,
             generate_readme=generate_readme,
             index=index,
+            output_format=output_format,
         )
 
         for i, key_blob_cfg in enumerate(otfad_config):
@@ -1011,10 +1029,11 @@ class Otfad(FeatureBaseClass):
         binary_image = self.binary_image(
             data_alignment=self.data_alignment, otfad_table_name=self.otfad_table_name
         )
+        binary_image.offset = binary_image.offset - self.table_address
         sb21_supported = self.db.get_bool(DatabaseManager.OTFAD, "sb_21_supported", default=False)
         logger.info(f" The OTFAD image structure:\n{binary_image.draw()}")
         if self.otfad_all_name != "":
-            write_file(binary_image.export(), self.otfad_all_name, mode="wb")
+            binary_image.save_binary_image(path=self.otfad_all_name, file_format=self.output_format)
             logger.info(f"Created OTFAD Image:\n{self.otfad_all_name}")
         else:
             logger.info("Skipping export of OTFAD image")
@@ -1022,7 +1041,7 @@ class Otfad(FeatureBaseClass):
         memory_map = (
             "In folder is stored two kind of files:\n"
             "  -  Binary file that contains whole image data including "
-            "OTFAD table and key blobs data 'otfad_whole_image.bin'.\n"
+            f"OTFAD table and key blobs data 'otfad_whole_image{file_extension()}'.\n"
         )
         if sb21_supported:
             memory_map += "  -  Example of BD file to simplify creating the SB2.1 file from the OTFAD source files.\n"
@@ -1036,7 +1055,8 @@ class Otfad(FeatureBaseClass):
 
         for i, image in enumerate(binary_image.sub_images):
             if image.name != "":
-                write_file(image.export(), image.name, mode="wb")
+                image.offset = 0
+                image.save_binary_image(path=image.name, file_format=self.output_format)
                 generated_files.append(image.name)
                 logger.info(f"Created OTFAD Image:\n{image.name}")
                 memory_map += f"\n{image.name}:\n{str(image)}"

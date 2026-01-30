@@ -1,6 +1,7 @@
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 revisions:
   a0: {}
 
@@ -123,7 +124,7 @@ features:
           - Mbi_MixinIvt
           - Mbi_MixinTrustZoneV2
           - Mbi_MixinLoadAddress
-          - Mbi_MixinImageVersion
+          - Mbi_MixinFwVersionHiddenImageVersion
           - Mbi_ExportMixinAppTrustZoneV2
       plain_ram:
         image_type: PLAIN_IMAGE
@@ -132,7 +133,7 @@ features:
           - Mbi_MixinIvt
           - Mbi_MixinTrustZoneV2
           - Mbi_MixinLoadAddress
-          - Mbi_MixinImageVersion
+          - Mbi_MixinFwVersionHiddenImageVersion
           - Mbi_ExportMixinAppTrustZoneV2
       crc_ram:
         image_type: CRC_RAM_IMAGE
@@ -141,7 +142,7 @@ features:
           - Mbi_MixinIvt
           - Mbi_MixinTrustZoneV2
           - Mbi_MixinLoadAddress
-          - Mbi_MixinImageVersion
+          - Mbi_MixinFwVersionHiddenImageVersion
           - Mbi_ExportMixinAppTrustZoneV2
           - Mbi_ExportMixinCrcSignEnd
       crc_xip:
@@ -151,7 +152,7 @@ features:
           - Mbi_MixinIvt
           - Mbi_MixinLoadAddress
           - Mbi_MixinTrustZoneV2
-          - Mbi_MixinImageVersion
+          - Mbi_MixinFwVersionHiddenImageVersion
           - Mbi_ExportMixinAppTrustZoneV2
           - Mbi_ExportMixinCrcSignEnd
       signed_xip:
@@ -161,7 +162,7 @@ features:
           - Mbi_MixinTrustZoneV2
           - Mbi_MixinIvt
           - Mbi_MixinLoadAddress
-          - Mbi_MixinImageVersion
+          - Mbi_MixinFwVersionHiddenImageVersion
           - Mbi_MixinAppCrc
           - Mbi_MixinAhab
           - Mbi_ExportMixinAppTzCrcAhab

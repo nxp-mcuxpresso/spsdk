@@ -1,4 +1,4 @@
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -247,6 +247,10 @@ features:
           - RT image and AP image for single-boot configuration"
         segments:
           primary_image_container_set: 0x8_000
+          secondary_image_container_set: -1 # Just behind previous segment
+      emmc_boot:
+        segments:
+          primary_image_container_set: 0x0
           secondary_image_container_set: -1 # Just behind previous segment
       sd:
         note: "Connected uSDHC1/uSDHC2. \n

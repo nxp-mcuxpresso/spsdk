@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,6 +12,7 @@ Enclave security subsystem. It includes message formatting, serialization, and p
 handling for various ELE operations including authentication, key management, lifecycle
 operations, and system control functions.
 """
+
 # pylint: disable=too-many-lines
 
 import logging
@@ -115,6 +116,14 @@ class EleMessage:
         return self.COMMAND_HEADER_WORDS_COUNT + self.COMMAND_PAYLOAD_WORDS_COUNT
 
     @property
+    def response_header_words_count(self) -> int:
+        """Get the number of words if the response header.
+
+        :return: The number of 32-bit words in the response header.
+        """
+        return self.RESPONSE_HEADER_WORDS_COUNT
+
+    @property
     def has_command_data(self) -> bool:
         """Check if command has additional data.
 
@@ -176,7 +185,7 @@ class EleMessage:
 
         :return: Total number of words in the response message.
         """
-        return self.RESPONSE_HEADER_WORDS_COUNT + self.RESPONSE_PAYLOAD_WORDS_COUNT
+        return self.response_header_words_count + self.RESPONSE_PAYLOAD_WORDS_COUNT
 
     @property
     def has_response_data(self) -> bool:
@@ -334,12 +343,12 @@ class EleMessage:
         :raises SPSDKParsingError: Invalid response format or field values detected.
         """
         # Decode and validate header
-        (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
+        version, size, command, tag = unpack(self.HEADER_FORMAT, response[:4])
         if tag != self.RSP_TAG:
             raise SPSDKParsingError(f"Message TAG in response is invalid: {hex(tag)}")
         if command != self.command:
             raise SPSDKParsingError(f"Message COMMAND in response is invalid: {hex(command)}")
-        if size not in range(self.RESPONSE_HEADER_WORDS_COUNT, self.response_words_count + 1):
+        if size not in range(self.response_header_words_count, self.response_words_count + 1):
             raise SPSDKParsingError(f"Message SIZE in response is invalid: {hex(size)}")
         if version != self.VERSION:
             raise SPSDKParsingError(f"Message VERSION in response is invalid: {hex(version)}")
@@ -1283,6 +1292,26 @@ class EleMessageGetInfo(EleMessage):
     COMMAND_PAYLOAD_WORDS_COUNT = 3
     MAX_RESPONSE_DATA_SIZE = 256
 
+    # Available attributes for retrieval
+    AVAILABLE_ATTRIBUTES = (
+        "cmd",
+        "version",
+        "length",
+        "soc_id",
+        "soc_rev",
+        "life_cycle",
+        "sssm_state",
+        "attest_api_version",
+        "uuid",
+        "sha256_rom_patch",
+        "sha256_fw",
+        "oem_srkh",
+        "imem_state",
+        "csal_state",
+        "trng_state",
+        "oem_pqc_srkh",
+    )
+
     def __init__(self) -> None:
         """Initialize ELE message object with default values.
 
@@ -1368,6 +1397,89 @@ class EleMessageGetInfo(EleMessage):
             self.info_oem_pqc_srkh = response_data[160:224]
         else:
             self.info_oem_pqc_srkh = bytes()
+
+    def get_attribute(self, attribute_name: str) -> Optional[str]:
+        """Get specific attribute value by name.
+
+        Retrieves and formats a specific attribute from the ELE info response.
+        Returns None if the attribute doesn't exist or is not available.
+
+        :param attribute_name: Name of the attribute to retrieve
+        :return: Formatted string value of the attribute, or None if not found
+        :raises SPSDKValueError: If attribute name is not valid
+        """
+        if attribute_name not in self.AVAILABLE_ATTRIBUTES:
+            raise SPSDKValueError(
+                f"Invalid attribute name: {attribute_name}. "
+                f"Available attributes: {', '.join(self.AVAILABLE_ATTRIBUTES)}"
+            )
+
+        attr_value = getattr(self, "info_" + attribute_name, None)
+        if attr_value is None:
+            return None
+
+        # Define formatters for each attribute type
+        formatters = {
+            "cmd": lambda v: f"Command:              {hex(v)}",
+            "version": lambda v: f"Version:              {v}",
+            "length": lambda v: f"Length:               {v}",
+            "soc_id": lambda v: f"SoC ID:               {SocId.get_label(v)} - 0x{v:04X}",
+            "soc_rev": lambda v: f"SoC version:          {v:04X}",
+            "life_cycle": lambda v: f"Life Cycle:           {LifeCycle.get_label(v)} - 0x{v:04X}",
+            "sssm_state": lambda v: f"SSSM state:           {v}",
+            "attest_api_version": lambda v: f"Attest API version:   {v}",
+            "uuid": lambda v: f"UUID:                 {v.hex()}",
+            "sha256_rom_patch": lambda v: f"SHA256 ROM PATCH:     {v.hex()}",
+            "sha256_fw": lambda v: f"SHA256 FW:            {v.hex()}",
+            "oem_srkh": self._format_oem_srkh,
+            "imem_state": lambda v: (
+                f"IMEM state:           "
+                f"{EleImemState.get_description(v, str(v))}"
+                f" - 0x{v:02X}"
+            ),
+            "csal_state": lambda v: (
+                f"CSAL state:           "
+                f"{EleCsalState.get_description(v, str(v))}"
+                f" - 0x{v:02X}"
+            ),
+            "trng_state": lambda v: (
+                f"TRNG state:           "
+                f"{EleTrngState.get_description(v, str(v))}"
+                f" - 0x{v:02X}"
+            ),
+            "oem_pqc_srkh": self._format_oem_pqc_srkh,
+        }
+
+        formatter = formatters.get(attribute_name)
+        return formatter(attr_value) if formatter else None
+
+    def _format_oem_srkh(self, attr_value: bytes) -> str:
+        """Format OEM SRKH attribute value.
+
+        :param attr_value: OEM SRKH bytes value
+        :return: Formatted OEM SRKH string
+        """
+        if attr_value[32:] == b"\x00" * 32:
+            return f"OEM SRKH:             {attr_value[:32].hex()}"
+        return f"OEM SRKH:             {attr_value.hex()}"
+
+    def _format_oem_pqc_srkh(self, attr_value: bytes) -> str:
+        """Format OEM PQC SRKH attribute value.
+
+        :param attr_value: OEM PQC SRKH bytes value
+        :return: Formatted OEM PQC SRKH string
+        """
+        if attr_value:
+            return f"OEM PQC SRKH:         {attr_value.hex()}"
+        return "OEM PQC SRKH:         Not available"
+
+    @classmethod
+    def get_available_attributes(cls) -> tuple:
+        """Get list of available attribute names.
+
+        :return: List of attribute names that can be retrieved
+        """
+        return cls.AVAILABLE_ATTRIBUTES
 
     def response_info(self) -> str:
         """Get formatted ELE response information.
@@ -2213,7 +2325,7 @@ class EleMessageWriteFuse(EleMessage):
         """
         super().decode_response(response)
         if len(response) == self.response_words_count * 4:
-            (self.processed_idx, _) = unpack(LITTLE_ENDIAN + UINT16 + UINT16, response[8:12])
+            self.processed_idx, _ = unpack(LITTLE_ENDIAN + UINT16 + UINT16, response[8:12])
 
 
 class EleMessageWriteShadowFuse(EleMessage):
@@ -2353,12 +2465,12 @@ class EleMessageSessionOpen(EleMessage):
         :raises SPSDKParsingError: Invalid response format, tag, command, size or version.
         """
         # Decode and validate header
-        (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
+        version, size, command, tag = unpack(self.HEADER_FORMAT, response[:4])
         if tag != self.RSP_TAG:
             raise SPSDKParsingError(f"Message TAG in response is invalid: {hex(tag)}")
         if command != self.command:
             raise SPSDKParsingError(f"Message COMMAND in response is invalid: {hex(command)}")
-        if size not in range(self.RESPONSE_HEADER_WORDS_COUNT, self.response_words_count + 1):
+        if size not in range(self.response_header_words_count, self.response_words_count + 1):
             raise SPSDKParsingError(f"Message SIZE in response is invalid: {hex(size)}")
         if version != self.VERSION:
             raise SPSDKParsingError(f"Message VERSION in response is invalid: {hex(version)}")
@@ -2479,12 +2591,12 @@ class EleMessageSessionClose(EleMessage):
         :raises SPSDKParsingError: Invalid response format or field values detected.
         """
         # Decode and validate header
-        (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
+        version, size, command, tag = unpack(self.HEADER_FORMAT, response[:4])
         if tag != self.RSP_TAG:
             raise SPSDKParsingError(f"Message TAG in response is invalid: {hex(tag)}")
         if command != self.command:
             raise SPSDKParsingError(f"Message COMMAND in response is invalid: {hex(command)}")
-        if size not in range(self.RESPONSE_HEADER_WORDS_COUNT, self.response_words_count + 1):
+        if size not in range(self.response_header_words_count, self.response_words_count + 1):
             raise SPSDKParsingError(f"Message SIZE in response is invalid: {hex(size)}")
         if version != self.VERSION:
             raise SPSDKParsingError(f"Message VERSION in response is invalid: {hex(version)}")
@@ -2557,12 +2669,12 @@ class EleMessageSabInit(EleMessage):
         :raises SPSDKParsingError: Invalid response format or field values detected.
         """
         # Decode and validate header
-        (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
+        version, size, command, tag = unpack(self.HEADER_FORMAT, response[:4])
         if tag != self.RSP_TAG:
             raise SPSDKParsingError(f"Message TAG in response is invalid: {hex(tag)}")
         if command != self.command:
             raise SPSDKParsingError(f"Message COMMAND in response is invalid: {hex(command)}")
-        if size not in range(self.RESPONSE_HEADER_WORDS_COUNT, self.response_words_count + 1):
+        if size not in range(self.response_header_words_count, self.response_words_count + 1):
             raise SPSDKParsingError(f"Message SIZE in response is invalid: {hex(size)}")
         if version != self.VERSION:
             raise SPSDKParsingError(f"Message VERSION in response is invalid: {hex(version)}")
@@ -2713,12 +2825,12 @@ class EleMessageKeyStoreOpen(EleMessage):
         :raises SPSDKParsingError: Invalid response format, tag, command, size or version.
         """
         # Decode and validate header
-        (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
+        version, size, command, tag = unpack(self.HEADER_FORMAT, response[:4])
         if tag != self.RSP_TAG:
             raise SPSDKParsingError(f"Message TAG in response is invalid: {hex(tag)}")
         if command != self.command:
             raise SPSDKParsingError(f"Message COMMAND in response is invalid: {hex(command)}")
-        if size not in range(self.RESPONSE_HEADER_WORDS_COUNT, self.response_words_count + 1):
+        if size not in range(self.response_header_words_count, self.response_words_count + 1):
             raise SPSDKParsingError(f"Message SIZE in response is invalid: {hex(size)}")
         if version != self.VERSION:
             raise SPSDKParsingError(f"Message VERSION in response is invalid: {hex(version)}")
@@ -2875,12 +2987,12 @@ class EleMessagePublicKeyExport(EleMessage):
         :raises SPSDKParsingError: Invalid response format, tag, command, size, or version.
         """
         # Decode and validate header
-        (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
+        version, size, command, tag = unpack(self.HEADER_FORMAT, response[:4])
         if tag != self.RSP_TAG:
             raise SPSDKParsingError(f"Message TAG in response is invalid: {hex(tag)}")
         if command != self.command:
             raise SPSDKParsingError(f"Message COMMAND in response is invalid: {hex(command)}")
-        if size not in range(self.RESPONSE_HEADER_WORDS_COUNT, self.response_words_count + 1):
+        if size not in range(self.response_header_words_count, self.response_words_count + 1):
             raise SPSDKParsingError(f"Message SIZE in response is invalid: {hex(size)}")
         if version != self.VERSION:
             raise SPSDKParsingError(f"Message VERSION in response is invalid: {hex(version)}")
@@ -3026,7 +3138,7 @@ class EleMessageKeyStoreClose(EleMessage):
         :raises SPSDKParsingError: Invalid response format or header field mismatch.
         """
         # Decode and validate header
-        (version, size, command, tag) = unpack(self.HEADER_FORMAT, response[:4])
+        version, size, command, tag = unpack(self.HEADER_FORMAT, response[:4])
         if tag != self.RSP_TAG:
             raise SPSDKParsingError(f"Message TAG in response is invalid: {hex(tag)}")
         if command != self.command:

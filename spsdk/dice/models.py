@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -333,7 +333,7 @@ class DICEResponse:
         :param offset: Optional starting offset in the data buffer, defaults to 0.
         :return: Parsed DICEResponse instance.
         """
-        (rtf, had, die_puk, ca_sign, uuid, version, challenge, die_sign) = struct.unpack_from(
+        rtf, had, die_puk, ca_sign, uuid, version, challenge, die_sign = struct.unpack_from(
             cls.FORMAT, buffer=data, offset=offset
         )
         return cls(

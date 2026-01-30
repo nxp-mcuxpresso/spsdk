@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,7 +11,6 @@ This module provides functionality for creating and handling CMS signature conta
 using ASN1Crypto implementation. It supports data signing operations with X.509
 certificates and various hash algorithms for secure message authentication.
 """
-
 
 # Used security modules
 from datetime import datetime

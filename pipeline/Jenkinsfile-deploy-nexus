@@ -1,0 +1,27 @@
+@Library('shared-lib') _
+
+node ("linux-spsdk") {
+    timeout(time: 1, unit: "HOURS") {
+        stage ("Checkout") {
+            checkoutRepo("spsdk", "master")
+        }
+        stage ("Test") {
+            withVenv(
+                "tox -e py310,py313 -- -ic gitcov -o reports_{envname}",
+            )
+        }
+        stage ("Build") {
+            withVenv(
+                "uv pip install build twine",
+                "rm -rf build dist *.egg-info",
+                "python -m build --wheel --outdir dist --installer uv",
+                "twine check --strict dist/*",
+            )
+        }
+        stage ("Publish") {
+            withVenv(
+                "twine upload --verbose --repository nexus dist/*"
+            )
+        }
+    }
+}

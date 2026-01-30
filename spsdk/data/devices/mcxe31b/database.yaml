@@ -1,4 +1,4 @@
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -73,8 +73,8 @@ features:
         image_type: SIGNED_XIP_IMAGE
         mixins:
           - Mbi_MixinHseIvt
-          - Mbi_MixinHseAppBootHeader
           - Mbi_MixinHseApp
+          - Mbi_MixinHseAppBootHeader
           - Mbi_ExportMixinHseSignature
           - Mbi_MixinHseLifecycle
           - Mbi_ExportMixinHseAppSigned
@@ -89,4 +89,4 @@ features:
 
   # ======== Hardware Security Engine ===  =====
   hse:
-    sub_features: [hse_attribute, key_import, key_catalog]
+    sub_features: [hse_attribute, key_import, key_catalog, smr]

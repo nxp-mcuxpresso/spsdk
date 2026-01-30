@@ -1,10 +1,10 @@
 {
-  "cpu": "MIMX9352",
+  "cpu": "mimx9352",
   "groups": [
     {
       "group": {
-        "name": "General",
-        "description": "General settings configuration"
+        "name": "Locks",
+        "description": "Lock bits allowing to lock access to specified fuses"
       },
       "registers": [
         {
@@ -1033,7 +1033,15 @@
               "width": 1
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "Reserved 0xA-0xB",
+        "description": "Reserved for future use."
+      },
+      "registers": [
         {
           "id": "Reserved10",
           "name": "Reserved 0xA",
@@ -1089,7 +1097,15 @@
               "width": 1
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "ECID",
+        "description": "Device Unique ID"
+      },
+      "registers": [
         {
           "id": "fuse12",
           "name": "ECID3",
@@ -1137,7 +1153,15 @@
             "read_lock_int": "0x0020",
             "operation_lock_int": "0x0010"
           }
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "Reserved 0x10-0x12",
+        "description": "Reserved for future use."
+      },
+      "registers": [
         {
           "id": "Reserved16",
           "name": "Reserved 0x10",
@@ -1191,7 +1215,15 @@
               "width": 15
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "HW_CFG",
+        "description": "Hardware configuration"
+      },
+      "registers": [
         {
           "id": "fuse19",
           "name": "HW_CFG1",
@@ -1393,7 +1425,15 @@
               "width": 1
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "Reserved 0x14-0x17",
+        "description": "Reserved for future use."
+      },
+      "registers": [
         {
           "id": "Reserved20",
           "name": "Reserved 0x14",
@@ -1577,7 +1617,15 @@
               "width": 25
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "BOOT_CFG",
+        "description": "Boot configuration"
+      },
+      "registers": [
         {
           "id": "fuse24",
           "name": "BOOT_CFG0",
@@ -4958,7 +5006,15 @@
               "width": 11
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "Reserved 0x23-0x37",
+        "description": "Reserved for future use."
+      },
+      "registers": [
         {
           "id": "Reserved35",
           "name": "Reserved 0x23",
@@ -5241,7 +5297,15 @@
               "width": 16
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "ELE_MISC_CTRL",
+        "description": "ELE miscellaneous configuration"
+      },
+      "registers": [
         {
           "id": "fuse56",
           "name": "ELE_MISC_CTRL0",
@@ -5923,7 +5987,15 @@
               "width": 1
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "Reserved 0x3E-0x3F",
+        "description": "Reserved for future use."
+      },
+      "registers": [
         {
           "id": "Reserved62",
           "name": "Reserved 0x3E",
@@ -5999,7 +6071,15 @@
               "width": 1
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "ELE_SRKH",
+        "description": "ELE SRK Hash"
+      },
+      "registers": [
         {
           "id": "fuse64",
           "name": "ELE_SRKH0",
@@ -6047,7 +6127,15 @@
           "name": "ELE_SRKH7",
           "description": "ELE_SRKH7",
           "index_int": "0x0047"
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "Reserved 0x48-0x7F",
+        "description": "Reserved for future use."
+      },
+      "registers": [
         {
           "id": "Reserved72",
           "name": "Reserved 0x48",
@@ -6535,7 +6623,15 @@
               "width": 16
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "OEM_SRKH",
+        "description": "OEM SRK Hash"
+      },
+      "registers": [
         {
           "id": "fuse128",
           "name": "OEM_SRKH0",
@@ -6631,7 +6727,15 @@
             "read_lock_int": "0x4000",
             "operation_lock_int": "0x2000"
           }
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "Reserved 0x88-0xB7",
+        "description": "Reserved for future use."
+      },
+      "registers": [
         {
           "id": "Reserved136",
           "name": "Reserved 0x88",
@@ -7053,7 +7157,15 @@
           "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
           "index_int": "0x00B7",
           "is_reserved": true
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "OTFAD1",
+        "description": "OTFAD configuration"
+      },
+      "registers": [
         {
           "id": "fuse184",
           "name": "OTFAD1_KEY3",
@@ -7199,7 +7311,15 @@
             "read_lock_int": "0x0020",
             "operation_lock_int": "0x0010"
           }
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "Reserved 0xBE-0x137",
+        "description": "Reserved for future use."
+      },
+      "registers": [
         {
           "id": "Reserved190",
           "name": "Reserved 0xBE",
@@ -8079,7 +8199,15 @@
           "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
           "index_int": "0x0137",
           "is_reserved": true
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "COM_DEVICE_ID_CFG",
+        "description": "Device communication config"
+      },
+      "registers": [
         {
           "id": "fuse312",
           "name": "COM_DEVICE_ID_CFG0",
@@ -8209,7 +8337,15 @@
               "description": "MAC_2 Address.  Reserved for customer SW"
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "Reserved 0x13E-0x146",
+        "description": "Reserved for future use."
+      },
+      "registers": [
         {
           "id": "Reserved318",
           "name": "Reserved 0x13E",
@@ -8326,7 +8462,15 @@
               "width": 32
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "OEM_SW_CFG",
+        "description": "OEM software configuration"
+      },
+      "registers": [
         {
           "id": "fuse327",
           "name": "OEM_SW_CFG",
@@ -8339,7 +8483,15 @@
             "operation_lock_int": "0x0002"
           },
           "reg_width": 16
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "Reserved 0x148-0x177",
+        "description": "Reserved for future use."
+      },
+      "registers": [
         {
           "id": "Reserved328",
           "name": "Reserved 0x148",
@@ -8675,7 +8827,15 @@
           "description": "Reserved for future use. Modification may result in unpredictable system behavior. Software should not rely on the value.",
           "index_int": "0x0177",
           "is_reserved": true
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "GPR2_CFG",
+        "description": "General purpose fuse 2"
+      },
+      "registers": [
         {
           "id": "fuse376",
           "name": "GPR2_CFG0",
@@ -8741,7 +8901,15 @@
           "name": "GPR2_CFG7",
           "description": "OEM Reserved - General Purpose Fuse 2",
           "index_int": "0x017F"
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "GPR3_CFG",
+        "description": "General purpose fuse 3"
+      },
+      "registers": [
         {
           "id": "fuse384",
           "name": "GPR3_CFG0",
@@ -8795,7 +8963,15 @@
           "name": "GPR3_CFG7",
           "description": "OEM Reserved - General Purpose Fuse 3",
           "index_int": "0x0187"
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "GPR4_CFG",
+        "description": "General purpose fuse 4"
+      },
+      "registers": [
         {
           "id": "fuse392",
           "name": "GPR4_CFG0",
@@ -8849,7 +9025,15 @@
           "name": "GPR4_CFG7",
           "description": "OEM Reserved - General Purpose Fuse 4",
           "index_int": "0x018F"
-        },
+        }
+      ]
+    },
+    {
+      "group": {
+        "name": "Reserved 0x190-0x1FF",
+        "description": "Reserved for future use."
+      },
+      "registers": [
         {
           "id": "Reserved400",
           "name": "Reserved 0x190",

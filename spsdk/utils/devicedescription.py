@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,7 +11,6 @@ This module provides abstract and concrete device description classes for differ
 communication protocols used with NXP devices, including UART, USB, UUU, SDIO,
 and SIO interfaces.
 """
-
 
 from abc import ABC, abstractmethod
 from typing import Optional, Union

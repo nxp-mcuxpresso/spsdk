@@ -39,14 +39,14 @@ dependencies = { file = ["requirements.txt"] }
 [project.optional-dependencies]
 examples = ["flask", "requests", "ipython", "notebook", "ipywidgets"]
 dk6 = ["pyftdi", "pylibftdi", "ftd2xx"]
-oscca = ["gmssl>=3.2,<4"]
-can = ["python-can<4.6,>=4.5"]
+oscca = ["gmssl<4,>=3.2"]
+can = ["python-can<5,>=4.5"]
 jlink = ["spsdk-jlink<1,>=0.3.1"]
 lauterbach = ["spsdk-lauterbach<1,>=0.4.0"]
 pemicro = ["spsdk-pemicro<1,>=0.3.1"]
 pkcs11 = ["spsdk-pkcs11<1,>=0.3.1"]
-pqc = ["spsdk-pqc<1.0,>=0.6.1"]
-rblhost = ["pymboot-rs<0.3.0"]
+pqc = ["spsdk-pqc<1,>=0.6.1"]
+rblhost = ["pymboot-rs<1"]
 all = [
     "spsdk[examples]",
     "spsdk[dk6]",
@@ -84,7 +84,7 @@ lpcprog = "spsdk.apps.lpcprog:safe_main"
 nxpshe = "spsdk.apps.nxpshe:safe_main"
 
 [build-system]
-requires = ["setuptools_scm<8.2", "setuptools>=77", "wheel"]
+requires = ["setuptools_scm<10", "setuptools>=77", "wheel"]
 
 [tool.black]
 line-length = 100
@@ -100,6 +100,8 @@ force_grid_wrap = 0
 use_parentheses = true
 ensure_newline_before_comments = true
 line_length = 100
+extend_skip_glob = ["**/__version__.py"]
+
 
 [tool.mypy]
 disallow_untyped_defs = true
@@ -238,7 +240,7 @@ checkers = [
         "spsdk",
     ], timeout = 60 } },
     { "black" = { timeout = 120 } },
-    { "isort" = { timeout = 60 } },
+    { "isort" = { timeout = 200 } },
     "copyright",
     "py_headers",
     { "cyclic" = { info_only = true, check_paths = [
@@ -293,3 +295,10 @@ full_name = "nxp-mcuxpresso/spsdk"
 
 [tool.check-wheel-contents]
 ignore = "W002" # Wheel contains duplicate files
+
+[tool.release-tools.depup]
+extra_requirements = ["requirements-develop.txt", "docs/requirements.txt"]
+keep_unbound = true
+strategy = "next-major"
+# Remove this when 3.10 is dropped alongside 3.10 restriction in requirements.txt
+ignore = ["click"]

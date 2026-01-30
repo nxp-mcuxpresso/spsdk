@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """High Assurance Boot (HAB) Certificate module.
 
 This module provides functionality for handling HAB certificates used in NXP's secure boot process.
 It allows creating, parsing, and exporting HAB certificate structures that combine headers
 with X.509 certificates according to the HAB protocol specifications.
 """
+
 from typing_extensions import Self
 
 from spsdk.crypto.certificate import Certificate

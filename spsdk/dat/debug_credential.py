@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -403,7 +403,7 @@ class DebugCredentialCertificate(FeatureBaseClass):
         """
         # The  ELE V2 is totally different to standard DC - try it first and if fail let do the standard process
         try:
-            return DebugCredentialEdgeLockEnclaveV2.parse(data, family=family)  # type:ignore
+            return DebugCredentialEdgeLockEnclaveV2.parse(data, family=family)  # type: ignore
         except SPSDKError:
             pass
         ver = unpack_from("<2H", data)

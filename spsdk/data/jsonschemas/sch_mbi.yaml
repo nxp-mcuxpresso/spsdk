@@ -1,4 +1,4 @@
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -158,16 +158,6 @@ ahab_sign_support:
       type: [number, string]
       title: Used SRK
       description: Which key from SRK set is being used.
-      format: number
-      template_value: 0
-    fuse_version:
-      type: [number, string]
-      title: Fuse version
-      description:
-        The value must be equal or greater than the version stored in fuses or PFR
-        to provide proper rollback protection. For example, on the MCXN556s series, the fuse version is used for rollback protection,
-        where it is joined with the image version to create a firmware version 'fw_version = (imageVersion << 8) | (fuse_version)'.
-        During rollback protection, the firmware version is checked against 'SECURE_FW_VERSION' in the CFPA page.
       format: number
       template_value: 0
     signer:

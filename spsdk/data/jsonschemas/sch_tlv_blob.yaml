@@ -1,6 +1,7 @@
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 ---
 output_file:
   type: object
@@ -184,14 +185,16 @@ tlv:
                     HMAC              0x1100  224/256/384/512\n
                     Derived key       0x1200  256/384\n
                     OEM_IMPORT_MK_SK  0x9200  128/192/256\n
-                    ECC NIST          0x7112  128/192/256"
-                  enum: [AES, HMAC, Derived key, OEM_IMPORT_MK_SK, ECC NIST]
+                    ECC NIST          0x7112  256/384/521\n
+                    RSA               0x7001  2048/3072/4096"
+                  enum:
+                    [AES, HMAC, Derived key, OEM_IMPORT_MK_SK, ECC NIST, RSA]
                   template_value: AES
                 key_size_bits:
                   type: number
                   title: Import key size bits
                   description: Import key size bits
-                  enum: [128, 192, 224, 256, 384, 512]
+                  enum: [128, 192, 224, 256, 384, 512, 521, 2048, 3072, 4096]
                   template_value: 256
                 key_lifetime:
                   type: string

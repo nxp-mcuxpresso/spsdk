@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -195,7 +195,7 @@ class CmdHeader(BaseClass):
         if calcsize(cls.FORMAT) > len(data):
             raise SPSDKError("Incorrect size")
         obj = cls(EnumCmdTag.NOP.tag)
-        (crc, obj.tag, obj.flags, obj.address, obj.count, obj.data) = unpack_from(cls.FORMAT, data)
+        crc, obj.tag, obj.flags, obj.address, obj.count, obj.data = unpack_from(cls.FORMAT, data)
         if crc != obj.crc:
             raise SPSDKError("CRC does not match")
         return obj

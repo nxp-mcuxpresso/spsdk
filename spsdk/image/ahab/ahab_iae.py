@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK AHAB Image Array Entry implementation.
 
 This module provides classes for handling image array entries within AHAB containers,
@@ -34,6 +35,7 @@ from spsdk.image.ahab.ahab_data import (
     AhabTargetMemory,
     load_images_types,
 )
+from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, Features
 from spsdk.utils.family import FamilyRevision, get_db
@@ -42,7 +44,6 @@ from spsdk.utils.misc import (
     align_block,
     clean_up_file_name,
     extend_block,
-    load_binary,
     split_data,
     value_to_bool,
     value_to_int,
@@ -52,6 +53,23 @@ from spsdk.utils.spsdk_enum import SpsdkSoftEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
+
+
+def load_binary_data_from_file(file_path: str) -> bytes:
+    """Load binary data from file.
+
+    :param file_path: Path to the binary file to load.
+    :return: Binary data read from the file.
+    :raises SPSDKError: If file cannot be read.
+    """
+    image = BinaryImage.load_binary_image(file_path)
+    if image.offset != 0:
+        logger.warning(
+            f"Image loaded from {file_path} has non-zero offset {image.offset}. "
+            "Setting offset to 0."
+        )
+        image.offset = 0
+    return image.export()
 
 
 class ImageArrayEntry(Container):
@@ -821,7 +839,9 @@ class ImageArrayEntry(Container):
             config.get_int("meta_data_start_partition_id", 0),
         )
         image_data = (
-            load_binary(config.get_input_file_name("image_path")) if "image_path" in config else b""
+            load_binary_data_from_file(config.get_input_file_name("image_path"))
+            if "image_path" in config
+            else b""
         )
         core_id = chip_config.base.core_ids.from_label(config.get_str("core_id", "Unknown")).tag
         flags = cls.create_flags(
@@ -1302,7 +1322,7 @@ class ImageArrayEntryTemplates:
         return [
             cls._create_image_array_entry(
                 iae_cls,
-                binary=load_binary(config.get_input_file_name(cls.KEY)),
+                binary=load_binary_data_from_file(config.get_input_file_name(cls.KEY)),
                 chip_config=chip_config,
                 config=config,
             )
@@ -1399,7 +1419,7 @@ class IaeDoubleAuthentication(ImageArrayEntryTemplates):
         ret = []
         # Load the NXP firmware image
         logger.info("Adding Double Authentication NXP firmware image")
-        nxp_image = load_binary(config.get_input_file_name(cls.KEY))
+        nxp_image = load_binary_data_from_file(config.get_input_file_name(cls.KEY))
 
         # Process ELE firmware container
         header = HeaderContainerData.parse(nxp_image)
@@ -1490,10 +1510,10 @@ class IaeSPLDDR(ImageArrayEntryTemplates):
 
         # load lpddr binary files
         logger.info("Adding DDR memory areas into SPL image")
-        lpddr_imem_1d = load_binary(config.get_input_file_name("lpddr_imem_1d"))
-        lpddr_dmem_1d = load_binary(config.get_input_file_name("lpddr_dmem_1d"))
-        lpddr_imem_2d = load_binary(config.get_input_file_name("lpddr_imem_2d"))
-        lpddr_dmem_2d = load_binary(config.get_input_file_name("lpddr_dmem_2d"))
+        lpddr_imem_1d = load_binary_data_from_file(config.get_input_file_name("lpddr_imem_1d"))
+        lpddr_dmem_1d = load_binary_data_from_file(config.get_input_file_name("lpddr_dmem_1d"))
+        lpddr_imem_2d = load_binary_data_from_file(config.get_input_file_name("lpddr_imem_2d"))
+        lpddr_dmem_2d = load_binary_data_from_file(config.get_input_file_name("lpddr_dmem_2d"))
 
         ddr_binaries = [lpddr_imem_1d, lpddr_dmem_1d, lpddr_imem_2d, lpddr_dmem_2d]
         alignments = database.get_list(DatabaseManager.AHAB, "ddr_alignments")
@@ -1507,7 +1527,7 @@ class IaeSPLDDR(ImageArrayEntryTemplates):
         ddr_binary = b"".join(ddr_binaries)
 
         # load and align the main SPL binary
-        ddr_fw = load_binary(config.get_input_file_name("spl_ddr"))
+        ddr_fw = load_binary_data_from_file(config.get_input_file_name("spl_ddr"))
         ddr_fw_alignment = database.get_value(DatabaseManager.AHAB, "ddr_fw_alignment")
 
         # merge to final binary
@@ -1609,17 +1629,19 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
             return len(imem).to_bytes(4, "little") + len(dmem).to_bytes(4, "little")
 
         # load lpddr binary files
-        lpddr_imem = load_binary(config.get_input_file_name("lpddr_imem"))
-        lpddr_dmem = load_binary(config.get_input_file_name("lpddr_dmem"))
+        lpddr_imem = load_binary_data_from_file(config.get_input_file_name("lpddr_imem"))
+        lpddr_dmem = load_binary_data_from_file(config.get_input_file_name("lpddr_dmem"))
 
         # Check for QuickBoot configuration
         quick_boot = config.get("lpddr_imem_qb") and config.get("lpddr_dmem_qb")
         if quick_boot:
-            lpddr_imem_qb = load_binary(config.get_input_file_name("lpddr_imem_qb"))
-            lpddr_dmem_qb = load_binary(config.get_input_file_name("lpddr_dmem_qb"))
+            lpddr_imem_qb = load_binary_data_from_file(config.get_input_file_name("lpddr_imem_qb"))
+            lpddr_dmem_qb = load_binary_data_from_file(config.get_input_file_name("lpddr_dmem_qb"))
 
         # Prepare the main binary with headers and DDR configuration
-        binary_image = align_block(load_binary(config.get_input_file_name("oei_ddr")), 4)
+        binary_image = align_block(
+            load_binary_data_from_file(config.get_input_file_name("oei_ddr")), 4
+        )
         # add ddr fw header and data
         binary_image += create_fw_header(lpddr_imem, lpddr_dmem)
         binary_image += lpddr_imem
@@ -1659,7 +1681,8 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
                 qb_data_binary = bytes()
 
             elif qb_data:
-                qb_data_binary = load_binary(qb_data, config.search_paths)
+                qb_data = config.get_input_file_name("qb_data")
+                qb_data_binary = load_binary_data_from_file(qb_data)
 
             # Create separate QB data entry
             if qb_data_binary is not None:
@@ -1830,7 +1853,7 @@ class IaeKernel(ImageArrayEntryTemplates):
         chunk_size = db.get_int(DatabaseManager.AHAB, f"{cls.KEY}_chunk_size")
         load_address = db.get_int(DatabaseManager.AHAB, f"{cls.KEY}_load_address")
         logger.debug(f"Kernel needs to be split into chunks of {chunk_size} bytes")
-        binary_image = load_binary(config.get_input_file_name(cls.KEY))
+        binary_image = load_binary_data_from_file(config.get_input_file_name(cls.KEY))
 
         entries = []
         for binary in split_data(binary_image, chunk_size):
@@ -1899,7 +1922,7 @@ class IaeUBoot(ImageArrayEntryTemplates):
         :return: List containing a single image array entry for U-Boot.
         :raises SPSDKError: If required files can't be loaded.
         """
-        binary_image = load_binary(config.get_input_file_name(cls.KEY))
+        binary_image = load_binary_data_from_file(config.get_input_file_name(cls.KEY))
         spsdk_signature = "SPSDK " + version
         return [
             cls._create_image_array_entry(

@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """Boot Data Table (BDT) segment module for HAB images.
 
 This module provides classes to create, manipulate and parse the Boot Data Table (BDT) segment
 used in High Assurance Boot (HAB) images. The BDT contains information about the application
 start address, length, and plugin flags required for secure boot configuration.
 """
+
 from struct import calcsize, pack, unpack_from
 from typing import Type
 

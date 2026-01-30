@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -1487,10 +1487,10 @@ class IskCertificate(BaseClass):
         :return: Parsed ISK certificate instance
         :raises SPSDKError: Invalid certificate data format or parsing error
         """
-        (signature_offset, constraints, isk_flags) = unpack_from("<3L", data)
+        signature_offset, constraints, isk_flags = unpack_from("<3L", data)
         header_word_cnt = 3
         if signature_offset & 0xFFFF == 0x4D43:  # This means that certificate has no offset
-            (constraints, isk_flags) = unpack_from("<2L", data)
+            constraints, isk_flags = unpack_from("<2L", data)
             signature_offset = 72
             header_word_cnt = 2
         user_data_flag = bool(isk_flags & 0x80000000)
@@ -1657,7 +1657,7 @@ class IskCertificateLite(BaseClass):
         :param data: Input data as bytes array containing the serialized ISK certificate.
         :return: Parsed ISK certificate instance.
         """
-        (_, _, constraints) = unpack_from(cls.HEADER_FORMAT, data)
+        _, _, constraints = unpack_from(cls.HEADER_FORMAT, data)
         offset = calcsize(cls.HEADER_FORMAT)
         isk_pub_key_bytes = data[offset : offset + cls.ISK_PUB_KEY_LENGTH]
         offset += cls.ISK_PUB_KEY_LENGTH

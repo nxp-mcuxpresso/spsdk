@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -298,10 +298,8 @@ def search_nxp_uart_devices(
                 retval.append(uart_dev)
                 continue
         except (SPSDKConnectionError, SPSDKPermissionError, struct.error) as e:
-            logger.debug(
-                f"Exception {type(e).__name__} occurred while reading status via SDP. \
-Arguments: {e.args}"
-            )
+            logger.debug(f"Exception {type(e).__name__} occurred while reading status via SDP. \
+Arguments: {e.args}")
         finally:
             if isinstance(sdp_com, SDP):
                 sdp_com.close()

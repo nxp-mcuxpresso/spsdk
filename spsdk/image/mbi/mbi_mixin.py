@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -64,6 +64,7 @@ from spsdk.utils.misc import (
     write_file,
 )
 from spsdk.utils.spsdk_enum import SpsdkEnum
+from spsdk.utils.verifier import Verifier
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +121,7 @@ class Mbi_Mixin:
     :cvar COUNT_IN_LEGACY_CERT_BLOCK_LEN: Flag indicating if mixin counts in legacy certificate block length.
     """
 
+    NAME = ""
     VALIDATION_SCHEMAS: list[str] = []
     NEEDED_MEMBERS: dict[str, Any] = {}
     PRE_PARSED: list[str] = []
@@ -195,6 +197,13 @@ class Mbi_Mixin:
         :return: Dictionary containing mixin configuration data.
         """
         return {}
+
+    def mix_verify(self) -> Verifier:
+        """Verify the mixin.
+
+        :return: Verifier object for validation results.
+        """
+        return Verifier(name=self.NAME or self.__class__.__name__, important=False)
 
 
 class Mbi_MixinApp(Mbi_Mixin):
@@ -703,6 +712,69 @@ class Mbi_MixinFwVersion(Mbi_Mixin):
         config: dict[str, Any] = {}
         config["firmwareVersion"] = self.firmware_version
         return config
+
+    def mix_verify(self) -> Verifier:
+        """Verify the mixin configuration.
+
+        :return: Verifier object for firmware version validation.
+        """
+        ver = Verifier(
+            name="Firmware Version",
+            description="Value compared with Secure_FW_Version monotonic counter value",
+        )
+        ver.add_record_range(
+            name="fw_version", value=self.firmware_version, min_val=0, max_val=0xFFFF
+        )
+        return ver
+
+    def mix_validate(self) -> None:
+        """Validate the mixin configuration."""
+        ver = self.mix_verify()
+        if ver.has_errors:
+            raise SPSDKError(ver.draw())
+
+
+class Mbi_MixinFwVersionHiddenImageVersion(Mbi_MixinFwVersion):
+    """Firmware version with hidden created image_version to be stored into IVT table image type."""
+
+    image_version: int
+    ivt_table: "Mbi_MixinIvt"
+    image_version_to_image_type: bool = True
+
+    def mix_load_from_config(self, config: Config) -> None:
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        """
+        self.firmware_version = config.get_int("firmwareVersion", config.get_int("imageVersion", 0))
+        self.image_version = self.firmware_version
+
+    def mix_verify(self) -> Verifier:
+        """Verify the mixin configuration.
+
+        :return: Verifier object for firmware version validation.
+        """
+        ver = super().mix_verify()
+
+        ver.add_record(
+            name="Firmware version in IVT",
+            result=self.firmware_version == self.image_version,
+            value=f"Firmware version: 0x{self.firmware_version:02x}, IVT image version: 0x{self.image_version:02x}",
+        )
+        return ver
+
+    def mix_parse(self, data: bytes) -> None:
+        """Parse the binary data to extract and set individual image fields.
+
+        This method extracts the image version from the provided binary data using
+        the IVT (Interrupt Vector Table) and stores it in the image_version attribute.
+
+        :param data: Complete binary image data to be parsed.
+        """
+        super().mix_parse(data)
+        self.image_version = self.ivt_table.get_image_version(data)
+        if not hasattr(self, "ahab"):
+            self.firmware_version = self.image_version
 
 
 class Mbi_MixinImageVersion(Mbi_Mixin):
@@ -1814,7 +1886,7 @@ class Mbi_MixinAhab(Mbi_Mixin):
     trust_zone: Optional[TrustZone]
     tz_type: TrustZoneType
     load_address: int
-    image_version: int
+    firmware_version: int
 
     @classmethod
     def mix_get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
@@ -1877,6 +1949,15 @@ class Mbi_MixinAhab(Mbi_Mixin):
         hash_type = ImageArrayEntryV2.FLAGS_HASH_ALGORITHM_TYPE.from_label(
             config.get_str("image_hash_type", "sha384")
         )
+        if "firmwareVersion" in config:
+            self.firmware_version = config.get_int("firmwareVersion")
+            # Upper 8 bits should be set as lower 8 bits (sw_version[7:0] << 8)
+            # Lower 8 bits should be set in fuse_version[7:0]
+            self.ahab.sw_version = (self.firmware_version >> 8) & 0xFF
+            self.ahab.fuse_version = self.firmware_version & 0xFF
+        elif "imageVersion" in config:
+            self.ahab.sw_version = config.get_int("imageVersion") & 0xFF
+
         data_iae_flags = ImageArrayEntryV2.create_flags(
             image_type=ImageArrayEntryV2.get_image_types(self.ahab.chip_config, core_id.tag)
             .from_label("executable")
@@ -1947,6 +2028,8 @@ class Mbi_MixinAhab(Mbi_Mixin):
             raise SPSDKError("Ahab container is missing")
 
         config = self.ahab._create_config(index=0, data_path=output_folder)
+        config.pop("fuse_version", None)
+        config.pop("software_version", None)
 
         if len(get_ahab_supported_hashes(self.family)) > 1:
             config["image_hash_type"] = (
@@ -1972,7 +2055,7 @@ class Mbi_MixinAhab(Mbi_Mixin):
 
         The method extracts the AHAB container from the binary data at the calculated
         offset and parses it using the chip configuration. If the instance has an
-        image_version attribute, it updates it with the software version from AHAB.
+        firmware_version attribute, it updates it with the software version from AHAB.
 
         :param data: Final Image in bytes to be parsed.
         :raises SPSDKError: If AHAB container parsing fails.
@@ -1980,12 +2063,16 @@ class Mbi_MixinAhab(Mbi_Mixin):
         """
         ahab_offset = Mbi_MixinIvt.get_cert_block_offset_from_data(data)
         self.ahab = AHABContainerV2.parse(
-            data,
+            data[ahab_offset:],
             chip_config=create_chip_config(self.family, feature=self.FEATURE, base_key=["ahab"]),
-            offset=ahab_offset,
+            offset=0,
         )
-        if hasattr(self, "image_version"):
-            self.image_version = self.ahab.sw_version
+        if hasattr(self, "firmware_version"):
+            # Upper 8 bits should be set as lower 8 bits (sw_version[7:0] << 8)
+            # Lower 8 bits should be set in fuse_version[7:0]
+            self.firmware_version = ((self.ahab.sw_version & 0xFF) << 8) | (
+                self.ahab.fuse_version & 0xFF
+            )
 
 
 class Mbi_MixinAppCrc(Mbi_Mixin):
@@ -3924,7 +4011,7 @@ class Mbi_ExportMixinAppTzCrcAhab(Mbi_ExportMixin):
     tz_type: TrustZoneType
     ivt_table: Mbi_MixinIvt
     total_len: int
-    image_version: int
+    firmware_version: int
     ahab: AHABContainerV2
     crc_check_record: Optional[ImageArrayEntryV2]
     CRC_IMAGE_NAME = "CRC-32 MPEG checksum"
@@ -3991,8 +4078,8 @@ class Mbi_ExportMixinAppTzCrcAhab(Mbi_ExportMixin):
             crc_val_cert_offset=ahab_offset,
         )
 
-        if hasattr(self, "image_version"):
-            self.ahab.sw_version = self.image_version
+        # if hasattr(self, "firmware_version"):
+        #     self.ahab.sw_version = self.firmware_version
 
         # Now update all the AHAB image array entries with the relative offsets
         # Note: offsets are relative to AHAB container, so they'll be negative values

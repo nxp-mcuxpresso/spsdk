@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -26,10 +26,13 @@ import yaml
 
 from spsdk.apps import nxpimage
 from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
+from spsdk.crypto.dilithium import IS_DILITHIUM_SUPPORTED
 from spsdk.crypto.hash import get_hash
 from spsdk.crypto.keys import PrivateKey, PrivateKeyEcc, PrivateKeyRsa, PublicKeyEcc
 from spsdk.crypto.signature_provider import PlainFileSP, SignatureProvider, get_signature_provider
 from spsdk.exceptions import SPSDKError
+from spsdk.image.ahab.ahab_container import AHABContainerV2
+from spsdk.image.ahab.ahab_iae import ImageArrayEntryV2
 from spsdk.image.cert_block.cert_blocks import CertBlockV21, CertBlockVx
 from spsdk.image.keystore import KeyStore
 from spsdk.image.mbi.mbi import MasterBootImage
@@ -395,9 +398,17 @@ def test_nxpimage_mbi_signed(
             assert ref_data[:-signature_length] == new_data[:-signature_length]
 
 
-@pytest.mark.parametrize("config_file,device", [("mb_xip_signed.yaml", "mcxe31b")])
+@pytest.mark.parametrize(
+    "config_file,device,app_offset",
+    [("mb_xip_signed.yaml", "mcxe31b", 0), ("mb_xip_signed_with_ivt.yaml", "mcxe31b", 0x1000)],
+)
 def test_nxpimage_mbi_signed_mcxe31(
-    cli_runner: CliRunner, nxpimage_data_dir: str, tmpdir: str, config_file: str, device: str
+    cli_runner: CliRunner,
+    nxpimage_data_dir: str,
+    tmpdir: str,
+    config_file: str,
+    device: str,
+    app_offset: int,
 ) -> None:
     """Test signed MBI export and parse functionality for MCXE31 device.
 
@@ -432,7 +443,159 @@ def test_nxpimage_mbi_signed_mcxe31(
         ).replace("\\", "/")
         parsed_app = os.path.join(tmpdir, "parsed", "application.bin")
         assert os.path.isfile(parsed_app)
-        assert filecmp.cmp(input_image, parsed_app)
+
+        input_image_data = load_binary(input_image)
+        parsed_app_data = load_binary(parsed_app)
+        assert input_image_data[app_offset:] == parsed_app_data
+
+
+@pytest.mark.parametrize(
+    "config_file,device,sign_digest",
+    [
+        pytest.param(
+            "mb_xip_signed_ecc256_mldsa65.yaml",
+            "mcxn556s",
+            "SHA384",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
+            ),
+        ),
+    ],
+)
+def test_nxpimage_mbi_ahab_signed(
+    cli_runner: CliRunner,
+    nxpimage_data_dir: str,
+    tmpdir: str,
+    config_file: str,
+    device: str,
+    sign_digest: str,
+) -> None:
+    """Test nxpimage MBI AHAB signed binary generation and validation for PQC.
+
+    This test validates the Master Boot Image (MBI) export functionality for AHAB-signed
+    binaries with Post-Quantum Cryptography support. It compares reference and newly
+    generated binaries, verifies AHAB signatures, validates container structure, and
+    ensures data integrity through CRC checks.
+
+    :param cli_runner: Click CLI test runner for command execution.
+    :param nxpimage_data_dir: Directory containing test data and configuration files.
+    :param tmpdir: Temporary directory for output files.
+    :param config_file: Configuration file name for MBI AHAB generation.
+    :param device: Target device family for MBI creation.
+    :param sign_digest: Digest algorithm for signing (sha256, sha384, or sha512).
+    """
+    with use_working_directory(nxpimage_data_dir):
+        config_file = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{config_file}"
+        ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+
+        cmd = f"mbi export -c {new_config}"
+        cli_runner.invoke(nxpimage.main, cmd.split())
+        assert os.path.isfile(new_binary)
+
+        # Validate file lengths
+        ref_data = load_binary(ref_binary)
+        new_data = load_binary(new_binary)
+        assert len(ref_data) == len(new_data)
+
+        # Parse MBI to get AHAB container
+        mbi_cls = MasterBootImage.get_mbi_class(load_configuration(new_config))
+        parsed_mbi = mbi_cls.parse(family=FamilyRevision(device), data=new_data)
+
+        # Verify AHAB container exists
+        assert hasattr(parsed_mbi, "ahab")
+        ahab_container = parsed_mbi.ahab
+        assert isinstance(ahab_container, AHABContainerV2)
+
+        # Get AHAB container offset from IVT
+        ahab_offset = Mbi_MixinIvt.get_cert_block_offset_from_data(new_data)
+        # Verify hash algorithm matches configuration
+        expected_ahab_hash = ImageArrayEntryV2.FLAGS_HASH_ALGORITHM_TYPE.from_label(sign_digest)
+        for img_entry in ahab_container.image_array:
+            if img_entry.flags_image_type_name != "crc_check":
+                # Extract AHAB hash type directly from flags
+                hash_val = (img_entry.flags >> img_entry.FLAGS_HASH_OFFSET) & (
+                    (1 << img_entry.FLAGS_HASH_SIZE) - 1
+                )
+                actual_ahab_hash = ImageArrayEntryV2.FLAGS_HASH_ALGORITHM_TYPE.from_tag(hash_val)
+
+                assert (
+                    actual_ahab_hash == expected_ahab_hash
+                ), f"Hash algorithm mismatch: expected {expected_ahab_hash.label}, got {actual_ahab_hash.label}"
+        # Compare data before AHAB container (application + optional TrustZone + optional CRC)
+        assert (
+            ref_data[:ahab_offset] == new_data[:ahab_offset]
+        ), "Application data mismatch before AHAB container"
+
+        # Verify AHAB container structure (skip signature for comparison)
+        ahab_ref_data = ref_data[ahab_offset:]
+        ahab_new_data = new_data[ahab_offset:]
+
+        # Get signature block offset within AHAB container
+        if ahab_container.signature_block:
+            sig_block_offset = ahab_container._signature_block_offset
+            sig_block_size = len(ahab_container.signature_block)
+
+            # Compare AHAB header and image array (before signature block)
+            assert (
+                ahab_ref_data[:sig_block_offset] == ahab_new_data[:sig_block_offset]
+            ), "AHAB container header/image array mismatch"
+
+            # Compare data after signature block (if any)
+            after_sig_offset = sig_block_offset + sig_block_size
+            if len(ahab_ref_data) > after_sig_offset:
+                assert (
+                    ahab_ref_data[after_sig_offset:] == ahab_new_data[after_sig_offset:]
+                ), "AHAB container data after signature mismatch"
+
+            # Verify AHAB signature
+            signature_data = ahab_container.get_signature_data()
+            assert len(signature_data) > 0, "No signature data available"
+
+            # Verify signature block has valid signature
+            assert (
+                ahab_container.signature_block.signature is not None
+            ), "AHAB signature block missing signature"
+
+            # Verify SRK hash if available
+            if ahab_container.signature_block.srk_assets:
+                srk_hash = ahab_container.get_srk_hash(0)
+                assert len(srk_hash) > 0, "SRK hash is empty"
+
+                # For dual SRK support
+                if ahab_container.signature_block.srk_assets.srk_count > 1:
+                    srk_hash1 = ahab_container.get_srk_hash(1)
+                    assert len(srk_hash1) > 0, "SRK hash #1 is empty"
+                # Verify CRC if present
+                if hasattr(parsed_mbi, "crc_check_record") and parsed_mbi.crc_check_record:
+                    crc_image = parsed_mbi.crc_check_record
+                    assert crc_image.flags_image_type_name == "crc_check"
+
+                    # Find CRC offset in the image
+                    crc_offset = ahab_offset + crc_image.image_offset
+                    crc_value_new = int.from_bytes(new_data[crc_offset : crc_offset + 4], "little")
+
+                    # Verify CRC calculation (CRC is calculated over all data before the CRC field)
+                    crc_obj = from_crc_algorithm(CrcAlg.CRC32_MPEG)
+                    calculated_crc = crc_obj.calculate(new_data[:crc_offset])
+
+                    assert (
+                        crc_value_new == calculated_crc
+                    ), f"CRC mismatch: stored=0x{crc_value_new:08x}, calculated=0x{calculated_crc:08x}"
+
+                    # Note: We don't compare CRC with reference because signatures are always different,
+                    # making the CRC different each time
+        # Verify firmware version mapping (MBI <-> AHAB)
+        if hasattr(parsed_mbi, "firmware_version"):
+            # Upper 8 bits should be sw_version, lower 8 bits should be fuse_version
+            expected_sw_version = (parsed_mbi.firmware_version >> 8) & 0xFF
+            expected_fuse_version = parsed_mbi.firmware_version & 0xFF
+
+            assert (
+                ahab_container.sw_version == expected_sw_version
+            ), f"SW version mismatch: expected 0x{expected_sw_version:02x}, got 0x{ahab_container.sw_version:02x}"
+            assert (
+                ahab_container.fuse_version == expected_fuse_version
+            ), f"Fuse version mismatch: expected 0x{expected_fuse_version:02x}, got 0x{ahab_container.fuse_version:02x}"
 
 
 @pytest.mark.parametrize(

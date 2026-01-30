@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,7 +12,6 @@ using the EL2GO (EdgeLock 2GO) service. It includes commands for device
 preparation, secure object provisioning, UUID management, and bulk operations
 for production deployment scenarios.
 """
-
 
 import json
 import math
@@ -130,7 +129,7 @@ def run_provisioning_command(
     is_flag=True,
     default=False,
     help=(
-        "Continue donwloading Secure Object in case of an error. "
+        "Continue downloading Secure Object in case of an error. "
         "This option has effect only when using a database with multiple UUIDs."
     ),
 )

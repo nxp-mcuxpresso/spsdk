@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK AHAB container Super Root Keys (SRK) management utilities.
 
 This module provides functionality for creating, parsing, verifying and exporting
@@ -11,7 +12,6 @@ Super Root Keys used in AHAB (Advanced High Assurance Boot) secure boot implemen
 The module supports multiple cryptographic algorithms including RSA, ECDSA, SM2, and
 post-quantum cryptography (Dilithium/ML-DSA).
 """
-
 
 import logging
 import math
@@ -1539,7 +1539,7 @@ class SRKData(HeaderContainer):
         :return: SRK record recreated from the binary data.
         """
         cls.check_container_head(data).validate()
-        (_, container_length, _, srk_id, _, _) = unpack(  # version  # tag  # Reserved  # Reserved
+        _, container_length, _, srk_id, _, _ = unpack(  # version  # tag  # Reserved  # Reserved
             cls.format(), data[: cls.fixed_length()]
         )
 
@@ -2167,7 +2167,7 @@ class SRKTableArray(HeaderContainer):
             tables_len += len(
                 cast(
                     SRKRecordV2, table.srk_records[self.chip_config.used_srk_id]
-                ).srk_data  # type:ignore
+                ).srk_data  # type: ignore
             )
 
         return super().__len__() + tables_len

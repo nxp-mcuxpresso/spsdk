@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -748,6 +748,89 @@ def spsdk_output_option(
         )(func)
 
         return func
+
+    return decorator
+
+
+def spsdk_output_option_to_config(
+    key_output: str,
+    key_output_format: Optional[str] = None,
+    directory: bool = False,
+) -> Callable:
+    """Click decorator for convert standard output option into override configuration option.
+
+    :param key_output: Configuration key name to be used for overriding.
+    :param key_output_format: Configuration key name for output format, defaults to None
+    :param directory: Output is a directory, defaults to False
+    :return: Click decorator
+    """
+
+    def decorator(func: Callable[[FC], FC]) -> Callable[[FC], FC]:
+        @functools.wraps(func)
+        @click.pass_context
+        def wrapper(ctx: click.Context, *args: Any, **kwargs: Any) -> Any:
+            output = kwargs.pop("output", None)
+            if output:
+                # Get existing override-config tuple (if any)
+                existing_overrides = kwargs.get("override_config", ())
+                # Warn user about change
+                logger.warning(
+                    "The --output option is deprecated. Define 'output' in the configuration file."
+                )
+                # Append the new override to the tuple
+                kwargs["override_config"] = (*existing_overrides, f"{key_output}={output}")
+
+            if key_output_format:
+                output_format = kwargs.pop("output_format", None)
+                if (
+                    output_format
+                    and ctx.get_parameter_source("output_format")
+                    == click.core.ParameterSource.COMMANDLINE
+                ):
+                    # Get existing override-config tuple (if any)
+                    existing_overrides = kwargs.get("override_config", ())
+                    # Warn user about change
+                    logger.warning(
+                        "The --output_format option is deprecated. Define 'output_format' in the configuration file."
+                    )
+                    # Append the new override to the tuple
+                    kwargs["override_config"] = (
+                        *existing_overrides,
+                        f"{key_output_format}={output_format}",
+                    )
+
+            force = kwargs.pop("force", None)
+            if force:
+                kwargs.pop("force", None)
+                logger.warning("The --force option is deprecated.")
+
+            return func(*args, **kwargs)
+
+        wrapper = click.option(  # output
+            "-o",
+            "--output",
+            type=click.Path(resolve_path=True, dir_okay=directory, file_okay=not directory),
+            required=False,
+            hidden=True,
+        )(wrapper)
+        wrapper = click.option(  # force
+            "--force",
+            default=False,
+            is_flag=True,
+            is_eager=True,
+            hidden=True,
+        )(wrapper)
+        if key_output_format:
+            wrapper = click.option(  # output_format
+                "-of",
+                "--output-format",
+                type=click.Choice(["bin", "hex", "srec", "sparse"], case_sensitive=False),
+                default="bin",
+                required=False,
+                hidden=True,
+            )(wrapper)
+
+        return wrapper
 
     return decorator
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -135,8 +135,7 @@ class ServiceDB(LocalSecureObjectsDB):
         super()._setup_db()
         with self:
             cursor = self._sanitize_cursor()
-            cursor.execute(
-                """
+            cursor.execute("""
                 CREATE TABLE IF NOT EXISTS jobs (
                     job_id TEXT PRIMARY KEY,
                     device_count INTEGER NOT NULL,
@@ -146,8 +145,7 @@ class ServiceDB(LocalSecureObjectsDB):
                     percentage INTEGER NULL DEFAULT 0,
                     downloaded INTEGER NULL DEFAULT 0
                 );
-                """
-            )
+                """)
             cursor.connection.commit()
 
     def insert_job(self, job_id: str, device_count: int) -> None:

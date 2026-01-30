@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -158,9 +158,9 @@ class HeaderContainerData:
         if len(binary) < 4:
             raise SPSDKParsingError("AHAB header length is not sufficient")
         if inverted:
-            (tag, length, version) = unpack(fmt, binary[:4])
+            tag, length, version = unpack(fmt, binary[:4])
         else:
-            (version, length, tag) = unpack(fmt, binary[:4])
+            version, length, tag = unpack(fmt, binary[:4])
         return cls(tag, length, version)
 
 
@@ -343,7 +343,7 @@ class HeaderContainer(Container):
                 f"Parsing error in {cls.__name__} container head data!\n"
                 "Input data must be at least 4 bytes!"
             )
-        (version, length, tag) = unpack(HeaderContainer.format(), binary[:4])
+        version, length, tag = unpack(HeaderContainer.format(), binary[:4])
         return tag, length, version
 
     @classmethod
@@ -364,7 +364,7 @@ class HeaderContainer(Container):
         ret.add_child(cls._check_fixed_input_length(binary))
         if not ret.has_errors:
             data_len = len(binary)
-            (tag, length, version) = cls.parse_head(binary[: HeaderContainer.fixed_length()])
+            tag, length, version = cls.parse_head(binary[: HeaderContainer.fixed_length()])
             ret.add_child(cls._verify_header(tag, length, version))
 
         if not ret.has_errors:
@@ -530,5 +530,5 @@ class HeaderContainerInverted(HeaderContainer):
                 "Input data must be at least 4 bytes!"
             )
         # Only SRK Table has splitted tag and version in binary format
-        (tag, length, version) = unpack(HeaderContainer.format(), binary)
+        tag, length, version = unpack(HeaderContainer.format(), binary)
         return tag, length, version

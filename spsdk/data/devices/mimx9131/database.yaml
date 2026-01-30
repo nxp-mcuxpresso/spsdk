@@ -1,4 +1,4 @@
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -199,6 +199,10 @@ features:
       emmc:
         segments:
           primary_image_container_set: 0x8_000
+          secondary_image_container_set: -1 # Just behind previous segment
+      emmc_boot:
+        segments:
+          primary_image_container_set: 0x0
           secondary_image_container_set: -1 # Just behind previous segment
       sd:
         segments:

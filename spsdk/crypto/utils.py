@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -416,7 +416,7 @@ def generate_srk_keys(
             # generate SGK certificate signed by SRK certificate
             sgk_cert = Certificate.generate_certificate(
                 subject=subject,
-                issuer=ca_issuer,
+                issuer=srk_cert.subject,
                 subject_public_key=sgk_public_key,
                 issuer_private_key=srk_private_key,
                 serial_number=serial[idx] if serial else None,
@@ -434,7 +434,7 @@ def generate_srk_keys(
                 encoding=encoding,
                 keys_path=keys_path,
                 crts_path=crts_path,
-                ca_issuer=ca_issuer,
+                ca_issuer=srk_cert.subject,
                 srk_private_key=srk_private_key,
                 duration=duration,
                 idx=idx,

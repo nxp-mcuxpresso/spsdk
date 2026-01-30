@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -326,8 +326,7 @@ class LocalSecureObjectsDB(LocalDB, SecureObjectsDB):
         logger.debug("Setting up a database")
         with self:
             cursor = self._sanitize_cursor()
-            cursor.executescript(
-                """
+            cursor.executescript("""
                 CREATE TABLE IF NOT EXISTS settings (
                     "name" varchar NOT NULL,
                     "value" text NOT NULL
@@ -336,8 +335,7 @@ class LocalSecureObjectsDB(LocalDB, SecureObjectsDB):
                     "uuid" varchar(32) NOT NULL PRIMARY KEY,
                     "so" blob NULL
                 );
-                """
-            )
+                """)
 
     def add_uuid(self, uuid: str) -> bool:
         """Add UUID into the database.
@@ -629,8 +627,7 @@ class LocalProductBasedBatchDB(LocalDB):
         with self:
             # Create table if not exists with appropriate schema
             cursor = self._sanitize_cursor()
-            cursor.executescript(
-                """
+            cursor.executescript("""
                 CREATE TABLE IF NOT EXISTS static (
                     version INTEGER DEFAULT 1,
                     job_id TEXT,
@@ -651,8 +648,7 @@ class LocalProductBasedBatchDB(LocalDB):
                     report BLOB,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
-                """
-            )
+                """)
 
     def __init__(self, file_path: str, lock_timeout: Optional[int] = 10):
         """Initialize local product-based database.

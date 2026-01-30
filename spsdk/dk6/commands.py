@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -355,7 +355,7 @@ class GetChipIdResponse(CmdResponse):
         """
         super().__init__(cmd_type, raw_data)
         if self.status == StatusCode.OK:
-            (self.chip_id, self.chip_version) = unpack_from(self.FORMAT, raw_data, self.MSG_OFFSET)
+            self.chip_id, self.chip_version = unpack_from(self.FORMAT, raw_data, self.MSG_OFFSET)
 
     def info(self) -> str:
         """Get object information as formatted string.

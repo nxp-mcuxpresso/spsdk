@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK HAB Write Data command implementation.
 
 This module provides functionality for creating and managing HAB Write Data commands,
@@ -270,7 +271,7 @@ class CmdWriteData(CmdBase):
         obj = cls(header.param & 0x7, WriteDataOpsEnum.from_tag((header.param >> 3) & 0x3))
         index = header.size
         while index < header.length:
-            (address, value) = unpack_from(">LL", data, index)
+            address, value = unpack_from(">LL", data, index)
             obj.append(address, value)
             index += 8
         return obj

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -453,7 +453,7 @@ class SecureBinary4(FeatureBaseClass):
             [sb4_sch_cfg[x] for x in ["sb4", "sb4_description", "sb4_output", "sb4_test"]]
         )
 
-        schemas.append(sb4_sch_cfg["image_version"])
+        schemas.append(mbi_sch_cfg["firmware_version"])
         schemas.append(mbi_sch_cfg["ahab_sign_support"])
         schemas.append(mbi_sch_cfg["ahab_sign_support_add_image_hash_type"])
         schemas.append(mbi_sch_cfg["ahab_sign_support_add_core_id"])
@@ -494,9 +494,17 @@ class SecureBinary4(FeatureBaseClass):
         )
         chip_config = create_chip_config(family, feature=cls.FEATURE, base_key=["ahab"])
         ahab = AHABContainerV2(chip_config)
-        image_version = config.get_int("imageVersion", 0)
+
         ahab.load_from_config_generic(config)
-        ahab.sw_version = image_version
+        if "firmwareVersion" in config:
+            firmware_version = config.get_int("firmwareVersion")
+            # Upper 8 bits should be set as lower 8 bits (sw_version[7:0] << 8)
+            # Lower 8 bits should be set in fuse_version[7:0]
+            ahab.sw_version = (firmware_version >> 8) & 0xFF
+            ahab.fuse_version = firmware_version & 0xFF
+        elif "imageVersion" in config:
+            ahab.sw_version = config.get_int("imageVersion") & 0xFF
+
         core_id = chip_config.core_ids.from_label(
             config.get_str("core_id", chip_config.core_ids.labels()[0])
         )
@@ -537,8 +545,11 @@ class SecureBinary4(FeatureBaseClass):
         ret["revision"] = self.family.revision
         ret["description"] = self.sb_descriptor.original_description
         ret["containerOutputFile"] = "sb4.bin"
-        ret["imageVersion"] = ret.pop("sw_version", 0)
-
+        # Upper 8 bits should be set as lower 8 bits (sw_version[7:0] << 8)
+        # Lower 8 bits should be set in fuse_version[7:0]
+        ret["firmwareVersion"] = ((ret.pop("sw_version") & 0xFF) << 8) | (
+            ret.pop("fuse_version") & 0xFF
+        )
         ret.update(self.sb_commands.get_config(data_path))
         return ret
 

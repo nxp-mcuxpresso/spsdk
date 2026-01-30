@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK AHAB container signature block implementation.
 
 This module provides classes and functionality for creating, parsing, and managing
 signature blocks used in AHAB (Advanced High Assurance Boot) containers. It supports
 both standard and version 2 signature block formats for secure boot operations.
 """
-
 
 import logging
 import os

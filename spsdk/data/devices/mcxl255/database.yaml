@@ -1,10 +1,11 @@
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 revisions:
   a0: {}
-latest: a0
+  a1: {}
+latest: a1
 
 # General MCU information
 info:
@@ -55,11 +56,11 @@ features:
         plain: plain_xip
         crc: crc_xip
 
-# ======== DAT section ========
+  # ======== DAT section ========
   dat:
     dmbox_ap_ix: 1 # Typical Index of debug mailbox access port is 2
     non_standard_statuses: # dictionary of non standard return statuses from various commands
-      2:  # Command get_crp_level
+      2: # Command get_crp_level
         0xFFFF_FFFF: ROP_STATE = 0xFFFF_FFFF (erased FLASH value), no ROP. Default for blank state
         0xEEBA_04C3: ROP_STATE = 0xEEBA_04C3. Debug disabled and unlocked, can be modified by customer, only limited debug mailbox commands available
         0x4939_8D8B: ROP_STATE = 0x4939_8D8B. Debug disabled and locked, cannot be modified by customer, only limited debug mailbox commands available
@@ -85,4 +86,33 @@ features:
   blhost:
     sub_features: [overridden_properties]
     overridden_properties:
-       17: "life-cycle"
+      17: "life-cycle"
+
+  # ======== Secure binary v3.1 section ========
+  sb31:
+    supported_commands:
+      - erase
+      - load
+      - execute
+      - programFuses
+      - programIFR
+      - loadCMAC
+      - copy
+      - loadHashLocking
+      - loadKeyBlob
+      - configureMemory
+      - fillMemory
+      - checkFwVersion
+    key_wraps_version: 2
+
+  # ======== Device Hardware Security Module (HSM) section ========
+  devhsm:
+    sub_features: [DevHsmSBc]
+    header_version: 2
+    oem_share_output_size: 64
+    oem_master_share_output_size: 96
+    supported_commands:
+      - erase
+      - load
+      - loadKeyBlob
+      - execute
