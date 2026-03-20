@@ -42,11 +42,15 @@ jobs:
 
       - name: Install SPSDK
         run: |
-          uv pip install --system --upgrade .[all]
+          uv pip install --python ${{ matrix.python-version }} .[all]
+        env:
+          UV_SYSTEM_PYTHON: 1
 
       - name: Install Development Dependencies
         run: |
-          uv pip install --system -r requirements-develop.txt
+          uv pip install --python ${{ matrix.python-version }} -r requirements-develop.txt
+        env:
+          UV_SYSTEM_PYTHON: 1
 
       - name: Run Codecheck
         run: |
