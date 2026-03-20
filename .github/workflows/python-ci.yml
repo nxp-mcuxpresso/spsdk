@@ -42,11 +42,11 @@ jobs:
 
       - name: Install SPSDK
         run: |
-          uv pip install --upgrade .[all]
+          uv pip install --system --upgrade .[all]
 
       - name: Install Development Dependencies
         run: |
-          uv pip install -r requirements-develop.txt
+          uv pip install --system -r requirements-develop.txt
 
       - name: Run Codecheck
         run: |
