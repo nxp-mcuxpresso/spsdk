@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,6 +13,7 @@ reading, and erasing CMPA (Customer Manufacturing Programming Area) data.
 """
 
 import logging
+import os
 import sys
 from typing import Callable, Optional, Type, Union
 
@@ -38,12 +39,19 @@ from spsdk.mboot.exceptions import McuBootError
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.pfr.exceptions import SPSDKPfrConfigError, SPSDKPfrError
-from spsdk.pfr.pfr import CMPA, CONFIG_AREA_CLASSES, BaseConfigArea, get_ifr_pfr_class
+from spsdk.pfr.pfr import (
+    CMPA,
+    CONFIG_AREA_CLASSES,
+    AbstractBaseConfigArea,
+    BaseConfigArea,
+    get_ifr_pfr_class,
+    get_ifr_pfr_class_from_config,
+)
 from spsdk.pfr.pfrc import Pfrc
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db
-from spsdk.utils.misc import get_printable_path, load_binary, size_fmt, write_file
+from spsdk.utils.misc import get_printable_path, load_binary, write_file
 
 PFRArea = Type[BaseConfigArea]
 logger = logging.getLogger(__name__)
@@ -63,9 +71,10 @@ def _store_output(
         write_file(data, path=path, mode=mode)
 
 
-def pfr_device_type_options() -> Callable:
+def pfr_device_type_options(required: bool = True) -> Callable:
     """PFR common device click options.
 
+    :param required: Whether the option is required (default: True)
     :return: Click decorator
     """
 
@@ -75,7 +84,7 @@ def pfr_device_type_options() -> Callable:
             "-t",
             "--type",
             "area",
-            required=True,
+            required=required,
             type=click.Choice(sorted(list(CONFIG_AREA_CLASSES.keys())), case_sensitive=False),
             help="Select PFR/IFR partition",
         )(options)
@@ -123,6 +132,26 @@ def get_template(family: FamilyRevision, area: str, output: str) -> None:
     )
 
 
+@main.command(name="get-templates", no_args_is_help=True)
+@spsdk_family_option(BaseConfigArea.get_supported_families())
+@spsdk_output_option(force=True, directory=True)
+def get_templates(family: FamilyRevision, output: str) -> None:
+    """Generate all user configuration template files for a family."""
+    family_areas: list[str] = get_db(family).get_list(DatabaseManager.PFR, "sub_features")
+    for area in family_areas:
+        pfr_cls = get_ifr_pfr_class(area, family)
+        template_data = pfr_cls.get_config_template(family)
+        template_path = f"{output}/{area}.yaml"
+        _store_output(
+            template_data,
+            template_path,
+            msg=(
+                f"The PFR {area} template for {family} has been saved into "
+                f"{get_printable_path(template_path)} YAML file"
+            ),
+        )
+
+
 @main.command(name="parse", no_args_is_help=True)
 @spsdk_family_option(BaseConfigArea.get_supported_families())
 @pfr_device_type_options()
@@ -153,6 +182,7 @@ def pfr_parse(
         data=data,
         family=family,
         area=area,
+        output=output,
         show_diff=show_diff,
     )
     _store_output(
@@ -164,6 +194,7 @@ def _parse_binary_data(
     data: bytes,
     family: FamilyRevision,
     area: str,
+    output: str,
     show_diff: bool = False,
 ) -> str:
     """Parse binary data and extract YAML configuration.
@@ -171,11 +202,12 @@ def _parse_binary_data(
     :param data: Data to parse
     :param family: Device to use
     :param area: PFR are (CMPA, CFPA)
+    :param output: Output file path
     :param show_diff: Show only difference to default
     :return: PFR YAML configuration as a string
     """
     pfr_obj = get_ifr_pfr_class(area, family).parse(data, family)
-    return pfr_obj.get_config_yaml(diff=show_diff)
+    return pfr_obj.get_config_yaml(data_path=os.path.dirname(output), diff=show_diff)
 
 
 @main.command(name="export", no_args_is_help=True)
@@ -217,7 +249,8 @@ def pfr_export(
     ignore: bool,
 ) -> None:
     """Generate binary data."""
-    pfr_obj = BaseConfigArea.load_from_config(config)
+    pfr_class = get_ifr_pfr_class_from_config(config)
+    pfr_obj = pfr_class.load_from_config(config)
     pfrc_devices = Pfrc.get_supported_families(True)
     if pfr_obj.family in pfrc_devices:
         try:
@@ -253,7 +286,10 @@ def pfr_export(
     if pfr_obj.SUB_FEATURE in ["cmpa", "cfpa_cmpa"] and root_of_trust:
         keys = extract_public_keys(root_of_trust, password)
 
-    data = pfr_obj.export(add_seal=add_seal, keys=keys, rotkh=rotkh)
+    if keys or rotkh:
+        pfr_obj.compute_rotkh(keys=keys, rotkh=rotkh)
+
+    data = pfr_obj.export(add_seal=add_seal)
 
     _store_output(
         data,
@@ -274,85 +310,57 @@ def pfr_export(
     help="Path to the BIN file with PFR data to write.",
 )
 @spsdk_config_option(required=False, klass=BaseConfigArea)
+@click.option("-a", "--add-seal", is_flag=True, help="Add seal mark digest at the end.")
 def write(
     interface: MbootProtocolBase,
     family: FamilyRevision,
     area: str,
     binary: str,
     config: Config,
+    add_seal: bool,
 ) -> None:
     """Write PFR/IFR page to the device."""
     if not binary and not config:
         raise SPSDKPfrError("The path to the PFR/IFR data file was not specified!")
-    data = b""
+    pfr_klass = get_ifr_pfr_class(area, family)
     if binary:
-        pfr_obj = get_ifr_pfr_class(area, family)(family=family)
-        data = load_binary(binary)
+        pfr_obj = pfr_klass.parse(load_binary(binary), family)
     elif config:
-        description = config.get("description")
-        cfg_area: str = config.get("type", description["type"] if description else "Invalid")
+        cfg_area: str = config.get("type", "Invalid")
         if area != cfg_area.lower():
             raise SPSDKAppError(
                 "Configuration area doesn't match CLI value and configuration value."
             )
-        pfr_cls = get_ifr_pfr_class(area, family)
-        pfr_cls.pre_check_config(config)
-        pfr_obj = pfr_cls.load_from_config(config)
+        pfr_klass.pre_check_config(config)
+        pfr_obj = pfr_klass.load_from_config(config)
         if family != pfr_obj.family:
             raise SPSDKAppError("Family in configuration doesn't match family from CLI.")
-        data = pfr_obj.export()
-
-    pfr_page_name = pfr_obj.__class__.__name__
-    pfr_page_length = pfr_obj.binary_size
-    pfr_page_address = pfr_obj.db.get_int(
-        pfr_obj.FEATURE, [pfr_obj.SUB_FEATURE, "address"], default=-1
-    )
-    if pfr_page_address == -1:
-        pfr_page_address = pfr_obj.db.get_int(
-            pfr_obj.FEATURE, [pfr_obj.SUB_FEATURE, "write_address"], default=-1
-        )
-    if pfr_page_address == -1:
-        raise SPSDKError(f"Unable to determine {pfr_page_name} page write address for {family}")
-
-    click.echo(
-        f"The {pfr_obj.__class__.__name__} page for {family.name} is located at "
-        f"address {pfr_page_address:#x} in the {family.revision} revision."
-    )
-
-    if len(data) != pfr_page_length:
-        raise SPSDKError(
-            f"PFR page length is {pfr_page_length}. Provided binary has {size_fmt(len(data))}."
-        )
-    if pfr_obj.WRITE_METHOD == "write_memory":
-        db = get_db(family)
-        with McuBoot(interface=interface, cmd_exception=True, family=family) as mboot:
-            try:
-                requires_scratch_erase = db.get_bool(
-                    DatabaseManager.PFR, "requires_scratch_erase", default=False
-                )
-                if requires_scratch_erase:
-                    scratch_page_address = db.get_int(DatabaseManager.PFR, "scratch_page_address")
-                    scratch_page_size = db.get_int(DatabaseManager.PFR, "scratch_page_size")
-                    logger.info(
-                        f"Erasing scratch area ({scratch_page_address:#x}) before writing configuration."
-                    )
-                    mboot.flash_erase_region(address=scratch_page_address, length=scratch_page_size)
-
-                logger.info(f"Writing configuration data to {pfr_page_address:#x}")
-                mboot.write_memory(address=pfr_page_address, data=data)
-
-                requires_reset = db.get_bool(DatabaseManager.PFR, "requires_reset", default=False)
-                if requires_reset:
-                    logger.info(
-                        "The configuration will be applied after reset. Resetting the device."
-                    )
-                    mboot.reset()
-            except McuBootError as exc:
-                raise SPSDKAppError(
-                    f"{pfr_obj.__class__.__name__} data write failed: {exc}"
-                ) from exc
-    else:
+    if pfr_obj.WRITE_METHOD != "write_memory":
         raise SPSDKAppError(f"Unsupported write method: {pfr_obj.WRITE_METHOD}")
+
+    db = pfr_obj.db
+    try:
+        write_method = create_write_method(pfr_obj=pfr_obj, interface=interface)
+        read_method = create_read_method(pfr_obj=pfr_obj, interface=interface)
+        erase_method = create_erase_method(pfr_obj=pfr_obj, interface=interface)
+
+        # Erase scratch page if needed
+        pfr_obj.erase_scratch_if_needed(erase_method=erase_method)
+
+        # Write the PFR into memory
+        pfr_obj.write_to_device(
+            write_method=write_method, read_method=read_method, add_seal=add_seal
+        )
+
+        requires_reset = db.get_bool(DatabaseManager.PFR, "requires_reset", default=False)
+        if requires_reset:
+            logger.warning(
+                "The configuration will be applied after reset. Do reset the device now."
+            )
+
+    except SPSDKError as exc:
+        raise SPSDKAppError(f"{pfr_obj.__class__.__name__} data write failed: {exc}") from exc
+
     click.echo(f"{pfr_obj.__class__.__name__} data written to device.")
 
 
@@ -387,45 +395,16 @@ def read(
 ) -> None:
     """Read PFR page from the device."""
     pfr_obj = get_ifr_pfr_class(area, family)(family=family)
-    pfr_page_name = pfr_obj.__class__.__name__
-    pfr_page_length = pfr_obj.binary_size
-    pfr_page_address = pfr_obj.db.get_int(
-        pfr_obj.FEATURE, [pfr_obj.SUB_FEATURE, "address"], default=-1
-    )
-    if pfr_page_address == -1:
-        pfr_page_address = pfr_obj.db.get_int(
-            pfr_obj.FEATURE, [pfr_obj.SUB_FEATURE, "read_address"], default=-1
-        )
-    if pfr_page_address == -1:
-        raise SPSDKError(f"Unable to determine {pfr_page_name} page read address for {family}")
 
-    click.echo(f"{pfr_page_name} page address on {family} is {pfr_page_address:#x}")
-
-    if pfr_obj.READ_METHOD == "read_memory":
-        with McuBoot(interface=interface, family=family) as mboot:
-            data = mboot.read_memory(address=pfr_page_address, length=pfr_page_length)
-        if not data:
-            raise SPSDKError(f"Unable to read data from address {pfr_page_address:#x}")
-    elif pfr_obj.READ_METHOD == "flash_read_resource":
-        with McuBoot(interface=interface, family=family) as mboot:
-            data = mboot.flash_read_resource(
-                address=pfr_page_address, length=pfr_page_length, option=0
-            )
-        if not data:
-            raise SPSDKError(f"Unable to read data from address {pfr_page_address:#x}")
-    else:
-        raise SPSDKAppError(f"Unsupported read method: {pfr_obj.READ_METHOD}")
+    pfr_obj.read_from_device(create_read_method(pfr_obj=pfr_obj, interface=interface))
+    data = pfr_obj.export()
 
     if output:
         write_file(data, output, "wb")
-        click.echo(f"{pfr_page_name} data stored to {get_printable_path(output)}")
+        click.echo(f"{pfr_obj.SUB_FEATURE} data stored to {get_printable_path(output)}")
     if yaml_output:
-        yaml_data = _parse_binary_data(
-            data=data,
-            family=family,
-            area=area,
-            show_diff=show_diff,
-        )
+        # If the area to read differs from the requested area, parse and create the correct object
+        yaml_data = pfr_obj.get_config_yaml(data_path=os.path.dirname(yaml_output), diff=show_diff)
         write_file(yaml_data, yaml_output)
         click.echo(f"Parsed config stored to {get_printable_path(yaml_output)}")
     if not output and not yaml_output:
@@ -441,7 +420,7 @@ def erase_cmpa(interface: MbootProtocolBase, family: FamilyRevision) -> None:
     pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE, [pfr_obj.SUB_FEATURE, "address"])
     erase_method = pfr_obj.db.get_str(pfr_obj.FEATURE, [pfr_obj.SUB_FEATURE, "erase_method"])
     # Update all possible mandatory fields in PFR block
-    pfr_obj.set_config(Config())
+    pfr_obj.force_update()
 
     click.echo(f"CMPA page address on {family} is {pfr_page_address:#x}")
 
@@ -456,6 +435,118 @@ def erase_cmpa(interface: MbootProtocolBase, family: FamilyRevision) -> None:
         except McuBootError as exc:
             raise SPSDKAppError(f"CMPA page erase failed: {exc}") from exc
     click.echo("CMPA page has been erased.")
+
+
+def create_read_method(
+    pfr_obj: AbstractBaseConfigArea,
+    interface: MbootProtocolBase,
+) -> Callable[[int, int], bytes]:
+    """Create a read method callable for PFR write operations.
+
+    This function creates a callable that matches the signature required by
+    PFR classes' write_to_device() method. The returned callable uses the
+    appropriate read method (read_memory or flash_read_resource) based on
+    the PFR object's READ_METHOD attribute.
+
+    :param pfr_obj: PFR/IFR configuration area object containing read method configuration.
+    :param interface: MCUBoot protocol interface for device communication.
+    :raises SPSDKAppError: If the READ_METHOD specified in pfr_obj is not supported.
+    :return: Callable with signature (address: int, length: int) -> bytes
+    """
+
+    def read_method(address: int, length: int) -> bytes:
+        """Read data from device memory.
+
+        :param address: Memory address to read from.
+        :param length: Number of bytes to read.
+        :raises SPSDKError: If unable to read data from the device.
+        :return: Bytes read from the specified address.
+        """
+        if pfr_obj.READ_METHOD == "read_memory":
+            with McuBoot(interface=interface, family=pfr_obj.family) as mboot:
+                data = mboot.read_memory(address=address, length=length)
+        else:
+            raise SPSDKAppError(f"Unsupported read method: {pfr_obj.READ_METHOD}")
+
+        if not data:
+            raise SPSDKError(f"Unable to read data from address {address:#x}")
+
+        return data
+
+    return read_method
+
+
+def create_write_method(
+    pfr_obj: AbstractBaseConfigArea,
+    interface: MbootProtocolBase,
+) -> Callable[[int, bytes], bool]:
+    """Create a write method callable for PFR write operations.
+
+    This function creates a callable that matches the signature required by
+    PFR classes' write_to_device() method. The returned callable uses the
+    appropriate write method based on the PFR object's WRITE_METHOD attribute.
+
+    :param pfr_obj: PFR/IFR configuration area object containing write method configuration.
+    :param interface: MCUBoot protocol interface for device communication.
+    :raises SPSDKAppError: If the WRITE_METHOD specified in pfr_obj is not supported.
+    :return: Callable with signature (address: int, data: bytes) -> bool
+    """
+
+    def write_method(address: int, data: bytes) -> bool:
+        """Write data to device memory.
+
+        :param address: Memory address to write to.
+        :param data: Data bytes to write.
+        :return: True if write succeeded, False otherwise.
+        """
+        try:
+            if pfr_obj.WRITE_METHOD == "write_memory":
+                with McuBoot(interface=interface, family=pfr_obj.family) as mboot:
+                    mboot.write_memory(address=address, data=data)
+            else:
+                raise SPSDKAppError(f"Unsupported write method: {pfr_obj.WRITE_METHOD}")
+
+            return True
+
+        except McuBootError as exc:
+            logger.error(f"Write failed at address {address:#x}: {exc}")
+            return False
+
+    return write_method
+
+
+def create_erase_method(
+    pfr_obj: AbstractBaseConfigArea,
+    interface: MbootProtocolBase,
+) -> Callable[[int, int], bool]:
+    """Create an erase method callable for PFR erase operations.
+
+    This function creates a callable that matches the signature required by
+    PFR classes' erase_scratch_if_needed() method. The returned callable uses
+    the flash_erase_region method to erase the specified memory region.
+
+    :param pfr_obj: PFR/IFR configuration area object containing erase method configuration.
+    :param interface: MCUBoot protocol interface for device communication.
+    :return: Callable with signature (address: int, length: int) -> bool
+    """
+
+    def erase_method(address: int, length: int) -> bool:
+        """Erase flash region on device.
+
+        :param address: Memory address to erase from.
+        :param length: Number of bytes to erase.
+        :return: True if erase succeeded, False otherwise.
+        """
+        try:
+            with McuBoot(interface=interface, family=pfr_obj.family) as mboot:
+                mboot.flash_erase_region(address=address, length=length)
+            return True
+
+        except McuBootError as exc:
+            logger.error(f"Erase failed at address {address:#x}: {exc}")
+            return False
+
+    return erase_method
 
 
 @catch_spsdk_error

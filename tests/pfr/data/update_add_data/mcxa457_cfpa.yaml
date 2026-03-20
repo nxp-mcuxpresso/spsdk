@@ -1,0 +1,1445 @@
+# Copyright 2025-2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ==========================  PFR CFPA configuration template for mcxa457, Revision: latest  ===========================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxa457
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ------------------------------------===== Configuration area type [Required] =====------------------------------------
+# Description: PFR / IFR type
+# Possible options: <CFPA, cfpa>
+type: CFPA
+# --------------------------------------------===== mcxa457 [Required] =====--------------------------------------------
+settings:
+  Header:
+    # ---------------------------------------===== CFPA_LC_STATE [Optional] =====---------------------------------------
+    # Description: Offset: 0b, Width: 8b, Life cycle state. This field is used to advance life cycle state to OEM LC
+    # states (Develop, Develop2, In-Field, In-field locked, Bricked, FA). Below are the allowed values for this field.
+    # Use of other values may lead to bricked state
+    # - DEVELOP__STATE, (3): Develop state
+    # - DEVELOP_2__STATE, (7): Develop 2 state
+    # - IN-FIELD_STATE, (15): In-field state
+    # - BRICKED_STATED, (90): Bricked stated
+    # - FA_STATE, (165): FA state
+    # - IN-FIELD_LOCKED_STATE, (207): In-field locked state
+    # Possible options: <DEVELOP__STATE, DEVELOP_2__STATE, IN-FIELD_STATE, BRICKED_STATED, FA_STATE, IN-
+    # FIELD_LOCKED_STATE>
+    CFPA_LC_STATE: DEVELOP__STATE
+    # ----------------------------------------===== CFPA_HEADER [Optional] =====----------------------------------------
+    # Description: Offset: 16b, Width: 16b, CFPA Header marker should be set to 0x9635. After this header is set, all
+    # non-zero values will take effect; leaving all values set to 0xff will cause undefined behavior. It is recommended
+    # to set all values to 0x00 before setting the CFPA header
+    CFPA_HEADER: 38453
+  # --------------------------------------===== CFPA_PAGE_VERSION [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000014, Width: 32b; cfpa page version
+  CFPA_PAGE_VERSION: '0x00000000'
+  # --------------------------------------===== IMAGE_KEY_REVOKE [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000018, Width: 32b; image key revoke
+  IMAGE_KEY_REVOKE: '0x00000000'
+  # ----------------------------------------===== DBG_REVOKE_VU [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000001C, Width: 32b; dbg revoke vu
+  DBG_REVOKE_VU:
+    # ---------------------------===== Debug_certificate_revocation_counter [Optional] =====----------------------------
+    # Description: Offset: 0b, Width: 16b, Debug certificate revocation counter. This monotonic counter field is used
+    # for revoking debug certificates. As part of debug authentication, CC_VU field in debug certificate/credential is
+    # checked against DCFG_VENDOR_USAGE value. The 32-bit DCFG_VENDOR_USAGE is formed using upper 16 bit of
+    # CMPA.VENDOR_USAGE and lower 16 bits of this field
+    Debug_certificate_revocation_counter: 0
+  # ---------------------------------------===== EE0_FW_Version [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000020, Width: 32b; ee0 fw version
+  EE0_FW_Version: '0x00000000'
+  # ---------------------------------------===== EE1_FW_Version [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000024, Width: 32b; ee1 fw version
+  EE1_FW_Version: '0x00000000'
+  # ---------------------------------------===== EE2_FW_Version [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000028, Width: 32b; ee2 fw version
+  EE2_FW_Version: '0x00000000'
+  # ---------------------------------------===== EE3_FW_Version [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000002C, Width: 32b; ee3 fw version
+  EE3_FW_Version: '0x00000000'
+  # -------------------------------------===== FMC_SBL_FW_Version [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000030, Width: 32b; fmc sbl fw version
+  FMC_SBL_FW_Version: '0x00000000'
+  # ------------------------------------===== RECOVERY_SB3_Version [Optional] =====-------------------------------------
+  # Description: Offset: 0x00000034, Width: 32b; recovery sb3 version
+  RECOVERY_SB3_Version: '0x00000000'
+  # -------------------------------------===== UPDATE_SB3_Version [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000038, Width: 32b; update sb3 version
+  UPDATE_SB3_Version: '0x00000000'
+  # ----------------------------------------===== LP_FW_Version [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000003C, Width: 32b; lp fw version
+  LP_FW_Version: '0x00000000'
+  # -----------------------------------------===== ROTK_REVOKE [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000040, Width: 32b; rotk revoke
+  ROTK_REVOKE:
+    # -----------------------------------------===== RoTK0_EN [Optional] =====------------------------------------------
+    # Description: Offset: 0b, Width: 2b, RoT Key 0 enable. Determines if ROTK0 can be used during secure boot
+    # - ENABLED_0, (0): Enabled
+    # - ENABLED_1, (1): Enabled
+    # - KEY_REVOKED_2, (2): Key revoked
+    # - KEY_REVOKED_3, (3): Key revoked
+    # Possible options: <ENABLED_0, ENABLED_1, KEY_REVOKED_2, KEY_REVOKED_3>
+    RoTK0_EN: ENABLED_0
+    # -----------------------------------------===== RoTK1_EN [Optional] =====------------------------------------------
+    # Description: Offset: 2b, Width: 2b, RoT Key 1 enable. Determines if ROTK1 can be used during secure boot
+    # - ENABLED_0, (0): Enabled
+    # - ENABLED_1, (1): Enabled
+    # - KEY_REVOKED_2, (2): Key revoked
+    # - KEY_REVOKED_3, (3): Key revoked
+    # Possible options: <ENABLED_0, ENABLED_1, KEY_REVOKED_2, KEY_REVOKED_3>
+    RoTK1_EN: ENABLED_0
+    # -----------------------------------------===== RoTK2_EN [Optional] =====------------------------------------------
+    # Description: Offset: 4b, Width: 2b, RoT Key 2 enable. Determines if ROTK2 can be used during secure boot
+    # - ENABLED_0, (0): Enabled
+    # - ENABLED_1, (1): Enabled
+    # - KEY_REVOKED_2, (2): Key revoked
+    # - KEY_REVOKED_3, (3): Key revoked
+    # Possible options: <ENABLED_0, ENABLED_1, KEY_REVOKED_2, KEY_REVOKED_3>
+    RoTK2_EN: ENABLED_0
+    # -----------------------------------------===== RoTK3_EN [Optional] =====------------------------------------------
+    # Description: Offset: 6b, Width: 2b, RoT Key 3 enable. Determines if ROTK3 can be used during secure boot
+    # - ENABLED_0, (0): Enabled
+    # - ENABLED_1, (1): Enabled
+    # - KEY_REVOKED_2, (2): Key revoked
+    # - KEY_REVOKED_3, (3): Key revoked
+    # Possible options: <ENABLED_0, ENABLED_1, KEY_REVOKED_2, KEY_REVOKED_3>
+    RoTK3_EN: ENABLED_0
+    # ------------------------------------===== DICE_UPD_ALIAS_KEY [Optional] =====-------------------------------------
+    # Description: Offset: 28b, Width: 1b, Generate alias key pair during boot in addition to CDI
+    # - ALIAS_KEYPAIR_NOT_GEN, (0): Alias key pair is not generated
+    # - ALIAS_KEYPAIR_GEN, (1): Alias key pair is generate
+    # Possible options: <ALIAS_KEYPAIR_NOT_GEN, ALIAS_KEYPAIR_GEN>
+    DICE_UPD_ALIAS_KEY: ALIAS_KEYPAIR_NOT_GEN
+    # ------------------------------------===== DICE_UPD_ALIAS_CERT [Optional] =====------------------------------------
+    # Description: Offset: 29b, Width: 1b, Generate Alias key certificate during boot. This option is only applicable if
+    # DICE_ALIAS_KEY_UPD is set
+    # - CERT_NOT_GENERATED, (0): Certificate is not generated
+    # - CERTIFICATE_IS_GENERATED, (1): Certificate is generated
+    # Possible options: <CERT_NOT_GENERATED, CERTIFICATE_IS_GENERATED>
+    DICE_UPD_ALIAS_CERT: CERT_NOT_GENERATED
+    # ---------------------------------------===== ISP_ACTIV_IMG [Optional] =====---------------------------------------
+    # Description: Offset: 30b, Width: 2b, Active image indicator used in ISP mode to manage SWAP enable before receive-
+    # sb command. This field is managed by ROM and user shouldn't set this field. ROM during update of IMGx_CMAC updates
+    # this field
+    # - SWAP_IS_DISABLED, (0): SWAP is disabled
+    # - SWAP_IS_ENABLED, (1): SWAP is enabled
+    # - SBL_IMAGE_I, (2): SBL image i
+    # Possible options: <SWAP_IS_DISABLED, SWAP_IS_ENABLED, SBL_IMAGE_I>
+    ISP_ACTIV_IMG: SWAP_IS_DISABLED
+  # -------------------------------------===== ERR_AUTH_FAIL_COUNT [Optional] =====-------------------------------------
+  # Description: Offset: 0x00000050, Width: 32b; err auth fail count
+  ERR_AUTH_FAIL_COUNT: '0x00000000'
+  # ---------------------------------------===== ERR_ITRC_COUNT [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000054, Width: 32b; err itrc count
+  ERR_ITRC_COUNT: '0x00000000'
+  # ---------------------------------------===== MCTR_IPED_CTX0 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000060, Width: 32b; mctr iped ctx0
+  MCTR_IPED_CTX0: '0x00000000'
+  # ---------------------------------------===== MCTR_IPED_CTX1 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000064, Width: 32b; MCTR IPED CTX1
+  MCTR_IPED_CTX1: '0x00000000'
+  # ---------------------------------------===== MCTR_IPED_CTX2 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000068, Width: 32b; mctr iped ctx2
+  MCTR_IPED_CTX2: '0x00000000'
+  # ---------------------------------------===== MCTR_IPED_CTX3 [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000006C, Width: 32b; mctr iped ctx3
+  MCTR_IPED_CTX3: '0x00000000'
+  # ---------------------------------------===== MCTR_IPED_CTX4 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000070, Width: 32b; mctr iped ctx4
+  MCTR_IPED_CTX4: '0x00000000'
+  # ---------------------------------------===== MCTR_IPED_CTX5 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000074, Width: 32b; mctr iped ctx5
+  MCTR_IPED_CTX5: '0x00000000'
+  # ---------------------------------------===== MCTR_IPED_CTX6 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000078, Width: 32b; mctr iped ctx6
+  MCTR_IPED_CTX6: '0x00000000'
+  # ---------------------------------------===== MCTR_IPED_CTX7 [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000007C, Width: 32b; mctr iped ctx7
+  MCTR_IPED_CTX7: '0x00000000'
+  # ---------------------------------------===== MCTR_CUST_CTR0 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000080, Width: 32b; mctr cust ctr0
+  MCTR_CUST_CTR0: '0x00000000'
+  # ---------------------------------------===== MCTR_CUST_CTR1 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000084, Width: 32b; MCTR CUST CTR1
+  MCTR_CUST_CTR1: '0x00000000'
+  # ---------------------------------------===== MCTR_CUST_CTR2 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000088, Width: 32b; mctr cust ctr2
+  MCTR_CUST_CTR2: '0x00000000'
+  # ---------------------------------------===== MCTR_CUST_CTR3 [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000008C, Width: 32b; mctr cust ctr3
+  MCTR_CUST_CTR3: '0x00000000'
+  # ---------------------------------------===== MCTR_CUST_CTR4 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000090, Width: 32b; mctr cust ctr4
+  MCTR_CUST_CTR4: '0x00000000'
+  # ---------------------------------------===== MCTR_CUST_CTR5 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000094, Width: 32b; mctr cust ctr5
+  MCTR_CUST_CTR5: '0x00000000'
+  # ---------------------------------------===== MCTR_CUST_CTR6 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000098, Width: 32b; mctr cust ctr6
+  MCTR_CUST_CTR6: '0x00000000'
+  # ---------------------------------------===== MCTR_CUST_CTR7 [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000009C, Width: 32b; mctr cust ctr7
+  MCTR_CUST_CTR7: '0x00000000'
+  # ----------------------------------------===== MFLAG_CUST_0 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000000A0, Width: 32b; mflag cust 0
+  MFLAG_CUST_0: '0x00000000'
+  # ----------------------------------------===== MFLAG_CUST_1 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000000A4, Width: 32b; MFLAG CUST 1
+  MFLAG_CUST_1: '0x00000000'
+  # ----------------------------------------===== MFLAG_CUST_2 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000000A8, Width: 32b; mflag cust 2
+  MFLAG_CUST_2: '0x00000000'
+  # ----------------------------------------===== MFLAG_CUST_3 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000000AC, Width: 32b; mflag cust 3
+  MFLAG_CUST_3: '0x00000000'
+  # ----------------------------------------===== MFLAG_CUST_4 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000000B0, Width: 32b; mflag cust 4
+  MFLAG_CUST_4: '0x00000000'
+  # ----------------------------------------===== MFLAG_CUST_5 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000000B4, Width: 32b; mflag cust 5
+  MFLAG_CUST_5: '0x00000000'
+  # ----------------------------------------===== MFLAG_CUST_6 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000000B8, Width: 32b; mflag cust 6
+  MFLAG_CUST_6: '0x00000000'
+  # ----------------------------------------===== MFLAG_CUST_7 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000000BC, Width: 32b; mflag cust 7
+  MFLAG_CUST_7: '0x00000000'
+  # ----------------------------------------===== FLASH_ACL_0_7 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000C0, Width: 32b; flash acl 0 7
+  FLASH_ACL_0_7:
+    # -----------------------------------------===== ACL_SEC_0 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector (offset range 0x00_0000 - 0x00_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given Select one of the 8 pre-defined access control
+    # attributes for the given sector. Access attributes control read, write and execute access along with sticky lock
+    # protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher
+    # lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted
+    # except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current
+    # sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_0: DEFAULT_FLASH_RW_UNLOCK
+    # -----------------------------------------===== ACL_SEC_1 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector (offset range 0x00_8000 - 0x00_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_1: DEFAULT_FLASH_RW_UNLOCK
+    # -----------------------------------------===== ACL_SEC_2 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector (offset range 0x01_0000 - 0x01_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_2: DEFAULT_FLASH_RW_UNLOCK
+    # -----------------------------------------===== ACL_SEC_3 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector. (offset range 0x01_8000 - 0x01_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_3: DEFAULT_FLASH_RW_UNLOCK
+    # -----------------------------------------===== ACL_SEC_4 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector (offset range 0x02_0000 - 0x02_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_4: DEFAULT_FLASH_RW_UNLOCK
+    # -----------------------------------------===== ACL_SEC_5 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector (offset range 0x02_8000 - 0x02_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_5: DEFAULT_FLASH_RW_UNLOCK
+    # -----------------------------------------===== ACL_SEC_6 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector (offset range 0x03_0000 - 0x03_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_6: DEFAULT_FLASH_RW_UNLOCK
+    # -----------------------------------------===== ACL_SEC_7 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector (offset range 0x03_8000 - 0x03_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_7: DEFAULT_FLASH_RW_UNLOCK
+  # ---------------------------------------===== FLASH_ACL_8_15 [Optional] =====----------------------------------------
+  # Description: Offset: 0x000000C4, Width: 32b; flash acl 8 15
+  FLASH_ACL_8_15:
+    # -----------------------------------------===== ACL_SEC_8 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector (offset range 0x04_0000 - 0x04_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_8: DEFAULT_FLASH_RW_UNLOCK
+    # -----------------------------------------===== ACL_SEC_9 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector (offset range 0x04_8000 - 0x04_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_9: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_10 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector (offset range 0x05_0000 - 0x05_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_10: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_11 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector. (offset range 0x05_8000 - 0x05_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_11: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_12 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector (offset range 0x06_0000 - 0x06_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_12: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_13 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector (offset range 0x06_8000 - 0x06_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_13: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_14 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector (offset range 0x07_0000 - 0x07_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_14: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_15 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector (offset range 0x07_8000 - 0x07_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_15: DEFAULT_FLASH_RW_UNLOCK
+  # ---------------------------------------===== FLASH_ACL_16_23 [Optional] =====---------------------------------------
+  # Description: Offset: 0x000000C8, Width: 32b; flash acl 16 23
+  FLASH_ACL_16_23:
+    # ----------------------------------------===== ACL_SEC_16 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector (offset range 0x08_0000 - 0x08_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_16: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_17 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector (offset range 0x08_8000 - 0x08_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_17: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_18 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector (offset range 0x09_0000 - 0x09_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_18: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_19 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector. (offset range 0x09_8000 - 0x09_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_19: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_20 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector (offset range 0x0A_0000 - 0x0A_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_20: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_21 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector (offset range 0x0A_8000 - 0x0A_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_21: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_22 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector (offset range 0x0B_0000 - 0x0B_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_22: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_23 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector (offset range 0x0B_8000 - 0x0B_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_23: DEFAULT_FLASH_RW_UNLOCK
+  # ---------------------------------------===== FLASH_ACL_24_31 [Optional] =====---------------------------------------
+  # Description: Offset: 0x000000CC, Width: 32b; FLASH ACL 24 31
+  FLASH_ACL_24_31:
+    # ----------------------------------------===== ACL_SEC_24 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector (offset range 0x0C_0000 - 0x0C_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_24: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_25 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector (offset range 0x0C_8000 - 0x0C_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_25: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_26 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector (offset range 0x0D_0000 - 0x0D_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_26: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_27 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector. (offset range 0x0D_8000 - 0x0D_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_27: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_28 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector (offset range 0x0E_0000 - 0x0E_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_28: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_29 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector (offset range 0x0E_8000 - 0x0E_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_29: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_30 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector (offset range 0x0F_0000 - 0x0F_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_30: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_31 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector (offset range 0x0F_8000 - 0x0F_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_31: DEFAULT_FLASH_RW_UNLOCK
+  # ---------------------------------------===== FLASH_ACL_32_39 [Optional] =====---------------------------------------
+  # Description: Offset: 0x000000D0, Width: 32b; flash acl 32 39
+  FLASH_ACL_32_39:
+    # ----------------------------------------===== ACL_SEC_32 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector (offset range 0x10_0000 - 0x10_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_32: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_33 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector (offset range 0x10_8000 - 0x10_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_33: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_34 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector (offset range 0x11_0000 - 0x11_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_34: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_35 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector. (offset range 0x11_8000 - 0x11_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_35: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_36 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector (offset range 0x12_0000 - 0x12_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_36: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_37 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector (offset range 0x12_8000 - 0x12_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_37: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_38 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector (offset range 0x13_0000 - 0x13_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_38: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_39 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector (offset range 0x13_8000 - 0x13_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_39: DEFAULT_FLASH_RW_UNLOCK
+  # ---------------------------------------===== FLASH_ACL_40_47 [Optional] =====---------------------------------------
+  # Description: Offset: 0x000000D4, Width: 32b; flash acl 40 47
+  FLASH_ACL_40_47:
+    # ----------------------------------------===== ACL_SEC_40 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector (offset range 0x14_0000 - 0x14_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_40: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_41 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector (offset range 0x14_8000 - 0x14_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_41: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_42 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector (offset range 0x15_0000 - 0x15_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_42: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_43 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector. (offset range 0x15_8000 - 0x15_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_43: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_44 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector (offset range 0x16_0000 - 0x16_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_44: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_45 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector (offset range 0x16_8000 - 0x16_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_45: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_46 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector (offset range 0x17_0000 - 0x17_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_46: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_47 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector (offset range 0x17_8000 - 0x17_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_47: DEFAULT_FLASH_RW_UNLOCK
+  # ---------------------------------------===== FLASH_ACL_48_55 [Optional] =====---------------------------------------
+  # Description: Offset: 0x000000D8, Width: 32b; flash acl 48 55
+  FLASH_ACL_48_55:
+    # ----------------------------------------===== ACL_SEC_48 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector (offset range 0x18_0000 - 0x18_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_48: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_49 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector (offset range 0x18_8000 - 0x18_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_49: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_50 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector (offset range 0x19_0000 - 0x19_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_50: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_51 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector. (offset range 0x19_8000 - 0x19_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Select one of the 8 pre-defined access
+    # control attributes for the given sector. Access attributes control read, write and execute access along with
+    # sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done
+    # with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it
+    # is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_)
+    # • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_51: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_52 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector (offset range 0x1A_0000 - 0x1A_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Select one of the 8 pre-defined access
+    # control attributes for the given sector. Access attributes control read, write and execute access along with
+    # sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done
+    # with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it
+    # is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_)
+    # • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_52: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_53 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector (offset range 0x1A_8000 - 0x1A_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_53: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_54 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector (offset range 0x1B_0000 - 0x1B_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_54: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_55 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector (offset range 0x1B_8000 - 0x1B_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_55: DEFAULT_FLASH_RW_UNLOCK
+  # ---------------------------------------===== FLASH_ACL_55_63 [Optional] =====---------------------------------------
+  # Description: Offset: 0x000000DC, Width: 32b; flash acl 55 63
+  FLASH_ACL_55_63:
+    # ----------------------------------------===== ACL_SEC_56 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector (offset range 0x1C_0000 - 0x1C_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_56: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_57 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector (offset range 0x1C_8000 - 0x1C_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_57: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_58 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector (offset range 0x1D_0000 - 0x1D_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_58: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_59 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector. (offset range 0x1D_8000 - 0x1D_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_59: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_60 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector (offset range 0x1E_0000 - 0x1E_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCK_1, (7): Hidden (no access + locked)1
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCK_1>
+    ACL_SEC_60: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_61 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector (offset range 0x1E_8000 - 0x1E_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_61: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_62 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector (offset range 0x1F_0000 - 0x1F_7FFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_62: DEFAULT_FLASH_RW_UNLOCK
+    # ----------------------------------------===== ACL_SEC_63 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector (offset range 0x1F_8000 - 0x1F_FFFF). Select
+    # one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and
+    # execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates
+    # of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater
+    # than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2
+    # (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted
+    # - DEFAULT_FLASH_RW_UNLOCK, (0): Default flash memory behavior (R/W unlocked)
+    # - DATA_FLASH_RW_LOCKED, (1): Data flash memory with this setting: R/W + locked
+    # - ROM_RX_LOCKED, (2): ROM with this setting: RX + locked
+    # - DROM_ROM_LOCKED, (3): Data read-only memory (DROM) with this setting: ROM + locked
+    # - ROM_RX_UNLOCKED, (4): ROM with this setting: RX unlocked
+    # - XOM_UNLOCKED, (5): XOM with this setting: XOM unlocked
+    # - XOM_LOCKED, (6): XOM with this setting: XOM + locked
+    # - HIDDEN_NO_ACCESS_LOCKED, (7): Hidden (no access + locked)
+    # Possible options: <DEFAULT_FLASH_RW_UNLOCK, DATA_FLASH_RW_LOCKED, ROM_RX_LOCKED, DROM_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, HIDDEN_NO_ACCESS_LOCKED>
+    ACL_SEC_63: DEFAULT_FLASH_RW_UNLOCK
+  # ------------------------------------===== SBL_IMG0_CMAC_CACHE0 [Optional] =====-------------------------------------
+  # Description: Offset: 0x00000100, Width: 32b; sbl img0 cmac cache[127:96]
+  SBL_IMG0_CMAC_CACHE0: '0x00000000'
+  # ------------------------------------===== SBL_IMG0_CMAC_CACHE1 [Optional] =====-------------------------------------
+  # Description: Offset: 0x00000104, Width: 32b; sbl img0 cmac cache[95:64]
+  SBL_IMG0_CMAC_CACHE1: '0x00000000'
+  # ------------------------------------===== SBL_IMG0_CMAC_CACHE2 [Optional] =====-------------------------------------
+  # Description: Offset: 0x00000108, Width: 32b; sbl img0 cmac cache[63:32]
+  SBL_IMG0_CMAC_CACHE2: '0x00000000'
+  # ------------------------------------===== SBL_IMG0_CMAC_CACHE3 [Optional] =====-------------------------------------
+  # Description: Offset: 0x0000010C, Width: 32b; sbl img0 cmac cache[31:0]
+  SBL_IMG0_CMAC_CACHE3: '0x00000000'
+  # --------------------------------------===== IMG1_CMAC_CACHE0 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000110, Width: 32b; img1 cmac cache[127:96]
+  IMG1_CMAC_CACHE0: '00000000'
+  # --------------------------------------===== IMG1_CMAC_CACHE1 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000114, Width: 32b; img1 cmac cache[95:64]
+  IMG1_CMAC_CACHE1: '0x00000000'
+  # --------------------------------------===== IMG1_CMAC_CACHE2 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000118, Width: 32b; img1 cmac cache[63:32]
+  IMG1_CMAC_CACHE2: '0x00000000'
+  # --------------------------------------===== IMG1_CMAC_CACHE3 [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000011C, Width: 32b; img1 cmac cache[31:0]
+  IMG1_CMAC_CACHE3: '0x00000000'
+  # ---------------------------------------===== LP_VECTOR_ADDR [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000130, Width: 32b; lp vector addr
+  LP_VECTOR_ADDR: '0x00000000'
+  # --------------------------------------===== IPED_GCM_AAD_CTX0 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000190, Width: 32b; iped gcm aad ctx0
+  IPED_GCM_AAD_CTX0: '0x00000000'
+  # --------------------------------------===== IPED_GCM_AAD_CTX1 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000194, Width: 32b; IPED GCM AAD CTX1
+  IPED_GCM_AAD_CTX1: '0x00000000'
+  # --------------------------------------===== IPED_GCM_AAD_CTX2 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000198, Width: 32b; iped gcm aad ctx2
+  IPED_GCM_AAD_CTX2: '0x00000000'
+  # --------------------------------------===== IPED_GCM_AAD_CTX3 [Optional] =====--------------------------------------
+  # Description: Offset: 0x0000019C, Width: 32b; iped gcm aad ctx3
+  IPED_GCM_AAD_CTX3: '0x00000000'
+  # --------------------------------------===== IPED_GCM_AAD_CTX4 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001A0, Width: 32b; iped gcm aad ctx4
+  IPED_GCM_AAD_CTX4: '0x00000000'
+  # --------------------------------------===== IPED_GCM_AAD_CTX5 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001A4, Width: 32b; iped gcm aad ctx5
+  IPED_GCM_AAD_CTX5: '0x00000000'
+  # --------------------------------------===== IPED_GCM_AAD_CTX6 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001A8, Width: 32b; iped gcm aad ctx6
+  IPED_GCM_AAD_CTX6: '0x00000000'
+  # --------------------------------------===== IPED_GCM_AAD_CTX7 [Optional] =====--------------------------------------
+  # Description: Offset: 0x000001AC, Width: 32b; iped gcm aad ctx7
+  IPED_GCM_AAD_CTX7: '0x00000000'

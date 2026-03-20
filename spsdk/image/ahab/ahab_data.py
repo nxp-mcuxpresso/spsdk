@@ -15,21 +15,17 @@ image creation.
 
 import logging
 from dataclasses import dataclass, field
-from typing import Optional, Type, Union
+from typing import Optional, Type, Union, cast
+
+from typing_extensions import TypeAlias
 
 from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.database import DatabaseManager, Features
 from spsdk.utils.family import FamilyRevision, get_db
-from spsdk.utils.spsdk_enum import SpsdkEnum, SpsdkSoftEnum
+from spsdk.utils.spsdk_enum import SpsdkDynamicEnum, SpsdkEnum, SpsdkSoftEnum
 
 logger = logging.getLogger(__name__)
 
-LITTLE_ENDIAN = "<"
-UINT8 = "B"
-UINT16 = "H"
-UINT32 = "L"
-INT32 = "l"
-UINT64 = "Q"
 RESERVED = 0
 CONTAINER_ALIGNMENT = 8
 
@@ -129,41 +125,6 @@ class AHABSignAlgorithm(SpsdkEnum):
     (Advanced High Assurance Boot) image authentication and verification.
     """
 
-
-class AHABSignAlgorithmV1(AHABSignAlgorithm):
-    """AHAB signature algorithm enumeration for version 1.
-
-    This class defines the supported cryptographic signature algorithms
-    for AHAB (Advanced High Assurance Boot) version 1, including their
-    numeric identifiers and descriptive names.
-
-    :cvar RSA: RSA signature algorithm with PKCS#1 v1.5 padding
-    :cvar RSA_PSS: RSA signature algorithm with PSS padding scheme
-    :cvar ECDSA: Elliptic Curve Digital Signature Algorithm
-    :cvar SM2: Chinese national cryptography standard signature algorithm
-    """
-
-    RSA = (0x21, "RSA", "Rivest–Shamir–Adleman")
-    RSA_PSS = (0x22, "RSA_PSS", "Rivest–Shamir–Adleman with PSS padding")
-    ECDSA = (0x27, "ECDSA", "Elliptic Curve Digital Signature Algorithm")
-    SM2 = (0x28, "SM2", "Chinese national cryptography standard")
-
-
-class AHABSignAlgorithmV2(AHABSignAlgorithm):
-    """AHAB signature algorithm enumeration for version 2.
-
-    This class defines the supported cryptographic signature algorithms for AHAB
-    (Advanced High Assurance Boot) version 2, including traditional algorithms
-    like RSA and ECDSA, as well as post-quantum cryptography standards.
-
-    :cvar RSA: Rivesta-Shamira-Adleman signature algorithm
-    :cvar RSA_PSS: RSA with Probabilistic Signature Scheme padding
-    :cvar ECDSA: Elliptic Curve Digital Signature Algorithm
-    :cvar SM2: Chinese national cryptography standard
-    :cvar DILITHIUM: Post-quantum cryptography standard candidate
-    :cvar ML_DSA: Module-Lattice-Based Digital Signature Algorithm
-    """
-
     RSA = (0x21, "RSA", "Rivest–Shamir–Adleman")
     RSA_PSS = (0x22, "RSA_PSS", "Rivest–Shamir–Adleman with PSS padding")
     ECDSA = (0x27, "ECDSA", "Elliptic Curve Digital Signature Algorithm")
@@ -177,37 +138,6 @@ class AHABSignHashAlgorithm(SpsdkEnum):
 
     This enumeration defines the supported hash algorithms for AHAB (Advanced High Assurance Boot)
     signature operations in NXP secure boot implementations.
-    """
-
-
-class AHABSignHashAlgorithmV1(AHABSignHashAlgorithm):
-    """AHAB signature hash algorithm enumeration for version 1.
-
-    This class defines the supported cryptographic hash algorithms for AHAB
-    (Advanced High Assurance Boot) signature operations in version 1 format.
-
-    :cvar SHA256: SHA-256 hash algorithm identifier and metadata.
-    :cvar SHA384: SHA-384 hash algorithm identifier and metadata.
-    :cvar SHA512: SHA-512 hash algorithm identifier and metadata.
-    :cvar SM3: SM3 hash algorithm identifier and metadata.
-    """
-
-    SHA256 = (0x00, "SHA256", "Secure Hash Algorithm 256")
-    SHA384 = (0x01, "SHA384", "Secure Hash Algorithm 384")
-    SHA512 = (0x02, "SHA512", "Secure Hash Algorithm 512")
-    SM3 = (
-        0x03,
-        "SM3",
-        "Cryptographic hash function used in the Chinese National Standard",
-    )
-
-
-class AHABSignHashAlgorithmV2(AHABSignHashAlgorithm):
-    """AHAB signature hash algorithm enumeration for version 2.
-
-    Extended enumeration of cryptographic hash algorithms supported by AHAB
-    (Advanced High Assurance Boot) version 2, including traditional SHA variants,
-    Chinese national standard SM3, SHA-3 family, and SHAKE algorithms.
     """
 
     SHA256 = (0x00, "SHA256", "Secure Hash Algorithm 256")
@@ -231,6 +161,39 @@ class AHABSignHashAlgorithmV2(AHABSignHashAlgorithm):
         "SHAKE_256_512",
         "Secure Hash Algorithm Shake 256 - with 512 bits output",
     )
+
+
+def get_signature_algorithm_enum(chip_config: Optional["AhabChipConfig"] = None) -> Type[SpsdkEnum]:
+    """Get signature algorithm enum, either from chip config or default.
+
+    :param chip_config: Optional chip configuration with dynamic enums
+    :return: Signature algorithm enum class
+    """
+    if chip_config:
+        return chip_config.signature_algorithms
+    # Return a default/fallback enum
+    return AHABSignAlgorithm
+
+
+def get_hash_algorithm_enum(chip_config: Optional["AhabChipConfig"] = None) -> Type[SpsdkEnum]:
+    """Get hash algorithm enum, either from chip config or default.
+
+    :param chip_config: Optional chip configuration with dynamic enums
+    :return: Hash algorithm enum class
+    """
+    if chip_config:
+        return chip_config.hash_algorithms
+    # Return a default/fallback enum
+    return AHABSignHashAlgorithm
+
+
+# just alias to maintain backwards compatibility
+# Enums are now created dynamically from DB
+
+AHABSignAlgorithmV1: TypeAlias = AHABSignAlgorithm
+AHABSignHashAlgorithmV1: TypeAlias = AHABSignHashAlgorithm
+AHABSignAlgorithmV2: TypeAlias = AHABSignAlgorithm
+AHABSignHashAlgorithmV2: TypeAlias = AHABSignHashAlgorithm
 
 
 class FlagsSrkSet(SpsdkSoftEnum):
@@ -600,6 +563,13 @@ class WrappingAlgorithm(SpsdkEnum):
     AES_CBC = (0x02, "AES_CBC", "AES-CBC wrapping (padding: ISO7816-4 padding)")
 
 
+class AhabMetadataType(SpsdkEnum):
+    """Type of Meta Data used in AHAB IAE."""
+
+    SCFW = (0, "SCFW", "Metadata for SCFW")
+    SM = (1, "SM", "Metadata for SM")
+
+
 @dataclass
 class AhabChipConfig:
     """AHAB chip configuration container.
@@ -612,13 +582,16 @@ class AhabChipConfig:
     :cvar core_ids: Enumeration of supported core identifiers.
     :cvar image_types: Mapping of image type names to their enumeration classes.
     :cvar image_types_mapping: Mapping of image types to their numeric identifiers.
+    :cvar signature_algorithms: Enumeration for signature algorithms (may be dynamically loaded).
+    :cvar hash_algorithms: Enumeration for hash algorithms (may be dynamically loaded).
+    :cvar srk_sets: Enumeration for SRK sets (may be dynamically loaded).
     :cvar containers_max_cnt: Maximum number of containers supported.
     :cvar images_max_cnt: Maximum number of images per container.
     :cvar container_types: List of supported container type identifiers.
     :cvar valid_offset_minimal_alignment: Minimum alignment requirement for offsets.
-    :cvar container_image_size_alignment: Alignment requirement for container image sizes.
     :cvar allow_empty_hash: Whether empty hash values are permitted.
     :cvar iae_has_signed_offsets: Whether Image Array Entry uses signed offset values.
+    :cvar metadata_type: Type of metadata used
     """
 
     family: FamilyRevision = FamilyRevision("Unknown")
@@ -628,12 +601,18 @@ class AhabChipConfig:
     core_ids: Type[SpsdkSoftEnum] = DummyEnum
     image_types: dict[str, Type[SpsdkSoftEnum]] = field(default_factory=dict)
     image_types_mapping: dict[str, list[int]] = field(default_factory=dict)
+
+    signature_algorithms: Type[SpsdkEnum] = field(default_factory=lambda: AHABSignAlgorithm)
+    hash_algorithms: Type[SpsdkEnum] = field(default_factory=lambda: AHABSignHashAlgorithm)
+    srk_sets: Type[SpsdkSoftEnum] = field(default_factory=lambda: FlagsSrkSet)
+
     containers_max_cnt: int = 3
     images_max_cnt: int = 8
     container_types: list[int] = field(default_factory=list)
     valid_offset_minimal_alignment: int = 4
     allow_empty_hash: bool = False
     iae_has_signed_offsets: bool = False
+    metadata_type: AhabMetadataType = AhabMetadataType.SCFW
 
 
 @dataclass
@@ -734,9 +713,17 @@ def create_chip_config(
     db = get_db(family)
     containers_max_cnt = db.get_int(feature, make_key("containers_max_cnt"))
     images_max_cnt = db.get_int(feature, make_key("oem_images_max_cnt"))
-    core_ids = SpsdkSoftEnum.create_from_dict(
-        "AHABCoreId", db.get_dict(feature, make_key("core_ids"))
+
+    # Create core_ids using SpsdkDynamicEnum
+    core_ids = SpsdkDynamicEnum.create_from_db(
+        db=db,
+        feature=feature,
+        enum_key="core_ids",
+        enum_name="AHABCoreId",
+        base_key=base_key,
+        fallback_enum=cast(Type[SpsdkEnum], DummyEnum),
     )
+
     image_types = load_images_types(db, feature=feature, base_key=base_key)
     image_types_mapping = db.get_dict(feature, make_key("image_types_mapping"))
 
@@ -747,16 +734,51 @@ def create_chip_config(
     container_types = db.get_list(feature, make_key("container_types"))
     allow_empty_hash = db.get_bool(feature, make_key("allow_empty_hash"))
     iae_has_signed_offsets = db.get_bool(feature, make_key("iae_has_signed_offsets"), False)
+
+    # Create dynamic enumerations
+    signature_algorithms = SpsdkDynamicEnum.create_from_db(
+        db=db,
+        feature=feature,
+        enum_key="signature_algorithms",
+        enum_name="AHABSignAlgorithm",
+        base_key=base_key,
+        fallback_enum=cast(Type[SpsdkEnum], AHABSignAlgorithm),
+    )
+
+    hash_algorithms = SpsdkDynamicEnum.create_from_db(
+        db=db,
+        feature=feature,
+        enum_key="hash_algorithms",
+        enum_name="AHABSignHashAlgorithm",
+        base_key=base_key,
+        fallback_enum=cast(Type[SpsdkEnum], AHABSignHashAlgorithm),
+    )
+
+    srk_sets = SpsdkDynamicEnum.create_from_db(
+        db=db,
+        feature=feature,
+        enum_key="srk_sets",
+        enum_name="FlagsSrkSet",
+        base_key=base_key,
+        fallback_enum=cast(Type[SpsdkEnum], FlagsSrkSet),
+    )
+
+    metadata_type = AhabMetadataType.from_label(db.get_str(feature, "metadata", "scfw").upper())
+
     return AhabChipConfig(
         family=family,
         target_memory=MEMORY_TARGET_DESCRIPTIONS[AhabTargetMemory.from_label(target_memory)],
-        core_ids=core_ids,
+        core_ids=cast(Type[SpsdkSoftEnum], core_ids),
         image_types=image_types,
         image_types_mapping=image_types_mapping,
+        signature_algorithms=cast(Type[SpsdkEnum], signature_algorithms),
+        hash_algorithms=cast(Type[SpsdkEnum], hash_algorithms),
+        srk_sets=cast(Type[SpsdkSoftEnum], srk_sets),
         containers_max_cnt=containers_max_cnt,
         images_max_cnt=images_max_cnt,
         container_types=container_types,
         valid_offset_minimal_alignment=valid_offset_minimal_alignment,
         allow_empty_hash=allow_empty_hash,
         iae_has_signed_offsets=iae_has_signed_offsets,
+        metadata_type=metadata_type,
     )

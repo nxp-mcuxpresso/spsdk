@@ -1,0 +1,3672 @@
+{
+    "cpu": "mcxa457",
+    "groups": [
+        {
+            "group": {
+                "name": "Configuration",
+                "description": "Configuration"
+            },
+            "registers": [
+                {
+                    "id": "field000",
+                    "name": "BOOT_CFG0",
+                    "description": "boot cfg0",
+                    "offset_int": "0",
+                    "default_value_int": "0x5963003F",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "field000-bit0",
+                            "name": "IFLASH_BOOTEN",
+                            "description": "Enable internal flash as primary boot media",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "enabled (default)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field000-bit1",
+                            "name": "IFLASH_DUAL_EN",
+                            "description": "Enable dual image boot from internal flash as primary boot media",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "enabled (default)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field000-bit2",
+                            "name": "EFLASH_BOOTEN",
+                            "description": "Enable external flash (FlexSPI) as primary boot media",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "enabled (default)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field000-bit3",
+                            "name": "EFLASH_DUAL_EN",
+                            "description": "Enable dual image boot from external flash as primary boot media",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "enabled (default)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field000-bit4",
+                            "name": "REC_FLEXSPI",
+                            "description": "Enable external flash(FlexSPI) as recovery boot media",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "enabled (default)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field000-bit5",
+                            "name": "REC_LSPI",
+                            "description": "Enable external flash(LSPI) as recovery boot media",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "enabled (default)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 2,
+                            "id": "field000-bits8-9",
+                            "name": "REC_BOOT_EN",
+                            "description": "Recovery boot enable",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "disabled"
+                                },
+                                {
+                                    "name": "ENABLED_1",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "ENABLED_2",
+                                    "value": 2,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "ENABLED_3",
+                                    "value": 3,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 2,
+                            "id": "field000-bits12-13",
+                            "name": "BOOT_SPEED",
+                            "description": "Boot speed. Selects the core frequency and voltage to use during ROM execution. 00b: 48MHz, FRO192, MD mode // default boot speed. If CMPA header is not valid, should boot from 48MHz MD mode. 01b: 96MHz, FRO192, SD mode 10b: 200MHz, SPLL, OD mode 11b: 250MHz, SPLL, OD mode // The actual speed will be depending on test results"
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 16,
+                            "id": "field000-bits16-31",
+                            "name": "CMPA_HEADER",
+                            "description": "CMPA Header marker should be set to 0x5963. After this header is set, all non-zero values will take effect; leaving all settings at 0xff will cause undefined behavior. It is recommended to set all values to 0x00 before setting the CMPA header value"
+                        }
+                    ]
+                },
+                {
+                    "id": "field004",
+                    "name": "BOOT_CFG1",
+                    "description": "BOOT CFG1",
+                    "offset_int": "0x0004",
+                    "default_value_int": "0x001F",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "field004-bit0",
+                            "name": "ISP_UART_EN",
+                            "description": "ISP interface enable",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "enabled (default)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field004-bit1",
+                            "name": "ISP_SPI_EN",
+                            "description": "ISP interface enable",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "enabled (default)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field004-bit2",
+                            "name": "ISP_CAN_EN",
+                            "description": "ISP interface enable",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "enabled (default)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field004-bit3",
+                            "name": "ISP_I2C_EN",
+                            "description": "ISP interface enable",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "enabled (default)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field004-bit4",
+                            "name": "ISP_USB_EN",
+                            "description": "ISP interface enable",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "enabled (default)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3
+                        },
+                        {
+                            "width": 2,
+                            "id": "field004-bits8-9",
+                            "name": "ISP_PIN_ENTRY",
+                            "description": "Disable ISP mode entry through pin assertion",
+                            "values": [
+                                {
+                                    "name": "ISP_ENTRY_ALLOWED_0",
+                                    "value": 0,
+                                    "description": "ISP entry allowed"
+                                },
+                                {
+                                    "name": "ISP_ENTRY_DISABLED",
+                                    "value": 1,
+                                    "description": "ISP entry disabled"
+                                },
+                                {
+                                    "name": "ISP_ENTRY_ALLOWED_2",
+                                    "value": 2,
+                                    "description": "ISP entry allowed"
+                                },
+                                {
+                                    "name": "ISP_ENTRY_ALLOWED_3",
+                                    "value": 3,
+                                    "description": "ISP entry allowed"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "field004-bits10-11",
+                            "name": "ISP_DM_ENTRY",
+                            "description": "Disable ISP mode entry through debug mailbox command",
+                            "values": [
+                                {
+                                    "name": "ISP_ENTRY_ALLOWED_0",
+                                    "value": 0,
+                                    "description": "ISP entry allowed"
+                                },
+                                {
+                                    "name": "ISP_ENTRY_DISABLED",
+                                    "value": 1,
+                                    "description": "ISP entry disabled"
+                                },
+                                {
+                                    "name": "ISP_ENTRY_ALLOWED_2",
+                                    "value": 2,
+                                    "description": "ISP entry allowed"
+                                },
+                                {
+                                    "name": "ISP_ENTRY_ALLOWED_3",
+                                    "value": 3,
+                                    "description": "ISP entry allowed"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "field004-bits12-13",
+                            "name": "ISP_API_ENTRY",
+                            "description": "Disable ISP mode entry through ROM API call. ISP mode can be entered through ROM API invocation",
+                            "values": [
+                                {
+                                    "name": "ISP_ENTRY_ALLOWED_0",
+                                    "value": 0,
+                                    "description": "ISP entry allowed"
+                                },
+                                {
+                                    "name": "ISP_ENTRY_DISABLED",
+                                    "value": 1,
+                                    "description": "ISP entry disabled"
+                                },
+                                {
+                                    "name": "ISP_ENTRY_ALLOWED_2",
+                                    "value": 2,
+                                    "description": "ISP entry allowed"
+                                },
+                                {
+                                    "name": "ISP_ENTRY_ALLOWED_3",
+                                    "value": 3,
+                                    "description": "ISP entry allowed"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "field004-bits14-15",
+                            "name": "ISP_FT_ENTRY",
+                            "description": "Disable ISP mode entry on image authentication failure",
+                            "values": [
+                                {
+                                    "name": "ISP_ENTRY_ALLOWED_0",
+                                    "value": 0,
+                                    "description": "ISP entry allowed"
+                                },
+                                {
+                                    "name": "ISP_ENTRY_DISABLED",
+                                    "value": 1,
+                                    "description": "ISP entry disabled"
+                                },
+                                {
+                                    "name": "ISP_ENTRY_ALLOWED_2",
+                                    "value": 2,
+                                    "description": "ISP entry allowed"
+                                },
+                                {
+                                    "name": "ISP_ENTRY_ALLOWED_3",
+                                    "value": 3,
+                                    "description": "ISP entry allowed"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 5,
+                            "id": "field004-bits16-20",
+                            "name": "FLASH_REMAP_SIZE",
+                            "description": "Flash remap size. FLASH_REMAP_SIZE defines the size of the secondary boot image (the range of flash addresses that will be remapped)in internal flash, where remapped address end = (FLASH_REMAP_SIZE + 1)"
+                        },
+                        {
+                            "width": 3
+                        },
+                        {
+                            "width": 8,
+                            "id": "field004-bits24-31",
+                            "name": "EXT_CMPA_32B_SIZE",
+                            "description": "Customer extended CMPA size expressed as multiple of 32 bytes. Total CMPA area = CMPA_BASE_ADDR + 32"
+                        }
+                    ]
+                },
+                {
+                    "id": "field008",
+                    "name": "BOOT_LED_STATUS",
+                    "description": "boot led status",
+                    "offset_int": "0x0008",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "field008-bits0-7",
+                            "name": "REC_BOOT_LED",
+                            "description": "Assert on recovery boot. ROM drives the GPIO pin high, identified by this field whenever primary boot fails and fall through to recovery boot source. Note, set the field to 0xFF as default and when not using the feature. [4:0] GPIO Pin number. P7_31 is not supported. [7:5] GPIO port number. Ports 0 -3 are are allowed. If this feature is not use then set this field to 0xFF"
+                        },
+                        {
+                            "width": 8,
+                            "id": "field008-bits8-15",
+                            "name": "ISP_BOOT_LED",
+                            "description": "Assert on ISP fall through. ROM drives the GPIO pin high identified by this field whenever primary boot fails and execution falls through to ISP mode. [[4:0] GPIO Pin number. P7_31 is not supported. [7:5] GPIO port number. Only 0 - 4 ports are allowed. If this feature is not use then set this field to 0xFF"
+                        },
+                        {
+                            "width": 8,
+                            "id": "field008-bits16-23",
+                            "name": "BOOT_FAIL_LED",
+                            "description": "Assert on fatal errors during boot. ROM drives the GPIO pin high identified by this field whenever primary boot fails due to fatal errors before locking-up/reset. [4:0] GPIO Pin number. P0_0 and P0_1 are not supported. [7:5] GPIO port number. Only 0 - 4 ports are allowed. If this feature is not use then set this field to 0x00"
+                        },
+                        {
+                            "width": 8
+                        }
+                    ]
+                },
+                {
+                    "id": "field00C",
+                    "name": "BOOT_TIMERS",
+                    "description": "boot timers",
+                    "offset_int": "0x000C",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "field00C-bits0-15",
+                            "name": "POWERDOWN_TIMEOUT_SECS",
+                            "description": "Powerdown timeout: ISP mode peripheral detection timeout value in seconds. If a non-zero value is program and peripheral activity is not detected within the number of seconds specified here, then the device will go to power down mode to conserve power"
+                        },
+                        {
+                            "width": 16,
+                            "id": "field00C-bits16-31",
+                            "name": "WDOG_TIMEOUT_COUNT",
+                            "description": "WDOG timeout: Upper 16 bits of 24-bit count value in WWDT0_TC register Timeout value in seconds. The lower 8 bits of WWDT0_TC are set to 0. When a non-zero value is programmed in this field ROM configures the watch dog timer to reset the device on timeout before passing execution control to user code"
+                        }
+                    ]
+                },
+                {
+                    "id": "field010",
+                    "name": "LSPI_QFLASH_CFG0",
+                    "description": "lspi qflash cfg0",
+                    "offset_int": "0x0010",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "field010-bit0",
+                            "name": "QSPI_AUTO_PROBE_EN",
+                            "description": "Quad/Octal-SPI flash auto probe feature enable"
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 5
+                        },
+                        {
+                            "width": 4,
+                            "id": "field010-bits7-10",
+                            "name": "QSPI_DUMMY_CYCLES",
+                            "description": "Quad/Octal-SPI dummy cycles for read command. If a non-zero value is programmed in this field, then the value is used to override the default number of dummy cycles for a fast read command read from the serial flash’s SFDP information. Note: this field is only used if FLEXSPI_AUTO_PROBE_EN is set"
+                        },
+                        {
+                            "width": 3,
+                            "id": "field010-bits11-13",
+                            "name": "QSPI_FREQUENCY",
+                            "description": "Q/O-SPI flash interface frequency"
+                        },
+                        {
+                            "width": 1,
+                            "id": "field010-bit14",
+                            "name": "QSPI_RESET_ENABLE",
+                            "description": "Use O/QSPI_RESET_PIN to reset the flash device"
+                        },
+                        {
+                            "width": 3,
+                            "id": "field010-bits15-17",
+                            "name": "QSPI_RESET_GPIO_PORT",
+                            "description": "When FLEXSPI_RESET_ENABLE = 1, this field determines the GPIO port number to use for O/QSPI reset function"
+                        },
+                        {
+                            "width": 5,
+                            "id": "field010-bits18-22",
+                            "name": "QSPI_RESET_GPIO_PIN",
+                            "description": "When FLEXSPI_RESET_ENABLE = 1, this field determines the GPIO pin number to use for O/QSPI reset function"
+                        },
+                        {
+                            "width": 2,
+                            "id": "field010-bits23-24",
+                            "name": "QSPI_HOLD_TIME",
+                            "description": "Delay after reset before accessing Quad/Octal-SPI flash devices. Note, for POR in addition to this wait time FLEXSPI_PWR_HOLD_TIME is added"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field010-bits25-28",
+                            "name": "QSPI_PWR_HOLD_TIME",
+                            "description": "Delay after POR before accessing Quad/Octal-SPI flash devices in addition to delay defined by FLEXSPI_HOLD TIME field"
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 2,
+                            "id": "field010-bits30-31",
+                            "name": "QSPI_PORT",
+                            "description": "Quad SPI port",
+                            "values": [
+                                {
+                                    "name": "PORTA1_(4-BIT)",
+                                    "value": 0,
+                                    "description": "portA1 (4-bit)"
+                                },
+                                {
+                                    "name": "PORTB1_(4-BIT)",
+                                    "value": 1,
+                                    "description": "portB1 (4-bit)"
+                                },
+                                {
+                                    "name": "PORTA1B1_(8-BIT)",
+                                    "value": 2,
+                                    "description": "portA1B1 (8-bit)"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "field014",
+                    "name": "LSPI_QFLASH_CFG1",
+                    "description": "LSPI QFLASH CFG1",
+                    "offset_int": "0x0014",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 7,
+                            "id": "field014-bits0-6",
+                            "name": "QSPI_DELAY_CELL_NUM",
+                            "description": "Delay cell numbers for Flash read sampling via DQS (either internal loopback or external DQS). The value provided here is loaded into the FLEXSPIn_DLLnCR"
+                        },
+                        {
+                            "width": 10,
+                            "id": "field014-bits7-16",
+                            "name": "QSPI_IMAGE_OFFSET",
+                            "description": "Any offset in memory mapped FlexSPI Flash area could be remapped to offset zero to support eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. FlLEXSPI_IMAGE_OFFSET field specifies the offset location of the second image. FLEXSPI_REMAP_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped. If this field is left blank boot ROM will not enable FlexSPI remap feature. The physical flash offset is computed as below: physical offset = FLEXSPI_IMAGE_OFFSET"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field014-bits17-20",
+                            "name": "QSPI_REMAP_IMAGE_SIZE",
+                            "description": "Any offset in memory mapped FlexSPI Flash area could be remapped to offset zero to support eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. FLEXSPI_IMAGE_OFFSET field specifies the offset location of second image. FLEXSPI_REMAP_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped. b'0000 Remap size = FLEXSPI_IMAGE_OFFSET"
+                        },
+                        {
+                            "width": 11
+                        }
+                    ]
+                },
+                {
+                    "id": "field018",
+                    "name": "LSPI_FLASH_CFG0",
+                    "description": "lspi flash cfg0",
+                    "offset_int": "0x0018",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field01C",
+                    "name": "LSPI_FLASH_CFG1",
+                    "description": "LSPI FLASH CFG1",
+                    "offset_int": "0x001C",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 16
+                        },
+                        {
+                            "width": 8,
+                            "id": "field01C-bits16-23",
+                            "name": "LSPI_SSEL_PIN",
+                            "description": "Override default SPI_SSEL ISP pin. Identifies the pin to be used as SPI_SSEL pin. [4:0] GPIO Pin number [7:5] GPIO port number"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field01C-bits24-27",
+                            "name": "LSPI_SSEL_FUNC_SLOT",
+                            "description": "Identifies the ALT pin mux function to use for the pin selected by REC_SPI_SSEL_PIN"
+                        },
+                        {
+                            "width": 2,
+                            "id": "field01C-bits28-29",
+                            "name": "LSPI_SSEL_X",
+                            "description": "SPI chip select number. FlexComm SPI interfaces supports up to four chip selects"
+                        },
+                        {
+                            "width": 2,
+                            "id": "field01C-bits30-31",
+                            "name": "LSPI_PIN_CUST",
+                            "description": "Use customer defined pins for 1-bit SPI recovery boot pins"
+                        }
+                    ]
+                },
+                {
+                    "id": "field020",
+                    "name": "ISP_UART_CFG",
+                    "description": "isp uart cfg",
+                    "offset_int": "0x0020",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "field020-bits0-7",
+                            "name": "UART_RX_PIN",
+                            "description": "Override default UART RX ISP pin. Identifies the pin to be used as UART_RX pin. [4:0] GPIO Pin number [7:5] GPIO port number"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field020-bits8-11",
+                            "name": "UART_RX_FUNC_SLOT",
+                            "description": "Identifies the ALT pin mux function to use for the pin selected by UART_RX_PIN"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field020-bits12-15",
+                            "name": "UART_ISP_FLEXCOM",
+                            "description": "Identifies the FlexComm used for UART ISP mode"
+                        },
+                        {
+                            "width": 8,
+                            "id": "field020-bits16-23",
+                            "name": "UART_TX_PIN",
+                            "description": "Override default UART TX ISP pin. Identifies the pin to be used as UART_TX pin. [4:0] GPIO Pin number [7:5] GPIO port number"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field020-bits24-27",
+                            "name": "UART_TX_FUNC_SLOT",
+                            "description": "Identifies the ALT pin mux function to use for the pin selected by UART_TX_PIN"
+                        },
+                        {
+                            "width": 4
+                        }
+                    ]
+                },
+                {
+                    "id": "field024",
+                    "name": "ISP_I2C_CFG",
+                    "description": "isp i2c cfg",
+                    "offset_int": "0x0024",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "field024-bits0-7",
+                            "name": "I2C_SCL_PIN",
+                            "description": "Override default I2C SCL ISP pin. Identifies the pin to be used as I2C_SCL pin. [4:0] GPIO Pin number [7:5] GPIO port number"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field024-bits8-11",
+                            "name": "I2C_SCL_FUNC_SLOT",
+                            "description": "Identifies the ALT pin mux function to use for the pin selected by I2C_SCL_PIN"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field024-bits12-15",
+                            "name": "I2C_ISP_FLEXCOM",
+                            "description": "Identifies the FlexComm used for I2C ISP mode"
+                        },
+                        {
+                            "width": 8,
+                            "id": "field024-bits16-23",
+                            "name": "I2C_SDA_PIN",
+                            "description": "Override default I2C SDA ISP pin. Identifies the pin to be used as I2C_SDA pin. [4:0] GPIO Pin number [7:5] GPIO port number"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field024-bits24-27",
+                            "name": "I2C_SDA_FUNC_SLOT",
+                            "description": "Identifies the ALT pin mux function to use for the pin selected by I2C_SDA_PIN"
+                        },
+                        {
+                            "width": 4
+                        }
+                    ]
+                },
+                {
+                    "id": "field028",
+                    "name": "ISP_CAN_CFG",
+                    "description": "isp can cfg",
+                    "offset_int": "0x0028",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "field028-bits0-7",
+                            "name": "CAN_RX_PIN",
+                            "description": "Override default CAN RX ISP pin. Identifies the pin to be used as CAN_RX pin. [4:0] GPIO Pin number [7:5] GPIO port number"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field028-bits8-11",
+                            "name": "CAN_RX_FUNC_SLOT",
+                            "description": "Identifies the ALT pin mux function to use for the pin selected by CAN_RX_PIN"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field028-bits12-15",
+                            "name": "CAN_ISP_INST",
+                            "description": "Identifies the instance used for CAN ISP mode"
+                        },
+                        {
+                            "width": 8,
+                            "id": "field028-bits16-23",
+                            "name": "CAN_TX_PIN",
+                            "description": "Override default CAN TX ISP pin. Identifies the pin to be used as CAN_TX pin. [4:0] GPIO Pin number [7:5] GPIO port number"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field028-bits24-27",
+                            "name": "CAN_TX_FUNC_SLOT",
+                            "description": "Identifies the ALT pin mux function to use for the pin selected by CAN_TX_PIN"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field028-bits28-31",
+                            "name": "CAN_BAUD_RATE",
+                            "description": "CAN baud rate. Baud rate configured during CAN ISP mode",
+                            "values": [
+                                {
+                                    "name": "AUTO_BAUDRATE",
+                                    "value": 0,
+                                    "description": "Auto baud detection (125K, 250K, 500K, 750K, 1M)"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "field02C",
+                    "name": "ISP_SPI_CFG0",
+                    "description": "isp spi cfg0",
+                    "offset_int": "0x002C",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "field02C-bits0-7",
+                            "name": "SPI_SCK_PIN",
+                            "description": "Override default SPI_SCK ISP pin. Identifies the pin to be used as SPI_SCK pin. [4:0] GPIO Pin number [7:5] GPIO port number"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field02C-bits8-11",
+                            "name": "SPI_SCK_FUNC_SLOT",
+                            "description": "Identifies the ALT pin mux function to use for the pin selected by SPI_SCK_PIN"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field02C-bits12-15",
+                            "name": "SPI_ISP_FLEXCOM",
+                            "description": "Identifies the FlexComm used for SPI ISP mode"
+                        },
+                        {
+                            "width": 8,
+                            "id": "field02C-bits16-23",
+                            "name": "SPI_MOSI_PIN",
+                            "description": "Override default SPI_MOSI ISP pin. Identifies the pin to be used as SPI_MOSI pin. [4:0] GPIO Pin number [7:5] GPIO port number"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field02C-bits24-27",
+                            "name": "SPI_MOSI_FUNC_SLOT",
+                            "description": "Identifies the ALT pin mux function to use for the pin selected by SPI_MOSI_PIN"
+                        },
+                        {
+                            "width": 4
+                        }
+                    ]
+                },
+                {
+                    "id": "field030",
+                    "name": "ISP_SPI_CFG1",
+                    "description": "ISP SPI CFG1",
+                    "offset_int": "0x0030",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "field030-bits0-7",
+                            "name": "SPI_MISO_PIN",
+                            "description": "Override default SPI_MISO ISP pin. Identifies the pin to be used as SPI_MISO pin. [4:0] GPIO Pin number [7:5] GPIO port number"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field030-bits8-11",
+                            "name": "SPI_MISO_FUNC_SLOT",
+                            "description": "Identifies the ALT pin mux function to use for the pin selected by SPI_MISO_PIN"
+                        },
+                        {
+                            "width": 4
+                        },
+                        {
+                            "width": 8,
+                            "id": "field030-bits16-23",
+                            "name": "SPI_SSEL_PIN",
+                            "description": "Override default SPI_SSEL ISP pin. Identifies the pin to be used as SPI_SSEL pin. [4:0] GPIO Pin number [7:5] GPIO port number"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field030-bits24-27",
+                            "name": "SPI_SSEL_FUNC_SLOT",
+                            "description": "Identifies the ALT pin mux function to use for the pin selected by SPI_SSEL_PIN"
+                        },
+                        {
+                            "width": 2,
+                            "id": "field030-bits28-29",
+                            "name": "ISP_SPI_SSEL_X",
+                            "description": "SPI chip select number. FlexComm SPI interfaces supports up to four chip selects"
+                        },
+                        {
+                            "width": 2
+                        }
+                    ]
+                },
+                {
+                    "id": "field034",
+                    "name": "ISP_USB_ID",
+                    "description": "isp usb id",
+                    "offset_int": "0x0034",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "field034-bits0-15",
+                            "name": "USB_Vendor_ID",
+                            "description": "usb vendor id"
+                        },
+                        {
+                            "width": 16,
+                            "id": "field034-bits16-31",
+                            "name": "USB_Product_ID",
+                            "description": "usb product id"
+                        }
+                    ]
+                },
+                {
+                    "id": "field038",
+                    "name": "ISP_USB_CFG",
+                    "description": "isp usb cfg",
+                    "offset_int": "0x0038",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "field038-bits0-7",
+                            "name": "USBx_VBUS_PIN",
+                            "description": "Override default USB0_VBUS_DETECT ISP pin. Identifies the pin to be used as USB0_VBUS detect pin. [4:0] GPIO Pin number [7:5] GPIO port number"
+                        },
+                        {
+                            "width": 4,
+                            "id": "field038-bits8-11",
+                            "name": "USBx_VBUS_FUNC_SLOT",
+                            "description": "Identifies the pin mux function slot"
+                        },
+                        {
+                            "width": 4
+                        },
+                        {
+                            "width": 3,
+                            "id": "field038-bits16-18",
+                            "name": "EXT_XTAL_CLK",
+                            "description": "USB PHY input clock frequency. For USB high speed PHY external XTAL input is needed. This field specifies the frequency of XTAL used on board. • 000 - 24 MHz input clock (Divide by 15) • 001 - 30 MHz input clock (Divide by 16) • 010 - 32 MHz input clock (Divide by 20) • 011 - Reserved • 100 - 20 MHz input clock (Divide by 24) • 101 - 19.2 MHz input clock (Divide by 25) • 110 - 16 MHz input clock (Divide by 30) • 111 - 12 MHz input clock (Divide by 40)"
+                        },
+                        {
+                            "width": 1,
+                            "id": "field038-bit19",
+                            "name": "PRE_DIV",
+                            "description": "Enable Pre-divider. Needed to support 48 MHz and other high speed crystals"
+                        },
+                        {
+                            "width": 12
+                        }
+                    ]
+                },
+                {
+                    "id": "field03C",
+                    "name": "ISP_MISC_CFG",
+                    "description": "isp misc cfg",
+                    "offset_int": "0x003C",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "field03C-bits0-7",
+                            "name": "I2C_SLAVE_ADDR",
+                            "description": "I2C slave address A 7-bit Address used for selecting our device on shared I2C bus system. By default ROM uses 0x10 as slave address. If this address conflicts with another slave on board customer could use this field to override the address"
+                        },
+                        {
+                            "width": 14
+                        },
+                        {
+                            "width": 2,
+                            "id": "field03C-bits22-23",
+                            "name": "ISP_USB_CUST",
+                            "description": "Use customer defined GPIO for USB VBUS detect function during ISP mode",
+                            "values": [
+                                {
+                                    "name": "DEDICATED_VBUS_PINS_0",
+                                    "value": 0,
+                                    "description": "Use dedicated VBUS pins"
+                                },
+                                {
+                                    "name": "CUST_DEFINED_USB0_VBUS",
+                                    "value": 1,
+                                    "description": "Customer defined GPIO for USB0_VBUS detect"
+                                },
+                                {
+                                    "name": "CUST_DEFINED_USB1_VBUS",
+                                    "value": 2,
+                                    "description": "Customer defined GPIO for USB1_VBUS detect"
+                                },
+                                {
+                                    "name": "DEDICATED_VBUS_PINS_3",
+                                    "value": 3,
+                                    "description": "Use dedicated VBUS pins"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "field03C-bits24-25",
+                            "name": "ISP_CAN_CUST",
+                            "description": "Use customer defined CAN ISP pins",
+                            "values": [
+                                {
+                                    "name": "ROM_DEFINED_0",
+                                    "value": 0,
+                                    "description": "Default ROM defined pins"
+                                },
+                                {
+                                    "name": "CUST_DEFINED",
+                                    "value": 1,
+                                    "description": "Customer defined"
+                                },
+                                {
+                                    "name": "ROM_DEFINED_2",
+                                    "value": 2,
+                                    "description": "Default ROM defined pins"
+                                },
+                                {
+                                    "name": "ROM_DEFINED_3",
+                                    "value": 3,
+                                    "description": "Default ROM defined pins"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "field03C-bits26-27",
+                            "name": "ISP_SPI_CUST",
+                            "description": "Use customer defined SPI ISP pins",
+                            "values": [
+                                {
+                                    "name": "ROM_DEFINED_0",
+                                    "value": 0,
+                                    "description": "Default ROM defined pins"
+                                },
+                                {
+                                    "name": "CUST_DEFINED",
+                                    "value": 1,
+                                    "description": "Customer defined"
+                                },
+                                {
+                                    "name": "ROM_DEFINED_2",
+                                    "value": 2,
+                                    "description": "Default ROM defined pins"
+                                },
+                                {
+                                    "name": "ROM_DEFINED_3",
+                                    "value": 3,
+                                    "description": "Default ROM defined pins"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "field03C-bits28-29",
+                            "name": "ISP_I2C_CUST",
+                            "description": "Use customer defined I2C ISP pins",
+                            "values": [
+                                {
+                                    "name": "ROM_DEFINED_0",
+                                    "value": 0,
+                                    "description": "Default ROM defined pins"
+                                },
+                                {
+                                    "name": "CUST_DEFINED",
+                                    "value": 1,
+                                    "description": "Customer defined"
+                                },
+                                {
+                                    "name": "ROM_DEFINED_2",
+                                    "value": 2,
+                                    "description": "Default ROM defined pins"
+                                },
+                                {
+                                    "name": "ROM_DEFINED_3",
+                                    "value": 3,
+                                    "description": "Default ROM defined pins"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "field03C-bits30-31",
+                            "name": "ISP_UART_CUST",
+                            "description": "Use customer defined UART ISP pins",
+                            "values": [
+                                {
+                                    "name": "ROM_DEFINED_0",
+                                    "value": 0,
+                                    "description": "Default ROM defined pins"
+                                },
+                                {
+                                    "name": "CUST_DEFINED",
+                                    "value": 1,
+                                    "description": "Customer defined"
+                                },
+                                {
+                                    "name": "ROM_DEFINED_2",
+                                    "value": 2,
+                                    "description": "Default ROM defined pins"
+                                },
+                                {
+                                    "name": "ROM_DEFINED_3",
+                                    "value": 3,
+                                    "description": "Default ROM defined pins"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "field040",
+                    "name": "CC_SOCU_PIN",
+                    "description": "cc socu pin",
+                    "offset_int": "0x0040",
+                    "default_value_int": "0xE000",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "field040-bit0",
+                            "name": "NIDEN",
+                            "description": "Non Secure non-invasive debug enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP_TO_ENABLE",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field040-bit1",
+                            "name": "DBGEN",
+                            "description": "Non Secure debug enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP_TO_ENABLE",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field040-bit2",
+                            "name": "SPNIDEN",
+                            "description": "Secure non-invasive debug enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP_TO_ENABLE",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field040-bit3",
+                            "name": "SPIDEN",
+                            "description": "Secure invasive debug enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP_TO_ENABLE",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1,
+                            "id": "field040-bit6",
+                            "name": "ISP_CMD_EN",
+                            "description": "ISP boot command enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP_TO_ENABLE",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field040-bit7",
+                            "name": "FA_CMD_EN",
+                            "description": "Controls enablement of Set_FA & Set_Brick commands",
+                            "values": [
+                                {
+                                    "name": "USE_DAP_TO_ENABLE",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field040-bit8",
+                            "name": "ME_CMD_EN",
+                            "description": "Flash Mass Erase cmd enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP_TO_ENABLE",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 16,
+                            "id": "field040-bits16-31",
+                            "name": "Inverse_value",
+                            "description": "inverse value of [15:0]",
+                            "calculated": "INVERSE"
+                        }
+                    ]
+                },
+                {
+                    "id": "field044",
+                    "name": "CC_SOCU_DFLT",
+                    "description": "cc socu dflt",
+                    "offset_int": "0x0044",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "field044-bit0",
+                            "name": "NIDEN",
+                            "description": "Non Secure non-invasive debug Fixed state",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field044-bit1",
+                            "name": "DBGEN",
+                            "description": "Non Secure debug Fixed state",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field044-bit2",
+                            "name": "SPNIDEN",
+                            "description": "Secure non-invasive debug Fixed state",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field044-bit3",
+                            "name": "SPIDEN",
+                            "description": "Secure invasive debug Fixed state",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1,
+                            "id": "field044-bit6",
+                            "name": "ISP_CMD_EN",
+                            "description": "ISP command Fixed state",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field044-bit7",
+                            "name": "FA_CMD_EN",
+                            "description": "Controls enablement of Set_FA & Set_Brick commands are fixed state",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field044-bit8",
+                            "name": "ME_CMD_EN",
+                            "description": "Mass erase flash command fixed state",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4
+                        },
+                        {
+                            "width": 1,
+                            "id": "field044-bit13",
+                            "name": "ME_DEVCFG_DIS",
+                            "description": "Disable erasing of DEVCFG page on mass erase command",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "DVCFG page erase is Disabled"
+                                },
+                                {
+                                    "name": "ALLOWED",
+                                    "value": 1,
+                                    "description": "DEVCFG page erase is allowed"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field044-bit14",
+                            "name": "DBG_KEYFLUSH",
+                            "description": "Flush keys in SGI keystore before enabling debug access",
+                            "values": [
+                                {
+                                    "name": "SGI_KEYS_ARE_RETAINED",
+                                    "value": 0,
+                                    "description": "SGI keys are retained"
+                                },
+                                {
+                                    "name": "SGI_KEYS_CLEARED",
+                                    "value": 1,
+                                    "description": "SGI Keys are cleared before debug access is granted"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field044-bit15",
+                            "name": "UUID_CHECK",
+                            "description": "Enforce UUID match during Debug authentication",
+                            "values": [
+                                {
+                                    "name": "DEBUG_CERT_ALL_DEVICES",
+                                    "value": 0,
+                                    "description": "Debug certificate can be used with all devices"
+                                },
+                                {
+                                    "name": "DEBUG_CERT_PER_DEVICE",
+                                    "value": 1,
+                                    "description": "Debug certificate per device with matching UUID is needed"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 16,
+                            "id": "field044-bits16-31",
+                            "name": "Inverse_value",
+                            "description": "inverse value of [15:0]",
+                            "calculated": "INVERSE"
+                        }
+                    ]
+                },
+                {
+                    "id": "field048",
+                    "name": "VENDOR_USAGE",
+                    "description": "vendor usage",
+                    "offset_int": "0x0048",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 16
+                        },
+                        {
+                            "width": 16,
+                            "id": "field048-bits16-31",
+                            "name": "VENDOR_USAGE",
+                            "description": "Upper 16 bits of vendor usage field defined in DAP. Lower 16-bits come from customer field area (CFPA.DBG_REVOKE_VU)"
+                        }
+                    ]
+                },
+                {
+                    "id": "Reserved0004C",
+                    "name": "Reserved 0x0004C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x004C",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field050",
+                    "name": "SECURE_BOOT_CFG",
+                    "description": "secure boot cfg",
+                    "offset_int": "0x0050",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "field050-bits0-1",
+                            "name": "SEC_BOOT_EN",
+                            "description": "Secure boot enforcement. This field defines the minimum image verification procedure (CRC32, CMAC, ECDSA sign). The Image type field in header indicates the type of verification data (checksum or signature) included in it",
+                            "values": [
+                                {
+                                    "name": "ALL_IMAGE_TYPES_ALLOWED",
+                                    "value": 0,
+                                    "description": "All Image types are allowed"
+                                },
+                                {
+                                    "name": "ONLY_CRC32_OR_CRYPTO_SIG",
+                                    "value": 1,
+                                    "description": "Only CRC32 or cryptographically signed (CMAC or PKI - ECDSA/ MLDSA) images are allowed"
+                                },
+                                {
+                                    "name": "ONLY_CRYPTO_SIGNED",
+                                    "value": 2,
+                                    "description": "Only cryptographically Signed (CMAC or PKI - ECDSA/ MLDSA) images are allowed"
+                                },
+                                {
+                                    "name": "ONLY_PKI_SIGNED",
+                                    "value": 3,
+                                    "description": "Only PKI signed (ECDSA or MLDSA) images are allowed"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 2,
+                            "id": "field050-bits3-4",
+                            "name": "LP_SEC_BOOT",
+                            "description": "Secure boot option for low-power wake from power-down & deep-powerdown. For CFPA/CMPA do CRC check always",
+                            "values": [
+                                {
+                                    "name": "SAME_AS_COLD_BOOT",
+                                    "value": 0,
+                                    "description": "Same as cold boot"
+                                },
+                                {
+                                    "name": "CRC_CFPA_CMPA_AND_IMAGE",
+                                    "value": 1,
+                                    "description": "CRC check for CFPA/CMPA & CRC32 check of active image"
+                                },
+                                {
+                                    "name": "CRC_AND_JUMP_TO_VECTOR",
+                                    "value": 2,
+                                    "description": "CRC check for CFPA/CMPA & jump to vector address specified in CFPA"
+                                },
+                                {
+                                    "name": "CRC_AND_CMAC_IMAGE",
+                                    "value": 3,
+                                    "description": "CRC check for CFPA/CMPA & CMAC check of active image"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 2,
+                            "id": "field050-bits6-7",
+                            "name": "DICE_CSR_KEY_TYPE",
+                            "description": "Define the DICE csr and key generation type",
+                            "values": [
+                                {
+                                    "name": "GEN_DICE_ECC_P384_KEYS_0",
+                                    "value": 0,
+                                    "description": "Generate DICE ECC P-384 keys"
+                                },
+                                {
+                                    "name": "GEN_DICE_ECC_P384_KEYS_1",
+                                    "value": 1,
+                                    "description": "Generate DICE ECC P-384 keys"
+                                },
+                                {
+                                    "name": "GEN_DICE_SHA384_MLDSA_2",
+                                    "value": 2,
+                                    "description": "Generate DICE SHA384 & MLDSA keys"
+                                },
+                                {
+                                    "name": "GEN_DICE_SHA384_MLDSA_3",
+                                    "value": 3,
+                                    "description": "Generate DICE SHA384 & MLDSA keys"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "field050-bits8-9",
+                            "name": "ENF_CNSA",
+                            "description": "Enforce CNSA suite approved algorithms for secure boot, secure update and debug authentication",
+                            "values": [
+                                {
+                                    "name": "USE_PERFORMANCE_CRYPTO",
+                                    "value": 0,
+                                    "description": "Use performance crypt algos (ECC P-256, SHA256 & AES 128)"
+                                },
+                                {
+                                    "name": "USE_CNSA1_CLASSIC_CRYPTO",
+                                    "value": 1,
+                                    "description": "Use CNSA 1.0 specified classic crypto algorithms. (ECC P-384, SHA384 & AES256)"
+                                },
+                                {
+                                    "name": "USE_CNSA2_PQC_CRYPTO",
+                                    "value": 2,
+                                    "description": "Use CNSA 2.0 specified PQC crypto algorithms.( MLDSA-87, ML-KEM, SHA384 & AES256)"
+                                },
+                                {
+                                    "name": "USE_HYBRID_PQC_CRYPTO",
+                                    "value": 3,
+                                    "description": "Use hybrid (PQC + classic) crypto algorithms.(ECDSA P-384 + MLDSA-87, ML-KEM, SHA384 & AES256)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "field050-bits10-11",
+                            "name": "ENF_TZM_PRESET",
+                            "description": "TrustZone-M mode",
+                            "values": [
+                                {
+                                    "name": "IGNORED",
+                                    "value": 0,
+                                    "description": "Ignored"
+                                },
+                                {
+                                    "name": "ENFORCE_PRESET_TZM_DATA_1",
+                                    "value": 1,
+                                    "description": "Enforce preset TZM data in image manifest"
+                                },
+                                {
+                                    "name": "ENFORCE_PRESET_TZM_DATA_2",
+                                    "value": 2,
+                                    "description": "Enforce preset TZM data in image manifest"
+                                },
+                                {
+                                    "name": "ENFORCE_PRESET_TZM_DATA_3",
+                                    "value": 3,
+                                    "description": "Enforce preset TZM data in image manifest"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "field050-bits12-13",
+                            "name": "FAST_BOOT_EN",
+                            "description": "Fast boot enabled. First boot after update local-CMAC using DUK-Auth key is created and used for sub-sequent boot authentication",
+                            "values": [
+                                {
+                                    "name": "ENABLED",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "FULL_BOOT_REQUIRED_1",
+                                    "value": 1,
+                                    "description": "Full boot required"
+                                },
+                                {
+                                    "name": "FULL_BOOT_REQUIRED_2",
+                                    "value": 2,
+                                    "description": "Full boot required"
+                                },
+                                {
+                                    "name": "FULL_BOOT_REQUIRED_3",
+                                    "value": 3,
+                                    "description": "Full boot required"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "field050-bits14-15",
+                            "name": "ACTIVE_IMG_PROT",
+                            "description": "Protection of active image. This field defines protection of flash area occupied by the active image. Only applicable to internal flash",
+                            "values": [
+                                {
+                                    "name": "PROTECT_CFPA_FLASH_ACL",
+                                    "value": 0,
+                                    "description": "Protection is defined using the CFPA FLASH_ACL settings"
+                                },
+                                {
+                                    "name": "WP_ACT_IMG_STICKY_GLBAC2",
+                                    "value": 1,
+                                    "description": "Write protect active image area with sticky lock. GLBAC2 is used. FLASH_ACL settings are ignored"
+                                },
+                                {
+                                    "name": "WP_ACT_IMG_NOSTKY_GLBAC4",
+                                    "value": 2,
+                                    "description": "Write protect active image area without sticky lock. GLBAC4 is used. FLASH_ACL settings are ignored"
+                                },
+                                {
+                                    "name": "XOM_ACT_IMG_STICKY_GLBAC6",
+                                    "value": 3,
+                                    "description": "XOM protect active image area with sticky lock. GLBAC6 is used. FLASH_ACL settings are ignored"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "field050-bits16-17",
+                            "name": "FIPS_SHA_STEN",
+                            "description": "Enable self-test for SHA2 block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDED",
+                                    "value": 0,
+                                    "description": "not included"
+                                },
+                                {
+                                    "name": "ON_FAIL_CONTINUE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot"
+                                },
+                                {
+                                    "name": "ON_FAIL_ISP_RECOVERY",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery"
+                                },
+                                {
+                                    "name": "ON_FAIL_LOCK_DEVICE",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "field050-bits18-19",
+                            "name": "FIPS_AES_STEN",
+                            "description": "Enable self-test for AES block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDED",
+                                    "value": 0,
+                                    "description": "not included"
+                                },
+                                {
+                                    "name": "ON_FAIL_CONTINUE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot"
+                                },
+                                {
+                                    "name": "ON_FAIL_ISP_RECOVERY",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery"
+                                },
+                                {
+                                    "name": "ON_FAIL_LOCK_DEVICE",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "field050-bits20-21",
+                            "name": "FIPS_ECDSA_STEN",
+                            "description": "Enable self-test for ECDSA block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDED",
+                                    "value": 0,
+                                    "description": "not included"
+                                },
+                                {
+                                    "name": "ON_FAIL_CONTINUE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot"
+                                },
+                                {
+                                    "name": "ON_FAIL_ISP_RECOVERY",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery"
+                                },
+                                {
+                                    "name": "ON_FAIL_LOCK_DEVICE",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "field050-bits22-23",
+                            "name": "FIPS_DRBG_STEN",
+                            "description": "Enable self-test for DRBG block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDED",
+                                    "value": 0,
+                                    "description": "not included"
+                                },
+                                {
+                                    "name": "ON_FAIL_CONTINUE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot"
+                                },
+                                {
+                                    "name": "ON_FAIL_ISP_RECOVERY",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery"
+                                },
+                                {
+                                    "name": "ON_FAIL_LOCK_DEVICE",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "field050-bits24-25",
+                            "name": "FIPS_CMAC_STEN",
+                            "description": "Enable self-test for CMAC block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDED",
+                                    "value": 0,
+                                    "description": "not included"
+                                },
+                                {
+                                    "name": "ON_FAIL_CONTINUE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot"
+                                },
+                                {
+                                    "name": "ON_FAIL_ISP_RECOVERY",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery"
+                                },
+                                {
+                                    "name": "ON_FAIL_LOCK_DEVICE",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "id": "field050-bits26-27",
+                            "name": "FIPS_KDF_STEN",
+                            "description": "Enable self-test for KDF block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDED",
+                                    "value": 0,
+                                    "description": "not included"
+                                },
+                                {
+                                    "name": "ON_FAIL_CONTINUE_BOOT",
+                                    "value": 1,
+                                    "description": "On failure continue to boot"
+                                },
+                                {
+                                    "name": "ON_FAIL_ISP_RECOVERY",
+                                    "value": 2,
+                                    "description": "On failure enter ISP mode for recovery"
+                                },
+                                {
+                                    "name": "ON_FAIL_LOCK_DEVICE",
+                                    "value": 3,
+                                    "description": "On failure lock the device to enforce power-cycle"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 2,
+                            "id": "field050-bits30-31",
+                            "name": "DIS_NXP_FW",
+                            "description": "Block NXP signed SB3 loading",
+                            "values": [
+                                {
+                                    "name": "ALLOW_NXP_SIGNED_SB3_FW_0",
+                                    "value": 0,
+                                    "description": "Allow NXP signed SB3 FW"
+                                },
+                                {
+                                    "name": "DISABLE_NXP_SIGNED_SB3_FW",
+                                    "value": 1,
+                                    "description": "Disable NXP signed SB3 FW"
+                                },
+                                {
+                                    "name": "ALLOW_OEM_NXP_SIGNED_SB3",
+                                    "value": 2,
+                                    "description": "Allow only OEM + NXP signed SB3 FW"
+                                },
+                                {
+                                    "name": "ALLOW_NXP_SIGNED_SB3_FW_3",
+                                    "value": 3,
+                                    "description": "Allow NXP signed SB3 FW"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "field054",
+                    "name": "RoTK_USAGE",
+                    "description": "rotk usage",
+                    "offset_int": "0x0054",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 3,
+                            "id": "field054-bits0-2",
+                            "name": "RoTK0_Usage",
+                            "description": "RoT key 0 usage properties",
+                            "values": [
+                                {
+                                    "name": "USE_ALL_CA_AND_KEYS",
+                                    "value": 0,
+                                    "description": "Usable as debug CA, image CA, FW CA, image and FW key"
+                                },
+                                {
+                                    "name": "USABLE_AS_DEBUG_CA_ONLY",
+                                    "value": 1,
+                                    "description": "Usable as debug CA only"
+                                },
+                                {
+                                    "name": "USE_IMAGE_CA_ONLY",
+                                    "value": 2,
+                                    "description": "Usable as image (boot & FW) CA only"
+                                },
+                                {
+                                    "name": "USE_DBG_BOOT_FW_CA",
+                                    "value": 3,
+                                    "description": "Usable as debug, boot & FW image CA"
+                                },
+                                {
+                                    "name": "USE_IMG_FW_KEY_ONLY",
+                                    "value": 4,
+                                    "description": "Usable as image key & FW update key only"
+                                },
+                                {
+                                    "name": "USE_BOOT_KEY_ONLY",
+                                    "value": 5,
+                                    "description": "Usable as boot image key only"
+                                },
+                                {
+                                    "name": "USE_FW_UPDATE_KEY_ONLY",
+                                    "value": 6,
+                                    "description": "Usable as FW update image key only"
+                                },
+                                {
+                                    "name": "KEY_SLOT_IS_NOT_USED",
+                                    "value": 7,
+                                    "description": "Key slot is not used"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "field054-bits3-5",
+                            "name": "RoTK1_Usage",
+                            "description": "RoT key 1 usage properties",
+                            "values": [
+                                {
+                                    "name": "USE_ALL_CA_AND_KEYS",
+                                    "value": 0,
+                                    "description": "Usable as debug CA, image CA, FW CA, image and FW key"
+                                },
+                                {
+                                    "name": "USABLE_AS_DEBUG_CA_ONLY",
+                                    "value": 1,
+                                    "description": "Usable as debug CA only"
+                                },
+                                {
+                                    "name": "USE_IMAGE_CA_ONLY",
+                                    "value": 2,
+                                    "description": "Usable as image (boot & FW) CA only"
+                                },
+                                {
+                                    "name": "USE_DBG_BOOT_FW_CA",
+                                    "value": 3,
+                                    "description": "Usable as debug, boot & FW image CA"
+                                },
+                                {
+                                    "name": "USE_IMG_FW_KEY_ONLY",
+                                    "value": 4,
+                                    "description": "Usable as image key & FW update key only"
+                                },
+                                {
+                                    "name": "USE_BOOT_KEY_ONLY",
+                                    "value": 5,
+                                    "description": "Usable as boot image key only"
+                                },
+                                {
+                                    "name": "USE_FW_UPDATE_KEY_ONLY",
+                                    "value": 6,
+                                    "description": "Usable as FW update image key only"
+                                },
+                                {
+                                    "name": "KEY_SLOT_IS_NOT_USED",
+                                    "value": 7,
+                                    "description": "Key slot is not used"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "field054-bits6-8",
+                            "name": "RoTK2_Usage",
+                            "description": "RoT key 2 usage properties",
+                            "values": [
+                                {
+                                    "name": "USE_ALL_CA_AND_KEYS",
+                                    "value": 0,
+                                    "description": "Usable as debug CA, image CA, FW CA, image and FW key"
+                                },
+                                {
+                                    "name": "USABLE_AS_DEBUG_CA_ONLY",
+                                    "value": 1,
+                                    "description": "Usable as debug CA only"
+                                },
+                                {
+                                    "name": "USE_IMAGE_CA_ONLY",
+                                    "value": 2,
+                                    "description": "Usable as image (boot & FW) CA only"
+                                },
+                                {
+                                    "name": "USE_DBG_BOOT_FW_CA",
+                                    "value": 3,
+                                    "description": "Usable as debug, boot & FW image CA"
+                                },
+                                {
+                                    "name": "USE_IMG_FW_KEY_ONLY",
+                                    "value": 4,
+                                    "description": "Usable as image key & FW update key only"
+                                },
+                                {
+                                    "name": "USE_BOOT_KEY_ONLY",
+                                    "value": 5,
+                                    "description": "Usable as boot image key only"
+                                },
+                                {
+                                    "name": "USE_FW_UPDATE_KEY_ONLY",
+                                    "value": 6,
+                                    "description": "Usable as FW update image key only"
+                                },
+                                {
+                                    "name": "KEY_SLOT_IS_NOT_USED",
+                                    "value": 7,
+                                    "description": "Key slot is not used"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3,
+                            "id": "field054-bits9-11",
+                            "name": "RoTK3_Usage",
+                            "description": "RoT key 3 usage properties",
+                            "values": [
+                                {
+                                    "name": "USE_ALL_CA_AND_KEYS",
+                                    "value": 0,
+                                    "description": "Usable as debug CA, image CA, FW CA, image and FW key"
+                                },
+                                {
+                                    "name": "USABLE_AS_DEBUG_CA_ONLY",
+                                    "value": 1,
+                                    "description": "Usable as debug CA only"
+                                },
+                                {
+                                    "name": "USE_IMAGE_CA_ONLY",
+                                    "value": 2,
+                                    "description": "Usable as image (boot & FW) CA only"
+                                },
+                                {
+                                    "name": "USE_DBG_BOOT_FW_CA",
+                                    "value": 3,
+                                    "description": "Usable as debug, boot & FW image CA"
+                                },
+                                {
+                                    "name": "USE_IMG_FW_KEY_ONLY",
+                                    "value": 4,
+                                    "description": "Usable as image key & FW update key only"
+                                },
+                                {
+                                    "name": "USE_BOOT_KEY_ONLY",
+                                    "value": 5,
+                                    "description": "Usable as boot image key only"
+                                },
+                                {
+                                    "name": "USE_FW_UPDATE_KEY_ONLY",
+                                    "value": 6,
+                                    "description": "Usable as FW update image key only"
+                                },
+                                {
+                                    "name": "KEY_SLOT_IS_NOT_USED",
+                                    "value": 7,
+                                    "description": "Key slot is not used"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field054-bit12",
+                            "name": "SKIP_DICE",
+                            "description": "Skip DICE computation",
+                            "values": [
+                                {
+                                    "name": "ENABLE_DICE",
+                                    "value": 0,
+                                    "description": "Enable DICE"
+                                },
+                                {
+                                    "name": "DISABLE_DICE",
+                                    "value": 1,
+                                    "description": "Disable DICE"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field054-bit13",
+                            "name": "DICE_INC_NXP_CFG",
+                            "description": "Include NXP area (IFR1) containing specific part configuration data defined during chip manufacturing process in DICE computation",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDED",
+                                    "value": 0,
+                                    "description": "not included"
+                                },
+                                {
+                                    "name": "INCLUDED",
+                                    "value": 1,
+                                    "description": "included"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field054-bit14",
+                            "name": "DICE_INC_CUST_CFG",
+                            "description": "Include data from CMPA page in DICE computation",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDED",
+                                    "value": 0,
+                                    "description": "not included"
+                                },
+                                {
+                                    "name": "INCLUDED",
+                                    "value": 1,
+                                    "description": "included"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field054-bit15",
+                            "name": "DICE_INC_NXP_FIELD_CFG",
+                            "description": "Include NXP field programmed area (NFPA) containing in-field ROM patch in DICE computation",
+                            "values": [
+                                {
+                                    "name": "NOT_INCLUDED",
+                                    "value": 0,
+                                    "description": "not included"
+                                },
+                                {
+                                    "name": "INCLUDED",
+                                    "value": 1,
+                                    "description": "included"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "field058",
+                    "name": "SBL_START_ADDR",
+                    "description": "Secondary boot loader (SBL) or First Mutable Code (FMC) image start address. When FMC_SBL_EN is set ROM checks for presence of valid image at this location. If not present then goes to recover boot path",
+                    "offset_int": "0x0058",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field05C",
+                    "name": "ERR_LOG_ADDR",
+                    "description": "start address of error log buffer in on-chip ram",
+                    "offset_int": "0x005C",
+                    "default_value_int": "0"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "ROTKH",
+                "description": "ROTKH fields"
+            },
+            "registers": [
+                {
+                    "id": "field060",
+                    "name": "ROTKH0",
+                    "description": "Root of Trust Key Hash is SHA256 or SHA384 of RoTK public. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage",
+                    "offset_int": "0x0060",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field064",
+                    "name": "ROTKH1",
+                    "description": "sha384[351:320] / sha256[223:192]",
+                    "offset_int": "0x0064",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field068",
+                    "name": "ROTKH2",
+                    "description": "sha384[319:288] / sha256[191:160]",
+                    "offset_int": "0x0068",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field06C",
+                    "name": "ROTKH3",
+                    "description": "sha384[287:256] / sha256[159:128]",
+                    "offset_int": "0x006C",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field070",
+                    "name": "ROTKH4",
+                    "description": "sha384[255:224] / sha256[127:096]",
+                    "offset_int": "0x0070",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field074",
+                    "name": "ROTKH5",
+                    "description": "sha384[223:192] / sha256[095:064]",
+                    "offset_int": "0x0074",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field078",
+                    "name": "ROTKH6",
+                    "description": "sha384[191:160] / sha256[063:032]",
+                    "offset_int": "0x0078",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field07C",
+                    "name": "ROTKH7",
+                    "description": "sha384[159:128] / sha256[031:000]",
+                    "offset_int": "0x007C",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field080",
+                    "name": "ROTKH8",
+                    "description": "sha384[127:096] / 0",
+                    "offset_int": "0x0080",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field084",
+                    "name": "ROTKH9",
+                    "description": "sha384[095:064] / 0",
+                    "offset_int": "0x0084",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field088",
+                    "name": "ROTKH10",
+                    "description": "sha384[063:032] / 0",
+                    "offset_int": "0x0088",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field08C",
+                    "name": "ROTKH11",
+                    "description": "sha384[031:000] / 0",
+                    "offset_int": "0x008C",
+                    "default_value_int": "0"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "CUST_MK_SK",
+                "description": "CUST_MK_SK key blob"
+            },
+            "registers": [
+                {
+                    "id": "field090",
+                    "name": "CUST_MK_SK_KEY_BLOB0",
+                    "description": "CUST_MK_SK is stored in form of RFC3394 blob and it is used by bootloader to decrypt SB3.1 encryption key during processing of SB file by bootloader. CUST_MK_SK is generated during device provisioning process by HSM_KEY_GEN (random key) or by HSM_STORE_KEY (user defined key) commands. To store this key into CMPA, SB_STORE_KEY command should be used",
+                    "offset_int": "0x0090",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field094",
+                    "name": "CUST_MK_SK_KEY_BLOB1",
+                    "description": "cust mk sk key blob",
+                    "offset_int": "0x0094",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field098",
+                    "name": "CUST_MK_SK_KEY_BLOB2",
+                    "description": "cust mk sk key blob",
+                    "offset_int": "0x0098",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field09C",
+                    "name": "CUST_MK_SK_KEY_BLOB3",
+                    "description": "cust mk sk key blob",
+                    "offset_int": "0x009C",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0A0",
+                    "name": "CUST_MK_SK_KEY_BLOB4",
+                    "description": "cust mk sk key blob",
+                    "offset_int": "0x00A0",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0A4",
+                    "name": "CUST_MK_SK_KEY_BLOB5",
+                    "description": "cust mk sk key blob",
+                    "offset_int": "0x00A4",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0A8",
+                    "name": "CUST_MK_SK_KEY_BLOB6",
+                    "description": "cust mk sk key blob",
+                    "offset_int": "0x00A8",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0AC",
+                    "name": "CUST_MK_SK_KEY_BLOB7",
+                    "description": "cust mk sk key blob",
+                    "offset_int": "0x00AC",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0B0",
+                    "name": "CUST_MK_SK_KEY_BLOB8",
+                    "description": "cust mk sk key blob",
+                    "offset_int": "0x00B0",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0B4",
+                    "name": "CUST_MK_SK_KEY_BLOB9",
+                    "description": "cust mk sk key blob",
+                    "offset_int": "0x00B4",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0B8",
+                    "name": "CUST_MK_SK_KEY_BLOB10",
+                    "description": "cust mk sk key blob",
+                    "offset_int": "0x00B8",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0BC",
+                    "name": "CUST_MK_SK_KEY_BLOB11",
+                    "description": "cust mk sk key blob",
+                    "offset_int": "0x00BC",
+                    "default_value_int": "0"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "PQC_ROTKH",
+                "description": "PQC ROTKH fields"
+            },
+            "registers": [
+                {
+                    "id": "field0C0",
+                    "name": "PQC_ROTKH0",
+                    "description": "Root of Trust Key Hash is SHA256 or SHA384 of RoTK public. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage",
+                    "offset_int": "0x00C0",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0C4",
+                    "name": "PQC_ROTKH1",
+                    "description": "sha384[351:320]",
+                    "offset_int": "0x00C4",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0C8",
+                    "name": "PQC_ROTKH2",
+                    "description": "sha384[319:288]",
+                    "offset_int": "0x00C8",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0CC",
+                    "name": "PQC_ROTKH3",
+                    "description": "sha384[287:256]",
+                    "offset_int": "0x00CC",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0D0",
+                    "name": "PQC_ROTKH4",
+                    "description": "sha384[255:224]",
+                    "offset_int": "0x00D0",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0D4",
+                    "name": "PQC_ROTKH5",
+                    "description": "sha384[223:192]",
+                    "offset_int": "0x00D4",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0D8",
+                    "name": "PQC_ROTKH6",
+                    "description": "sha384[191:160]",
+                    "offset_int": "0x00D8",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0DC",
+                    "name": "PQC_ROTKH7",
+                    "description": "sha384[159:128]",
+                    "offset_int": "0x00DC",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0E0",
+                    "name": "PQC_ROTKH8",
+                    "description": "sha384[127:096]",
+                    "offset_int": "0x00E0",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0E4",
+                    "name": "PQC_ROTKH9",
+                    "description": "sha384[095:064]",
+                    "offset_int": "0x00E4",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0E8",
+                    "name": "PQC_ROTKH10",
+                    "description": "sha384[063:032]",
+                    "offset_int": "0x00E8",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0EC",
+                    "name": "PQC_ROTKH11",
+                    "description": "sha384[031:000]",
+                    "offset_int": "0x00EC",
+                    "default_value_int": "0"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Quick GPIO Configuration",
+                "description": "Quick GPIO Configuration"
+            },
+            "registers": [
+                {
+                    "id": "field0F0",
+                    "name": "QUICK_SET_GPIO_0",
+                    "description": "Drive GPIO 0 port pins high after reset. Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot. Note, if a pin is selected in both QUICK_SET_GPIO_x and QUICK_CLR_GPIO_x fields then pin will be set to high-level with quick transition to low",
+                    "offset_int": "0x00F0",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0F4",
+                    "name": "QUICK_CLR_GPIO_0",
+                    "description": "Drive GPIO 0 port pins low. See description of QUICK_SET_GPIO_0 field. Note, if a pin is selected in both QUICK_SET_GPIO_x and QUICK_CLR_GPIO_x fields then pin will be set to high-level with quick transition to low",
+                    "offset_int": "0x00F4",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0F8",
+                    "name": "QUICK_SET_GPIO_1",
+                    "description": "Drive GPIO 1 port pins high. See description of QUICK_SET_GPIO_0 field",
+                    "offset_int": "0x00F8",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0FC",
+                    "name": "QUICK_CLR_GPIO_1",
+                    "description": "Drive GPIO 1 port pins low. See description of QUICK_SET_GPIO_0 field",
+                    "offset_int": "0x00FC",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field100",
+                    "name": "QUICK_SET_GPIO_2",
+                    "description": "Drive GPIO 2 port pins high. See description of QUICK_SET_GPIO_0 field",
+                    "offset_int": "0x0100",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field104",
+                    "name": "QUICK_CLR_GPIO_2",
+                    "description": "Drive GPIO 2 port pins low. See description of QUICK_SET_GPIO_0 field",
+                    "offset_int": "0x0104",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field108",
+                    "name": "QUICK_SET_GPIO_3",
+                    "description": "Drive GPIO 3 port pins high. See description of QUICK_SET_GPIO_0 field",
+                    "offset_int": "0x0108",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field10C",
+                    "name": "QUICK_CLR_GPIO_3",
+                    "description": "Drive GPIO 3 port pins low. See description of QUICK_SET_GPIO_0 field",
+                    "offset_int": "0x010C",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field110",
+                    "name": "QUICK_SET_GPIO_4",
+                    "description": "Drive GPIO 4 port pins high. See description of QUICK_SET_GPIO_0 field",
+                    "offset_int": "0x0110",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field114",
+                    "name": "QUICK_CLR_GPIO_4",
+                    "description": "Drive GPIO 4 port pins low. See description of QUICK_SET_GPIO_0 field",
+                    "offset_int": "0x0114",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field118",
+                    "name": "QUICK_SET_GPIO_5",
+                    "description": "Drive GPIO 5 port pins high. See description of QUICK_SET_GPIO_0 field",
+                    "offset_int": "0x0118",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field11C",
+                    "name": "QUICK_CLR_GPIO_5",
+                    "description": "Drive GPIO 5 port pins low. See description of QUICK_SET_GPIO_0 field",
+                    "offset_int": "0x011C",
+                    "default_value_int": "0"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved 00120-0012C",
+                "description": "Reserved 00120-0012C"
+            },
+            "registers": [
+                {
+                    "id": "Reserved00120",
+                    "name": "Reserved 0x00120",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0120",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved00124",
+                    "name": "Reserved 0x00124",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0124",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved00128",
+                    "name": "Reserved 0x00128",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0128",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved0012C",
+                    "name": "Reserved 0x0012C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x012C",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "IPED",
+                "description": "IPED region configuration"
+            },
+            "registers": [
+                {
+                    "id": "field130",
+                    "name": "IPED0_START",
+                    "description": "iped0 start",
+                    "offset_int": "0x0130",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "field130-bit0",
+                            "name": "GCM_MODE",
+                            "description": "GCM mode enable",
+                            "values": [
+                                {
+                                    "name": "REGION_ENABLED_CTR_MODE",
+                                    "value": 0,
+                                    "description": "Region is enabled in CTR mode"
+                                },
+                                {
+                                    "name": "REGION_ENABLED_GCM_MODE",
+                                    "value": 1,
+                                    "description": "Region is enabled in GCM mode"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field130-bit1",
+                            "name": "AHBERR_DIS",
+                            "description": "Disable AHB bus error. If GCM authentication fails generates bus error or not",
+                            "values": [
+                                {
+                                    "name": "BUS_ERROR_ENABLED",
+                                    "value": 0,
+                                    "description": "Bus error enabled"
+                                },
+                                {
+                                    "name": "BUS_ERROR_DISABLED",
+                                    "value": 1,
+                                    "description": "Bus error disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "id": "field130-bits8-31",
+                            "name": "IPED_CTX0_START_ADDR",
+                            "description": "Upper 24-bits of IPED region 0 start address. Lower 8 address bits are always 0"
+                        }
+                    ]
+                },
+                {
+                    "id": "field134",
+                    "name": "IPED0_END",
+                    "description": "iped0 end",
+                    "offset_int": "0x0134",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "field134-bits0-1",
+                            "name": "LOCK_EN",
+                            "description": "Lock the IPED context settings",
+                            "values": [
+                                {
+                                    "name": "REGION_IS_NOT_LOCKED",
+                                    "value": 0,
+                                    "description": "Region is not locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_1",
+                                    "value": 1,
+                                    "description": "Region is locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_2",
+                                    "value": 2,
+                                    "description": "Region is locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_3",
+                                    "value": 3,
+                                    "description": "Region is locked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "id": "field134-bits8-31",
+                            "name": "IPED_CTX0_END_ADDR",
+                            "description": "Upper 24-bits of IPED region 0 end address. Lower 8 address bits are always 0"
+                        }
+                    ]
+                },
+                {
+                    "id": "field138",
+                    "name": "IPED1_START",
+                    "description": "iped1 start",
+                    "offset_int": "0x0138",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "field138-bit0",
+                            "name": "GCM_MODE",
+                            "description": "GCM mode enable",
+                            "values": [
+                                {
+                                    "name": "REGION_ENABLED_CTR_MODE",
+                                    "value": 0,
+                                    "description": "Region is enabled in CTR mode"
+                                },
+                                {
+                                    "name": "REGION_ENABLED_GCM_MODE",
+                                    "value": 1,
+                                    "description": "Region is enabled in GCM mode"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field138-bit1",
+                            "name": "AHBERR_DIS",
+                            "description": "Disable AHB bus error. If GCM authentication fails generates bus error or not",
+                            "values": [
+                                {
+                                    "name": "BUS_ERROR_ENABLED",
+                                    "value": 0,
+                                    "description": "Bus error enabled"
+                                },
+                                {
+                                    "name": "BUS_ERROR_DISABLED",
+                                    "value": 1,
+                                    "description": "Bus error disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "id": "field138-bits8-31",
+                            "name": "IPED_CTX1_START_ADDR",
+                            "description": "Upper 24-bits of IPED region 1 start address. Lower 8 address bits are always 0"
+                        }
+                    ]
+                },
+                {
+                    "id": "field13C",
+                    "name": "IPED1_END",
+                    "description": "iped1 end",
+                    "offset_int": "0x013C",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "field13C-bits0-1",
+                            "name": "LOCK_EN",
+                            "description": "Lock the IPED context settings",
+                            "values": [
+                                {
+                                    "name": "REGION_IS_NOT_LOCKED",
+                                    "value": 0,
+                                    "description": "Region is not locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_1",
+                                    "value": 1,
+                                    "description": "Region is locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_2",
+                                    "value": 2,
+                                    "description": "Region is locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_3",
+                                    "value": 3,
+                                    "description": "Region is locked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "id": "field13C-bits8-31",
+                            "name": "IPED_CTX1_END_ADDR",
+                            "description": "Upper 24-bits of IPED region 1 end address. Lower 8 address bits are always 0"
+                        }
+                    ]
+                },
+                {
+                    "id": "field140",
+                    "name": "IPED2_START",
+                    "description": "iped2 start",
+                    "offset_int": "0x0140",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "field140-bit0",
+                            "name": "GCM_MODE",
+                            "description": "GCM mode enable",
+                            "values": [
+                                {
+                                    "name": "REGION_ENABLED_CTR_MODE",
+                                    "value": 0,
+                                    "description": "Region is enabled in CTR mode"
+                                },
+                                {
+                                    "name": "REGION_ENABLED_GCM_MODE",
+                                    "value": 1,
+                                    "description": "Region is enabled in GCM mode"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field140-bit1",
+                            "name": "AHBERR_DIS",
+                            "description": "Disable AHB bus error. If GCM authentication fails generates bus error or not",
+                            "values": [
+                                {
+                                    "name": "BUS_ERROR_ENABLED",
+                                    "value": 0,
+                                    "description": "Bus error enabled"
+                                },
+                                {
+                                    "name": "BUS_ERROR_DISABLED",
+                                    "value": 1,
+                                    "description": "Bus error disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "id": "field140-bits8-31",
+                            "name": "IPED_CTX2_START_ADDR",
+                            "description": "Upper 24-bits of IPED region 2 start address. Lower 8 address bits are always 0"
+                        }
+                    ]
+                },
+                {
+                    "id": "field144",
+                    "name": "IPED2_END",
+                    "description": "iped2 end",
+                    "offset_int": "0x0144",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "field144-bits0-1",
+                            "name": "LOCK_EN",
+                            "description": "Lock the IPED context settings",
+                            "values": [
+                                {
+                                    "name": "REGION_IS_NOT_LOCKED",
+                                    "value": 0,
+                                    "description": "Region is not locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_1",
+                                    "value": 1,
+                                    "description": "Region is locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_2",
+                                    "value": 2,
+                                    "description": "Region is locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_3",
+                                    "value": 3,
+                                    "description": "Region is locked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "id": "field144-bits8-31",
+                            "name": "IPED_CTX2_END_ADDR",
+                            "description": "Upper 24-bits of IPED region 2 end address. Lower 8 address bits are always 0"
+                        }
+                    ]
+                },
+                {
+                    "id": "field148",
+                    "name": "IPED3_START",
+                    "description": "iped3 start",
+                    "offset_int": "0x0148",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "field148-bit0",
+                            "name": "GCM_MODE",
+                            "description": "GCM mode enable",
+                            "values": [
+                                {
+                                    "name": "REGION_ENABLED_CTR_MODE",
+                                    "value": 0,
+                                    "description": "Region is enabled in CTR mode"
+                                },
+                                {
+                                    "name": "REGION_ENABLED_GCM_MODE",
+                                    "value": 1,
+                                    "description": "Region is enabled in GCM mode"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field148-bit1",
+                            "name": "AHBERR_DIS",
+                            "description": "Disable AHB bus error. If GCM authentication fails generates bus error or not",
+                            "values": [
+                                {
+                                    "name": "BUS_ERROR_ENABLED",
+                                    "value": 0,
+                                    "description": "Bus error enabled"
+                                },
+                                {
+                                    "name": "BUS_ERROR_DISABLED",
+                                    "value": 1,
+                                    "description": "Bus error disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "id": "field148-bits8-31",
+                            "name": "IPED_CTX3_START_ADDR",
+                            "description": "Upper 24-bits of IPED region 3 start address. Lower 8 address bits are always 0"
+                        }
+                    ]
+                },
+                {
+                    "id": "field14C",
+                    "name": "IPED3_END",
+                    "description": "iped3 end",
+                    "offset_int": "0x014C",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "field14C-bits0-1",
+                            "name": "LOCK_EN",
+                            "description": "Lock the IPED context settings",
+                            "values": [
+                                {
+                                    "name": "REGION_IS_NOT_LOCKED",
+                                    "value": 0,
+                                    "description": "Region is not locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_1",
+                                    "value": 1,
+                                    "description": "Region is locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_2",
+                                    "value": 2,
+                                    "description": "Region is locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_3",
+                                    "value": 3,
+                                    "description": "Region is locked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "id": "field14C-bits8-31",
+                            "name": "IPED_CTX3_END_ADDR",
+                            "description": "Upper 24-bits of IPED region 3 end address. Lower 8 address bits are always 0"
+                        }
+                    ]
+                },
+                {
+                    "id": "field150",
+                    "name": "IPED4_START",
+                    "description": "iped4 start",
+                    "offset_int": "0x0150",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "field150-bit0",
+                            "name": "GCM_MODE",
+                            "description": "GCM mode enable",
+                            "values": [
+                                {
+                                    "name": "REGION_ENABLED_CTR_MODE",
+                                    "value": 0,
+                                    "description": "Region is enabled in CTR mode"
+                                },
+                                {
+                                    "name": "REGION_ENABLED_GCM_MODE",
+                                    "value": 1,
+                                    "description": "Region is enabled in GCM mode"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field150-bit1",
+                            "name": "AHBERR_DIS",
+                            "description": "Disable AHB bus error. If GCM authentication fails generates bus error or not",
+                            "values": [
+                                {
+                                    "name": "BUS_ERROR_ENABLED",
+                                    "value": 0,
+                                    "description": "Bus error enabled"
+                                },
+                                {
+                                    "name": "BUS_ERROR_DISABLED",
+                                    "value": 1,
+                                    "description": "Bus error disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "id": "field150-bits8-31",
+                            "name": "IPED_CTX4_START_ADDR",
+                            "description": "Upper 24-bits of IPED region 4 start address. Lower 8 address bits are always 0"
+                        }
+                    ]
+                },
+                {
+                    "id": "field154",
+                    "name": "IPED4_END",
+                    "description": "iped4 end",
+                    "offset_int": "0x0154",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "field154-bits0-1",
+                            "name": "LOCK_EN",
+                            "description": "Lock the IPED context settings",
+                            "values": [
+                                {
+                                    "name": "REGION_IS_NOT_LOCKED",
+                                    "value": 0,
+                                    "description": "Region is not locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_1",
+                                    "value": 1,
+                                    "description": "Region is locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_2",
+                                    "value": 2,
+                                    "description": "Region is locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_3",
+                                    "value": 3,
+                                    "description": "Region is locked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "id": "field154-bits8-31",
+                            "name": "IPED_CTX4_END_ADDR",
+                            "description": "Upper 24-bits of IPED region 4 end address. Lower 8 address bits are always 0"
+                        }
+                    ]
+                },
+                {
+                    "id": "field158",
+                    "name": "IPED5_START",
+                    "description": "iped5 start",
+                    "offset_int": "0x0158",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "field158-bit0",
+                            "name": "GCM_MODE",
+                            "description": "GCM mode enable",
+                            "values": [
+                                {
+                                    "name": "REGION_ENABLED_CTR_MODE",
+                                    "value": 0,
+                                    "description": "Region is enabled in CTR mode"
+                                },
+                                {
+                                    "name": "REGION_ENABLED_GCM_MODE",
+                                    "value": 1,
+                                    "description": "Region is enabled in GCM mode"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field158-bit1",
+                            "name": "AHBERR_DIS",
+                            "description": "Disable AHB bus error. If GCM authentication fails generates bus error or not",
+                            "values": [
+                                {
+                                    "name": "BUS_ERROR_ENABLED",
+                                    "value": 0,
+                                    "description": "Bus error enabled"
+                                },
+                                {
+                                    "name": "BUS_ERROR_DISABLED",
+                                    "value": 1,
+                                    "description": "Bus error disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "id": "field158-bits8-31",
+                            "name": "IPED_CTX5_START_ADDR",
+                            "description": "Upper 24-bits of IPED region 5 start address. Lower 8 address bits are always 0"
+                        }
+                    ]
+                },
+                {
+                    "id": "field15C",
+                    "name": "IPED5_END",
+                    "description": "iped5 end",
+                    "offset_int": "0x015C",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "field15C-bits0-1",
+                            "name": "LOCK_EN",
+                            "description": "Lock the IPED context settings",
+                            "values": [
+                                {
+                                    "name": "REGION_IS_NOT_LOCKED",
+                                    "value": 0,
+                                    "description": "Region is not locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_1",
+                                    "value": 1,
+                                    "description": "Region is locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_2",
+                                    "value": 2,
+                                    "description": "Region is locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_3",
+                                    "value": 3,
+                                    "description": "Region is locked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "id": "field15C-bits8-31",
+                            "name": "IPED_CTX5_END_ADDR",
+                            "description": "Upper 24-bits of IPED region 5 end address. Lower 8 address bits are always 0"
+                        }
+                    ]
+                },
+                {
+                    "id": "field160",
+                    "name": "IPED6_START",
+                    "description": "iped6 start",
+                    "offset_int": "0x0160",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "field160-bit0",
+                            "name": "GCM_MODE",
+                            "description": "GCM mode enable",
+                            "values": [
+                                {
+                                    "name": "REGION_ENABLED_CTR_MODE",
+                                    "value": 0,
+                                    "description": "Region is enabled in CTR mode"
+                                },
+                                {
+                                    "name": "REGION_ENABLED_GCM_MODE",
+                                    "value": 1,
+                                    "description": "Region is enabled in GCM mode"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field160-bit1",
+                            "name": "AHBERR_DIS",
+                            "description": "Disable AHB bus error. If GCM authentication fails generates bus error or not",
+                            "values": [
+                                {
+                                    "name": "BUS_ERROR_ENABLED",
+                                    "value": 0,
+                                    "description": "Bus error enabled"
+                                },
+                                {
+                                    "name": "BUS_ERROR_DISABLED",
+                                    "value": 1,
+                                    "description": "Bus error disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "id": "field160-bits8-31",
+                            "name": "IPED_CTX6_START_ADDR",
+                            "description": "Upper 24-bits of IPED region 6 start address. Lower 8 address bits are always 0"
+                        }
+                    ]
+                },
+                {
+                    "id": "field164",
+                    "name": "IPED6_END",
+                    "description": "iped6 end",
+                    "offset_int": "0x0164",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "field164-bits0-1",
+                            "name": "LOCK_EN",
+                            "description": "Lock the IPED context settings",
+                            "values": [
+                                {
+                                    "name": "REGION_IS_NOT_LOCKED",
+                                    "value": 0,
+                                    "description": "Region is not locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_1",
+                                    "value": 1,
+                                    "description": "Region is locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_2",
+                                    "value": 2,
+                                    "description": "Region is locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_3",
+                                    "value": 3,
+                                    "description": "Region is locked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "id": "field164-bits8-31",
+                            "name": "IPED_CTX6_END_ADDR",
+                            "description": "Upper 24-bits of IPED region 6 end address. Lower 8 address bits are always 0"
+                        }
+                    ]
+                },
+                {
+                    "id": "field168",
+                    "name": "IPED7_START",
+                    "description": "iped7 start",
+                    "offset_int": "0x0168",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "field168-bit0",
+                            "name": "GCM_MODE",
+                            "description": "GCM mode enable",
+                            "values": [
+                                {
+                                    "name": "REGION_ENABLED_CTR_MODE",
+                                    "value": 0,
+                                    "description": "Region is enabled in CTR mode"
+                                },
+                                {
+                                    "name": "REGION_ENABLED_GCM_MODE",
+                                    "value": 1,
+                                    "description": "Region is enabled in GCM mode"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field168-bit1",
+                            "name": "AHBERR_DIS",
+                            "description": "Disable AHB bus error. If GCM authentication fails generates bus error or not",
+                            "values": [
+                                {
+                                    "name": "BUS_ERROR_ENABLED",
+                                    "value": 0,
+                                    "description": "Bus error enabled"
+                                },
+                                {
+                                    "name": "BUS_ERROR_DISABLED",
+                                    "value": 1,
+                                    "description": "Bus error disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "id": "field168-bits8-31",
+                            "name": "IPED_CTX7_START_ADDR",
+                            "description": "Upper 24-bits of IPED region 7 start address. Lower 8 address bits are always 0"
+                        }
+                    ]
+                },
+                {
+                    "id": "field16C",
+                    "name": "IPED7_END",
+                    "description": "iped7 end",
+                    "offset_int": "0x016C",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "field16C-bits0-1",
+                            "name": "LOCK_EN",
+                            "description": "Lock the IPED context settings",
+                            "values": [
+                                {
+                                    "name": "REGION_IS_NOT_LOCKED",
+                                    "value": 0,
+                                    "description": "Region is not locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_1",
+                                    "value": 1,
+                                    "description": "Region is locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_2",
+                                    "value": 2,
+                                    "description": "Region is locked"
+                                },
+                                {
+                                    "name": "REGION_IS_LOCKED_3",
+                                    "value": 3,
+                                    "description": "Region is locked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 24,
+                            "id": "field16C-bits8-31",
+                            "name": "IPED_CTX7_END_ADDR",
+                            "description": "Upper 24-bits of IPED region 7 end address. Lower 8 address bits are always 0"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved 00170-001B8",
+                "description": "Reserved 00170-001B8"
+            },
+            "registers": [
+                {
+                    "id": "Reserved00170",
+                    "name": "Reserved 0x00170",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0170",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved00174",
+                    "name": "Reserved 0x00174",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0174",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved00178",
+                    "name": "Reserved 0x00178",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0178",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved0017C",
+                    "name": "Reserved 0x0017C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x017C",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved00180",
+                    "name": "Reserved 0x00180",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0180",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved00184",
+                    "name": "Reserved 0x00184",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0184",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved00188",
+                    "name": "Reserved 0x00188",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0188",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved0018C",
+                    "name": "Reserved 0x0018C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x018C",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved00190",
+                    "name": "Reserved 0x00190",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0190",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved00194",
+                    "name": "Reserved 0x00194",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0194",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved00198",
+                    "name": "Reserved 0x00198",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0198",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved0019C",
+                    "name": "Reserved 0x0019C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x019C",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved001A0",
+                    "name": "Reserved 0x001A0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01A0",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved001A4",
+                    "name": "Reserved 0x001A4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01A4",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved001A8",
+                    "name": "Reserved 0x001A8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01A8",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved001AC",
+                    "name": "Reserved 0x001AC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01AC",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved001B0",
+                    "name": "Reserved 0x001B0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01B0",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved001B4",
+                    "name": "Reserved 0x001B4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01B4",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved001B8",
+                    "name": "Reserved 0x001B8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01B8",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "DICE",
+                "description": "DICE certificate"
+            },
+            "registers": [
+                {
+                    "id": "field1BC",
+                    "name": "DICE_x509_SRAM_BUF_LEN",
+                    "description": "dice x509 sram buf len",
+                    "offset_int": "0x01BC",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "field1BC-bits0-15",
+                            "name": "DICE_ECDSA_CERT_BUF_SIZE",
+                            "description": "dice ecdsa cert buf size"
+                        },
+                        {
+                            "width": 16,
+                            "id": "field1BC-bits16-31",
+                            "name": "DICE_MLDSA_CERT_BUF_SIZE",
+                            "description": "dice mldsa cert buf size"
+                        }
+                    ]
+                },
+                {
+                    "id": "field1C0",
+                    "name": "DICE_x509_ECDSA_SRAM_ADDR",
+                    "description": "dice x509 ecdsa sram addr",
+                    "offset_int": "0x01C0",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field1C4",
+                    "name": "DICE_x509_MLDSA_SRAM_ADDR",
+                    "description": "If set as zero, then use the 0x30002000 RAM address as the default",
+                    "offset_int": "0x01C4",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field1C8",
+                    "name": "DICE_ALIAS_KEY_SRAM_ADDR",
+                    "description": "If set as zero, then use the 0x30019000 RAM address as the default",
+                    "offset_int": "0x01C8",
+                    "default_value_int": "0"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "MLDSA CERT",
+                "description": "MLDSA certificate template hash"
+            },
+            "registers": [
+                {
+                    "id": "field1CC",
+                    "name": "MLDSA_CERT_TEMP_ADDR",
+                    "description": "Certificate template structure for MLDSA alias key identity",
+                    "offset_int": "0x01CC",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field1D0",
+                    "name": "MLDSA_CERT_TEMP_HASH0",
+                    "description": "Root of Trust Key Hash is SHA256 or SHA384 of RoTK public. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage",
+                    "offset_int": "0x01D0",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field1D4",
+                    "name": "MLDSA_CERT_TEMP_HASH1",
+                    "description": "sha384[351:320]",
+                    "offset_int": "0x01D4",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field1D8",
+                    "name": "MLDSA_CERT_TEMP_HASH2",
+                    "description": "sha384[319:288]",
+                    "offset_int": "0x01D8",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field1DC",
+                    "name": "MLDSA_CERT_TEMP_HASH3",
+                    "description": "sha384[287:256]",
+                    "offset_int": "0x01DC",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field1E0",
+                    "name": "MLDSA_CERT_TEMP_HASH4",
+                    "description": "sha384[255:224]",
+                    "offset_int": "0x01E0",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field1E4",
+                    "name": "MLDSA_CERT_TEMP_HASH5",
+                    "description": "sha384[223:192]",
+                    "offset_int": "0x01E4",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field1E8",
+                    "name": "MLDSA_CERT_TEMP_HASH6",
+                    "description": "sha384[191:160]",
+                    "offset_int": "0x01E8",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field1EC",
+                    "name": "MLDSA_CERT_TEMP_HASH7",
+                    "description": "sha384[159:128]",
+                    "offset_int": "0x01EC",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field1F0",
+                    "name": "MLDSA_CERT_TEMP_HASH8",
+                    "description": "sha384[127:096]",
+                    "offset_int": "0x01F0",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field1F4",
+                    "name": "MLDSA_CERT_TEMP_HASH9",
+                    "description": "sha384[095:064]",
+                    "offset_int": "0x01F4",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field1F8",
+                    "name": "MLDSA_CERT_TEMP_HASH10",
+                    "description": "sha384[063:032]",
+                    "offset_int": "0x01F8",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field1FC",
+                    "name": "MLDSA_CERT_TEMP_HASH11",
+                    "description": "sha384[031:000]",
+                    "offset_int": "0x01FC",
+                    "default_value_int": "0"
+                }
+            ]
+        }
+    ]
+}

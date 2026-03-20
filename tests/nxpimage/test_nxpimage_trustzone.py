@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023,2025 NXP
+# Copyright 2022-2023,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -45,7 +45,10 @@ def tz_data_dir(data_dir: str) -> str:
 
 @pytest.mark.parametrize(
     "config_file,output_file,reference_binary",
-    [("lpc55s6xA1.yaml", "lpc55s6xA1_tzFile.bin", "lpc55s6xA1_tzFile.bin")],
+    [
+        ("lpc55s6xA1.yaml", "lpc55s6xA1_tzFile.bin", "lpc55s6xA1_tzFile.bin"),
+        ("trust_zone_v2.yaml", "mcxa457_tz.bin", "trust_zone_v2.bin"),
+    ],
 )
 def test_nxpimage_trustzone_basic(
     cli_runner: CliRunner,
@@ -79,6 +82,7 @@ def test_nxpimage_trustzone_basic(
     "config_file,output_file,reference_binary",
     [
         ("lpc55s6xA1.yaml", "lpc55s6xA1_tzFile.bin", "lpc55s6xA1_tzFile.bin"),
+        ("trust_zone_v2.yaml", "mcxa457_tz.bin", "trust_zone_v2.bin"),
     ],
 )
 def test_nxpimage_trustzone_export_parse(

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """AHAB signed message implementation for secure device communication.
 
 This module provides classes and functions to create, parse, and manipulate AHAB
@@ -37,11 +38,7 @@ from spsdk.image.ahab.ahab_abstract_interfaces import Container
 from spsdk.image.ahab.ahab_container import AHABContainerBase
 from spsdk.image.ahab.ahab_data import (
     CONTAINER_ALIGNMENT,
-    LITTLE_ENDIAN,
     RESERVED,
-    UINT8,
-    UINT16,
-    UINT32,
     AhabChipConfig,
     FlagsSrkSet,
     KeyAlgorithm,
@@ -60,6 +57,10 @@ from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
 from spsdk.utils.misc import (
+    LITTLE_ENDIAN,
+    UINT8,
+    UINT16,
+    UINT32,
     BinaryPattern,
     Endianness,
     align,
@@ -2182,6 +2183,8 @@ class SignedMessageContainer(AHABContainerBase):
             ),
             encrypt_iv=iv if bool(descriptor_flags & 0x01) else None,
         )
+        ret.chip_config.base.signature_algorithms = chip_config.signature_algorithms
+        ret.chip_config.base.hash_algorithms = chip_config.hash_algorithms
         ret.length = container_length
         ret.signature_block = cls.SIGNATURE_BLOCK.parse(
             data[signature_block_offset:], ret.chip_config

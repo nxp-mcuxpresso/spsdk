@@ -13,7 +13,7 @@ from typing import Any, Dict
 import pytest
 import yaml
 
-from spsdk.exceptions import SPSDKParsingError, SPSDKValueError
+from spsdk.exceptions import SPSDKParsingError, SPSDKVerificationError
 from spsdk.image.hse.common import HseKeyBits, KeyType
 from spsdk.image.hse.key_catalog import KeyCatalogCfg, KeyGroupCfgEntry, KeyGroupOwner, MuMask
 from spsdk.utils.config import Config
@@ -255,13 +255,13 @@ def test_key_catalog_cfg_validation_empty_nvm() -> None:
     ]
 
     with pytest.raises(
-        SPSDKValueError, match="At least one group must be defined for NVM key catalog"
+        SPSDKVerificationError, match="At least one group must be defined for NVM key catalog"
     ):
         KeyCatalogCfg(
             family=family,
             nvm_key_groups=[],
             ram_key_groups=ram_groups,
-        )
+        ).verify().validate()
 
 
 def test_key_catalog_cfg_validation_empty_ram() -> None:
@@ -279,13 +279,13 @@ def test_key_catalog_cfg_validation_empty_ram() -> None:
     ]
 
     with pytest.raises(
-        SPSDKValueError, match="At least one group must be defined for RAM key catalog"
+        SPSDKVerificationError, match="At least one group must be defined for RAM key catalog"
     ):
         KeyCatalogCfg(
             family=family,
             nvm_key_groups=nvm_groups,
             ram_key_groups=[],
-        )
+        ).verify().validate()
 
 
 def test_key_catalog_cfg_validation_she_group_owner() -> None:
@@ -312,12 +312,12 @@ def test_key_catalog_cfg_validation_she_group_owner() -> None:
         ),
     ]
 
-    with pytest.raises(SPSDKValueError, match="SHE key groups must have ANY owner"):
+    with pytest.raises(SPSDKVerificationError, match="SHE key group has correct owner 'ANY'"):
         KeyCatalogCfg(
             family=family,
             nvm_key_groups=nvm_groups,
             ram_key_groups=ram_groups,
-        )
+        ).verify().validate()
 
 
 def test_key_catalog_cfg_validation_she_group_position() -> None:
@@ -351,12 +351,15 @@ def test_key_catalog_cfg_validation_she_group_position() -> None:
         ),
     ]
 
-    with pytest.raises(SPSDKValueError, match="First SHE key group must be mapped to group 0"):
+    with pytest.raises(
+        SPSDKVerificationError,
+        match="First SHE key group is at index 1 - must be mapped to group 0 in NVM catalog",
+    ):
         KeyCatalogCfg(
             family=family,
             nvm_key_groups=nvm_groups,
             ram_key_groups=ram_groups,
-        )
+        ).verify().validate()
 
 
 def test_key_catalog_cfg_validation_shared_secret_in_nvm() -> None:
@@ -384,13 +387,13 @@ def test_key_catalog_cfg_validation_shared_secret_in_nvm() -> None:
     ]
 
     with pytest.raises(
-        SPSDKValueError, match="SHARED_SECRET key groups can only be used in RAM key catalog"
+        SPSDKVerificationError, match="SHARED_SECRET key groups can only be used in RAM key catalog"
     ):
         KeyCatalogCfg(
             family=family,
             nvm_key_groups=nvm_groups,
             ram_key_groups=ram_groups,
-        )
+        ).verify().validate()
 
 
 def test_key_catalog_cfg_validation_rsa_pair_in_ram() -> None:
@@ -418,13 +421,13 @@ def test_key_catalog_cfg_validation_rsa_pair_in_ram() -> None:
     ]
 
     with pytest.raises(
-        SPSDKValueError, match="RSA_PAIR key groups can only be used in NVM key catalog"
+        SPSDKVerificationError, match="RSA_PAIR key groups can only be used in NVM key catalog"
     ):
         KeyCatalogCfg(
             family=family,
             nvm_key_groups=nvm_groups,
             ram_key_groups=ram_groups,
-        )
+        ).verify().validate()
 
 
 def test_key_catalog_cfg_validation_ram_owner() -> None:
@@ -451,12 +454,14 @@ def test_key_catalog_cfg_validation_ram_owner() -> None:
         ),
     ]
 
-    with pytest.raises(SPSDKValueError, match="RAM key groups must have ANY owner"):
+    with pytest.raises(
+        SPSDKVerificationError, match="RAM key group has invalid owner 'CUST' - must be 'ANY'"
+    ):
         KeyCatalogCfg(
             family=family,
             nvm_key_groups=nvm_groups,
             ram_key_groups=ram_groups,
-        )
+        ).verify().validate()
 
 
 def test_key_catalog_cfg_export_parse(family: FamilyRevision) -> None:
@@ -913,12 +918,12 @@ def test_key_catalog_cfg_she_group_beyond_index_4() -> None:
         ),
     ]
 
-    with pytest.raises(SPSDKValueError, match="SHE key groups can only be in groups 0-4"):
+    with pytest.raises(SPSDKVerificationError, match="SHE key group at valid position 0-4"):
         KeyCatalogCfg(
             family=family,
             nvm_key_groups=nvm_groups,
             ram_key_groups=ram_groups,
-        )
+        ).verify().validate()
 
 
 def test_key_catalog_cfg_various_key_types(family: FamilyRevision) -> None:

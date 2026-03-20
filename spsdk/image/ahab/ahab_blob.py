@@ -28,9 +28,9 @@ from spsdk.crypto.symmetric import (
 from spsdk.ele.ele_constants import KeyBlobEncryptionAlgorithm
 from spsdk.exceptions import SPSDKError
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer, HeaderContainerData
-from spsdk.image.ahab.ahab_data import UINT8, AHABTags
+from spsdk.image.ahab.ahab_data import AHABTags
 from spsdk.utils.config import Config
-from spsdk.utils.misc import write_file
+from spsdk.utils.misc import UINT8, write_file
 from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
 

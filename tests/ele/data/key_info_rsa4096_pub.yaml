@@ -1,0 +1,70 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ============================  hse Configuration template for mcxe31b, Revision: latest.  =============================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxe31b
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ======================================================================================================================
+#                                               == HSE Key Information ==                                               
+# ======================================================================================================================
+# ---------------------------------------===== Output file name [Required] =====----------------------------------------
+# Description: Output Key Info file name
+output: key_info_rsa.bin
+# -------------------------------------------===== Key Type [Required] =====--------------------------------------------
+# Description: Type of the cryptographic key
+# Possible options: <SHE, AES, HMAC, SHARED_SECRET, SIPHASH, ECC_PAIR, ECC_PUB, ECC_PUB_EXT, RSA_PAIR, RSA_PUB,
+# RSA_PUB_EXT, DH_PAIR, DH_PUB>
+keyType: RSA_PUB
+# ----------------------------------------===== Key Bit Length [Required] =====-----------------------------------------
+# Description: Length of the key in bits
+# Possible options: <0, 64, 128, 160, 192, 224, 240, 256, 320, 384, 512, 521, 638, 1024, 2048, 3072, 4096>
+keyBitLen: 4096
+# ------------------------------------------===== Key Counter [Optional] =====------------------------------------------
+# Description: Counter value for rollback protection (0 to 0xFFFFFFFE)
+keyCounter: 0
+# -------------------------------------------===== Key Flags [Optional] =====-------------------------------------------
+# Description: Flags defining key properties and usage restrictions:
+# - USAGE_ENCRYPT: Key is used to encrypt data (including keys if USAGE_KEY_PROVISION is set)
+# - USAGE_DECRYPT: Key is used to decrypt data (including keys if USAGE_KEY_PROVISION is set)
+# - USAGE_SIGN: Key is used to generate digital signatures or MACs of any data (including keys if USAGE_KEY_PROVISION is
+# set)
+# - USAGE_VERIFY: Key is used to verify digital signatures or MACs of any data (including keys if USAGE_KEY_PROVISION is
+# set)
+# - USAGE_EXCHANGE: Key may be used for key exchange operations
+# - USAGE_DERIVE: Key may be used as a base key for deriving other keys
+# - USAGE_KEY_PROVISION: Key used for key provisioning operation. Provision keys can only be NVM keys. This flag along
+# with encrypt/decrypt/sign/verify flags specifies which operations can be performed on a key using this provisioning
+# key
+# - USAGE_AUTHORIZATION: Key can be used for system authorization. Can be set only for NVM keys. This key should have
+# the verify flag set, but the sign flag NOT set
+# - USAGE_SMR_DECRYPT: The key is used for SMR decryption. If this flag is set during key installation, HSE will set the
+# USAGE_DECRYPT flag to zero
+# - ACCESS_WRITE_PROT: The key is write protected and cannot change anymore. For RAM keys, this flag is forced to zero
+# - ACCESS_DEBUG_PROT: The key is disabled when a debugger is attached. For RAM keys, this flag is forced to zero
+# - ACCESS_EXPORTABLE: The key can be exported in any format. Ignored when used in combination with USAGE_KEY_PROVISION
+# or USAGE_AUTHORIZATION (provision/authorization keys are NOT exportable)
+# - USAGE_XTS_TWEAK: This is used as a tweak key in XTS AES encryption; no other flag shall be set
+# - USAGE_OTFAD_DECRYPT: The key is used just in OTFAD decryption; no other flag shall be set
+# Possible options: <USAGE_ENCRYPT, USAGE_DECRYPT, USAGE_SIGN, USAGE_VERIFY, USAGE_EXCHANGE, USAGE_DERIVE,
+# USAGE_KEY_PROVISION, USAGE_AUTHORIZATION, USAGE_SMR_DECRYPT, ACCESS_WRITE_PROT, ACCESS_DEBUG_PROT, ACCESS_EXPORTABLE,
+# USAGE_XTS_TWEAK, USAGE_OTFAD_DECRYPT>
+keyFlags:
+  - USAGE_VERIFY
+  - USAGE_AUTHORIZATION
+# -------------------------------------------===== SMR Flags [Optional] =====-------------------------------------------
+# Description: Secure Memory Region flags that must be verified before key usage
+# Possible options: <0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
+# 27, 28, 29, 30, 31>
+smrFlags: []
+# ---------------------------------------===== Key-Specific Data [Optional] =====---------------------------------------
+# Description: Additional data specific to the key type

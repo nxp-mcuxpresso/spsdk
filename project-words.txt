@@ -664,6 +664,7 @@ imxrt
 IMXRT
 incididunt
 incrementation
+INDIV
 initialloadsize
 inquirerpy
 intelhex
@@ -887,6 +888,7 @@ morbi
 moredelay
 moriginal
 MOSI
+MSEL
 msignature
 mspsdk
 msrk
@@ -1044,6 +1046,7 @@ Packetizer
 PACKETIZER
 paramlen
 paramslen
+parseable
 partconf
 Pbus
 PCAN

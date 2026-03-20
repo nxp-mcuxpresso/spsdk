@@ -14,6 +14,8 @@ This module provides CLI commands for working with HSE features, including:
 The commands are organized in a hierarchical structure with 'hse' as the main group.
 """
 
+from typing import Optional
+
 import click
 
 from spsdk.apps.utils.common_cli_options import (
@@ -22,9 +24,14 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_family_option,
     spsdk_output_option,
 )
+from spsdk.crypto.hash import EnumHashAlgorithm
+from spsdk.crypto.keys import PrivateKeyEcc, PrivateKeyRsa, load_key
+from spsdk.exceptions import SPSDKError
+from spsdk.image.hse.common import AuthSchemeEnum
+from spsdk.image.hse.core_reset import CoreResetEntry
 from spsdk.image.hse.key_catalog import KeyCatalogCfg
 from spsdk.image.hse.key_info import KeyInfo
-from spsdk.image.hse.smr import SmrEntry
+from spsdk.image.hse.smr import SmrAuthenticationTag, SmrEntry
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import get_printable_path, load_binary, write_file
@@ -174,7 +181,7 @@ def key_catalog_parse_command(binary: str, family: FamilyRevision, output: str) 
     ).get_config(cfg)
 
     write_file(yaml_data, output)
-    click.echo(f"Success. (Key Catalog cfg: {binary} has been parsed and stored into {output} )")
+    click.echo(f"Success. (Key Catalog binary: {binary} has been parsed and stored into {output} )")
 
 
 @hse_group.group(name="smr-entry", no_args_is_help=True, cls=CommandsTreeGroup)
@@ -233,7 +240,7 @@ def smr_entry_parse_command(binary: str, family: FamilyRevision, output: str) ->
     """Parse a binary SMR entry file and display its contents."""
     data = load_binary(binary)
     smr_entry_parse(data, family, output)
-    click.echo(f"Success. (Key Catalog cfg: {binary} has been parsed and stored into {output} )")
+    click.echo(f"Success. SMR Entry binary: {binary} has been parsed and stored into {output} )")
 
 
 def smr_entry_parse(data: bytes, family: FamilyRevision, output: str) -> None:
@@ -247,6 +254,146 @@ def smr_entry_parse(data: bytes, family: FamilyRevision, output: str) -> None:
     cfg = smr_entry.get_config(data_path=output)
     yaml_data = CommentedConfig(
         main_title=("SME entry configuration:"),
+        schemas=smr_entry.get_validation_schemas(family),
+    ).get_config(cfg)
+    write_file(yaml_data, output)
+
+
+@smr_entry_group.command(name="create-auth-tag", no_args_is_help=True)
+@spsdk_output_option()
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+    help="Path to binary data to create authentication tag from.",
+)
+@click.option(
+    "-k",
+    "--key",
+    "key_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+    help="Path to a key.",
+)
+@click.option(
+    "-a",
+    "--auth-scheme",
+    required=False,
+    type=click.Choice(list(AuthSchemeEnum.labels()), case_sensitive=False),
+    help="Authentication scheme to use. If not specified, it will be determined by key type.",
+    callback=lambda ctx, param, value: (
+        AuthSchemeEnum.from_label(value.lower()) if value is not None else None
+    ),
+)
+@click.option(
+    "-h",
+    "--hash-algorithm",
+    required=False,
+    type=click.Choice(list(EnumHashAlgorithm.labels()), case_sensitive=False),
+    help="Name of a hash algorithm to use. Use the same hash algorithm in SMR entry definition.",
+    callback=lambda ctx, param, value: (
+        EnumHashAlgorithm.from_label(value.lower()) if value is not None else None
+    ),
+)
+def smr_entry_create_auth_tag(
+    binary: str,
+    output: str,
+    key_path: str,
+    auth_scheme: Optional[AuthSchemeEnum] = None,
+    hash_algorithm: Optional[EnumHashAlgorithm] = None,
+) -> None:
+    """Calculate authentication tag for SMR entry installation."""
+    data = load_binary(binary)
+    key = load_key(key_path)
+    if not isinstance(key, (bytes, PrivateKeyEcc, PrivateKeyRsa)):
+        raise SPSDKError(
+            "Either symmetric key or a private key must be specified by --key parameter."
+        )
+    auth_scheme_used = SmrAuthenticationTag.get_auth_scheme(auth_scheme, key)
+    try:
+        auth_tag = SmrAuthenticationTag.create_auth_tag(data, key, auth_scheme, hash_algorithm)
+        write_file(auth_tag, output, mode="wb")
+    except SPSDKError as exc:
+        raise SPSDKError(f"Failed to create authentication tag: {str(exc)}") from exc
+    click.echo(
+        f"Success. Authentication tag of type {auth_scheme_used.label} created: {get_printable_path(output)}"
+    )
+
+
+@hse_group.group(name="cr-entry", no_args_is_help=True, cls=CommandsTreeGroup)
+def core_reset_entry_group() -> None:  # pylint: disable=unused-argument
+    """Group of sub-commands related to Core Reset entry functionality."""
+
+
+@core_reset_entry_group.command(name="get-template", no_args_is_help=True)
+@spsdk_output_option(force=True)
+@spsdk_family_option(families=CoreResetEntry.get_supported_families())
+def cr_entry_get_template_command(output: str, family: FamilyRevision) -> None:
+    """Create template of Core Reset entry configuration in YAML format."""
+    cr_entry_get_template(output, family)
+
+
+def cr_entry_get_template(output: str, family: FamilyRevision) -> None:
+    """Create template of Core Reset entry configuration in YAML format.
+
+    :param output: Path to the output template file
+    :param family: Family revision
+    """
+    write_file(CoreResetEntry.get_config_template(family), output)
+    click.echo(f"The template file {get_printable_path(output)} has been created.")
+
+
+@core_reset_entry_group.command(name="export", no_args_is_help=True)
+@spsdk_config_option(klass=CoreResetEntry)
+def cr_entry_export_command(config: Config) -> None:
+    """Create Core Reset entry binary from YAML/JSON configuration."""
+    cr_entry_export(config)
+
+
+def cr_entry_export(config: Config) -> None:
+    """Generate Core Reset entry binary from YAML/JSON configuration.
+
+    :param config: Path to the YAML/JSON configuration
+    """
+    cr_entry = CoreResetEntry.load_from_config(config)
+    cr_entry.verify().validate()
+    cr_entry_data = cr_entry.export()
+    output_file_path = config.get_output_file_name("output")
+    write_file(cr_entry_data, output_file_path, mode="wb")
+    click.echo(f"Success. (Core Reset Entry: {get_printable_path(output_file_path)} created.)")
+
+
+@core_reset_entry_group.command(name="parse", no_args_is_help=True)
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, readable=True, resolve_path=True),
+    required=True,
+    help="Path to binary with Core Reset entry.",
+)
+@spsdk_family_option(families=SmrEntry.get_supported_families())
+@spsdk_output_option()
+def cr_entry_parse_command(binary: str, family: FamilyRevision, output: str) -> None:
+    """Parse a binary Core Reset entry file and display its contents."""
+    data = load_binary(binary)
+    cr_entry_parse(data, family, output)
+    click.echo(
+        f"Success. (Core Reset Entry binary: {binary} has been parsed and stored into {output} )"
+    )
+
+
+def cr_entry_parse(data: bytes, family: FamilyRevision, output: str) -> None:
+    """Parse Core Reset entry binary into YAML/JSON configuration.
+
+    :param data: Path to the SMR entry binary
+    :param output: Path to the output file
+    :param family: Family revision
+    """
+    smr_entry = CoreResetEntry.parse(data, family)
+    cfg = smr_entry.get_config(data_path=output)
+    yaml_data = CommentedConfig(
+        main_title=("Core Reset entry configuration:"),
         schemas=smr_entry.get_validation_schemas(family),
     ).get_config(cfg)
     write_file(yaml_data, output)

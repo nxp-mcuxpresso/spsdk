@@ -69,6 +69,13 @@ features:
           - Mbi_MixinHseApp
           - Mbi_ExportMixinHseApp
           - Mbi_MixinHseLifecycle
+      smr_xip:
+        image_type: SMR_IMAGE
+        mixins:
+          - Mbi_MixinHseIvt
+          - Mbi_MixinHseApp
+          - Mbi_ExportMixinHseApp
+          - Mbi_MixinHseLifecycle
       signed_xip:
         image_type: SIGNED_XIP_IMAGE
         mixins:
@@ -81,6 +88,7 @@ features:
     images:
       xip:
         plain: plain_xip
+        smr: smr_xip
         signed: signed_xip
 
   # ======== EdgeLock Enclave section ========
@@ -89,4 +97,16 @@ features:
 
   # ======== Hardware Security Engine ===  =====
   hse:
-    sub_features: [hse_attribute, key_import, key_catalog, smr]
+    sub_features: [hse_attribute, key_import, key_catalog, smr, cr]
+    core_ids:
+      - "M7_0"
+    auth_schemes:
+      - "CMAC"
+      - "XCBC_MAC"
+      - "ECDSA"
+      - "EDDSA"
+      - "RSASSA_PKCS1_V15"
+      - "RSASSA_PSS"
+    smr_config_flags:
+      - "INSTALL_AUTH"
+      - "AUTH_AAD"

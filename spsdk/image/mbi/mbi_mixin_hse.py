@@ -20,6 +20,8 @@ from spsdk.crypto.hash import get_hash
 from spsdk.crypto.rng import random_bytes
 from spsdk.crypto.symmetric import aes_gcm_encrypt
 from spsdk.exceptions import SPSDKError, SPSDKVerificationError
+from spsdk.image.hse.common import CoreId
+from spsdk.image.mbi.mbi_data import MbiImageTypeEnum
 from spsdk.image.mbi.mbi_mixin import Mbi_ExportMixin, Mbi_Mixin, Mbi_MixinApp
 from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
@@ -217,9 +219,20 @@ class Ivt:
         The method determines whether the image has secure boot enabled by checking
         the boot sequence configuration.
 
-        :return: True if the image is signed (secure boot), False otherwise.
+        :return: True if the image is signed (basic secure boot), False otherwise.
         """
-        return self.boot_config.boot_seq
+        return self.boot_config.boot_seq and bool(self.app_boot_header_addr)
+
+    @property
+    def is_smr(self) -> bool:
+        """Check if the image is SMR type.
+
+        The method determines whether the image has secure boot enabled by checking
+        the boot sequence configuration.
+
+        :return: True if the image is SMR image, False otherwise.
+        """
+        return self.boot_config.boot_seq and not bool(self.app_boot_header_addr)
 
     def verify(self) -> Verifier:
         """Verify HSE IVT (Image Vector Table) data integrity.
@@ -408,8 +421,9 @@ class Mbi_MixinHseIvt(Mbi_Mixin):
         :param config: Configuration object containing HSE-specific fields and addresses.
         """
         boot_cfg = BootConfig()
-        is_signed = config.get_str("outputImageAuthenticationType").lower() == "signed"
-        boot_cfg.boot_seq = is_signed
+        auth_type = config.get_str("outputImageAuthenticationType").lower()
+        # the boot_seq is True for signed and smr, signed also contains AppBootHeader
+        boot_cfg.boot_seq = auth_type in ["signed", "smr"]
         self.ivt = Ivt(family=FamilyRevision.load_from_config(config))
         self.ivt.boot_config = boot_cfg
         if "appStartAddress" in config:
@@ -419,7 +433,7 @@ class Mbi_MixinHseIvt(Mbi_Mixin):
         if "hseFwAddr" in config:
             self.ivt.hse_fw_addr = config.get_int("hseFwAddr")
         # boot header address is set automatically as it is is located right in front of application
-        if self.ivt.is_signed and self.ivt.app_start_addr is not None:
+        if auth_type == "signed" and self.ivt.app_start_addr is not None:
             self.ivt.app_boot_header_addr = self.ivt.app_start_addr - AppBootHeader.ALIGNMENT
 
     def mix_validate(self) -> None:
@@ -478,9 +492,12 @@ class Mbi_MixinHseIvt(Mbi_Mixin):
         :param data: Raw binary data containing the image.
         :return: Image type identifier (4 if boot sequence is enabled, 0 otherwise).
         """
-        if Ivt.parse(data).boot_config.boot_seq:
-            return 4
-        return 0
+        ivt = Ivt.parse(data)
+        if ivt.is_signed:
+            return MbiImageTypeEnum.SIGNED_XIP_IMAGE.tag
+        if ivt.is_smr:
+            return MbiImageTypeEnum.SMR_IMAGE.tag
+        return MbiImageTypeEnum.PLAIN_IMAGE.tag
 
 
 class AppBootHeader:
@@ -496,15 +513,6 @@ class AppBootHeader:
     :cvar SIZE: Total size of the header structure in bytes.
     :cvar ALIGNMENT: Required memory alignment for the header.
     """
-
-    class CoreId(SpsdkEnum):
-        """Core ID enumeration for HSE operations.
-
-        This enumeration defines the available processor cores that can be targeted
-        for HSE (Hardware Security Engine) operations in NXP MCUs.
-        """
-
-        CORE_CM7_0 = (0x00, "cm7_0", "CM7 0 core")
 
     # Format string for struct packing/unpacking
     FORMAT = "<BBBBIIII11I"
@@ -526,7 +534,7 @@ class AppBootHeader:
         self._version = self.VERSION
         self.start_address: int = 0
         self.app_size: int = 0
-        self.core_id = self.CoreId.CORE_CM7_0
+        self.core_id = CoreId.CORE_M7_0
 
     def verify(self) -> Verifier:
         """Verify HSE IVT header integrity.
@@ -549,6 +557,11 @@ class AppBootHeader:
                 result=VerifierResult.ERROR,
                 value=f"Unsupported AppBL Header version: 0x{self._version:02X}",
             )
+        ret.add_record(
+            name="Core ID",
+            result=self.core_id in CoreId.get_available_core_ids(self.family),
+            value=f" Core with id {self.core_id.label} is supported.",
+        )
         return ret
 
     def export(self) -> bytes:
@@ -606,7 +619,7 @@ class AppBootHeader:
             *_,  # reserved
         ) = struct.unpack_from(cls.FORMAT, data)
 
-        header.core_id = cls.CoreId.from_tag(core_id)
+        header.core_id = CoreId.from_tag(core_id)
         header.verify().validate()
 
         return header
@@ -814,7 +827,7 @@ class Mbi_ExportMixinHseApp(Mbi_ExportMixin):
                 offset=self.ivt.app_offset,
             )
         )
-        if self.lifecycle:
+        if self.lifecycle not in (None, Mbi_MixinHseLifecycle.LifecycleState.NONE):
             if self.ivt.lc_config_offset:
                 lc_offset = self.ivt.lc_config_offset
             else:
@@ -831,7 +844,7 @@ class Mbi_ExportMixinHseApp(Mbi_ExportMixin):
             ret.add_image(
                 BinaryImage(
                     name="Lifecycle",
-                    binary=self.lifecycle.tag.to_bytes(
+                    binary=self.lifecycle.tag.to_bytes(  # type: ignore
                         Mbi_MixinHseLifecycle.LC_VALUE_LENGTH, Endianness.LITTLE.value
                     ),
                     offset=lc_offset,
@@ -850,7 +863,7 @@ class Mbi_ExportMixinHseApp(Mbi_ExportMixin):
         :param image: Binary image data to be disassembled.
         """
         end_offset = None
-        if hasattr(self, "hse_app_boot_header"):
+        if getattr(self, "hse_app_boot_header", None):
             end_offset = self.ivt.app_offset + self.hse_app_boot_header.app_size
         # if LC configuration word is part of the image, we take its offset as end of application
         elif self.ivt.lc_config_offset and self.ivt.lc_config_offset < len(image):
@@ -1033,7 +1046,7 @@ class Mbi_MixinHseApp(Mbi_MixinApp):
             if len(self.app) <= ivt.app_offset:
                 logger.warning("Invalid app_offset in IVT header: offset is larger than image size")
                 return
-
+            # take only the application without IVT
             self.app = self.app[ivt.app_offset :]
             if ivt.app_start_addr and not self.ivt.app_start_addr:
                 logger.info("Updating application start address from IVT found in input image file")

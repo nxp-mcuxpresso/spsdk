@@ -13,6 +13,7 @@ image signing and verification, and attribute retrieval operations.
 """
 
 import json
+import logging
 from typing import Optional
 
 import click
@@ -23,12 +24,15 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_use_json_option,
 )
 from spsdk.apps.utils.utils import INT
-from spsdk.crypto.keys import PrivateKey, PublicKey
+from spsdk.crypto.keys import load_key
 from spsdk.ele.ele_comm import EleMessageHandler
 from spsdk.ele.ele_constants import ResponseStatus
 from spsdk.ele.ele_message_hse import (
+    EleMessageHseActivatePassiveBlock,
     EleMessageHseBootDataImageSign,
     EleMessageHseBootDataImageVerify,
+    EleMessageHseCoreResetEntryErase,
+    EleMessageHseCoreResetEntryInstall,
     EleMessageHseEraseFirmware,
     EleMessageHseFirmwareIntegrityCheck,
     EleMessageHseFirmwareUpdate,
@@ -37,8 +41,11 @@ from spsdk.ele.ele_message_hse import (
     EleMessageHseGetKeyInfo,
     EleMessageHseImportKey,
     EleMessageHseSetAttr,
+    EleMessageHseSmrEntryErase,
     EleMessageHseSmrEntryInstall,
+    EleMessageHseSmrVerify,
     HseAccessMode,
+    HseSmrVerificationOptions,
     KeyImportPayload,
 )
 from spsdk.ele.hse_attrs import (
@@ -50,16 +57,15 @@ from spsdk.ele.hse_attrs import (
 )
 from spsdk.exceptions import SPSDKError
 from spsdk.image.hse.common import KeyCatalogId, KeyHandle
+from spsdk.image.hse.core_reset import CoreResetEntry
 from spsdk.image.hse.key_catalog import KeyCatalogCfg
 from spsdk.image.hse.key_info import KeyFormat, KeyInfo
-from spsdk.image.hse.smr import (
-    EcdsaSignScheme,
-    EddsaSignScheme,
-    SmrEntry,
-    prepare_auth_tag_addr_tuple,
-)
+from spsdk.image.hse.smr import SmrEntry
+from spsdk.mboot.mcuboot import McuBoot
 from spsdk.utils.config import Config
 from spsdk.utils.misc import load_binary, write_file
+
+logger = logging.getLogger(__name__)
 
 
 @click.group(name="hse", cls=CommandsTreeGroup)
@@ -91,8 +97,13 @@ def hse_group() -> None:
     required=True,
     help="Key slot index within the group.",
 )
+@spsdk_use_json_option
 def get_key_info(
-    ele_handler: EleMessageHandler, catalog_id: KeyCatalogId, group_idx: int, slot_idx: int
+    ele_handler: EleMessageHandler,
+    catalog_id: KeyCatalogId,
+    group_idx: int,
+    slot_idx: int,
+    use_json: bool,
 ) -> None:
     """Get HSE key information.
 
@@ -100,16 +111,17 @@ def get_key_info(
     The information includes key flags, bit length, counter, SMR flags, and key type.
     """
     cmd = EleMessageHseGetKeyInfo(
-        KeyHandle(catalog_id=catalog_id, group_idx=group_idx, slot_idx=slot_idx)
+        KeyHandle.from_attributes(catalog_id=catalog_id, group_idx=group_idx, slot_idx=slot_idx)
     )
     with ele_handler:
         ele_handler.send_message(cmd)
-
-    if cmd.status == ResponseStatus.ELE_SUCCESS_IND.tag:
-        click.echo("HSE Get Key Info successful:")
-        click.echo(cmd.response_info())
+    assert cmd.key_info  # key info is set at this point
+    cmd.key_info.family = ele_handler.family
+    if use_json:
+        key_info = cmd.key_info.get_config()
+        click.echo(json.dumps(key_info, indent=3))
     else:
-        click.echo(f"HSE Get Key Info failed: {cmd.response_status()}")
+        click.echo(cmd.response_info())
 
 
 @hse_group.command(name="fw-update", no_args_is_help=True)
@@ -350,6 +362,7 @@ def format_key_catalog(ele_handler: EleMessageHandler, key_catalog: str) -> None
         key_catalog_cfg = KeyCatalogCfg.load_from_config(Config.create_from_file(key_catalog))
     except SPSDKError:
         key_catalog_cfg = KeyCatalogCfg.parse(load_binary(key_catalog))
+    key_catalog_cfg.verify().validate()
     cmd = EleMessageHseFormatKeyCatalogs()
     cmd.set_buffer_params(ele_handler.comm_buff_addr, ele_handler.comm_buff_size)
     with ele_handler:
@@ -412,33 +425,20 @@ def key_import(
     key_format: Optional[KeyFormat],
 ) -> None:
     """Import key in HSE key catalog."""
-    key = None
-    for parser in [
-        lambda k: PrivateKey.load(k),
-        lambda k: PublicKey.load(k),
-        lambda k: load_binary(k),
-    ]:
-        try:
-            key = parser(key_path)
-            break
-        except SPSDKError:
-            continue
-    if key is None:
-        raise SPSDKError(f"Unable to load key from path {key_path}")
-    assert isinstance(key, (PrivateKey, PublicKey, bytes))
+    key = load_key(key_path)
     try:
         key_info_obj = KeyInfo.load_from_config(Config.create_from_file(key_info))
     except SPSDKError:
         key_info_obj = KeyInfo.parse(load_binary(key_info))
     payload = KeyImportPayload(key_info=key_info_obj, key=key)
-    key_handle = KeyHandle(catalog_id, group_idx, slot_idx)
+    key_handle = KeyHandle.from_attributes(catalog_id, group_idx, slot_idx)
     cmd = EleMessageHseImportKey(key_handle=key_handle, payload=payload, key_format=key_format)
     cmd.set_buffer_params(ele_handler.comm_buff_addr, ele_handler.comm_buff_size)
     if cmd.free_space_size < payload.size:
         raise SPSDKError(
             f"Insufficient free space at address {cmd.free_space_address}: Required {payload.size}, Available {cmd.free_space_size}"
         )
-    cmd.payload_address = cmd.free_space_address
+    cmd.payload.address = cmd.free_space_address
     with ele_handler:
         ele_handler.device.write_memory(cmd.free_space_address, payload.export())
         ele_handler.send_message(cmd)
@@ -448,81 +448,186 @@ def key_import(
 @hse_group.command(name="smr-entry-install", no_args_is_help=True)
 @click.pass_obj
 @click.option(
+    "-i",
     "--entry-idx",
-    type=INT(),
+    type=click.IntRange(0, 7),
     required=True,
-    help="SMR entry index.",
+    help="SMR entry index in the SMR table to be added/updated.",
 )
 @click.option(
     "-e",
     "--smr-entry",
+    "smr_entry_path",
     type=click.Path(exists=True, dir_okay=False),
     required=True,
     help="Path to SMR entry binary data or config file.",
 )
 @click.option(
+    "-t",
+    "--auth-tag",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+    help="Path to SMR authentication tag as a binary file.",
+    callback=lambda ctx, param, value: load_binary(value),
+)
+@click.option(
     "-a",
     "--auth-tag-addr",
     type=INT(),
-    multiple=True,
-    required=False,
-    default=(0, 0),
-    help="Authentication tag address. For MAC and RSA signature, only one value is used. Both values are used for ECDSA and EDDSA signatures.",
+    required=True,
+    help="The location in flash of the initial proof of authenticity over SMR.",
 )
 @click.option(
-    "-l",
-    "--auth-tag-length",
-    type=INT(),
-    multiple=True,
-    required=False,
-    default=(0, 0),
-    help="Authentication tag length. For MAC and RSA signature, only one value is used. Both values are used for ECDSA and EDDSA signatures.",
+    "-ef",
+    "--erase-flash",
+    is_flag=True,
+    default=False,
+    help="Erase flash before writing the authentication tag.",
 )
 def smr_entry_install(
     ele_handler: EleMessageHandler,
     entry_idx: int,
-    smr_entry: str,
-    auth_tag_addr: tuple,
-    auth_tag_length: tuple,
+    smr_entry_path: str,
+    auth_tag: bytes,
+    auth_tag_addr: int,
+    erase_flash: bool,
 ) -> None:
     """Install SMR (Secure Memory Region)."""
     try:
-        smr_entry_obj = SmrEntry.load_from_config(Config.create_from_file(smr_entry))
+        smr_entry = SmrEntry.load_from_config(Config.create_from_file(smr_entry_path))
     except SPSDKError:
-        smr_entry_obj = SmrEntry.parse(load_binary(smr_entry))
-    two_values_required = isinstance(smr_entry_obj.auth_scheme, (EcdsaSignScheme, EddsaSignScheme))
-    valid_auth_tag_len = (
-        len(auth_tag_length) == 2 if two_values_required else len(auth_tag_length) == 1
-    )
-    if not valid_auth_tag_len:
-        raise SPSDKError(
-            f"Invalid number of authentication tag lengths provided: {len(auth_tag_length)}. Expected: {2 if two_values_required else 1}"
-        )
-    auth_tag_addr = prepare_auth_tag_addr_tuple(
-        smr_entry_obj.auth_scheme, auth_tag_addr, auth_tag_length
-    )
+        smr_entry = SmrEntry.parse(load_binary(smr_entry_path), ele_handler.family)
+    smr_entry.verify().validate()
+    auth_tag_lengths = smr_entry.get_auth_tag_lengths(auth_tag)
+    smr_entry.update_auth_tag_addrs(auth_tag, auth_tag_addr)
     # currently only ONE_PASS access mode is supported
     cmd = EleMessageHseSmrEntryInstall(
         access_mode=HseAccessMode.ONE_PASS,
         entry_index=entry_idx,
-        smr_data_addr=smr_entry_obj.smr_src_addr,
-        smr_data_length=smr_entry_obj.smr_size,
-        auth_tag_addr=auth_tag_addr,
-        auth_tag_length=auth_tag_length,
+        smr_data_addr=smr_entry.smr_src_addr,
+        smr_data_length=smr_entry.smr_size,
+        auth_tag_addrs=smr_entry.inst_auth_tag_addrs,
+        auth_tag_lengths=auth_tag_lengths,
     )
     cmd.set_buffer_params(ele_handler.comm_buff_addr, ele_handler.comm_buff_size)
-
-    if cmd.free_space_size < smr_entry_obj.size:
-        raise SPSDKError(
-            f"Insufficient free space at address {cmd.free_space_address}: Required {smr_entry_obj.size}, Available {cmd.free_space_size}"
-        )
     cmd.smr_entry_addr = cmd.free_space_address
     with ele_handler:
-        ele_handler.device.write_memory(cmd.free_space_address, smr_entry_obj.export())
-
-    with ele_handler:
+        if erase_flash:
+            if isinstance(ele_handler.device, McuBoot):
+                ele_handler.device.flash_erase_region(
+                    smr_entry.inst_auth_tag_addrs[0], len(auth_tag)
+                )
+            else:
+                logger.warning("Device does not support flash erase operation")
+        ele_handler.device.write_memory(smr_entry.inst_auth_tag_addrs[0], auth_tag)
+        logger.info(f"The authentication tag has been loaded to address {smr_entry}")
+        ele_handler.device.write_memory(cmd.free_space_address, smr_entry.export())
         ele_handler.send_message(cmd)
     click.echo(str(cmd.response_info()))
+
+
+# Add the SMR verify command
+@hse_group.command(name="smr-verify", no_args_is_help=True)
+@click.pass_obj
+@click.option(
+    "-i",
+    "--entry-idx",
+    type=click.IntRange(0, 7),
+    required=True,
+    help="SMR entry index in the SMR table to be verified.",
+)
+@click.option(
+    "--options",
+    type=click.Choice(HseSmrVerificationOptions.labels(), case_sensitive=False),
+    default="NONE",
+    callback=lambda ctx, param, value: HseSmrVerificationOptions.from_label(value.upper()),
+    help="Verification options for customizing the on-demand SMR verification.",
+)
+def smr_verify(
+    ele_handler: EleMessageHandler,
+    entry_idx: int,
+    options: HseSmrVerificationOptions,
+) -> None:
+    """Verify SMR (Secure Memory Region) on-demand.
+
+    This service starts the on-demand verification of a secure memory region by specifying
+    the index in the SMR table. The service loads and verifies an SMR entry in SRAM based
+    on the specified verification options.
+
+    Options:
+    - NONE: Default verification of the SMR at run-time
+    - NO_LOAD: SMR is verified from external flash without loading to SRAM
+    - RELOAD: SMR is loaded from external flash and verified even if already loaded
+    - PASSIVE_MEM: Verifies SMR from passive block with address translation (HSE_B only)
+    """
+    # Validate entry index range
+    if entry_idx < 0 or entry_idx > 31:
+        raise SPSDKError(f"Invalid SMR entry index: {entry_idx}. Must be between 0 and 31.")
+
+    # Create SMR verify command
+    cmd = EleMessageHseSmrVerify(entry_index=entry_idx, options=options)
+
+    # Send command to HSE
+    with ele_handler:
+        try:
+            ele_handler.send_message(cmd)
+        except SPSDKError as e:
+            if options == HseSmrVerificationOptions.NO_LOAD:
+                click.echo(
+                    "Hint: NO_LOAD option requires SMR to be in memory-mapped external flash (not SD/eMMC) and cannot be encrypted."
+                )
+            elif options == HseSmrVerificationOptions.RELOAD:
+                click.echo(
+                    "Hint: RELOAD option requires SMR to be in memory-mapped external flash (not SD/eMMC)."
+                )
+            elif options == HseSmrVerificationOptions.PASSIVE_MEM:
+                click.echo(
+                    "Hint: PASSIVE_MEM option is only available for HSE_B with A/B Swap Configuration."
+                )
+            raise e
+    click.echo(cmd.response_info())
+
+
+@hse_group.command(name="smr-entry-erase", no_args_is_help=True)
+@click.pass_obj
+@click.option(
+    "-i",
+    "--entry-idx",
+    type=click.IntRange(0, 7),
+    required=True,
+    help="SMR entry index in the SMR table to be erased.",
+)
+@click.confirmation_option(
+    prompt="This will permanently erase the SMR entry and all associated secure memory configurations. "
+    "This operation cannot be undone. Are you sure you want to continue?"
+)
+def smr_entry_erase(
+    ele_handler: EleMessageHandler,
+    entry_idx: int,
+) -> None:
+    """Erase SMR (Secure Memory Region) entry.
+
+    This service erases one SMR entry from the internal HSE memory.
+    The service removes the specified entry from the SMR table, effectively
+    disabling the secure memory region configuration for that entry index.
+
+    Requirements:
+    - SuperUser (SU) access rights with privileges over HSE_SYS_AUTH_NVM_CONFIG data
+    are required to perform this service
+    - Erasing an SMR entry will remove all associated secure memory configurations
+    - The operation is irreversible - the entry must be reinstalled if needed again
+
+    Notes:
+    - Ensure no Core Reset entries reference this SMR entry before erasing
+    - Consider the impact on secure boot flow before erasing
+    """
+    # Create SMR entry erase command
+    cmd = EleMessageHseSmrEntryErase(entry_index=entry_idx)
+
+    # Send command to HSE
+    with ele_handler:
+        ele_handler.send_message(cmd)
+    click.echo(cmd.response_info())
 
 
 @hse_group.command(name="fw-erase")
@@ -537,7 +642,7 @@ def fw_erase(ele_handler: EleMessageHandler) -> None:
     This service erases the HSE Firmware, SYS-IMG, and backup (if present)
     from the secure flash on the device.
 
-    IMPORTANT RESTRICTIONS:
+    Requirements:
     - Available for flash-based devices only (HSE_B variant)
     - Can only be performed in CUST_DEL life cycle
     - This is a DESTRUCTIVE operation that cannot be undone
@@ -577,3 +682,112 @@ def fw_integrity_check(ele_handler: EleMessageHandler) -> None:
 
     if cmd.status != ResponseStatus.ELE_SUCCESS_IND.tag:
         click.echo(cmd.response_status())
+
+
+@hse_group.command(name="cr-entry-install", no_args_is_help=True)
+@click.pass_obj
+@click.option(
+    "-i",
+    "--entry-idx",
+    type=click.IntRange(0, 3),
+    required=True,
+    help="Core Reset entry index in the CR table to be added/updated.",
+)
+@click.option(
+    "-e",
+    "--cr-entry",
+    "cr_entry_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+    help="Path to Core Reset entry binary data or config file.",
+)
+def core_reset_install(
+    ele_handler: EleMessageHandler,
+    entry_idx: int,
+    cr_entry_path: str,
+) -> None:
+    """Install Core Reset entry.
+
+    This service updates an existing or adds a new entry in the Core Reset table.
+    The Core Reset table manages the boot sequence and SMR verification for different
+    processor cores in the system.
+
+    Requirements:
+    - SMR entries linked with the CR entry (via preBoot/altPreBoot/postBoot SMR maps)
+    must be installed in HSE prior to the CR installation
+    - SuperUser rights (for NVM Configuration) are needed to perform this service
+    - Updating an existing CR entry requires all preBoot and postBoot SMR(s) linked
+    with the previous entry to be verified successfully (applicable only in OEM_PROD/IN_FIELD life cycles)
+    """
+    try:
+        cr_entry = CoreResetEntry.load_from_config(Config.create_from_file(cr_entry_path))
+    except SPSDKError:
+        cr_entry = CoreResetEntry.parse(load_binary(cr_entry_path), ele_handler.family)
+    cr_entry.verify().validate()
+
+    cmd = EleMessageHseCoreResetEntryInstall(
+        entry_index=entry_idx,
+        entry_addr=0,  # Will be set after loading to target memory
+    )
+
+    cmd.set_buffer_params(ele_handler.comm_buff_addr, ele_handler.comm_buff_size)
+    cr_entry_data = cr_entry.export()
+    cmd.entry_addr = cmd.free_space_address
+    with ele_handler:
+        # Write CR entry data to target memory
+        ele_handler.device.write_memory(cmd.free_space_address, cr_entry_data)
+        logger.info(f"Core Reset entry loaded to address 0x{cmd.free_space_address:08X}")
+        ele_handler.send_message(cmd)
+    click.echo(cmd.response_info())
+
+
+@hse_group.command(name="cr-entry-erase", no_args_is_help=True)
+@click.pass_obj
+@click.option(
+    "-i",
+    "--entry-idx",
+    type=click.IntRange(0, 3),
+    required=True,
+    help="Core Reset entry index in the CR table to be erased.",
+)
+@click.confirmation_option(
+    prompt="This will permanently erase the Core Reset entry and all associated boot configurations. "
+    "This operation cannot be undone. Are you sure you want to continue?"
+)
+def core_reset_erase(
+    ele_handler: EleMessageHandler,
+    entry_idx: int,
+) -> None:
+    """Erase Core Reset entry.
+
+    This service erases one Core Reset entry from the internal HSE memory.
+    The service removes the specified entry from the Core Reset table, effectively
+    disabling the core reset configuration for that entry index.
+
+    Notes:
+    - Ensure no critical boot sequences depend on this Core Reset entry
+    - Consider the impact on system boot flow before erasing
+    - SMR entries referenced by this CR entry may become orphaned
+    """
+    cmd = EleMessageHseCoreResetEntryErase(entry_index=entry_idx)
+    with ele_handler:
+        ele_handler.send_message(cmd)
+    click.echo(cmd.response_info())
+
+
+@hse_group.command(name="activate-passive-block")
+@click.pass_obj
+def activate_passive_block(ele_handler: EleMessageHandler) -> None:
+    """Activate passive flash block.
+
+    This service switches the passive flash block area to become the active block.
+    It enables A/B swap functionality in dual-bank flash configurations.
+
+    Notes:
+    - Available for HSE_B variant only
+    - Used for A/B update scenarios and dual-bank flash configurations
+    """
+    cmd = EleMessageHseActivatePassiveBlock()
+    with ele_handler:
+        ele_handler.send_message(cmd)
+    click.echo(cmd.response_info())

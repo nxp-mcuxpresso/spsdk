@@ -177,6 +177,18 @@ features:
         V2X_SECONDARY: [0x0C, v2x_secondary, V2X secondary Image]
         V2X_ROM_PATCH: [0x0D, v2x_rom_patch, V2X rom patch Image]
 
+    signature_algorithms:
+      RSA: [0x21, "RSA", "RSA signature algorithm"]
+      RSA_PSS: [0x22, "RSA_PSS", "RSA PSS signature algorithm"]
+      ECDSA: [0x27, "ECDSA", "ECDSA signature algorithm"]
+      SM2: [0x28, "SM2", "SM2 signature algorithm"]
+
+    hash_algorithms:
+      SHA256: [0x00, "SHA256", "SHA-256 hash algorithm"]
+      SHA384: [0x01, "SHA384", "SHA-384 hash algorithm"]
+      SHA512: [0x02, "SHA512", "SHA-512 hash algorithm"]
+      SM3: [0x03, "SM3", "SM3 hash algorithm"]
+
     image_types_mapping:
       ele: [6]
       v2x: [9, 10]

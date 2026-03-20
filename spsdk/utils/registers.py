@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK register configuration and management utilities.
 
 This module provides comprehensive functionality for handling register descriptions,
@@ -684,8 +685,11 @@ class RegsBitField:
             # Try to decode standard input
             try:
                 val_int = value_to_int(new_val)
-            except TypeError:
-                raise SPSDKRegsErrorEnumNotFound  # pylint: disable=raise-missing-from
+            except TypeError as exc:
+                raise SPSDKRegsErrorEnumNotFound(
+                    f"Invalid enum value '{new_val}' for bitfield '{self.name}'. "
+                    f"This value cannot be decoded as a valid enum or integer."
+                ) from exc
         self.set_value(val_int, raw, no_preprocess)
 
     def get_enum_value(self) -> Union[str, int]:
@@ -731,7 +735,10 @@ class RegsBitField:
                 if enum.get_value_int() == enum_name:
                     return enum_name
         if not isinstance(enum_name, str):
-            raise SPSDKRegsErrorEnumNotFound(f"The enum for {enum_name} has not been found.")
+            raise SPSDKRegsErrorEnumNotFound(
+                f"Invalid enum value type '{type(enum_name).__name__}' for bitfield '{self.name}'. "
+                f"Enum values must be either string names or integer values."
+            )
         enum_name = enum_name.upper()
         for enum in self._enums:
             if enum.name.upper() == enum_name:
@@ -743,7 +750,10 @@ class RegsBitField:
                 )
                 return enum.get_value_int()
 
-        raise SPSDKRegsErrorEnumNotFound(f"The enum for {enum_name} has not been found.")
+        raise SPSDKRegsErrorEnumNotFound(
+            f"The enum '{enum_name}' does not exist in bitfield '{self.name}'. "
+            f"Available enums: {', '.join(self.get_enum_names())}."
+        )
 
     def get_enum_names(self) -> list[str]:
         """Get list of enumeration names.
@@ -1306,7 +1316,8 @@ class Register:
                 return bitfield
 
         raise SPSDKRegsErrorBitfieldNotFound(
-            f" The UID:{uid} is not found in register {self.name}."
+            f"The bitfield with UID '{uid}' does not exist in register '{self.name}'. "
+            f"Please verify the bitfield UID in your configuration is correct."
         )
 
     def find_bitfield(self, name: str) -> RegsBitField:
@@ -1331,7 +1342,10 @@ class Register:
                     "Deprecated names will be removed in the next major version of SPSDK."
                 )
                 return bitfield
-        raise SPSDKRegsErrorBitfieldNotFound(f" The {name} is not found in register {self.name}.")
+        raise SPSDKRegsErrorBitfieldNotFound(
+            f"The bitfield '{name}' was not found in register '{self.name}'. "
+            f"This may indicate an incorrect bitfield name in your configuration."
+        )
 
     def __str__(self) -> str:
         """Get string representation of the register.
@@ -1579,7 +1593,8 @@ class _RegistersBase(Generic[RegisterClassT]):
                         return sub_reg
 
         raise SPSDKRegsErrorRegisterNotFound(
-            f"The {name} is not found in loaded registers for {self.family} device."
+            f"The register '{name}' does not exist in the loaded register set for {self.family} device. "
+            f"This may indicate an incorrect register name or unsupported register for this device family."
         )
 
     def get_reg(self, uid: str) -> RegisterClassT:
@@ -1602,7 +1617,8 @@ class _RegistersBase(Generic[RegisterClassT]):
                         return sub_reg
 
         raise SPSDKRegsErrorRegisterNotFound(
-            f"The UID:{uid} is not found in loaded registers for {self.family} device."
+            f"The register with UID '{uid}' does not exist in the loaded register set for {self.family} device. "
+            f"This may indicate an incorrect UID or unsupported register for this device family."
         )
 
     def add_register(self, reg: RegisterClassT) -> None:

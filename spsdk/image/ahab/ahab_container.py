@@ -17,7 +17,7 @@ AHABContainerV2 for different container versions and configurations.
 
 import logging
 from struct import pack, unpack
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 from typing_extensions import Self
 
@@ -27,11 +27,7 @@ from spsdk.fuses.fuses import FuseScript
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer, HeaderContainerData
 from spsdk.image.ahab.ahab_data import (
     CONTAINER_ALIGNMENT,
-    LITTLE_ENDIAN,
     RESERVED,
-    UINT8,
-    UINT16,
-    UINT32,
     AhabChipConfig,
     AhabChipContainerConfig,
     AHABTags,
@@ -43,7 +39,16 @@ from spsdk.image.ahab.ahab_srk import SRKTableArray
 from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
-from spsdk.utils.misc import align, extend_block, get_abs_path, write_file
+from spsdk.utils.misc import (
+    LITTLE_ENDIAN,
+    UINT8,
+    UINT16,
+    UINT32,
+    align,
+    extend_block,
+    get_abs_path,
+    write_file,
+)
 from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
 
@@ -182,7 +187,16 @@ class AHABContainerBase(HeaderContainer):
         :return: SRK Set flag enumeration value.
         """
         srk_set = (self.flags >> self.FLAGS_SRK_SET_OFFSET) & ((1 << self.FLAGS_SRK_SET_SIZE) - 1)
-        return FlagsSrkSet.from_tag(srk_set)
+
+        # Try to use chip config enumeration first
+        if hasattr(self, "chip_config") and self.chip_config and hasattr(self.chip_config, "base"):
+            try:
+                return cast(FlagsSrkSet, self.chip_config.base.srk_sets.from_tag(srk_set))
+            except Exception:
+                pass
+
+        # Fallback to default FlagsSrkSet
+        return cast(FlagsSrkSet, FlagsSrkSet.from_tag(srk_set))
 
     @property
     def flag_used_srk_id(self) -> int:
@@ -996,13 +1010,13 @@ class AHABContainer(AHABContainerBase):
                                         "Decrypted data HASH doesn't match IV vector.",
                                     )
                         else:
-                            if self.flag_srk_set in (FlagsSrkSet.NXP, FlagsSrkSet.DEVHSM):
+                            if self.flag_srk_set.label in ("nxp", "devhsm"):
                                 ver_enc.add_record(
                                     "Decrypted data",
                                     VerifierResult.WARNING,
                                     "The NXP image can't be verified",
                                 )
-                            elif self.flag_srk_set not in FlagsSrkSet:
+                            elif self.flag_srk_set.label not in ("oem", "none"):
                                 ver_enc.add_record(
                                     "Decrypted data",
                                     VerifierResult.WARNING,
@@ -1085,7 +1099,8 @@ class AHABContainer(AHABContainerBase):
         # Lock the parsed container to any updates of offsets
         parsed_container.length = container_length
         parsed_container.chip_config.locked = True
-
+        parsed_container.chip_config.base.signature_algorithms = chip_config.signature_algorithms
+        parsed_container.chip_config.base.hash_algorithms = chip_config.hash_algorithms
         parsed_container.signature_block = cls.SIGNATURE_BLOCK.parse(
             data[offset + signature_block_offset :], parsed_container.chip_config
         )

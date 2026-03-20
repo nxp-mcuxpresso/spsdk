@@ -2587,3 +2587,33 @@ def prompt_for_passphrase() -> str:
         )
     password = getpass.getpass(prompt="Private key is encrypted. Enter password: ", stream=None)
     return password
+
+
+def load_key(key_path: str) -> Union[PrivateKey, PublicKey, bytes]:
+    """Load a cryptographic key from the specified file path.
+
+    This function attempts to load a key using multiple parsers in sequence:
+    1. First tries to load as a private key (PEM, DER formats)
+    2. Then tries to load as a public key (PEM, DER formats)
+    3. Finally tries to load as raw binary data
+
+    The function uses a fallback mechanism - if one parser fails with an SPSDKError,
+    it continues to the next parser until a successful load or all parsers are exhausted.
+
+    :param key_path: Path to the key file to be loaded
+    :return: Loaded key as PrivateKey, PublicKey, or raw bytes depending on the file format
+    :raises SPSDKError: If the key cannot be loaded with any of the available parsers
+    """
+    parsers: list[Callable[[str], Union[PrivateKey, PublicKey, bytes]]] = [
+        PrivateKey.load,
+        PublicKey.load,
+        load_binary,
+    ]
+    for parser in parsers:
+        try:
+            key = parser(key_path)
+            assert isinstance(key, (PrivateKey, PublicKey, bytes))
+            return key
+        except SPSDKError:
+            continue
+    raise SPSDKError(f"Unable to load key from path {key_path}")

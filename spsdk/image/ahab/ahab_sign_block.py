@@ -31,8 +31,6 @@ from spsdk.image.ahab.ahab_certificate import (
 from spsdk.image.ahab.ahab_data import (
     CONTAINER_ALIGNMENT,
     RESERVED,
-    UINT16,
-    UINT32,
     AhabChipContainerConfig,
     AHABTags,
     FlagsSrkSet,
@@ -41,7 +39,7 @@ from spsdk.image.ahab.ahab_data import (
 from spsdk.image.ahab.ahab_signature import ContainerSignature
 from spsdk.image.ahab.ahab_srk import SRKRecordV2, SRKTable, SRKTableArray
 from spsdk.utils.config import Config
-from spsdk.utils.misc import align, bytes_to_print, load_binary, write_file
+from spsdk.utils.misc import UINT16, UINT32, align, bytes_to_print, load_binary, write_file
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
@@ -588,7 +586,9 @@ class SignatureBlock(HeaderContainer):
         signature_block._blob_offset = blob_offset
         try:
             signature_block.srk_assets = (
-                SRKTable.parse(data[srk_table_offset:]) if srk_table_offset else None
+                SRKTable.parse(data[srk_table_offset:], chip_config.base)
+                if srk_table_offset
+                else None
             )
         except SPSDKParsingError:
             signature_block.srk_assets = None
@@ -707,7 +707,10 @@ class SignatureBlock(HeaderContainer):
         signature_block = cls(chip_config=chip_config)
         # SRK Table
         signature_block.srk_assets = (
-            SRKTable.load_from_config(config.get_config("srk_table"))
+            SRKTable.load_from_config(
+                config.get_config("srk_table"),
+                chip_config=chip_config.base,  # Pass base chip config
+            )
             if "srk_table" in config
             else None
         )

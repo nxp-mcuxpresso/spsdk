@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +14,7 @@ which provides enhanced enumeration functionality for SPSDK components.
 import pytest
 
 from spsdk.exceptions import SPSDKKeyError
-from spsdk.utils.spsdk_enum import SpsdkEnum
+from spsdk.utils.spsdk_enum import SpsdkEnum, SpsdkIntFlag
 
 
 class SpsdkEnumNumbers(SpsdkEnum):
@@ -217,3 +217,97 @@ def test_enum_isinstance() -> None:
     assert isinstance(SpsdkEnumNumbers.TWO, SpsdkEnumNumbers)
     assert not isinstance(SpsdkEnumNumbers.ONE, SpsdkEnumDays)
     assert not isinstance(1, SpsdkEnumDays)
+
+
+class HouseFeatures(SpsdkIntFlag):
+    """Test enumeration for house features using SpsdkIntFlag.
+
+    This enumeration defines various house features as bit flags that can be
+    combined using bitwise operations for testing SpsdkIntFlag functionality.
+    """
+
+    HEATING = 1
+    AC = 1 << 1
+    ELECTRICITY = 1 << 2
+    GAS = 1 << 3
+
+
+def test_int_flags_from_label() -> None:
+    """Test SpsdkIntFlag.from_label() method functionality.
+
+    Verifies that the from_label method correctly retrieves flag values by their
+    label names, supports case-insensitive lookup, and raises appropriate exceptions
+    for invalid labels.
+
+    :raises SPSDKKeyError: When attempting to retrieve a non-existent label.
+    """
+    enum_member = HouseFeatures.from_label("HEATING")
+    assert enum_member == HouseFeatures.HEATING
+    enum_member = HouseFeatures.from_label("heating")
+    assert enum_member == HouseFeatures.HEATING
+    with pytest.raises(SPSDKKeyError):
+        HouseFeatures.from_label("INVALID")
+
+
+def test_int_flags_from_labels() -> None:
+    """Test SpsdkIntFlag.from_labels() method functionality.
+
+    Verifies that the from_labels method correctly combines multiple flag values
+    from a list of label names using bitwise OR operations, and that individual
+    flags can be checked for membership in the combined result.
+    """
+    enum_member = HouseFeatures.from_labels(["HEATING", "ELECTRICITY"])
+    assert enum_member.value == 5
+    assert HouseFeatures.HEATING in enum_member
+    assert HouseFeatures.ELECTRICITY in enum_member
+    assert HouseFeatures.GAS not in enum_member
+
+
+def test_int_flags_from_values() -> None:
+    """Test SpsdkIntFlag.from_values() method functionality.
+
+    Verifies that the from_values method correctly combines multiple flag values
+    from a list of integer values using bitwise OR operations, and that individual
+    flags can be checked for membership in the combined result.
+    """
+    enum_member = HouseFeatures.from_values([1, 4])
+    assert enum_member.value == 5
+    assert HouseFeatures.HEATING in enum_member
+    assert HouseFeatures.ELECTRICITY in enum_member
+    assert HouseFeatures.GAS not in enum_member
+
+
+def test_int_flags_from_list() -> None:
+    """Test SpsdkIntFlag.from_list() method functionality.
+
+    Verifies that the from_list method correctly combines flag values from a mixed
+    list containing label strings, integer values, and enum instances. Tests that
+    the resulting combined flag has the correct value and membership properties.
+    """
+    enum_member = HouseFeatures.from_list(["heating", 2, HouseFeatures.GAS])
+    assert enum_member.value == 11
+    assert HouseFeatures.HEATING in enum_member
+    assert HouseFeatures.AC in enum_member
+    assert HouseFeatures.GAS in enum_member
+    assert HouseFeatures.ELECTRICITY not in enum_member
+    assert enum_member.value == 11
+
+
+def test_int_flags_to_list() -> None:
+    """Test SpsdkIntFlag.to_list() method functionality.
+
+    Verifies that the to_list method correctly decomposes a combined flag value
+    into its individual constituent flags, returning a list containing only the
+    flags that are set in the combined value.
+    """
+    enum_members = HouseFeatures(11).to_list()
+    assert len(enum_members) == 3
+    assert HouseFeatures.HEATING in enum_members
+    assert HouseFeatures.AC in enum_members
+    assert HouseFeatures.GAS in enum_members
+
+
+def test_int_flags_has_unknown_flags() -> None:
+    """Test SpsdkIntFlag.has_unknown_flags property."""
+    assert not HouseFeatures(11).has_unknown_flags
+    assert HouseFeatures(1000).has_unknown_flags

@@ -28,8 +28,7 @@ from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer
 from spsdk.image.ahab.ahab_container import AHABContainer, AHABContainerV1forV2, AHABContainerV2
 from spsdk.image.ahab.ahab_data import (
     CONTAINER_ALIGNMENT,
-    AHABSignHashAlgorithmV1,
-    AHABSignHashAlgorithmV2,
+    AHABSignHashAlgorithm,
     AHABTags,
     AhabTargetMemory,
     create_chip_config,
@@ -777,11 +776,9 @@ class AHABImage(FeatureBaseClass):
 
         :param family: Family revision for which the validation schema should be generated.
         :return: List of dictionaries containing image validation schemas with processed properties
-                 and templates.
+                and templates.
         """
         db = get_db(family)
-        container_type = db.get_list(DatabaseManager.AHAB, "container_types", [])
-        container_type_2 = 2 in container_type
         extra_images = db.get_list(DatabaseManager.AHAB, "extra_images", [])
         core_ids = SpsdkSoftEnum.create_from_dict(
             "AHABCoreId", db.get_dict(DatabaseManager.AHAB, "core_ids")
@@ -797,6 +794,15 @@ class AHABImage(FeatureBaseClass):
             "properties"
         ]["container"]["properties"]["images"]["items"].pop("oneOf")
 
+        # Load hash algorithms from database
+        try:
+            chip_config = create_chip_config(family)
+            hash_algorithms = chip_config.hash_algorithms
+            hash_algo_labels = [algo.label.lower() for algo in hash_algorithms]
+        except SPSDKError:
+            # Fallback to default based on container type
+            hash_algo_labels = [x.lower() for x in AHABSignHashAlgorithm.labels()]
+
         # Find general image take the content and optionally add it to each extension without binary_image
         std_properties = {}
         for image in images:
@@ -804,14 +810,10 @@ class AHABImage(FeatureBaseClass):
                 image["properties"]["core_id"]["enum"] = core_ids.labels()
                 image["properties"]["core_id"]["template_value"] = core_ids.labels()[0]
                 image["properties"]["image_type"]["enum"] = image_types
-                image["properties"]["hash_type"]["enum"] = [
-                    x.lower()
-                    for x in (
-                        AHABSignHashAlgorithmV2.labels()
-                        if container_type_2
-                        else AHABSignHashAlgorithmV1.labels()
-                    )
-                ]
+                image["properties"]["hash_type"]["enum"] = hash_algo_labels
+                image["properties"]["hash_type"]["template_value"] = (
+                    hash_algo_labels[0] if hash_algo_labels else "sha256"
+                )
                 org_std_properties: dict[str, Any] = deepcopy(image)
                 break
 
@@ -874,13 +876,39 @@ class AHABImage(FeatureBaseClass):
         sch_cnt: dict[str, Any] = sch["whole_ahab_image"]["properties"]["containers"]["items"][
             "oneOf"
         ][1]["properties"]["container"]["properties"]
+
         if not certificate_supported:
             sch_cnt.pop("certificate")
+
         if container_type_2:
             sch_cnt["check_all_signatures"]["skip_in_template"] = False
             sch_cnt["fast_boot"]["skip_in_template"] = False
             sch_cnt["srk_table"]["properties"]["srk_table_#2"]["skip_in_template"] = False
             sch_cnt["signer_#2"]["skip_in_template"] = False
+
+        # Update hash_algorithm enum based on database configuration
+        try:
+            chip_config = create_chip_config(family)
+            hash_algorithms = chip_config.hash_algorithms
+            hash_algo_labels = [algo.label.lower() for algo in hash_algorithms]
+
+            # Update hash_algorithm in srk_table
+            if "srk_table" in sch_cnt:
+                sch_cnt["srk_table"]["properties"]["hash_algorithm"]["enum"] = [
+                    "default"
+                ] + hash_algo_labels
+                sch_cnt["srk_table"]["properties"]["hash_algorithm"]["template_value"] = "default"
+
+            srk_sets = chip_config.srk_sets
+            srk_set_labels = [srk_set.label.lower() for srk_set in srk_sets]
+
+            # Update srk_set enum
+            sch_cnt["srk_set"]["enum"] = srk_set_labels
+            sch_cnt["srk_set"]["template_value"] = srk_set_labels[0] if srk_set_labels else "none"
+
+        except SPSDKError:
+            # Fallback to default if database doesn't have custom enumerations
+            pass
 
         # Get image schemas using the extracted function
         result_images = cls.get_image_schemas(family)
@@ -898,11 +926,35 @@ class AHABImage(FeatureBaseClass):
 
         This method retrieves validation schemas specifically configured for container signing
         by removing image-related properties and requirements from the base validation schemas.
+        It also updates enumerations based on database configuration.
 
         :param family: Family for which the validation schema should be generated.
         :return: List of schemas for signing the container.
         """
         schemas = AHABImage.get_validation_schemas(family)
+
+        # Update enumerations based on database
+        try:
+            chip_config = create_chip_config(family)
+
+            # Update hash_algorithm enum in srk_table
+            container_schema = schemas[1]["properties"]["containers"]["items"]["oneOf"][1][
+                "properties"
+            ]["container"]
+            if "srk_table" in container_schema["properties"]:
+                hash_algo_labels = [algo.label.lower() for algo in chip_config.hash_algorithms]
+                container_schema["properties"]["srk_table"]["properties"]["hash_algorithm"][
+                    "enum"
+                ] = ["default"] + hash_algo_labels
+
+            # Update srk_set enum
+            srk_set_labels = [srk_set.label.lower() for srk_set in chip_config.srk_sets]
+            container_schema["properties"]["srk_set"]["enum"] = srk_set_labels
+
+        except SPSDKError:
+            # Use defaults if database doesn't have custom enumerations
+            pass
+
         # Remove images property from the container
         schemas[1]["properties"]["containers"]["items"]["oneOf"][1]["properties"]["container"][
             "properties"
@@ -911,6 +963,7 @@ class AHABImage(FeatureBaseClass):
         schemas[1]["properties"]["containers"]["items"]["oneOf"][1]["properties"]["container"][
             "required"
         ] = ["srk_set"]
+
         return [
             schemas[0],
             schemas[1]["properties"]["containers"]["items"]["oneOf"][1]["properties"]["container"],

@@ -17,6 +17,40 @@
 Release Notes
 =============
 
+---------------------
+3.7.1 (20-March-2026)
+---------------------
+
+**New Product Introduction or Updates**
+
+* add support for MCXE31x device family
+* add support for MCXA577/567/566/557/556/537/536/457/456 devices
+
+**New features**
+
+* `nxpimage`_:
+    - add SPI support for RT118x
+    - add support with AHAB QB data for i.MX95 
+* `pfr`_:
+    - update PFR implementation for mw30/mcxa55 devices
+    - improve mcxa55 CFPA/CMPA grouping
+    - improve error messages for incorrect YAML indentation in configuration files
+* :ref:`nxpele`:
+    - add support for MCXE31 device family with Core Reset Entry Install command
+    - implement key import functionality for MCXE31 with hardware testing and fixes
+    - add automatic authentication tag calculation for Secure Memory Regions (SMR) on MCX E31
+    - add HSE_SRV_ID_ACTIVATE_PASSIVE_BLOCK service for MCXE31 passive block activation
+
+**Bugfixes**
+
+* `nxpimage`_:
+    - rename image version to firmware version for plain and CRC images on PQC devices
+* `pfr`_:
+    - mcxa55: fix ROTKH first 4 bytes inversion in CMPA
+    - mcxa55: replace mcxa455 with mcxa457 device support and correct memory map configuration
+    - mcxa55: fix reading of additional CMPA data with update_cfpa_cmpa command
+    - mcxa55: fix verifier issue for debug authentication with hybrid keys (ECC384 + MLDSA87)
+
 -----------------------
 3.7.0 (30-January-2026)
 -----------------------

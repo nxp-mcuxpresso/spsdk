@@ -309,6 +309,13 @@ whole_ahab_image:
                               description: OEI - Optional Executable Image firmware
                               template_value: oei-m33-ddr.bin
                               format: file
+                            qb_data:
+                              type: string
+                              title: Quick Boot Data
+                              description: QB data - Optional Quick boot data, if defined a new empty record will be added just behind DDR FW entry
+                              template_value: qb_data.bin
+                              format: file
+                              skip_in_template: True
 
                         - type: object
                           template_title: OEI TCM Settings (ECC configuration etc.)
@@ -607,19 +614,35 @@ whole_ahab_image:
                             meta_data_start_cpu_id:
                               type: [number, string]
                               title: Start CPU ID
-                              description: Resource ID of CPU to be started
+                              description: SCFW - Resource ID of CPU to be started. SM -  CPU ID for System Manager. Identifies which CPU should start executing the image.
                               format: number
                               template_value: 0
                             meta_data_mu_cpu_id:
                               type: [number, string]
                               title: CPU memory unit start ID
-                              description: Resource ID of the MU associated with the CPU
+                              description: SCFW - Resource ID of the MU associated with the CPU
                               format: number
                               template_value: 0
                             meta_data_start_partition_id:
                               type: [number, string]
                               title: Start partition ID
-                              description: Partition ID of the partition to start
+                              description: SCFW - Partition ID of the partition to start
+                              format: number
+                              template_value: 0
+                            meta_data_msel:
+                              type: [number, string]
+                              title: SM mSel Value
+                              description: >
+                                mSel value for System Manager (i.MX9). Only valid for CM33_0 (cpu_id=0).
+                                This value is passed via the mkimage msel parameter and stored in bits 23:16 of metadata.
+                              format: number
+                              template_value: 0
+                            meta_data_flags:
+                              type: [number, string]
+                              title: SM Flags
+                              description: >
+                                Flags value for System Manager (i.MX9). Only valid for CM33_0 (cpu_id=0).
+                                This value is passed via the mkimage flags parameter and stored in bits 31:24 of metadata.
                               format: number
                               template_value: 0
                             hash_type:

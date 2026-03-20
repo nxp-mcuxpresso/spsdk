@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -35,6 +35,7 @@ class MbiImageTypeEnum(SpsdkEnum):
     CRC_XIP_IMAGE = (0x05, "CRC_XIP_IMAGE", "Plain CRC XIP Image")
     SIGNED_XIP_NXP_IMAGE = (0x08, "SIGNED_XIP_NXP_IMAGE", "Plain Signed XIP Image NXP Keys")
     NBU_SIGNED_XIP_IMAGE = (0x44, "NBU_SIGNED_XIP_IMAGE", "NBU Signed XIP Image")
+    SMR_IMAGE = (0x99, "SMR_IMAGE", "SMR Image")
 
 
 MAP_IMAGE_TARGETS = {
@@ -59,4 +60,5 @@ MAP_AUTHENTICATIONS = {
     "nxp_signed": ["signed-nxp", "NXP Signed", "NXP signed", "nxp_signed", "famode_nxp"],
     "encrypted": ["signed-encrypted", "Encrypted + Signed", "encrypted"],
     "nbu_signed": ["nbu-signed", "NBU Signed", "nbu_signed"],
+    "smr": ["smr", "SMR"],
 }

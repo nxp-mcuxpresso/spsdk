@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK AHAB container certificate management utilities.
 
 This module provides functionality for handling AHAB (Advanced High Assurance Boot)
@@ -23,15 +24,7 @@ from spsdk.crypto.signature_provider import SignatureProvider, get_signature_pro
 from spsdk.crypto.utils import extract_public_key
 from spsdk.exceptions import SPSDKParsingError, SPSDKValueError
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer, HeaderContainerData
-from spsdk.image.ahab.ahab_data import (
-    RESERVED,
-    UINT8,
-    UINT16,
-    UINT32,
-    AHABSignHashAlgorithmV2,
-    AHABTags,
-    FlagsSrkSet,
-)
+from spsdk.image.ahab.ahab_data import RESERVED, AHABSignHashAlgorithm, AHABTags, FlagsSrkSet
 from spsdk.image.ahab.ahab_signature import ContainerSignature
 from spsdk.image.ahab.ahab_srk import SRKData, SRKRecordV2, SRKTableArray
 from spsdk.utils.abstract_features import FeatureBaseClass
@@ -39,6 +32,9 @@ from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
 from spsdk.utils.misc import (
+    UINT8,
+    UINT16,
+    UINT32,
     bytes_to_print,
     extend_block,
     load_hex_string,
@@ -824,7 +820,7 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         cert_hash0 = (
             None
             if cert_hash0_str == "default"
-            else AHABSignHashAlgorithmV2.from_label(cert_hash0_str.upper())
+            else AHABSignHashAlgorithm.from_label(cert_hash0_str.upper())
         )
         cert_public_key0 = SRKRecordV2.create_from_key(
             extract_public_key(config.get_input_file_name("public_key_0")),
@@ -841,7 +837,7 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
             cert_hash1 = (
                 None
                 if cert_hash1_str == "default"
-                else AHABSignHashAlgorithmV2.from_label(cert_hash1_str.upper())
+                else AHABSignHashAlgorithm.from_label(cert_hash1_str.upper())
             )
             cert_public_key1_path = config.get_input_file_name("public_key_1")
             cert_public_key1 = SRKRecordV2.create_from_key(

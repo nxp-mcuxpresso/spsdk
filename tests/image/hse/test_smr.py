@@ -8,31 +8,35 @@
 """Unit tests for the HSE SMR (Secure Memory Region) module."""
 
 import os
-from typing import Any, Dict, Type
+from typing import Any, Dict
 
 import pytest
 import yaml
 
 from spsdk.apps.utils.common_cli_options import Optional
+from spsdk.crypto.keys import PrivateKeyEcc, PrivateKeyRsa
 from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKValueError
-from spsdk.image.hse.common import KeyCatalogId, KeyHandle
-from spsdk.image.hse.smr import (
+from spsdk.image.hse.common import (
     AuthScheme,
     AuthSchemeEnum,
     CipherAlgo,
     CmacScheme,
-    EcdsaSignScheme,
-    EddsaSignScheme,
     GmacScheme,
     HashAlgo,
     HmacScheme,
+    KeyCatalogId,
+    KeyHandle,
     RsaPkcs1v15Scheme,
     RsaPssSignScheme,
+    XcbcMacScheme,
+)
+from spsdk.image.hse.smr import (
+    EcdsaSignScheme,
+    EddsaSignScheme,
+    SmrAuthenticationTag,
     SmrConfigFlags,
     SmrDecrypt,
     SmrEntry,
-    XcbcMacScheme,
-    prepare_auth_tag_addr_tuple,
 )
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
@@ -49,7 +53,7 @@ def family() -> FamilyRevision:
 @pytest.fixture
 def key_handle() -> KeyHandle:
     """Return a key handle for testing."""
-    return KeyHandle(KeyCatalogId.NVM, 0, 0)
+    return KeyHandle.from_attributes(KeyCatalogId.NVM, 0, 0)
 
 
 @pytest.fixture
@@ -71,7 +75,7 @@ def smr_entry_config() -> Dict[str, Any]:
         "smrSrcAddr": 0x00400000,
         "smrSize": 0x10000,
         "smrDest": 0x20000000,
-        "configFlags": "QSPI_FLASH",
+        "configFlags": ["QSPI_FLASH"],
         "checkPeriod": 0,
         "authKeyHandle": {
             "catalogId": "NVM",
@@ -162,335 +166,6 @@ def test_smr_decrypt_get_size() -> None:
     size = SmrDecrypt.get_size()
     # Size should be: 4 (key handle) + 4 (gmac_tag_addr) + 1 (aad_length) + 3 (reserved) + 4 (aad_addr)
     assert size == 16
-
-
-def test_ecdsa_scheme_init() -> None:
-    """Test basic initialization of EcdsaScheme."""
-    scheme = EcdsaSignScheme(hash_algo=HashAlgo.SHA256)
-
-    assert scheme.hash_algo == HashAlgo.SHA256
-    assert scheme.AUTH_SCH == AuthSchemeEnum.ECDSA
-
-
-def test_ecdsa_scheme_invalid_hash() -> None:
-    """Test EcdsaScheme validation with NULL hash."""
-    with pytest.raises(SPSDKValueError, match="Hash algorithm cannot be NULL for ECDSA"):
-        EcdsaSignScheme(hash_algo=HashAlgo.NULL)
-
-
-def test_ecdsa_scheme_export_parse() -> None:
-    """Test exporting and parsing EcdsaScheme."""
-    original = EcdsaSignScheme(hash_algo=HashAlgo.SHA384)
-
-    # Export to binary
-    exported_data = original.export()
-
-    # Parse from binary
-    parsed = AuthScheme.parse(exported_data)
-
-    # Verify it's the correct type and fields match
-    assert isinstance(parsed, EcdsaSignScheme)
-    assert parsed.hash_algo == original.hash_algo
-
-
-def test_ecdsa_scheme_config_roundtrip() -> None:
-    """Test round-trip from EcdsaScheme to config and back."""
-    original = EcdsaSignScheme(hash_algo=HashAlgo.SHA512)
-
-    # Get config
-    config_dict = original.get_config()
-    config = Config(config_dict["ecdsa"])
-
-    # Load from config
-    parsed = EcdsaSignScheme.load_from_config(config)
-
-    # Verify fields match
-    assert parsed.hash_algo == original.hash_algo
-
-
-def test_ecdsa_scheme_string_representation() -> None:
-    """Test string representation of EcdsaScheme."""
-    scheme = EcdsaSignScheme(hash_algo=HashAlgo.SHA256)
-
-    str_repr = str(scheme)
-    assert "ECDSA" in str_repr
-    assert "SHA256" in str_repr
-
-
-def test_eddsa_scheme_init() -> None:
-    """Test basic initialization of EddsaSignScheme."""
-    scheme = EddsaSignScheme(
-        pre_hash_eddsa=True,
-        context_length=16,
-        context_addr=0x00500000,
-    )
-
-    assert scheme.pre_hash_eddsa is True
-    assert scheme.context_length == 16
-    assert scheme.context_addr == 0x00500000
-
-
-def test_eddsa_scheme_invalid_context_length() -> None:
-    """Test EddsaSignScheme validation with invalid context length."""
-    with pytest.raises(SPSDKValueError, match="context_length must be between 0 and 255"):
-        EddsaSignScheme(
-            pre_hash_eddsa=False,
-            context_length=256,  # Invalid
-            context_addr=0x00500000,
-        )
-
-
-def test_eddsa_scheme_missing_context_addr() -> None:
-    """Test EddsaSignScheme validation with missing context address."""
-    with pytest.raises(
-        SPSDKValueError, match="p_context must be provided when context_length is non-zero"
-    ):
-        EddsaSignScheme(
-            pre_hash_eddsa=False,
-            context_length=16,
-            context_addr=0,  # Missing
-        )
-
-
-def test_eddsa_scheme_export_parse() -> None:
-    """Test exporting and parsing EddsaSignScheme."""
-    original = EddsaSignScheme(
-        pre_hash_eddsa=True,
-        context_length=8,
-        context_addr=0x00500000,
-    )
-
-    # Export to binary
-    exported_data = original.export()
-
-    # Parse from binary
-    parsed = AuthScheme.parse(exported_data)
-
-    # Verify it's the correct type and fields match
-    assert isinstance(parsed, EddsaSignScheme)
-    assert parsed.pre_hash_eddsa == original.pre_hash_eddsa
-    assert parsed.context_length == original.context_length
-    assert parsed.context_addr == original.context_addr
-
-
-def test_rsa_pss_scheme_init() -> None:
-    """Test basic initialization of RsaPssSignScheme."""
-    scheme = RsaPssSignScheme(
-        hash_algo=HashAlgo.SHA256,
-        salt_length=32,
-    )
-
-    assert scheme.hash_algo == HashAlgo.SHA256
-    assert scheme.salt_length == 32
-
-
-def test_rsa_pss_scheme_invalid_hash() -> None:
-    """Test RsaPssSignScheme validation with NULL hash."""
-    with pytest.raises(SPSDKValueError, match="Hash algorithm cannot be NULL for RSA PSS"):
-        RsaPssSignScheme(hash_algo=HashAlgo.NULL, salt_length=32)
-
-
-def test_rsa_pss_scheme_invalid_salt_length() -> None:
-    """Test RsaPssSignScheme validation with negative salt length."""
-    with pytest.raises(SPSDKValueError, match="salt_length must be a non-negative integer"):
-        RsaPssSignScheme(hash_algo=HashAlgo.SHA256, salt_length=-1)
-
-
-def test_rsa_pss_scheme_export_parse() -> None:
-    """Test exporting and parsing RsaPssSignScheme."""
-    original = RsaPssSignScheme(
-        hash_algo=HashAlgo.SHA384,
-        salt_length=48,
-    )
-
-    # Export to binary
-    exported_data = original.export()
-
-    # Parse from binary
-    parsed = AuthScheme.parse(exported_data)
-
-    # Verify it's the correct type and fields match
-    assert isinstance(parsed, RsaPssSignScheme)
-    assert parsed.hash_algo == original.hash_algo
-    assert parsed.salt_length == original.salt_length
-
-
-def test_rsa_pkcs1v15_scheme_init() -> None:
-    """Test basic initialization of RsaPkcs1v15Scheme."""
-    scheme = RsaPkcs1v15Scheme(hash_algo=HashAlgo.SHA256)
-
-    assert scheme.hash_algo == HashAlgo.SHA256
-
-
-def test_rsa_pkcs1v15_scheme_invalid_hash() -> None:
-    """Test RsaPkcs1v15Scheme validation with NULL hash."""
-    with pytest.raises(SPSDKValueError, match="Hash algorithm cannot be NULL for RSA PKCS1v15"):
-        RsaPkcs1v15Scheme(hash_algo=HashAlgo.NULL)
-
-
-def test_rsa_pkcs1v15_scheme_export_parse() -> None:
-    """Test exporting and parsing RsaPkcs1v15Scheme."""
-    original = RsaPkcs1v15Scheme(hash_algo=HashAlgo.SHA512)
-
-    # Export to binary
-    exported_data = original.export()
-
-    # Parse from binary
-    parsed = AuthScheme.parse(exported_data)
-
-    # Verify it's the correct type and fields match
-    assert isinstance(parsed, RsaPkcs1v15Scheme)
-    assert parsed.hash_algo == original.hash_algo
-
-
-def test_cmac_scheme_init() -> None:
-    """Test basic initialization of CmacScheme."""
-    scheme = CmacScheme(cipher_algo=CipherAlgo.AES)
-
-    assert scheme.cipher_algo == CipherAlgo.AES
-
-
-def test_cmac_scheme_invalid_cipher() -> None:
-    """Test CmacScheme validation with non-AES cipher."""
-    with pytest.raises(SPSDKValueError, match="Only AES cipher algorithm is supported for CMAC"):
-        CmacScheme(cipher_algo=CipherAlgo.NULL)
-
-
-def test_cmac_scheme_export_parse() -> None:
-    """Test exporting and parsing CmacScheme."""
-    original = CmacScheme(cipher_algo=CipherAlgo.AES)
-
-    # Export to binary
-    exported_data = original.export()
-
-    # Parse from binary
-    parsed = AuthScheme.parse(exported_data)
-
-    # Verify it's the correct type and fields match
-    assert isinstance(parsed, CmacScheme)
-    assert parsed.cipher_algo == original.cipher_algo
-
-
-def test_hmac_scheme_init() -> None:
-    """Test basic initialization of HmacScheme."""
-    scheme = HmacScheme(hash_algo=HashAlgo.SHA256)
-
-    assert scheme.hash_algo == HashAlgo.SHA256
-
-
-def test_hmac_scheme_export_parse() -> None:
-    """Test exporting and parsing HmacScheme."""
-    original = HmacScheme(hash_algo=HashAlgo.SHA384)
-
-    # Export to binary
-    exported_data = original.export()
-
-    # Parse from binary
-    parsed = AuthScheme.parse(exported_data)
-
-    # Verify it's the correct type and fields match
-    assert isinstance(parsed, HmacScheme)
-    assert parsed.hash_algo == original.hash_algo
-
-
-def test_gmac_scheme_init() -> None:
-    """Test basic initialization of GmacScheme."""
-    scheme = GmacScheme(iv_length=12, iv_addr=0x00500000)
-
-    assert scheme.iv_length == 12
-    assert scheme.iv_addr == 0x00500000
-
-
-def test_gmac_scheme_invalid_iv_length() -> None:
-    """Test GmacScheme validation with invalid IV length."""
-    with pytest.raises(SPSDKValueError, match="iv_length must be a positive integer"):
-        GmacScheme(iv_length=0, iv_addr=0x00500000)
-
-
-def test_gmac_scheme_invalid_iv_addr() -> None:
-    """Test GmacScheme validation with invalid IV address."""
-    with pytest.raises(SPSDKValueError, match="iv_addr must be a non-zero address"):
-        GmacScheme(iv_length=12, iv_addr=0)
-
-
-def test_gmac_scheme_export_parse() -> None:
-    """Test exporting and parsing GmacScheme."""
-    original = GmacScheme(iv_length=16, iv_addr=0x00600000)
-
-    # Export to binary
-    exported_data = original.export()
-
-    # Parse from binary
-    parsed = AuthScheme.parse(exported_data)
-
-    # Verify it's the correct type and fields match
-    assert isinstance(parsed, GmacScheme)
-    assert parsed.iv_length == original.iv_length
-    assert parsed.iv_addr == original.iv_addr
-
-
-def test_xcbc_mac_scheme_init() -> None:
-    """Test basic initialization of XcbcMacScheme."""
-    scheme = XcbcMacScheme()
-
-    assert scheme.AUTH_SCH == AuthSchemeEnum.XCBC_MAC
-
-
-def test_xcbc_mac_scheme_export_parse() -> None:
-    """Test exporting and parsing XcbcMacScheme."""
-    original = XcbcMacScheme()
-
-    # Export to binary
-    exported_data = original.export()
-
-    # Parse from binary
-    parsed = AuthScheme.parse(exported_data)
-
-    # Verify it's the correct type
-    assert isinstance(parsed, XcbcMacScheme)
-
-
-def test_auth_scheme_registry() -> None:
-    """Test that all authentication schemes are registered."""
-    schemes = AuthScheme.auth_schemes()
-
-    assert AuthSchemeEnum.ECDSA in schemes
-    assert AuthSchemeEnum.EDDSA in schemes
-    assert AuthSchemeEnum.RSASSA_PSS in schemes
-    assert AuthSchemeEnum.RSASSA_PKCS1_V15 in schemes
-    assert AuthSchemeEnum.CMAC in schemes
-    assert AuthSchemeEnum.HMAC in schemes
-    assert AuthSchemeEnum.GMAC in schemes
-    assert AuthSchemeEnum.XCBC_MAC in schemes
-
-
-def test_auth_scheme_parse_invalid_type() -> None:
-    """Test parsing with invalid authentication scheme type."""
-    # Create data with invalid scheme type (0xFF)
-    invalid_data = b"\xff\x00\x00\x00\x00\x00\x00\x00"
-
-    with pytest.raises(SPSDKParsingError, match="Invalid authentication scheme type"):
-        AuthScheme.parse(invalid_data)
-
-
-def test_auth_scheme_parse_insufficient_data() -> None:
-    """Test parsing with insufficient data."""
-    with pytest.raises(
-        SPSDKParsingError, match="Insufficient data for authentication scheme header"
-    ):
-        AuthScheme.parse(b"\x80\x00")
-
-
-def test_auth_scheme_is_mac_scheme() -> None:
-    """Test is_mac_scheme property."""
-    mac_scheme = CmacScheme(cipher_algo=CipherAlgo.AES)
-    sig_scheme = EcdsaSignScheme(hash_algo=HashAlgo.SHA256)
-
-    assert mac_scheme.is_mac_scheme is True
-    assert mac_scheme.is_signature_scheme is False
-
-    assert sig_scheme.is_mac_scheme is False
-    assert sig_scheme.is_signature_scheme is True
 
 
 def test_smr_entry_init(family: FamilyRevision, key_handle: KeyHandle) -> None:
@@ -641,7 +316,7 @@ def test_smr_entry_load_from_config_with_decryption() -> None:
         "smrSrcAddr": 0x00400000,
         "smrSize": 0x10000,
         "smrDest": 0x20000000,
-        "configFlags": "QSPI_FLASH",
+        "configFlags": ["QSPI_FLASH"],
         "checkPeriod": 0,
         "authKeyHandle": {
             "catalogId": "NVM",
@@ -686,7 +361,7 @@ def test_smr_entry_load_from_config_invalid_auth_scheme() -> None:
         "smrSrcAddr": 0x00400000,
         "smrSize": 0x10000,
         "smrDest": 0x20000000,
-        "configFlags": "QSPI_FLASH",
+        "configFlags": ["QSPI_FLASH"],
         "checkPeriod": 0,
         "authKeyHandle": {
             "catalogId": "NVM",
@@ -729,7 +404,7 @@ def test_smr_entry_get_config(family: FamilyRevision, key_handle: KeyHandle) -> 
     assert config["smrSrcAddr"] == "0x00400000"
     assert config["smrSize"] == "0x00010000"
     assert config["smrDest"] == "0x20000000"
-    assert config["configFlags"] == "QSPI_FLASH"
+    assert config["configFlags"] == ["QSPI_FLASH"]
     assert config["checkPeriod"] == 0
     assert config["authKeyHandle"]["catalogId"] == "NVM"
     assert config["authKeyHandle"]["groupIdx"] == 0
@@ -1077,9 +752,7 @@ def test_smr_entry_template(family: FamilyRevision, tmp_path: str) -> None:
         "rsassa_pss",
         "rsassa_pkcs1_v15",
         "cmac",
-        "gmac",
         "xcbc_mac",
-        "hmac",
     ]
 
     for scheme in possible_schemes:
@@ -1338,138 +1011,168 @@ def test_smr_entry_validation_schemas(family: FamilyRevision) -> None:
 
 
 @pytest.mark.parametrize(
-    "auth_scheme, auth_tag_addr, auth_tag_length, expected_result, expected_exception",
+    "auth_scheme, auth_tag, auth_tag_lengths",
     [
-        # ECDSA with two addresses
         (
             EcdsaSignScheme(hash_algo=HashAlgo.SHA256),
-            (0x00100000, 0x00200000),
+            bytes.fromhex(
+                "141bd4ef5994dad92b93dfd40756a346378c08633cecf825c993f40b7bfb5dac66ad239fdaf097d6fd64e3798b390c5ed9161ae142b101ff09359089dc93bdf1"
+            ),
             (32, 32),
-            (0x00100000, 0x00200000),
-            None,
         ),
-        # ECDSA with one address (second calculated)
-        (
-            EcdsaSignScheme(hash_algo=HashAlgo.SHA256),
-            (0x00100000,),
-            (64,),
-            (0x00100000, 0x00100040),  # 0x00100000 + 64
-            None,
-        ),
-        # EdDSA with two addresses
-        (
-            EddsaSignScheme(pre_hash_eddsa=False, context_length=0, context_addr=0),
-            (0x00300000, 0x00400000),
-            (64, 64),
-            (0x00300000, 0x00400000),
-            None,
-        ),
-        # EdDSA with one address (second calculated)
-        (
-            EddsaSignScheme(pre_hash_eddsa=True, context_length=16, context_addr=0x00500000),
-            (0x00600000,),
-            (128,),
-            (0x00600000, 0x00600080),  # 0x00600000 + 128
-            None,
-        ),
-        # RSA PSS with one address
         (
             RsaPssSignScheme(hash_algo=HashAlgo.SHA256, salt_length=32),
-            (0x00700000,),
-            (256,),
-            (0x00700000, 0),
-            None,
+            bytes.fromhex(256 * "ff"),
+            (256, 0),
         ),
-        # RSA PKCS1v15 with one address
-        (
-            RsaPkcs1v15Scheme(hash_algo=HashAlgo.SHA384),
-            (0x00800000,),
-            (512,),
-            (0x00800000, 0),
-            None,
-        ),
-        # CMAC with one address
-        (
-            CmacScheme(cipher_algo=CipherAlgo.AES),
-            (0x00900000,),
-            (16,),
-            (0x00900000, 0),
-            None,
-        ),
-        # HMAC with one address
-        (
-            HmacScheme(hash_algo=HashAlgo.SHA256),
-            (0x00A00000,),
-            (32,),
-            (0x00A00000, 0),
-            None,
-        ),
-        # GMAC with one address
         (
             GmacScheme(iv_length=12, iv_addr=0x00500000),
-            (0x00B00000,),
-            (16,),
-            (0x00B00000, 0),
-            None,
-        ),
-        # XCBC-MAC with one address
-        (
-            XcbcMacScheme(),
-            (0x00C00000,),
-            (16,),
-            (0x00C00000, 0),
-            None,
-        ),
-        # Error cases
-        # Empty auth_tag_addr
-        (
-            EcdsaSignScheme(hash_algo=HashAlgo.SHA256),
-            (),
-            (32,),
-            None,
-            SPSDKValueError,
-        ),
-        # Empty auth_tag_length
-        (
-            EcdsaSignScheme(hash_algo=HashAlgo.SHA256),
-            (0x00100000,),
-            (),
-            None,
-            SPSDKValueError,
-        ),
-        # ECDSA with too many addresses
-        (
-            EcdsaSignScheme(hash_algo=HashAlgo.SHA256),
-            (0x00100000, 0x00200000, 0x00300000),
-            (32, 32, 32),
-            None,
-            SPSDKError,
-        ),
-        # RSA with too many addresses
-        (
-            RsaPssSignScheme(hash_algo=HashAlgo.SHA256, salt_length=32),
-            (0x00100000, 0x00200000),
-            (256, 256),
-            None,
-            SPSDKError,
+            bytes.fromhex("000102030405060708090A0B0C0D0E0F"),
+            (16, 0),
         ),
     ],
 )
-def test_prepare_auth_tag_addr_tuple(
+def test_get_auth_tag_lengths(
+    family: FamilyRevision,
     auth_scheme: AuthScheme,
-    auth_tag_addr: tuple,
-    auth_tag_length: tuple,
-    expected_result: Optional[tuple],
-    expected_exception: Optional[Type[Exception]],
+    auth_tag: bytes,
+    auth_tag_lengths: tuple,
 ) -> None:
-    """Test prepare_auth_tag_addr_tuple with various authentication schemes and parameters.
+    """Test getting authentication tag lengths for different authentication schemes.
 
-    This test covers all supported authentication schemes (ECDSA, EdDSA, RSA variants,
-    MAC schemes) with valid inputs, as well as error cases with invalid parameters.
+    This test verifies that the get_auth_tag_lengths method correctly returns
+    the expected tag lengths for various authentication schemes including:
+    - ECDSA with SHA256 (returns r and s component lengths)
+    - RSA PSS with SHA256 (returns signature length and 0 for second component)
+    - GMAC (returns tag length and 0 for second component)
     """
-    if expected_exception:
-        with pytest.raises(expected_exception):
-            prepare_auth_tag_addr_tuple(auth_scheme, auth_tag_addr, auth_tag_length)
+    smr = SmrEntry(
+        family=family,
+        auth_scheme=auth_scheme,
+        smr_src_addr=0,
+        smr_size=0,
+        smr_dest=0,
+        auth_key_handle=KeyHandle.from_attributes(KeyCatalogId.NVM, 0, 1),
+    )
+    result = smr.get_auth_tag_lengths(auth_tag)
+    assert result == auth_tag_lengths
+
+
+@pytest.mark.parametrize(
+    "explicit_scheme, key, expected_scheme, expected_auth_tag, raises_exception",
+    [
+        (
+            AuthSchemeEnum.HMAC,
+            "000102030405060708090A0B0C0D0E0F",
+            AuthSchemeEnum.HMAC,
+            "07eff8b326b7798c9ccfcbdbe579489ac785a7995a04618b1a2813c26744777d",
+            False,
+        ),
+        (
+            AuthSchemeEnum.CMAC,
+            "000102030405060708090A0B0C0D0E0F",
+            AuthSchemeEnum.CMAC,
+            "97dd6e5a882cbd564c39ae7d1c5a31aa",
+            False,
+        ),
+        (
+            None,
+            "000102030405060708090A0B0C0D0E0F",
+            AuthSchemeEnum.CMAC,
+            "97dd6e5a882cbd564c39ae7d1c5a31aa",
+            False,
+        ),
+        (AuthSchemeEnum.XCBC_MAC, "", AuthSchemeEnum.XCBC_MAC, "", True),
+    ],
+)
+def test_create_auth_tag_symmetric(
+    explicit_scheme: Optional[AuthSchemeEnum],
+    key: str,
+    expected_scheme: AuthSchemeEnum,
+    expected_auth_tag: str,
+    raises_exception: bool,
+) -> None:
+    """Parametrized test for SmrAuthenticationTag.get_auth_scheme method.
+
+    :param explicit_scheme: Authentication scheme explicitly provided (or None)
+    :param key_type: Type of key to test with
+    :param key_value: Value of the key (or None for mock objects)
+    :param expected_scheme: Expected authentication scheme result
+    :param should_raise: Whether the test should raise an exception
+    """
+    key_bytes = bytes.fromhex(key)
+    result = SmrAuthenticationTag.get_auth_scheme(explicit_scheme, key_bytes)
+    assert result == expected_scheme
+    if raises_exception:
+        with pytest.raises(SPSDKError):
+            SmrAuthenticationTag.create_auth_tag(b"", key_bytes, explicit_scheme)
     else:
-        result = prepare_auth_tag_addr_tuple(auth_scheme, auth_tag_addr, auth_tag_length)
-        assert result == expected_result
+        auth_tag = SmrAuthenticationTag.create_auth_tag(b"", key_bytes, explicit_scheme)
+        if expected_auth_tag:
+            assert auth_tag == bytes.fromhex(expected_auth_tag)
+
+
+@pytest.fixture
+def rsa2048_key(tests_root_dir: str) -> PrivateKeyRsa:
+    """Create test RSA 2048-bit keys for testing purposes.
+
+    Loads a set of RSA 2048-bit public keys from the test data directory
+    for use in cryptographic testing scenarios.
+
+    :param tests_root_dir: Root directory path containing test data files.
+    :return: List of RSA 2048-bit public keys loaded from test files.
+    """
+    # Generate a test private key for testing
+    keys_dir = os.path.join(tests_root_dir, "_data", "keys", "rsa2048")
+    return PrivateKeyRsa.load(os.path.join(keys_dir, "srk0_rsa2048.pem"))
+
+
+@pytest.fixture
+def ecc256_key(tests_root_dir: str) -> PrivateKeyEcc:
+    """Create test RSA 2048-bit keys for testing purposes.
+
+    Loads a set of RSA 2048-bit public keys from the test data directory
+    for use in cryptographic testing scenarios.
+
+    :param tests_root_dir: Root directory path containing test data files.
+    :return: List of RSA 2048-bit public keys loaded from test files.
+    """
+    # Generate a test private key for testing
+    keys_dir = os.path.join(tests_root_dir, "_data", "keys", "ecc256")
+    return PrivateKeyEcc.load(os.path.join(keys_dir, "srk0_ecc256.pem"))
+
+
+@pytest.mark.parametrize(
+    "explicit_scheme",
+    [
+        (AuthSchemeEnum.RSASSA_PSS),
+        (AuthSchemeEnum.RSASSA_PKCS1_V15),
+        (None),
+    ],
+)
+def test_create_auth_tag_rsa(
+    rsa2048_key: PrivateKeyRsa, explicit_scheme: Optional[AuthSchemeEnum]
+) -> None:
+    data = b""
+    auth_scheme = SmrAuthenticationTag.get_auth_scheme(explicit_scheme, rsa2048_key)
+    auth_tag = SmrAuthenticationTag.create_auth_tag(data, rsa2048_key, explicit_scheme)
+    assert rsa2048_key.get_public_key().verify_signature(
+        auth_tag, data, pss_padding=True if auth_scheme == AuthSchemeEnum.RSASSA_PSS else False
+    )
+
+
+@pytest.mark.parametrize(
+    "explicit_scheme",
+    [
+        (AuthSchemeEnum.ECDSA),
+        (None),
+    ],
+)
+def test_create_auth_tag_ecc(
+    ecc256_key: PrivateKeyEcc, explicit_scheme: Optional[AuthSchemeEnum]
+) -> None:
+    data = b""
+    auth_scheme = SmrAuthenticationTag.get_auth_scheme(explicit_scheme, ecc256_key)
+    assert auth_scheme == AuthSchemeEnum.ECDSA
+    auth_tag = SmrAuthenticationTag.create_auth_tag(data, ecc256_key, explicit_scheme)
+    assert ecc256_key.get_public_key().verify_signature(auth_tag, data)

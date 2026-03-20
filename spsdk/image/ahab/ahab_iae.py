@@ -20,17 +20,13 @@ from typing_extensions import Self
 
 from spsdk.__version__ import version
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image.ahab.ahab_abstract_interfaces import Container, HeaderContainerData
 from spsdk.image.ahab.ahab_data import (
-    INT32,
     RESERVED,
-    UINT32,
-    UINT64,
     AhabChipContainerConfig,
+    AhabMetadataType,
     AHABSignHashAlgorithm,
-    AHABSignHashAlgorithmV1,
-    AHABSignHashAlgorithmV2,
     AHABTags,
     AhabTargetMemory,
     load_images_types,
@@ -40,6 +36,9 @@ from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, Features
 from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import (
+    INT32,
+    UINT32,
+    UINT64,
     align,
     align_block,
     clean_up_file_name,
@@ -128,15 +127,23 @@ class ImageArrayEntry(Container):
     FLAGS_IMAGE_DESCRIPTOR_SIZE = 1
     FLAGS_BOOT_FLAGS_OFFSET = 16
     FLAGS_BOOT_FLAGS_SIZE = 15
+    # Metadata for SCFW
     METADATA_START_CPU_ID_OFFSET = 0
     METADATA_START_CPU_ID_SIZE = 10
     METADATA_MU_CPU_ID_OFFSET = 10
     METADATA_MU_CPU_ID_SIZE = 10
     METADATA_START_PARTITION_ID_OFFSET = 20
     METADATA_START_PARTITION_ID_SIZE = 8
+    # Metadata for SM
+    METADATA_SM_CPU_ID_OFFSET = 0
+    METADATA_SM_CPU_ID_SIZE = 8
+    METADATA_SM_MSEL_OFFSET = 16
+    METADATA_SM_MSEL_SIZE = 8
+    METADATA_SM_FLAGS_OFFSET = 24
+    METADATA_SM_FLAGS_SIZE = 8
 
-    FLAGS_HASH_ALGORITHM_TYPE: Type[Union[AHABSignHashAlgorithmV1, AHABSignHashAlgorithmV2]] = (
-        AHABSignHashAlgorithmV1
+    FLAGS_HASH_ALGORITHM_TYPE: Type[Union[AHABSignHashAlgorithm, AHABSignHashAlgorithm]] = (
+        AHABSignHashAlgorithm
     )
 
     def __init__(
@@ -387,6 +394,67 @@ class ImageArrayEntry(Container):
         meta_data |= start_partition_id << 20
         return meta_data
 
+    @staticmethod
+    def create_meta_sm(start_cpu_id: int = 0, msel: int = 0, flags: int = 0) -> int:
+        """Create a meta data field for System Manager (i.MX9).
+
+        The meta data is constructed differently based on the CPU:
+        - For all cores except CM33_0: only bits 7:0 contain CPU ID, all other bits are 0
+        - For CM33_0 (cpu_id=0):
+            - bits 7:0: CPU ID
+            - bits 23:16: mSel value
+            - bits 31:24: flags
+
+        CPU IDs for i.MX95:
+            - 0: CM33 (SM)
+            - 1: CM7
+            - 2-7: CA55 cores 0-5
+            - 8: CA55 platform
+
+        CPU IDs for i.MX943:
+            - 0: CM33 (SM)
+            - 1: CM7_0
+            - 2-5: CA55 cores 0-3
+            - 6: CA55 platform
+            - 7: M7P_1
+            - 8: M33 Sync
+
+        CPU IDs for i.MX952:
+            - 0: CM33 (SM)
+            - 1: CM7
+            - 2-5: CA55 cores 0-3
+            - 8: CA55 platform
+
+        :param start_cpu_id: CPU ID (bits 7:0), defaults to 0.
+        :param msel: mSel value (bits 23:16), only used for CM33_0, defaults to 0.
+        :param flags: Flags value (bits 31:24), only used for CM33_0, defaults to 0.
+        :return: Combined image meta data field as a 32-bit integer.
+        :raises SPSDKValueError: If any parameter is out of valid range.
+        """
+        # Validate input parameters
+        if start_cpu_id < 0 or start_cpu_id > ((1 << ImageArrayEntry.METADATA_SM_CPU_ID_SIZE) - 1):
+            raise SPSDKValueError(
+                f"cpu_id must be between 0 and {(1 << ImageArrayEntry.METADATA_SM_CPU_ID_SIZE) - 1}"
+            )
+        if msel < 0 or msel > ((1 << ImageArrayEntry.METADATA_SM_MSEL_SIZE) - 1):
+            raise SPSDKValueError(
+                f"msel must be between 0 and {(1 << ImageArrayEntry.METADATA_SM_MSEL_SIZE) - 1}"
+            )
+        if flags < 0 or flags > ((1 << ImageArrayEntry.METADATA_SM_FLAGS_SIZE) - 1):
+            raise SPSDKValueError(
+                f"flags must be between 0 and {(1 << ImageArrayEntry.METADATA_SM_FLAGS_SIZE) - 1}"
+            )
+
+        # Start with CPU ID in bits 7:0
+        meta_data = start_cpu_id << ImageArrayEntry.METADATA_SM_CPU_ID_OFFSET
+
+        if start_cpu_id == 0:
+            # For CM33_0 (cpu_id=0), add mSel and flags
+            meta_data |= msel << ImageArrayEntry.METADATA_SM_MSEL_OFFSET
+            meta_data |= flags << ImageArrayEntry.METADATA_SM_FLAGS_OFFSET
+
+        return meta_data
+
     @classmethod
     def create_flags(
         cls,
@@ -543,6 +611,7 @@ class ImageArrayEntry(Container):
             & ((1 << self.FLAGS_IMAGE_DESCRIPTOR_SIZE) - 1)
         )
 
+    # SCFW metadata
     @property
     def metadata_start_cpu_id(self) -> int:
         """Get the start CPU ID from the metadata field.
@@ -580,6 +649,46 @@ class ImageArrayEntry(Container):
         """
         return (self.image_meta_data >> self.METADATA_START_PARTITION_ID_OFFSET) & (
             (1 << self.METADATA_START_PARTITION_ID_SIZE) - 1
+        )
+
+    # SM metadata
+    @property
+    def metadata_sm_cpu_id(self) -> int:
+        """Get the SM CPU ID from the metadata field (i.MX9).
+
+        Extracts the CPU ID bits from the metadata for System Manager.
+        This identifies which CPU should start executing the image.
+
+        :return: SM CPU ID as an integer (bits 7:0).
+        """
+        return (self.image_meta_data >> self.METADATA_SM_CPU_ID_OFFSET) & (
+            (1 << self.METADATA_SM_CPU_ID_SIZE) - 1
+        )
+
+    @property
+    def metadata_sm_msel(self) -> int:
+        """Get the SM mSel value from the metadata field (i.MX9).
+
+        Extracts the mSel bits from the metadata for System Manager.
+        This value is only valid for CM33_0 (cpu_id=0).
+
+        :return: SM mSel value as an integer (bits 23:16).
+        """
+        return (self.image_meta_data >> self.METADATA_SM_MSEL_OFFSET) & (
+            (1 << self.METADATA_SM_MSEL_SIZE) - 1
+        )
+
+    @property
+    def metadata_sm_flags(self) -> int:
+        """Get the SM flags from the metadata field (i.MX9).
+
+        Extracts the flags bits from the metadata for System Manager.
+        This value is only valid for CM33_0 (cpu_id=0).
+
+        :return: SM flags value as an integer (bits 31:24).
+        """
+        return (self.image_meta_data >> self.METADATA_SM_FLAGS_OFFSET) & (
+            (1 << self.METADATA_SM_FLAGS_SIZE) - 1
         )
 
     def export(self) -> bytes:
@@ -786,7 +895,6 @@ class ImageArrayEntry(Container):
             image_hash,
             image_iv,
         ) = unpack(cls.format(chip_config.base.iae_has_signed_offsets), data[: cls.fixed_length()])
-
         # Create the image array entry with the parsed values
         iae = cls(
             chip_config=chip_config,
@@ -833,11 +941,23 @@ class ImageArrayEntry(Container):
         )
         is_encrypted = config.get("is_encrypted", False)
         is_image_descriptor = config.get("is_image_descriptor", False)
-        meta_data = cls.create_meta(
-            config.get_int("meta_data_start_cpu_id", 0),
-            config.get_int("meta_data_mu_cpu_id", 0),
-            config.get_int("meta_data_start_partition_id", 0),
-        )
+
+        # Determine type of metadata
+        # 1. SCFW metadata
+        if chip_config.base.metadata_type == AhabMetadataType.SCFW:
+            meta_data = cls.create_meta(
+                config.get_int("meta_data_start_cpu_id", 0),
+                config.get_int("meta_data_mu_cpu_id", 0),
+                config.get_int("meta_data_start_partition_id", 0),
+            )
+        else:
+            # 2. SM metadata
+            meta_data = cls.create_meta_sm(
+                config.get_int("meta_data_start_cpu_id", 0),
+                config.get_int("meta_data_msel", 0),
+                config.get_int("meta_data_flags", 0),
+            )
+
         image_data = (
             load_binary_data_from_file(config.get_input_file_name("image_path"))
             if "image_path" in config
@@ -923,9 +1043,15 @@ class ImageArrayEntry(Container):
         ret_cfg["is_encrypted"] = bool(self.flags_is_encrypted)
         ret_cfg["is_image_descriptor"] = bool(self.flags_is_image_descriptor)
         ret_cfg["boot_flags"] = self.flags_boot_flags
-        ret_cfg["meta_data_start_cpu_id"] = self.metadata_start_cpu_id
-        ret_cfg["meta_data_mu_cpu_id"] = self.metadata_mu_cpu_id
-        ret_cfg["meta_data_start_partition_id"] = self.metadata_start_partition_id
+
+        if self.chip_config.base.metadata_type == AhabMetadataType.SCFW:
+            ret_cfg["meta_data_start_cpu_id"] = self.metadata_start_cpu_id
+            ret_cfg["meta_data_mu_cpu_id"] = self.metadata_mu_cpu_id
+            ret_cfg["meta_data_start_partition_id"] = self.metadata_start_partition_id
+        else:
+            ret_cfg["meta_data_start_cpu_id"] = self.metadata_sm_cpu_id
+            ret_cfg["meta_data_msel"] = self.metadata_sm_msel
+            ret_cfg["meta_data_flags"] = self.metadata_sm_flags
         ret_cfg["hash_type"] = self.get_hash_from_flags(self.flags).label
 
         return ret_cfg
@@ -1002,7 +1128,7 @@ class ImageArrayEntryV2(ImageArrayEntry):
     # The encrypted flag has been moved due to hash field expansion
     FLAGS_IS_ENCRYPTED_OFFSET = 12
     # The Container version 2 using more hash algorithms
-    FLAGS_HASH_ALGORITHM_TYPE = AHABSignHashAlgorithmV2
+    FLAGS_HASH_ALGORITHM_TYPE = AHABSignHashAlgorithm
 
 
 IAE_TYPE = TypeVar("IAE_TYPE", Type[ImageArrayEntry], Type[ImageArrayEntryV2])
@@ -1180,23 +1306,37 @@ class ImageArrayEntryTemplates:
         )
         is_encrypted = cls._load_bool(database, "is_encrypted", config=config, default=False)
         boot_flags = cls._load_int(database, "boot_flags", config=config, default=0)
+
+        hash_type = AHABSignHashAlgorithm.from_attr(
+            cls._load_str(database, "hash_type", config=config, default="SHA384")
+        )
+        # Load metadata
         meta_data_start_cpu_id = cls._load_int(
             database, "meta_data_start_cpu_id", config=config, default=0
         )
-        meta_data_mu_cpu_id = cls._load_int(
-            database, "meta_data_mu_cpu_id", config=config, default=0
-        )
-        meta_data_start_partition_id = cls._load_int(
-            database, "meta_data_start_partition_id", config=config, default=0
-        )
-        hash_type = AHABSignHashAlgorithmV1.from_attr(
-            cls._load_str(database, "hash_type", config=config, default="SHA384")
-        )
-        meta_data = iae_cls.create_meta(
-            start_cpu_id=meta_data_start_cpu_id,
-            mu_cpu_id=meta_data_mu_cpu_id,
-            start_partition_id=meta_data_start_partition_id,
-        )
+        if chip_config.base.metadata_type == AhabMetadataType.SCFW:
+            # SCFW metadata
+            meta_data_mu_cpu_id = cls._load_int(
+                database, "meta_data_mu_cpu_id", config=config, default=0
+            )
+            meta_data_start_partition_id = cls._load_int(
+                database, "meta_data_start_partition_id", config=config, default=0
+            )
+
+            meta_data = iae_cls.create_meta(
+                start_cpu_id=meta_data_start_cpu_id,
+                mu_cpu_id=meta_data_mu_cpu_id,
+                start_partition_id=meta_data_start_partition_id,
+            )
+        else:
+            # SM metadata
+            meta_data_msel = cls._load_int(database, "meta_data_msel", config=config, default=0)
+            meta_data_flags = cls._load_int(database, "meta_data_flags", config=config, default=0)
+            meta_data = iae_cls.create_meta_sm(
+                start_cpu_id=meta_data_start_cpu_id,
+                msel=meta_data_msel,
+                flags=meta_data_flags,
+            )
         flags = iae_cls.create_flags(
             image_type=image_type.tag,
             core_id=core_id.tag,
@@ -1270,7 +1410,7 @@ class ImageArrayEntryTemplates:
         meta_data_start_partition_id = cls._load_int(
             database, "meta_data_start_partition_id", default=0
         )
-        hash_type = AHABSignHashAlgorithmV2.from_attr(
+        hash_type = AHABSignHashAlgorithm.from_attr(
             cls._load_str(database, "hash_type", default="SHA384")
         )
 
@@ -1690,7 +1830,7 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
                 image_type = chip_config.base.image_types["application"].from_attr("oei_ddr").tag
 
                 flags = iae_cls.create_flags(
-                    image_type=image_type, core_id=0, hash_type=AHABSignHashAlgorithmV1.SHA384
+                    image_type=image_type, core_id=0, hash_type=AHABSignHashAlgorithm.SHA384
                 )
                 gap_after_image = 0
                 if qb_data_dummy:

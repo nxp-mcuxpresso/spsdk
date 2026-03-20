@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK AHAB container signature implementation.
 
 This module provides functionality for creating, parsing, and verifying signatures
@@ -21,10 +22,10 @@ from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer, HeaderContainerData
-from spsdk.image.ahab.ahab_data import RESERVED, UINT8, UINT16, AHABTags, SignatureType
+from spsdk.image.ahab.ahab_data import RESERVED, AHABTags, SignatureType
 from spsdk.image.ahab.ahab_srk import SRKTable
 from spsdk.utils.config import Config
-from spsdk.utils.misc import BinaryPattern, bytes_to_print
+from spsdk.utils.misc import UINT8, UINT16, BinaryPattern, bytes_to_print
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)

@@ -28,14 +28,16 @@ from spsdk.crypto.keys import (
     PublicKeyRsa,
 )
 from spsdk.ele.ele_constants import HseMessageIDs, HseResponseStatus, MessageIDs, ResponseStatus
-from spsdk.ele.ele_message import LITTLE_ENDIAN, UINT8, UINT16, UINT32, EleMessage
+from spsdk.ele.ele_message import EleMessage
 from spsdk.ele.hse_attrs import HseAttributeHandler, HseAttributeId
 from spsdk.exceptions import SPSDKValueError
-from spsdk.image.hse.common import KeyHandle
+from spsdk.image.hse.common import HseAeadScheme, HseCipherSchemeBase, KeyContainer, KeyHandle
 from spsdk.image.hse.key_info import KeyFormat, KeyInfo, KeyType
 from spsdk.utils.database import DatabaseManager
-from spsdk.utils.misc import Endianness
+from spsdk.utils.misc import LITTLE_ENDIAN, UINT8, UINT16, UINT32, Endianness
 from spsdk.utils.spsdk_enum import SpsdkEnum
+
+RESERVED = 0
 
 
 class MuChannel(SpsdkEnum):
@@ -210,7 +212,9 @@ class EleMessageHse(EleMessage):
 
         :return:  The serialized command message as bytes.
         """
-        header = pack(self.CMD_HEADER_FORMAT, self.service_id, 0, 0, 0, 0)
+        header = pack(
+            self.CMD_HEADER_FORMAT, self.service_id, RESERVED, RESERVED, RESERVED, RESERVED
+        )
         descriptor = self.get_srv_descriptor()
         return header + descriptor
 
@@ -269,8 +273,17 @@ class EleMessageHse(EleMessage):
         """
         return self.service_id.to_bytes(4, Endianness.LITTLE.value)[3]
 
+    @property
+    def descriptor_size(self) -> int:
+        """The size of service descriptor."""
+        return calcsize(self.CMD_DESCRIPTOR_FORMAT)
+
     def __len__(self) -> int:
-        return calcsize(self.CMD_HEADER_FORMAT) + calcsize(self.CMD_DESCRIPTOR_FORMAT)
+        """Get the length of exported data.
+
+        :return: Number of bytes in the exported data.
+        """
+        return calcsize(self.CMD_HEADER_FORMAT) + self.descriptor_size
 
 
 class EleMessageHseAttr(EleMessageHse):
@@ -350,8 +363,8 @@ class EleMessageHseGetAttr(EleMessageHseAttr):
         return pack(
             self.CMD_DESCRIPTOR_FORMAT,
             self.attr_handler_cls.ATTR_ID.tag,
-            0,
-            0,
+            RESERVED,
+            RESERVED,
             self.attr_handler_cls.get_size(),
             self.response_data_address,
         )
@@ -419,8 +432,8 @@ class EleMessageHseSetAttr(EleMessageHseAttr):
         return pack(
             self.CMD_DESCRIPTOR_FORMAT,
             self.attr_handler_cls.ATTR_ID.tag,
-            0,
-            0,
+            RESERVED,
+            RESERVED,
             self.attr_handler_cls.get_size(),
             self.value_addr,
         )
@@ -602,9 +615,9 @@ class EleMessageHseFirmwareUpdate(EleMessageHse):
         return pack(
             self.CMD_DESCRIPTOR_FORMAT,
             self.access_mode.tag,  # accessMode
-            0,
-            0,
-            0,  # reserved[3]
+            RESERVED,
+            RESERVED,
+            RESERVED,  # reserved[3]
             self.stream_length,  # streamLength
             self.fw_file_addr,  # pInFwFile
         )
@@ -691,7 +704,7 @@ class EleMessageHseGetKeyInfo(EleMessageHse):
         self,
         key_handle: KeyHandle,
         srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
-        mu_channel: MuChannel = MuChannel.CHANNEL_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_1,
     ):
         """Initialize the HSE Get Key Info message.
 
@@ -806,8 +819,8 @@ class EleMessageHseSmrEntryInstall(EleMessageHse):
         smr_entry_addr: Optional[int] = None,
         smr_data_addr: Optional[int] = None,
         smr_data_length: Optional[int] = None,
-        auth_tag_addr: tuple = (0, 0),
-        auth_tag_length: tuple = (0, 0),
+        auth_tag_addrs: tuple[int, int] = (0, 0),
+        auth_tag_lengths: tuple[int, int] = (0, 0),
         cipher_params: Optional[HseSmrCipherParams] = None,
         srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
         mu_channel: MuChannel = MuChannel.CHANNEL_1,
@@ -834,8 +847,8 @@ class EleMessageHseSmrEntryInstall(EleMessageHse):
         self.smr_entry_addr = smr_entry_addr
         self.smr_data_addr = smr_data_addr
         self.smr_data_length = smr_data_length or 0
-        self.auth_tag_addr = auth_tag_addr
-        self.auth_tag_length = auth_tag_length
+        self.auth_tag_addrs = auth_tag_addrs
+        self.auth_tag_lengths = auth_tag_lengths
         self.cipher_params = cipher_params or HseSmrCipherParams()
 
         # No response data expected for this command beyond status
@@ -858,15 +871,15 @@ class EleMessageHseSmrEntryInstall(EleMessageHse):
             self.CMD_DESCRIPTOR_FORMAT,
             self.access_mode.tag,  # accessMode
             self.entry_index,  # entryIndex
-            0,
-            0,  # reserved[2]
+            RESERVED,
+            RESERVED,  # reserved[2]
             self.smr_entry_addr,  # pSmrEntry
             self.smr_data_addr,  # pSmrData
             self.smr_data_length,  # smrDataLength
-            self.auth_tag_addr[0],  # pAuthTag[0]
-            self.auth_tag_addr[1],  # pAuthTag[1]
-            self.auth_tag_length[0],  # authTagLength[0]
-            self.auth_tag_length[1],  # authTagLength[1]
+            self.auth_tag_addrs[0],  # pAuthTag[0]
+            self.auth_tag_addrs[1],  # pAuthTag[1]
+            self.auth_tag_lengths[0],  # authTagLength[0]
+            self.auth_tag_lengths[1],  # authTagLength[1]
             self.cipher_params.iv_addr,  # cipher.pIV
             self.cipher_params.gmac_tag_addr,  # cipher.pGmacTag
             self.cipher_params.aad_addr,  # cipher.pAAD
@@ -886,78 +899,182 @@ class EleMessageHseSmrEntryInstall(EleMessageHse):
         return f"SMR entry {self.entry_index} installation failed"
 
 
-class HseCipherScheme:
-    """HSE Cipher Scheme structure.
+class HseSmrVerificationOptions(SpsdkEnum):
+    """HSE SMR verification options enumeration.
 
-    This class represents a cipher scheme configuration for HSE (Hardware Security Engine)
-    operations, encapsulating algorithm type, mode, and additional cipher options for
-    cryptographic operations.
+    Defines the available options for customizing on-demand SMR verification behavior.
     """
 
-    def __init__(self, algorithm: int = 0, mode: int = 0, options: bytes = bytes(4)):
-        """Initialize the cipher scheme structure.
-
-        :param algorithm: Cipher algorithm identifier.
-        :param mode: Cipher mode identifier.
-        :param options: Additional cipher options (4 bytes).
-        """
-        self.algorithm = algorithm
-        self.mode = mode
-        self.options = options
-
-    def pack(self) -> bytes:
-        """Pack the cipher scheme into bytes.
-
-        Serializes the cipher scheme object into a binary format using little-endian
-        byte ordering with algorithm, mode, padding bytes, and options.
-
-        :return: Packed cipher scheme as bytes in little-endian format.
-        """
-        return pack(
-            LITTLE_ENDIAN + UINT8 + UINT8 + UINT8 + UINT8 + UINT32,
-            self.algorithm,
-            self.mode,
-            0,
-            0,
-            int.from_bytes(self.options, byteorder=Endianness.LITTLE.value),
-        )
+    NONE = (0, "NONE", "Default verification of the SMR at run-time")
+    NO_LOAD = (3, "NO_LOAD", "SMR is verified from external flash without loading to SRAM")
+    RELOAD = (
+        3 << 2,
+        "RELOAD",
+        "SMR is loaded from external flash and verified even if already loaded",
+    )
+    PASSIVE_MEM = (
+        3 << 4,
+        "PASSIVE_MEM",
+        "Verifies SMR from passive block with address translation (HSE_B only)",
+    )
 
 
-class HseAuthScheme:
-    """HSE Authentication Scheme structure.
+class EleMessageHseSmrVerify(EleMessageHse):
+    """HSE Secure Memory Region Verification service.
 
-    This class represents authentication parameters for HSE (Hardware Security Engine)
-    operations, encapsulating algorithm identifiers, modes, and additional options
-    required for secure authentication processes.
+    This service starts the on-demand verification of a secure memory region by specifying
+    the index in the SMR table. The service loads and verifies an SMR entry in SRAM based
+    on the specified verification options.
+
+    Important notes for HSE_H/M:
+    - SMRs used in CORE RESET table can be verified on-demand only if they were loaded
+    before in SRAM or BOOT_SEQ = 0. Otherwise, NOT_ALLOWED error will be reported.
+    - SMRs not part of CORE RESET table can be loaded and verified at run time.
+    - On second call, HSE will only perform verification in SRAM.
+    - SMRs cannot be loaded and verified from SD/MMC memory using this service.
+
+    :cvar CMD: Command identifier for SMR verification service.
+    :cvar CMD_DESCRIPTOR_FORMAT: Binary format descriptor for the command structure.
     """
 
-    def __init__(self, algorithm: int = 0, mode: int = 0, options: bytes = bytes(4)):
-        """Initialize the authentication scheme structure.
+    CMD = HseMessageIDs.SMR_VERIFY.tag
+    CMD_DESCRIPTOR_FORMAT = LITTLE_ENDIAN + UINT8 + UINT8 + UINT16
 
-        :param algorithm: Authentication algorithm identifier.
-        :param mode: Authentication mode identifier.
-        :param options: Additional authentication options (4 bytes).
+    def __init__(
+        self,
+        entry_index: int,
+        options: HseSmrVerificationOptions = HseSmrVerificationOptions.NONE,
+        srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_1,
+    ):
+        """Initialize the SMR Verify message.
+
+        Creates a new SMR (Secure Memory Region) verification message for HSE communication.
+        This message is used to trigger on-demand verification of SMR entries in the SMR table.
+
+        :param entry_index: Index of SMR entry in the SMR table to be verified
+                           (max HSE_NUM_OF_SMR_ENTRIES)
+        :param options: Verification options for customizing the on-demand SMR verification
+        :param srv_version: Service version to use for this message
+        :raises SPSDKValueError: If entry_index is invalid
         """
-        self.algorithm = algorithm
-        self.mode = mode
+        super().__init__(srv_version, mu_channel)
+
+        # Validate entry index (assuming max 32 SMR entries based on typical HSE limits)
+        if not isinstance(entry_index, int) or entry_index < 0 or entry_index > 7:
+            raise SPSDKValueError(f"Invalid SMR entry index: {entry_index}. Must be 0-7.")
+
+        self.entry_index = entry_index
         self.options = options
 
-    def pack(self) -> bytes:
-        """Pack the authentication scheme into bytes.
+        # No response data expected for this command beyond status
+        self.response_data_size = 0
 
-        Serializes the authentication scheme object into a binary format using little-endian
-        byte order with specific field layout.
+    def get_srv_descriptor(self) -> bytes:
+        """Get service descriptor for the SMR Verify command.
 
-        :return: Packed authentication scheme as bytes with algorithm, mode, padding, and options.
+        Packs the service descriptor fields into a binary format according to the
+        CMD_DESCRIPTOR_FORMAT specification for HSE SMR verification.
+
+        :return: Packed service descriptor bytes containing entry index, reserved field,
+                 and verification options.
         """
         return pack(
-            LITTLE_ENDIAN + UINT8 + UINT8 + UINT8 + UINT8 + UINT32,
-            self.algorithm,
-            self.mode,
-            0,
-            0,
-            int.from_bytes(self.options, byteorder=Endianness.LITTLE.value),
+            self.CMD_DESCRIPTOR_FORMAT,
+            self.entry_index,  # entryIndex
+            RESERVED,  # reserved - RFU, set to 0
+            self.options.tag,  # options (hseSmrVerificationOptions_t)
         )
+
+    def response_info(self) -> str:
+        """Get formatted information about the response.
+
+        Returns a human-readable string describing the SMR verification result
+        based on the response status and entry details.
+
+        :return: String representation of the SMR verification result including
+                 entry index, options, and success/failure status.
+        """
+        if self.status == ResponseStatus.ELE_SUCCESS_IND.tag:
+            return f"SMR entry {self.entry_index} verification successful (options: {self.options.label})"
+        return f"SMR entry {self.entry_index} verification failed"
+
+
+class EleMessageHseSmrEntryErase(EleMessageHse):
+    """HSE SMR Entry Erase service.
+
+    This service erases one SMR (Secure Memory Region) entry from the internal HSE memory.
+    The service removes the specified entry from the SMR table, effectively disabling
+    the secure memory region configuration for that entry index.
+
+    Important notes:
+    - SuperUser (SU) access rights with privileges over HSE_SYS_AUTH_NVM_CONFIG data
+    are required to perform this service
+    - Erasing an SMR entry will remove all associated secure memory configurations
+    - The operation is irreversible - the entry must be reinstalled if needed again
+    - Care should be taken when erasing SMR entries that are referenced by Core Reset entries
+
+    :cvar CMD: Command identifier for SMR entry erase service.
+    :cvar CMD_DESCRIPTOR_FORMAT: Binary format specification for command descriptor.
+    """
+
+    CMD = HseMessageIDs.SMR_ENTRY_ERASE.tag
+    CMD_DESCRIPTOR_FORMAT = LITTLE_ENDIAN + UINT8 + UINT8 + UINT8 + UINT8
+
+    def __init__(
+        self,
+        entry_index: int,
+        srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_1,
+    ):
+        """Initialize the SMR Entry Erase message.
+
+        Creates a new SMR (Secure Memory Region) entry erase message for HSE communication.
+        This message is used to erase SMR entries from the SMR table at the specified
+        entry index.
+
+        :param entry_index: Index in the SMR table for the entry to be erased.
+                              Must be within HSE_NUM_OF_SMR_ENTRIES range.
+        :param srv_version: Service version to use for this message.
+        :param mu_channel: Message unit channel to use for communication.
+        :raises SPSDKValueError: If entry_index is invalid.
+        """
+        super().__init__(srv_version, mu_channel)
+        if entry_index < 0 or entry_index > 7:
+            raise SPSDKValueError(f"Invalid SMR entry index: {entry_index}. Must be 0-7.")
+        self.entry_index = entry_index
+
+        # No response data expected for this command beyond status
+        self.response_data_size = 0
+
+    def get_srv_descriptor(self) -> bytes:
+        """Get service descriptor for the SMR Entry Erase command.
+
+        Packs the service descriptor fields into a binary format according to the
+        CMD_DESCRIPTOR_FORMAT specification for HSE SMR entry erase operation.
+
+        :return: Packed service descriptor bytes containing entry index and reserved fields.
+        """
+        return pack(
+            self.CMD_DESCRIPTOR_FORMAT,
+            self.entry_index,  # smrEntryInd
+            RESERVED,  # reserved[0]
+            RESERVED,  # reserved[1]
+            RESERVED,  # reserved[2]
+        )
+
+    def response_info(self) -> str:
+        """Get formatted information about the response.
+
+        Returns a human-readable string describing the SMR entry erase result
+        based on the response status and entry details.
+
+        :return: String representation of the SMR entry erase result including
+                 entry index and success/failure status.
+        """
+        if self.status == ResponseStatus.ELE_SUCCESS_IND.tag:
+            return f"SMR entry {self.entry_index} erase successful"
+        return f"SMR entry {self.entry_index} erase failed"
 
 
 class EleMessageHseImportKey(EleMessageHse):
@@ -972,56 +1089,28 @@ class EleMessageHseImportKey(EleMessageHse):
     """
 
     CMD = HseMessageIDs.IMPORT_KEY.tag
-    CMD_DESCRIPTOR_FORMAT = (
+    BASE_DESCRIPTOR_FORMAT = (
         LITTLE_ENDIAN
-        + UINT32  # targetKeyHandle
-        + UINT32  # pKeyInfo
-        + UINT32  # pKey[0]
-        + UINT32  # pKey[1]
-        + UINT32  # pKey[2]
-        + UINT16  # keyLen[0]
-        + UINT16  # keyLen[1]
-        + UINT16  # keyLen[2]
-        + UINT8  # reserved[0]
-        + UINT8  # reserved[1]
-        + UINT32  # cipher.cipherKeyHandle
-        + UINT8  # cipher.cipherScheme.algorithm
-        + UINT8  # cipher.cipherScheme.mode
-        + UINT8  # cipher.cipherScheme.reserved[0]
-        + UINT8  # cipher.cipherScheme.reserved[1]
-        + UINT32  # cipher.cipherScheme.options
-        + UINT16  # keyContainer.keyContainerLen
-        + UINT8  # keyContainer.reserved[0]
-        + UINT8  # keyContainer.reserved[1]
-        + UINT32  # keyContainer.pKeyContainer
-        + UINT32  # keyContainer.authKeyHandle
-        + UINT8  # keyContainer.authScheme.algorithm
-        + UINT8  # keyContainer.authScheme.mode
-        + UINT8  # keyContainer.authScheme.reserved[0]
-        + UINT8  # keyContainer.authScheme.reserved[1]
-        + UINT32  # keyContainer.authScheme.options
-        + UINT16  # keyContainer.authLen[0]
-        + UINT16  # keyContainer.authLen[1]
-        + UINT32  # keyContainer.pAuth[0]
-        + UINT32  # keyContainer.pAuth[1]
-        + UINT8  # keyFormat
-        + UINT8  # keyFormat padding to align
-        + UINT16  # keyFormat padding to align
+        + UINT32
+        + UINT32
+        + UINT32
+        + UINT32
+        + UINT32
+        + UINT16
+        + UINT16
+        + UINT16
+        + UINT8
+        + UINT8
     )
 
     def __init__(
         self,
         key_handle: KeyHandle,
         payload: "KeyImportPayload",
-        cipher_key_handle: int = 0xFFFFFFFF,  # HSE_INVALID_KEY_HANDLE
-        cipher_scheme: Optional[HseCipherScheme] = None,
-        key_container_len: int = 0,
-        key_container_addr: int = 0,
-        auth_key_handle: int = 0xFFFFFFFF,  # HSE_INVALID_KEY_HANDLE
-        auth_scheme: Optional[HseAuthScheme] = None,
-        auth_lengths: tuple = (0, 0),
-        auth_address: tuple = (0, 0),
+        cipher_key_handle: Optional[KeyHandle] = None,
+        cipher_scheme: Optional[HseCipherSchemeBase] = None,
         key_format: Optional[KeyFormat] = None,
+        key_container: Optional[KeyContainer] = None,
         srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
         mu_channel: MuChannel = MuChannel.CHANNEL_1,
     ):
@@ -1034,40 +1123,33 @@ class EleMessageHseImportKey(EleMessageHse):
         :param payload: Key import payload containing key data and metadata
         :param cipher_key_handle: Handle of the key used for decryption if key is encrypted
         :param cipher_scheme: Cipher scheme used for encrypted keys
-        :param key_container_len: Length of the key container in bytes
-        :param key_container_addr: Memory address of the key container
-        :param auth_key_handle: Handle of the key used for authentication verification
-        :param auth_scheme: Authentication scheme for key container verification
-        :param auth_lengths: Tuple of lengths for authentication tags (up to 2 elements)
-        :param auth_address: Tuple of addresses for authentication tags (up to 2 elements)
         :param key_format: Format of the key being imported (defaults to RAW)
         :param srv_version: Service version to use for this message
         """
         super().__init__(srv_version, mu_channel)
         self.key_handle = key_handle
         self.payload = payload
-        self.payload_address = 0
-
-        self.cipher_key_handle = cipher_key_handle
-        self.cipher_scheme = cipher_scheme or HseCipherScheme()
-
-        self.key_container_len = key_container_len
-        self.key_container_addr = key_container_addr
-        self.auth_key_handle = auth_key_handle
-        self.auth_scheme = auth_scheme or HseAuthScheme()
-
-        # Ensure auth_lengths and auth_address are tuples of length 2
-        if len(auth_lengths) < 2:
-            auth_lengths = tuple(list(auth_lengths) + [0] * (2 - len(auth_lengths)))
-        if len(auth_address) < 2:
-            auth_address = tuple(list(auth_address) + [0] * (2 - len(auth_address)))
-        self.auth_lengths = auth_lengths
-        self.auth_address = auth_address
-
-        self.key_format = key_format if key_format is not None else KeyFormat.RAW
-
+        self.cipher_key_handle = cipher_key_handle or KeyHandle(KeyHandle.INVALID_KEY_HANDLE)
+        self.cipher_scheme = cipher_scheme or HseAeadScheme()
+        self.key_format = key_format
+        self.key_container = key_container or KeyContainer()
         # No response data expected for this command beyond status
         self.response_data_size = 0
+
+    @property
+    def descriptor_size(self) -> int:
+        """The size of service descriptor."""
+        # Base descriptor fields
+        base_size = calcsize(self.BASE_DESCRIPTOR_FORMAT)
+
+        # Variable-length components
+        variable_size = (
+            self.cipher_key_handle.get_size()
+            + self.cipher_scheme.get_size()
+            + self.key_container.get_size()
+            + 4  # key_format field
+        )
+        return base_size + variable_size
 
     def get_srv_descriptor(self) -> bytes:
         """Get service descriptor for the Import Key command.
@@ -1078,54 +1160,28 @@ class EleMessageHseImportKey(EleMessageHse):
         :return: Packed service descriptor bytes containing key handles, addresses,
             cipher and authentication schemes, and other import parameters.
         """
-        return pack(
-            self.CMD_DESCRIPTOR_FORMAT,
+        ret = pack(
+            self.BASE_DESCRIPTOR_FORMAT,
             self.key_handle.handle,
-            self.payload_address,  # key_info_addr
-            (
-                self.payload_address + self.payload.key_offsets[0]
-                if self.payload.key_offsets[0] is not None
-                else 0
-            ),  # pKey[0]
-            (
-                self.payload_address + self.payload.key_offsets[1]
-                if self.payload.key_offsets[1] is not None
-                else 0
-            ),  # pKey[1]
-            (
-                self.payload_address + self.payload.key_offsets[2]
-                if self.payload.key_offsets[2] is not None
-                else 0
-            ),  # pKey[2]
+            self.payload.key_info_address,
+            self.payload.get_key_part_address(0),
+            self.payload.get_key_part_address(1),
+            self.payload.get_key_part_address(2),
             self.payload.key_lengths[0] or 0,
             self.payload.key_lengths[1] or 0,
             self.payload.key_lengths[2] or 0,
-            0,  # reserved[0]
-            0,  # reserved[1]
-            self.cipher_key_handle,
-            self.cipher_scheme.algorithm,
-            self.cipher_scheme.mode,
-            0,  # cipher.cipherScheme.reserved[0]
-            0,  # cipher.cipherScheme.reserved[1]
-            int.from_bytes(self.cipher_scheme.options, byteorder=Endianness.LITTLE.value),
-            self.key_container_len,
-            0,  # keyContainer.reserved[0]
-            0,  # keyContainer.reserved[1]
-            self.key_container_addr,
-            self.auth_key_handle,
-            self.auth_scheme.algorithm,
-            self.auth_scheme.mode,
-            0,  # keyContainer.authScheme.reserved[0]
-            0,  # keyContainer.authScheme.reserved[1]
-            int.from_bytes(self.auth_scheme.options, byteorder=Endianness.LITTLE.value),
-            self.auth_lengths[0],
-            self.auth_lengths[1],
-            self.auth_address[0],
-            self.auth_address[1],
-            self.key_format.tag,
-            0,  # padding
-            0,  # padding
+            RESERVED,  # reserved[0]
+            RESERVED,  # reserved[1]
         )
+        ret += self.cipher_key_handle.export()
+        ret += self.cipher_scheme.export()
+        ret += self.key_container.export()
+        ret += (
+            (self.key_format.tag).to_bytes(4, Endianness.LITTLE.value)
+            if self.key_format
+            else bytes(4)
+        )
+        return ret
 
     def response_info(self) -> str:
         """Get formatted information about the response.
@@ -1136,8 +1192,8 @@ class EleMessageHseImportKey(EleMessageHse):
         :return: String representation of the key import result.
         """
         if self.status == ResponseStatus.ELE_SUCCESS_IND.tag:
-            return f"Key import successful for key handle 0x{self.key_handle:08X}"
-        return f"Key import failed for key handle 0x{self.key_handle:08X}"
+            return f"Key import successful for key handle {str(self.key_handle)}"
+        return f"Key import failed for key handle {self.key_handle}"
 
 
 class KeyImportPayload:
@@ -1155,18 +1211,23 @@ class KeyImportPayload:
     SUB_FEATURE = "key_import"
 
     def __init__(
-        self,
-        key_info: KeyInfo,
-        key: Union[PrivateKey, PublicKey, bytes],
+        self, key_info: KeyInfo, key: Union[PrivateKey, PublicKey, bytes], address: int = 0
     ) -> None:
         """Initialize the key import structure.
 
         :param key_info: Key information structure containing key metadata and configuration.
         :param key: The cryptographic key to import, can be private key, public key, or raw bytes.
+        :param address: Address of payload in the memory.
         """
         self.key_info = key_info
         self.key = key
         self.key_data = self.convert_key(key, self.key_info.key_type)
+        self.address = address
+
+    @property
+    def key_info_address(self) -> int:
+        """Get key info binary address in the target memory."""
+        return self.address
 
     @property
     def key_lengths(self) -> list[Optional[int]]:
@@ -1197,6 +1258,13 @@ class KeyImportPayload:
                 current_offset += length
 
         return offsets
+
+    def get_key_part_address(self, key_part_index: int) -> int:
+        """Get absolute address of key part. Return 0 if not defined."""
+        key_part = self.key_offsets[key_part_index]
+        if key_part is not None:
+            return self.address + key_part
+        return 0
 
     @property
     def size(self) -> int:
@@ -1425,10 +1493,10 @@ class EleMessageHseEraseFirmware(EleMessageHse):
         """
         return pack(
             self.CMD_DESCRIPTOR_FORMAT,
-            0,  # reserved[0]
-            0,  # reserved[1]
-            0,  # reserved[2]
-            0,  # reserved[3]
+            RESERVED,  # reserved[0]
+            RESERVED,  # reserved[1]
+            RESERVED,  # reserved[2]
+            RESERVED,  # reserved[3]
         )
 
     def response_info(self) -> str:
@@ -1494,10 +1562,10 @@ class EleMessageHseFirmwareIntegrityCheck(EleMessageHse):
         """
         return pack(
             self.CMD_DESCRIPTOR_FORMAT,
-            0,  # reserved[0]
-            0,  # reserved[1]
-            0,  # reserved[2]
-            0,  # reserved[3]
+            RESERVED,  # reserved[0]
+            RESERVED,  # reserved[1]
+            RESERVED,  # reserved[2]
+            RESERVED,  # reserved[3]
         )
 
     def response_info(self) -> str:
@@ -1511,3 +1579,230 @@ class EleMessageHseFirmwareIntegrityCheck(EleMessageHse):
         if self.status == ResponseStatus.ELE_SUCCESS_IND.tag:
             return "HSE Firmware integrity check passed - Firmware is valid"
         return "HSE Firmware integrity check failed - Firmware may be corrupted"
+
+
+class EleMessageHseCoreResetEntryInstall(EleMessageHse):
+    """HSE Core Reset Entry Install service.
+
+    This service updates an existing or adds a new entry in the Core Reset table.
+    The Core Reset table manages the boot sequence and SMR verification for different
+    processor cores in the system.
+
+    Important notes:
+    - SMR entries linked with the CR entry (via preBoot/altPreBoot/postBoot SMR maps)
+    must be installed in HSE prior to the CR installation
+    - SuperUser rights (for NVM Configuration) are needed to perform this service
+    - Updating an existing CR entry requires all preBoot and postBoot SMR(s) linked
+    with the previous entry to be verified successfully (applicable only in OEM_PROD/IN_FIELD life cycles)
+
+    :cvar CMD: Command identifier for Core Reset entry installation service.
+    :cvar CMD_DESCRIPTOR_FORMAT: Binary format specification for command descriptor.
+    """
+
+    CMD = HseMessageIDs.CORE_RESET_ENTRY_INSTALL.tag
+    CMD_DESCRIPTOR_FORMAT = LITTLE_ENDIAN + UINT8 + UINT8 + UINT8 + UINT8 + UINT32
+
+    def __init__(
+        self,
+        entry_index: int,
+        entry_addr: int,
+        srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_1,
+    ):
+        """Initialize the Core Reset Entry Install message.
+
+        Creates a new Core Reset (CR) entry installation message for HSE communication.
+        This message is used to install or update CR entries in the Core Reset table
+        with specified entry index and configuration.
+
+        :param entry_index: Index in the Core Reset table to be added/updated.
+                              Must be within HSE_NUM_OF_CORE_RESET_ENTRIES range.
+        :param entry_addr: Address of Core Reset entry structure (hseCrEntry_t).
+                             This structure contains the core configuration including
+                             core ID, SMR maps, and other reset parameters.
+        :param srv_version: Service version to use for this message.
+        :param mu_channel: Message unit channel to use for communication.
+        :raises SPSDKValueError: If entry_index is invalid.
+        """
+        super().__init__(srv_version, mu_channel)
+        if entry_index < 0 or entry_index > 3:
+            raise SPSDKValueError(f"Invalid Core Reset entry index: {entry_index}. Must be 0-3.")
+        self.entry_index = entry_index
+        self.entry_addr = entry_addr
+
+        # No response data expected for this command beyond status
+        self.response_data_size = 0
+
+    def get_srv_descriptor(self) -> bytes:
+        """Get service descriptor for the Core Reset Entry Install command.
+
+        Packs the service descriptor fields into a binary format according to the
+        CMD_DESCRIPTOR_FORMAT specification for HSE Core Reset entry installation.
+
+        :return: Packed service descriptor bytes containing entry index, reserved fields,
+                 and Core Reset entry address.
+        """
+        return pack(
+            self.CMD_DESCRIPTOR_FORMAT,
+            self.entry_index,
+            RESERVED,
+            RESERVED,
+            RESERVED,
+            self.entry_addr,
+        )
+
+    def response_info(self) -> str:
+        """Get formatted information about the response.
+
+        Returns a human-readable string describing the Core Reset entry installation
+        result based on the response status and entry details.
+
+        :return: String representation of the Core Reset entry installation result
+                 including entry index and success/failure status.
+        """
+        if self.status == ResponseStatus.ELE_SUCCESS_IND.tag:
+            return f"Core Reset entry {self.entry_index} installation successful"
+        return f"Core Reset entry {self.entry_index} installation failed"
+
+
+class EleMessageHseCoreResetEntryErase(EleMessageHse):
+    """HSE Core Reset Entry Erase service.
+
+    This service erases one Core Reset entry from the internal HSE memory.
+    The service removes the specified entry from the Core Reset table, effectively
+    disabling the core reset configuration for that entry index.
+
+    Important notes:
+    - SuperUser (SU) access rights with privileges over HSE_SYS_AUTH_NVM_CONFIG data
+    are required to perform this service
+    - Erasing a CR entry will remove all associated boot configurations for that core
+    - The operation is irreversible - the entry must be reinstalled if needed again
+
+    :cvar CMD: Command identifier for Core Reset entry erase service.
+    :cvar CMD_DESCRIPTOR_FORMAT: Binary format specification for command descriptor.
+    """
+
+    CMD = HseMessageIDs.CORE_RESET_ENTRY_ERASE.tag
+    CMD_DESCRIPTOR_FORMAT = LITTLE_ENDIAN + UINT8 + UINT8 + UINT8 + UINT8
+
+    def __init__(
+        self,
+        entry_index: int,
+        srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_1,
+    ):
+        """Initialize the Core Reset Entry Erase message.
+
+        Creates a new Core Reset (CR) entry erase message for HSE communication.
+        This message is used to erase CR entries from the Core Reset table at the
+        specified entry index.
+
+        :param entry_index: Index in the Core Reset table for the entry to be erased.
+                              Must be within HSE_NUM_OF_CORE_RESET_ENTRIES range.
+        :param srv_version: Service version to use for this message.
+        :param mu_channel: Message unit channel to use for communication.
+        :raises SPSDKValueError: If entry_index is invalid.
+        """
+        super().__init__(srv_version, mu_channel)
+        if entry_index < 0 or entry_index > 3:
+            raise SPSDKValueError(f"Invalid Core Reset entry index: {entry_index}. Must be 0-3.")
+        self.entry_index = entry_index
+
+        # No response data expected for this command beyond status
+        self.response_data_size = 0
+
+    def get_srv_descriptor(self) -> bytes:
+        """Get service descriptor for the Core Reset Entry Erase command.
+
+        Packs the service descriptor fields into a binary format according to the
+        CMD_DESCRIPTOR_FORMAT specification for HSE Core Reset entry erase operation.
+
+        :return: Packed service descriptor bytes containing entry index and reserved fields.
+        """
+        return pack(
+            self.CMD_DESCRIPTOR_FORMAT,
+            self.entry_index,  # crEntryInd
+            RESERVED,  # reserved[0]
+            RESERVED,  # reserved[1]
+            RESERVED,  # reserved[2]
+        )
+
+    def response_info(self) -> str:
+        """Get formatted information about the response.
+
+        Returns a human-readable string describing the Core Reset entry erase
+        result based on the response status and entry details.
+
+        :return: String representation of the Core Reset entry erase result
+                 including entry index and success/failure status.
+        """
+        if self.status == ResponseStatus.ELE_SUCCESS_IND.tag:
+            return f"Core Reset entry {self.entry_index} erase successful"
+        return f"Core Reset entry {self.entry_index} erase failed"
+
+
+class EleMessageHseActivatePassiveBlock(EleMessageHse):
+    """HSE Activate Passive Block service.
+
+    This service is an application request to switch passive flash block area.
+    It activates the passive block, making it the active block for subsequent operations.
+
+    Important notes:
+    - Available for HSE_B variant only
+    - Used for A/B swap functionality in dual-bank flash configurations
+    - Switches between active and passive flash block areas
+
+    :cvar CMD: Command identifier for HSE activate passive block operation.
+    :cvar CMD_DESCRIPTOR_FORMAT: Binary format specification for command descriptor.
+    """
+
+    CMD = HseMessageIDs.ACTIVATE_PASSIVE_BLOCK.tag
+    CMD_DESCRIPTOR_FORMAT = (
+        LITTLE_ENDIAN + UINT8 + UINT8 + UINT8 + UINT8
+    )  # reserved[4] - no data structure used
+
+    def __init__(
+        self,
+        srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
+        mu_channel: MuChannel = MuChannel.CHANNEL_0,
+    ):
+        """Initialize the HSE Activate Passive Block message.
+
+        Creates a new HSE activate passive block message. This operation will switch
+        the passive flash block area to become the active block.
+
+        :param srv_version: Service version to use for this message.
+        :param mu_channel: Message unit channel to use for communication.
+        """
+        super().__init__(srv_version, mu_channel)
+
+        # No response data expected for this command beyond status
+        self.response_data_size = 0
+
+    def get_srv_descriptor(self) -> bytes:
+        """Get service descriptor for the Activate Passive Block command.
+
+        Creates a packed binary service descriptor. Since no data structure is used
+        for this service, the descriptor contains only reserved/padding bytes.
+
+        :return: Packed service descriptor bytes with reserved fields set to zero.
+        """
+        return pack(
+            self.CMD_DESCRIPTOR_FORMAT,
+            RESERVED,  # reserved[0]
+            RESERVED,  # reserved[1]
+            RESERVED,  # reserved[2]
+            RESERVED,  # reserved[3]
+        )
+
+    def response_info(self) -> str:
+        """Get formatted information about the response.
+
+        Returns a human-readable string describing the result of the HSE activate
+        passive block operation, indicating whether the block switch was successful.
+
+        :return: String representation of the activate passive block operation result.
+        """
+        if self.status == ResponseStatus.ELE_SUCCESS_IND.tag:
+            return "HSE Activate passive block operation successful - Passive block is now active"
+        return "HSE Activate passive block operation failed"

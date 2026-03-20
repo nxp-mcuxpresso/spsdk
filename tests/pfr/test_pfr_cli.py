@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -344,6 +344,8 @@ def test_parse(cli_runner: CliRunner, data_dir: str, tmpdir: str) -> None:
         ("mcxn947", "cmpa"),
         ("nhs52s04", "cfpa"),
         ("nhs52s04", "cmpa"),
+        ("mcxa457", "cfpa"),
+        ("mcxa457", "update_cfpa_cmpa"),
     ],
 )
 def test_user_config(cli_runner: CliRunner, tmpdir: str, family: str, type: str) -> None:
@@ -456,3 +458,100 @@ def test_generate_cmpa_certblock_lpc55s3x(
         logging.debug(cmd)
         cli_runner.invoke(cli.main, cmd.split())
         assert filecmp.cmp(org, new)
+
+
+@pytest.mark.parametrize(
+    "family, pfr_type, add_data",
+    [
+        ("mcxa457", "update_cfpa", False),
+        ("mcxa457", "update_cfpa", True),
+        ("mcxa457", "update_cfpa_cmpa", False),
+        ("mcxa457", "update_cfpa_cmpa", True),
+    ],
+)
+def test_update_field_and_add_data(
+    cli_runner: CliRunner, data_dir: str, tmpdir: str, family: str, pfr_type: str, add_data: bool
+) -> None:
+    """Test updating PFR fields and adding data functionality.
+
+    This test verifies that the PFR CLI export command correctly processes configuration
+    files with field updates and optional additional data, comparing the generated output
+    against reference files.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param data_dir: Directory containing test data files.
+    :param tmpdir: Temporary directory for output files.
+    :param family: Target MCU family name.
+    :param pfr_type: Type of PFR configuration.
+    :param add_data: Flag indicating whether to include additional data in configuration.
+    """
+    config = f"{family}_{pfr_type}"
+    if add_data:
+        config += "_add_data"
+    work_dir = os.path.join(data_dir, "update_add_data")
+    config_file = os.path.join(data_dir, "update_add_data", f"{config}.yaml")
+    ref_file = os.path.join(data_dir, "update_add_data", f"{config}.bin")
+    output = os.path.join(tmpdir, f"{config}.bin")
+    with use_working_directory(work_dir):
+        cmd = ["export", "--config", config_file, "--output", output]
+        logging.debug(cmd)
+        cli_runner.invoke(cli.main, cmd)
+        assert filecmp.cmp(ref_file, output)
+
+
+@pytest.mark.parametrize(
+    "family, pfr_type, add_data",
+    [
+        ("mcxa457", "update_cfpa", False),
+        ("mcxa457", "update_cfpa", True),
+        ("mcxa457", "update_cfpa_cmpa", False),
+        ("mcxa457", "update_cfpa_cmpa", True),
+    ],
+)
+def test_parse_add_data(
+    cli_runner: CliRunner, data_dir: str, tmpdir: str, family: str, pfr_type: str, add_data: bool
+) -> None:
+    """Test parsing PFR binary with optional additional data.
+
+    This test verifies that the PFR parse command correctly handles binary files
+    with and without additional data, ensuring the parsed configuration contains
+    the expected additional_data field when present.
+
+    :param cli_runner: Click CLI test runner for command execution.
+    :param data_dir: Directory containing test data files.
+    :param tmpdir: Temporary directory for output files.
+    :param family: Target MCU family name.
+    :param pfr_type: Type of PFR (Protected Flash Region).
+    :param add_data: Flag indicating whether additional data should be present.
+    """
+    config = f"{family}_{pfr_type}"
+    if add_data:
+        config += "_add_data"
+    work_dir = os.path.join(data_dir, "update_add_data")
+
+    ifr_file = os.path.join(data_dir, "update_add_data", f"{config}.bin")
+    output = os.path.join(tmpdir, f"{config}.yaml")
+
+    with use_working_directory(work_dir):
+        cmd = [
+            "parse",
+            "--family",
+            family,
+            "--type",
+            pfr_type,
+            "--binary",
+            ifr_file,
+            "--output",
+            output,
+        ]
+        logging.debug(cmd)
+        cli_runner.invoke(cli.main, cmd)
+        output_config = load_configuration(output)
+        if add_data:
+            assert "settings_cfpa" in output_config
+            assert "additional_data_cfpa" in output_config
+            assert os.path.exists(
+                os.path.join(os.path.dirname(output), output_config["additional_data_cfpa"])
+            )
+        else:
+            assert "additional_data_cfpa" not in output_config
