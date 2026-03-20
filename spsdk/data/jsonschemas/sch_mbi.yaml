@@ -446,6 +446,8 @@ image_type:
           NXP signed,
           NBU Signed,
           encrypted,
+          smr,
+          SMR,
         ]
       enum_template:
         ["plain", "crc", "signed", "signed-encrypted", "signed-nxp","nbu-signed"]

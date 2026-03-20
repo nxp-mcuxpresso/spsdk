@@ -13,18 +13,20 @@ and message encoding/decoding validation.
 """
 
 import os
+import shutil
 
 import pytest
 
-from spsdk.crypto.keys import PrivateKeyEcc, PrivateKeyRsa, PublicKeyEcc, PublicKeyRsa
+from spsdk.crypto.keys import PrivateKeyEcc, PrivateKeyRsa, PublicKeyEcc, PublicKeyRsa, load_key
 from spsdk.ele.ele_message_hse import (
     EleMessageHse,
     EleMessageHseBootDataImageSign,
+    EleMessageHseImportKey,
     KeyImportPayload,
     MuChannel,
 )
 from spsdk.exceptions import SPSDKValueError
-from spsdk.image.hse.common import HseKeyBits, KeyType
+from spsdk.image.hse.common import HseKeyBits, KeyCatalogId, KeyHandle, KeyType
 from spsdk.image.hse.key_info import (
     HseAesBlockModeMask,
     HseEccCurveId,
@@ -32,7 +34,9 @@ from spsdk.image.hse.key_info import (
     HseSmrFlags,
     KeyInfo,
 )
+from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
+from spsdk.utils.misc import load_binary
 
 
 # Mock implementation of EleMessageHse for testing
@@ -468,6 +472,46 @@ def test_key_import_payload_with_raw_bytes_no_key_type() -> None:
     # Should raise an error when converting
     with pytest.raises(SPSDKValueError, match="Key type must be specified"):
         KeyImportPayload.convert_key(key)
+
+
+@pytest.mark.parametrize(
+    "key_info_file,key_file,key_import_command",
+    [
+        ("key_info_aes128.yaml", "aes128.bin", "key_import_aes_128.bin"),
+        ("key_info_ecc256_pub.yaml", "ecc256_pub.pem", "key_import_ecc256_pub.bin"),
+        ("key_info_rsa4096_pub.yaml", "rsa4096_pub.pem", "key_import_rsa4096_pub.bin"),
+    ],
+)
+def test_key_import_command_data(
+    data_dir: str,
+    tmpdir: str,
+    key_info_file: str,
+    key_file: str,
+    key_import_command: str,
+) -> None:
+    """Test AES key import functionality with HSE ELE message.
+
+    This test verifies the complete AES key import workflow by loading key information
+    from a YAML configuration file, reading the AES key binary data, creating a key
+    import payload, and generating the corresponding HSE import key command. The test
+    validates that the generated command data matches the expected binary output.
+
+    :param data_dir: Source directory containing test data files
+    :param tmpdir: Temporary directory for test file operations
+    :param key_info_file: YAML file containing key information configuration
+    :param key_file: Binary file containing the AES key data
+    :param key_import_command: Expected binary output file for command verification
+    """
+    shutil.copytree(os.path.join(data_dir), tmpdir, dirs_exist_ok=True)
+    key_info_obj = KeyInfo.load_from_config(
+        Config.create_from_file(os.path.join(tmpdir, key_info_file))
+    )
+    key = load_key(os.path.join(tmpdir, key_file))
+    payload = KeyImportPayload(key_info=key_info_obj, key=key)
+    key_handle = KeyHandle.from_attributes(KeyCatalogId.NVM, 1, 2)
+    cmd = EleMessageHseImportKey(key_handle=key_handle, payload=payload)
+    cmd.set_buffer_params(0x2040_1000, 0x1000)
+    assert cmd.command_data == load_binary(os.path.join(tmpdir, key_import_command))
 
 
 def test_export_command() -> None:

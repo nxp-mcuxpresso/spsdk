@@ -1,4 +1,4 @@
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -140,6 +140,33 @@ features:
     #     V2X_ROM_PATCH: [0x0D, v2x_rom_patch, V2X rom patch Image]
     #     V2X_DUMMY: [0x0E, v2x_dummy, V2X dummy Image]
 
+    signature_algorithms:
+      RSA: [0x21, "RSA", "RSA signature algorithm"]
+      RSA_PSS: [0x22, "RSA_PSS", "RSA PSS signature algorithm"]
+      ECDSA: [0x27, "ECDSA", "ECDSA signature algorithm"]
+      SM2: [0x28, "SM2", "SM2 signature algorithm"]
+      # V2 only
+      DILITHIUM: [0xD1, "DILITHIUM", "Dilithium PQC algorithm"]
+      ML_DSA: [0xD2, "ML-DSA", "ML-DSA PQC algorithm"]
+
+    hash_algorithms:
+      SHA256: [0x00, "sha256", "SHA-256 hash algorithm"]
+      SHA384: [0x01, "sha384", "SHA-384 hash algorithm"]
+      SHA512: [0x02, "sha512", "SHA-512 hash algorithm"]
+      SM3: [0x03, "sm3", "SM3 hash algorithm"]
+      # V2 only
+      SHA3_256: [0x04, "sha3-256", "SHA3-256 hash algorithm"]
+      SHA3_384: [0x05, "sha3-384", "SHA3-384 hash algorithm"]
+      SHA3_512: [0x06, "sha3-512", "SHA3-512 hash algorithm"]
+      SHAKE_128_256: [0x08, "shake-128-256", "SHAKE-128 with 256-bit output"]
+      SHAKE_256_512: [0x09, "shake-256-512", "SHAKE-256 with 512-bit output"]
+
+    srk_sets:
+      NONE: [0x00, "none", "Image is not signed"]
+      NXP: [0x01, "nxp", "Signed by NXP keys"]
+      OEM: [0x02, "oem", "Signed by OEM keys"]
+      DEVHSM: [0x05, "devhsm", "Device HSM key set"]
+
     double_authentication_load_address: 0
     double_authentication_core_id: 0
     double_authentication_image_type: 0
@@ -149,20 +176,17 @@ features:
       _name: "AHAB SRK"
       srkh: "__srk_hash" # SRK hash fuse
 
+    metadata: scfw
+
   # ======== PFR section ========
   pfr:
     sub_features: [cmpa, cfpa]
     cmpa:
       erase_method: write_memory
-      additional_data: # extra data defined by customer
-        enabled: False
-        offset: -1
-        max_size: 0
+      support_additional_data: False # extra data defined by customer
     cfpa:
-      additional_data: # extra data defined by customer
-        enabled: False
-        offset: -1
-        max_size: 0
+      support_additional_data: False # extra data defined by customer
+
     requires_reset: False
     requires_scratch_erase: False
 
@@ -477,4 +501,18 @@ features:
   tlv_blob: {}
 
   # ======== Hardware Security Engine section ========
-  hse: {}
+  hse:
+    core_ids:
+      - "M7_0"
+      - "M7_1"
+      - "M7_2"
+      - "M7_3"
+    auth_schemes:
+      - "CMAC"
+      - "GMAC"
+      - "XCBC_MAC"
+      - "HMAC"
+      - "ECDSA"
+      - "EDDSA"
+      - "RSASSA_PKCS1_V15"
+      - "RSASSA_PSS"

@@ -346,6 +346,9 @@ features:
         kernel,
         dtb,
       ]
+
+    metadata: sm # uses IAE metadata for SM
+
   # ======== EdgeLock Enclave section ========
   ele: {}
 

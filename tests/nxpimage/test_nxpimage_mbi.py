@@ -400,7 +400,12 @@ def test_nxpimage_mbi_signed(
 
 @pytest.mark.parametrize(
     "config_file,device,app_offset",
-    [("mb_xip_signed.yaml", "mcxe31b", 0), ("mb_xip_signed_with_ivt.yaml", "mcxe31b", 0x1000)],
+    [
+        ("mb_xip_signed.yaml", "mcxe31b", 0),
+        ("mb_xip_signed_with_ivt.yaml", "mcxe31b", 0x1000),
+        ("mb_xip_smr.yaml", "mcxe31b", 0),
+        ("mb_xip_smr_with_ivt.yaml", "mcxe31b", 0x1000),
+    ],
 )
 def test_nxpimage_mbi_signed_mcxe31(
     cli_runner: CliRunner,

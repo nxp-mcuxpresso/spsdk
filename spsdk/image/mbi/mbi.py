@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -252,7 +252,7 @@ class MasterBootImage(FeatureBaseClass):
             None,
         )
         if not auth:
-            raise ValueError(f"Name {name} does not contain any known authentication type.")
+            raise SPSDKValueError(f"Name {name} does not contain any known authentication type.")
         target = next(
             (
                 MAP_IMAGE_TARGETS["targets"][target_identifier][0]
@@ -266,7 +266,7 @@ class MasterBootImage(FeatureBaseClass):
             None,
         )
         if not target:
-            raise ValueError(f"Name {name} does not contain any known target type.")
+            raise SPSDKValueError(f"Name {name} does not contain any known target type.")
         return auth, target
 
     @classmethod

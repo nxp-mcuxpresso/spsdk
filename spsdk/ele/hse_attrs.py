@@ -18,9 +18,9 @@ from typing import Any, Optional, Type
 
 from typing_extensions import Self
 
-from spsdk.ele.ele_message import LITTLE_ENDIAN, UINT8, UINT16, UINT32, UINT64
 from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.abstract import BaseClass
+from spsdk.utils.misc import LITTLE_ENDIAN, UINT8, UINT16, UINT32, UINT64
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 

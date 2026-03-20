@@ -211,3 +211,11 @@ HSE Secure Memory Region
    :members:
    :undoc-members:
    :show-inheritance:
+
+HSE Core Reset
+------------------------------------------------
+
+.. automodule:: spsdk.image.hse.core_reset
+   :members:
+   :undoc-members:
+   :show-inheritance:

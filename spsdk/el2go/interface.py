@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -31,7 +31,6 @@ from spsdk.mboot.mcuboot import McuBoot, StatusCode, stringify_status_code
 from spsdk.mboot.properties import PropertyTag
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.uboot.uboot import UbootFastboot, UbootSerial
-from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db, get_families
 from spsdk.utils.misc import write_file
@@ -565,7 +564,7 @@ class El2GoInterfaceHandlerMboot(EL2GOInterfaceHandler):
                 logger.error("Family and DB must be provided for CMPA cleanup method")
                 return
             cmpa = CMPA(family=client.family)
-            cmpa.set_config(Config())
+            cmpa.force_update()
             cmpa_data = cmpa.export(draw=False)
             cmpa_address = client.db.get_int(DatabaseManager.PFR, ["cmpa", "address"])
 

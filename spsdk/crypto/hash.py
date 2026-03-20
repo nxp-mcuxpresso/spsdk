@@ -45,6 +45,9 @@ class EnumHashAlgorithm(SpsdkEnum):
     SHAKE_128_256 = (9, "shake_128_256", "SHAKE128 with 256b output")
     SHAKE_256_512 = (10, "shake_256_512", "SHAKE256 with 512b output")
     SHA224 = (11, "sha224", "SHA224")
+    SHA3_224 = (12, "sha3_224", "SHA3_224")
+    SHA512_224 = (13, "sha512_224", "SHA512_224")
+    SHA512_256 = (14, "sha512_256", "SHA512_256")
     NONE = (254, "none", "NONE")
 
 

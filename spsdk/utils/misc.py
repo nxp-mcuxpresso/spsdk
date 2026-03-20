@@ -40,6 +40,16 @@ T = TypeVar("T")  # pylint: disable=invalid-name
 logger = logging.getLogger(__name__)
 
 
+# Struct format constants for common data types
+LITTLE_ENDIAN = "<"
+BIG_ENDIAN = ">"
+UINT8 = "B"
+UINT16 = "H"
+UINT32 = "L"
+INT32 = "l"
+UINT64 = "Q"
+
+
 class Endianness(str, Enum):
     """Endianness enumeration for byte order specification.
 

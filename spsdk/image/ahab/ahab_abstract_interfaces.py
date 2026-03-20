@@ -21,9 +21,8 @@ import colorama
 from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKLengthError, SPSDKParsingError
-from spsdk.image.ahab.ahab_data import LITTLE_ENDIAN, UINT8, UINT16
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.misc import bytes_to_print
+from spsdk.utils.misc import LITTLE_ENDIAN, UINT8, UINT16, bytes_to_print
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 

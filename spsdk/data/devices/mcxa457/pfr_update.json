@@ -1,0 +1,84 @@
+{
+    "cpu": "mcxa457",
+    "groups": [
+        {
+            "group": {
+                "name": "UPDATE",
+                "description": "UPDATE Configuration Area."
+            },
+            "registers": [
+                {
+                    "id": "field000",
+                    "name": "UPD_TYPE",
+                    "description": "Device configuration update request type",
+                    "offset_int": "0",
+                    "default_value_int": "0x494D4730",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "field000-bits0-31",
+                            "name": "DEVCFG_UPD_TYPE",
+                            "description": "Device configuration update request type",
+                            "values": [
+                                {
+                                    "name": "IMAGE_0_UPDATED",
+                                    "value": 1229801264,
+                                    "description": "Image 0 updated"
+                                },
+                                {
+                                    "name": "IMAGE_1_UPDATED",
+                                    "value": 1229801265,
+                                    "description": "Image 1 updated"
+                                },
+                                {
+                                    "name": "NFPA_UPDATED",
+                                    "value": 1313230913,
+                                    "description": "NFPA updated"
+                                },
+                                {
+                                    "name": "CFPA_UPDATED",
+                                    "value": 1431323718,
+                                    "description": "CFPA updated"
+                                },
+                                {
+                                    "name": "CMPA_UPDATED",
+                                    "value": 1431323725,
+                                    "description": "CMPA updated"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "UPDATE Reserved",
+                "description": "UPDATE Reserved Area."
+            },
+            "registers": [
+                {
+                    "id": "field004",
+                    "name": "UPD_PARAM0",
+                    "description": "upd param0",
+                    "offset_int": "0x0004",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field008",
+                    "name": "UPD_PARAM1",
+                    "description": "UPD PARAM1",
+                    "offset_int": "0x0008",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field00C",
+                    "name": "UPD_PARAM2",
+                    "description": "upd param2",
+                    "offset_int": "0x000C",
+                    "default_value_int": "0"
+                }
+            ]
+        }
+    ]
+}

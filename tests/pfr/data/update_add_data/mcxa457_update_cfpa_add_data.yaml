@@ -1,0 +1,24 @@
+# Copyright 2025-2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ==========================  PFR CFPA configuration template for mcxa457, Revision: latest  ===========================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxa457
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ------------------------------------===== Configuration area type [Required] =====------------------------------------
+# Description: PFR / IFR type
+# Possible options: <CFPA, cfpa>
+type: UPDATE_CFPA
+# --------------------------------------------===== mcxa457 [Required] =====--------------------------------------------
+settings_update: mcxa457_update.yaml
+settings_cfpa: mcxa457_cfpa.yaml
+additional_data_cfpa: add-data.bin

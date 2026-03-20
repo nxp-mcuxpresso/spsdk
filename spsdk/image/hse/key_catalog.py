@@ -16,14 +16,15 @@ from typing import Any
 
 from typing_extensions import Self
 
-from spsdk.ele.ele_message import LITTLE_ENDIAN, UINT8, UINT16
-from spsdk.exceptions import SPSDKParsingError, SPSDKValueError
+from spsdk.exceptions import SPSDKParsingError
 from spsdk.image.hse.common import HseKeyBits, KeyType
 from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, update_validation_schema_family
+from spsdk.utils.misc import LITTLE_ENDIAN, UINT8, UINT16
 from spsdk.utils.spsdk_enum import SpsdkEnum
+from spsdk.utils.verifier import Verifier, VerifierResult
 
 
 class MuMask(SpsdkEnum):
@@ -241,58 +242,69 @@ class KeyCatalogCfg(FeatureBaseClass):
         self.nvm_key_groups = nvm_key_groups
         self.ram_key_groups = ram_key_groups
 
-        # Validate the key catalog configuration
-        self._validate_key_catalogs()
+    def verify(self) -> Verifier:
+        """Verify key catalog configuration and return verification results.
 
-    def _validate_key_catalogs(self) -> None:
-        """Validate the key catalog configurations.
+        This method performs comprehensive verification of the key catalog configuration,
+        including validation of NVM and RAM catalogs, SHE key groups, and key type constraints.
 
-        Checks that the key catalogs meet the HSE requirements:
-        - At least one group should be defined for each catalog
-        - SHE key groups are properly configured
-        - Key group owners are valid for their catalog type
-        - Key types are valid for their catalog type
-
-        :raises SPSDKValueError: If key catalog configuration is invalid
+        :return: Verifier object containing detailed verification results and any warnings or errors.
         """
-        # Check that at least one group is defined for each catalog
-        if not self.nvm_key_groups:
-            raise SPSDKValueError("At least one group must be defined for NVM key catalog")
-        if not self.ram_key_groups:
-            raise SPSDKValueError("At least one group must be defined for RAM key catalog")
+        ret = Verifier("Key Catalog Configuration")
 
-        # Check NVM catalog
+        # Check that at least one group is defined for each catalog
+        ret.add_record(
+            "NVM Catalog Groups",
+            bool(self.nvm_key_groups),
+            "At least one group must be defined for NVM key catalog",
+        )
+        ret.add_record(
+            "RAM Catalog Groups",
+            bool(self.ram_key_groups),
+            "At least one group must be defined for RAM key catalog",
+        )
+        # Validate NVM catalog
         she_group_count = 0
         for i, group in enumerate(self.nvm_key_groups):
-            # Check if this is a SHE key group (group 0-4)
+            # Check if this is a SHE key group
             is_she_group = group.key_type == KeyType.SHE
             if is_she_group:
-                if i > 4:
-                    raise SPSDKValueError("SHE key groups can only be in groups 0-4")
+                ret.add_record(
+                    f"NVM Group {i} SHE Position", i <= 4, "SHE key group at valid position 0-4"
+                )
                 she_group_count += 1
                 # SHE groups must have ANY owner
-                if group.group_owner != KeyGroupOwner.ANY:
-                    raise SPSDKValueError("SHE key groups must have ANY owner")
+                ret.add_record(
+                    f"NVM Group {i} SHE Owner",
+                    group.group_owner == KeyGroupOwner.ANY,
+                    "SHE key group has correct owner 'ANY'",
+                )
                 # First SHE group must be at index 0
                 if she_group_count == 1 and i != 0:
-                    raise SPSDKValueError(
-                        "First SHE key group must be mapped to group 0 in NVM catalog"
+                    ret.add_record(
+                        "SHE Group Mapping",
+                        VerifierResult.ERROR,
+                        f"First SHE key group is at index {i} - must be mapped to group 0 in NVM catalog",
                     )
-            # Check that SHARED_SECRET is not in NVM catalog
-            if group.key_type == KeyType.SHARED_SECRET:
-                raise SPSDKValueError(
-                    "SHARED_SECRET key groups can only be used in RAM key catalog"
-                )
-
-        # Check RAM catalog
-        for group in self.ram_key_groups:
+            ret.add_record(
+                f"NVM Group {i} Key Type",
+                group.key_type != KeyType.SHARED_SECRET,
+                "SHARED_SECRET key groups can only be used in RAM key catalog",
+            )
+        # Validate RAM catalog
+        for i, group in enumerate(self.ram_key_groups):
             # RAM key owner must always be ANY
-            if group.group_owner != KeyGroupOwner.ANY:
-                raise SPSDKValueError("RAM key groups must have ANY owner")
-
-            # Check that RSA_PAIR is not in RAM catalog
-            if group.key_type == KeyType.RSA_PAIR:
-                raise SPSDKValueError("RSA_PAIR key groups can only be used in NVM key catalog")
+            ret.add_record(
+                f"RAM Group {i} Owner",
+                group.group_owner == KeyGroupOwner.ANY,
+                f"RAM key group has invalid owner '{group.group_owner.label}' - must be 'ANY'",
+            )
+            ret.add_record(
+                f"RAM Group {i} Key Type",
+                group.key_type != KeyType.RSA_PAIR,
+                "RSA_PAIR key groups can only be used in NVM key catalog",
+            )
+        return ret
 
     @property
     def nvm_catalog_cfg_size(self) -> int:

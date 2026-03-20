@@ -1,0 +1,45 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+#   PFR UPDATE configuration template for mcxa457, Revision: latest.
+# Created: 09/02/2026 13:01:58.
+# NXP SPSDK version: 3.8.0.dev43+g737d75888
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxa457
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ------------------------------------===== Configuration area type [Required] =====------------------------------------
+# Description: PFR / IFR type
+# Possible options: <UPDATE, update>
+type: UPDATE
+# --------------------------------------------===== mcxa457 [Required] =====--------------------------------------------
+settings:
+  # ------------------------------------------===== UPD_TYPE [Optional] =====-------------------------------------------
+  # Description: Offset: 0x00000000, Width: 32b; upd type
+  UPD_TYPE:
+    # --------------------------------------===== DEVCFG_UPD_TYPE [Optional] =====--------------------------------------
+    # Description: Offset: 0b, Width: 32b, Device configuration update request type
+    # - IMAGE_0_UPDATED, (1229801264): Image 0 updated
+    # - IMAGE_1_UPDATED, (1229801265): Image 1 updated
+    # - NFPA_UPDATED, (1313230913): NFPA updated
+    # - CFPA_UPDATED, (1431323718): CFPA updated
+    # - CMPA_UPDATED, (1431323725): CMPA updated
+    # Possible options: <IMAGE_0_UPDATED, IMAGE_1_UPDATED, NFPA_UPDATED, CFPA_UPDATED, CMPA_UPDATED>
+    DEVCFG_UPD_TYPE: CFPA_UPDATED
+  # -----------------------------------------===== UPD_PARAM0 [Optional] =====------------------------------------------
+  # Description: Offset: 0x00000004, Width: 32b; upd param0
+  UPD_PARAM0: '0x00000000'
+  # -----------------------------------------===== UPD_PARAM1 [Optional] =====------------------------------------------
+  # Description: Offset: 0x00000008, Width: 32b; UPD PARAM1
+  UPD_PARAM1: '0x00000000'
+  # -----------------------------------------===== UPD_PARAM2 [Optional] =====------------------------------------------
+  # Description: Offset: 0x0000000C, Width: 32b; upd param2
+  UPD_PARAM2: '0x00000000'

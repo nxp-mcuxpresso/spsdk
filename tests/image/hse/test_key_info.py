@@ -184,10 +184,9 @@ def test_key_info_flags_methods(family: FamilyRevision) -> None:
     assert HseKeyFlags.ACCESS_WRITE_PROT not in access_flags
 
     # Test SMR flags
-    smr_flags = key_info.get_smr_flags()
-    assert HseSmrFlags.SMR_0 in smr_flags
-    assert HseSmrFlags.SMR_1 in smr_flags
-    assert HseSmrFlags.SMR_2 not in smr_flags
+    assert HseSmrFlags.SMR_0 in key_info.smr_flags
+    assert HseSmrFlags.SMR_1 in key_info.smr_flags
+    assert HseSmrFlags.SMR_2 not in key_info.smr_flags
 
 
 def test_key_info_string_representation(family: FamilyRevision) -> None:
@@ -340,9 +339,9 @@ def test_key_info_template(family: FamilyRevision, tmp_path: str) -> None:
     config.check(schemas)
 
 
-def test_key_handle_init() -> None:
+def test_key_handle_from_attributes() -> None:
     """Test initialization of KeyHandle."""
-    key_handle = KeyHandle(KeyCatalogId.RAM, 1, 2)
+    key_handle = KeyHandle.from_attributes(KeyCatalogId.RAM, 1, 2)
 
     assert key_handle.catalog_id == KeyCatalogId.RAM
     assert key_handle.group_idx == 1
@@ -352,7 +351,7 @@ def test_key_handle_init() -> None:
 
 def test_key_handle_from_handle() -> None:
     """Test creating KeyHandle from raw handle value."""
-    key_handle = KeyHandle.from_handle(0x00010203)  # NVM(1) << 16 | 2 << 8 | 3
+    key_handle = KeyHandle(0x00010203)  # NVM(1) << 16 | 2 << 8 | 3
 
     assert key_handle.catalog_id == KeyCatalogId.NVM
     assert key_handle.group_idx == 2
@@ -376,7 +375,7 @@ def test_key_handle_parse_invalid() -> None:
 
 def test_key_handle_export() -> None:
     """Test exporting KeyHandle to bytes."""
-    key_handle = KeyHandle(KeyCatalogId.NVM, 5, 6)
+    key_handle = KeyHandle.from_attributes(KeyCatalogId.NVM, 5, 6)
     exported = key_handle.export()
 
     assert exported == b"\x06\x05\x01\x00"  # Little-endian: 0x00010506
@@ -385,32 +384,32 @@ def test_key_handle_export() -> None:
 def test_key_handle_is_valid() -> None:
     """Test is_valid method of KeyHandle."""
     # Valid key handle
-    key_handle = KeyHandle(KeyCatalogId.RAM, 1, 2)
+    key_handle = KeyHandle.from_attributes(KeyCatalogId.RAM, 1, 2)
     assert key_handle.is_valid() is True
 
     # Invalid key handle (invalid group index)
-    key_handle = KeyHandle(KeyCatalogId.RAM, KeyHandle.INVALID_GROUP_IDX, 2)
+    key_handle = KeyHandle.from_attributes(KeyCatalogId.RAM, KeyHandle.INVALID_GROUP_IDX, 2)
     assert key_handle.is_valid() is False
 
     # Invalid key handle (invalid slot index)
-    key_handle = KeyHandle(KeyCatalogId.RAM, 1, KeyHandle.INVALID_SLOT_IDX)
+    key_handle = KeyHandle.from_attributes(KeyCatalogId.RAM, 1, KeyHandle.INVALID_SLOT_IDX)
     assert key_handle.is_valid() is False
 
 
 def test_key_handle_is_rom_key() -> None:
     """Test is_rom_key property of KeyHandle."""
     # ROM key
-    key_handle = KeyHandle(KeyCatalogId.ROM, 1, 2)
+    key_handle = KeyHandle.from_attributes(KeyCatalogId.ROM, 1, 2)
     assert key_handle.is_rom_key is True
 
     # Non-ROM key
-    key_handle = KeyHandle(KeyCatalogId.RAM, 1, 2)
+    key_handle = KeyHandle.from_attributes(KeyCatalogId.RAM, 1, 2)
     assert key_handle.is_rom_key is False
 
 
 def test_key_handle_string_representation() -> None:
     """Test string representation of KeyHandle."""
-    key_handle = KeyHandle(KeyCatalogId.NVM, 3, 4)
+    key_handle = KeyHandle.from_attributes(KeyCatalogId.NVM, 3, 4)
     str_repr = str(key_handle)
 
     assert "Key Handle: 0x00010304" in str_repr
@@ -422,13 +421,13 @@ def test_key_handle_string_representation() -> None:
 def test_key_handle_predefined_constants() -> None:
     """Test predefined key handle constants."""
     # ROM_KEY_AES256_KEY0
-    key_handle = KeyHandle.from_handle(KeyHandle.ROM_KEY_AES256_KEY0)
+    key_handle = KeyHandle(KeyHandle.ROM_KEY_AES256_KEY0)
     assert key_handle.catalog_id == KeyCatalogId.ROM
     assert key_handle.group_idx == 0
     assert key_handle.slot_idx == 0
 
     # ROM_KEY_RSA3072_PUB_KEY0
-    key_handle = KeyHandle.from_handle(KeyHandle.ROM_KEY_RSA3072_PUB_KEY0)
+    key_handle = KeyHandle(KeyHandle.ROM_KEY_RSA3072_PUB_KEY0)
     assert key_handle.catalog_id == KeyCatalogId.ROM
     assert key_handle.group_idx == 1
     assert key_handle.slot_idx == 0

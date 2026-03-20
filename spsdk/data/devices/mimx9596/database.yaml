@@ -294,16 +294,39 @@ features:
           [0x0A, executable_fast_boot_image, Executable fast boot Image]
         OEI_DDR: [0x0D, oei_ddr, Executable boot Image]
         V2X_DUMMY: [0x0E, v2x_dummy, V2X dummy Image]
-
       ele:
         ELE_AS_IMAGE: [0x05, ele_as_image, EdgeLock Enclave Image in OEM Image]
         ELE: [0x06, ele, EdgeLock Enclave Image]
-
       v2x:
         V2X_AS_IMAGE: [0x0A, v2x_as_image, V2X image as OEM Image]
         V2X_PRIMARY: [0x0B, v2x_primary, V2X primary Image]
         V2X_SECONDARY: [0x0C, v2x_secondary, V2X secondary Image]
         V2X_ROM_PATCH: [0x0D, v2x_rom_patch, V2X rom patch Image]
+
+    signature_algorithms:
+      RSA_PSS: [0x22, "RSA_PSS", "RSA PSS signature algorithm"]
+      ECDSA: [0x27, "ECDSA", "ECDSA signature algorithm"]
+      SM2: [0x28, "SM2", "SM2 signature algorithm"]
+      # V2 only
+      DILITHIUM: [0xD1, "DILITHIUM", "Dilithium PQC algorithm"]
+      ML_DSA: [0xD2, "ML-DSA", "ML-DSA PQC algorithm"]
+
+    hash_algorithms:
+      SHA256: [0x00, "SHA256", "SHA-256 hash algorithm"]
+      SHA384: [0x01, "SHA384", "SHA-384 hash algorithm"]
+      SHA512: [0x02, "SHA512", "SHA-512 hash algorithm"]
+      SM3: [0x03, "SM3", "SM3 hash algorithm"]
+      # V2 only
+      SHA3_256: [0x04, "SHA3_256", "SHA3-256 hash algorithm"]
+      SHA3_384: [0x05, "SHA3_384", "SHA3-384 hash algorithm"]
+      SHA3_512: [0x06, "SHA3_512", "SHA3-512 hash algorithm"]
+      SHAKE_128_256: [0x08, "SHAKE_128_256", "SHAKE-128 with 256-bit output"]
+      SHAKE_256_512: [0x09, "SHAKE_256_512", "SHAKE-256 with 512-bit output"]
+
+    srk_sets:
+      NONE: [0x00, "none", "Image is not signed"]
+      NXP: [0x01, "nxp", "Signed by NXP keys"]
+      OEM: [0x02, "oem", "Signed by OEM keys"]
 
     image_types_mapping:
       ele: [6]
@@ -396,6 +419,9 @@ features:
         kernel,
         dtb,
       ]
+
+    metadata: sm # uses IAE metadata for SM
+
   # ======== EdgeLock Enclave section ========
   ele: {}
 

@@ -22,7 +22,12 @@ from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.signature_provider import SignatureProvider
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer
 from spsdk.image.ahab.ahab_blob import AhabBlob
-from spsdk.image.ahab.ahab_data import AhabChipContainerConfig, AHABTags, FlagsSrkSet
+from spsdk.image.ahab.ahab_data import (
+    AhabChipContainerConfig,
+    AHABTags,
+    FlagsSrkSet,
+    create_chip_config,
+)
 from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.ahab.ahab_sign_block import SignatureBlock, SignatureBlockV2
 from spsdk.image.ahab.ahab_signature import ContainerSignature
@@ -175,7 +180,10 @@ def ahab_update_keyblob(
             logger.warning(
                 "Updating keyblob of a container signed by NXP, please make sure this is intended behaviour."
             )
-        container_chip_config = AhabChipContainerConfig(used_srk_id=ahab_srk_id)
+        base_config = create_chip_config(family)
+        container_chip_config = AhabChipContainerConfig(base=base_config, used_srk_id=ahab_srk_id)
+        container_chip_config.base.signature_algorithms = base_config.signature_algorithms
+        container_chip_config.base.hash_algorithms = base_config.hash_algorithms
         signature_block = container_type.SIGNATURE_BLOCK.parse(
             data[signature_block_offset:], chip_config=container_chip_config
         )
@@ -266,7 +274,10 @@ def ahab_re_sign(
         ahab_srk_id = (flags >> container_type.FLAGS_USED_SRK_ID_OFFSET) & (
             (1 << container_type.FLAGS_USED_SRK_ID_SIZE) - 1
         )
-        container_chip_config = AhabChipContainerConfig(used_srk_id=ahab_srk_id)
+        base_config = create_chip_config(family)
+        container_chip_config = AhabChipContainerConfig(base=base_config, used_srk_id=ahab_srk_id)
+        container_chip_config.base.signature_algorithms = base_config.signature_algorithms
+        container_chip_config.base.hash_algorithms = base_config.hash_algorithms
         signature_block = container_type.SIGNATURE_BLOCK.parse(
             data[signature_block_offset:], chip_config=container_chip_config
         )

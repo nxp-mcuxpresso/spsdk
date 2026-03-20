@@ -13,12 +13,15 @@ dynamic values, and enhanced error handling tailored for SPSDK applications.
 """
 
 from dataclasses import dataclass
-from enum import Enum
-from typing import Callable, Optional, Type, Union, cast
+from enum import Enum, IntFlag
+from typing import TYPE_CHECKING, Any, Callable, Iterator, Optional, Sequence, Type, Union, cast
 
 from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKKeyError, SPSDKTypeError
+
+if TYPE_CHECKING:
+    from spsdk.utils.database import Features
 
 
 @dataclass(frozen=True)
@@ -267,3 +270,269 @@ class SpsdkSoftEnum(SpsdkEnum):
                 )
 
             return cast(Self, UnknownEnum).from_tag(tag)
+
+
+class SpsdkDynamicEnum:
+    """SPSDK Dynamic Enumeration loader from database.
+
+    This class provides functionality for dynamically loading enumeration classes
+    from database configurations at runtime. It acts as a factory and proxy for
+    dynamically created enum types, supporting lazy loading and caching.
+    """
+
+    def __init__(
+        self,
+        db: "Features",
+        feature: str,
+        enum_key: str,
+        enum_name: str,
+        base_key: Optional[list[str]] = None,
+        fallback_enum: Optional[Type[SpsdkEnum]] = None,
+    ):
+        """Initialize dynamic enum loader.
+
+        :param db: Database instance to load from
+        :param feature: Database feature identifier
+        :param enum_key: Key in database where enum data is stored
+        :param enum_name: Name for the dynamically created enum class
+        :param base_key: Optional hierarchical keys for nested database access
+        :param fallback_enum: Optional fallback enum class if database load fails
+        """
+        self._db = db
+        self._feature = feature
+        self._enum_key = enum_key
+        self._enum_name = enum_name
+        self._base_key = base_key
+        self._fallback_enum = fallback_enum
+        self._cached_enum: Optional[Type[SpsdkEnum]] = None
+
+    def _make_key(self, key: str) -> Union[str, list[str]]:
+        """Create a composite key from base key and provided key.
+
+        :param key: The key to be combined with base key.
+        :return: Original key if no base key exists, otherwise list with base key elements and new key.
+        """
+        if self._base_key is None:
+            return key
+        ret = []
+        ret.extend(self._base_key)
+        ret.append(key)
+        return ret
+
+    def _get_enum_class(self) -> Type[SpsdkEnum]:
+        """Get or create the dynamic enum class.
+
+        Loads enum data from database and creates a SpsdkSoftEnum class. Results are
+        cached to avoid repeated database queries. Falls back to fallback_enum if
+        database load fails.
+
+        :return: Dynamically created or fallback enum class
+        """
+        if self._cached_enum is not None:
+            return self._cached_enum
+
+        try:
+            enum_data = self._db.get_dict(self._feature, self._make_key(self._enum_key))
+            self._cached_enum = cast(
+                Type[SpsdkEnum],
+                SpsdkSoftEnum.create_from_dict(self._enum_name, enum_data),
+            )
+            return self._cached_enum
+        except Exception:
+            if self._fallback_enum:
+                self._cached_enum = self._fallback_enum
+                return self._cached_enum
+            raise
+
+    @classmethod
+    def create_from_db(
+        cls,
+        db: "Features",
+        feature: str,
+        enum_key: str,
+        enum_name: str,
+        base_key: Optional[list[str]] = None,
+        fallback_enum: Optional[Type[SpsdkEnum]] = None,
+    ) -> Type[SpsdkEnum]:
+        """Create a dynamic enum class from database configuration.
+
+        This is a convenience class method that creates an instance and immediately
+        returns the loaded enum class.
+
+        :param db: Database instance to load from
+        :param feature: Database feature identifier
+        :param enum_key: Key in database where enum data is stored
+        :param enum_name: Name for the dynamically created enum class
+        :param base_key: Optional hierarchical keys for nested database access
+        :param fallback_enum: Optional fallback enum class if database load fails
+        :return: Dynamically created enum class
+        """
+        instance = cls(
+            db=db,
+            feature=feature,
+            enum_key=enum_key,
+            enum_name=enum_name,
+            base_key=base_key,
+            fallback_enum=fallback_enum,
+        )
+        return instance._get_enum_class()
+
+    def __iter__(self) -> Iterator:
+        """Make the dynamic enum iterable by delegating to the underlying enum class.
+
+        :return: Iterator over enum members
+        """
+        return iter(self._get_enum_class())
+
+    def __getattr__(self, name: str) -> Any:
+        """Delegate attribute access to the underlying enum class.
+
+        :param name: Attribute name to access
+        :return: Attribute value from the enum class
+        """
+        return getattr(self._get_enum_class(), name)
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        """Make the instance callable by delegating to the underlying enum class.
+
+        :return: Result of calling the enum class
+        """
+        return self._get_enum_class()(*args, **kwargs)
+
+
+class SpsdkIntFlag(IntFlag):
+    """SPSDK enhanced integer flag enumeration with extended functionality.
+
+    This class extends Python's standard IntFlag to provide additional features
+    for SPSDK operations including flexible flag creation from various input types,
+    validation of unknown flags, and enhanced flag manipulation capabilities.
+
+    SpsdkIntFlag supports bitwise operations and provides utility methods for:
+    - Creating flags from labels, values, or mixed lists
+    - Converting flag combinations back to individual components
+    - Validating flag values against defined enum members
+    - Case-insensitive label lookup
+
+    Example:
+        >>> class HouseFeatures(SpsdkIntFlag):
+        ...     HEATING = 1
+        ...     AC = 2
+        ...     ELECTRICITY = 4
+        ...     GAS = 8
+
+        >>> # Create from labels
+        >>> features = HouseFeatures.from_labels(["HEATING", "AC"])
+        >>> print(features.value)  # 3
+
+        >>> # Create from mixed list
+        >>> features = HouseFeatures.from_list(["heating", 4, HouseFeatures.GAS])
+        >>> print(features.value)  # 13
+
+        >>> # Convert back to individual flags
+        >>> individual = features.to_list()
+        >>> print([f.name for f in individual])  # ['HEATING', 'ELECTRICITY', 'GAS']
+
+        >>> # Check for unknown flags
+        >>> unknown_flags = HouseFeatures(1000)
+        >>> print(unknown_flags.has_unknown_flags())  # True
+
+    Note:
+        Unlike standard IntFlag, this class provides enhanced error handling
+        and validation capabilities specifically designed for SPSDK applications.
+        All label-based operations are case-insensitive for improved usability.
+    """
+
+    @classmethod
+    def from_label(cls, label: str) -> Self:
+        """Get flag by label name."""
+        # Case-insensitive search through members
+        label_upper = label.upper()
+        for name, item in cls.__members__.items():
+            if name == label_upper:
+                return item
+
+        raise SPSDKKeyError(f"There is no {cls.__name__} item with label {label} defined")
+
+    @classmethod
+    def from_labels(cls, labels: list[str]) -> Self:
+        """Get flag by label name."""
+        combined = cls(0)
+        for label in labels:
+            combined |= cls.from_label(label)
+        return combined
+
+    @classmethod
+    def from_values(cls, values: list[int]) -> Self:
+        """Get flag by label name."""
+        result = cls(0)
+        for value in values:
+            result |= cls(value)
+        return result
+
+    @classmethod
+    def from_list(cls, items: Sequence[Union[str, int, "Self"]]) -> Self:
+        """Get flag from mixed list of labels and values.
+
+        :param items: List containing label strings and/or integer values
+        :return: Combined flag value
+        """
+        result = cls(0)
+        for item in items:
+            if isinstance(item, str):
+                result |= cls.from_label(item)
+            elif isinstance(item, cls):
+                result |= item
+            else:
+                result |= cls(item)
+        return result
+
+    def to_list(self) -> list[Self]:
+        """Get list of SMR items from the map.
+
+        :return: List of SMR items (0-31) that are set in the map
+        """
+        items = []
+        for member in self.__class__.__members__.values():
+            if member.value == 0:
+                # Special case: if there's a zero-valued flag and self is zero, include it
+                if self.value == 0:
+                    items.append(member)
+            else:
+                # Check if this member is a single bit flag (power of 2) and is set in self
+                if (member & (member - 1)) == 0 and (self & member):
+                    items.append(member)
+        return items
+
+    @property
+    def has_unknown_flags(self) -> bool:
+        """Check if this flag combination contains any undefined/unknown flags.
+
+        This method verifies whether the current flag value contains any bits
+        that are not defined as valid enum members. This can happen when creating
+        a flag instance with arbitrary integer values that don't correspond to
+        defined enum members.
+
+        :return: True if unknown flags are present, False if all flags are defined
+
+        Example:
+            >>> class MyFlags(SpsdkIntFlag):
+            ...     FLAG_A = 1
+            ...     FLAG_B = 2
+            >>> valid_flags = MyFlags(3)  # FLAG_A | FLAG_B
+            >>> valid_flags.has_unknown_flags()
+            False
+            >>> invalid_flags = MyFlags(1000)  # Contains undefined bits
+            >>> invalid_flags.has_unknown_flags()
+            True
+        """
+        if self.value == 0:
+            return False
+
+        # Get all valid flag values (powers of 2) from enum members
+        valid_flags = 0
+        for member in self.__class__.__members__.values():
+            if member != 0:
+                valid_flags |= member.value
+
+        # Check if current value has any bits set that are not in valid_flags
+        return (self.value & ~valid_flags) != 0

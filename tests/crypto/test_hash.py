@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -187,7 +187,7 @@ def test_get_hash_algorithm() -> None:
     have the expected digest_size attribute.
     """
     # Test valid algorithms
-    for algorithm in [EnumHashAlgorithm.SHA1, EnumHashAlgorithm.SHA256, EnumHashAlgorithm.SHA384]:
+    for algorithm in [alg for alg in EnumHashAlgorithm if alg != EnumHashAlgorithm.NONE]:
         hash_algo = get_hash_algorithm(algorithm)
         assert hash_algo is not None
         assert hasattr(hash_algo, "digest_size")
