@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -21,7 +21,7 @@ from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.rng import random_bytes
 from spsdk.crypto.symmetric import Counter
 from spsdk.exceptions import SPSDKError
-from spsdk.image.cert_block.cert_blocks import CertBlockV1
+from spsdk.image.cert_block.cert_block_v1 import CertBlockV1
 from spsdk.sbfile.sb2.commands import CmdErase, CmdLoad, CmdReset
 from spsdk.sbfile.sb2.sections import BootSectionV2, CertSectionV2
 from spsdk.utils.family import FamilyRevision

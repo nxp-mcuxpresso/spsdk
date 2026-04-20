@@ -301,4 +301,4 @@ extra_requirements = ["requirements-develop.txt", "docs/requirements.txt"]
 keep_unbound = true
 strategy = "next-major"
 # Remove this when 3.10 is dropped alongside 3.10 restriction in requirements.txt
-ignore = ["click"]
+ignore = ["click", "chardet"]

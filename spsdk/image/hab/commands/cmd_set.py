@@ -230,3 +230,25 @@ class CmdSet(CmdBase):
         if engine_cfg is not None:
             cmd.engine_cfg = int(engine_cfg)
         return cmd
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the SetEngine command.
+
+        Exports the engine configuration parameters including hash algorithm,
+        engine type, and engine configuration.
+
+        :param data_path: Path to store the data files of configuration (unused for SetEngine).
+        :return: Configuration dictionary for SetEngine command.
+        """
+        ret_cfg = Config()
+
+        # Export hash algorithm
+        ret_cfg["SetEngine_HashAlgorithm"] = self.hash_algorithm.label
+
+        # Export engine
+        ret_cfg["SetEngine_Engine"] = self.engine.label
+
+        # Export engine configuration
+        ret_cfg["SetEngine_EngineConfiguration"] = self.engine_cfg
+
+        return ret_cfg

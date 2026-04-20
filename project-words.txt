@@ -776,6 +776,7 @@ LIGHTWHITE
 LIGHTYELLOW
 listdev
 listdir
+llms
 LNOT
 loadaddr
 loadcmac
@@ -946,6 +947,7 @@ nocak
 NOCAK
 noconfirm
 nofcb
+noindex
 nolock
 nombstr
 nonsecure

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK SB3.1 functions testing module.
 
 This module contains comprehensive test cases for SB3.1 (Secure Binary 3.1) format
@@ -19,7 +20,7 @@ import pytest
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.signature_provider import PlainFileSP
 from spsdk.exceptions import SPSDKError
-from spsdk.image.cert_block.cert_blocks import CertBlockV21
+from spsdk.image.cert_block.cert_block_v21 import CertBlockV21
 from spsdk.sbfile.sb31.commands import BaseCmd, CmdErase, load_cmd_data_from_cfg
 from spsdk.sbfile.sb31.functions import (
     KeyDerivationMode,

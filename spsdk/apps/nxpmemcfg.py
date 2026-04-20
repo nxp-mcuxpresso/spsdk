@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -250,7 +250,6 @@ def export(config: Config) -> MemoryConfig:
     :param config: Memory Configuration dictionary.
     """
     # Validate base items in config
-    MemoryConfig.pre_check_config(config)
     memcfg = MemoryConfig.load_from_config(config)
     logger.info(f"Family:     {memcfg.family}")
     logger.info(f"Peripheral: {memcfg.peripheral}")

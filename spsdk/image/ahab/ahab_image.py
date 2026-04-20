@@ -630,7 +630,8 @@ class AHABImage(FeatureBaseClass):
                             container_type.parse(
                                 ahab_bin,
                                 chip_config=ahab.chip_config,
-                                offset=container_type.get_container_offset(i),
+                                offset=0,
+                                container_offset=container_type.get_container_offset(i),
                             )
                         )
                         i += 1
@@ -705,7 +706,8 @@ class AHABImage(FeatureBaseClass):
                     container = container_type.parse(
                         data,
                         chip_config=ret.chip_config,
-                        offset=container_type.get_container_offset(i),
+                        offset=0,
+                        container_offset=container_type.get_container_offset(i),
                     )
                     ret.ahab_containers.append(container)
             except (SPSDKError, IndexError) as exc:
@@ -779,6 +781,7 @@ class AHABImage(FeatureBaseClass):
                 and templates.
         """
         db = get_db(family)
+
         extra_images = db.get_list(DatabaseManager.AHAB, "extra_images", [])
         core_ids = SpsdkSoftEnum.create_from_dict(
             "AHABCoreId", db.get_dict(DatabaseManager.AHAB, "core_ids")

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """HAB Unlock command implementations for various hardware engines.
 
 This module provides classes to create and manage unlock commands for different
@@ -204,6 +205,152 @@ class CmdUnlockBase(CmdBase):
             raw_data += pack(">Q", self.uid)
         return raw_data
 
+    def get_unlock_features_config(self) -> Optional[str]:
+        """Get unlock features as human-readable configuration string.
+
+        Converts the internal features bitmask into a comma-separated list of feature labels
+        based on the engine type and feature enumeration mapping.
+        :return: Human-readable string of features separated by commas, or None if no features are set.
+        """
+        # Export features
+        # Get the features enum class for this engine
+        features_class = CMD_TO_FEATURE.get(type(self))
+        if features_class:
+            # Convert features bitmask to list of feature labels
+            feature_labels = []
+            for feature_enum in features_class:
+                if self.features & feature_enum.tag:
+                    feature_labels.append(feature_enum.label)
+
+            if feature_labels:
+                # Export as comma-separated string
+                return ", ".join(feature_labels)
+
+        return None
+
+
+class CmdUnlock(CmdUnlockBase):
+    """HAB unlock engine command implementation.
+
+    This class provides a concrete implementation of the HAB unlock command,
+    supporting configuration-based initialization and feature/UID calculations
+    for unlocking specific hardware engines in NXP MCUs.
+
+    :cvar CMD_IDENTIFIER: Command identifier for unlock operations.
+    """
+
+    CMD_IDENTIFIER = CmdName.UNLOCK
+
+    @classmethod
+    def load_from_config(cls, config: Config, cmd_index: Optional[int] = None) -> Self:
+        """Load configuration into the unlock command.
+
+        Creates an unlock command instance from the provided HAB image configuration by parsing
+        the unlock engine type, features, and UID values from the configuration data.
+
+        :param config: HAB image configuration containing unlock command settings.
+        :param cmd_index: Optional index of the command in the configuration in case multiple
+            same commands are present.
+        :return: Configured unlock command instance.
+        """
+        cmd_cfg = cls._get_cmd_config(config, cmd_index)
+        unlock_engine = EngineEnum.from_label(cmd_cfg["Unlock_Engine"])
+        klass = CmdUnlockBase.get_unlock_class(unlock_engine)
+        kwargs = {}
+        unlock_features = cmd_cfg.get("Unlock_Features")
+        if unlock_features is not None:
+            features_class = CMD_TO_FEATURE[klass]
+            # can be a coma separated list or the actual list
+            features_str: list = (
+                unlock_features.split(",") if isinstance(unlock_features, str) else unlock_features
+            )
+            features = [features_class.from_label(feature).tag for feature in features_str]
+
+            kwargs["features"] = cls.calc_features_value(features)
+        unlock_uid: str = cmd_cfg.get("Unlock_UID")
+        if unlock_uid:
+            # can be a coma separated list or the actual list
+            uids: list[int] = (
+                [int(uid.strip(), 0) for uid in unlock_uid.split(",")]
+                if isinstance(unlock_uid, str)
+                else unlock_uid
+            )
+            kwargs["uid"] = cls.calc_uid(uids)
+        cmd = klass(**kwargs)  # type: ignore
+        return cmd  # type: ignore
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the Unlock command.
+
+        Exports the unlock configuration including engine type, features,
+        and optional UID values.
+
+        :param data_path: Path to store the data files of configuration (unused for Unlock).
+        :return: Configuration dictionary for Unlock command.
+        """
+        ret_cfg = Config()
+
+        # Export engine type
+        ret_cfg["Unlock_Engine"] = self.engine.label
+
+        # Export features
+        # Get the features enum class for this engine
+        features_class = CMD_TO_FEATURE.get(type(self))
+        if features_class:
+            # Convert features bitmask to list of feature labels
+            feature_labels = []
+            for feature_enum in features_class:
+                if self.features & feature_enum.tag:
+                    feature_labels.append(feature_enum.label)
+
+            if feature_labels:
+                # Export as comma-separated string
+                ret_cfg["Unlock_Features"] = ", ".join(feature_labels)
+
+        # Export UID
+        # Convert UID to list of bytes (reverse of calc_uid)
+        uid_bytes: list[int] = []
+        uid_value = self.uid
+        while uid_value > 0:
+            uid_bytes.insert(0, uid_value & 0xFF)
+            uid_value >>= 8
+
+        if uid_bytes:
+            # Export as comma-separated hex string
+            ret_cfg["Unlock_UID"] = ", ".join([f"0x{byte:02X}" for byte in uid_bytes])
+
+        return ret_cfg
+
+    @classmethod
+    def calc_features_value(cls, features: list[int]) -> int:
+        """Calculate the unlock features value.
+
+        This method performs a bitwise OR operation on all feature values in the provided
+        list to combine them into a single unlock features value.
+
+        :param features: List of integer feature values to be combined.
+        :return: Combined features value as a single integer.
+        """
+        result = 0
+        for feature in features:
+            result |= feature
+        return result
+
+    @classmethod
+    def calc_uid(cls, uid_values: list[int]) -> int:
+        """Calculate the unlock UID value from a list of UID components.
+
+        This method combines multiple UID values into a single integer by shifting each value
+        8 bits to the left and performing a bitwise OR operation.
+
+        :param uid_values: List of integer UID components to be combined.
+        :return: Combined UID value as a single integer.
+        """
+        result = 0
+        for uid in uid_values:
+            result = (result << 8) | uid
+        return result
+
 
 class UnlockOCOTPFeaturesEnum(SpsdkEnum):
     """SPSDK enumeration for HAB Unlock command OCOTP features.
@@ -220,7 +367,7 @@ class UnlockOCOTPFeaturesEnum(SpsdkEnum):
     JTAG = (8, "JTAG", "Unlock JTAG using SCS HAB_JDE bit.")
 
 
-class CmdUnlockOCOTP(CmdUnlockBase):
+class CmdUnlockOCOTP(CmdUnlock):
     """HAB Unlock command for On-Chip One-Time Programmable memory (fuses).
 
     This command manages unlock operations for OCOTP memory features including
@@ -228,6 +375,8 @@ class CmdUnlockOCOTP(CmdUnlockBase):
     functionality. It provides granular control over which OCOTP features
     remain unlocked after HAB authentication.
     """
+
+    CMD_IDENTIFIER = CmdName.UNLOCK
 
     def __init__(self, features: Union[int, UnlockOCOTPFeaturesEnum] = 0, uid: int = 0):
         """Initialize OCOTP unlock command.
@@ -319,7 +468,7 @@ class CmdUnlockOCOTP(CmdUnlockBase):
         return msg
 
 
-class CmdUnlockCAAM(CmdUnlockBase):
+class CmdUnlockCAAM(CmdUnlock):
     """HAB command for unlocking CAAM (Cryptographic Acceleration and Assurance Module) features.
 
     This command allows selective unlocking of specific CAAM hardware features including
@@ -327,6 +476,8 @@ class CmdUnlockCAAM(CmdUnlockBase):
     write operations. The unlock configuration is controlled through feature flags
     that determine which CAAM components remain accessible after the unlock operation.
     """
+
+    CMD_IDENTIFIER = CmdName.UNLOCK
 
     def __init__(self, features: Union[int, UnlockCAAMFeaturesEnum] = 0):
         """Initialize CAAM unlock command.
@@ -398,13 +549,15 @@ class UnlockSNVSFeaturesEnum(SpsdkEnum):
     ZMK_WRITE = (2, "ZMK WRITE", "Leaves Zero-able Master Key write unlocked.")
 
 
-class CmdUnlockSNVS(CmdUnlockBase):
+class CmdUnlockSNVS(CmdUnlock):
     """HAB command for unlocking Secure Non-Volatile Storage (SNVS) engine features.
 
     This command allows selective unlocking of SNVS engine functionality including
     LP software reset and Zero Master Key write operations. It extends the base
     unlock command functionality with SNVS-specific feature management.
     """
+
+    CMD_IDENTIFIER = CmdName.UNLOCK
 
     def __init__(self, features: Union[int, UnlockSNVSFeaturesEnum] = 0) -> None:
         """Initialize SNVS unlock command.
@@ -445,14 +598,40 @@ class CmdUnlockSNVS(CmdUnlockBase):
         msg += f"Unlock ZMK Write : {self.unlock_zmk_write}\n"
         return msg
 
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the base Unlock command.
 
-class CmdUnlockAny(CmdUnlockBase):
+        This is a base implementation that should be overridden by derived classes.
+        It provides a fallback for generic unlock commands.
+
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary for Unlock command.
+        """
+        ret_cfg = Config()
+
+        # Export engine type
+        ret_cfg["Unlock_Engine"] = self.engine.label
+
+        # Export features if present
+        features = self.get_unlock_features_config()
+        if features:
+            ret_cfg["Unlock_Features"] = features
+
+        # Export UID if present
+        ret_cfg["Unlock_UID"] = f"0x{self.uid:X}"
+
+        return ret_cfg
+
+
+class CmdUnlockAny(CmdUnlock):
     """HAB unlock command for generic engine operations.
 
     This class implements a generic unlock command that can be used with any
     HAB engine type, providing flexibility for unlocking operations with
     configurable features and unique identifiers.
     """
+
+    CMD_IDENTIFIER = CmdName.UNLOCK
 
     def __init__(self, engine: EngineEnum = EngineEnum.ANY, features: int = 0, uid: int = 0):
         """Initialize HAB Unlock command.
@@ -478,87 +657,6 @@ class CmdUnlockAny(CmdUnlockBase):
         msg += f"Features: {self.features}\n"
         msg += f"UID:      {self.uid}\n"
         return msg
-
-
-class CmdUnlock(CmdUnlockBase):
-    """HAB unlock engine command implementation.
-
-    This class provides a concrete implementation of the HAB unlock command,
-    supporting configuration-based initialization and feature/UID calculations
-    for unlocking specific hardware engines in NXP MCUs.
-
-    :cvar CMD_IDENTIFIER: Command identifier for unlock operations.
-    """
-
-    CMD_IDENTIFIER = CmdName.UNLOCK
-
-    @classmethod
-    def load_from_config(cls, config: Config, cmd_index: Optional[int] = None) -> Self:
-        """Load configuration into the unlock command.
-
-        Creates an unlock command instance from the provided HAB image configuration by parsing
-        the unlock engine type, features, and UID values from the configuration data.
-
-        :param config: HAB image configuration containing unlock command settings.
-        :param cmd_index: Optional index of the command in the configuration in case multiple
-            same commands are present.
-        :return: Configured unlock command instance.
-        """
-        cmd_cfg = cls._get_cmd_config(config, cmd_index)
-        unlock_engine = EngineEnum.from_label(cmd_cfg["Unlock_Engine"])
-        klass = CmdUnlockBase.get_unlock_class(unlock_engine)
-        kwargs = {}
-        unlock_features = cmd_cfg.get("Unlock_Features")
-        if unlock_features is not None:
-            features_class = CMD_TO_FEATURE[klass]
-            # can be a coma separated list or the actual list
-            features_str: list = (
-                unlock_features.split(",") if isinstance(unlock_features, str) else unlock_features
-            )
-            features = [features_class.from_label(feature).tag for feature in features_str]
-
-            kwargs["features"] = cls.calc_features_value(features)
-        unlock_uid: str = cmd_cfg.get("Unlock_UID")
-        if unlock_uid:
-            # can be a coma separated list or the actual list
-            uids: list[int] = (
-                [int(uid.strip(), 0) for uid in unlock_uid.split(",")]
-                if isinstance(unlock_uid, str)
-                else unlock_uid
-            )
-            kwargs["uid"] = cls.calc_uid(uids)
-        cmd = klass(**kwargs)  # type: ignore
-        return cmd  # type: ignore
-
-    @classmethod
-    def calc_features_value(cls, features: list[int]) -> int:
-        """Calculate the unlock features value.
-
-        This method performs a bitwise OR operation on all feature values in the provided
-        list to combine them into a single unlock features value.
-
-        :param features: List of integer feature values to be combined.
-        :return: Combined features value as a single integer.
-        """
-        result = 0
-        for feature in features:
-            result |= feature
-        return result
-
-    @classmethod
-    def calc_uid(cls, uid_values: list[int]) -> int:
-        """Calculate the unlock UID value from a list of UID components.
-
-        This method combines multiple UID values into a single integer by shifting each value
-        8 bits to the left and performing a bitwise OR operation.
-
-        :param uid_values: List of integer UID components to be combined.
-        :return: Combined UID value as a single integer.
-        """
-        result = 0
-        for uid in uid_values:
-            result = (result << 8) | uid
-        return result
 
 
 CMD_TO_FEATURE = {

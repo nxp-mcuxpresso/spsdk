@@ -1,6 +1,7 @@
 asn1crypto<2,>=1.2
 bincopy<21,>=17.14.5
 bitstring<5,>=3.1
+chardet<6 # remove once https://github.com/psf/requests/issues/7223 is fixed
 click-command-tree<2
 click-option-group<1,>=0.3.0
 click!=8.1.4,!=8.3,<9,>=7.1

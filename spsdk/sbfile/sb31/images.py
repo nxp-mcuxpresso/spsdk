@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -23,7 +23,7 @@ from spsdk.crypto.hash import EnumHashAlgorithm, get_hash, get_hash_length
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
 from spsdk.crypto.symmetric import aes_cbc_decrypt
 from spsdk.exceptions import SPSDKError, SPSDKValueError
-from spsdk.image.cert_block.cert_blocks import CertBlockV21
+from spsdk.image.cert_block.cert_block_v21 import CertBlockV21
 from spsdk.sbfile.sb31.commands import CFG_NAME_TO_CLASS, BaseCmd, CmdSectionHeader
 from spsdk.sbfile.sb31.commands_validator import CommandsValidator
 from spsdk.sbfile.utils.encryption_provider import (

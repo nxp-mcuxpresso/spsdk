@@ -1,24 +1,6 @@
-# Copyright 2023-2025 NXP
+# Copyright 2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
----
-family:
-  type: object
-  required:
-    - family
-  properties:
-    family:
-      type: string
-      title: MCU family
-      description:
-        Family identifier including the chip revision. If revision is not
-        present, latest revision is used as default.
-      template_value: mimxrt1189
-    revision:
-      type: string
-      title: MCU revision
-      description: Revision of silicon
-      template_value: latest
 
 signed_message:
   type: object
@@ -137,7 +119,18 @@ signed_message:
           title: Hash Algorithm
           description: "Hash algorithm used for SRK records. If not specified, default algorithm based on key type will be used."
           enum:
-            [default, sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, sm3]
+            [
+              default,
+              sha256,
+              sha384,
+              sha512,
+              sha3_256,
+              sha3_384,
+              sha3_512,
+              shake_128_256,
+              shake_256_512,
+              sm3,
+            ]
           template_value: default
         rsa_exponent_legacy_size:
           type: boolean
@@ -154,10 +147,10 @@ signed_message:
           title: Super Root Key (SRK) table
           description:
             "Table containing the used SRK records. All SRKs must be of the same
-            type. Supported signing algorithms are: RSA-PSS, ECDSA, Dilithium or SM2. Supported hash algorithms:
-            sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1,
-            rsa2048, rsa4096, dilithium3, sm2. Certificate may be of Certificate Authority. Dilithium algorithms are supported just
-            in new type of AHAB container"
+            type. Supported signing algorithms are: RSA-PSS, ECDSA, ML-DSA, Dilithium or SM2. Supported hash algorithms:
+            sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, shake_128_256, shake_256_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1,
+            rsa2048, rsa3072, rsa4096, dil3, dil5, mldsa65, mldsa87, sm2. Certificate may be of Certificate Authority. PQC algorithms are supported just
+            in a new type of AHAB container"
           minItems: 4
           maxItems: 4
           items:
@@ -266,10 +259,18 @@ signed_message:
           type: string
           title: Device UUID
           description:
-            Unique identifier of the chip. It could be retrieve by BLHOST command from chip or also the debug authentication protocol
+            Unique identifier of the chip. It could be retrieved by BLHOST command from chip or also the debug authentication protocol
             could provide this value. Hex string format (hexadecimal string without '0x'). In case that the restriction on UUID is not needed
             the field could be omitted.
           template_value: "0000000000000000"
+        flags:
+          type: [number, string]
+          title: Command context flags
+          description: "Used to identify the context of the command:\n
+            0x0: Baseline API\n
+            0x1: SAB API"
+          format: number
+          template_value: 0x00
         command:
           oneOf:
             - type: object

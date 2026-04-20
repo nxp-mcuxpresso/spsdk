@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK Image Vector Table (IVT) segment implementation for HAB containers.
 
 This module provides classes for creating, parsing, and manipulating IVT segments
@@ -287,6 +288,34 @@ class HabSegmentIvt(HabSegmentBase):
         if options.get("DCDFilePath"):
             segment.dcd_address = segment.ivt_address + SegIVT.SIZE + 0x20
         return cls(segment)
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the IVT segment.
+
+        The method generates configuration data for the IVT segment, extracting
+        the entrypoint address that can be optionally stored in options.
+
+        :param data_path: Path to store the data files of configuration (unused for IVT).
+        :return: Configuration dictionary with optional entrypoint address.
+        """
+        ret_cfg = Config()
+
+        # IVT segment can optionally export entryPointAddress
+        # Most values (ivt_address, bdt_address, dcd_address, csf_address) are calculated
+        # from other configuration parameters and segments
+
+        # Only export entryPointAddress if it differs from the reset vector
+        # (this would need to be determined by comparing with app segment)
+        # For now, we export it as optional parameter
+        options = {}
+
+        if self.ivt.app_address:
+            options["entryPointAddress"] = f"{self.ivt.app_address:#010x}"
+
+        if options:
+            ret_cfg["options"] = options
+
+        return ret_cfg
 
     @classmethod
     def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("unknown")) -> Self:

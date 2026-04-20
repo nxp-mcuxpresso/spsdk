@@ -206,8 +206,11 @@ features:
     dac_rot_type: not_available # The Dac packet doesn't contains the ROT hash
 
   # ======== FCB section ========
-  # fcb:
-  #   mem_types: {}
+  fcb:
+    mem_types:
+      flexspi_nor:
+        reg_spec: ../mimx9596/fcb_flexspi_nor.json
+        reg_spec_modification: ../../common/fcb_flexspi_nor_modification.yaml
 
   # ======== AHAB section ========
   ahab:

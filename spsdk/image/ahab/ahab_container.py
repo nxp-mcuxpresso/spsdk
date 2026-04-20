@@ -1069,7 +1069,7 @@ class AHABContainer(AHABContainerBase):
         return ret
 
     @classmethod
-    def parse(cls, data: bytes, chip_config: AhabChipConfig, offset: int) -> Self:  # type: ignore # pylint: disable=arguments-differ
+    def parse(cls, data: bytes, chip_config: AhabChipConfig, offset: int, container_offset: int) -> Self:  # type: ignore # pylint: disable=arguments-differ
         """Parse input binary chunk to the container object.
 
         This method reconstructs an AHAB container from binary data by parsing the container
@@ -1078,8 +1078,11 @@ class AHABContainer(AHABContainerBase):
         :param data: Binary data with Container block to parse.
         :param chip_config: Ahab image chip configuration.
         :param offset: AHAB container offset in the binary data.
+        :param container_offset: Container offset within the AHAB image.
+        :raises SPSDKError: If the container data is invalid or parsing fails.
         :return: Object recreated from the binary data.
         """
+        cnt_offset = offset + container_offset
         (
             container_length,
             flags,
@@ -1087,42 +1090,39 @@ class AHABContainer(AHABContainerBase):
             fuse_version,
             number_of_images,
             signature_block_offset,
-        ) = cls._parse(data[offset:])
+        ) = cls._parse(data[cnt_offset:])
 
         parsed_container = cls(
             chip_config=chip_config,
             flags=flags,
             fuse_version=fuse_version,
             sw_version=sw_version,
-            container_offset=offset,
+            container_offset=container_offset,
         )
+
         # Lock the parsed container to any updates of offsets
         parsed_container.length = container_length
         parsed_container.chip_config.locked = True
         parsed_container.chip_config.base.signature_algorithms = chip_config.signature_algorithms
         parsed_container.chip_config.base.hash_algorithms = chip_config.hash_algorithms
         parsed_container.signature_block = cls.SIGNATURE_BLOCK.parse(
-            data[offset + signature_block_offset :], parsed_container.chip_config
+            data[cnt_offset + signature_block_offset :], parsed_container.chip_config
         )
 
         for i in range(number_of_images):
             image_array_entry_binary_start = (
-                offset + cls.fixed_length() + i * cls.IAE_TYPE.fixed_length()
+                cnt_offset + cls.fixed_length() + i * cls.IAE_TYPE.fixed_length()
             )
             image_array_entry = cls.IAE_TYPE.parse(
                 data[image_array_entry_binary_start:], parsed_container.chip_config
             )
-            binary_image_start = offset + image_array_entry._image_offset
+            binary_image_start = offset + image_array_entry.image_offset
 
-            image_size = int.from_bytes(
-                data[image_array_entry_binary_start + 4 : image_array_entry_binary_start + 8],
-                "little",
-            )
-            binary_image_end = min(binary_image_start + image_size, len(data))
+            binary_image_end = min(binary_image_start + image_array_entry.image_size, len(data))
             image_array_entry.image = data[binary_image_start:binary_image_end]
 
             parsed_container.image_array.append(image_array_entry)  # type: ignore
-        parsed_container._parsed_header = HeaderContainerData.parse(binary=data[offset:])
+        parsed_container._parsed_header = HeaderContainerData.parse(binary=data[cnt_offset:])
         return parsed_container
 
     @property

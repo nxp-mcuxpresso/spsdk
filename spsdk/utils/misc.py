@@ -31,7 +31,7 @@ import yaml
 
 from spsdk import SPSDK_SECRETS_PATH
 from spsdk.crypto.rng import random_bytes
-from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKNotTextFileError, SPSDKParsingError, SPSDKValueError
 from spsdk.utils.exceptions import SPSDKTimeoutError
 
 # for generics
@@ -305,9 +305,13 @@ def load_file(
     """
     path = find_file(path, search_paths=search_paths)
     logger.debug(f"Loading {'binary' if 'b' in mode else 'text'} file from {path}")
-    encoding = None if "b" in mode else "utf-8"
-    with open(path, mode, encoding=encoding) as f:
-        return f.read()
+    text_file = bool("b" not in mode)
+    encoding = "utf-8" if text_file else None
+    try:
+        with open(path, mode, encoding=encoding) as f:
+            return f.read()
+    except UnicodeDecodeError as exc:
+        raise SPSDKNotTextFileError(f"Failed to load file {path}") from exc
 
 
 def write_file(
@@ -1055,6 +1059,9 @@ def load_configuration(path: str, search_paths: Optional[list[str]] = None) -> d
     """
     try:
         config = load_text(path, search_paths=search_paths)
+    except SPSDKNotTextFileError as exc:
+        raise SPSDKNotTextFileError(f"Configuration file is not a text file: {str(exc)}") from exc
+
     except Exception as exc:
         raise SPSDKError(f"Can't load configuration file: {str(exc)}") from exc
 
@@ -1068,7 +1075,9 @@ def load_configuration(path: str, search_paths: Optional[list[str]] = None) -> d
         try:
             # SecretLoader inherits from SafeLoader, thus using yaml.load is OK
             config_data = yaml.load(config, Loader=SecretsLoader)  # nosec: yaml_load
-        except (yaml.YAMLError, UnicodeDecodeError) as yaml_exc:
+        except UnicodeDecodeError as exc:
+            raise SPSDKError(f"Can't load configuration file: {str(exc)}") from exc
+        except yaml.YAMLError as yaml_exc:
             yaml_error = yaml_exc
 
     if not config_data:

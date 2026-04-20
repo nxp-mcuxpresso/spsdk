@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,8 +13,16 @@ capture:
     exclude-regex: "venv|tests|docs|build"
 
 analyze:
-  aggressiveness-level: high
-  cov-analyze-args: [--disable-sigma]
+  aggressiveness-level: medium
+  cov-analyze-args:
+    [
+      --security,
+      --webapp-security,
+      --enable-audit-checkers,
+      --enable-parse-warnings,
+      --enable,
+      PARSE_ERROR,
+    ]
 
 commit:
   connect:

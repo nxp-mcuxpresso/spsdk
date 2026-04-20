@@ -135,6 +135,13 @@ features:
     test_address: 0x22020000
     dmbox_ap_ix: 0
 
+  # ======== FCB section ========
+  fcb:
+    mem_types:
+      flexspi_nor:
+        reg_spec: ../mimx9352/fcb_flexspi_nor.json
+        reg_spec_modification: ../../common/fcb_flexspi_nor_modification.yaml
+
   # ======== AHAB section ========
   ahab:
     containers_max_cnt: 3
@@ -142,8 +149,8 @@ features:
     container_types: [1] # Supported container types
     core_ids:
       CORTEX_M33: [1, "cortex-m33", "Cortex M33"]
-      CORTEX_A55: [2, "cortex-a55", "Cortex A55"]
-      CORTEX_A53: [4, "cortex-a53", "Cortex A53"]
+      CORTEX_A35_1: [2, "cortex-a35-1", "Cortex A35 1"]
+      CORTEX_A35_2: [4, "cortex-a35-2", "Cortex A35 2"]
       ELE: [6, "ele", "EdgeLock Enclave"]
       HDMI_TX: [7, "hdmi-tx", "HDMI Tx"]
       HDMI_RX: [8, "hdmi-rx", "HDMI Rx"]
@@ -175,27 +182,27 @@ features:
 
     # AHAB extra images
     upower_load_address: 0x28300200
-    upower_core_id: cortex-a53
+    upower_core_id: cortex-a35-2
     upower_meta_data_start_cpu_id: 0
     upower_image_size_alignment: 0x400
 
     spl_load_address: 0x22020000
-    spl_core_id: cortex-a55
+    spl_core_id: cortex-a35-1
     spl_meta_data_start_cpu_id: 2
     spl_ddr_image_size_alignment: 0x400
 
     atf_load_address: 0x20040000
-    atf_core_id: cortex-a55
+    atf_core_id: cortex-a35-1
     atf_meta_data_start_cpu_id: 0
     atf_image_size_alignment: 0x400
 
     uboot_load_address: 0x80200000
-    uboot_core_id: cortex-a55
+    uboot_core_id: cortex-a35-1
     uboot_meta_data_start_cpu_id: 0
     uboot_image_size_alignment: 0x400
 
     tee_load_address: 0xa6000000
-    tee_core_id: cortex-a55
+    tee_core_id: cortex-a35-1
     tee_meta_data_start_cpu_id: 0
     tee_image_size_alignment: 0x400
 
@@ -205,14 +212,14 @@ features:
     mcu_image_size_alignment: 0x400
 
     kernel_load_address: 0x80400000
-    kernel_core_id: cortex-a55
+    kernel_core_id: cortex-a35-1
     kernel_meta_data_start_cpu_id: 0
     kernel_chunk_size: 0x700000
     kernel_revisions_to_split: [a0]
     kernel_image_size_alignment: 0x400
 
     dtb_load_address: 0x83000000
-    dtb_core_id: cortex-a55
+    dtb_core_id: cortex-a35-1
     dtb_meta_data_start_cpu_id: 0
     dtb_entry_point: 0x0
     dtb_image_type: data

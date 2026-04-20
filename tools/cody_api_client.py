@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#!/usr/bin/env python3
-# -*- coding: UTF-8 -*-
-#
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -78,6 +75,8 @@ class CodyApiClient:
             raise ValueError("CODY_SRC_ACCESS_TOKEN environment variable is required")
 
         self.endpoint = os.environ.get("CODY_SRC_ENDPOINT", "https://sourcegraph.com/")
+        # Normalize endpoint - remove trailing slash for consistency
+        self.endpoint = self.endpoint.rstrip("/")
 
         # API URL
         self.chat_completions_url = (
@@ -106,84 +105,99 @@ class CodyApiClient:
 
         :return: List of available model names, empty list if unavailable.
         """
-        try:
-            models_url = f"{self.endpoint}/.api/models"
-            api_response = requests.get(
-                models_url, headers=self.headers, timeout=10, verify=self.verify_ssl
-            )
-            if api_response.status_code == 200:
-                models_data = api_response.json()
-                # Handle different possible response formats
-                if isinstance(models_data, dict):
-                    return models_data.get("models", [])
-                if isinstance(models_data, list):
-                    return models_data
-            else:
-                LOGGER.debug(f"Models API returned status {api_response.status_code}")
-        except (requests.RequestException, json.JSONDecodeError, KeyError) as e:
-            LOGGER.debug(f"Could not fetch available models: {e}")
+        # Try multiple possible endpoints
+        possible_endpoints = [
+            f"{self.endpoint}/.api/models",
+            f"{self.endpoint}/.api/llm/models",
+            f"{self.endpoint}/api/models",
+        ]
+
+        for models_url in possible_endpoints:
+            try:
+                LOGGER.debug(f"Trying models endpoint: {models_url}")
+                api_response = requests.get(
+                    models_url, headers=self.headers, timeout=10, verify=self.verify_ssl
+                )
+
+                if api_response.status_code == 200:
+                    LOGGER.debug(f"Response from {models_url}: {api_response.text[:200]}")
+                    models_data = api_response.json()
+
+                    # Handle different possible response formats
+                    if isinstance(models_data, dict):
+                        # Try different possible keys
+                        for key in ["models", "data", "available_models", "llms"]:
+                            if key in models_data:
+                                models = models_data[key]
+                                if isinstance(models, list):
+                                    # Extract model names if they're objects
+                                    model_names = []
+                                    for model in models:
+                                        if isinstance(model, str):
+                                            model_names.append(model)
+                                        elif isinstance(model, dict) and "name" in model:
+                                            model_names.append(model["name"])
+                                        elif isinstance(model, dict) and "id" in model:
+                                            model_names.append(model["id"])
+                                    if model_names:
+                                        LOGGER.info(f"Found {len(model_names)} models from API")
+                                        return model_names
+                    elif isinstance(models_data, list):
+                        # Direct list of models
+                        model_names = []
+                        for model in models_data:
+                            if isinstance(model, str):
+                                model_names.append(model)
+                            elif isinstance(model, dict) and "name" in model:
+                                model_names.append(model["name"])
+                            elif isinstance(model, dict) and "id" in model:
+                                model_names.append(model["id"])
+                        if model_names:
+                            LOGGER.info(f"Found {len(model_names)} models from API")
+                            return model_names
+                else:
+                    LOGGER.debug(
+                        f"Models API at {models_url} returned status {api_response.status_code}"
+                    )
+
+            except (requests.RequestException, json.JSONDecodeError, KeyError) as e:
+                LOGGER.debug(f"Could not fetch models from {models_url}: {e}")
+                continue
+
+        LOGGER.warning("Could not fetch available models from any endpoint")
         return []
-
-    def _select_best_model(self, preferred_models: list[str]) -> str:
-        """Select the best available model from preferred list.
-
-        This method attempts to find the most suitable model by first checking
-        preferred models in order of preference. If none are available, it falls
-        back to any available Claude Sonnet model, or uses the first preferred
-        model as a last resort.
-
-        :param preferred_models: List of model names in order of preference.
-        :return: Name of the selected model.
-        """
-        available_models = self._get_available_models()
-
-        if not available_models:
-            # If we can't get available models, use the first preferred model
-            LOGGER.info("Could not fetch available models, using first preferred model")
-            return preferred_models[0]
-
-        # Try preferred models in order
-        for model in preferred_models:
-            if model in available_models:
-                LOGGER.info(f"Selected model: {model}")
-                return model
-
-        # If none of the preferred models are available, use the first available model
-        # that contains "claude" and "sonnet" (as a reasonable fallback)
-        for model in available_models:
-            if "claude" in model.lower() and "sonnet" in model.lower():
-                LOGGER.warning(f"Using fallback model: {model}")
-                return model
-
-        # Last resort: use first preferred model anyway
-        LOGGER.warning(f"No suitable models found, using fallback: {preferred_models[0]}")
-        return preferred_models[0]
 
     def _determine_model(self) -> str:
         """Determine which model to use with automatic detection and environment variable support.
 
         The method prioritizes environment variable CODY_MODEL over automatic selection.
-        If no environment variable is set, it attempts to select the best available model
-        from a predefined list of preferred models ordered by preference.
+        If no environment variable is set, it uses autodetection to select the first
+        available model from the API.
 
         :return: Selected model identifier string.
+        :raises ValueError: If CODY_MODEL is not set and no models are available from API.
         """
-        # 1. Check environment variable first (highest priority)
+        # Check environment variable first (highest priority)
         env_model = os.environ.get("CODY_MODEL")
         if env_model:
             LOGGER.info(f"Using model from CODY_MODEL environment variable: {env_model}")
             return env_model
 
-        # 2. Auto-select from preferred list (ordered by preference - newest first)
-        preferred_models = [
-            "anthropic::2024-10-22::claude-sonnet-4-latest",
-            "anthropic::2024-12-20::claude-3-7-sonnet-latest",
-            "anthropic::2024-10-22::claude-3-7-sonnet-latest",
-            "anthropic::claude-3-sonnet-latest",
-            "anthropic::claude-3-sonnet-20240229",  # Additional fallback
-        ]
+        # Auto-detect from API
+        available_models = self._get_available_models()
 
-        return self._select_best_model(preferred_models)
+        if not available_models:
+            raise ValueError(
+                "No models available from API and CODY_MODEL environment variable not set. "
+                "Please set CODY_MODEL to specify a model explicitly."
+            )
+
+        # Use the first available model
+        selected_model = available_models[0]
+        LOGGER.info(f"Auto-selected model: {selected_model}")
+        LOGGER.debug(f"Available models: {available_models}")
+
+        return selected_model
 
     def send_prompt(self, prompt: str) -> Optional[str]:
         """Send prompt to Cody and wait for response (blocking).
@@ -207,6 +221,7 @@ class CodyApiClient:
 
         try:
             LOGGER.info(f"Sending prompt to Cody using model: {self.model}")
+            LOGGER.debug(f"Request URL: {self.chat_completions_url}")
 
             api_response = requests.post(
                 self.chat_completions_url,
@@ -216,22 +231,67 @@ class CodyApiClient:
                 timeout=self.timeout,
                 verify=self.verify_ssl,
             )
+
+            # Log response status for debugging
+            LOGGER.debug(f"Response status: {api_response.status_code}")
+
             api_response.raise_for_status()
 
-            # Process streaming response
-            last_response = ""
-            for line in api_response.iter_lines(decode_unicode=True):
-                if line.startswith('data: {"'):
-                    last_response = line[6:]
+            # Process streaming response - improved parsing
+            full_response = ""
+            last_completion = ""
 
-            if last_response:
-                result = json.loads(last_response)["completion"]
+            for line in api_response.iter_lines(decode_unicode=True):
+
+                if not line or line.strip() == "":
+                    continue
+
+                LOGGER.debug(f"Received line: {line[:100]}...")
+
+                # Handle different streaming formats
+                if line.startswith("data: "):
+                    json_str = line[6:].strip()
+                    if json_str and json_str != "[DONE]":
+                        try:
+                            chunk = json.loads(json_str)
+                            # Try different possible response formats
+                            if "completion" in chunk:
+                                last_completion = chunk["completion"]
+                            elif "delta" in chunk and "text" in chunk["delta"]:
+                                full_response += chunk["delta"]["text"]
+                            elif "text" in chunk:
+                                full_response += chunk["text"]
+                        except json.JSONDecodeError as e:
+                            LOGGER.debug(f"Failed to parse chunk: {e}")
+                            continue
+                elif line.startswith("{"):
+                    # Direct JSON without 'data:' prefix
+                    try:
+                        chunk = json.loads(line)
+                        if "completion" in chunk:
+                            last_completion = chunk["completion"]
+                        elif "delta" in chunk and "text" in chunk["delta"]:
+                            full_response += chunk["delta"]["text"]
+                        elif "text" in chunk:
+                            full_response += chunk["text"]
+                    except json.JSONDecodeError as e:
+                        LOGGER.debug(f"Failed to parse JSON line: {e}")
+                        continue
+
+            # Return the best available response
+            result = last_completion if last_completion else full_response
+
+            if result:
                 LOGGER.info("✅ Received response from Cody")
                 return result
 
-            LOGGER.error("❌ No response received from Cody")
+            LOGGER.error("❌ No response content received from Cody")
             return None
 
+        except requests.HTTPError as e:
+            LOGGER.error(f"❌ HTTP error: {e}")
+            LOGGER.error(f"Response content: {e.response.text if e.response else 'N/A'}")
+            return None
         except requests.RequestException as e:
             LOGGER.error(f"❌ API request failed: {str(e)}")
             return None
@@ -240,6 +300,9 @@ class CodyApiClient:
             return None
         except KeyError as e:
             LOGGER.error(f"❌ Missing expected field in response: {str(e)}")
+            return None
+        except Exception as e:
+            LOGGER.error(f"❌ Unexpected error: {str(e)}")
             return None
 
 
@@ -258,7 +321,9 @@ def send_prompt_to_cody(prompt: str) -> Optional[str]:
 
 
 if __name__ == "__main__":
-    # Example usage
+    # Example usage with debug logging
+    logging.getLogger().setLevel(logging.DEBUG)
+
     response = send_prompt_to_cody("What are best practices for register definitions?")
     if response:
         print("🤖 Cody's response:")

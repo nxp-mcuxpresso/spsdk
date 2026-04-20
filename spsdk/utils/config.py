@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,7 +15,7 @@ import logging
 import os
 from abc import abstractmethod
 from copy import deepcopy
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union, cast
 
 from typing_extensions import Self
 
@@ -248,7 +248,7 @@ class Config(dict):
         output_file_name = self.get_output_file_name(key)
         return os.path.dirname(output_file_name)
 
-    def load_sub_config(self, key: str) -> "Config":
+    def load_sub_config(self, key: str, target_klass: Optional[type] = None) -> "Config":
         """Load sub-configuration from a file path specified by the given key.
 
         The method resolves the file path using the current configuration's search paths,
@@ -256,14 +256,20 @@ class Config(dict):
         search paths with the current ones.
 
         :param key: Configuration key containing the file path to load.
+        :param target_klass: Optional target class for validation schemas.
         :raises SPSDKError: When the file specified by the key cannot be found.
         :return: New Config instance loaded from the specified file.
         """
+        from spsdk.utils.abstract_features import FeatureBaseClass
+
         try:
             path = find_file(self[key], search_paths=self.search_paths)
         except SPSDKError as exc:
             raise SPSDKError(f"Cannot find file for '{key}': {str(exc)}") from exc
         ret = self.create_from_file(path)
+        if target_klass:
+            schemas = cast(FeatureBaseClass, target_klass).get_validation_schemas_from_cfg(ret)
+            ret.check(schemas, check_unknown_props=True)
         ret.search_paths.extend(self.search_paths)
         return ret
 

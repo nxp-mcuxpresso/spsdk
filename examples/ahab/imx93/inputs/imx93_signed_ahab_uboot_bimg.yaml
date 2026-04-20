@@ -1,4 +1,4 @@
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -20,7 +20,9 @@ revision: a1
 # Description: Specify type of memory used by bootable image description.
 # Possible options: <serial_downloader, flexspi_nor>
 memory_type: serial_downloader
-
+# ---------------------------------------===== Output file name [Optional] =====----------------------------------------
+# Description: Bootable image output file name
+output: ../outputs/imx93-ahab-uboot-signed.bin
 # ======================================================================================================================
 #                                      == Primary executable Segment definition ==
 # ======================================================================================================================

@@ -1375,8 +1375,6 @@ def test_nxpcrypto_ahab_pki_tree_hierarchy(
 
     :param cli_runner: Click CLI test runner for executing commands.
     :param tmpdir: Temporary directory path for test output files.
-    :param key_type: Type of cryptographic keys to generate.
-    :param encoding: File encoding format for generated keys and certificates.
     """
     key_type = "secp384r1"
     encoding = "pem"
@@ -1577,3 +1575,221 @@ def test_incorrect_cert_format(cli_runner: CliRunner, data_dir: str) -> None:
     cmd = "cert verify -c cert/satyr.crt --sign cert/subject_public_secp256.pem"
     result = run_nxpcrypto(cli_runner, cmd, data_dir, expected_code=-1)
     assert "ECDSA" in str(result.exception)
+
+
+@pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed")
+@pytest.mark.parametrize(
+    "key_type",
+    ["dil3", "dil5", "mldsa65", "mldsa87"],
+)
+@pytest.mark.parametrize(
+    "encoding",
+    ["pem", "der"],
+)
+@pytest.mark.parametrize(
+    "keys_number",
+    [1, 4],
+)
+def test_nxpcrypto_ahab_pqc_tree(
+    cli_runner: CliRunner,
+    tmpdir: str,
+    key_type: str,
+    encoding: str,
+    keys_number: int,
+) -> None:
+    """Test AHAB PQC tree generation for ML-DSA and Dilithium keys.
+
+    This test verifies that the ahab-pqc command correctly generates post-quantum
+    cryptographic key pairs (private and public keys) without certificates for
+    different key types, encodings, and key counts.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param tmpdir: Temporary directory path for test output files.
+    :param key_type: Post-quantum key type (dil2, dil3, dil5, mldsa44, mldsa65, mldsa87).
+    :param encoding: File encoding format (pem or der).
+    :param keys_number: Number of key pairs to generate (1, 2, or 4).
+    """
+    tree_path = f"{tmpdir}/pqc_tree_{key_type}_{encoding}"
+    cmd = f"pki-tree ahab-pqc -k {key_type} -o {tree_path} -e {encoding} -n {keys_number}"
+    result = run_nxpcrypto(cli_runner, cmd, tmpdir)
+    assert result.exit_code == 0, "AHAB PQC Tree command failed"
+
+    # Verify keys directory exists
+    keys_path = os.path.join(tree_path, "keys")
+    assert os.path.isdir(keys_path), f"Keys directory not found: {keys_path}"
+
+    # Verify no certificates directory is created
+    crts_path = os.path.join(tree_path, "crts")
+    assert not os.path.exists(crts_path), "Certificates directory should not exist for PQC keys"
+
+    # Count and verify private keys
+    private_keys = glob.glob(os.path.join(keys_path, f"SRK*_{key_type}_key.{encoding}"))
+    assert (
+        len(private_keys) == keys_number
+    ), f"Expected {keys_number} private keys, found {len(private_keys)}"
+
+    # Count and verify public keys
+    public_keys = glob.glob(os.path.join(keys_path, f"SRK*_{key_type}_key.pub.{encoding}"))
+    assert (
+        len(public_keys) == keys_number
+    ), f"Expected {keys_number} public keys, found {len(public_keys)}"
+
+    # Verify each key pair
+    for idx in range(keys_number):
+        private_key_path = os.path.join(keys_path, f"SRK{idx}_{key_type}_key.{encoding}")
+        public_key_path = os.path.join(keys_path, f"SRK{idx}_{key_type}_key.pub.{encoding}")
+
+        # Check files exist
+        assert os.path.isfile(private_key_path), f"Private key not found: {private_key_path}"
+        assert os.path.isfile(public_key_path), f"Public key not found: {public_key_path}"
+
+        # Load and verify keys
+        private_key = PrivateKey.load(private_key_path)
+        public_key = PublicKey.load(public_key_path)
+
+        # Verify key types
+        if key_type.startswith("dil"):
+            assert isinstance(
+                private_key, PrivateKeyDilithium
+            ), f"Private key should be Dilithium type for {key_type}"
+            assert isinstance(
+                public_key, PublicKeyDilithium
+            ), f"Public key should be Dilithium type for {key_type}"
+        else:  # mldsa
+            from spsdk.crypto.keys import PrivateKeyMLDSA, PublicKeyMLDSA
+
+            assert isinstance(
+                private_key, PrivateKeyMLDSA
+            ), f"Private key should be ML-DSA type for {key_type}"
+            assert isinstance(
+                public_key, PublicKeyMLDSA
+            ), f"Public key should be ML-DSA type for {key_type}"
+
+        # Verify the public key matches the private key
+        derived_public_key = private_key.get_public_key()
+        assert derived_public_key == public_key, f"Public key {idx} does not match the private key"
+
+
+@pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed")
+def test_nxpcrypto_ahab_pqc_tree_with_password(
+    cli_runner: CliRunner,
+    tmpdir: str,
+) -> None:
+    """Test AHAB PQC tree generation with password-protected keys.
+
+    This test verifies that the ahab-pqc command can generate password-protected
+    post-quantum cryptographic keys and that they can be loaded with the correct
+    password.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param tmpdir: Temporary directory path for test output files.
+    """
+    key_type = "mldsa65"
+    encoding = "pem"
+    keys_number = 2
+    password = "test_password_123"
+    tree_path = f"{tmpdir}/pqc_tree_password"
+
+    cmd = f"pki-tree ahab-pqc -k {key_type} -o {tree_path} -e {encoding} -n {keys_number} -p {password}"
+    result = run_nxpcrypto(cli_runner, cmd, tmpdir)
+    assert result.exit_code == 0, "AHAB PQC Tree command with password failed"
+
+    keys_path = os.path.join(tree_path, "keys")
+
+    # Verify password-protected keys can be loaded
+    for idx in range(keys_number):
+        private_key_path = os.path.join(keys_path, f"SRK{idx}_{key_type}_key.{encoding}")
+
+        # Should succeed with correct password
+        private_key = PrivateKey.load(private_key_path, password=password)
+        assert private_key is not None, f"Failed to load password-protected key {idx}"
+
+
+@pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed")
+def test_nxpcrypto_ahab_pqc_tree_invalid_key_type(
+    cli_runner: CliRunner,
+    tmpdir: str,
+) -> None:
+    """Test AHAB PQC tree generation with invalid key type.
+
+    This test verifies that the ahab-pqc command properly rejects invalid
+    post-quantum key types.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param tmpdir: Temporary directory path for test output files.
+    """
+    tree_path = f"{tmpdir}/pqc_tree_invalid"
+    cmd = f"pki-tree ahab-pqc -k invalid_key_type -o {tree_path} -e pem -n 2"
+    result = run_nxpcrypto(cli_runner, cmd, tmpdir, expected_code=-1)
+    assert result.exit_code != 0, "Command should fail with invalid key type"
+
+
+@pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed")
+@pytest.mark.parametrize(
+    "key_type",
+    ["dil5", "mldsa65"],
+)
+def test_nxpcrypto_ahab_pqc_key_signature(
+    cli_runner: CliRunner,
+    data_dir: str,
+    tmpdir: str,
+    key_type: str,
+) -> None:
+    """Test that generated PQC keys can be used for signing and verification.
+
+    This test verifies that the post-quantum keys generated by ahab-pqc command
+    can successfully sign data and verify signatures.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param data_dir: Directory containing test data files.
+    :param tmpdir: Temporary directory path for test output files.
+    :param key_type: Post-quantum key type to test.
+    """
+    tree_path = f"{tmpdir}/pqc_tree_sign_{key_type}"
+    encoding = "pem"
+
+    # Generate PQC keys
+    cmd = f"pki-tree ahab-pqc -k {key_type} -o {tree_path} -e {encoding} -n 1"
+    result = run_nxpcrypto(cli_runner, cmd, tmpdir)
+    assert result.exit_code == 0, "AHAB PQC Tree command failed"
+
+    keys_path = os.path.join(tree_path, "keys")
+    private_key_path = os.path.join(keys_path, f"SRK0_{key_type}_key.{encoding}")
+    public_key_path = os.path.join(keys_path, f"SRK0_{key_type}_key.pub.{encoding}")
+
+    # Create test data
+    input_file = os.path.join(tmpdir, "test_data.bin")
+    test_data = b"Test data for PQC signature"
+    write_file(test_data, input_file, mode="wb")
+
+    # Sign data
+    signature_file = os.path.join(tmpdir, f"signature_{key_type}.bin")
+    cmd = f"signature create -s {private_key_path} -i {input_file} -o {signature_file}"
+    result = run_nxpcrypto(cli_runner, cmd, tmpdir)
+    assert result.exit_code == 0, "Signature creation failed"
+    assert os.path.isfile(signature_file), "Signature file not created"
+
+    # Verify signature
+    cmd = f"signature verify -k {public_key_path} -i {input_file} -s {signature_file}"
+    result = run_nxpcrypto(cli_runner, cmd, tmpdir)
+    assert result.exit_code == 0, "Signature verification failed"
+    assert SIGNATURE_MATCHING in result.output, "Signature should match"
+
+
+@pytest.mark.skipif(IS_DILITHIUM_SUPPORTED, reason="Test only when PQC is not installed")
+def test_nxpcrypto_ahab_pqc_tree_no_support(
+    cli_runner: CliRunner,
+    tmpdir: str,
+) -> None:
+    """Test AHAB PQC tree generation when PQC support is not installed.
+
+    This test verifies that the ahab-pqc command provides a helpful error message
+    when post-quantum cryptography support is not available.
+
+    :param cli_runner: Click CLI test runner for executing commands.
+    :param tmpdir: Temporary directory path for test output files.
+    """
+    tree_path = f"{tmpdir}/pqc_tree_no_support"
+    cmd = f"pki-tree ahab-pqc -k mldsa65 -o {tree_path} -e pem -n 2"
+    result = run_nxpcrypto(cli_runner, cmd, tmpdir, expected_code=1)
+    assert result.exit_code != 0, "Command should fail when PQC support is not installed"

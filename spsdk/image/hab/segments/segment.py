@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -221,6 +221,14 @@ class HabSegmentBase(VerifyBaseClass):
 
         :param config: Configuration object containing segment parameters.
         :return: Instance of segment created from the configuration.
+        """
+
+    @abstractmethod
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the Feature.
+
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary.
         """
 
     @property

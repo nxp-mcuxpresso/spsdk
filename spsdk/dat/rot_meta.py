@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -25,7 +25,9 @@ from spsdk.crypto.keys import PublicKeyEcc, PublicKeyRsa
 from spsdk.crypto.utils import extract_public_key
 from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError, SPSDKTypeError, SPSDKValueError
 from spsdk.image.ahab.ahab_srk import SRKRecord, SRKTable
-from spsdk.image.cert_block.cert_blocks import CertBlock, CertBlockV1, CertBlockV21
+from spsdk.image.cert_block.cert_block_v1 import CertBlockV1
+from spsdk.image.cert_block.cert_block_v21 import CertBlockV21
+from spsdk.image.cert_block.cert_blocks import CertBlock
 from spsdk.utils.config import Config
 from spsdk.utils.misc import Endianness
 

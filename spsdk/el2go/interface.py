@@ -173,6 +173,7 @@ class EL2GOInterfaceHandler:
         fb_size: Optional[int] = None,
         usb_path: Optional[str] = None,
         usb_serial: Optional[str] = None,
+        uboot_prompt: Optional[str] = None,
     ) -> "EL2GOInterfaceHandler":
         """Get EL2GO interface handler based on the configuration.
 
@@ -187,6 +188,7 @@ class EL2GOInterfaceHandler:
         :param fb_size: Custom size for Fastboot buffer, overrides database default.
         :param usb_path: USB device path filter for device identification.
         :param usb_serial: USB serial number filter for device identification.
+        :param uboot_prompt: Custom U-Boot prompt string for serial communication.
         :raises SPSDKError: If family or port is not provided when required by interface type.
         :raises SPSDKError: If unable to determine the default interface type.
         :return: Configured EL2GO interface handler instance for the specified interface type.
@@ -208,6 +210,9 @@ class EL2GOInterfaceHandler:
 
         if default_interface is None:
             raise SPSDKError("Unable to determine default interface")
+
+        if isinstance(uboot_prompt, str):
+            UbootSerial.set_prompt(uboot_prompt)
 
         if default_interface == El2GoInterface.UBOOT_FASTBOOT:
             if not isinstance(family, FamilyRevision):

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -26,7 +26,7 @@ from spsdk.crypto.signature_provider import SignatureProvider, get_signature_pro
 from spsdk.crypto.spsdk_hmac import hmac
 from spsdk.crypto.symmetric import Counter, aes_key_unwrap, aes_key_wrap
 from spsdk.exceptions import SPSDKError, SPSDKValueError
-from spsdk.image.cert_block.cert_blocks import CertBlockV1
+from spsdk.image.cert_block.cert_block_v1 import CertBlockV1
 from spsdk.sbfile.misc import SecBootBlckSize
 from spsdk.sbfile.sb2 import sly_bd_parser as bd_parser
 from spsdk.sbfile.sb2.commands import CmdHeader

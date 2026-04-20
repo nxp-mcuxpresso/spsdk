@@ -182,6 +182,21 @@ class HabSegmentBDT(HabSegmentBase):
         segment.offset = SegIVT.SIZE
         return segment
 
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the BDT segment.
+
+        The method generates configuration data for the BDT segment.
+        Note: BDT segment doesn't store any files or specific configuration,
+        all parameters are handled at the HAB image level.
+
+        :param data_path: Path to store the data files of configuration (unused for BDT).
+        :return: Empty configuration dictionary.
+        """
+        ret_cfg = Config()
+        # BDT segment has no specific configuration to export
+        # startAddress, flags, etc. are handled by HabImage.get_config()
+        return ret_cfg
+
     @classmethod
     def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("unknown")) -> Self:
         """Parse BDT segment block from image binary.

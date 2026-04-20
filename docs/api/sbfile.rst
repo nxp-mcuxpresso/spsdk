@@ -129,7 +129,7 @@ SBFile Version X - DEVHSM
 SBFile Version C
 -----------------
 .. automodule:: spsdk.sbfile.sbc
-   :no-index:
+   :noindex:
    :members:
    :undoc-members:
    :show-inheritance:

@@ -35,6 +35,7 @@ from spsdk.apps.utils.common_cli_options import (
 from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error
 from spsdk.crypto.certificate import Certificate, generate_extensions, generate_name
 from spsdk.crypto.crypto_types import SPSDKEncoding
+from spsdk.crypto.dilithium import IS_DILITHIUM_SUPPORTED
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import (
     PrivateKey,
@@ -1038,6 +1039,126 @@ def ahab_tree_extend(
     """
     click.echo("Generating PKI Tree for AHAB")
     ahab_extend_tree_command(tree_path, password, encoding, keys_number, duration, serial)
+
+
+@pki_group.command(name="ahab-pqc", no_args_is_help=True)
+@click.option(
+    "-k",
+    "--key-type",
+    type=click.Choice(["dil3", "dil5", "mldsa65", "mldsa87"], case_sensitive=False),
+    required=True,
+    metavar="KEY-TYPE",
+    help="""\b
+        Post-quantum key types:
+        dil3, dil5, mldsa65, mldsa87.
+        """,
+)
+@click.option(
+    "-p",
+    "--password",
+    "password",
+    metavar="PASSWORD",
+    help="Password with which the keys will be encrypted. "
+    "If not provided, the keys will be unencrypted.",
+)
+@spsdk_output_option(force=True, directory=True)
+@click.option(
+    "-e",
+    "--encoding",
+    type=click.Choice(list(SPSDKEncoding.cryptography_encodings()), case_sensitive=False),
+    default="PEM",
+)
+@click.option(
+    "-n",
+    "--keys-number",
+    type=click.IntRange(1, 4),
+    default=4,
+    help="Number of keys that will be created (default 4)",
+)
+def ahab_pqc_tree_generate(
+    key_type: str,
+    output: str,
+    password: str,
+    encoding: str,
+    keys_number: int,
+) -> None:
+    """Generate post-quantum keys for AHAB (ML-DSA and Dilithium).
+
+    This command generates the specified number of post-quantum cryptographic key pairs
+    for use with AHAB. Supported algorithms include Dilithium (dil2, dil3, dil5) and
+    ML-DSA (mldsa44, mldsa65, mldsa87).
+
+    The generated keys are stored in the output directory with the following structure:
+    - keys/: Contains private keys
+    - keys/: Contains public keys (with .pub extension)
+
+    No certificates are generated for post-quantum keys.
+    """
+    click.echo("Generating Post-Quantum Keys for AHAB")
+    ahab_pqc_tree_generate_command(key_type, output, password, encoding, keys_number)
+
+
+def ahab_pqc_tree_generate_command(
+    key_type: str,
+    output: str,
+    password: str,
+    encoding: str,
+    keys_number: int,
+) -> None:
+    """Generate post-quantum keys for AHAB.
+
+    :param key_type: Post-quantum key type (dil2, dil3, dil5, mldsa44, mldsa65, mldsa87)
+    :param output: Output directory for generated keys
+    :param password: Password for key protection
+    :param encoding: Encoding format (PEM or DER)
+    :param keys_number: Number of key pairs to generate (1-4)
+    :raises SPSDKAppError: If Dilithium support is not available
+    """
+    if not IS_DILITHIUM_SUPPORTED:
+        raise SPSDKAppError(
+            "Post-quantum cryptography (Dilithium/ML-DSA) is not supported. "
+            "Please install the required dependencies: pip install spsdk[pqc]"
+        )
+
+    encoding_param = encoding.upper().strip()
+    encoding_enum = SPSDKEncoding.all()[encoding_param]
+
+    keys_path = os.path.join(output, "keys")
+    os.makedirs(keys_path, exist_ok=True)
+
+    # Get the key generator function and parameters
+    generators = get_supported_keys_generators()
+    if key_type.lower() not in generators:
+        raise SPSDKAppError(f"Unsupported key type: {key_type}")
+
+    generator_func, generator_params = generators[key_type.lower()]
+
+    # Generate the specified number of key pairs
+    for idx in range(keys_number):
+        click.echo(f"Generating key pair {idx}...")
+
+        # Generate private key
+        private_key = generator_func(**generator_params)
+
+        # Generate public key from private key
+        public_key = private_key.get_public_key()
+
+        # Construct file names
+        key_name = f"SRK{idx}_{key_type.lower()}_key"
+        pub_key_name = f"SRK{idx}_{key_type.lower()}_key.pub"
+
+        private_key_path = os.path.join(keys_path, f"{key_name}.{encoding.lower()}")
+        public_key_path = os.path.join(keys_path, f"{pub_key_name}.{encoding.lower()}")
+
+        # Save private key
+        private_key.save(private_key_path, password=password, encoding=encoding_enum)
+        click.echo(f"Private key saved: {private_key_path}")
+
+        # Save public key
+        public_key.save(public_key_path, encoding=encoding_enum)
+        click.echo(f"Public key saved: {public_key_path}")
+
+    click.echo(f"\nSuccessfully generated {keys_number} post-quantum key pair(s) in: {output}")
 
 
 @pki_group.command(name="hab", no_args_is_help=True)

@@ -49,7 +49,7 @@ firmwareVersion: 0x47
 #                                                == Additional Checks. ==
 # ======================================================================================================================
 # --------------------------------===== The additional CRC images check [Optional] =====--------------------------------
-# Description: If true, add additional CRC image that is computed from all data execution mage and optionally TrustZone.
+# Description: If true, add additional CRC image that is computed from all data execution image and optionally TrustZone.
 add_crc_check: true
 # ======================================================================================================================
 #                                 == AHAB Container format to add to ECC + PQC sign. ==
@@ -65,12 +65,12 @@ used_srk_id: 0
 # Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
 # private key used for sign the container header. Header can be signed by SRK. The referenced SRK must not have been
 # revoked.
-signer: ../../_data/keys/ecc256/imgkey_ecc256.pem
+signer: ../../_data/keys/ecc256/srk0_ecc256.pem
 # ---------------------===== AHAB container signer for second signature (PQC only) [Optional] =====---------------------
 # Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
 # private key used for second sign (PQC only) of the container header. Header can be signed by SRK. The referenced SRK
 # must not have been revoked.
-signer_#2: ../../_data/keys/mldsa65/imgkey_mldsa65.pem
+signer_#2: ../../_data/keys/mldsa65/srk0_mldsa65.pem
 
 # ======================================================================================================================
 #                                         == Configuration of AHAB SRK table ==

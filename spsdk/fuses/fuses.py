@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -530,6 +530,7 @@ class Fuses(FeatureBaseClassComm):
         self,
         family: FamilyRevision,
         fuse_operator: Optional[FuseOperator] = None,
+        cache: bool = True,
     ):
         """Initialize Fuses class to control fuse operations.
 
@@ -539,6 +540,8 @@ class Fuses(FeatureBaseClassComm):
         :param family: Target MCU family and revision information for fuse operations.
         :param fuse_operator: Optional operator for performing actual fuse operations,
             defaults to None.
+        :param cache: Enable caching of lock fuse values to prevent multiple reads,
+            defaults to True.
         :raises SPSDKError: When the specified family has no fuses definition available.
         """
         self.family = family
@@ -549,6 +552,8 @@ class Fuses(FeatureBaseClassComm):
         self.fuse_regs = self.get_init_regs(family)
         # keep the context based on the latest operation: load_from_config/read_all etc.
         self.fuse_context: list[FuseRegister] = []
+        self._cache_enabled = cache
+        self._cache: set[str] = set()  # Store UIDs of cached lock fuse registers
 
     def __repr__(self) -> str:
         """Get string representation of the Fuses class.
@@ -643,6 +648,36 @@ class Fuses(FeatureBaseClassComm):
         """
         return FuseRegisters(family=family)
 
+    def clear_cache(self) -> None:
+        """Clear the lock fuse read cache.
+
+        Removes all cached lock fuse values, forcing subsequent reads to fetch fresh
+        data from the device.
+        """
+        self._cache.clear()
+        logger.debug("Lock fuse cache cleared")
+
+    def is_cached(self, reg: FuseRegister) -> bool:
+        """Check if a lock fuse register value is cached.
+
+        Only lock fuses are cached to prevent multiple reads during lock checks.
+
+        :param reg: Fuse register to check.
+        :return: True if the register is a lock fuse and its value is cached, False otherwise.
+        """
+        return self._cache_enabled and self.fuse_regs.is_lock_fuse(reg) and reg.uid in self._cache
+
+    def add_to_cache(self, reg: FuseRegister) -> None:
+        """Add a lock fuse register to the cache.
+
+        Only lock fuses are cached to optimize lock checking operations.
+
+        :param reg: Fuse register to add to cache.
+        """
+        if self._cache_enabled and self.fuse_regs.is_lock_fuse(reg):
+            self._cache.add(reg.uid)
+            logger.debug(f"Added lock fuse {reg.name} to cache")
+
     def load_config(self, config: dict[str, Any]) -> None:
         """Load the fuses configuration from dictionary.
 
@@ -694,15 +729,17 @@ class Fuses(FeatureBaseClassComm):
                 logger.warning(f"Unable to read the fuse {reg.name}: {str(e)}")
         self.fuse_context = ctx
 
-    def read_single(self, name: str, check_locks: bool = True) -> int:
+    def read_single(self, name: str, check_locks: bool = True, force: bool = False) -> int:
         """Read single fuse from device.
 
         Reads the value of a specified fuse register from the device, with optional
         lock checking to ensure the fuse is readable before attempting the operation.
+        Lock fuses are cached to avoid redundant reads during lock checking operations.
 
         :param name: Fuse name or uid to read from device.
         :param check_locks: Check value of lock fuse before reading to prevent
             locked fuse access.
+        :param force: Force read even when the fuse is marked as non-readable
         :raises SPSDKFuseOperationFailure: When fuse is not readable or read
             operation is locked.
         :raises SPSDKFuseConfigurationError: When OTP index is not defined for
@@ -710,13 +747,22 @@ class Fuses(FeatureBaseClassComm):
         :return: Value read from the fuse register.
         """
         reg = self.fuse_regs.find_reg(name, include_group_regs=True)
-        if not reg.access.is_readable:
+
+        # Check cache first (only for lock fuses)
+        if self.is_cached(reg):
+            logger.debug(f"Returning cached value for lock fuse {reg.name}")
+            return reg.get_value()
+
+        if not reg.access.is_readable and not force:
             raise SPSDKFuseOperationFailure(
                 f"Unable to read fuse {name}. Fuse access: {reg.access.description}"
             )
+        if reg.reserved and not force:
+            raise SPSDKFuseConfigurationError(f"Unable to read fuse {name}. Fuse is reserved.")
+
         lock_fuse = self.fuse_regs.get_lock_fuse(reg)
         if lock_fuse and check_locks:
-            logger.debug("Reading the value of lock register first.")
+            logger.debug(f"Reading the value of lock register first. {lock_fuse.name}")
             # if the fuse locks itself, do not read it
             self.read_single(lock_fuse.uid, check_locks=lock_fuse != reg)
             if FuseLock.READ_LOCK in reg.get_active_locks():
@@ -726,15 +772,20 @@ class Fuses(FeatureBaseClassComm):
 
         if reg.has_group_registers():
             for sub_reg in reg.sub_regs:
-                self.read_single(sub_reg.uid)
+                self.read_single(sub_reg.uid, check_locks=check_locks, force=force)
+            # Cache group register if it's a lock fuse
+            self.add_to_cache(reg)
             self.fuse_context = [reg]
             return reg.get_value()
 
         if reg.otp_index is None:
             raise SPSDKFuseConfigurationError("OTP index is not defined")
+
         value = self.fuse_operator.read_fuse(reg.otp_index, reg.width)
         reg.set_value(value)
         self.fuse_regs.update_locks()
+        # Cache only if it's a lock fuse
+        self.add_to_cache(reg)
         self.fuse_context = [reg]
         return value
 
@@ -756,13 +807,14 @@ class Fuses(FeatureBaseClassComm):
 
         The method handles both individual fuses and group registers. It performs
         lock checks, validates write permissions, and manages individual write lock
-        behavior according to fuse configuration.
+        behavior according to fuse configuration. After writing a lock fuse, its cache
+        entry is cleared to ensure fresh reads.
 
         :param name: Fuse name or uid to write.
         :param lock: Set lock after write operation.
         :raises SPSDKError: OTP index for fuse is not set.
         :raises SPSDKFuseOperationFailure: Fuse is not writable, write-locked, or has
-                                           non-reset value with write lock.
+                                            non-reset value with write lock.
         """
 
         def write_single_reg(reg: FuseRegister, lock: bool = False) -> None:
@@ -771,7 +823,7 @@ class Fuses(FeatureBaseClassComm):
             This method writes the value of a fuse register to the OTP memory with comprehensive
             validation including access rights, lock status checks, and individual write lock
             handling. The method automatically manages lock states and validates write permissions
-            before performing the operation.
+            before performing the operation. After writing a lock fuse, its cache entry is removed.
 
             :param reg: The fuse register to write to the device.
             :param lock: Whether to lock the fuse after writing, defaults to False.
@@ -819,10 +871,18 @@ class Fuses(FeatureBaseClassComm):
             if lock or reg.individual_write_lock == IndividualWriteLock.IMPLICIT:
                 reg.lock(FuseLock.WRITE_LOCK)
 
+            # Remove from cache after write if it's a lock fuse
+            if self.fuse_regs.is_lock_fuse(reg) and reg.uid in self._cache:
+                self._cache.remove(reg.uid)
+                logger.debug(f"Removed lock fuse {reg.name} from cache after write")
+
         reg = self.fuse_regs.find_reg(name, include_group_regs=True)
         if reg.has_group_registers():
             for sub_reg in reg.sub_regs:
                 write_single_reg(sub_reg, lock)
+            # Remove group register from cache if it's a lock fuse
+            if self.fuse_regs.is_lock_fuse(reg) and reg.uid in self._cache:
+                self._cache.remove(reg.uid)
         else:
             write_single_reg(reg, lock)
 

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK NXP Image HAB (High Assurance Boot) command-line interface.
 
 This module provides CLI commands for managing HAB-related operations including
@@ -132,7 +133,7 @@ def hab_convert(command: str, external: list[str]) -> str:
 @spsdk_family_option(families=HabImage.get_supported_families())
 @spsdk_output_option(directory=True)
 def hab_parse_command(binary: str, family: FamilyRevision, output: str) -> None:
-    """Parse HAB container into individual segments."""
+    """Parse HAB container into individual segments and configuration."""
     file_bin = load_binary(binary)
     created_files = hab_parse(file_bin, family, output)
     for file_path in created_files:
@@ -141,12 +142,28 @@ def hab_parse_command(binary: str, family: FamilyRevision, output: str) -> None:
 
 
 def hab_parse(binary: bytes, family: FamilyRevision, output: str) -> list[str]:
-    """Generate HAB container from configuration."""
+    """Parse HAB container and generate configuration with segment files."""
     hab_image = HabImage.parse(binary, family)
-    generated_bins = []
+    generated_files = []
+
+    # Generate configuration file
+    config = hab_image.get_config(data_path=output)
+    schemas = HabImage.get_validation_schemas(family)
+    config_str = CommentedConfig(main_title="HAB parsed configuration", schemas=schemas).get_config(
+        config
+    )
+
+    config_path = os.path.join(output, "hab_config.yaml")
+    write_file(config_str, config_path, mode="w")
+    generated_files.append(config_path)
+
+    # Post-export to generate any additional files (like segment binaries)
+
     for segment in hab_image.segments:
-        assert segment.SEGMENT_IDENTIFIER
-        seg_out = os.path.join(output, f"{segment.SEGMENT_IDENTIFIER.label}.bin")
-        write_file(segment.export(), seg_out, mode="wb")
-        generated_bins.append(seg_out)
-    return generated_bins
+        if segment.SEGMENT_IDENTIFIER is None or segment.SEGMENT_IDENTIFIER.label == "app":
+            continue
+        segment_path = os.path.join(output, f"{segment.SEGMENT_IDENTIFIER.label}.bin")
+        write_file(segment.export(), segment_path, mode="wb")
+        generated_files.append(segment_path)
+
+    return generated_files

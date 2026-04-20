@@ -37,7 +37,9 @@ from spsdk.image.ahab.ahab_container import AHABContainerV2
 from spsdk.image.ahab.ahab_data import create_chip_config
 from spsdk.image.ahab.ahab_iae import ImageArrayEntryV2
 from spsdk.image.bca.bca import BCA
-from spsdk.image.cert_block.cert_blocks import CertBlockV1, CertBlockV21, CertBlockVx
+from spsdk.image.cert_block.cert_block_v1 import CertBlockV1
+from spsdk.image.cert_block.cert_block_v21 import CertBlockV21
+from spsdk.image.cert_block.cert_block_vx import CertBlockVx
 from spsdk.image.fcf.fcf import FCF
 from spsdk.image.keystore import KeySourceType, KeyStore
 from spsdk.image.mbi.mbi_classes import (
@@ -63,8 +65,9 @@ from spsdk.utils.misc import (
     load_hex_string,
     write_file,
 )
+from spsdk.utils.schema_validator import SPSDKErrorValidationFailed
 from spsdk.utils.spsdk_enum import SpsdkEnum
-from spsdk.utils.verifier import Verifier
+from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +131,7 @@ class Mbi_Mixin:
     COUNT_IN_LEGACY_CERT_BLOCK_LEN: bool = True
 
     family: FamilyRevision
+    parsed_elements: dict[str, Any]
 
     def mix_init(self) -> None:
         """Initialize the mixin component.
@@ -172,15 +176,6 @@ class Mbi_Mixin:
         :param config: Dictionary with configuration fields.
         """
 
-    def mix_validate(self) -> None:
-        """Validate the setting of image.
-
-        Performs validation checks on the current image configuration to ensure
-        all settings are properly configured and consistent.
-
-        :raises SPSDKError: Invalid image configuration or settings.
-        """
-
     def mix_parse(self, data: bytes) -> None:
         """Parse the binary data to individual fields.
 
@@ -218,6 +213,7 @@ class Mbi_MixinApp(Mbi_Mixin):
         initialization.
     """
 
+    NAME = "Application"
     VALIDATION_SCHEMAS: list[str] = ["app"]
     NEEDED_MEMBERS: dict[str, Any] = {"_app": bytes(), "app_ext_memory_align": 0x1000}
 
@@ -298,25 +294,47 @@ class Mbi_MixinApp(Mbi_Mixin):
             )
         self.app = image.export()
 
-    def mix_validate(self) -> None:
-        """Validate the application format and interrupt vector table.
+    def mix_verify(self) -> Verifier:
+        """Verify the application format and interrupt vector table.
 
-        Performs validation checks on the application binary to ensure it meets
+        Performs verification checks on the application binary to ensure it meets
         minimum size requirements and has valid interrupt vector table entries.
         The method verifies that the stack pointer, program counter, and DSC
         illegal operation vectors are not identical.
 
-        :raises SPSDKError: The application format is invalid or minimum size
-            requirements are not met.
+        :return: Verifier object for validation results.
         """
-        if len(self.app) < 0x38:
-            raise SPSDKError("The application minimal size is 0x38, this input has lower size.")
-        sp = int.from_bytes(self.app[:4], "little")
-        pc = int.from_bytes(self.app[4:8], "little")
-        # Illegal Operation additional test for DSC devices
-        dsc_iop = int.from_bytes(self.app[8:12], "little")
-        if len(set([sp, pc, dsc_iop])) == 1:
-            raise SPSDKError("The first 3 vectors of interrupt vector table cannot be same")
+        ver = Verifier(
+            name="Application Binary",
+            description="Validates application format and interrupt vector table integrity",
+        )
+
+        # Check minimum size requirement
+        ver.add_record_bytes(
+            name="Application size",
+            value=self.app,
+            min_length=0x38,
+        )
+
+        # Only check IVT if we have enough data
+        if len(self.app) >= 0x38:
+            sp = int.from_bytes(self.app[:4], "little")
+            pc = int.from_bytes(self.app[4:8], "little")
+            dsc_iop = int.from_bytes(self.app[8:12], "little")
+
+            # Check that first 3 vectors are not all the same
+            vectors_unique = len(set([sp, pc, dsc_iop])) > 1
+            ver.add_record(
+                name="IVT vectors uniqueness",
+                result=vectors_unique,
+                value=(
+                    f"SP=0x{sp:08X}, PC=0x{pc:08X}, IOP=0x{dsc_iop:08X}"
+                    if vectors_unique
+                    else f"All vectors are identical: 0x{sp:08X}"
+                ),
+            )
+
+        return ver
 
 
 class Mbi_MixinTrustZone(Mbi_Mixin):
@@ -331,6 +349,7 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
     :cvar PRE_PARSED: List of pre-parsed configuration elements.
     """
 
+    NAME = "TrustZone"
     VALIDATION_SCHEMAS: list[str] = ["trust_zone"]
     NEEDED_MEMBERS: dict[str, Any] = {
         "trust_zone": None,
@@ -371,21 +390,22 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
             len(self.trust_zone) if self.trust_zone and self.tz_type == TrustZoneType.CUSTOM else 0
         )
 
-    def _load_preset_file(self, preset_file: str) -> None:
+    def _load_preset_file(self, config: Config) -> None:
         """Load preset file for TrustZone configuration.
 
         Attempts to load the preset file as a configuration file first. If that fails,
         falls back to loading it as a binary TrustZone file and parses it directly.
 
-        :param preset_file: Path to the preset file (config or binary format).
+        :param config: Configuration containing TrustZone settings.
         :raises SPSDKError: When binary file cannot be loaded or parsed as TrustZone.
         """
         try:
-            cfg = Config.create_from_file(preset_file)
+            cfg = config.load_sub_config("trustZonePresetFile", target_klass=TrustZone)
+            self.trust_zone = TrustZone.load_from_config(cfg)
         except SPSDKError:
-            self.trust_zone = TrustZone.parse(load_binary(preset_file), family=self.family)
-            return
-        self.trust_zone = TrustZone.load_from_config(cfg)
+            self.trust_zone = TrustZone.parse(
+                load_binary(config.get_input_file_name("trustZonePresetFile")), family=self.family
+            )
 
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
@@ -398,7 +418,7 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
         self.trust_zone = None
         if config.get("enableTrustZone", False):
             if config.get("trustZonePresetFile"):
-                self._load_preset_file(config.get_input_file_name("trustZonePresetFile"))
+                self._load_preset_file(config)
                 if self.tz_type != TrustZoneType.CUSTOM:
                     logger.warning(
                         "The TrustZone data are not added to the image as they have default values."
@@ -434,7 +454,7 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
         :param data: Final Image in bytes containing the binary data to parse.
         :raises SPSDKParsingError: Invalid TrustZone type detected in the binary data.
         """
-        tz_type = self.ivt_table.get_tz_type(data)
+        tz_type = Mbi_MixinIvt.get_tz_type(data)
         if tz_type not in TrustZoneType.tags():
             raise SPSDKParsingError("Invalid TrustZone type")
 
@@ -457,6 +477,54 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
                 tz_data = data[-tz_data_size:]
             self.trust_zone = TrustZone.parse(tz_data, family=self.family)
 
+    def mix_verify(self) -> Verifier:
+        """Verify the TrustZone configuration.
+
+        Performs verification checks on the TrustZone settings to ensure proper
+        configuration and compatibility with the target family.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="TrustZone Configuration",
+            description="Validates TrustZone settings and configuration type",
+        )
+
+        # Check TrustZone type
+        if self.trust_zone is None:
+            ver.add_record(
+                name="TrustZone enabled",
+                result=VerifierResult.SUCCEEDED,
+                value="Disabled (optional)",
+                important=False,
+            )
+        else:
+            ver.add_record(
+                name="TrustZone enabled",
+                result=VerifierResult.SUCCEEDED,
+                value=f"Enabled ({self.tz_type.label})",
+            )
+
+            # Verify TrustZone type is valid
+            ver.add_record_enum(
+                name="TrustZone type",
+                value=self.tz_type,
+                enum=TrustZoneType,
+            )
+
+            # Check TrustZone data size if custom
+            if self.tz_type == TrustZoneType.CUSTOM:
+                ver.add_record_bytes(
+                    name="TrustZone data",
+                    value=self.trust_zone.export(),
+                    min_length=1,
+                )
+
+            # Add TrustZone V2 object's own verifier (since it inherits from FeatureBaseClass)
+            ver.add_child(self.trust_zone.verify())
+
+        return ver
+
 
 class Mbi_MixinTrustZoneMandatory(Mbi_MixinTrustZone):
     """Master Boot Image Trust Zone mixin for devices where TrustZone is mandatory.
@@ -468,6 +536,7 @@ class Mbi_MixinTrustZoneMandatory(Mbi_MixinTrustZone):
     :cvar VALIDATION_SCHEMAS: List of validation schemas used for configuration validation.
     """
 
+    NAME = "Mandatory TrustZone"
     VALIDATION_SCHEMAS: list[str] = ["trust_zone_mandatory"]
     trust_zone: Optional[TrustZone]
     family: FamilyRevision
@@ -491,7 +560,7 @@ class Mbi_MixinTrustZoneMandatory(Mbi_MixinTrustZone):
         :param config: Configuration object containing TrustZone setup parameters.
         """
         if config.get("trustZonePresetFile"):
-            self._load_preset_file(config.get_input_file_name("trustZonePresetFile"))
+            self._load_preset_file(config)
             if self.tz_type != TrustZoneType.CUSTOM:
                 logger.warning(
                     "The TrustZone data are not added to the image as they have default values."
@@ -499,13 +568,25 @@ class Mbi_MixinTrustZoneMandatory(Mbi_MixinTrustZone):
         else:
             self.trust_zone = TrustZone(self.family)
 
-    def mix_validate(self) -> None:
-        """Validate the setting of image.
+    def mix_verify(self) -> Verifier:
+        """Verify the TrustZone configuration for mandatory TrustZone devices.
 
-        :raises SPSDKError: The TrustZone configuration is invalid.
+        Performs verification checks ensuring that TrustZone is properly configured
+        for devices that require it.
+
+        :return: Verifier object for validation results.
         """
-        if not self.trust_zone:
-            raise SPSDKError("The Trust Zone MUST be used.")
+        # Get parent verifier first
+        ver = super().mix_verify()
+
+        # Add mandatory check
+        ver.add_record(
+            name="TrustZone mandatory check",
+            result=self.trust_zone is not None,
+            value="TrustZone is configured" if self.trust_zone else "TrustZone MUST be configured",
+        )
+
+        return ver
 
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
         """Get the configuration of the mixin.
@@ -536,6 +617,7 @@ class Mbi_MixinTrustZoneV2(Mbi_Mixin):
     :cvar NEEDED_MEMBERS: Required member variables and their default values.
     """
 
+    NAME = "TrustZone V2"
     VALIDATION_SCHEMAS: list[str] = ["trust_zone_2"]
     NEEDED_MEMBERS: dict[str, Any] = {
         "trust_zone": None,
@@ -578,11 +660,19 @@ class Mbi_MixinTrustZoneV2(Mbi_Mixin):
         """
         self.trust_zone = None
         if config.get("trustZonePresetFile"):
-            preset_file = config.get_input_file_name("trustZonePresetFile")
             try:
-                self.trust_zone = TrustZoneV2.load_from_config(Config.create_from_file(preset_file))
+                self.trust_zone = TrustZoneV2.load_from_config(
+                    config.load_sub_config("trustZonePresetFile", target_klass=TrustZoneV2)
+                )
+            except SPSDKErrorValidationFailed as exc:
+                raise SPSDKErrorValidationFailed(
+                    f"Failed to load TrustZone from configuration: {str(exc)}"
+                ) from exc
             except SPSDKError:
-                self.trust_zone = TrustZoneV2.parse(load_binary(preset_file), family=self.family)
+                self.trust_zone = TrustZoneV2.parse(
+                    load_binary(config.get_input_file_name("trustZonePresetFile")),
+                    family=self.family,
+                )
 
     def mix_get_config(self, output_folder: str) -> dict[str, Any]:
         """Get the configuration of the mixin.
@@ -616,7 +706,7 @@ class Mbi_MixinTrustZoneV2(Mbi_Mixin):
         :param data: Final Image in bytes.
         :raises SPSDKParsingError: Invalid TrustZone type or Trust Zone block not found.
         """
-        tz_type = self.ivt_table.get_tz_type(data)
+        tz_type = Mbi_MixinIvt.get_tz_type(data)
         if tz_type not in TrustZoneType.tags():
             raise SPSDKParsingError("Invalid TrustZone type")
 
@@ -627,6 +717,53 @@ class Mbi_MixinTrustZoneV2(Mbi_Mixin):
             if tz_offset is None:
                 raise SPSDKParsingError("Trust Zone block not found")
             self.trust_zone = TrustZoneV2.parse(data[tz_offset:], family=self.family)
+
+    def mix_verify(self) -> Verifier:
+        """Verify the TrustZone V2 configuration.
+
+        Performs verification checks on the TrustZone V2 settings to ensure proper
+        configuration and compatibility with the target family.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="TrustZone V2 Configuration",
+            description="Validates TrustZone V2 settings and configuration",
+        )
+
+        # Check TrustZone presence
+        if self.trust_zone is None:
+            ver.add_record(
+                name="TrustZone V2 enabled",
+                result=VerifierResult.SUCCEEDED,
+                value="Not configured (optional)",
+                important=False,
+            )
+        else:
+            ver.add_record(
+                name="TrustZone V2 enabled",
+                result=VerifierResult.SUCCEEDED,
+                value=f"Configured ({self.tz_type.label})",
+            )
+
+            # Verify TrustZone type is valid
+            ver.add_record_enum(
+                name="TrustZone type",
+                value=self.tz_type,
+                enum=TrustZoneType,
+            )
+
+            # Check TrustZone V2 data size
+            ver.add_record_bytes(
+                name="TrustZone V2 data",
+                value=self.trust_zone.export(),
+                min_length=1,
+            )
+
+            # Add TrustZone V2 object's own verifier (since it inherits from FeatureBaseClass)
+            ver.add_child(self.trust_zone.verify())
+
+        return ver
 
 
 class Mbi_MixinLoadAddress(Mbi_Mixin):
@@ -639,9 +776,10 @@ class Mbi_MixinLoadAddress(Mbi_Mixin):
     :cvar VALIDATION_SCHEMAS: List of validation schema names for load address configuration.
     """
 
+    NAME = "Load Address"
     VALIDATION_SCHEMAS: list[str] = ["load_addr"]
 
-    load_address: Optional[int]
+    load_address: Optional[int] = 0
     ivt_table: "Mbi_MixinIvt"
 
     def mix_load_from_config(self, config: Config) -> None:
@@ -680,6 +818,45 @@ class Mbi_MixinLoadAddress(Mbi_Mixin):
         """
         self.load_address = self.ivt_table.get_load_address_from_data(data)
 
+    def mix_verify(self) -> Verifier:
+        """Verify the load address configuration.
+
+        Performs verification checks on the load address to ensure it's properly
+        configured and within valid ranges.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="Load Address",
+            description="Validates output image execution address configuration",
+        )
+
+        # Check if load address is defined
+        if self.load_address is None:
+            ver.add_record(
+                name="Load address defined",
+                result=VerifierResult.ERROR,
+                value="Load address is not defined",
+            )
+        else:
+            # Verify load address is in valid range (32-bit address space)
+            ver.add_record_range(
+                name="Load address range",
+                value=self.load_address,
+                min_val=0,
+                max_val=0xFFFFFFFF,
+            )
+
+            # Verify load address is 4-byte aligned
+            is_aligned = (self.load_address % 4) == 0
+            ver.add_record(
+                name="Load address alignment",
+                result=is_aligned,
+                value=f"0x{self.load_address:08X} is {'aligned' if is_aligned else 'NOT aligned'} to 4 bytes",
+            )
+
+        return ver
+
 
 class Mbi_MixinFwVersion(Mbi_Mixin):
     """Master Boot Image Firmware Version Mixin.
@@ -691,10 +868,12 @@ class Mbi_MixinFwVersion(Mbi_Mixin):
     :cvar NEEDED_MEMBERS: Dictionary defining required members for the mixin functionality.
     """
 
+    NAME = "Firmware Version"
+
     VALIDATION_SCHEMAS: list[str] = ["firmware_version"]
     NEEDED_MEMBERS: dict[str, Any] = {"manifest": None}
 
-    firmware_version: Optional[int]
+    firmware_version: Optional[int] = 0
 
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
@@ -714,28 +893,41 @@ class Mbi_MixinFwVersion(Mbi_Mixin):
         return config
 
     def mix_verify(self) -> Verifier:
-        """Verify the mixin configuration.
+        """Verify the firmware version configuration.
+
+        Validates that the firmware version is within the valid 16-bit range
+        for comparison with the Secure_FW_Version monotonic counter.
 
         :return: Verifier object for firmware version validation.
         """
         ver = Verifier(
             name="Firmware Version",
-            description="Value compared with Secure_FW_Version monotonic counter value",
+            description="Value compared with Secure_FW_Version monotonic counter value (16-bit)",
         )
-        ver.add_record_range(
-            name="fw_version", value=self.firmware_version, min_val=0, max_val=0xFFFF
-        )
-        return ver
 
-    def mix_validate(self) -> None:
-        """Validate the mixin configuration."""
-        ver = self.mix_verify()
-        if ver.has_errors:
-            raise SPSDKError(ver.draw())
+        # Check if firmware version is defined
+        if self.firmware_version is None:
+            ver.add_record(
+                name="Firmware version defined",
+                result=VerifierResult.ERROR,
+                value="Firmware version is not defined",
+            )
+        else:
+            # Verify firmware version is in valid 16-bit range
+            ver.add_record_range(
+                name="Firmware version range",
+                value=self.firmware_version,
+                min_val=0,
+                max_val=0xFFFF,
+            )
+
+        return ver
 
 
 class Mbi_MixinFwVersionHiddenImageVersion(Mbi_MixinFwVersion):
     """Firmware version with hidden created image_version to be stored into IVT table image type."""
+
+    NAME = "Firmware version with hidden Image Version"
 
     image_version: int
     ivt_table: "Mbi_MixinIvt"
@@ -789,6 +981,7 @@ class Mbi_MixinImageVersion(Mbi_Mixin):
     :cvar image_version_to_image_type: Flag indicating if image version maps to image type.
     """
 
+    NAME = "Image Version"
     VALIDATION_SCHEMAS: list[str] = ["image_version"]
     NEEDED_MEMBERS: dict[str, Any] = {"image_version": 0}
     image_version_to_image_type: bool = True
@@ -823,6 +1016,48 @@ class Mbi_MixinImageVersion(Mbi_Mixin):
         """
         self.image_version = self.ivt_table.get_image_version(data)
 
+    def mix_verify(self) -> Verifier:
+        """Verify the image version configuration.
+
+        Validates that the image version is properly configured for dual boot
+        procedures and within valid ranges.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="Image Version",
+            description="Image version used in dual boot procedure",
+        )
+
+        # Check if image version is defined
+        if self.image_version is None:
+            ver.add_record(
+                name="Image version defined",
+                result=VerifierResult.WARNING,
+                value="Image version is not defined (defaults to 0)",
+                important=False,
+            )
+        else:
+            # Verify image version is in valid range
+            # The range depends on how many bits are allocated in IVT flags
+            ver.add_record_range(
+                name="Image version range",
+                value=self.image_version,
+                min_val=0,
+                max_val=0xFFFF,  # 16-bit range based on IVT_IMAGE_FLAGS_IMG_VER_MASK
+            )
+
+            # Check if image version will be included in image type
+            if hasattr(self, "image_version_to_image_type") and self.image_version_to_image_type:
+                ver.add_record(
+                    name="Image version in IVT",
+                    result=VerifierResult.SUCCEEDED,
+                    value=f"Version {self.image_version} will be included in IVT flags",
+                    important=False,
+                )
+
+        return ver
+
 
 class Mbi_MixinImageSubType(Mbi_Mixin):
     """Master Boot Image SubType mixin class.
@@ -856,6 +1091,7 @@ class Mbi_MixinImageSubType(Mbi_Mixin):
         MAIN = (0x00, "MAIN", "Default (main) application image")
         RECOVERY = (0x01, "RECOVERY", "Recovery image")
 
+    NAME = "Image SubType"
     VALIDATION_SCHEMAS: list[str] = ["image_subtype"]
     NEEDED_MEMBERS: dict[str, Any] = {"image_subtype": 0}
 
@@ -920,6 +1156,68 @@ class Mbi_MixinImageSubType(Mbi_Mixin):
         """
         self.image_subtype = self.ivt_table.get_sub_type(data)
 
+    def mix_verify(self) -> Verifier:
+        """Verify the image subtype configuration.
+
+        Validates that the image subtype is properly configured and valid for
+        the target MCU family (KW45xx/K32W1xx or MCXN9xx).
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="Image SubType",
+            description="Image subtype for multi-image configurations (MAIN, NBU, RECOVERY)",
+        )
+
+        # Check if image subtype is defined
+        if self.image_subtype is None:
+            ver.add_record(
+                name="Image subtype defined",
+                result=VerifierResult.ERROR,
+                value="Image subtype is not defined",
+            )
+        else:
+            # Verify image subtype is in valid range (2-bit field)
+            ver.add_record_range(
+                name="Image subtype range",
+                value=self.image_subtype,
+                min_val=0,
+                max_val=0x03,  # 2-bit field based on IVT_IMAGE_FLAGS_SUB_TYPE_MASK
+            )
+
+            # Try to identify which enum applies and validate
+            subtype_label = None
+            try:
+                # Try KW45xx/K32W1xx enum first
+                subtype_enum_kw45 = Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx.from_tag(
+                    self.image_subtype
+                )
+                subtype_label = subtype_enum_kw45.label
+            except SPSDKError:
+                try:
+                    # Try MCXN9xx enum
+                    subtype_enum_mcxn9xx = Mbi_MixinImageSubType.Mbi_ImageSubTypeMcxn9xx.from_tag(
+                        self.image_subtype
+                    )
+                    subtype_label = subtype_enum_mcxn9xx.label
+                except SPSDKError:
+                    pass
+
+            if subtype_label:
+                ver.add_record(
+                    name="Image subtype value",
+                    result=VerifierResult.SUCCEEDED,
+                    value=f"{subtype_label} (0x{self.image_subtype:02X})",
+                )
+            else:
+                ver.add_record(
+                    name="Image subtype value",
+                    result=VerifierResult.WARNING,
+                    value=f"Unknown subtype: 0x{self.image_subtype:02X}",
+                )
+
+        return ver
+
 
 class Mbi_MixinIvt(Mbi_Mixin):
     """Master Boot Image Interrupt Vector Table mixin class.
@@ -933,6 +1231,8 @@ class Mbi_MixinIvt(Mbi_Mixin):
     :cvar IVT_CRC_CERTIFICATE_OFFSET: Offset for CRC certificate field in IVT table.
     :cvar IVT_LOAD_ADDR_OFFSET: Offset for load address field in IVT table.
     """
+
+    NAME = "Interrupt vector table modifications"
 
     # IVT table offsets
     IVT_IMAGE_LENGTH_OFFSET = 0x20
@@ -968,6 +1268,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
     image_version_to_image_type: bool
     image_subtype: Optional[int]
     tz_type: Optional[TrustZoneType]
+    total_len: int
 
     @property
     def ivt_table(self) -> Self:
@@ -1121,15 +1422,48 @@ class Mbi_MixinIvt(Mbi_Mixin):
         :param data: Raw MBI image data to validate.
         :raises SPSDKParsingError: Insufficient length of image has been detected.
         """
-        if len(data) < 0x38:  # Minimum size of IVT table
-            raise SPSDKParsingError("Insufficient length of input raw data!")
+        ver = Verifier("Total length")
+        cls._verify_total_length(data, ver)
+        if ver.has_errors:
+            raise SPSDKParsingError(ver.draw(results=[VerifierResult.ERROR], colorize=False))
 
-        total_len = int.from_bytes(
-            data[cls.IVT_IMAGE_LENGTH_OFFSET : cls.IVT_IMAGE_LENGTH_OFFSET + 4],
-            Endianness.LITTLE.value,
+    @classmethod
+    def _verify_total_length(cls, data: bytes, ver: Verifier) -> None:
+        """Verify total length field from raw MBI image data.
+
+        Validates that the input data contains sufficient bytes for a valid MBI image by checking
+        both the minimum IVT table size and comparing the declared image length with actual data size.
+
+        :param data: Raw MBI image data to validate.
+        :param ver: Verifier object to add validation records to.
+        """
+        # Check minimum IVT table size
+        ver.add_record_bytes(
+            name="Minimum IVT size",
+            value=data,
+            min_length=0x38,
         )
-        if total_len > len(data):
-            raise SPSDKParsingError("Insufficient length of input raw data!")
+
+        if len(data) >= 0x38:
+            # Extract total length from IVT
+            total_len = int.from_bytes(
+                data[cls.IVT_IMAGE_LENGTH_OFFSET : cls.IVT_IMAGE_LENGTH_OFFSET + 4],
+                Endianness.LITTLE.value,
+            )
+
+            # Verify declared length matches actual data
+            if total_len > len(data):
+                ver.add_record(
+                    name="Total length consistency",
+                    result=VerifierResult.ERROR,
+                    value=f"Declared length (0x{total_len:08X}) > Actual data length (0x{len(data):08X})",
+                )
+            else:
+                ver.add_record(
+                    name="Total length consistency",
+                    result=VerifierResult.SUCCEEDED,
+                    value=f"Declared: 0x{total_len:08X}, Actual: 0x{len(data):08X}",
+                )
 
     @classmethod
     def get_flags(cls, data: bytes) -> int:
@@ -1197,7 +1531,6 @@ class Mbi_MixinIvt(Mbi_Mixin):
         :return: Load address value extracted from the MBI image data.
         """
         cls.check_total_length(data)
-
         return cls.get_load_address_from_data(data)
 
     @classmethod
@@ -1212,6 +1545,21 @@ class Mbi_MixinIvt(Mbi_Mixin):
         """
         return int.from_bytes(
             data[cls.IVT_LOAD_ADDR_OFFSET : cls.IVT_LOAD_ADDR_OFFSET + 4],
+            Endianness.LITTLE.value,
+        )
+
+    @classmethod
+    def get_total_length_from_data(cls, data: bytes) -> int:
+        """Get the total length from raw MBI image data.
+
+        Extracts the total length from the Interrupt Vector Table (IVT) at the predefined offset
+        within the provided raw MBI image data.
+
+        :param data: Raw MBI image data containing the IVT structure.
+        :return: Total length as integer value extracted from the IVT.
+        """
+        return int.from_bytes(
+            data[cls.IVT_IMAGE_LENGTH_OFFSET : cls.IVT_IMAGE_LENGTH_OFFSET + 4],
             Endianness.LITTLE.value,
         )
 
@@ -1302,6 +1650,327 @@ class Mbi_MixinIvt(Mbi_Mixin):
 
         return bool(flags & cls._RELOC_TABLE_FLAG)
 
+    def _verify_image_type(self, ver: Verifier) -> None:
+        """Verify IMAGE_TYPE is set and valid.
+
+        Validates that IMAGE_TYPE attribute exists and is a valid MBI image type.
+
+        :param ver: Verifier object to add validation records to.
+        """
+        if hasattr(self, "IMAGE_TYPE"):
+            ver.add_record_enum(
+                name="Image type",
+                value=self.IMAGE_TYPE,
+                enum=MbiImageTypeEnum,
+            )
+        else:
+            ver.add_record(
+                name="Image type defined",
+                result=VerifierResult.ERROR,
+                value="IMAGE_TYPE is not defined",
+            )
+
+    def _verify_trustzone_type(self, ver: Verifier) -> None:
+        """Verify TrustZone type if applicable.
+
+        Validates TrustZone type configuration in IVT.
+
+        :param ver: Verifier object to add validation records to.
+        """
+        if hasattr(self, "tz_type") and self.tz_type is not None:
+            ver.add_record_enum(
+                name="TrustZone type in IVT",
+                value=self.tz_type,
+                enum=TrustZoneType,
+            )
+
+    def _verify_load_address(self, ver: Verifier) -> None:
+        """Verify load address if set.
+
+        Validates load address is within valid range and properly aligned.
+
+        :param ver: Verifier object to add validation records to.
+        """
+        if not (hasattr(self, "load_address") and self.load_address is not None):
+            return
+
+        ver.add_record_range(
+            name="Load address",
+            value=self.load_address,
+            min_val=0,
+            max_val=0xFFFFFFFF,
+        )
+
+        # Check 4-byte alignment
+        is_aligned = (self.load_address % 4) == 0
+        ver.add_record(
+            name="Load address alignment",
+            result=is_aligned,
+            value=f"0x{self.load_address:08X} is {'aligned' if is_aligned else 'NOT aligned'}",
+        )
+
+    def _verify_image_subtype(self, ver: Verifier) -> None:
+        """Verify image subtype if applicable.
+
+        Validates image subtype is within valid 2-bit range.
+
+        :param ver: Verifier object to add validation records to.
+        """
+        if hasattr(self, "image_subtype") and self.image_subtype is not None:
+            ver.add_record_range(
+                name="Image subtype",
+                value=self.image_subtype,
+                min_val=0,
+                max_val=0x03,  # 2-bit field
+            )
+
+    def _verify_image_version(self, ver: Verifier) -> None:
+        """Verify image version if applicable.
+
+        Validates image version is within valid 16-bit range.
+
+        :param ver: Verifier object to add validation records to.
+        """
+        if hasattr(self, "image_version") and self.image_version is not None:
+            ver.add_record_range(
+                name="Image version",
+                value=self.image_version,
+                min_val=0,
+                max_val=0xFFFF,  # 16-bit field
+            )
+
+    def _verify_hardware_key(self, ver: Verifier) -> None:
+        """Verify hardware key enabled flag.
+
+        Validates hardware user mode keys configuration.
+
+        :param ver: Verifier object to add validation records to.
+        """
+        if hasattr(self, "user_hw_key_enabled"):
+            ver.add_record(
+                name="Hardware user mode keys",
+                result=VerifierResult.SUCCEEDED,
+                value=f"{'Enabled' if self.user_hw_key_enabled else 'Disabled'}",
+                important=False,
+            )
+
+    def _verify_key_store(self, ver: Verifier) -> None:
+        """Verify key store presence.
+
+        Validates KeyStore configuration in IVT.
+
+        :param ver: Verifier object to add validation records to.
+        """
+        if hasattr(self, "key_store") and self.key_store is not None:
+            ver.add_record(
+                name="KeyStore in IVT",
+                result=VerifierResult.SUCCEEDED,
+                value=f"KeyStore present ({len(self.key_store.export())} bytes)",
+                important=False,
+            )
+
+    def _verify_app_table(self, ver: Verifier) -> None:
+        """Verify application table presence.
+
+        Validates relocation table configuration in IVT.
+
+        :param ver: Verifier object to add validation records to.
+        """
+        if hasattr(self, "app_table") and self.app_table is not None:
+            ver.add_record(
+                name="Relocation table in IVT",
+                result=VerifierResult.SUCCEEDED,
+                value=f"Relocation table present ({len(self.app_table.entries)} entries)",
+                important=False,
+            )
+
+    def _verify_flags_generation(self, ver: Verifier) -> None:
+        """Verify IVT flags can be generated.
+
+        Attempts to create flags and validates the operation succeeds.
+
+        :param ver: Verifier object to add validation records to.
+        """
+        try:
+            flags = self.create_flags()
+            ver.add_record(
+                name="IVT flags generation",
+                result=VerifierResult.SUCCEEDED,
+                value=f"Flags: 0x{flags:08X}",
+            )
+        except Exception as e:
+            ver.add_record(
+                name="IVT flags generation",
+                result=VerifierResult.ERROR,
+                value=f"Failed to generate flags: {str(e)}",
+            )
+
+    def _verify_parsed_ivt_image_type(self, ver: Verifier, parsed_image_type: int) -> None:
+        """Verify parsed IVT image type matches generated flags.
+
+        :param ver: Verifier object to add validation records to.
+        :param parsed_image_type: Parsed image type from IVT data.
+        """
+        ver.add_record(
+            name="Parsed IVT image type",
+            result=parsed_image_type == self.create_flags(),
+            value=f"Parsed: 0x{parsed_image_type:08X}, Generated: 0x{self.create_flags():08X}",
+            important=True,
+        )
+
+    def _verify_parsed_ivt_total_length(
+        self, ver: Verifier, parsed_image_type: int, parsed_total_length: int
+    ) -> None:
+        """Verify parsed IVT total length.
+
+        :param ver: Verifier object to add validation records to.
+        :param parsed_image_type: Parsed image type from IVT data.
+        :param parsed_total_length: Parsed total length from IVT data.
+        """
+        if parsed_image_type == 0 and parsed_total_length == 0:
+            ver.add_record(
+                name="Parsed IVT total length",
+                result=VerifierResult.WARNING,
+                value="Parsed: is zero and should be set to correct value",
+                important=True,
+            )
+        else:
+            ver.add_record(
+                name="Parsed IVT total length",
+                result=parsed_total_length == self.total_len,
+                value=f"Parsed: 0x{parsed_total_length:08X}, Generated: 0x{self.total_len:08X}",
+                important=True,
+            )
+
+    def _verify_parsed_ivt_crc(self, ver: Verifier, parsed_crc_cert_block_offset: int) -> None:
+        """Verify parsed IVT CRC value or certificate block offset.
+
+        :param ver: Verifier object to add validation records to.
+        :param parsed_crc_cert_block_offset: Parsed CRC or certificate block offset.
+        """
+        if "parsed_crc" in self.parsed_elements:
+            ver.add_record(
+                name="IVT CRC value",
+                result=self.parsed_elements["parsed_crc"] == parsed_crc_cert_block_offset,
+                value=(
+                    f"Parsed: 0x{parsed_crc_cert_block_offset:08X}, "
+                    f"computed: 0x{self.parsed_elements['parsed_crc']:08X}"
+                ),
+                important=False,
+            )
+        else:
+            ver.add_record(
+                name="Parsed IVT certificate block offset",
+                result=VerifierResult.SUCCEEDED,
+                value=f"Parsed: 0x{parsed_crc_cert_block_offset:08X}",
+                important=False,
+            )
+
+    def _verify_parsed_ivt_load_address(self, ver: Verifier, parsed_load_address: int) -> None:
+        """Verify parsed IVT load address.
+
+        :param ver: Verifier object to add validation records to.
+        :param parsed_load_address: Parsed load address from IVT data.
+        """
+        ver.add_record(
+            name="Parsed IVT load address",
+            result=(
+                parsed_load_address == self.load_address
+                if hasattr(self, "load_address")
+                else VerifierResult.SUCCEEDED
+            ),
+            value=f"Parsed: 0x{parsed_load_address:08X}"
+            + (f", Generated: 0x{self.load_address:08X}" if hasattr(self, "load_address") else ""),
+            important=True,
+        )
+
+    def _verify_parsed_ivt_end_crc(self, ver: Verifier) -> None:
+        """Verify end of image CRC value if present.
+
+        :param ver: Verifier object to add validation records to.
+        """
+        if "parsed_end_crc" not in self.parsed_elements:
+            return
+
+        parsed_end_crc = self.parsed_elements["parsed_end_crc"]
+        computed_end_crc = self.parsed_elements["computed_end_crc"]
+        ver.add_record(
+            name="End of image CRC value",
+            result=parsed_end_crc == computed_end_crc,
+            value=f"Parsed: 0x{parsed_end_crc:08X}, computed: 0x{computed_end_crc:08X}",
+            important=False,
+        )
+
+    def _verify_parsed_ivt_data(self, ver: Verifier) -> None:
+        """Verify parsed IVT data against individual members.
+
+        Validates all parsed IVT fields match the generated values.
+
+        :param ver: Verifier object to add validation records to.
+        """
+        if "parsed_ivt" not in self.parsed_elements:
+            return
+
+        # Extract parsed values from IVT data
+        parsed_image_type = self.get_flags_from_data(self.parsed_elements["parsed_ivt"])
+        parsed_total_length = self.get_total_length_from_data(self.parsed_elements["parsed_ivt"])
+        parsed_crc_cert_block_offset = self.get_cert_block_offset_from_data(
+            self.parsed_elements["parsed_ivt"]
+        )
+        parsed_load_address = self.get_load_address_from_data(self.parsed_elements["parsed_ivt"])
+
+        # Verify each parsed field
+        self._verify_parsed_ivt_image_type(ver, parsed_image_type)
+        self._verify_parsed_ivt_total_length(ver, parsed_image_type, parsed_total_length)
+        self._verify_parsed_ivt_crc(ver, parsed_crc_cert_block_offset)
+        self._verify_parsed_ivt_load_address(ver, parsed_load_address)
+        self._verify_parsed_ivt_end_crc(ver)
+
+    def mix_verify(self) -> Verifier:
+        """Verify the IVT (Interrupt Vector Table) configuration.
+
+        Validates IVT settings including image type, flags, TrustZone configuration,
+        hardware key settings, and other IVT-related parameters.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="Interrupt Vector Table (IVT)",
+            description="Validates IVT configuration and flags",
+        )
+
+        # Verify IMAGE_TYPE is set
+        self._verify_image_type(ver)
+
+        # Verify TrustZone type if applicable
+        self._verify_trustzone_type(ver)
+
+        # Verify load address if set
+        self._verify_load_address(ver)
+
+        # Verify image subtype if applicable
+        self._verify_image_subtype(ver)
+
+        # Verify image version if applicable
+        self._verify_image_version(ver)
+
+        # Verify hardware key enabled flag
+        self._verify_hardware_key(ver)
+
+        # Verify key store presence
+        self._verify_key_store(ver)
+
+        # Verify application table presence
+        self._verify_app_table(ver)
+
+        # Try to create flags to verify they can be generated
+        self._verify_flags_generation(ver)
+
+        # Verify parsed IVT data if available
+        self._verify_parsed_ivt_data(ver)
+
+        return ver
+
 
 class Mbi_MixinIvtZeroTotalLength(Mbi_MixinIvt):
     """Master Boot Image Interrupt Vector table mixin for XIP images with zero total length.
@@ -1334,21 +2003,72 @@ class Mbi_MixinIvtZeroTotalLength(Mbi_MixinIvt):
         )
 
     @classmethod
-    def check_total_length(cls, data: bytes) -> None:
-        """Check total length field from raw data.
+    def _verify_total_length(cls, data: bytes, ver: Verifier) -> None:
+        """Verify total length field from raw MBI image data.
 
-        Validates that the total length field in the MBI image header matches or is compatible
-        with the actual data length provided.
+        Validates that the input data contains sufficient bytes for a valid MBI image by checking
+        both the minimum IVT table size and comparing the declared image length with actual data size.
 
         :param data: Raw MBI image data to validate.
-        :raises SPSDKParsingError: Insufficient length of image has been detected.
+        :param ver: Verifier object to add validation records to.
         """
-        total_len = int.from_bytes(
-            data[cls.IVT_IMAGE_LENGTH_OFFSET : cls.IVT_IMAGE_LENGTH_OFFSET + 4],
-            Endianness.LITTLE.value,
+        # Check minimum IVT table size
+        ver.add_record_bytes(
+            name="Minimum IVT size",
+            value=data,
+            min_length=0x38,
         )
-        if total_len != 0 and total_len > len(data):
-            raise SPSDKParsingError("Insufficient length of input raw data!")
+
+        if len(data) >= 0x38:
+            # Extract total length from IVT
+            total_len = int.from_bytes(
+                data[cls.IVT_IMAGE_LENGTH_OFFSET : cls.IVT_IMAGE_LENGTH_OFFSET + 4],
+                Endianness.LITTLE.value,
+            )
+
+            # Verify declared length matches actual data - handle 3 cases
+            if total_len == 0:
+                # Case 1: Zero length (valid for XIP images)
+                ver.add_record(
+                    name="Total length consistency",
+                    result=VerifierResult.SUCCEEDED,
+                    value=f"Total length is 0 (XIP mode), Actual: 0x{len(data):08X}",
+                )
+            elif total_len > len(data):
+                # Case 2: Declared length exceeds actual data (ERROR)
+                ver.add_record(
+                    name="Total length consistency",
+                    result=VerifierResult.ERROR,
+                    value=f"Declared length (0x{total_len:08X}) > Actual data length (0x{len(data):08X})",
+                )
+            else:
+                # Case 3: Valid length (OK)
+                ver.add_record(
+                    name="Total length consistency",
+                    result=VerifierResult.SUCCEEDED,
+                    value=f"Declared: 0x{total_len:08X}, Actual: 0x{len(data):08X}",
+                )
+
+    def mix_verify(self) -> Verifier:
+        """Verify the IVT configuration for XIP images with zero total length.
+
+        Extends parent IVT verification and adds specific checks for XIP images
+        that require total length to be set to zero.
+
+        :return: Verifier object for validation results.
+        """
+        # Get parent verifier first
+        ver = super().mix_verify()
+
+        # Add XIP-specific information
+        ver.add_record(
+            name="XIP total length behavior",
+            result=VerifierResult.SUCCEEDED,
+            value="Total length will be set to 0 (XIP mode)",
+            important=False,
+        )
+
+        return ver
 
 
 class Mbi_MixinRelocTable(Mbi_Mixin):
@@ -1437,18 +2157,6 @@ class Mbi_MixinRelocTable(Mbi_Mixin):
             config["applicationTable"] = cfg_table
         return config
 
-    def mix_validate(self) -> None:
-        """Validate the setting of image.
-
-        This method checks if the application table configuration is valid by ensuring
-        that when an application table exists, it contains at least one entry.
-
-        :raises SPSDKError: Application table configuration is invalid - the application
-            relocation table must have at least one record when present.
-        """
-        if self.app_table and len(self.app_table.entries) == 0:
-            raise SPSDKError("The application relocation table MUST has at least one record.")
-
     def disassembly_app_data(self, data: bytes) -> bytes:
         """Disassemble application data to extract application and Multiple Application Table.
 
@@ -1463,6 +2171,32 @@ class Mbi_MixinRelocTable(Mbi_Mixin):
             return data[: self.app_table.start_address]
 
         return data
+
+    def mix_verify(self) -> Verifier:
+        """Verify the relocation table configuration.
+
+        Validates that the relocation table is properly configured with valid
+        entries and addresses.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="Relocation Table",
+            description="Validates multiple image table entries and configuration",
+        )
+
+        # Check if relocation table exists
+        if self.app_table is None:
+            ver.add_record(
+                name="Relocation table present",
+                result=VerifierResult.SUCCEEDED,
+                value="Not configured (optional)",
+                important=False,
+            )
+        else:
+            ver.add_child(self.app_table.verify())
+
+        return ver
 
 
 class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
@@ -1505,18 +2239,6 @@ class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
             raise SPSDKError("The Image manifest must exists.")
         return self.manifest.total_length
 
-    def mix_validate(self) -> None:
-        """Validate the settings of the MBI image.
-
-        This method performs validation checks on the image configuration, ensuring
-        that all required components are properly set, including the mandatory manifest.
-
-        :raises SPSDKError: The image manifest is missing or the configuration is invalid.
-        """
-        super().mix_validate()
-        if not self.manifest:
-            raise SPSDKError("The Image manifest must exists.")
-
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
 
@@ -1547,6 +2269,36 @@ class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
         self.manifest = self.manifest_class.parse(self.family, data[manifest_offset:])
         self.firmware_version = self.manifest.firmware_version
         self.trust_zone = self.manifest.trust_zone or TrustZone(self.family)
+
+    def mix_verify(self) -> Verifier:
+        """Verify the manifest configuration.
+
+        Validates that the manifest is properly configured and adds the manifest's
+        own verification results as a child verifier.
+
+        :return: Verifier object for validation results.
+        """
+        # Get parent verifier (TrustZone mandatory verification)
+        ver = super().mix_verify()
+
+        # Check if manifest exists
+        if self.manifest is None:
+            ver.add_record(
+                name="Manifest presence",
+                result=VerifierResult.ERROR,
+                value="Manifest is not configured (required)",
+            )
+        else:
+            ver.add_record(
+                name="Manifest presence",
+                result=VerifierResult.SUCCEEDED,
+                value="Manifest is configured",
+            )
+
+            # Add manifest's own verifier as child
+            ver.add_child(self.manifest.verify(self.family))
+
+        return ver
 
 
 class Mbi_MixinManifestCrc(Mbi_MixinManifest):
@@ -1719,24 +2471,6 @@ class Mbi_MixinCertBlockV1(Mbi_Mixin):
         config["signer"] = "Cannot get from parse"
         return config
 
-    def mix_validate(self) -> None:
-        """Validate the setting of image.
-
-        This method checks that the certificate block is present and is of type CertBlockV1,
-        verifies that a signature provider is defined, and validates that the signature
-        provider can work with the public key from the last certificate in the chain.
-
-        :raises SPSDKError: Certificate block is missing, not CertBlockV1 type, or signature
-            provider is not defined.
-        """
-        if not self.cert_block or not isinstance(self.cert_block, CertBlockV1):
-            raise SPSDKError("Certificate block is missing")
-        if not self.signature_provider:
-            raise SPSDKError("Signature provider is not defined")
-
-        public_key = self.cert_block.certificates[-1].get_public_key()
-        self.signature_provider.try_to_verify_public_key(public_key)
-
     def mix_parse(self, data: bytes) -> None:
         """Parse the binary data to extract and initialize individual MBI fields.
 
@@ -1756,6 +2490,82 @@ class Mbi_MixinCertBlockV1(Mbi_Mixin):
         self.cert_block = CertBlockV1.parse(data[offset:], self.family)
         self.cert_block.alignment = 4
         self.signature_provider = None
+
+    def mix_verify(self) -> Verifier:
+        """Verify the Certificate Block V1 configuration.
+
+        Validates certificate block V1 including structure, certificates,
+        and signature provider configuration.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="Certificate Block V1 Mixin",
+            description="Validates certificate block V1 configuration for MBI",
+        )
+
+        # Check if certificate block exists
+        if self.cert_block is None:
+            ver.add_record(
+                name="Certificate block presence",
+                result=VerifierResult.ERROR,
+                value="Certificate block is not configured (required)",
+            )
+        else:
+            # Verify it's the correct type
+            ver.add_record(
+                name="Certificate block type",
+                result=isinstance(self.cert_block, CertBlockV1),
+                value=(
+                    f"Type: {type(self.cert_block).__name__} "
+                    f"({'valid' if isinstance(self.cert_block, CertBlockV1) else 'INVALID, expected CertBlockV1'})"
+                ),
+            )
+
+            # Add certificate block's own verifier
+            ver.add_child(self.cert_block.verify())
+
+        # Verify signature provider
+        if self.signature_provider is None:
+            ver.add_record(
+                name="Signature provider",
+                result=VerifierResult.ERROR,
+                value="Signature provider is not configured (required)",
+            )
+        else:
+            ver.add_record(
+                name="Signature provider",
+                result=VerifierResult.SUCCEEDED,
+                value="Signature provider is configured",
+            )
+
+            # Verify signature provider matches certificate block
+            if self.cert_block and isinstance(self.cert_block, CertBlockV1):
+                try:
+                    public_key = self.cert_block.certificates[-1].get_public_key()
+                    self.signature_provider.try_to_verify_public_key(public_key)
+                    ver.add_record(
+                        name="Signature provider key match",
+                        result=VerifierResult.SUCCEEDED,
+                        value="Signature provider matches certificate block public key",
+                    )
+                except Exception as e:
+                    ver.add_record(
+                        name="Signature provider key match",
+                        result=VerifierResult.ERROR,
+                        value=f"Signature provider does not match certificate: {str(e)}",
+                    )
+
+        if "rsa_signature" in self.parsed_elements:
+            rsa_signature = self.parsed_elements["rsa_signature"]
+            rsa_signature_verify = self.parsed_elements["rsa_signature_verify"]
+            ver.add_record(
+                name="RSA signature verification",
+                result=rsa_signature_verify,
+                value=f"RSA signature: {rsa_signature}",
+            )
+
+        return ver
 
 
 class Mbi_MixinCertBlockV21(Mbi_Mixin):
@@ -1822,28 +2632,6 @@ class Mbi_MixinCertBlockV21(Mbi_Mixin):
         config["signer"] = "Cannot get from parse"
         return config
 
-    def mix_validate(self) -> None:
-        """Validate the settings of the MBI image.
-
-        This method verifies that the certification block and signature provider are properly
-        configured, and ensures that the signature provider's public key matches the key
-        from either the ISK certificate or the root key record.
-
-        :raises SPSDKError: When certification block is missing, signature provider is missing,
-                           or when the signature provider's public key verification fails.
-        """
-        if not self.cert_block:
-            raise SPSDKError("Certification block is missing")
-
-        if not self.signature_provider:
-            raise SPSDKError("Signature provider is missing")
-        public_key = (
-            self.cert_block.isk_certificate.isk_cert.export()
-            if self.cert_block.isk_certificate and self.cert_block.isk_certificate.isk_cert
-            else self.cert_block.root_key_record.root_public_key
-        )
-        self.signature_provider.try_to_verify_public_key(public_key)
-
     def mix_parse(self, data: bytes) -> None:
         """Parse the binary data to extract and initialize individual certificate fields.
 
@@ -1857,6 +2645,87 @@ class Mbi_MixinCertBlockV21(Mbi_Mixin):
             data[self.ivt_table.get_cert_block_offset(data) :], self.family
         )
         self.signature_provider = None
+
+    def mix_verify(self) -> Verifier:
+        """Verify the Certificate Block V2.1 configuration.
+
+        Validates certificate block V2.1 including structure, root key record,
+        ISK certificate, and signature provider configuration.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="Certificate Block V2.1 Mixin",
+            description="Validates certificate block V2.1 configuration for MBI",
+        )
+
+        # Check if certificate block exists
+        if self.cert_block is None:
+            ver.add_record(
+                name="Certificate block presence",
+                result=VerifierResult.ERROR,
+                value="Certificate block is not configured (required)",
+            )
+        else:
+            # Verify it's the correct type
+            ver.add_record(
+                name="Certificate block type",
+                result=isinstance(self.cert_block, CertBlockV21),
+                value=(
+                    f"Type: {type(self.cert_block).__name__} "
+                    f"({'valid' if isinstance(self.cert_block, CertBlockV21) else 'INVALID, expected CertBlockV21'})"
+                ),
+            )
+
+            # Add certificate block's own verifier
+            ver.add_child(self.cert_block.verify())
+
+        # Verify signature provider
+        if self.signature_provider is None:
+            ver.add_record(
+                name="Signature provider",
+                result=VerifierResult.ERROR,
+                value="Signature provider is not configured (required)",
+            )
+        else:
+            ver.add_record(
+                name="Signature provider",
+                result=VerifierResult.SUCCEEDED,
+                value="Signature provider is configured",
+            )
+
+            # Verify signature provider matches certificate block
+            if self.cert_block and isinstance(self.cert_block, CertBlockV21):
+                try:
+                    # Get public key from ISK certificate or root key record
+                    if self.cert_block.isk_certificate and self.cert_block.isk_certificate.isk_cert:
+                        public_key = self.cert_block.isk_certificate.isk_cert.export()
+                    else:
+                        public_key = self.cert_block.root_key_record.root_public_key
+
+                    self.signature_provider.try_to_verify_public_key(public_key)
+                    ver.add_record(
+                        name="Signature provider key match",
+                        result=VerifierResult.SUCCEEDED,
+                        value="Signature provider matches certificate block public key",
+                    )
+                except Exception as e:
+                    ver.add_record(
+                        name="Signature provider key match",
+                        result=VerifierResult.ERROR,
+                        value=f"Signature provider does not match certificate: {str(e)}",
+                    )
+
+        if "ecc_signature" in self.parsed_elements:
+            ecc_signature = self.parsed_elements["ecc_signature"]
+            ecc_signature_verify = self.parsed_elements["ecc_signature_verify"]
+            ver.add_record(
+                name="ECC signature verification",
+                result=ecc_signature_verify,
+                value=f"ECC signature: {ecc_signature}",
+            )
+
+        return ver
 
 
 class Mbi_MixinAhab(Mbi_Mixin):
@@ -2040,16 +2909,6 @@ class Mbi_MixinAhab(Mbi_Mixin):
 
         return config
 
-    def mix_validate(self) -> None:
-        """Validate the setting of image.
-
-        Checks if the AHAB container is present in the image configuration.
-
-        :raises SPSDKError: When AHAB container is missing from the image.
-        """
-        if not self.ahab:
-            raise SPSDKError("Ahab container is missing")
-
     def mix_parse(self, data: bytes) -> None:
         """Parse the binary data to extract and initialize individual fields.
 
@@ -2063,9 +2922,10 @@ class Mbi_MixinAhab(Mbi_Mixin):
         """
         ahab_offset = Mbi_MixinIvt.get_cert_block_offset_from_data(data)
         self.ahab = AHABContainerV2.parse(
-            data[ahab_offset:],
+            data,
             chip_config=create_chip_config(self.family, feature=self.FEATURE, base_key=["ahab"]),
-            offset=0,
+            offset=ahab_offset,
+            container_offset=0,
         )
         if hasattr(self, "firmware_version"):
             # Upper 8 bits should be set as lower 8 bits (sw_version[7:0] << 8)
@@ -2073,6 +2933,100 @@ class Mbi_MixinAhab(Mbi_Mixin):
             self.firmware_version = ((self.ahab.sw_version & 0xFF) << 8) | (
                 self.ahab.fuse_version & 0xFF
             )
+
+        if hasattr(self, "app_crc"):
+            self.app_crc = bool(
+                self.ahab.image_array[-1].flags_image_type
+                == ImageArrayEntryV2.get_image_types(
+                    self.ahab.chip_config, self.ahab.image_array[-1].flags_core_id.tag
+                )
+                .from_label("crc_check")
+                .tag,
+            )
+
+    def mix_verify(self) -> Verifier:
+        """Verify the AHAB container configuration.
+
+        Validates AHAB container including structure, image array entries,
+        signature block, and firmware version configuration.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="AHAB Container Mixin",
+            description="Validates AHAB container configuration for MBI",
+        )
+
+        # Check if AHAB container exists
+        if self.ahab is None:
+            ver.add_record(
+                name="AHAB container presence",
+                result=VerifierResult.ERROR,
+                value="AHAB container is not configured (required)",
+            )
+        else:
+            # Verify it's the correct type
+            ver.add_record(
+                name="AHAB container type",
+                result=isinstance(self.ahab, AHABContainerV2),
+                value=(
+                    f"Type: {type(self.ahab).__name__} "
+                    f"({'valid' if isinstance(self.ahab, AHABContainerV2) else 'INVALID, expected AHABContainerV2'})"
+                ),
+            )
+
+            # Add AHAB container's own verifier
+            ver.add_child(self.ahab.verify())
+
+            # Verify image array is not empty
+            if not self.ahab.image_array:
+                ver.add_record(
+                    name="Image array",
+                    result=VerifierResult.ERROR,
+                    value="Image array is empty (at least one image required)",
+                )
+            else:
+                ver.add_record(
+                    name="Image array count",
+                    result=VerifierResult.SUCCEEDED,
+                    value=f"{len(self.ahab.image_array)} image(s) in array",
+                )
+
+            # Verify firmware version consistency if applicable
+            if hasattr(self, "firmware_version") and self.firmware_version is not None:
+                expected_sw_version = (self.firmware_version >> 8) & 0xFF
+                expected_fuse_version = self.firmware_version & 0xFF
+
+                sw_version_match = self.ahab.sw_version == expected_sw_version
+                fuse_version_match = self.ahab.fuse_version == expected_fuse_version
+
+                ver.add_record(
+                    name="Firmware version consistency",
+                    result=sw_version_match and fuse_version_match,
+                    value=(
+                        f"Firmware: 0x{self.firmware_version:04X}, "
+                        f"SW: 0x{self.ahab.sw_version:02X} (expected 0x{expected_sw_version:02X}), "
+                        f"Fuse: 0x{self.ahab.fuse_version:02X} (expected 0x{expected_fuse_version:02X})"
+                    ),
+                )
+
+        # Verify CRC check record if applicable
+        if hasattr(self, "app_crc") and self.app_crc:
+            crc_record = self.crc_check_record
+            if crc_record is None:
+                ver.add_record(
+                    name="CRC check record",
+                    result=VerifierResult.ERROR,
+                    value="CRC check is enabled but CRC record not found in image array",
+                )
+            else:
+                ver.add_record(
+                    name="CRC check record",
+                    result=VerifierResult.SUCCEEDED,
+                    value=f"CRC check record present (type: {crc_record.flags_image_type_name})",
+                )
+
+        return ver
 
 
 class Mbi_MixinAppCrc(Mbi_Mixin):
@@ -2125,6 +3079,51 @@ class Mbi_MixinAppCrc(Mbi_Mixin):
 
         return config
 
+    def mix_verify(self) -> Verifier:
+        """Verify the application CRC configuration.
+
+        Validates CRC check settings and CRC record presence in AHAB container.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="Application CRC",
+            description="Validates CRC check configuration for AHAB signing",
+        )
+
+        # Verify app_crc flag
+        ver.add_record(
+            name="CRC check enabled",
+            result=VerifierResult.SUCCEEDED,
+            value=f"CRC check: {'Enabled' if self.app_crc else 'Disabled'}",
+            important=False,
+        )
+
+        # If CRC is enabled, verify the CRC check record exists
+        if self.app_crc:
+            crc_record = self.crc_check_record
+            if crc_record is None:
+                ver.add_record(
+                    name="CRC check record presence",
+                    result=VerifierResult.ERROR,
+                    value="CRC check is enabled but CRC record not found in AHAB image array",
+                )
+            else:
+                ver.add_record(
+                    name="CRC check record presence",
+                    result=VerifierResult.SUCCEEDED,
+                    value=f"CRC check record present (type: {crc_record.flags_image_type_name})",
+                )
+
+                # Verify CRC record image size
+                ver.add_record(
+                    name="CRC record size",
+                    result=len(crc_record.image) == 4,
+                    value=f"CRC record size: {len(crc_record.image)} bytes (expected 4 bytes)",
+                )
+
+        return ver
+
 
 class Mbi_MixinCertBlockVx(Mbi_Mixin):
     """Master Boot Image certification block mixin for MC55xx family devices.
@@ -2162,14 +3161,6 @@ class Mbi_MixinCertBlockVx(Mbi_Mixin):
         self.add_hash = config.get("addCertHash", True)
         self.just_header = config.get("justHeader", False)
 
-    def mix_validate(self) -> None:
-        """Validate the setting of image.
-
-        :raises SPSDKError: Signature provider is missing.
-        """
-        if not self.signature_provider:
-            raise SPSDKError("Signature provider is missing")
-
     def mix_parse(self, data: bytes) -> None:
         """Parse the binary data to extract and initialize individual MBI fields.
 
@@ -2180,6 +3171,91 @@ class Mbi_MixinCertBlockVx(Mbi_Mixin):
         """
         self.cert_block = CertBlockVx.parse(data[self.IMG_ISK_OFFSET :], self.family)
         self.signature_provider = None
+
+    def mix_verify(self) -> Verifier:
+        """Verify the Certificate Block Vx configuration.
+
+        Validates certificate block Vx including structure, ISK certificate lite,
+        signature provider, and configuration flags.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="Certificate Block Vx Mixin",
+            description="Validates certificate block Vx configuration for MBI (MC55xx family)",
+        )
+
+        # Check if certificate block exists
+        if self.cert_block is None:
+            ver.add_record(
+                name="Certificate block presence",
+                result=VerifierResult.ERROR,
+                value="Certificate block is not configured (required)",
+            )
+        else:
+            # Verify it's the correct type
+            ver.add_record(
+                name="Certificate block type",
+                result=isinstance(self.cert_block, CertBlockVx),
+                value=(
+                    f"Type: {type(self.cert_block).__name__} "
+                    f"({'valid' if isinstance(self.cert_block, CertBlockVx) else 'INVALID, expected CertBlockVx'})"
+                ),
+            )
+
+            # Add certificate block's own verifier
+            ver.add_child(self.cert_block.verify())
+
+        # Verify signature provider
+        if self.signature_provider is None:
+            ver.add_record(
+                name="Signature provider",
+                result=VerifierResult.ERROR,
+                value="Signature provider is not configured (required)",
+            )
+        else:
+            ver.add_record(
+                name="Signature provider",
+                result=VerifierResult.SUCCEEDED,
+                value="Signature provider is configured",
+            )
+
+            # Verify signature provider matches certificate block
+            if self.cert_block and isinstance(self.cert_block, CertBlockVx):
+                try:
+                    public_key = self.cert_block.isk_certificate.pub_key
+                    self.signature_provider.try_to_verify_public_key(public_key.export())
+                    ver.add_record(
+                        name="Signature provider key match",
+                        result=VerifierResult.SUCCEEDED,
+                        value="Signature provider matches ISK certificate public key",
+                    )
+                except Exception as e:
+                    ver.add_record(
+                        name="Signature provider key match",
+                        result=VerifierResult.ERROR,
+                        value=f"Signature provider does not match certificate: {str(e)}",
+                    )
+
+        # Verify add_hash flag
+        if hasattr(self, "add_hash"):
+            ver.add_record(
+                name="Add certificate hash",
+                result=VerifierResult.SUCCEEDED,
+                value=f"Add hash: {'Yes' if self.add_hash else 'No'}",
+                important=False,
+            )
+
+        # Verify just_header flag
+        if hasattr(self, "just_header"):
+            ver.add_record(
+                name="Just header mode",
+                result=VerifierResult.SUCCEEDED,
+                value=f"Just header: {'Yes' if self.just_header else 'No'}",
+                important=False,
+            )
+
+        return ver
 
 
 class Mbi_MixinBca(Mbi_Mixin):
@@ -2230,23 +3306,27 @@ class Mbi_MixinBca(Mbi_Mixin):
                 if self.bca:
                     self.bca.registers.load_from_config(bca_config)
                 else:
-                    self.bca = BCA.load_from_config(
-                        Config(
-                            {
-                                "family": self.family.name,
-                                "revision": self.family.revision,
-                                "bca": bca_config,
-                            }
-                        )
+                    bca_full_config = Config(
+                        {
+                            "family": self.family.name,
+                            "revision": self.family.revision,
+                            "bca": bca_config,
+                        }
                     )
+                    BCA.pre_check_config(bca_full_config)
+                    self.bca = BCA.load_from_config(bca_full_config)
                 return
             try:
-                bca_config = config.load_sub_config("bca")
+                bca_config = config.load_sub_config("bca", target_klass=BCA)
                 if self.bca:
                     self.bca.registers.load_from_config(bca_config["bca"])
                 else:
                     self.bca = BCA.load_from_config(bca_config)
                 logger.info("Updating BCA from YAML configuration")
+            except SPSDKErrorValidationFailed as exc:
+                raise SPSDKErrorValidationFailed(
+                    f"Failed to load BCA from configuration: {str(exc)}"
+                ) from exc
             except (SPSDKError, SPSDKTypeError):
                 bca_file = config.get_input_file_name("bca")
                 bca_bin = load_binary(bca_file, config.search_paths)
@@ -2274,18 +3354,6 @@ class Mbi_MixinBca(Mbi_Mixin):
             write_file(bca_cfg, os.path.join(output_folder, filename))
             config["bca"] = filename
         return config
-
-    def mix_validate(self) -> None:
-        """Validate the settings of the MBI image.
-
-        This method performs validation checks on the image configuration,
-        specifically verifying that the BCA (Boot Configuration Area) is properly
-        formatted if present.
-
-        :raises SPSDKError: Configuration of BCA is invalid.
-        """
-        if self.bca and not isinstance(self.bca, BCA):
-            raise SPSDKError("Validation failed: BCA is invalid format")
 
     def mix_parse(self, data: bytes) -> None:
         """Parse the binary data to extract and initialize individual MBI fields.
@@ -2340,6 +3408,69 @@ class Mbi_MixinBca(Mbi_Mixin):
 
         return [ret]
 
+    def mix_verify(self) -> Verifier:
+        """Verify the BCA (Boot Configuration Area) configuration.
+
+        Validates BCA settings including structure, registers, and configuration.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="Boot Configuration Area (BCA)",
+            description="Validates BCA configuration and register settings",
+        )
+
+        # Check if BCA exists
+        if self.bca is None:
+            ver.add_record(
+                name="BCA presence",
+                result=VerifierResult.SUCCEEDED,
+                value="BCA is not configured (optional)",
+                important=False,
+            )
+        else:
+            # Verify it's the correct type
+            ver.add_record(
+                name="BCA type",
+                result=isinstance(self.bca, BCA),
+                value=(
+                    f"Type: {type(self.bca).__name__} "
+                    f"({'valid' if isinstance(self.bca, BCA) else 'INVALID, expected BCA'})"
+                ),
+            )
+
+            # Add BCA's own verifier
+            ver.add_child(self.bca.verify())
+
+            # Verify BCA size
+            ver.add_record(
+                name="BCA size",
+                result=len(self.bca.export()) == BCA.SIZE,
+                value=f"BCA size: {len(self.bca.export())} bytes (expected {BCA.SIZE} bytes)",
+            )
+
+            # Verify BCA offset
+            ver.add_record(
+                name="BCA offset",
+                result=self.BCA_OFFSET == 0x3C0,
+                value=(
+                    f"BCA offset: 0x{self.BCA_OFFSET:03X} "
+                    f"({'valid' if self.BCA_OFFSET == 0x3C0 else 'INVALID, expected 0x3C0'})"
+                ),
+            )
+
+        if "bca_parsed_crc" in self.parsed_elements:
+            parsed_crc = self.parsed_elements["bca_parsed_crc"]
+            computed_crc = self.parsed_elements["bca_computed_crc"]
+
+            ver.add_record(
+                name="CRC verification",
+                result=parsed_crc == computed_crc,
+                value=f"Parsed: 0x{parsed_crc:08X}, Computed: 0x{computed_crc:08X}",
+            )
+
+        return ver
+
 
 class Mbi_MixinFcf(Mbi_Mixin):
     """Master Boot Image FCF mixin class.
@@ -2389,26 +3520,32 @@ class Mbi_MixinFcf(Mbi_Mixin):
             if isinstance(config["fcf"], dict):
                 logger.info("Updating FCF config from direct configuration")
                 fcf_config = config.get_config("fcf")
+
                 if self.fcf:
                     self.fcf.registers.load_from_config(fcf_config)
                 else:
-                    self.fcf = FCF.load_from_config(
-                        Config(
-                            {
-                                "family": self.family.name,
-                                "revision": self.family.revision,
-                                "fcf": fcf_config,
-                            }
-                        )
+                    fcf_config_full = Config(
+                        {
+                            "family": self.family.name,
+                            "revision": self.family.revision,
+                            "fcf": fcf_config,
+                        }
                     )
+                    FCF.pre_check_config(fcf_config_full)
+                    self.fcf = FCF.load_from_config(fcf_config_full)
+
                 return
             try:
-                fcf_cfg = config.load_sub_config("fcf")
+                fcf_cfg = config.load_sub_config("fcf", target_klass=FCF)
                 if self.fcf:
                     self.fcf.registers.load_from_config(fcf_cfg["fcf"])
                 else:
                     self.fcf = FCF.load_from_config(fcf_cfg)
                 logger.info("Updating FCF from YAML configuration")
+            except SPSDKErrorValidationFailed as exc:
+                raise SPSDKErrorValidationFailed(
+                    f"Failed to load FCF from configuration: {str(exc)}"
+                ) from exc
             except (SPSDKError, SPSDKTypeError):
                 fcf_file = config.get_input_file_name("fcf")
                 fcf_bin = load_binary(fcf_file, config.search_paths)
@@ -2436,14 +3573,6 @@ class Mbi_MixinFcf(Mbi_Mixin):
         config = {}
         config["fcf"] = filename
         return config
-
-    def mix_validate(self) -> None:
-        """Validate the setting of image.
-
-        :raises SPSDKError: Configuration of FCF is invalid.
-        """
-        if not self.fcf or not isinstance(self.fcf, FCF):
-            raise SPSDKError("Validation failed: FCF is missing")
 
     def mix_parse(self, data: bytes) -> None:
         """Parse the binary data to individual fields.
@@ -2493,6 +3622,58 @@ class Mbi_MixinFcf(Mbi_Mixin):
 
         return [ret]
 
+    def mix_verify(self) -> Verifier:
+        """Verify the FCF (Flash Configuration Field) configuration.
+
+        Validates FCF settings including structure, registers, and configuration.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="Flash Configuration Field (FCF)",
+            description="Validates FCF configuration and register settings",
+        )
+
+        # Check if FCF exists
+        if self.fcf is None:
+            ver.add_record(
+                name="FCF presence",
+                result=VerifierResult.ERROR,
+                value="FCF is not configured (required)",
+            )
+        else:
+            # Verify it's the correct type
+            ver.add_record(
+                name="FCF type",
+                result=isinstance(self.fcf, FCF),
+                value=(
+                    f"Type: {type(self.fcf).__name__} "
+                    f"({'valid' if isinstance(self.fcf, FCF) else 'INVALID, expected FCF'})"
+                ),
+            )
+
+            # Add FCF's own verifier
+            ver.add_child(self.fcf.verify())
+
+            # Verify FCF size
+            ver.add_record(
+                name="FCF size",
+                result=len(self.fcf.export()) == FCF.SIZE,
+                value=f"FCF size: {len(self.fcf.export())} bytes (expected {FCF.SIZE} bytes)",
+            )
+
+            # Verify FCF offset
+            ver.add_record(
+                name="FCF offset",
+                result=self.FCF_OFFSET == 0x400,
+                value=(
+                    f"FCF offset: 0x{self.FCF_OFFSET:03X} "
+                    f"({'valid' if self.FCF_OFFSET == 0x400 else 'INVALID, expected 0x400'})"
+                ),
+            )
+
+        return ver
+
 
 class Mbi_MixinHwKey(Mbi_Mixin):
     """Master Boot Image hardware key user mode enablement mixin.
@@ -2531,14 +3712,6 @@ class Mbi_MixinHwKey(Mbi_Mixin):
         config["enableHwUserModeKeys"] = bool(self.user_hw_key_enabled)
         return config
 
-    def mix_validate(self) -> None:
-        """Validate the setting of image.
-
-        :raises SPSDKError: Invalid HW key enabled member type.
-        """
-        if not isinstance(self.user_hw_key_enabled, bool):
-            raise SPSDKError("User HW Key is not Boolean type.")
-
     def mix_parse(self, data: bytes) -> None:
         """Parse the binary to individual fields.
 
@@ -2548,6 +3721,62 @@ class Mbi_MixinHwKey(Mbi_Mixin):
         :param data: Final Image in bytes.
         """
         self.user_hw_key_enabled = self.ivt_table.get_hw_key_enabled(data)
+
+    def mix_verify(self) -> Verifier:
+        """Verify the hardware key user mode configuration.
+
+        Validates hardware key user mode enablement settings.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="Hardware Key User Mode",
+            description="Validates hardware key user mode enablement configuration",
+        )
+
+        # Check if user_hw_key_enabled is defined
+        if self.user_hw_key_enabled is None:
+            ver.add_record(
+                name="Hardware key setting defined",
+                result=VerifierResult.ERROR,
+                value="Hardware key user mode setting is not defined",
+            )
+        else:
+            # Verify it's a boolean type
+            ver.add_record(
+                name="Hardware key setting type",
+                result=isinstance(self.user_hw_key_enabled, bool),
+                value=(
+                    f"Type: {type(self.user_hw_key_enabled).__name__} "
+                    f"({'valid' if isinstance(self.user_hw_key_enabled, bool) else 'INVALID, expected bool'})"
+                ),
+            )
+
+            # Report the setting value
+            ver.add_record(
+                name="Hardware key user mode",
+                result=VerifierResult.SUCCEEDED,
+                value=f"{'Enabled' if self.user_hw_key_enabled else 'Disabled'}",
+                important=False,
+            )
+
+            # Add informational note about what this setting does
+            if self.user_hw_key_enabled:
+                ver.add_record(
+                    name="Hardware key access",
+                    result=VerifierResult.SUCCEEDED,
+                    value="Non-secure applications can access keys on hardware secure bus",
+                    important=False,
+                )
+            else:
+                ver.add_record(
+                    name="Hardware key access",
+                    result=VerifierResult.SUCCEEDED,
+                    value="Non-secure applications will read zeros from hardware secure bus",
+                    important=False,
+                )
+
+        return ver
 
 
 class Mbi_MixinKeyStore(Mbi_Mixin):
@@ -2620,14 +3849,6 @@ class Mbi_MixinKeyStore(Mbi_Mixin):
         config["keyStoreFile"] = file_name
         return config
 
-    def mix_validate(self) -> None:
-        """Validate the setting of image.
-
-        :raises SPSDKError: When KeyStore is used but HMAC key is not provided.
-        """
-        if self.key_store and not self.hmac_key:  # pylint: disable=no-member
-            raise SPSDKError("When is used KeyStore, the HMAC key MUST by also used.")
-
     def mix_parse(self, data: bytes) -> None:
         """Parse the binary data to extract and initialize individual MBI fields.
 
@@ -2645,6 +3866,78 @@ class Mbi_MixinKeyStore(Mbi_Mixin):
                 KeySourceType.KEYSTORE,
                 data[key_store_offset : key_store_offset + KeyStore.KEY_STORE_SIZE],
             )
+
+    def mix_verify(self) -> Verifier:
+        """Verify the KeyStore configuration.
+
+        Validates KeyStore settings including presence, size, and HMAC key dependency.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="KeyStore",
+            description="Validates KeyStore configuration for MBI",
+        )
+
+        # Check if KeyStore exists
+        if self.key_store is None:
+            ver.add_record(
+                name="KeyStore presence",
+                result=VerifierResult.SUCCEEDED,
+                value="KeyStore is not configured (optional)",
+                important=False,
+            )
+        else:
+            # Verify it's the correct type
+            ver.add_record(
+                name="KeyStore type",
+                result=isinstance(self.key_store, KeyStore),
+                value=(
+                    f"Type: {type(self.key_store).__name__} "
+                    f"({'valid' if isinstance(self.key_store, KeyStore) else 'INVALID, expected KeyStore'})"
+                ),
+            )
+
+            # Verify key source type
+            ver.add_record(
+                name="Key source type",
+                result=VerifierResult.SUCCEEDED,
+                value=f"Key source: {self.key_store.key_source.label}",
+                important=False,
+            )
+
+            # Verify KeyStore size
+            if self.key_store.key_source == KeySourceType.KEYSTORE and self.key_store.export():
+                exported_size = len(self.key_store.export())
+                ver.add_record(
+                    name="KeyStore size",
+                    result=exported_size == KeyStore.KEY_STORE_SIZE,
+                    value=f"KeyStore size: {exported_size} bytes (expected {KeyStore.KEY_STORE_SIZE} bytes)",
+                )
+            else:
+                ver.add_record(
+                    name="KeyStore size",
+                    result=VerifierResult.SUCCEEDED,
+                    value=f"KeyStore is empty (key source: {self.key_store.key_source.label})",
+                    important=False,
+                )
+
+            # Verify HMAC key dependency
+            if hasattr(self, "hmac_key"):
+                if self.hmac_key is None:
+                    ver.add_record(
+                        name="HMAC key dependency",
+                        result=VerifierResult.ERROR,
+                        value="KeyStore is configured but HMAC key is missing (required)",
+                    )
+                else:
+                    ver.add_record(
+                        name="HMAC key dependency",
+                        result=VerifierResult.SUCCEEDED,
+                        value="HMAC key is configured (required for KeyStore)",
+                    )
+
+        return ver
 
 
 class Mbi_MixinHmac(Mbi_Mixin):
@@ -2725,18 +4018,6 @@ class Mbi_MixinHmac(Mbi_Mixin):
         config["outputImageEncryptionKeyFile"] = "The HMAC key cannot be restored"
         return config
 
-    def mix_validate(self) -> None:
-        """Validate the setting of image.
-
-        Validates that the HMAC key, if present, has the correct length of 32 bytes.
-
-        :raises SPSDKError: Invalid HMAC key length.
-        """
-        if self.hmac_key:
-            length = len(self.hmac_key)
-            if length != self._HMAC_KEY_LENGTH:
-                raise SPSDKError(f"Invalid size of HMAC key 32 != {length}.")
-
     def compute_hmac(self, data: bytes) -> bytes:
         """Compute HMAC hash for the provided data.
 
@@ -2766,6 +4047,73 @@ class Mbi_MixinHmac(Mbi_Mixin):
         if self.dek:
             self.hmac_key = load_hex_string(source=self.dek, expected_size=self._HMAC_KEY_LENGTH)
 
+    def mix_verify(self) -> Verifier:
+        """Verify the HMAC configuration.
+
+        Validates HMAC key settings including presence, size, and configuration.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="HMAC Configuration",
+            description="Validates HMAC key configuration for MBI authentication",
+        )
+
+        # Check if HMAC key exists
+        if self.hmac_key is None:
+            ver.add_record(
+                name="HMAC key presence",
+                result=VerifierResult.SUCCEEDED,
+                value="HMAC key is not configured (optional)",
+                important=False,
+            )
+        else:
+            # Verify HMAC key type
+            ver.add_record(
+                name="HMAC key type",
+                result=isinstance(self.hmac_key, bytes),
+                value=(
+                    f"Type: {type(self.hmac_key).__name__} "
+                    f"({'valid' if isinstance(self.hmac_key, bytes) else 'INVALID, expected bytes'})"
+                ),
+            )
+
+            # Verify HMAC key length
+            ver.add_record(
+                name="HMAC key length",
+                result=len(self.hmac_key) == self._HMAC_KEY_LENGTH,
+                value=f"Key length: {len(self.hmac_key)} bytes (expected {self._HMAC_KEY_LENGTH} bytes)",
+            )
+
+            # Verify HMAC size constant
+            ver.add_record(
+                name="HMAC size",
+                result=self.HMAC_SIZE == 32,
+                value=(
+                    f"HMAC size: {self.HMAC_SIZE} bytes "
+                    f"({'valid' if self.HMAC_SIZE == 32 else 'INVALID, expected 32 bytes'})"
+                ),
+            )
+
+            # Verify HMAC offset
+            ver.add_record(
+                name="HMAC offset",
+                result=self.HMAC_OFFSET == 64,
+                value=(
+                    f"HMAC offset: {self.HMAC_OFFSET} bytes "
+                    f"({'valid' if self.HMAC_OFFSET == 64 else 'INVALID, expected 64 bytes'})"
+                ),
+            )
+
+            if "parsed_hmac" in self.parsed_elements:
+                parsed_hmac: bytes = self.parsed_elements["parsed_hmac"]
+                parsed_hmac_verify = self.parsed_elements["parsed_hmac_verify"]
+                ver.add_record(
+                    name="Parsed HMAC", result=parsed_hmac_verify, value=parsed_hmac.hex()
+                )
+
+        return ver
+
 
 class Mbi_MixinHmacMandatory(Mbi_MixinHmac):
     """Master Boot Image HMAC mixin with mandatory key validation.
@@ -2779,16 +4127,34 @@ class Mbi_MixinHmacMandatory(Mbi_MixinHmac):
 
     VALIDATION_SCHEMAS: list[str] = ["hmac_mandatory"]
 
-    def mix_validate(self) -> None:
-        """Validate the setting of image.
+    def mix_verify(self) -> Verifier:
+        """Verify the HMAC configuration for mandatory HMAC.
 
-        Checks if HMAC key exists and performs additional validation through parent class.
+        Validates HMAC key settings and ensures HMAC key is present (mandatory).
 
-        :raises SPSDKError: If HMAC key is missing or other validation errors occur.
+        :return: Verifier object for validation results.
         """
-        if not self.hmac_key:  # pylint: disable=no-member
-            raise SPSDKError("HMAC Key MUST exists.")
-        super().mix_validate()
+        # Get parent verifier first
+        ver = super().mix_verify()
+
+        # Update the name and description for mandatory HMAC
+        ver.name = "HMAC Configuration (Mandatory)"
+        ver.description = (
+            "Validates HMAC key configuration for MBI authentication (HMAC key is required)"
+        )
+
+        # Add mandatory check
+        ver.add_record(
+            name="HMAC key mandatory check",
+            result=self.hmac_key is not None,
+            value=(
+                "HMAC key is configured"
+                if self.hmac_key
+                else "HMAC key MUST be configured (required)"
+            ),
+        )
+
+        return ver
 
 
 class Mbi_MixinCtrInitVector(Mbi_Mixin):
@@ -2861,23 +4227,9 @@ class Mbi_MixinCtrInitVector(Mbi_Mixin):
         :return: Dictionary containing mixin configuration with CTR initialization vector.
         """
         config: dict[str, Any] = {}
-        self.mix_validate()
         assert isinstance(self.ctr_init_vector, bytes)
         config["CtrInitVector"] = self.ctr_init_vector.hex()
         return config
-
-    def mix_validate(self) -> None:
-        """Validate the setting of image.
-
-        The method validates that the counter initialization vector exists and has the correct size
-        for encryption counter operations.
-
-        :raises SPSDKError: Initial vector for encryption counter doesn't exist or has invalid size.
-        """
-        if not self.ctr_init_vector:
-            raise SPSDKError("Initial vector for encryption counter MUST exist.")
-        if len(self.ctr_init_vector) != self._CTR_INIT_VECTOR_SIZE:
-            raise SPSDKError("Invalid size of Initial vector for encryption counter.")
 
     def mix_parse(self, data: bytes) -> None:
         """Parse the binary data to extract and populate individual MBI fields.
@@ -2896,6 +4248,53 @@ class Mbi_MixinCtrInitVector(Mbi_Mixin):
                 iv_offset += KeyStore.KEY_STORE_SIZE
         self.ctr_init_vector = data[iv_offset : iv_offset + self._CTR_INIT_VECTOR_SIZE]
 
+    def mix_verify(self) -> Verifier:
+        """Verify the CTR initialization vector configuration.
+
+        Validates CTR initialization vector including presence, type, and size.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="CTR Initialization Vector",
+            description="Validates counter initialization vector for encryption operations",
+        )
+
+        # Check if CTR initialization vector exists
+        if self.ctr_init_vector is None:
+            ver.add_record(
+                name="CTR IV presence",
+                result=VerifierResult.ERROR,
+                value="CTR initialization vector is not configured (required)",
+            )
+        else:
+            # Verify CTR IV type
+            ver.add_record(
+                name="CTR IV type",
+                result=isinstance(self.ctr_init_vector, bytes),
+                value=(
+                    f"Type: {type(self.ctr_init_vector).__name__} "
+                    f"({'valid' if isinstance(self.ctr_init_vector, bytes) else 'INVALID, expected bytes'})"
+                ),
+            )
+
+            # Verify CTR IV length
+            ver.add_record(
+                name="CTR IV length",
+                result=len(self.ctr_init_vector) == self._CTR_INIT_VECTOR_SIZE,
+                value=f"IV length: {len(self.ctr_init_vector)} bytes (expected {self._CTR_INIT_VECTOR_SIZE} bytes)",
+            )
+
+            # Display CTR IV value (for informational purposes)
+            ver.add_record(
+                name="CTR IV value",
+                result=VerifierResult.SUCCEEDED,
+                value=f"IV: {self.ctr_init_vector.hex().upper()}",
+                important=False,
+            )
+
+        return ver
+
 
 ########################################################################################################################
 # Export image Mixins
@@ -2913,6 +4312,8 @@ class Mbi_ExportMixin:
     """
 
     family: FamilyRevision
+    parsed_elements: dict[str, Any]
+    IMAGE_ALIGNMENT = 1
 
     def collect_data(self) -> BinaryImage:  # pylint: disable=no-self-use
         """Collect basic data to create image.
@@ -3010,7 +4411,6 @@ class Mbi_ExportMixinApp(Mbi_ExportMixin):
 
     app: Optional[bytes]
     clean_ivt: Callable[[bytes], bytes]
-    ivt_table: Mbi_MixinIvt
     app_table: MultipleImageTable
     disassembly_app_data: Callable[[bytes], bytes]
     bca: Optional[BCA]
@@ -3079,6 +4479,8 @@ class Mbi_ExportMixinApp(Mbi_ExportMixin):
         if hasattr(self, "disassembly_app_data"):
             image = self.disassembly_app_data(image)
 
+        self.parsed_elements["parsed_ivt"] = image[:0x38]
+
         self.app = self.clean_ivt(image) if hasattr(self, "clean_ivt") else image
 
 
@@ -3095,6 +4497,7 @@ class Mbi_ExportMixinAppTrustZone(Mbi_ExportMixinApp):
     tz_type: TrustZoneType
     family: FamilyRevision
     TRUST_ZONE_IMAGE_NAME = "TrustZone Preset data"
+    update_ivt: Callable
 
     def collect_data(self) -> BinaryImage:
         """Collect application data and TrustZone including update IVT.
@@ -3125,7 +4528,7 @@ class Mbi_ExportMixinAppTrustZone(Mbi_ExportMixinApp):
 
         :param image: Binary image data to be disassembled.
         """
-        tz_type = TrustZoneType.from_tag(self.ivt_table.get_tz_type(image))
+        tz_type = TrustZoneType.from_tag(Mbi_MixinIvt.get_tz_type(image))
         self.trust_zone = None
         if tz_type == TrustZoneType.ENABLED:
             self.trust_zone = TrustZone(self.family)
@@ -3167,7 +4570,7 @@ class Mbi_ExportMixinAppTrustZoneV2(Mbi_ExportMixinAppTrustZone):
             app_image = ret.find_sub_image(Mbi_ExportMixinApp.APP_IMAGE_NAME)
             if not app_image or not app_image.binary:
                 raise SPSDKError("Application image not found")
-            app_image.binary = self.ivt_table.update_ivt(
+            app_image.binary = self.update_ivt(
                 app_image.binary,
                 total_len=len(app_image.binary) + len(tz_image.binary),
                 # What was previously the CRC location is now offset to TZ Data
@@ -3186,7 +4589,7 @@ class Mbi_ExportMixinAppTrustZoneV2(Mbi_ExportMixinAppTrustZone):
         :param image: Binary image data to be disassembled.
         :raises SPSDKError: Cannot find TrustZone block when custom TrustZone type is detected.
         """
-        tz_type = TrustZoneType.from_tag(self.ivt_table.get_tz_type(image))
+        tz_type = TrustZoneType.from_tag(Mbi_MixinIvt.get_tz_type(image))
         self.trust_zone = None
         if tz_type == TrustZoneType.CUSTOM:
             tz_offset = TrustZoneV2.find_trustzone_block_offset(image)
@@ -3268,7 +4671,7 @@ class Mbi_ExportMixinAppTrustZoneCertBlock(Mbi_ExportMixin):
         :param image: Binary image data to be disassembled.
         """
         # Re -parse TZ if needed
-        tz_type = TrustZoneType.from_tag(self.ivt_table.get_tz_type(image))
+        tz_type = TrustZoneType.from_tag(Mbi_MixinIvt.get_tz_type(image))
         self.trust_zone = None
         if tz_type == TrustZoneType.ENABLED:
             self.trust_zone = TrustZone(self.family)
@@ -3279,6 +4682,7 @@ class Mbi_ExportMixinAppTrustZoneCertBlock(Mbi_ExportMixin):
         image = image[: -self.ivt_table.get_cert_block_offset_from_data(image)]
         if hasattr(self, "disassembly_app_data"):
             image = self.disassembly_app_data(image)
+        self.parsed_elements["parsed_ivt"] = image[:0x38]
         self.app = self.ivt_table.clean_ivt(image)
 
 
@@ -3341,6 +4745,7 @@ class Mbi_ExportMixinAppTrustZoneCertBlockV2(Mbi_ExportMixin):
             image = image[: self.ivt_table.get_cert_block_offset_from_data(image)]
         if hasattr(self, "disassembly_app_data"):
             image = self.disassembly_app_data(image)
+        self.parsed_elements["parsed_ivt"] = image[:0x38]
         self.app = self.ivt_table.clean_ivt(image)
 
 
@@ -3420,6 +4825,7 @@ class Mbi_ExportMixinAppCertBlockManifest(Mbi_ExportMixin):
             image = image[: self.ivt_table.get_cert_block_offset_from_data(image)]
         if hasattr(self, "disassembly_app_data"):
             image = self.disassembly_app_data(image)
+        self.parsed_elements["parsed_ivt"] = image[:0x38]
         self.app = self.ivt_table.clean_ivt(image)
 
     def finalize(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
@@ -3469,6 +4875,23 @@ class Mbi_ExportMixinCrcSign(Mbi_ExportMixin):
     IVT_CRC_CERTIFICATE_OFFSET: int
     update_crc_val_cert_offset: Callable[[bytes, int], bytes]
 
+    def calculate_crc(self, input_image: bytes) -> int:
+        """Calculate MBI CRC from binary.
+
+        Calculates CRC32 using MPEG2 specification over the entire image data except
+        for the 4-byte CRC field at the certificate offset in the IVT table, then
+        updates the image with the calculated CRC value.
+
+        :param input_image: Input binary image to be signed with CRC.
+        :return: Calculated CRC
+        """
+        # calculate CRC using MPEG2 specification over all of data (app and trustzone)
+        # except for 4 bytes at CRC_BLOCK_OFFSET
+        crc_obj = from_crc_algorithm(CrcAlg.CRC32_MPEG)
+        crc = crc_obj.calculate(input_image[: self.IVT_CRC_CERTIFICATE_OFFSET])
+        crc_obj.initial_value = crc
+        return crc_obj.calculate(input_image[self.IVT_CRC_CERTIFICATE_OFFSET + 4 :])
+
     def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
         """Sign binary image with CRC32 checksum.
 
@@ -3481,16 +4904,13 @@ class Mbi_ExportMixinCrcSign(Mbi_ExportMixin):
         :return: Binary image with updated CRC32 checksum in IVT table.
         :raises SPSDKError: Invalid CRC offset in the image.
         """
+        input_image = image.export()
+        crc = self.calculate_crc(input_image)
+
         if revert:
+            self.parsed_elements["computed_crc"] = crc
             return image
 
-        input_image = image.export()
-        # calculate CRC using MPEG2 specification over all of data (app and trustzone)
-        # except for 4 bytes at CRC_BLOCK_OFFSET
-        crc_obj = from_crc_algorithm(CrcAlg.CRC32_MPEG)
-        crc = crc_obj.calculate(input_image[: self.IVT_CRC_CERTIFICATE_OFFSET])
-        crc_obj.initial_value = crc
-        crc = crc_obj.calculate(input_image[self.IVT_CRC_CERTIFICATE_OFFSET + 4 :])
         image_with_crc = image.get_image_by_absolute_address(self.IVT_CRC_CERTIFICATE_OFFSET)
         # Recreate data with valid CRC value
         if not image_with_crc.binary:
@@ -3521,13 +4941,15 @@ class Mbi_ExportMixinCrcSignEnd(Mbi_ExportMixin):
         :raises SPSDKError: Application image not found in the binary image.
         :return: Binary image with appended CRC checksum or with CRC removed if revert is True.
         """
-        if revert and image.binary:
-            image.binary = image.binary[:-4]
-            return image
-
         crc_obj = from_crc_algorithm(CrcAlg.CRC32_MPEG)
         image.alignment = 4  # Ensure 4-byte alignment
         total_data = image.export()
+
+        if revert and image.binary:
+            self.parsed_elements["parsed_end_crc"] = struct.unpack("<I", image.binary[-4:])[0]
+            image.binary = image.binary[:-4]
+            self.parsed_elements["computed_end_crc"] = crc_obj.calculate(image.binary)
+            return image
 
         app_image = image.find_sub_image(Mbi_ExportMixinApp.APP_IMAGE_NAME)
         if not app_image or not app_image.binary:
@@ -3575,8 +4997,17 @@ class Mbi_ExportMixinRsaSign(Mbi_ExportMixin):
                 raise SPSDKError("Certificate block or image is missing")
             if not isinstance(self.cert_block, CertBlockV1):
                 raise SPSDKError("Only CertBlockV1 is supported")
+            self.parsed_elements["rsa_signature"] = image.binary[-self.cert_block.signature_size :]
             image.binary = image.binary[: -self.cert_block.signature_size]
+
+            self.parsed_elements[
+                "rsa_signature_verify"
+            ] = self.cert_block.get_root_public_key().verify_signature(
+                signature=self.parsed_elements["rsa_signature"], data=image.binary
+            )
+
             return image
+
         if not self.signature_provider:
             raise SPSDKError("Signature provider is missing")
         signature = self.signature_provider.get_signature(image.export())
@@ -3615,8 +5046,20 @@ class Mbi_ExportMixinEccSign(Mbi_ExportMixin):
                 raise SPSDKError("Certificate block or image is missing")
             if not isinstance(self.cert_block, CertBlockV21):
                 raise SPSDKError("Only CertBlockV21 is supported")
+
+            self.parsed_elements["ecc_signature"] = image.binary[-self.cert_block.signature_size :]
             image.binary = image.binary[: -self.cert_block.signature_size]
+
+            public_key = (
+                self.cert_block.isk_certificate.get_public_key()
+                if self.cert_block.isk_certificate
+                else self.cert_block.get_root_public_key()
+            )
+            self.parsed_elements["ecc_signature_verify"] = public_key.verify_signature(
+                signature=self.parsed_elements["ecc_signature"], data=image.binary
+            )
             return image
+
         if not self.signature_provider:
             raise SPSDKError("Signature provider is missing")
         self.data_to_sign = image.export()
@@ -3654,14 +5097,20 @@ class Mbi_ExportMixinHmacKeyStoreFinalize(Mbi_ExportMixin):
         :return: Finalized binary image with HMAC and optional KeyStore added or removed.
         """
         raw_image = image.export()
+        hmac_value = self.compute_hmac(raw_image[: self.HMAC_OFFSET])
         if revert:
             end_of_hmac_keystore = self.HMAC_OFFSET + self.HMAC_SIZE
+            self.parsed_elements["parsed_hmac"] = raw_image[self.HMAC_OFFSET : end_of_hmac_keystore]
+            self.parsed_elements["parsed_hmac_verify"] = (
+                hmac_value == self.parsed_elements["parsed_hmac"]
+            )
             if self.ivt_table.get_key_store_presented(raw_image):
                 end_of_hmac_keystore += KeyStore.KEY_STORE_SIZE
+                self.parsed_elements["parsed_keystore"] = raw_image[
+                    self.HMAC_OFFSET + self.HMAC_SIZE : end_of_hmac_keystore
+                ]
             image.binary = raw_image[: self.HMAC_OFFSET] + raw_image[end_of_hmac_keystore:]
             return image
-
-        hmac_value = self.compute_hmac(raw_image[: self.HMAC_OFFSET])
 
         hmac_fits_between_images = self.HMAC_OFFSET in [x.offset for x in image.sub_images]
         ret = BinaryImage(name=image.name)
@@ -3731,6 +5180,7 @@ class Mbi_ExportMixinAppBcaFcf(Mbi_ExportMixin):
     IMG_SIGNATURE_OFFSET = 0x380
     IMG_BCA_OFFSET = 0x3C0
     IMG_FCF_OFFSET = 0x400
+    IMG_FCF_LENGTH = 0x10
     IMG_ISK_OFFSET = 0x410
     IMG_ISK_HASH_OFFSET = 0x4A0
     IMG_WPC_ROOT_CA_CERT_HASH_OFFSET = 0x5E0
@@ -3878,6 +5328,13 @@ class Mbi_ExportMixinAppBcaFcf(Mbi_ExportMixin):
 
         :param image: Raw image data to be disassembled into components.
         """
+        if hasattr(self, "bca"):
+            bca_binary = image[self.IMG_BCA_OFFSET : self.IMG_FCF_OFFSET]
+            self.bca = BCA.parse(binary=bca_binary, family=self.family)
+        if hasattr(self, "fcf"):
+            fcf_binary = image[self.IMG_FCF_OFFSET : self.IMG_FCF_OFFSET + self.IMG_FCF_LENGTH]
+            self.fcf = FCF.parse(binary=fcf_binary, family=self.family)
+
         self.app = image
 
 
@@ -3894,6 +5351,7 @@ class Mbi_ExportMixinCrcSignBca(Mbi_ExportMixin):
     bca: BCA
     image_size: int
     IMG_DATA_START: int
+    BCA_OFFSET: int
 
     def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
         """Calculate CRC32 for image data and update Boot Config Area.
@@ -3906,22 +5364,37 @@ class Mbi_ExportMixinCrcSignBca(Mbi_ExportMixin):
         :raises SPSDKError: When Boot Config Area is not initialized.
         :return: Binary image with updated Boot Config Area containing CRC information.
         """
+        input_image = image.export()
+        crc_obj = from_crc_algorithm(CrcAlg.CRC32_MPEG)
+        crc_len = len(input_image[self.IMG_DATA_START :])
+        computed_crc = crc_obj.calculate(input_image[self.IMG_DATA_START :])
+
         if revert:
+            # Extract the CRC value from the image at the correct offset
+            crc_address = self.BCA_OFFSET + self.bca.registers.find_reg("CRC_EXPECTED_VALUE").offset
+            parsed_crc = struct.unpack(
+                "<I",
+                input_image[crc_address : crc_address + 4],
+            )[0]
+
+            # Store both values in parsed_elements for verification
+            self.parsed_elements["bca_parsed_crc"] = parsed_crc
+            self.parsed_elements["bca_computed_crc"] = computed_crc
+            # Log the comparison
+            if parsed_crc == computed_crc:
+                logger.debug(f"CRC verification passed: 0x{parsed_crc:08X}")
+            else:
+                logger.warning(
+                    f"CRC mismatch! Parsed: 0x{parsed_crc:08X}, " f"Computed: 0x{computed_crc:08X}"
+                )
             return image
 
         if not hasattr(self, "bca") or self.bca is None:
             raise SPSDKError("BCA is not initialized")
 
-        input_image = image.export()
-        # self.bca.registers.find_reg("IMAGE_SIZE").set_value(self.image_size)
-
-        crc_obj = from_crc_algorithm(CrcAlg.CRC32_MPEG)
-        crc_len = len(input_image[self.IMG_DATA_START :])
-        crc = crc_obj.calculate(input_image[self.IMG_DATA_START :])
-
         self.bca.registers.find_reg("CRC_START_ADDRESS").set_value(self.IMG_DATA_START)
         self.bca.registers.find_reg("CRC_BYTE_COUNT").set_value(crc_len)
-        self.bca.registers.find_reg("CRC_EXPECTED_VALUE").set_value(crc)
+        self.bca.registers.find_reg("CRC_EXPECTED_VALUE").set_value(computed_crc)
 
         image.find_sub_image("Boot Config Area").binary = self.bca.export()
         return image
@@ -4016,6 +5489,7 @@ class Mbi_ExportMixinAppTzCrcAhab(Mbi_ExportMixin):
     crc_check_record: Optional[ImageArrayEntryV2]
     CRC_IMAGE_NAME = "CRC-32 MPEG checksum"
     AHAB_IMAGE_NAME = "AHAB Container"
+    IMAGE_ALIGNMENT = 4
 
     def collect_data(self) -> BinaryImage:
         """Collect application data and TrustZone including update IVT.
@@ -4231,7 +5705,7 @@ class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
         :param image: Binary image data to be disassembled.
         """
         # Re -parse decrypted TZ if needed
-        tz_type = TrustZoneType.from_tag(self.ivt_table.get_tz_type(image))
+        tz_type = TrustZoneType.from_tag(Mbi_MixinIvt.get_tz_type(image))
         self.trust_zone = None
         if tz_type == TrustZoneType.ENABLED:
             self.trust_zone = TrustZone(self.family)
@@ -4243,6 +5717,7 @@ class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
 
         if hasattr(self, "disassembly_app_data"):
             image = self.disassembly_app_data(image)
+        self.parsed_elements["parsed_ivt"] = image[:0x38]
         self.app = self.ivt_table.clean_ivt(image)
 
     @property

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -199,4 +199,12 @@ class SPSDKIndexError(SPSDKError, IndexError):
 
     This exception is raised when an index-related error occurs during SPSDK operations,
     combining SPSDK-specific error handling with standard Python IndexError behavior.
+    """
+
+
+class SPSDKNotTextFileError(SPSDKError):
+    """SPSDK exception for non-text file errors.
+
+    This exception is raised when SPSDK expects a text file but encounters
+    a binary or non-text file format during file processing operations.
     """

@@ -40,6 +40,7 @@ from spsdk.image.ahab.ahab_signature import ContainerSignature
 from spsdk.image.ahab.ahab_srk import SRKRecordV2, SRKTable, SRKTableArray
 from spsdk.utils.config import Config
 from spsdk.utils.misc import UINT16, UINT32, align, bytes_to_print, load_binary, write_file
+from spsdk.utils.schema_validator import SPSDKErrorValidationFailed
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
@@ -728,16 +729,16 @@ class SignatureBlock(HeaderContainer):
 
         if "certificate" in config:
             try:
-                cert_cfg = config.load_sub_config("certificate")
-                cert_cfg.check(
-                    get_ahab_certificate_class(chip_config.base.family).get_validation_schemas(
-                        family=chip_config.base.family
-                    ),
-                    check_unknown_props=True,
+                cert_cfg = config.load_sub_config(
+                    "certificate", target_klass=get_ahab_certificate_class(chip_config.base.family)
                 )
                 signature_block.certificate = get_ahab_certificate_class(
                     chip_config.base.family
                 ).load_from_config(cert_cfg)
+            except SPSDKErrorValidationFailed as exc:
+                raise SPSDKErrorValidationFailed(
+                    f"Failed to load certificate from configuration: {str(exc)}"
+                ) from exc
             except SPSDKError:
                 # this could be pre-exported binary certificate :-)
                 signature_block.certificate = get_ahab_certificate_class(
@@ -1547,16 +1548,16 @@ class SignatureBlockV2(HeaderContainer):
         signature_block.certificate = None
         if "certificate" in config:
             try:
-                cert_cfg = config.load_sub_config("certificate")
-                cert_cfg.check(
-                    get_ahab_certificate_class(chip_config.base.family).get_validation_schemas(
-                        family=chip_config.base.family
-                    ),
-                    check_unknown_props=True,
+                cert_cfg = config.load_sub_config(
+                    "certificate", target_klass=get_ahab_certificate_class(chip_config.base.family)
                 )
                 signature_block.certificate = get_ahab_certificate_class(
                     chip_config.base.family
                 ).load_from_config(cert_cfg)
+            except SPSDKErrorValidationFailed as exc:
+                raise SPSDKErrorValidationFailed(
+                    f"Failed to load certificate from configuration: {str(exc)}"
+                ) from exc
             except SPSDKError:
                 # this could be pre-exported binary certificate :-)
                 signature_block.certificate = get_ahab_certificate_class(

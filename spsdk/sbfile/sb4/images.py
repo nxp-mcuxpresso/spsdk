@@ -729,7 +729,9 @@ class SecureBinary4(FeatureBaseClass):
 
         chip_config = create_chip_config(family, feature=cls.FEATURE, base_key=["ahab"])
         # Parse AHAB container first
-        container = AHABContainerV2.parse(data, chip_config=chip_config, offset=0)
+        container = AHABContainerV2.parse(
+            data, chip_config=chip_config, offset=0, container_offset=0
+        )
 
         # Get the image array entry that contains SB descriptor data
         if not container.image_array or len(container.image_array) < 1:

@@ -1,0 +1,184 @@
+# Copyright 2025-2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ============================  sb40 Configuration template for mcxa455, Revision: latest.  =============================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxa455
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+
+# ======================================================================================================================
+#                                           == Secure Binary v4.0 Settings ==
+# ======================================================================================================================
+# ----------------------------------------===== Part Common Key [Optional] =====----------------------------------------
+# Description: Path to PCK/NPK 256 or 128 bit key in plain hex string format or path to binary file or hex string.
+containerKeyBlobEncryptionKey: .\workspace\keys\userkey.txt
+# ---------------------------------------===== KDK access rights [Optional] =====---------------------------------------
+# Description: Accepted values are 0, 1, 2 and 3. Value used as key properties for key derivation process, more details
+# can be found in CSSv2 manual.
+# Possible options: <0, 1, 2, 3>
+kdkAccessRights: 3
+# ------------------------------------------===== Description [Optional] =====------------------------------------------
+# Description: Description up to 16 characters, longer will be truncated. Stored in SB4.0 manifest.
+description: SB40 PQC version
+
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# -----------------------------------------===== SB4 filename [Required] =====------------------------------------------
+# Description: Generated SB4 container filename.
+containerOutputFile: .\workspace\output_images\mcxa455\sb40_ecc256_dil3.sb4
+
+# ======================================================================================================================
+#                                 == AHAB Container format to add to ECC + PQC sign. ==
+# ======================================================================================================================
+# -----------------------------------===== Super Root Key (SRK) set [Required] =====------------------------------------
+# Description: Defines which set is used to authenticate the container.
+# Possible options: <oem, nxp>
+srk_set: oem
+# -------------------------------------------===== Used SRK [Required] =====--------------------------------------------
+# Description: Which key from SRK set is being used.
+used_srk_id: 1
+# ----------------------------------------===== SRK revoke mask [Optional] =====----------------------------------------
+# Description: Bit-mask to indicate which SRKs to revoke. Bit set to 1 means revoke key. Bit 0 = revoke SRK_0, bit 1 =
+# revoke SRK_1 etc. Example of revocation SRK_0 and SRK_1 - the value should be 0x03
+srk_revoke_mask: "0x00"
+# -------------------------------------===== Check all signatures [Optional] =====--------------------------------------
+# Description: This option overrides a fuse to select verification mode.
+#  - default: Apply default fuse policy.
+#  - check_all_signatures: Force verification of all present signatures.
+# Possible options: <default, check_all_signatures>
+check_all_signatures: check_all_signatures
+# -----------------------------------------===== Fuse version [Optional] =====------------------------------------------
+# Description: The value must be equal or greater than the version stored in fuses to allow loading this container.
+fuse_version: 0xbc
+# ---------------------------------------===== Software version [Optional] =====----------------------------------------
+# Description: Number used by Privileged Host Boot Companion (PHBC) to select between multiple images with same Fuse
+# version field.
+sw_version: 0xde
+# ----------------------------------===== AHAB container signing key [Optional] =====-----------------------------------
+# Description: Private key used for sign the container header. Header can be signed by SRK. The referenced SRK must not
+# have been revoked.
+signer: ../../_data/keys/ecc256/srk1_ecc256.pem
+# ------------------===== AHAB container signing key for second signature (PQC only) [Optional] =====-------------------
+# Description: Private key used for second sign (PQC only) of the container header. Header can be signed by SRK. The
+# referenced SRK must not have been revoked.
+signer_#2: ../../_data/keys/dil3/srk1_dil3.pem
+# ---------------------------------------===== Images HASH type [Optional] =====----------------------------------------
+# Description: HASH type of image.
+image_hash_type: sha384
+
+# ======================================================================================================================
+#                                         == Configuration of AHAB SRK table ==
+# ======================================================================================================================
+# -------------------------------------------===== SRK Table [Required] =====-------------------------------------------
+# Description: SRK (Super Root key) table definition.
+srk_table:
+  # -------------------------------------------===== CA Flag [Optional] =====-------------------------------------------
+  # Description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys
+  flag_ca: false
+  # ---------------------------------===== Super Root Key (SRK) table [Required] =====----------------------------------
+  # Description: Table containing the used SRK records. All SRKs must be of the same type. Supported signing algorithms
+  # are: RSA-PSS, ECDSA, Dilithium or SM2. Supported hash algorithms: sha256, sha384, sha512, sha3_256, sha3_384,
+  # sha3_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1, rsa2048, rsa4096, dilithium3, sm2.
+  # Certificate may be of Certificate Authority. Dilithium algorithms are supported just in new type of AHAB container
+  srk_array:
+    - ../../_data/keys/ecc256/srk0_ecc256.pub
+    - ../../_data/keys/ecc256/srk1_ecc256.pub
+    - ../../_data/keys/ecc256/srk2_ecc256.pub
+    - ../../_data/keys/ecc256/srk3_ecc256.pub
+
+  # ====================================================================================================================
+  #                  == Configuration of AHAB SRK table in case that the double signing (ECC + PQC) ==
+  # ====================================================================================================================
+  # --------------------------------------===== Second SRK Table [Optional] =====---------------------------------------
+  srk_table_#2:
+    # ------------------------------------------===== CA Flag [Optional] =====------------------------------------------
+    # Description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys
+    flag_ca: false
+    # --------------------------------===== Super Root Key (SRK) table [Required] =====---------------------------------
+    # Description: Table containing the used SRK Dilithium records. All SRKs must be of the same type. Supported signing
+    # algorithms are: Dilithium level 3. Supported hash algorithms: sha3_256, sha3_384, sha3_512. Certificate may be of
+    # Certificate Authority.
+    srk_array:
+      - ../../_data/keys/dil3/srk0_dil3.pub
+      - ../../_data/keys/dil3/srk1_dil3.pub
+      - ../../_data/keys/dil3/srk2_dil3.pub
+      - ../../_data/keys/dil3/srk3_dil3.pub
+
+# ======================================================================================================================
+#              == Optional configuration of AHAB Container Certificate (if not used, erase the section) ==
+# ======================================================================================================================
+# -------------------------------------===== The AHAB certificate [Optional] =====--------------------------------------
+# Description: The file that contains AHAB certificate. It could be used already prepared binary form signed by SRK, or
+# it is possible to use configuration YAML file of certificate and the AHAB export process it will export it itself.
+# certificate: my_ahab_certificate.bin
+# ======================================================================================================================
+#                                   == Secure Binary v3.1 / v4.0 Commands Settings ==
+# ======================================================================================================================
+# ----------------------------------------===== SB3.1 Commands [Required] =====-----------------------------------------
+# Description: Secure Binary v3.1 commands block, list of all possible options - Modify it according to your application
+commands:
+  - # -------------------------------------------===== Erase [Required] =====-------------------------------------------
+    # Description: Performs a flash erase of the given address range. The erase will be rounded up to the sector size.
+    erase:
+      # -----------------------------------------===== Address [Required] =====-----------------------------------------
+      # Description: Address of memory block to be erased.
+      address: 0
+      # ------------------------------------------===== Size [Required] =====-------------------------------------------
+      # Description: Size of memory block to be erased.
+      size: 4096
+      # ----------------------------------------===== Memory ID [Optional] =====----------------------------------------
+      # Description: ID of memory block to be erased.
+      memoryId: 0
+
+  - # -------------------------------------------===== Load [Required] =====--------------------------------------------
+    # Description: If set, then the data to write immediately follows the range header. The length field contains the
+    # actual data length
+    load:
+      # -----------------------------------------===== Address [Required] =====-----------------------------------------
+      # Description: Address of memory block to be loaded.
+      address: 0
+      # ----------------------------------------===== Memory ID [Optional] =====----------------------------------------
+      # Description: ID of memory block to be loaded.
+      memoryId: 9
+      # -----------------------------===== Data to be loaded [Conditionally required] =====-----------------------------
+      # Description: The data to be loaded, it could be defined in following formats:
+      #   - 32-bit value. Value will be converted to binary in little endian format. Example: '0xB38AA899' or '0b111000'
+      #   - Array of 32-bit binary values delimited by comma to be loaded. Individual 32-bit values will be stored in
+      # little endian format. Example: 0x1234, 0x5678, 0, 12345678
+      #   - Path to binary file. Example: my_binary.bin
+      data: .\workspace\input_images\test1.bin
+
+  - # -------------------------------------------===== Load [Required] =====--------------------------------------------
+    # Description: If set, then the data to write immediately follows the range header. The length field contains the
+    # actual data length
+    load:
+      # -----------------------------------------===== Address [Required] =====-----------------------------------------
+      # Description: Address of memory block to be loaded.
+      address: 0x10000
+      # ----------------------------------------===== Memory ID [Optional] =====----------------------------------------
+      # Description: ID of memory block to be loaded.
+      memoryId: 9
+      # -----------------------------===== Data to be loaded [Conditionally required] =====-----------------------------
+      # Description: The data to be loaded, it could be defined in following formats:
+      #   - 32-bit value. Value will be converted to binary in little endian format. Example: '0xB38AA899' or '0b111000'
+      #   - Array of 32-bit binary values delimited by comma to be loaded. Individual 32-bit values will be stored in
+      # little endian format. Example: 0x1234, 0x5678, 0, 12345678
+      #   - Path to binary file. Example: my_binary.bin
+      data: .\workspace\input_images\test2.bin
+
+  - # ------------------------------------------===== Execute [Required] =====------------------------------------------
+    # Description: Address is the jump-to address. No further processing of SB after jump, ROM do not expect to return.
+    execute:
+      # -----------------------------------------===== Address [Required] =====-----------------------------------------
+      # Description: Jump-to address to start execute code.
+      address: 0

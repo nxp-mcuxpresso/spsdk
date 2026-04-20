@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK Secure Binary (SB) command-line interface utilities.
 
 This module provides CLI commands for working with NXP Secure Binary files
@@ -29,7 +30,7 @@ from spsdk.apps.utils.utils import SPSDKAppError, store_key
 from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.signature_provider import get_signature_provider_from_config_str
 from spsdk.exceptions import SPSDKError
-from spsdk.image.cert_block.cert_blocks import CertBlockV1
+from spsdk.image.cert_block.cert_block_v1 import CertBlockV1
 from spsdk.image.keystore import KeyStore
 from spsdk.sbfile.sb2.commands import CmdLoad
 from spsdk.sbfile.sb2.images import BootImageV21
@@ -126,6 +127,8 @@ def sb21_export(
         parsed_config = BootImageV21.parse_sb21_config(command, external_files=external)
         if not output:
             output = parsed_config.get_output_file_name("containerOutputFile")
+        if "containerOutputFile" not in parsed_config:
+            parsed_config["containerOutputFile"] = output
         sb2 = BootImageV21.load_from_config(
             config=parsed_config,
             key_file_path=key,

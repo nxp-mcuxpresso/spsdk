@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK U-Boot communication interface implementation.
 
 This module provides communication interfaces for interacting with U-Boot bootloader
@@ -78,6 +79,26 @@ class UbootSerial:
         self.retries = retries
         self.open(interrupt_autoboot)
         self.crc = crc
+
+    @classmethod
+    def set_prompt(cls, prompt: str) -> None:
+        """Set the U-Boot prompt at class level.
+
+        Allows customization of the U-Boot command prompt.
+
+        :param prompt: The prompt string to set (e.g., "=> ").
+        :raises SPSDKError: If prompt is not a string or cannot be encoded.
+        """
+        if not isinstance(prompt, str):
+            raise SPSDKError(f"U-Boot prompt must be a string, got {type(prompt)}")
+        if not prompt:
+            logger.warning("Trying to set empty U-Boot prompt")
+            return
+        logger.debug(f"Overriding U-Boot prompt to {prompt}")
+        try:
+            cls.PROMPT = prompt.encode(UbootSerial.ENCODING)
+        except UnicodeEncodeError as e:
+            raise SPSDKError(f"Failed to encode prompt: {e}") from e
 
     def calc_crc(self, data: bytes, address: int, count: int) -> None:
         """Calculate CRC from the data.
