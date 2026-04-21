@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -182,23 +182,67 @@ class HabImage(FeatureBaseClass):
     def get_config(self, data_path: str = "./") -> Config:
         """Create configuration of the HAB image feature.
 
-        The method generates a configuration object containing options like flags, family information,
-        revision, and optional file paths for XMCD and DCD segments based on the current state.
+        The method generates a complete configuration object containing options,
+        input image file, and all segments with their configurations.
 
         :param data_path: Path to store the data files of configuration.
-        :return: Configuration object with HAB image settings.
+        :return: Configuration object with complete HAB image settings.
         """
         config = Config()
-        config["options"] = {
-            "flags": self.flags,
+
+        # Create options section
+        options = {
             "family": self.family.name,
             "revision": self.family.revision,
-            "bootDevice": None,  # TODO
+            "flags": self.flags,
+            "startAddress": f"{self.start_address:#010x}",
         }
-        if self.xmcd_segment:
-            config["options"]["XMCDFilePath"] = "xmcd.bin"
-        if self.dcd_segment:
-            config["options"]["DCDFilePath"] = "dcd.bin"  # TODO
+
+        # Add boot device if available
+        if self.boot_device:
+            options["bootDevice"] = self.boot_device.label
+
+        # Add custom IVT offset if different from database default
+        if self.boot_device and self._ivt_offset is not None:
+            db_ivt_offset = self.db.get_int(
+                DatabaseManager.BOOTABLE_IMAGE,
+                ["mem_types", self.boot_device.label, "segments", "hab_container"],
+            )
+            if self._ivt_offset != db_ivt_offset:
+                options["ivtOffset"] = self._ivt_offset
+        elif self._ivt_offset is not None:
+            # If no boot device specified, always include ivtOffset
+            options["ivtOffset"] = self._ivt_offset
+
+        # Add initialLoadSize if we can determine it
+        if self.app_segment:
+            options["initialLoadSize"] = self.app_segment.offset
+
+        # Add entryPointAddress from IVT if available
+        if self.ivt_segment:
+            options["entryPointAddress"] = f"{self.ivt_segment.app_address:#010x}"
+
+        config["options"] = options
+
+        # Export all segments and merge their configurations
+        for segment in self.segments:
+            segment_cfg = segment.get_config(data_path)
+
+            # Merge segment config into main config
+            for key, value in segment_cfg.items():
+                if key == "options":
+                    # Merge options
+                    config["options"].update(value)
+                elif key == "sections":
+                    # Sections come from CSF segment
+                    config["sections"] = value
+                elif key == "inputImageFile":
+                    # Input image file from APP segment
+                    config["inputImageFile"] = value
+                else:
+                    # Other keys (shouldn't happen, but handle gracefully)
+                    config[key] = value
+
         return config
 
     @classmethod

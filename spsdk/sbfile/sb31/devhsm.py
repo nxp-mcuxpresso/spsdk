@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -21,7 +21,7 @@ from spsdk.apps.utils.utils import format_raw_data
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.rng import random_bytes
 from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError
-from spsdk.image.cert_block.cert_blocks import CertificateBlockHeader
+from spsdk.image.cert_block.cert_block_v21 import CertificateBlockHeader
 from spsdk.mboot.commands import TrustProvKeyType, TrustProvOemKeyType
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.sbfile.devhsm.devhsm import DevHsm

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -20,16 +20,14 @@ import pytest
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.signature_provider import PlainFileSP
 from spsdk.exceptions import SPSDKError
-from spsdk.image.cert_block.cert_blocks import (
-    CertBlock,
-    CertBlockHeader,
-    CertBlockV1,
+from spsdk.image.cert_block.cert_block_v1 import CertBlockHeader, CertBlockV1
+from spsdk.image.cert_block.cert_block_v21 import (
     CertBlockV21,
-    CertBlockVx,
     CertificateBlockHeader,
-    IskCertificateLite,
     find_root_certificates,
 )
+from spsdk.image.cert_block.cert_block_vx import CertBlockVx, IskCertificateLite
+from spsdk.image.cert_block.cert_blocks import CertBlock
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_binary

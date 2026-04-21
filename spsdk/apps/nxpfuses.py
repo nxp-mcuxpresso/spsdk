@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -70,8 +70,17 @@ def print_register_info(fuse_register: FuseRegister, rich: bool = False) -> None
         click.echo(f"Fuse raw value:   {fuse_register.get_hex_value(raw=True)}")
     if rich:
         click.echo(f"Fuse description: {fuse_register.description}")
-        click.echo(f"Fuse address:     0x{fuse_register.offset:08X}")
         click.echo(f"Fuse width:       {fuse_register.width} bits")
+        if fuse_register.get_bitfields():
+            click.echo("Bitfields:")
+            for bitfield in fuse_register.get_bitfields():
+                bf_value = bitfield.get_value()
+                click.echo(f"  - {bitfield.name}:")
+                click.echo(f"      Offset: {bitfield.offset}")
+                click.echo(f"      Width:  {bitfield.width} bits")
+                click.echo(f"      Value:  {hex(bf_value)} ({bf_value})")
+                if bitfield.description:
+                    click.echo(f"      Description: {bitfield.description}")
 
 
 def prompt_for_write_permission(skip: bool = False) -> bool:
@@ -103,6 +112,7 @@ def get_fuse_operator(
     buffer_size: Optional[int],
     fb_addr: Optional[int],
     fb_size: Optional[int],
+    uboot_prompt: Optional[str],
 ) -> FuseOperator:
     """Get fuse operator."""
     operator_class = Fuses.get_fuse_operator_type(family)
@@ -133,6 +143,7 @@ def get_fuse_operator(
             lpcusbsio=lpcusbsio,
             buspal=buspal,
             timeout=timeout,
+            uboot_prompt=uboot_prompt,
         )
         return NxpeleFuseOperator(ele_message_handler)
     raise SPSDKTypeError(f"Unsupported fuse operator type: {operator_class.__name__}")
@@ -181,6 +192,7 @@ def write(
     fb_size: Optional[int],
     config: Config,
     yes: bool,
+    uboot_prompt: Optional[str],
 ) -> None:
     """Write fuses from configuration into device."""
     exit_code = 0
@@ -216,6 +228,7 @@ def write(
         buffer_size=buffer_size,
         fb_addr=fb_addr,
         fb_size=fb_size,
+        uboot_prompt=uboot_prompt,
     )
     # first we need to write non-lock fuses as they may lock other fuses to be written
     all_lock_fuses = fuses.fuse_regs.get_lock_fuses()
@@ -266,6 +279,7 @@ def write_single(
     value: str,
     lock: bool,
     yes: bool,
+    uboot_prompt: Optional[str],
 ) -> None:
     """Write single fuse into device."""
     permitted = prompt_for_write_permission(yes)
@@ -283,6 +297,7 @@ def write_single(
         buffer_size=buffer_size,
         fb_addr=fb_addr,
         fb_size=fb_size,
+        uboot_prompt=uboot_prompt,
     )
     fuses = Fuses(family=family, fuse_operator=fuse_operator)
     try:
@@ -313,6 +328,13 @@ def write_single(
     default=False,
     help="Enables rich format of printed output.",
 )
+@click.option(
+    "-ia",
+    "--ignore-access-rights",
+    is_flag=True,
+    default=False,
+    help="Force reading fuses even when access rights are set to WO (Write-Only).",
+)
 def print_fuses(
     port: Optional[str],
     usb: Optional[str],
@@ -327,6 +349,8 @@ def print_fuses(
     family: FamilyRevision,
     name: Optional[str],
     rich: bool,
+    ignore_access_rights: bool,
+    uboot_prompt: Optional[str],
 ) -> None:
     """Print the current state of fuses from device."""
     fuse_operator = get_fuse_operator(
@@ -341,27 +365,48 @@ def print_fuses(
         buffer_size=buffer_size,
         fb_addr=fb_addr,
         fb_size=fb_size,
+        uboot_prompt=uboot_prompt,
     )
     fuses = Fuses(family=family, fuse_operator=fuse_operator)
+    error_count = 0
+
     if name:
         try:
             otp_index = value_to_int(name)  # name is otp index
             name = fuses.fuse_regs.get_by_otp_index(otp_index).uid
+            logger.debug(f"OTP index {otp_index} resolved to fuse '{name}'")
         except SPSDKError:
-            pass
-        fuses.read_single(name)
-        fuse = fuses.fuse_regs.find_reg(name)
-        print_register_info(fuse, rich)
+            logger.debug("Cannot resolve OTP index, using name as provided")
+        try:
+            fuses.read_single(name, force=ignore_access_rights)
+            fuse = fuses.fuse_regs.find_reg(name, include_group_regs=True)
+            print_register_info(fuse, rich)
+        except SPSDKFuseOperationFailure as e:
+            logger.debug(f"Permission error, unable to read fuse {name}: {str(e)}")
+            click.echo(f"Error: Unable to read fuse '{name}'. Check debug logs for details.")
+            click.echo("Use -i option to ignore access rights.")
+            error_count += 1
+        except SPSDKError as e:
+            logger.debug(f"Error occurred, unable to read the fuse {name}: {str(e)}")
+            click.echo(f"Error: Unable to read fuse '{name}'. Check debug logs for details.")
+            error_count += 1
     else:
         for reg in fuses.fuse_regs:
             try:
-                fuses.read_single(reg.uid)
+                fuses.read_single(reg.uid, force=ignore_access_rights)
                 print_register_info(reg, rich)
                 click.echo()
             except SPSDKFuseOperationFailure as e:
-                logger.warning(f"Permission error, unable to read fuse {reg.name}: {str(e)}")
+                logger.debug(f"Permission error, unable to read fuse {reg.name}: {str(e)}")
+                error_count += 1
             except SPSDKError as e:
-                logger.warning(f"Error occurred, unable to read the fuse {reg.name}: {str(e)}")
+                logger.debug(f"Error occurred, unable to read the fuse {reg.name}: {str(e)}")
+                error_count += 1
+
+        if error_count > 0:
+            click.echo(
+                f"Warning: {error_count} fuse(s) could not be read. Check debug logs for details."
+            )
 
 
 @main.command(name="fuses-script", no_args_is_help=True)
@@ -386,6 +431,13 @@ def fuses_script(config: Config, output: str) -> None:
     default=False,
     help="Save differences compared to default values.",
 )
+@click.option(
+    "-ia",
+    "--ignore-access-rights",
+    is_flag=True,
+    default=False,
+    help="Force reading fuses even when access rights are set to WO (Write-Only) or Reserved.",
+)
 def get_config(
     port: Optional[str],
     usb: Optional[str],
@@ -400,6 +452,8 @@ def get_config(
     family: FamilyRevision,
     output: str,
     diff_only: bool,
+    ignore_access_rights: bool,
+    uboot_prompt: Optional[str],
 ) -> None:
     """Save the current state of fuses to config file."""
     fuse_operator = get_fuse_operator(
@@ -414,8 +468,10 @@ def get_config(
         buffer_size=buffer_size,
         fb_addr=fb_addr,
         fb_size=fb_size,
+        uboot_prompt=uboot_prompt,
     )
     fuses = Fuses(family=family, fuse_operator=fuse_operator)
+    error_count = 0
     try:
         total_registers = len(fuses.fuse_regs)
         processed = 0
@@ -423,18 +479,26 @@ def get_config(
             progress_callback(0, total_registers)  # Initialize progress bar at 0%
             for reg in fuses.fuse_regs:
                 try:
-                    fuses.read_single(reg.uid)
+                    fuses.read_single(reg.uid, force=ignore_access_rights)
                 except SPSDKFuseOperationFailure as e:
-                    logger.warning(f"Permission error, unable to read fuse {reg.name}: {str(e)}")
+                    logger.debug(f"Permission error, unable to read fuse {reg.name}: {str(e)}")
+                    error_count += 1
                 except SPSDKError as e:
-                    logger.warning(f"Error occurred, unable to read the fuse {reg.name}: {str(e)}")
+                    logger.debug(f"Error occurred, unable to read the fuse {reg.name}: {str(e)}")
+                    error_count += 1
                 finally:
                     processed += 1
                     progress_callback(processed, len(fuses.fuse_regs))
     except SPSDKError as exc:
         raise SPSDKAppError(f"Reading the fuses failed: ({str(exc)})") from exc
+
     write_file(fuses.get_config_yaml(diff=diff_only), output)
     click.echo(f"The fuses configuration has been saved into {output}")
+
+    if error_count > 0:
+        click.echo(
+            f"Warning: {error_count} fuse(s) could not be read. Check debug logs for details."
+        )
 
 
 @catch_spsdk_error

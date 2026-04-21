@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """Device Configuration Data (DCD) segment module for HAB.
 
 This module implements the Device Configuration Data (DCD) segment used in HAB-enabled bootable images.
@@ -12,6 +13,7 @@ application code execution.
 """
 
 import logging
+import os
 from typing import Iterator, Optional
 
 from typing_extensions import Self
@@ -29,7 +31,7 @@ from spsdk.image.hab.segments.seg_ivt import HabSegmentIvt
 from spsdk.image.hab.segments.segment import HabSegmentBase, HabSegmentEnum, PaddingSegment
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import load_binary
+from spsdk.utils.misc import load_binary, write_file
 
 logger = logging.getLogger(__name__)
 
@@ -346,6 +348,30 @@ class HabSegmentDcd(HabSegmentBase):
             segment.offset = ivt.dcd_address - ivt.ivt_address
             return segment
         raise SPSDKSegmentNotPresent(f"Segment {cls.__name__} is not present")
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the DCD segment.
+
+        The method generates configuration data for the DCD segment, exporting
+        the DCD binary data to a file in the specified path.
+
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary with DCD file path.
+        """
+        ret_cfg = Config()
+
+        # Export DCD binary data to file
+        filename = "dcd.bin"
+        write_file(
+            data=self.dcd.export(),
+            path=os.path.join(data_path, filename),
+            mode="wb",
+        )
+
+        # Create options section with DCDFilePath
+        ret_cfg["options"] = {"DCDFilePath": filename}
+
+        return ret_cfg
 
     @classmethod
     def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("unknown")) -> Self:

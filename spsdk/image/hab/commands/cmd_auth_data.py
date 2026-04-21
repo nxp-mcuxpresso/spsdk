@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """HAB authentication data commands implementation.
 
 This module provides HAB (High Assurance Boot) commands for handling authentication
@@ -11,6 +12,7 @@ data operations in the secure boot process. It includes commands for authenticat
 CSF data, decrypting data, and managing authentication signatures and MACs.
 """
 
+import os
 from datetime import datetime
 from struct import pack, unpack_from
 from typing import Any, Iterator, Optional, Union
@@ -33,7 +35,7 @@ from spsdk.image.hab.hab_signature import Signature
 from spsdk.image.hab.hab_srk import SrkTable
 from spsdk.image.hab.utils import aead_nonce_len, get_header_version
 from spsdk.utils.config import Config
-from spsdk.utils.misc import load_binary
+from spsdk.utils.misc import load_binary, write_file
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
@@ -522,20 +524,58 @@ class CmdAuthData(CmdBase):
         """
         header = CmdHeader.parse(data, CmdTag.AUT_DAT.tag)
         key, sig_format, eng, cfg, location = unpack_from(">4BL", data, header.size)
-        obj = cls(
-            AuthDataFlagsEnum.from_tag(header.param),
-            key,
-            CertFormatEnum.from_tag(sig_format),
-            EngineEnum.from_tag(eng),
-            cfg,
-            location,
-        )
+
+        flags = AuthDataFlagsEnum.from_tag(header.param)
+        cert_fmt = CertFormatEnum.from_tag(sig_format)
+        engine = EngineEnum.from_tag(eng)
+
+        # Parse blocks first to determine command type
+        blocks = []
         index = header.size + 8
         while index < header.length:
             start_address, size = unpack_from(">2L", data, index)
-            obj.append(start_address, size)
+            blocks.append((start_address, size))
             index += 8
-        return obj
+
+        # Determine the correct subclass based on parameters
+        if cert_fmt == CertFormatEnum.AEAD:
+            # Decrypt data command
+            obj = CmdDecryptData(flags, key, cert_fmt, engine, cfg, location)
+        elif len(blocks) == 0 and key == 1:
+            # AuthenticateCSF - no blocks, key index 1
+            obj = CmdAuthenticateCsf(flags, key, cert_fmt, engine, cfg, location)  # type: ignore
+        else:
+            # AuthenticateData - has blocks
+            obj = SecCsfAuthenticateData(flags, key, cert_fmt, engine, cfg, location)  # type: ignore
+
+        # Add parsed blocks
+        for start_address, size in blocks:
+            obj.append(start_address, size)
+
+        return obj  # type: ignore
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the base AuthData command.
+
+        This is a base implementation that should be overridden by derived classes.
+        It provides a fallback for generic authenticate data commands.
+
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary for AuthData command.
+        """
+        ret_cfg = Config()
+
+        # This is a generic fallback - derived classes should override this
+        ret_cfg["AuthData_VerificationIndex"] = self.key_index
+        ret_cfg["AuthData_Engine"] = self.engine.label
+        ret_cfg["AuthData_EngineConfiguration"] = self.engine_cfg
+
+        ret_cfg["Signer"] = "Not available"
+
+        # Note: Signature/MAC and blocks are runtime objects, not stored in config
+        # Note: Private key/signature provider cannot be retrieved from parsed binary
+
+        return ret_cfg
 
 
 def get_hab_signature_provider(config: Config) -> SignatureProvider:
@@ -605,6 +645,42 @@ class CmdAuthenticateCsf(CmdAuthData):
         cmd.signature_provider = signature_provider
         cmd.signature = Signature(version=get_header_version(config))
         return cmd
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the AuthenticateCSF command.
+
+        Exports the signature provider configuration (private key path).
+        Note: Certificate is exported by InstallCSFK/InstallNOCAK command.
+
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary for AuthenticateCSF command.
+        """
+        ret_cfg = Config()
+
+        # Export signature provider configuration
+        if self.signature_provider:
+            # Get the private key path from signature provider
+            if hasattr(self.signature_provider, "signature_provider"):
+                ret_cfg["Signer"] = self.signature_provider.signature_provider
+            elif hasattr(self.signature_provider, "private_key_path"):
+                ret_cfg["Signer"] = self.signature_provider.private_key_path
+        elif self.private_key:
+            # If using direct private key, we need to save it
+
+            filename = "csf_private_key.pem"
+            write_file(
+                data=self.private_key.export(),
+                path=os.path.join(data_path, filename),
+                mode="wb",
+            )
+            ret_cfg["Signer"] = filename
+        else:
+            ret_cfg["Signer"] = "Not available"
+
+        # Note: Engine is stored in Header section, not here
+        # Note: Certificate is stored in InstallCSFK/InstallNOCAK, not here
+
+        return ret_cfg
 
 
 class CmdDecryptData(CmdAuthData):
@@ -704,6 +780,41 @@ class CmdDecryptData(CmdAuthData):
         cmd.key_index = verification_index
         return cmd
 
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the DecryptData command.
+
+        Exports the decryption parameters including engine, verification index,
+        nonce file, and MAC length.
+
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary for DecryptData command.
+        """
+        ret_cfg = Config()
+
+        # Export engine configuration
+        ret_cfg["Decrypt_Engine"] = self.engine.label
+
+        # Export engine configuration
+        ret_cfg["Decrypt_EngineConfiguration"] = self.engine_cfg
+
+        # Export verification index
+        ret_cfg["Decrypt_VerifyIndex"] = self.key_index
+
+        # Export nonce if present
+        if self.nonce:
+            filename = "decrypt_nonce.bin"
+            write_file(
+                data=self.nonce,
+                path=os.path.join(data_path, filename),
+                mode="wb",
+            )
+            ret_cfg["Decrypt_Nonce"] = filename
+
+        # Export MAC length
+        ret_cfg["Decrypt_MacBytes"] = self.mac_len
+
+        return ret_cfg
+
     def generate_nonce(self, data: bytes) -> None:
         """Generate a random nonce for the decrypt data command.
 
@@ -783,3 +894,43 @@ class SecCsfAuthenticateData(CmdAuthData):
         cmd.certificate = install_key.certificate_ref
         cmd.signature = Signature(version=get_header_version(config))
         return cmd
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the AuthenticateData command.
+
+        Exports the signature provider configuration and authentication parameters.
+        Note: Certificate is exported by InstallKey/InstallNOCAK command.
+
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary for AuthenticateData command.
+        """
+        ret_cfg = Config()
+
+        # Export engine configuration
+        ret_cfg["AuthenticateData_Engine"] = self.engine.label
+        ret_cfg["AuthenticateData_EngineConfiguration"] = self.engine_cfg
+        ret_cfg["AuthenticateData_VerificationIndex"] = self.key_index
+
+        # Export signature provider configuration
+        if self.signature_provider:
+            # Get the private key path from signature provider
+            if hasattr(self.signature_provider, "signature_provider"):
+                ret_cfg["Signer"] = self.signature_provider.signature_provider
+            elif hasattr(self.signature_provider, "private_key_path"):
+                ret_cfg["Signer"] = self.signature_provider.private_key_path
+        elif self.private_key:
+            # If using direct private key, we need to save it
+            filename = "authenticate_data_private_key.pem"
+            write_file(
+                data=self.private_key.export(),
+                path=os.path.join(data_path, filename),
+                mode="wb",
+            )
+            ret_cfg["Signer"] = filename
+        else:
+            ret_cfg["Signer"] = "Not available"
+
+        # Note: Certificate is stored in InstallKey/InstallNOCAK, not here
+        # Note: Signature is runtime object, not stored in config
+
+        return ret_cfg

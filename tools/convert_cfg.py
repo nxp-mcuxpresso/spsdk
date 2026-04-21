@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -32,7 +32,7 @@ from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.ahab.signed_msg import SignedMessage
 from spsdk.image.bee import Bee
 from spsdk.image.bootable_image.bimg import BootableImage
-from spsdk.image.cert_block.cert_blocks import CertBlockV21
+from spsdk.image.cert_block.cert_block_v21 import CertBlockV21
 from spsdk.image.fcb.fcb import FCB
 from spsdk.image.iee.iee import Iee
 from spsdk.image.mbi.mbi import MasterBootImage

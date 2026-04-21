@@ -141,7 +141,7 @@ class Message(Container):
         +-----+--------------+--------------+----------------+----------------+
         |0x00 | Cert version |  Permission  |           Issue date            |
         +-----+--------------+--------------+---------------------------------+
-        |0x04 |   Reserved   |    Command   |             Reserved            |
+        |0x04 |    Flags     |    Command   |             Reserved            |
         +-----+--------------+--------------+---------------------------------+
         |0x08 |                                                               |
         |     |                 Unique ID (64 or 128 bits)                    |
@@ -166,6 +166,7 @@ class Message(Container):
         cmd: int = 0,
         unique_id: Optional[bytes] = None,
         unique_id_len: int = UNIQUE_ID_LEN,
+        header_flags: int = 0,
     ) -> None:
         """Initialize signed message for EdgeLock device communication.
 
@@ -183,6 +184,8 @@ class Message(Container):
         :param unique_id: Device UUID bytes, defaults to None (zero-filled bytes)
         :param unique_id_len: UUID length in bytes - 8 or 16 bytes supported,
             defaults to 8 bytes
+        :param header_flags: Command context flags (0x0: Baseline API, 0x1: SAB API)
+            0x2-0xff: Reserved), defaults to 0
         """
         self.family = family
         self.cert_ver = cert_ver
@@ -192,6 +195,7 @@ class Message(Container):
         self.cmd = cmd
         self.unique_id_len = unique_id_len
         self.unique_id = unique_id or bytes(self.unique_id_len)
+        self.header_flags = header_flags
         if len(self.unique_id) > self.unique_id_len:
             logger.warning(
                 f"The given UUID is longer than used {self.unique_id_len} "
@@ -212,7 +216,7 @@ class Message(Container):
         """Get string representation of the signed message.
 
         Provides a formatted string containing certificate version, permissions,
-        issue date, and UUID information for debugging and logging purposes.
+        issue date, flags, and UUID information for debugging and logging purposes.
 
         :return: Formatted string representation of the signed message object.
         """
@@ -221,6 +225,7 @@ class Message(Container):
             f"  Certificate version:{self.cert_ver}\n"
             f"  Permissions:        {hex(self.permissions)}\n"
             f"  Issue date:         {hex(self.issue_date)}\n"
+            f"  Flags:              {hex(self.header_flags)}\n"
             f"  UUID:               {self.unique_id.hex() if self.unique_id else 'Not Available'}"
         )
         return ret
@@ -278,7 +283,7 @@ class Message(Container):
         """Verify general message properties and return verification results.
 
         Creates a Verifier object to validate the message's certificate version,
-        permissions, issue date, command type, and unique ID against expected
+        permissions, issue date, command type, flags, and unique ID against expected
         formats and ranges.
 
         :return: Verifier object containing validation records for all message properties.
@@ -293,6 +298,7 @@ class Message(Container):
         ret.add_record_bit_range("Certificate permission", self.permissions, 8)
         ret.add_record_bit_range("Issue date", self.issue_date, 16)
         ret.add_record_enum("Command", self.cmd, MessageCommands)
+        ret.add_record_bit_range("Flags", self.header_flags, 8)
         ret.add_record_bytes(
             "Unique ID",
             self.unique_id,
@@ -316,7 +322,7 @@ class Message(Container):
             self.cert_ver,
             RESERVED,
             self.cmd,
-            RESERVED,
+            self.header_flags,
         )
         msg += self.unique_id[: self.unique_id_len]
         msg += self.export_payload()
@@ -348,17 +354,17 @@ class Message(Container):
         return msg_cls._load_from_config(config, family, cls)
 
     @classmethod
-    def load_from_config_generic(cls, config: Config) -> tuple[int, int, Optional[int], bytes]:
+    def load_from_config_generic(cls, config: Config) -> tuple[int, int, Optional[int], bytes, int]:
         """Load configuration data into message components.
 
         Converts the general configuration options from container configurations
         into message object components including certificate version, permissions,
-        issue date, and UUID.
+        issue date, UUID, and flags.
 
         :param config: Message configuration dictionaries containing cert_version,
-            cert_permission, issue_date, and uuid fields.
+            cert_permission, issue_date, uuid, and flags fields.
         :return: Tuple containing certificate version, permission, issue date
-            (or None if not specified), and UUID bytes.
+            (or None if not specified), UUID bytes, and flags.
         """
         cert_ver = config.get_int("cert_version", 0)
         permission = config.get_int("cert_permission", 0)
@@ -369,7 +375,8 @@ class Message(Container):
             issue_date = None
 
         uuid = bytes.fromhex(config.get("uuid", bytes(cls.UNIQUE_ID_LEN).hex()))
-        return (cert_ver, permission, issue_date, uuid)
+        flags = config.get_int("flags", 0)
+        return (cert_ver, permission, issue_date, uuid, flags)
 
     @classmethod
     def _load_from_config(
@@ -392,7 +399,7 @@ class Message(Container):
         """Create configuration of the general parts of Message.
 
         The method builds a configuration dictionary containing certificate version, permissions,
-        issue date, and UUID from the message's internal properties.
+        issue date, UUID, and flags from the message's internal properties.
 
         :raises AssertionError: If unique_id is not of bytes type.
         :return: Configuration dictionary with general message parameters.
@@ -403,6 +410,7 @@ class Message(Container):
         cfg["cert_permission"] = self.permissions
         cfg["issue_date"] = f"{(self.issue_date & 0xfff)}-{(self.issue_date>>12) & 0xf}"
         cfg["uuid"] = self.unique_id.hex()
+        cfg["flags"] = self.header_flags
 
         return cfg
 
@@ -438,7 +446,7 @@ class Message(Container):
         """Parse input binary to the signed message object.
 
         The method extracts message components from binary data including issue date,
-        permissions, certificate version, command, and unique ID, then creates the
+        permissions, certificate version, command, flags, and unique ID, then creates the
         appropriate message class instance based on the command type.
 
         :param data: Binary data with Container block to parse.
@@ -454,7 +462,7 @@ class Message(Container):
             certificate_version,  # certificate version
             _,  # Reserved to zero
             command,  # Command
-            _,  # Reserved
+            header_flags,  # Flags
         ) = unpack(cls.format(), data[: cls.fixed_length()])
 
         uuid = data[cls.fixed_length() : cls.fixed_length() + cls.UNIQUE_ID_LEN]
@@ -467,6 +475,7 @@ class Message(Container):
             issue_date=issue_date,
             unique_id=uuid,
             unique_id_len=cls.UNIQUE_ID_LEN,
+            header_flags=header_flags,
         )
         parsed_msg.parse_payload(data[cls.fixed_length() + cls.UNIQUE_ID_LEN :])
         return parsed_msg
@@ -518,6 +527,7 @@ class MessageReturnLifeCycle(Message):
         unique_id: Optional[bytes] = None,
         unique_id_len: int = Message.UNIQUE_ID_LEN,
         life_cycle: int = 0,
+        header_flags: int = 0,
     ) -> None:
         """Initialize AHAB signed message for EdgeLock device communication.
 
@@ -532,6 +542,7 @@ class MessageReturnLifeCycle(Message):
         :param unique_id: Unique identifier of the target device, defaults to None.
         :param unique_id_len: Length of unique ID in bytes (8 or 16), defaults to 8 bytes.
         :param life_cycle: Target life cycle state to request, defaults to 0.
+        :param header_flags: Message flags for additional control options, defaults to 0.
         """
         super().__init__(
             family=family,
@@ -541,6 +552,7 @@ class MessageReturnLifeCycle(Message):
             cmd=self.TAG,
             unique_id=unique_id,
             unique_id_len=unique_id_len,
+            header_flags=header_flags,
         )
         self.life_cycle = life_cycle
 
@@ -597,7 +609,7 @@ class MessageReturnLifeCycle(Message):
         if MessageCommands.from_label(command_name) != MessageReturnLifeCycle.TAG:
             raise SPSDKError("Invalid configuration for Return Life Cycle Request command.")
 
-        cert_ver, permission, issue_date, uuid = cls.load_from_config_generic(config)
+        cert_ver, permission, issue_date, uuid, header_flags = cls.load_from_config_generic(config)
 
         life_cycle = command.get_int("RETURN_LIFECYCLE_UPDATE_REQ")
 
@@ -609,6 +621,7 @@ class MessageReturnLifeCycle(Message):
             unique_id=uuid,
             unique_id_len=base_cls.UNIQUE_ID_LEN,
             life_cycle=life_cycle,
+            header_flags=header_flags,
         )
 
     def get_config(self) -> Config:
@@ -665,6 +678,7 @@ class MessageWriteSecureFuse(Message):
         length: int = 0,
         flags: int = 0,
         data: Optional[list[int]] = None,
+        header_flags: int = 0,
     ) -> None:
         """Initialize EdgeLock signed message for device communication.
 
@@ -683,6 +697,7 @@ class MessageWriteSecureFuse(Message):
         :param length: Fuse data length, defaults to 0.
         :param flags: Fuse operation flags, defaults to 0.
         :param data: List of fuse values to be written, defaults to None.
+        :param header_flags: Message flags for signature and other operations, defaults to 0.
         """
         super().__init__(
             family=family,
@@ -692,6 +707,7 @@ class MessageWriteSecureFuse(Message):
             cmd=self.TAG,
             unique_id=unique_id,
             unique_id_len=unique_id_len,
+            header_flags=header_flags,
         )
         self.fuse_id = fuse_id
         self.length = length
@@ -776,7 +792,7 @@ class MessageWriteSecureFuse(Message):
         if MessageCommands.from_label(command_name) != MessageWriteSecureFuse.TAG:
             raise SPSDKError("Invalid configuration for Write secure fuse Request command.")
 
-        cert_ver, permission, issue_date, uuid = cls.load_from_config_generic(config)
+        cert_ver, permission, issue_date, uuid, header_flags = cls.load_from_config_generic(config)
 
         secure_fuse = command.get_config("WRITE_SEC_FUSE_REQ")
         fuse_id = secure_fuse.get_int("id")
@@ -797,6 +813,7 @@ class MessageWriteSecureFuse(Message):
             length=length,
             flags=flags,
             data=data,
+            header_flags=header_flags,
         )
 
     def get_config(self) -> Config:
@@ -870,6 +887,7 @@ class MessageKeyStoreReprovisioningEnable(Message):
         unique_id_len: int = Message.UNIQUE_ID_LEN,
         monotonic_counter: int = 0,
         user_sab_id: int = 0,
+        header_flags: int = 1,
     ) -> None:
         """Initialize key store reprovisioning enable signed message.
 
@@ -885,6 +903,7 @@ class MessageKeyStoreReprovisioningEnable(Message):
         :param unique_id_len: UUID length in bytes (8 or 16), defaults to 8 bytes
         :param monotonic_counter: Monotonic counter value, defaults to 0
         :param user_sab_id: User SAB identifier, defaults to 0
+        :param flags: Message flags
         """
         super().__init__(
             family=family,
@@ -894,6 +913,7 @@ class MessageKeyStoreReprovisioningEnable(Message):
             cmd=self.TAG,
             unique_id=unique_id,
             unique_id_len=unique_id_len,
+            header_flags=header_flags,
         )
         self.flags = self.FLAGS
         self.target = self.TARGET
@@ -985,7 +1005,7 @@ class MessageKeyStoreReprovisioningEnable(Message):
         if MessageCommands.from_label(command_name) != cls.TAG:
             raise SPSDKError("Invalid configuration for Write secure fuse Request command.")
 
-        cert_ver, permission, issue_date, uuid = cls.load_from_config_generic(config)
+        cert_ver, permission, issue_date, uuid, header_flags = cls.load_from_config_generic(config)
 
         keystore_repr_en = command.get_config("KEYSTORE_REPROVISIONING_ENABLE_REQ")
         monotonic_counter = keystore_repr_en.get_int("monotonic_counter", 0)
@@ -999,6 +1019,7 @@ class MessageKeyStoreReprovisioningEnable(Message):
             unique_id_len=base_cls.UNIQUE_ID_LEN,
             monotonic_counter=monotonic_counter,
             user_sab_id=user_sab_id,
+            header_flags=header_flags,
         )
 
     def get_config(self) -> Config:
@@ -1085,6 +1106,7 @@ class MessageKeyExchange(Message):
         input_user_fixed_info_digest: bytes = bytes(),
         oem_private_key: Optional[PrivateKeyEcc] = None,
         nxp_prod_ka_pub: Optional[PublicKeyEcc] = None,
+        header_flags: int = 0,
     ) -> None:
         """Initialize key exchange signed message with ECDH support.
 
@@ -1129,6 +1151,7 @@ class MessageKeyExchange(Message):
             defaults to empty bytes.
         :param oem_private_key: OEM P256 private key for ECDH, defaults to None.
         :param nxp_prod_ka_pub: NXP production key agreement public key, defaults to None.
+        :param header_flags: Flags for additional control, defaults to 0.
         """
         super().__init__(
             family=family,
@@ -1138,6 +1161,7 @@ class MessageKeyExchange(Message):
             cmd=self.TAG,
             unique_id=unique_id,
             unique_id_len=unique_id_len,
+            header_flags=header_flags,
         )
         self.tag = self.TAG
         self.version = self.PAYLOAD_VERSION
@@ -1474,7 +1498,7 @@ class MessageKeyExchange(Message):
         if MessageCommands.from_label(command_name) != MessageKeyExchange.TAG:
             raise SPSDKError("Invalid configuration for Key Exchange Request command.")
 
-        cert_ver, permission, issue_date, uuid = cls.load_from_config_generic(config)
+        cert_ver, permission, issue_date, uuid, header_flags = cls.load_from_config_generic(config)
 
         key_exchange = command.get_config("KEY_EXCHANGE_REQ")
 
@@ -1556,6 +1580,7 @@ class MessageKeyExchange(Message):
             input_user_fixed_info_digest=input_user_fixed_info_digest,
             oem_private_key=oem_private_key,
             nxp_prod_ka_pub=nxp_prod_ka_pub,
+            header_flags=header_flags,
         )
 
         # Perform ECDH key derivation if both keys are provided
@@ -1701,6 +1726,7 @@ class MessageDat(Message):
         unique_id_len: int = Message.UNIQUE_ID_LEN,
         challenge_vector: bytes = bytes(32),
         authentication_beacon: int = 0,
+        header_flags: int = 0,
     ) -> None:
         """Initialize Message for EdgeLock device communication.
 
@@ -1717,6 +1743,7 @@ class MessageDat(Message):
         :param challenge_vector: 32 bytes of challenge request received from device by DAC
         :param authentication_beacon: Authentication beacon value within range specified by
             authentication_beacon_length
+        :header_flags flags: Optional flags for message processing, defaults to 0
         :raises SPSDKValueError: Invalid authentication beacon length from database
         """
         super().__init__(
@@ -1727,6 +1754,7 @@ class MessageDat(Message):
             cmd=self.TAG,
             unique_id=unique_id,
             unique_id_len=unique_id_len,
+            header_flags=header_flags,
         )
 
         self.challenge_vector = challenge_vector
@@ -1817,7 +1845,7 @@ class MessageDat(Message):
         if MessageCommands.from_label(command_name) != MessageDat.TAG:
             raise SPSDKError("Invalid configuration for DAT Request command.")
 
-        cert_ver, permission, issue_date, uuid = cls.load_from_config_generic(config)
+        cert_ver, permission, issue_date, uuid, header_flags = cls.load_from_config_generic(config)
 
         dat_cfg = command.get_config("DAT_AUTHENTICATION_REQ")
         challenge_vector = dat_cfg.load_symmetric_key(
@@ -1834,6 +1862,7 @@ class MessageDat(Message):
             unique_id_len=base_cls.UNIQUE_ID_LEN,
             challenge_vector=challenge_vector,
             authentication_beacon=authentication_beacon,
+            header_flags=header_flags,
         )
 
     def get_config(self) -> Config:

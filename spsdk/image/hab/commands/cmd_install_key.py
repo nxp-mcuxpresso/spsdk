@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK HAB Install Key command implementations.
 
 This module provides classes for different types of key installation commands
@@ -11,6 +12,7 @@ used in High Assurance Boot (HAB) protocol, including SRK, CSFK, and various
 secret key installation operations.
 """
 
+import os
 from struct import pack, unpack_from
 from typing import Optional, Union
 
@@ -383,23 +385,30 @@ class SecCmdInstallKey(CmdBase):
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
-        """Parse binary data into InstallKey command object.
-
-        Deserializes binary representation of an InstallKey command back into a structured
-        command object with all parameters extracted and validated.
-
-        :param data: Binary data containing the serialized InstallKey command.
-        :return: InstallKey command object with parsed parameters.
-        """
+        """Parse binary data into InstallKey command object."""
         header = CmdHeader.parse(data, CmdTag.INS_KEY.tag)
         protocol, algorithm, src_index, tgt_index, location = unpack_from(">4BL", data, header.size)
-        return cls(
-            InstallKeyFlagsEnum.from_tag(header.param),
-            CertFormatEnum.from_tag(protocol),
-            EnumAlgorithm.from_tag(algorithm),
-            src_index,
-            tgt_index,
-            location,
+
+        flags = InstallKeyFlagsEnum.from_tag(header.param)
+        cert_fmt = CertFormatEnum.from_tag(protocol)
+
+        # Determine the correct subclass based on parameters
+        if cert_fmt == CertFormatEnum.SRK:
+            return CmdInstallSrk(  # type: ignore
+                flags, cert_fmt, EnumAlgorithm.from_tag(algorithm), src_index, tgt_index, location
+            )
+        if flags == InstallKeyFlagsEnum.CSF and tgt_index == 1:
+            # Could be InstallCSFK or InstallNOCAK - we can't distinguish from binary alone
+            return CmdInstallCsfk(  # type: ignore
+                flags, cert_fmt, EnumAlgorithm.from_tag(algorithm), src_index, tgt_index, location
+            )
+        if flags == InstallKeyFlagsEnum.ABS and cert_fmt == CertFormatEnum.BLOB:
+            return CmdInstallSecretKey(  # type: ignore
+                flags, cert_fmt, EnumAlgorithm.from_tag(algorithm), src_index, tgt_index, location
+            )
+
+        return CmdInstallKey(  # type: ignore
+            flags, cert_fmt, EnumAlgorithm.from_tag(algorithm), src_index, tgt_index, location
         )
 
 
@@ -435,6 +444,32 @@ class CmdInstallSrk(SecCmdInstallKey):
         )
         cmd.source_index = int(cmd_cfg["InstallSRK_SourceIndex"])
         return cmd
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the InstallSRK command.
+
+        Exports the SRK table to a binary file and creates configuration
+        with the file path and source index.
+
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary for InstallSRK command.
+        """
+        ret_cfg = Config()
+
+        # Export SRK table to binary file
+        filename = "srk_table.bin"
+        if self.certificate_ref:
+            write_file(
+                data=self.certificate_ref.export(),
+                path=os.path.join(data_path, filename),
+                mode="wb",
+            )
+
+        # Create command configuration
+        ret_cfg["InstallSRK_Table"] = filename
+        ret_cfg["InstallSRK_SourceIndex"] = self.source_index
+
+        return ret_cfg
 
 
 class CmdInstallCsfk(SecCmdInstallKey):
@@ -480,6 +515,34 @@ class CmdInstallCsfk(SecCmdInstallKey):
         )
         return cmd
 
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the InstallCSFK command.
+
+        Exports the CSFK certificate to a PEM file and creates configuration
+        with the file path and certificate format.
+
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary for InstallCSFK command.
+        """
+        ret_cfg = Config()
+
+        # Export CSFK certificate to PEM file
+        filename = "csfk_certificate.pem"
+        if self.certificate_ref:
+            assert isinstance(self.certificate_ref, HabCertificate)
+            write_file(
+                data=self.certificate_ref.cert.export(),
+                path=os.path.join(data_path, filename),
+                mode="wb",
+            )
+            # Create command configuration
+            ret_cfg["InstallCSFK_File"] = filename
+
+        # Add certificate format
+        ret_cfg["InstallCSFK_CertificateFormat"] = self.certificate_format.label
+
+        return ret_cfg
+
 
 class CmdInstallKey(SecCmdInstallKey):
     """HAB Install Key command for secure boot operations.
@@ -519,6 +582,45 @@ class CmdInstallKey(SecCmdInstallKey):
         )
 
         return cmd
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the InstallKey command.
+
+        Exports the key certificate to a PEM file and creates configuration
+        with the file path, verification index, and target index.
+
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary for InstallKey command.
+        """
+        ret_cfg = Config()
+
+        # Export certificate to PEM file
+        filename = "install_key_certificate.pem"
+        if self.certificate_ref:
+            assert isinstance(self.certificate_ref, HabCertificate)
+            write_file(
+                data=self.certificate_ref.cert.export(),
+                path=os.path.join(data_path, filename),
+                mode="wb",
+            )
+
+            # Create command configuration
+            ret_cfg["InstallKey_File"] = filename
+            ret_cfg["InstallKey_VerificationIndex"] = self.source_index
+            ret_cfg["InstallKey_TargetIndex"] = self.target_index
+        else:
+            # If certificate is not available (e.g., from parsed binary without full data)
+            ret_cfg["InstallKey_File"] = (
+                "Cannot retrieve certificate from parsed binary - please provide path"
+            )
+            ret_cfg["InstallKey_VerificationIndex"] = self.source_index
+            ret_cfg["InstallKey_TargetIndex"] = self.target_index
+
+        # Add optional fields if they differ from defaults
+        if self.certificate_format != CertFormatEnum.X509:
+            ret_cfg["InstallKey_CertificateFormat"] = self.certificate_format.label
+
+        return ret_cfg
 
 
 class CmdInstallSecretKey(SecCmdInstallKey):
@@ -628,6 +730,35 @@ class CmdInstallSecretKey(SecCmdInstallKey):
             cmd.secret_key = cmd.generate_secret_key()
         return cmd
 
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the InstallSecretKey command.
+
+        Exports the secret key configuration including key length, indices,
+        and key file path. The secret key itself is saved separately.
+
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary for InstallSecretKey command.
+        """
+        ret_cfg = Config()
+
+        # Export verification and target indices
+        if self.source_index != 0:  # Only export if not default
+            ret_cfg["SecretKey_VerifyIndex"] = self.source_index
+        ret_cfg["SecretKey_TargetIndex"] = self.target_index
+
+        # Export secret key length if not default
+        ret_cfg["SecretKey_Length"] = self.secret_len
+
+        # Export secret key file path
+        if self.secret_key_path:
+            ret_cfg["SecretKey_Name"] = os.path.basename(self.secret_key_path)
+
+        # Note: SecretKey_ReuseDek is not exported - it's a load-time decision
+        # Note: The actual secret key file is saved by save_secret_key() method
+        # Note: location is calculated, not stored in config
+
+        return ret_cfg
+
     def generate_secret_key(self) -> bytes:
         """Generate a random secret key.
 
@@ -714,3 +845,33 @@ class CmdInstallNOCAK(SecCmdInstallKey):
             certificate=cert,
         )
         return cmd
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the InstallNOCAK command.
+
+        Exports the NOCAK certificate to a PEM file and creates configuration
+        with the file path and certificate format.
+
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary for InstallNOCAK command.
+        """
+        ret_cfg = Config()
+
+        # Export NOCAK certificate to PEM file
+        filename = "nocak_certificate.pem"
+        if self.certificate_ref:
+            assert isinstance(self.certificate_ref, HabCertificate)
+            write_file(
+                data=self.certificate_ref.cert.export(),
+                path=os.path.join(data_path, filename),
+                mode="wb",
+            )
+
+        # Create command configuration
+        ret_cfg["InstallNOCAK_File"] = filename
+
+        # Add certificate format if it's not default X509
+        if self.certificate_format != CertFormatEnum.X509:
+            ret_cfg["InstallNOCAK_CertificateFormat"] = self.certificate_format.label
+
+        return ret_cfg

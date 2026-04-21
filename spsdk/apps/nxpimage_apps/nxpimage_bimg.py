@@ -125,6 +125,11 @@ def bootable_image_parse(
             raise SPSDKAppError("Pre-parsed check failed")
 
     bimg_image = BootableImage.parse(data, family=family, mem_type=mem_type)
+    verifier = bimg_image.verify()
+    if verifier.has_errors:
+        click.echo("The image has errors:")
+        print_verifier_to_console(verifier)
+        raise SPSDKAppError("Image verification failed")
     bimg_image_info = bimg_image.image_info()
     logger.info(f"Parsed Bootable image memory map: {bimg_image_info.draw()}")
     write_file(

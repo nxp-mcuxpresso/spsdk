@@ -706,10 +706,10 @@ whole_ahab_image:
                         title: Super Root Key (SRK) table
                         description:
                           "Table containing the used SRK records. All SRKs must be of the same
-                          type. Supported signing algorithms are: RSA-PSS, ECDSA, Dilithium or SM2. Supported hash algorithms:
-                          sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1,
-                          rsa2048, rsa4096, dilithium3, sm2. Certificate may be of Certificate Authority. Dilithium algorithms are supported just
-                          in new type of AHAB container"
+                          type. Supported signing algorithms are: RSA-PSS, ECDSA, ML-DSA, Dilithium or SM2. Supported hash algorithms:
+                          sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, shake_128_256, shake_256_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1,
+                          rsa2048, rsa3072, rsa4096, dil3, dil5, mldsa65, mldsa87, sm2. Certificate may be of Certificate Authority. PQC algorithms are supported just
+                          in a new type of AHAB container"
                         minItems: 4
                         maxItems: 4
                         items:

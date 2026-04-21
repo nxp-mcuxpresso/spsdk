@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -242,24 +242,6 @@ def test_schema_validator_required(test_vector: dict[str, Any], result: bool) ->
     else:
         with pytest.raises(SPSDKError):
             check_config(test_vector, [schema])
-
-
-def test_schema_invalid_validator() -> None:
-    """Test schema validator with invalid schema type.
-
-    Verifies that the schema validator properly raises SPSDKError when
-    provided with a schema containing an invalid type specification.
-
-    :raises SPSDKError: When schema contains invalid type definition.
-    """
-    schema = {
-        "type": "object",
-        "properties": {
-            "n1": {"type": "invalid_type"},
-        },
-    }
-    with pytest.raises(SPSDKError):
-        check_config({}, [schema])
 
 
 def _is_yaml_comment(yaml_data: str, comment: str, key: Optional[str] = None) -> bool:

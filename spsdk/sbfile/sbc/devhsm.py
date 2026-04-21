@@ -21,7 +21,7 @@ from spsdk.apps.utils.utils import format_raw_data
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.rng import random_bytes
 from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError
-from spsdk.image.cert_block.cert_blocks import CertificateBlockHeaderV2_2
+from spsdk.image.cert_block.cert_block_v21 import CertificateBlockHeaderV2_2
 from spsdk.mboot.commands import TrustProvOemKeyType, TrustProvOperation
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.sbfile.devhsm.devhsm import DevHsm

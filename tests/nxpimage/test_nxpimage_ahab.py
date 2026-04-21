@@ -638,10 +638,7 @@ def test_nxpimage_ahab_parse_sm2(
 
 @pytest.mark.parametrize(
     "config_file",
-    [
-        ("sm_return_lc.yaml"),
-        ("sm_key_exchange.yaml"),
-    ],
+    ["sm_return_lc.yaml", "sm_key_exchange.yaml", "sm_key_reprovisioning.yaml"],
 )
 def test_nxpimage_signed_message_export(
     cli_runner: CliRunner, tmpdir: str, data_dir: str, config_file: str

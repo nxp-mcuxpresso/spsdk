@@ -172,6 +172,7 @@ class EleMessageHandler:
         buspal: Optional[str] = None,
         lpcusbsio: Optional[str] = None,
         timeout: int = 5000,
+        uboot_prompt: Optional[str] = None,
     ) -> "EleMessageHandler":
         """Get ELE message handler for specified device and family.
 
@@ -190,9 +191,12 @@ class EleMessageHandler:
         :param buspal: BusPal interface configuration.
         :param lpcusbsio: LPCUSBSIO interface configuration.
         :param timeout: Communication timeout in milliseconds.
+        :param uboot_prompt: Custom U-Boot prompt for serial communication.
         :raises SPSDKError: When port is not specified for U-Boot serial device.
         :return: Configured ELE message handler instance.
         """
+        if isinstance(uboot_prompt, str):
+            UbootSerial.set_prompt(uboot_prompt)
         default_device = device or EleMessageHandler.get_ele_device(family)
         if default_device == EleDevice.UBOOT_FASTBOOT:
             db = get_db(family)

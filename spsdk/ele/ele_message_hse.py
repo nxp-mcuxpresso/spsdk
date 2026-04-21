@@ -927,8 +927,9 @@ class EleMessageHseSmrVerify(EleMessageHse):
     on the specified verification options.
 
     Important notes for HSE_H/M:
+
     - SMRs used in CORE RESET table can be verified on-demand only if they were loaded
-    before in SRAM or BOOT_SEQ = 0. Otherwise, NOT_ALLOWED error will be reported.
+      before in SRAM or BOOT_SEQ = 0. Otherwise, NOT_ALLOWED error will be reported.
     - SMRs not part of CORE RESET table can be loaded and verified at run time.
     - On second call, HSE will only perform verification in SRAM.
     - SMRs cannot be loaded and verified from SD/MMC memory using this service.
@@ -1008,8 +1009,9 @@ class EleMessageHseSmrEntryErase(EleMessageHse):
     the secure memory region configuration for that entry index.
 
     Important notes:
+
     - SuperUser (SU) access rights with privileges over HSE_SYS_AUTH_NVM_CONFIG data
-    are required to perform this service
+      are required to perform this service
     - Erasing an SMR entry will remove all associated secure memory configurations
     - The operation is irreversible - the entry must be reinstalled if needed again
     - Care should be taken when erasing SMR entries that are referenced by Core Reset entries
@@ -1522,6 +1524,7 @@ class EleMessageHseFirmwareIntegrityCheck(EleMessageHse):
     to ensure they have not been corrupted or tampered with.
 
     Important notes:
+
     - Available for HSE_B variant only
     - No input data structure required
     - Returns success/failure status indicating firmware integrity state
@@ -1589,11 +1592,13 @@ class EleMessageHseCoreResetEntryInstall(EleMessageHse):
     processor cores in the system.
 
     Important notes:
+
     - SMR entries linked with the CR entry (via preBoot/altPreBoot/postBoot SMR maps)
-    must be installed in HSE prior to the CR installation
+      must be installed in HSE prior to the CR installation
     - SuperUser rights (for NVM Configuration) are needed to perform this service
     - Updating an existing CR entry requires all preBoot and postBoot SMR(s) linked
-    with the previous entry to be verified successfully (applicable only in OEM_PROD/IN_FIELD life cycles)
+      with the previous entry to be verified successfully (applicable only in
+      OEM_PROD/IN_FIELD life cycles)
 
     :cvar CMD: Command identifier for Core Reset entry installation service.
     :cvar CMD_DESCRIPTOR_FORMAT: Binary format specification for command descriptor.
@@ -1673,8 +1678,9 @@ class EleMessageHseCoreResetEntryErase(EleMessageHse):
     disabling the core reset configuration for that entry index.
 
     Important notes:
+
     - SuperUser (SU) access rights with privileges over HSE_SYS_AUTH_NVM_CONFIG data
-    are required to perform this service
+      are required to perform this service
     - Erasing a CR entry will remove all associated boot configurations for that core
     - The operation is irreversible - the entry must be reinstalled if needed again
 
@@ -1748,6 +1754,7 @@ class EleMessageHseActivatePassiveBlock(EleMessageHse):
     It activates the passive block, making it the active block for subsequent operations.
 
     Important notes:
+
     - Available for HSE_B variant only
     - Used for A/B swap functionality in dual-bank flash configurations
     - Switches between active and passive flash block areas

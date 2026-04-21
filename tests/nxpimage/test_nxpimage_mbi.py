@@ -33,7 +33,8 @@ from spsdk.crypto.signature_provider import PlainFileSP, SignatureProvider, get_
 from spsdk.exceptions import SPSDKError
 from spsdk.image.ahab.ahab_container import AHABContainerV2
 from spsdk.image.ahab.ahab_iae import ImageArrayEntryV2
-from spsdk.image.cert_block.cert_blocks import CertBlockV21, CertBlockVx
+from spsdk.image.cert_block.cert_block_v21 import CertBlockV21
+from spsdk.image.cert_block.cert_block_vx import CertBlockVx
 from spsdk.image.keystore import KeyStore
 from spsdk.image.mbi.mbi import MasterBootImage
 from spsdk.image.mbi.mbi_mixin import MasterBootImageManifestCrc, Mbi_MixinHmac, Mbi_MixinIvt

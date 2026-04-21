@@ -5,6 +5,7 @@ sphinx-autodoc-annotation
 sphinx_autodoc_typehints
 myst-parser
 sphinx-click>=4.2.0
+click<8.3; python_version == "3.10" # command object is not deep-copyable
 json-schema-for-humans
 pytablewriter
 Pillow>=10.2.0

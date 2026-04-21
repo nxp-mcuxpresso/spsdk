@@ -136,11 +136,10 @@ if IS_OSCCA_SUPPORTED:
         capture_data = False
         base64_data = b""
         for line in data.splitlines(keepends=False):
-            if capture_data:
-                base64_data += line
-            # PEM data may contain EC PARAMS, thus capture trigger should be the word KEY
             if b"KEY" in line:
                 capture_data = not capture_data
+            elif capture_data:
+                base64_data += line
         # in the end the `capture_data` flag should be false signaling proper END * KEY
         # and we should have some data
         try:

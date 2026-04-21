@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """Test suite for SPSDK nxpimage HAB container functionality.
 
 This module contains comprehensive tests for the HAB (High Assurance Boot) container
@@ -282,12 +283,12 @@ def test_nxpimage_hab_convert(
         (
             "rt1170_RAM_unsigned",
             FamilyRevision("mimxrt1176"),
-            ["ivt", "bdt", "app"],
+            ["ivt", "bdt", "application"],
         ),
         (
             "rt1050_ext_xip_unsigned",
             FamilyRevision("mimxrt1050"),
-            ["ivt", "bdt", "app"],
+            ["ivt", "bdt", "application"],
         ),
     ],
 )

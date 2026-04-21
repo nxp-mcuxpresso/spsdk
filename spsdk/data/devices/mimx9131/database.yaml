@@ -191,6 +191,13 @@ features:
     test_address: 0x2048_0000
     dmbox_ap_ix: 0
 
+  # ======== FCB section ========
+  fcb:
+    mem_types:
+      flexspi_nor:
+        reg_spec: ../mimx9352/fcb_flexspi_nor.json
+        reg_spec_modification: ../../common/fcb_flexspi_nor_modification.yaml
+
   # ======== EdgeLock Enclave section ========
   ele: {}
 

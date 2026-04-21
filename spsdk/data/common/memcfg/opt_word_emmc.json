@@ -163,7 +163,7 @@
                                     "value": 3,
                                     "description": "eMMC card high speed 400 timing"
                                 }
-                              ]
+                            ]
                         },
                         {
                             "id": "field000-bits16-17",

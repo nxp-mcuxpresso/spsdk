@@ -25,6 +25,7 @@ from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKValueError
 from spsdk.image.trustzone import TrustZone
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import Endianness, align_block
+from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
 
@@ -162,6 +163,94 @@ class MasterBootImageManifest:
         extra_data = data[manifest_len:total_length]
         return fw_version, None, extra_data
 
+    def verify(self, family: FamilyRevision) -> Verifier:
+        """Verify the Master Boot Image Manifest configuration.
+
+        Validates that the manifest is properly configured with valid firmware
+        version, flags, and optional TrustZone settings.
+
+        :param family: Family revision for TrustZone verification.
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="MBI Manifest",
+            description="Validates Master Boot Image Manifest configuration",
+        )
+
+        # Verify magic marker
+        ver.add_record(
+            name="Magic marker",
+            result=VerifierResult.SUCCEEDED,
+            value=f"{self.MAGIC.decode('ascii')} (0x{self.MAGIC.hex()})",
+            important=False,
+        )
+
+        # Verify format version
+        ver.add_record(
+            name="Format version",
+            result=VerifierResult.SUCCEEDED,
+            value=f"0x{self.FORMAT_VERSION:08X}",
+            important=False,
+        )
+
+        # Verify firmware version (16-bit range)
+        ver.add_record_range(
+            name="Firmware version",
+            value=self.firmware_version,
+            min_val=0,
+            max_val=0xFFFF,
+        )
+
+        # Verify flags
+        ver.add_record(
+            name="Flags",
+            result=VerifierResult.SUCCEEDED,
+            value=f"0x{self.flags:08X}",
+            important=False,
+        )
+
+        # Verify total length
+        calculated_length = self._calculate_length()
+        if self.total_length == calculated_length:
+            ver.add_record(
+                name="Total length",
+                result=VerifierResult.SUCCEEDED,
+                value=f"{self.total_length} bytes (0x{self.total_length:X})",
+            )
+        else:
+            ver.add_record(
+                name="Total length",
+                result=VerifierResult.ERROR,
+                value=f"Mismatch: stored={self.total_length}, calculated={calculated_length}",
+            )
+
+        # Verify TrustZone if present (use embedded verifier)
+        if self.trust_zone is not None:
+            if self.trust_zone.is_customized:
+                ver.add_record(
+                    name="TrustZone configuration",
+                    result=VerifierResult.SUCCEEDED,
+                    value="Custom TrustZone data present",
+                )
+                # Add TrustZone's own verifier as child
+                ver.add_child(self.trust_zone.verify())
+            else:
+                ver.add_record(
+                    name="TrustZone configuration",
+                    result=VerifierResult.SUCCEEDED,
+                    value="TrustZone enabled with default values",
+                    important=False,
+                )
+        else:
+            ver.add_record(
+                name="TrustZone configuration",
+                result=VerifierResult.SUCCEEDED,
+                value="Not configured",
+                important=False,
+            )
+
+        return ver
+
 
 class MasterBootImageManifestDigest(MasterBootImageManifest):
     """MasterBootImage Manifest with digest hash algorithm support.
@@ -277,6 +366,84 @@ class MasterBootImageManifestDigest(MasterBootImageManifest):
         extra_data = data[manifest_len:total_length]
         return fw_version, hash_algo, extra_data
 
+    def verify(self, family: FamilyRevision) -> Verifier:
+        """Verify the Master Boot Image Manifest with Digest configuration.
+
+        Validates that the manifest is properly configured with valid firmware
+        version, digest hash algorithm, flags, and optional TrustZone settings.
+
+        :param family: Family revision for TrustZone verification.
+        :return: Verifier object for validation results.
+        """
+        # Get parent verifier first
+        ver = super().verify(family)
+
+        # Verify digest hash algorithm if present
+        if self.digest_hash_algo is not None:
+            ver.add_record_enum(
+                name="Digest hash algorithm",
+                value=self.digest_hash_algo,
+                enum=EnumHashAlgorithm,
+            )
+
+            # Verify it's a supported algorithm
+            if self.digest_hash_algo in self.SUPPORTED_ALGORITHMS:
+                ver.add_record(
+                    name="Algorithm support",
+                    result=VerifierResult.SUCCEEDED,
+                    value=f"{self.digest_hash_algo.label} is supported",
+                    important=False,
+                )
+
+                # Show hash size
+                hash_size = self.get_hash_size(self.digest_hash_algo)
+                ver.add_record(
+                    name="Hash size",
+                    result=VerifierResult.SUCCEEDED,
+                    value=f"{hash_size} bytes",
+                    important=False,
+                )
+            else:
+                ver.add_record(
+                    name="Algorithm support",
+                    result=VerifierResult.ERROR,
+                    value=(
+                        f"{self.digest_hash_algo.label} is not in supported "
+                        f"algorithms: {[a.label for a in self.SUPPORTED_ALGORITHMS]}"
+                    ),
+                )
+
+            # Verify digest present flag is set correctly
+            digest_flag_set = bool(self.flags & self.DIGEST_PRESENT_FLAG)
+            flag_status = (
+                "set"
+                if digest_flag_set
+                else "NOT set (should be set when digest_hash_algo is defined)"
+            )
+            ver.add_record(
+                name="Digest present flag",
+                result=(VerifierResult.SUCCEEDED if digest_flag_set else VerifierResult.ERROR),
+                value=f"Flag is {flag_status}",
+            )
+        else:
+            ver.add_record(
+                name="Digest hash algorithm",
+                result=VerifierResult.SUCCEEDED,
+                value="Not configured (optional)",
+                important=False,
+            )
+
+            # Verify digest present flag is NOT set
+            digest_flag_set = bool(self.flags & self.DIGEST_PRESENT_FLAG)
+            if digest_flag_set:
+                ver.add_record(
+                    name="Digest present flag",
+                    result=VerifierResult.WARNING,
+                    value="Flag is set but no digest_hash_algo is configured",
+                )
+
+        return ver
+
 
 class MasterBootImageManifestCrc(MasterBootImageManifest):
     """Master Boot Image Manifest with CRC validation.
@@ -355,6 +522,36 @@ class MasterBootImageManifestCrc(MasterBootImageManifest):
         """
         crc_obj = from_crc_algorithm(CrcAlg.CRC32_MPEG)
         self.crc = crc_obj.calculate(image)
+
+    def verify(self, family: FamilyRevision) -> Verifier:
+        """Verify the Master Boot Image Manifest with CRC configuration.
+
+        Validates that the manifest is properly configured with valid firmware
+        version, CRC value, and optional TrustZone settings.
+
+        :param family: Family revision for TrustZone verification.
+        :return: Verifier object for validation results.
+        """
+        # Get parent verifier first
+        ver = super().verify(family)
+
+        # Verify CRC value
+        ver.add_record_range(
+            name="CRC value",
+            value=self.crc,
+            min_val=0,
+            max_val=0xFFFFFFFF,
+        )
+
+        # Show CRC algorithm info
+        ver.add_record(
+            name="CRC algorithm",
+            result=VerifierResult.SUCCEEDED,
+            value="CRC32-MPEG",
+            important=False,
+        )
+
+        return ver
 
 
 T_Manifest = TypeVar(
@@ -492,6 +689,59 @@ class MultipleImageEntry:
 
         return MultipleImageEntry(data[src_addr : src_addr + size], dst_addr, flags)
 
+    def verify(self, index: Optional[int] = None) -> Verifier:
+        """Verify the Multiple Image Entry configuration.
+
+        Validates that the entry has valid addresses, image data, and flags.
+
+        :param index: Optional entry index for naming the verifier.
+        :return: Verifier object for validation results.
+        """
+        name = f"Entry {index}" if index is not None else "Image Entry"
+        ver = Verifier(name, important=False)
+
+        # Check destination address
+        ver.add_record_range(
+            name="Destination address",
+            value=self.dst_addr,
+            min_val=0,
+            max_val=0xFFFFFFFF,
+        )
+
+        # Check source address (if set)
+        if self.src_addr != 0:
+            ver.add_record_range(
+                name="Source address",
+                value=self.src_addr,
+                min_val=0,
+                max_val=0xFFFFFFFF,
+            )
+
+        # Check image data
+        ver.add_record_bytes(
+            name="Image data",
+            value=self.image,
+            min_length=1,
+        )
+
+        # Check image size
+        ver.add_record(
+            name="Image size",
+            result=VerifierResult.SUCCEEDED,
+            value=f"{self.size} bytes (0x{self.size:X})",
+            important=False,
+        )
+
+        # Check flags
+        ver.add_record(
+            name="Flags",
+            result=VerifierResult.SUCCEEDED,
+            value=f"0x{self.flags:08X} ({'LOAD' if self.is_load else 'NO_LOAD'})",
+            important=False,
+        )
+
+        return ver
+
     def export_image(self) -> bytes:
         """Export binary image data aligned to 4-byte boundary.
 
@@ -612,3 +862,52 @@ class MultipleImageTable:
             app_table.add_entry(MultipleImageEntry.parse(data[: -16 * (1 + n)]))
 
         return app_table
+
+    def verify(self) -> Verifier:
+        """Verify the Multiple Image Table configuration.
+
+        Validates that the table is properly configured with valid entries,
+        addresses, and data.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="Multiple Image Table",
+            description="Validates relocation table entries and configuration",
+        )
+
+        # Verify table has at least one entry
+        if len(self._entries) == 0:
+            ver.add_record(
+                name="Table entries",
+                result=VerifierResult.ERROR,
+                value="Table must have at least one entry",
+            )
+        else:
+            ver.add_record(
+                name="Table entries",
+                result=VerifierResult.SUCCEEDED,
+                value=f"{len(self._entries)} entries configured",
+            )
+
+            # Verify header version
+            ver.add_record(
+                name="Header version",
+                result=VerifierResult.SUCCEEDED,
+                value=f"Version {self.header_version}",
+                important=False,
+            )
+
+            # Verify start address
+            ver.add_record_range(
+                name="Start address",
+                value=self.start_address,
+                min_val=0,
+                max_val=0xFFFFFFFF,
+            )
+
+            # Verify each entry
+            for idx, entry in enumerate(self._entries):
+                ver.add_child(entry.verify(), prefix_name=f"Entry {idx}")
+
+        return ver

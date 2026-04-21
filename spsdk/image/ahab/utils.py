@@ -428,7 +428,7 @@ def ahab_sign_image(
             segment.ahab.verify()
 
         else:
-            logger.error("Segment does not contain AHAB data")
+            logger.warning(f"{segment} does not contain AHAB data")
 
     return bimg.export(), bimg
 

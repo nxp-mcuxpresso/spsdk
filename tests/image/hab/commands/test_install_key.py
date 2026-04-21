@@ -2,9 +2,10 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2023,2025 NXP
+# Copyright 2019-2023,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK HAB Install Key command tests.
 
 This module contains unit tests for the HAB (High Assurance Boot) Install Key
@@ -83,7 +84,7 @@ def test_install_key_cmd_export_parse() -> None:
     data = cmd.export()
     assert len(data) == 12
     assert len(data) == cmd.size
-    assert cmd == SecCmdInstallKey.parse(data)
+    assert cmd.export() == SecCmdInstallKey.parse(data).export()
 
 
 def test_install_key_cmd_info() -> None:

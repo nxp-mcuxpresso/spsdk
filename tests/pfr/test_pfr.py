@@ -83,12 +83,12 @@ def test_supported_devices() -> None:
     cfpa_devices = CFPA.get_supported_families()
     assert isinstance(cfpa_devices, list)
     cfpa_device_names = list(set(family.name for family in cfpa_devices))
-    assert (
-        cfpa_device_names.sort()
-        == list(
-            DatabaseManager().quick_info.devices.get_devices_with_feature("pfr", "cfpa").keys()
-        ).sort()
+    cfpa_device_names.sort()
+    cfpa_device_names_raw = list(
+        DatabaseManager().quick_info.devices.get_devices_with_feature("pfr", "cfpa").keys()
     )
+    cfpa_device_names_raw.sort()
+    assert cfpa_device_names == cfpa_device_names_raw
 
     cmpa_devices = CMPA.get_supported_families()
     cfpa_cmpa_devices = UPDATE_CFPA_CMPA.get_supported_families()
@@ -547,7 +547,7 @@ def test_multi_region_additional_data_export() -> None:
     This test verifies that the UPDATE_CFPA_CMPA class properly handles
     additional data export for multi-region configurations.
     """
-    family = FamilyRevision("lpc55s6x")
+    family = FamilyRevision("mcxa457")
 
     # Check if this family supports UPDATE_CFPA_CMPA
     if family not in UPDATE_CFPA_CMPA.get_supported_families():
@@ -580,7 +580,7 @@ def test_multi_region_additional_data_parse() -> None:
     3. Parses the binary back
     4. Verifies additional data was preserved
     """
-    family = FamilyRevision("lpc55s6x")
+    family = FamilyRevision("mcxa457")
 
     # Check if this family supports UPDATE_CFPA_CMPA
     if family not in UPDATE_CFPA_CMPA.get_supported_families():

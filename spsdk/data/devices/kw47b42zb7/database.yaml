@@ -1,4 +1,4 @@
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -70,7 +70,7 @@ features:
       10: "verify-erase"
       34: "fuse-program-voltage"
     property_warnings:
-      34:  # 0x22 in hexadecimal
+      34: # 0x22 in hexadecimal
         value: 0
         message: "WARNING: Setting property Fuse Program Voltage (0x22) to 0 on KW47 will cause a device reset!"
 
@@ -121,6 +121,16 @@ features:
           - Mbi_MixinLoadAddress
           - Mbi_MixinCertBlockV21
           - Mbi_MixinManifestDigest
+          - Mbi_ExportMixinAppCertBlockManifest
+          - Mbi_ExportMixinEccSign
+      famode:
+        image_type: SIGNED_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinCertBlockV21
+          - Mbi_MixinManifest
           - Mbi_ExportMixinAppCertBlockManifest
           - Mbi_ExportMixinEccSign
       nxp_signed_xip:

@@ -76,6 +76,7 @@ class BootableImage(FeatureBaseClass):
         self._segments: list[Segment] = self._get_segments(family, mem_type)
         self._init_offset: int = 0
         self.set_init_offset(init_offset)
+        self.parsed_binary_size = 0
 
     @property
     def segments(self) -> list[Segment]:
@@ -258,20 +259,32 @@ class BootableImage(FeatureBaseClass):
 
         return self.get_segment_offset(last_segment) + len(last_segment)
 
-    @property
-    def header_len(self) -> int:
+    def header_len(self, full: bool = True) -> int:
         """Get the length of the bootable image header.
 
-        Calculates the length of the space before application data by finding the first
-        non-boot header segment and returning its offset position.
+        Calculates the total size of the bootable image header area by finding the first
+        non-boot header segment and returning its offset position relative to the init_offset.
+        The header area includes all boot header segments (e.g., FCB, IVT, boot data) that
+        appear before the application code/data segments. The returned size represents the
+        boundary between header segments and application segments.
 
+        :param full: Get complete size of header, otherwise just used in bootable image header size.
         :raises SPSDKError: When unable to determine the size of bootable image header.
-        :return: Length of the bootable image header in bytes.
+        :return: Length of the bootable image header in bytes, relative to init_offset.
         """
-        for segment in self.segments:
+        ret = 0
+        for segment in self._segments:
             if not segment.BOOT_HEADER:
-                return self.get_segment_offset(segment)
-        raise SPSDKError("Cannot determine the size of bootable image header")
+                ret = self.get_segment_offset(segment)
+
+        if not full:
+            # Decrement the initial offset
+            ret -= self.init_offset
+        if ret < 0:
+            raise SPSDKError(
+                "Cannot compute bootable image header size (initial offset is bigger than header)"
+            )
+        return ret
 
     @property
     def bootable_header_only(self) -> bool:
@@ -283,7 +296,7 @@ class BootableImage(FeatureBaseClass):
 
         :return: True if image contains only bootable header, False otherwise.
         """
-        return any(((not x.BOOT_HEADER and len(x) == 0) for x in self.segments))
+        return all((x.BOOT_HEADER or len(x) == 0 for x in self.segments))
 
     def _parse(self, binary: bytes) -> None:
         """Parse binary data into bootable image segments.
@@ -319,10 +332,10 @@ class BootableImage(FeatureBaseClass):
                     continue
                 prev_offset = offset
                 prev_size = len(segment)
-            return
         except SPSDKError as e:
             logger.debug(f"Parsing of the segment '{segment.NAME}' failed: {e}")
             raise
+        self.parsed_binary_size = len(binary)
 
     @classmethod
     def _parse_all(
@@ -361,6 +374,8 @@ class BootableImage(FeatureBaseClass):
             try:
                 bimg = cls(family, memory_type)
                 bimg._parse(binary)
+                if len(bimg.segments) == 0:
+                    continue
                 if no_errors:
                     bimg.verify().validate()
                 bimg_instances.append(bimg)
@@ -368,7 +383,12 @@ class BootableImage(FeatureBaseClass):
                 logger.debug(e)
                 continue
         # try to parse bootable image with moving initial offset
-        if not bimg_instances:
+        do_parse_incomplete_images = not bimg_instances
+        if bimg_instances:
+            succeeded_validation = any(not bimg.verify().has_errors for bimg in bimg_instances)
+            do_parse_incomplete_images = not succeeded_validation and not no_errors
+
+        if do_parse_incomplete_images:
             logger.debug("The exact match has not been found")
             for memory_type in mem_types:
                 segments = cls._get_segments(family, memory_type)
@@ -381,6 +401,8 @@ class BootableImage(FeatureBaseClass):
                     try:
                         bimg = cls(family, memory_type, init_offset)
                         bimg._parse(binary)
+                        if len(bimg.segments) == 0:
+                            continue
                         if no_errors:
                             bimg.verify().validate()
                         bimg_instances.append(bimg)
@@ -716,7 +738,7 @@ class BootableImage(FeatureBaseClass):
         :return: Verifier object containing validation results for the bootable image.
         """
         ret = Verifier(f"Bootable Image of {self.family} for {self.mem_type} memory type")
-        ret.add_record_range("Header length", self.header_len)
+        ret.add_record_range("Header length", self.header_len())
         ret.add_record_range("Initial offset", self.init_offset)
 
         for seg in self._segments:
@@ -740,6 +762,22 @@ class BootableImage(FeatureBaseClass):
             ret.add_record("Binary structure", VerifierResult.SUCCEEDED, val, raw=True)
         except SPSDKError:
             ret.add_record("Binary structure", VerifierResult.ERROR, image_info.draw(), raw=True)
+
+        if not ret.has_errors:
+            if self.bootable_header_only and self.parsed_binary_size:
+                # Verify that input image size doesn't exceed header area when only header segments are present
+                header_size = self.header_len(full=False)
+                if self.parsed_binary_size > header_size:
+                    ret.add_record(
+                        name="Bootable Image",
+                        result=VerifierResult.ERROR,
+                        value=(
+                            f"Input image size ({self.parsed_binary_size} bytes) "
+                            f"exceeds header area size ({header_size} bytes) "
+                            "when there is just Bootable area segments"
+                        ),
+                    )
+
         return ret
 
     @classmethod

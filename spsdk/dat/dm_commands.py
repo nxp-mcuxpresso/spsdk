@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -206,8 +206,8 @@ class DebugMailboxCommand:
         status = ret & 0xFFFF
 
         if status != 0:
-            if status in STANDARD_ERROR_CODES:
-                error_msg = STANDARD_ERROR_CODES[status]
+            if ret in STANDARD_ERROR_CODES:
+                error_msg = STANDARD_ERROR_CODES[ret]
                 raise SPSDKError(f"Debug Mailbox Command Error: {error_msg}")
             raise SPSDKError(f"Status code is not success: {hex(status)} !")
 

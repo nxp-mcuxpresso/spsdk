@@ -37,6 +37,7 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_family_option,
     spsdk_output_option,
     timeout_option,
+    uboot_prompt_option,
     usb_option,
 )
 from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error
@@ -106,6 +107,7 @@ def nxpele_options(options: FC) -> Callable:
         required=False,
         help="Select connection method for ELE communication, otherwise default from DB will be used",
     )(options)
+    options = uboot_prompt_option()(options)
     options = buspal_option()(options)
     options = lpcusbsio_option()(options)
     options = usb_option()(options)
@@ -133,6 +135,7 @@ def main(
     buffer_size: Optional[int],
     fb_addr: Optional[int],
     fb_size: Optional[int],
+    uboot_prompt: Optional[str],
 ) -> int:
     """Utility for communication with the EdgeLock Enclave on target over BLHOST or UBOOT."""
     log_level = log_level or logging.WARNING
@@ -155,6 +158,7 @@ def main(
         usb=usb,
         lpcusbsio=lpcusbsio,
         timeout=timeout,
+        uboot_prompt=uboot_prompt,
     )
     return 0
 

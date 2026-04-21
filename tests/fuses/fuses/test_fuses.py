@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """SPSDK Fuses module unit tests.
@@ -224,7 +224,7 @@ def test_fuses_try_read_locked_fuse(mock_test_database: Any, data_dir: str) -> N
     :raises SPSDKFuseOperationFailure: When attempting to read a locked fuse register.
     """
     operator = TestFuseOperator(return_values={0x15: 5, 0x400: 2})
-    fuses = Fuses(family=FamilyRevision("dev2"), fuse_operator=operator)
+    fuses = Fuses(family=FamilyRevision("dev2"), fuse_operator=operator, cache=False)
     register = fuses.fuse_regs.get_reg("field208")
     assert register.fuse_lock_register is not None
     assert register.fuse_lock_register.register_id == "lock0"
@@ -243,7 +243,37 @@ def test_fuses_try_read_locked_fuse(mock_test_database: Any, data_dir: str) -> N
     assert operator.actions[2].value == 10
 
 
-def test_fuses_try_write_locked_fuse(mock_test_database: Any, data_dir: str) -> None:
+def test_fuses_try_read_locked_fuse_cache(mock_test_database: Any, data_dir: str) -> None:
+    """Test reading a locked fuse register and verify proper exception handling.
+
+    This test verifies that attempting to read a locked fuse register raises the appropriate
+    exception, while also testing the lock register properties and write operations.
+    The test uses a mock fuse operator to simulate hardware behavior.
+
+    :param mock_test_database: Mock database fixture for testing.
+    :param data_dir: Directory path containing test data files.
+    :raises SPSDKFuseOperationFailure: When attempting to read a locked fuse register.
+    """
+    operator = TestFuseOperator(return_values={0x15: 5, 0x400: 2})
+    fuses = Fuses(family=FamilyRevision("dev2"), fuse_operator=operator)
+    register = fuses.fuse_regs.get_reg("field208")
+    assert register.fuse_lock_register is not None
+    assert register.fuse_lock_register.register_id == "lock0"
+    assert register.fuse_lock_register.read_lock_mask == 0x2
+    assert register.fuse_lock_register.write_lock_mask == 0x1
+    assert register.fuse_lock_register.operation_lock_mask == 0x4
+    with pytest.raises(SPSDKFuseOperationFailure):
+        fuses.read_single("field208")
+    register.set_value(10)
+    fuses.write_single("field208")
+    assert len(operator.actions) == 2
+    assert operator.actions[0].action_type == "read"
+    assert operator.actions[1].action_type == "write"
+    assert operator.actions[1].fuse_index == 0x15
+    assert operator.actions[1].value == 10
+
+
+def test_fuses_try_write_locked_fuse_cache(mock_test_database: Any, data_dir: str) -> None:
     """Test writing to a locked fuse register and verify proper exception handling.
 
     This test verifies that the fuse system correctly prevents write operations
@@ -256,6 +286,40 @@ def test_fuses_try_write_locked_fuse(mock_test_database: Any, data_dir: str) -> 
     """
     operator = TestFuseOperator(return_values={0x15: 5, 0x400: 1})
     fuses = Fuses(family=FamilyRevision("dev2"), fuse_operator=operator)
+    register = fuses.fuse_regs.get_reg("field208")
+    assert register.fuse_lock_register is not None
+    assert register.fuse_lock_register.register_id == "lock0"
+    assert register.fuse_lock_register.read_lock_mask == 0x2
+    assert register.fuse_lock_register.write_lock_mask == 0x1
+    assert register.fuse_lock_register.operation_lock_mask == 0x4
+    with pytest.raises(SPSDKFuseOperationFailure):
+        fuses.write_single("field208")
+    fuses.read_single("field208")
+    assert len(operator.actions) == 2  # due to reading the lock register
+    assert operator.actions[0].action_type == "read"
+    assert operator.actions[1].action_type == "read"
+    assert operator.actions[1].fuse_index == 0x15
+    fuses.clear_cache()
+    operator.return_values[0x400] = 3  # lock the read and write
+    with pytest.raises(SPSDKFuseOperationFailure):
+        fuses.write_single("field208")
+    with pytest.raises(SPSDKFuseOperationFailure):
+        fuses.read_single("field208")
+
+
+def test_fuses_try_write_locked_fuse(mock_test_database: Any, data_dir: str) -> None:
+    """Test writing to a locked fuse register and verify proper exception handling.
+
+    This test verifies that the fuse system correctly prevents write operations
+    to locked fuse registers and raises appropriate exceptions. It also tests
+    that read operations are handled correctly based on lock status.
+
+    :param mock_test_database: Mock database fixture for testing.
+    :param data_dir: Directory path containing test data files.
+    :raises SPSDKFuseOperationFailure: When attempting to write to locked fuse or read locked fuse.
+    """
+    operator = TestFuseOperator(return_values={0x15: 5, 0x400: 1})
+    fuses = Fuses(family=FamilyRevision("dev2"), fuse_operator=operator, cache=False)
     register = fuses.fuse_regs.get_reg("field208")
     assert register.fuse_lock_register is not None
     assert register.fuse_lock_register.register_id == "lock0"

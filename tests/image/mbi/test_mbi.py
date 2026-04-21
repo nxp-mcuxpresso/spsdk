@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -21,7 +21,7 @@ import pytest
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.signature_provider import SignatureProvider
 from spsdk.exceptions import SPSDKError
-from spsdk.image.cert_block.cert_blocks import CertBlockV1
+from spsdk.image.cert_block.cert_block_v1 import CertBlockV1
 from spsdk.image.exceptions import SPSDKUnsupportedImageType
 from spsdk.image.keystore import KeySourceType, KeyStore
 from spsdk.image.mbi.mbi import MasterBootImage
@@ -502,13 +502,15 @@ def test_signed_xip_multiple_certificates_invalid_input(data_dir: str) -> None:
     priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
     with pytest.raises(SPSDKError):
-        MasterBootImage.create_mbi_class("signed_xip", family)(
+        mbi = MasterBootImage.create_mbi_class("signed_xip", family)(
             family=family,
             app=bytes(range(128)),
             trust_zone=None,
             cert_block=cert_block,
             signature_provider=signature_provider,
-        ).export()
+        )
+        mbi.export()
+        mbi.validate()
 
     # chain of certificates does not match
     der_file_names = ["selfsign_4096_v3.der.crt"]

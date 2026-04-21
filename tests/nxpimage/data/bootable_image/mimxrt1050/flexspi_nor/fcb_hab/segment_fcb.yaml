@@ -1,6 +1,7 @@
-# Copyright 2024 NXP
+# Copyright 2024,2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ======  FCB configuration for rt105x.
 # Created: 15/05/2024 09:11:41.
 # NXP SPSDK version: 2.2.0.dev192+gd94269ae  =======

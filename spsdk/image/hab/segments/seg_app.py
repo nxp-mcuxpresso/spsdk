@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK HAB Application segment implementation.
 
 This module provides functionality for handling Application segments
@@ -11,6 +12,7 @@ in the High Assurance Boot (HAB) container format used by NXP MCUs.
 """
 
 import logging
+import os
 
 from typing_extensions import Self
 
@@ -25,7 +27,7 @@ from spsdk.image.hab.utils import (
 )
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import align_block
+from spsdk.utils.misc import align_block, write_file
 from spsdk.utils.verifier import Verifier
 
 logger = logging.getLogger(__name__)
@@ -91,6 +93,29 @@ class HabSegmentApp(HabSegmentBase):
         segment = cls(app_bin)
         segment.offset = offset
         return segment
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the Feature.
+
+        The method generates configuration data for the APP segment, including the application
+        binary file. The binary data is saved to a file in the specified data path.
+
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary.
+        """
+        ret_cfg = Config()
+
+        # Save the application binary to a file
+        filename = "application.bin"
+        write_file(
+            data=self.binary,
+            path=os.path.join(data_path, filename),
+            mode="wb",
+        )
+
+        ret_cfg["inputImageFile"] = filename
+
+        return ret_cfg
 
     def export(self) -> bytes:
         """Export object into bytes array.

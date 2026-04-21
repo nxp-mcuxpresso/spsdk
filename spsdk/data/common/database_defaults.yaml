@@ -150,16 +150,16 @@ features:
       ML_DSA: [0xD2, "ML-DSA", "ML-DSA PQC algorithm"]
 
     hash_algorithms:
-      SHA256: [0x00, "sha256", "SHA-256 hash algorithm"]
-      SHA384: [0x01, "sha384", "SHA-384 hash algorithm"]
-      SHA512: [0x02, "sha512", "SHA-512 hash algorithm"]
-      SM3: [0x03, "sm3", "SM3 hash algorithm"]
+      SHA256: [0x00, "SHA256", "SHA-256 hash algorithm"]
+      SHA384: [0x01, "SHA384", "SHA-384 hash algorithm"]
+      SHA512: [0x02, "SHA512", "SHA-512 hash algorithm"]
+      SM3: [0x03, "SM3", "SM3 hash algorithm"]
       # V2 only
-      SHA3_256: [0x04, "sha3-256", "SHA3-256 hash algorithm"]
-      SHA3_384: [0x05, "sha3-384", "SHA3-384 hash algorithm"]
-      SHA3_512: [0x06, "sha3-512", "SHA3-512 hash algorithm"]
-      SHAKE_128_256: [0x08, "shake-128-256", "SHAKE-128 with 256-bit output"]
-      SHAKE_256_512: [0x09, "shake-256-512", "SHAKE-256 with 512-bit output"]
+      SHA3_256: [0x04, "SHA3_256", "SHA3-256 hash algorithm"]
+      SHA3_384: [0x05, "SHA3_384", "SHA3-384 hash algorithm"]
+      SHA3_512: [0x06, "SHA3_512", "SHA3-512 hash algorithm"]
+      SHAKE_128_256: [0x08, "SHAKE_128_256", "SHAKE-128 with 256-bit output"]
+      SHAKE_256_512: [0x09, "SHAKE_256_512", "SHAKE-256 with 512-bit output"]
 
     srk_sets:
       NONE: [0x00, "none", "Image is not signed"]
