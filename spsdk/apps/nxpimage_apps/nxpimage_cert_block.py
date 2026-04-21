@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK Certificate Block management commands for nxpimage application.
 
 This module provides CLI commands for working with certificate blocks in NXP images,
@@ -22,7 +23,8 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_family_option,
     spsdk_output_option,
 )
-from spsdk.image.cert_block.cert_blocks import CertBlock, CertBlockVx, IskCertificateLite
+from spsdk.image.cert_block.cert_block_vx import CertBlockVx, IskCertificateLite
+from spsdk.image.cert_block.cert_blocks import CertBlock
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import get_printable_path, load_binary, write_file

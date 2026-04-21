@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -35,6 +35,10 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 ENABLE_DEBUG = SPSDK_DEBUG
 
 logger = logging.getLogger(__name__)
+
+
+class SPSDKErrorValidationFailed(SPSDKError):
+    """Exception raised when configuration validation against schema fails."""
 
 
 def cmap_update(cmap: CMap, updater: CMap) -> None:
@@ -431,7 +435,7 @@ def check_config(
         else:
             validator = fastjsonschema.compile(schema, formats=formats)
     except (TypeError, fastjsonschema.JsonSchemaDefinitionException) as exc:
-        raise SPSDKError(f"Invalid validation schema to check config: {str(exc)}") from exc
+        assert validator is not None, f"Invalid validation schema to check config: {str(exc)}"
     try:
         if ENABLE_DEBUG:
             # pylint: disable=import-error,import-outside-toplevel
@@ -442,12 +446,11 @@ def check_config(
 
             validator_file.validate(config_to_check, formats)
         else:
-            if validator is None:
-                raise SPSDKError("Validator is not defined")
+            assert validator, "Validator is not defined"
             validator(config_to_check)
     except fastjsonschema.JsonSchemaValueException as exc:
         message = _print_validation_fail_reason(exc, formats)
-        raise SPSDKError(f"Configuration validation failed: {message}") from exc
+        raise SPSDKErrorValidationFailed(f"Configuration validation failed: {message}") from exc
 
 
 class CommentedConfig:

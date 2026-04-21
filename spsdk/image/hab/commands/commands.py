@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -197,7 +197,7 @@ class CmdBase(BaseClass):
         :raises NotImplementedError: Derived class has to implement this method.
         :return: Parsed command object.
         """
-        raise NotImplementedError("Derived class has to implement this method.")
+        raise NotImplementedError(f"Derived class {cls.__name__} has to implement this method.")
 
     @classmethod
     def load_from_config(cls, config: Config, cmd_index: Optional[int] = None) -> Self:
@@ -210,7 +210,22 @@ class CmdBase(BaseClass):
         :raises NotImplementedError: Derived class has to implement this method.
         :return: Command instance loaded from configuration.
         """
-        raise NotImplementedError("Derived class has to implement this method.")
+        raise NotImplementedError(f"Derived class {cls.__name__} has to implement this method.")
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the command.
+
+        Exports the command configuration including any associated data files
+        (certificates, keys, signatures) to the specified path.
+
+        :param data_path: Path to store the data files of configuration.
+
+        :raises NotImplementedError: Derived class has to implement this method.
+        :return: Configuration dictionary for this command.
+        """
+        raise NotImplementedError(
+            f"Derived class {self.__class__.__name__} has to implement this method."
+        )
 
     @classmethod
     def _get_cmd_config(cls, config: Config, cmd_index: Optional[int] = None) -> Config:

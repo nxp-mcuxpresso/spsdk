@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK Master Boot Image (MBI) command-line interface.
 
 This module provides CLI commands for creating, parsing, and managing Master Boot Images
@@ -23,11 +24,13 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_family_option,
     spsdk_output_option,
 )
+from spsdk.apps.utils.utils import SPSDKAppError, print_verifier_to_console
 from spsdk.image.mbi.mbi import MasterBootImage, mbi_generate_config_templates
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import get_printable_path, load_binary, write_file
 from spsdk.utils.schema_validator import CommentedConfig
+from spsdk.utils.verifier import Verifier
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +57,9 @@ def mbi_export(config: Config) -> None:
     """
     mbi_obj = MasterBootImage.load_from_config(config)
     mbi_data = mbi_obj.export_image()
+    # Validation could be done just after export to be all signatures computed
+    mbi_obj.validate()
+
     if mbi_obj.rkth:
         click.echo(f"RKTH: {mbi_obj.rkth.hex()}")
     mbi_output_file_path = config.get_output_file_name("masterBootOutputFile")
@@ -109,6 +115,84 @@ def mbi_parse(family: FamilyRevision, binary: str, dek: str, output: str) -> Non
     write_file(yaml_data, os.path.join(output, "mbi_config.yaml"))
 
     click.echo(f"Success. (MBI: {binary} has been parsed and stored into {output} )")
+
+
+@mbi_group.command(name="verify", no_args_is_help=True)
+@spsdk_family_option(families=MasterBootImage.get_supported_families())
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, readable=True, resolve_path=True),
+    required=True,
+    help="Path to binary MBI image to verify.",
+)
+@click.option(
+    "-p",
+    "--problems",
+    is_flag=True,
+    default=False,
+    help="Show just problems in image.",
+)
+@click.option(
+    "-k",
+    "--dek",
+    type=str,
+    required=False,
+    help=(
+        "Data encryption key, if it's specified, the verify method tries decrypt all encrypted images. "
+        "It could be specified as binary/HEX text file path or directly HEX string"
+    ),
+)
+def mbi_verify_command(family: FamilyRevision, binary: str, dek: str, problems: bool) -> None:
+    """Verify MBI Image."""
+    mbi_verify(family=family, binary=binary, dek=dek, problems=problems)
+
+
+def mbi_verify(family: FamilyRevision, binary: str, dek: str, problems: bool) -> None:
+    """Verify MBI Image."""
+    data = load_binary(binary)
+    verifiers: list[Verifier] = []
+    valid_image = None
+
+    # Get all possible MBI classes for the family
+    try:
+        mbi_classes = MasterBootImage.get_mbi_classes(family)
+    except Exception as exc:
+        click.echo(f"Failed to get MBI classes for {family}: {str(exc)}", err=True)
+        raise SPSDKAppError("Failed to determine MBI image types") from exc
+
+    # Try parsing with each MBI class configuration
+    for mbi_key, (mbi_cls, target, authentication) in mbi_classes.items():
+        try:
+            mbi_image = mbi_cls.parse(family=family, data=data, dek=dek)
+            ver = mbi_image.verify()
+            verifiers.append(ver)
+            if not ver.has_errors:
+                valid_image = mbi_image
+                logger.info(f"Valid MBI image found: {target} / {authentication}")
+                break
+        except Exception as exc:
+            logger.debug(f"Failed to parse as {mbi_key}: {str(exc)}")
+            continue
+
+    if not valid_image:
+        click.echo(
+            "The binary has errors for all MBI configurations! All configuration attempts will be printed.",
+            err=True,
+        )
+        for verifier, (mbi_key, _) in zip(verifiers, mbi_classes.items()):
+            click.echo("\n" + "=" * 120)
+            click.echo(
+                f"The verification attempt for MBI configuration: {mbi_key.upper()}".center(120)
+            )
+            click.echo("=" * 120 + "\n")
+            print_verifier_to_console(verifier, problems)
+        raise SPSDKAppError("Verify failed")
+
+    if not problems:
+        click.echo(valid_image.export_image().draw())
+
+    print_verifier_to_console(valid_image.verify(), problems)
 
 
 @mbi_group.command(name="get-templates", no_args_is_help=True)

@@ -279,7 +279,7 @@ ahab_sign_support_add_crc:
       type: boolean
       title: The additional CRC images check
       description:
-        If true, add additional CRC image that is computed from all data execution mage and optionally TrustZone.
+        If true, add additional CRC image that is computed from all data execution image and optionally TrustZone.
       template_value: false
 
 cert_block_vX:

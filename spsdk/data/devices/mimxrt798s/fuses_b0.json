@@ -3800,7 +3800,7 @@
                             "width": 5,
                             "id": "fuse141-bits-27-31",
                             "name": "OSC_SETTLING_TIME",
-                            "description": "Specifies the settling time of OSC\n0d - 390 \u03bcs (default)\nnd - n \u00d7 100 \u03bcs \u00d7 1.3"
+                            "description": "Specifies the settling time of OSC\n0d - 390 μs (default)\nnd - n × 100 μs × 1.3"
                         }
                     ]
                 },
@@ -3907,7 +3907,7 @@
                             "width": 7,
                             "id": "fuse160-bits-25-31",
                             "name": "USBPLL_LOCK_TIME",
-                            "description": "Specifies the lock time of USB PLL\n0d - 30 \u00b5s (default)\nnd - n \u00d7 10 \u00b5s"
+                            "description": "Specifies the lock time of USB PLL\n0d - 30 µs (default)\nnd - n × 10 µs"
                         }
                     ]
                 },
@@ -4905,7 +4905,7 @@
                             "width": 7,
                             "id": "fuse153-bits-17-23",
                             "name": "XSPI_FLASH_IMAGE_SIZE",
-                            "description": "Size of the second image\n0d - Same size as the image offset (XSPI_IMAGE_OFFSET)\n1d - 128 KB\n2d - 256 KB\nmd - m \u00d7 128 KB (m = 3-7)\n8d - 1 MB\nnd - (n-7) \u00d7 1 MB (n = 8-71)"
+                            "description": "Size of the second image\n0d - Same size as the image offset (XSPI_IMAGE_OFFSET)\n1d - 128 KB\n2d - 256 KB\nmd - m × 128 KB (m = 3-7)\n8d - 1 MB\nnd - (n-7) × 1 MB (n = 8-71)"
                         },
                         {
                             "width": 3,
@@ -5891,7 +5891,7 @@
                 {
                     "id": "fuse482",
                     "name": "SENSE_PVT_SP3",
-                    "description": "Sense domain PVT setpoint 3 CPU1/HiFi1 \u2013 Freq/Volt\n250 MHz PVTS delay values, HiFi1[15:8], CPU1[7:0]",
+                    "description": "Sense domain PVT setpoint 3 CPU1/HiFi1 – Freq/Volt\n250 MHz PVTS delay values, HiFi1[15:8], CPU1[7:0]",
                     "index_int": "0x01E2",
                     "shadow_reg_offset_int": "0x0788",
                     "lock": {
@@ -5905,7 +5905,7 @@
                 {
                     "id": "fuse483",
                     "name": "COM_PVT_SP3",
-                    "description": "Compute domain PVT setpoint 3 CPU0/HiFi4 \u2013 Freq/Volt\n325 MHz PVTS delay values, HiFi4[15:8], CPU0[7:0]",
+                    "description": "Compute domain PVT setpoint 3 CPU0/HiFi4 – Freq/Volt\n325 MHz PVTS delay values, HiFi4[15:8], CPU0[7:0]",
                     "index_int": "0x01E3",
                     "shadow_reg_offset_int": "0x078C",
                     "lock": {
@@ -5919,7 +5919,7 @@
                 {
                     "id": "fuse484",
                     "name": "SENSE_PVT_SP2",
-                    "description": "Sense domain PVT setpoint 2 CPU1/HiFi1 \u2013 Freq/Volt\n160 MHz PVTS delay values, HiFi1[15:8], CPU1[7:0]",
+                    "description": "Sense domain PVT setpoint 2 CPU1/HiFi1 – Freq/Volt\n160 MHz PVTS delay values, HiFi1[15:8], CPU1[7:0]",
                     "index_int": "0x01E4",
                     "shadow_reg_offset_int": "0x0790",
                     "lock": {
@@ -5933,7 +5933,7 @@
                 {
                     "id": "fuse485",
                     "name": "COM_PVT_SP2",
-                    "description": "Compute domain PVT setpoint 2 CPU0/HiFi4 \u2013 Freq/Volt\n192 MHz PVTS delay values, HiFi4[15:8], CPU0[7:0]",
+                    "description": "Compute domain PVT setpoint 2 CPU0/HiFi4 – Freq/Volt\n192 MHz PVTS delay values, HiFi4[15:8], CPU0[7:0]",
                     "index_int": "0x01E5",
                     "shadow_reg_offset_int": "0x0794",
                     "lock": {
@@ -5947,7 +5947,7 @@
                 {
                     "id": "fuse486",
                     "name": "SENSE_PVT_SP1",
-                    "description": "Sense domain PVT setpoint 1 CPU1/HiFi1 \u2013 Freq/Volt\n100 MHz PVTS delay values, HiFi1[15:8], CPU1[7:0]",
+                    "description": "Sense domain PVT setpoint 1 CPU1/HiFi1 – Freq/Volt\n100 MHz PVTS delay values, HiFi1[15:8], CPU1[7:0]",
                     "index_int": "0x01E6",
                     "shadow_reg_offset_int": "0x0798",
                     "lock": {
@@ -5961,7 +5961,7 @@
                 {
                     "id": "fuse487",
                     "name": "COM_PVT_SP1",
-                    "description": "Compute domain PVT setpoint 1 CPU0/HiFi4 \u2013 Freq/Volt\n110 MHz PVTS delay values, HiFi4[15:8], CPU0[7:0]",
+                    "description": "Compute domain PVT setpoint 1 CPU0/HiFi4 – Freq/Volt\n110 MHz PVTS delay values, HiFi4[15:8], CPU0[7:0]",
                     "index_int": "0x01E7",
                     "shadow_reg_offset_int": "0x079C",
                     "lock": {

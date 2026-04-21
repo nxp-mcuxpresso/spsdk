@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK fuse registers management and operations.
 
 This module provides comprehensive functionality for handling fuse registers,
@@ -230,7 +231,6 @@ class FuseRegister(Register):
         :param lock_type: Type of lock to set on the fuse register.
         """
         if self._locks[lock_type]:
-            logger.debug(f"Fuse {self.name} has already lock set {lock_type.description}.")
             return
         self._locks[lock_type] = True
 
@@ -238,12 +238,11 @@ class FuseRegister(Register):
         """Unset the fuse lock.
 
         Removes the specified lock type from the fuse register. If the lock is already
-        unset, the operation is logged and no changes are made.
+        unset no changes are made.
 
         :param lock_type: Type of fuse lock to be removed.
         """
         if not self._locks[lock_type]:
-            logger.debug(f"Fuse {self.name} has already lock unset {lock_type.description}.")
             return
         self._locks[lock_type] = False
 
@@ -515,6 +514,18 @@ class FuseRegisters(_RegistersBase[FuseRegister]):
             if lock_fuse:
                 lock_fuses.append(lock_fuse)
         return list(set(lock_fuses))
+
+    def is_lock_fuse(self, reg: FuseRegister) -> bool:
+        """Check if a fuse register is a lock fuse.
+
+        A lock fuse is a register that controls access (read/write/operation locks)
+        to other fuse registers in the system.
+
+        :param reg: Fuse register to check.
+        :return: True if the register is a lock fuse, False otherwise.
+        """
+        lock_fuses = self.get_lock_fuses()
+        return reg in lock_fuses
 
     def get_by_otp_index(self, otp_index: int) -> FuseRegister:
         """Get fuse register by OTP index.

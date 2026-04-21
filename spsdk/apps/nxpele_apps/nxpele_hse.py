@@ -612,12 +612,11 @@ def smr_entry_erase(
     disabling the secure memory region configuration for that entry index.
 
     Requirements:
+
     - SuperUser (SU) access rights with privileges over HSE_SYS_AUTH_NVM_CONFIG data
-    are required to perform this service
+      are required to perform this service
     - Erasing an SMR entry will remove all associated secure memory configurations
     - The operation is irreversible - the entry must be reinstalled if needed again
-
-    Notes:
     - Ensure no Core Reset entries reference this SMR entry before erasing
     - Consider the impact on secure boot flow before erasing
     """
@@ -713,11 +712,13 @@ def core_reset_install(
     processor cores in the system.
 
     Requirements:
+
     - SMR entries linked with the CR entry (via preBoot/altPreBoot/postBoot SMR maps)
-    must be installed in HSE prior to the CR installation
+      must be installed in HSE prior to the CR installation
     - SuperUser rights (for NVM Configuration) are needed to perform this service
     - Updating an existing CR entry requires all preBoot and postBoot SMR(s) linked
-    with the previous entry to be verified successfully (applicable only in OEM_PROD/IN_FIELD life cycles)
+      with the previous entry to be verified successfully (applicable only in
+      OEM_PROD/IN_FIELD life cycles)
     """
     try:
         cr_entry = CoreResetEntry.load_from_config(Config.create_from_file(cr_entry_path))

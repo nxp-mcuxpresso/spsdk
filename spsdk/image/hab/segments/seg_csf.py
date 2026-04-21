@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """HAB CSF (Command Sequence File) segment implementation.
 
 This module provides functionality for creating, manipulating, and parsing
@@ -24,7 +25,7 @@ from spsdk.image.exceptions import SPSDKSegmentNotPresent
 from spsdk.image.hab.commands.cmd_auth_data import CmdAuthData, CmdDecryptData
 from spsdk.image.hab.commands.cmd_install_key import CmdInstallSecretKey
 from spsdk.image.hab.commands.commands import CmdBase, CmdSecretRefType, ImageBlock, parse_command
-from spsdk.image.hab.constants import CmdName, CmdTag
+from spsdk.image.hab.constants import CertFormatEnum, CmdName, CmdTag, EngineEnum, EnumAlgorithm
 from spsdk.image.hab.hab_header import Header, SegmentTag
 from spsdk.image.hab.hab_mac import MAC
 from spsdk.image.hab.hab_signature import Signature
@@ -483,6 +484,127 @@ class HabSegmentCSF(HabSegmentBase):
 
         segment.update(True)
         return segment
+
+    def _extract_header_hash_algorithm(self) -> str:
+        """Extract hash algorithm from CSF commands.
+
+        :return: Hash algorithm label or default "sha256".
+        """
+        for cmd in self.csf.commands:
+            if hasattr(cmd, "hash_algorithm") and cmd.hash_algorithm != EnumAlgorithm.ANY:
+                return cmd.hash_algorithm.label.lower()
+        return "sha256"
+
+    def _extract_header_engine(self) -> str:
+        """Extract engine from CSF commands.
+
+        :return: Engine label or default "ANY".
+        """
+        valid_header_engines = {
+            EngineEnum.ANY,
+            EngineEnum.SAHARA,
+            EngineEnum.RTIC,
+            EngineEnum.DCP,
+            EngineEnum.CAAM,
+            EngineEnum.SW,
+        }
+        for cmd in self.csf.commands:
+            if hasattr(cmd, "engine") and cmd.engine != EngineEnum.ANY:
+                if cmd.engine in valid_header_engines:
+                    return cmd.engine.label
+        return "ANY"
+
+    def _extract_header_engine_config(self) -> int:
+        """Extract engine configuration from CSF commands.
+
+        :return: Engine configuration value or 0.
+        """
+        for cmd in self.csf.commands:
+            if hasattr(cmd, "engine_cfg") and cmd.engine_cfg != 0:
+                return cmd.engine_cfg
+        return 0
+
+    def _extract_header_cert_format(self) -> str:
+        """Extract certificate format from CSF commands.
+
+        :return: Certificate format label or default "x509".
+        """
+        for cmd in self.csf.commands:
+            if hasattr(cmd, "certificate_format"):
+                if cmd.certificate_format == CertFormatEnum.X509:
+                    return "x509"
+        return "x509"
+
+    def _extract_header_sig_format(self) -> str:
+        """Extract signature format from CSF commands.
+
+        :return: Signature format label or default "CMS".
+        """
+        for cmd in self.csf.commands:
+            if hasattr(cmd, "sig_format"):
+                return cmd.sig_format.label
+        return "CMS"
+
+    def _create_header_config(self) -> Config:
+        """Create Header configuration section.
+
+        :return: Configuration object with Header settings.
+        """
+        header_config = Config()
+
+        # Extract version from CSF header
+        version_major = (self.csf.version >> 4) & 0xF
+        version_minor = self.csf.version & 0xF
+        header_config["Header_Version"] = f"{version_major}.{version_minor}"
+
+        # Extract other header fields
+        header_config["Header_HashAlgorithm"] = self._extract_header_hash_algorithm()
+        header_config["Header_Engine"] = self._extract_header_engine()
+        header_config["Header_EngineConfiguration"] = self._extract_header_engine_config()
+        header_config["Header_CertificateFormat"] = self._extract_header_cert_format()
+        header_config["Header_SignatureFormat"] = self._extract_header_sig_format()
+
+        return header_config
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the CSF segment.
+
+        The method generates configuration data for the CSF segment including
+        all CSF commands with their parameters.
+
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary with CSF sections.
+        """
+        ret_cfg = Config()
+
+        if not self.csf:
+            return ret_cfg
+
+        sections = []
+
+        # Add mandatory Header section as first command
+        sections.append({"Header": self._create_header_config()})
+
+        # Add remaining commands
+        for cmd in self.csf.commands:
+            cmd_config = cmd.get_config(data_path)
+            if cmd_config:
+                # Wrap flat config in command name dictionary
+                if cmd.CMD_IDENTIFIER:
+                    sections.append({cmd.CMD_IDENTIFIER.label: cmd_config})
+                else:
+                    # Fallback for commands without identifier
+                    sections.append(cmd_config)
+
+        ret_cfg["sections"] = sections
+
+        # Add signature timestamp if available
+        if self.signature_timestamp:
+            ret_cfg["options"] = {
+                "signatureTimestamp": self.signature_timestamp.strftime("%d/%m/%Y %H:%M:%S")
+            }
+
+        return ret_cfg
 
     def export(self) -> bytes:
         """Export CSF segment into bytes array.

@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2023,2025 NXP
+# Copyright 2019-2023,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -102,7 +102,7 @@ def test_auth_data_cmd_export_parse() -> None:
     data = cmd.export()
     assert len(data) == 20
     assert len(data) == cmd.size
-    assert cmd == CmdAuthData.parse(data)
+    assert cmd.export() == CmdAuthData.parse(data).export()
 
 
 def test_auth_data_cmd_get_set_iter() -> None:

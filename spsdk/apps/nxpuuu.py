@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -442,6 +442,7 @@ def list_devices(ctx: click.Context, usb: Optional[str]) -> None:
         )
 
     click.echo(table)
+    click.echo(colorama.Style.RESET_ALL)
 
 
 @catch_spsdk_error

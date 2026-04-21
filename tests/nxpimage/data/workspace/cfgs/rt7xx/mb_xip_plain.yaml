@@ -1,6 +1,7 @@
-# Copyright 2024 NXP
+# Copyright 2024,2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  Master Boot Image Configuration template for rt7xx, Plain Image (either XIP or Load-to-RAM).  ===========
 
 # ======================================================================================================================

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """HAB segment implementation for External Memory Configuration Data (XMCD).
 
 This module provides classes for creating, parsing and manipulating XMCD segments
@@ -67,6 +68,34 @@ class HabSegmentXMCD(HabSegmentBase):
             )
             return segment
         raise SPSDKSegmentNotPresent(f"Segment {cls.__name__} is not present")
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the XMCD segment.
+
+        The method generates configuration data for the XMCD segment, exporting
+        the XMCD binary data to a file in the specified path.
+
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary with XMCD file path.
+        """
+        import os
+
+        from spsdk.utils.misc import write_file
+
+        ret_cfg = Config()
+
+        # Export XMCD binary data to file
+        filename = "xmcd.bin"
+        write_file(
+            data=self.xmcd.export(),
+            path=os.path.join(data_path, filename),
+            mode="wb",
+        )
+
+        # Create options section with XMCDFilePath
+        ret_cfg["options"] = {"XMCDFilePath": filename}
+
+        return ret_cfg
 
     @classmethod
     def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("unknown")) -> Self:

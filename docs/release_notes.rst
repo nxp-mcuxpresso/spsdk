@@ -17,6 +17,66 @@
 Release Notes
 =============
 
+-----------------------
+3.8.0 (27-March-2026)
+-----------------------
+
+**Backwards incompatible**
+
+* Certificate block module has been refactored - cert_block.py split into individual files per certification block type to maintain clear code organization
+
+**New features**
+
+* `nxpcrypto`_:
+    - add PQC (Post-Quantum Cryptography) support in pki-tree ahab command for i.MX95/i.MX943 hybrid keys
+* `nxpdebugmbox`_:
+    - add warning that there is an exception and DAT must be performed in ISP mode
+* :ref:`nxpele`:
+    - make U-Boot prompt configurable instead of hardcoded value
+* :ref:`nxpfuses`:
+    - add bitfields display to rich print output for improved fuse register visualization
+* `nxpimage`_:
+    - add SPI support for RT118x device family
+    - add MBI verifier functionality for Master Boot Image validation
+    - adopt flexible format support for AHAB containers
+    - restore QB data availability for i.MX95 device
+    - fix signed message flag handling for i.MX95 B0 HSM keystore reprovisioning
+    - resolve ML-DSA PQC signing issues for i.MX95 platform
+* add signature provider support for MCXN55xS
+* create jupyter notebook documentation for Secure Memory Region feature on MCX E31
+* unify indentation of data files across SPSDK for consistency
+* notify user when PQC support is not available
+
+**Bugfixes**
+
+* `blhost`_:
+    - fix CAN interface operation with rx/tx arbitration IDs specified
+* `el2go-host`_:
+    - fix provision_device_command() missing uboot_prompt parameter
+* :ref:`nxpele`:
+    - clarify HSE secure lifecycle transition requirements and error handling
+* :ref:`nxpfuses`:
+    - i.MX95 fix reading single fuses for grouped fuses like SRKH
+    - i.MX95 resolve read failures on i.MX95 B0 silicon and synchronize with CRR data
+    - i.MX95 fix nxpfuses failures when reading all fuses
+    - fix fuse address display showing incorrect 0x0 value when using --rich parameter
+* `nxpimage`_:
+    - i.MX95 correct keystore reprovisioning flag in signed message for HSM
+    - i.MX95 add support for OTFAD scramble mode on i.MX95 B0 silicon
+    - i.MX95/i.MX943 update AHAB metadata for System Manager core mapping
+    - fix bootable image HAB parse method to properly store parsed files
+    - improve error reporting when segment parsing fails in bimg
+    - fix AHAB flexSPI NOR image signing issues
+    - correct A35 core count for i.MX8ULP in database
+    - fix AHAB export failures with OEI extra sections on i.MX95
+* :ref:`nxpuuu`:
+    - fix synchronous abort handler after cancelling uboot fastboot mode
+* `pfr`_:
+    - fix cert block parsing error for lpc55s36 family support
+* validate embedded YAML config definitions in main configuration files
+* correct documentation error for signed u-boot replacement sequence
+* remove appended hash from signed FA messages for OEM-Return transitions
+
 ---------------------
 3.7.1 (20-March-2026)
 ---------------------

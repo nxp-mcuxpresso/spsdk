@@ -419,6 +419,7 @@ features:
     sb_21_supported: False
     has_kek_fuses: True
     supports_key_scrambling: True
+    reversed_scramble_key: True
 
     fuses_1: # Fuses for OTFAD1
       _name: Configuration of fuses for OTFAD1

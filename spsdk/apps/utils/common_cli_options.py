@@ -410,6 +410,23 @@ def usbserial_option() -> Callable[[FC], FC]:
     )
 
 
+def uboot_prompt_option() -> Callable[[FC], FC]:
+    """Click decorator handling U-Boot prompt configuration.
+
+    Provides: `uboot_prompt: str` a u-boot prompt string.
+
+    :return: Click decorator.
+    """
+    return click.option(
+        "--uboot-prompt",
+        envvar="UBOOT_PROMPT",
+        help="Override default U-Boot serial prompt for ELE communication, using the option, or environment variable.",
+        type=str,
+        required=False,
+        show_envvar=True,
+    )
+
+
 def spsdk_use_json_option(options: FC) -> FC:
     """Use json click option decorator.
 
@@ -998,6 +1015,7 @@ def spsdk_el2go_interface(
     fb_size: bool = True,
     usbpath: bool = True,
     usbserial: bool = True,
+    uboot_prompt: bool = True,
 ) -> Callable:
     """Click decorator handling EL2Go interface.
 
@@ -1026,6 +1044,7 @@ def spsdk_el2go_interface(
             fb_size: Optional[int] = None,
             usbpath: Optional[str] = None,
             usbserial: Optional[str] = None,
+            uboot_prompt: Optional[str] = None,
             **kwargs: Any,
         ) -> Any:
             # if --help is provided anywhere on command line, skip interface lookup
@@ -1052,7 +1071,14 @@ def spsdk_el2go_interface(
             try:
                 interface_params = load_interface_config(cli_params)
                 interface_handler = EL2GOInterfaceHandler.get_el2go_interface_handler(
-                    interface_params, family, device, fb_addr, fb_size, usbpath, usbserial
+                    interface_params,
+                    family,
+                    device,
+                    fb_addr,
+                    fb_size,
+                    usbpath,
+                    usbserial,
+                    uboot_prompt,
                 )
                 kwargs["interface"] = interface_handler
             except SPSDKError:
@@ -1070,6 +1096,7 @@ def spsdk_el2go_interface(
             usb_option: (usb, {"identify_by_family": True}),
             port_option: (port, {"baud_rate": MbootUARTInterface.default_baudrate}),
             el2go_interface_option: (device, {}),
+            uboot_prompt_option: (uboot_prompt, {}),
             fb_buffer_address: (fb_addr, {}),
             fb_buffer_size: (fb_size, {}),
             usbpath_option: (usbpath, {}),

@@ -945,9 +945,9 @@ class Register:
         register properties, bitfield creation, and default value initialization.
 
         :param spec: Dictionary containing register specification with keys like 'id',
-                     'name', 'offset_int', 'reg_width', 'description', 'access', etc.
+                    'name', 'offset_int', 'reg_width', 'description', 'access', etc.
         :param reg_mods: Optional dictionary with register-level modifications that
-                         override specification values.
+                        override specification values.
         :return: New register instance configured according to the specification.
         """
         uid = spec.get("id", "")
@@ -966,6 +966,8 @@ class Register:
         deprecated_names = [x.upper() for x in spec.get("deprecated_names", [])]
 
         if reg_mods:
+            if "access" in reg_mods:
+                access = Access.from_label(reg_mods["access"])
             if "reverse" in reg_mods:
                 reverse = value_to_bool(reg_mods["reverse"])
             if "config_as_hexstring" in reg_mods:
