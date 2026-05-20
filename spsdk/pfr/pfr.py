@@ -23,6 +23,7 @@ from typing import Any, Callable, Optional, Type, cast
 from typing_extensions import Self
 
 from spsdk.apps.utils.utils import SPSDKAppError
+from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.keys import PublicKey, PublicKeyEcc, PublicKeyRsa
 from spsdk.exceptions import SPSDKError, SPSDKValueError
@@ -589,9 +590,17 @@ class BaseConfigArea(AbstractBaseConfigArea):
         # Set the computed field handler
         for reg, fields in computed_fields.items():
             reg_obj = registers.get_reg(reg)
-            for bitfield in fields.keys():
-                reg_obj.get_bitfield(bitfield).reserved = True
-                logger.debug(f"Hiding bitfield: {bitfield} in {reg}")
+            # Handle both register-level and bitfield-level computed fields
+            if isinstance(fields, str):
+                # Register-level computed field (fields is the method name as a string)
+                # Mark the entire register as reserved so it won't appear in templates
+                reg_obj.reserved = True
+                logger.debug(f"Hiding register {reg} - computed using method: {fields}")
+            elif isinstance(fields, dict):
+                # Bitfield-level computed fields
+                for bitfield in fields.keys():
+                    reg_obj.get_bitfield(bitfield).reserved = True
+                    logger.debug(f"Hiding bitfield: {bitfield} in {reg}")
         return registers
 
     def compute_register(self, reg: Register, method: str) -> None:
@@ -639,6 +648,45 @@ class BaseConfigArea(AbstractBaseConfigArea):
         inverse = (val & 0xFF) ^ 0xFF
         ret |= inverse << 8
         return ret
+
+    def pfr_calculate_crc(self, val: int) -> int:
+        """Calculate CRC32 for the PFR data up to the CRC register.
+
+        :param val: Input current reg value (ignored, CRC is calculated from data).
+        :return: Calculated CRC32 value.
+        """
+        # Get the register that holds the CRC
+        crc_reg = None
+        for reg_uid, fields in self.computed_fields.items():
+            if isinstance(fields, str) and fields == "pfr_calculate_crc":
+                crc_reg = self.registers.get_reg(uid=reg_uid)
+                break
+            elif isinstance(fields, dict):
+                for method in fields.items():
+                    if method == "pfr_calculate_crc":
+                        crc_reg = self.registers.get_reg(uid=reg_uid)
+                        break
+            if crc_reg:
+                break
+
+        if not crc_reg:
+            raise SPSDKPfrError("CRC register not found in computed fields")
+
+        # Export data up to CRC register offset
+        crc_offset = crc_reg.offset
+        image_info = self.registers.image_info(
+            size=self.registers_size, pattern=BinaryPattern(self.IMAGE_PREFILL_PATTERN)
+        )
+        data = bytearray(image_info.export())
+
+        # Calculate CRC32 for data from offset 0 to crc_offset (excluding CRC register itself)
+        data_for_crc = bytes(data[:crc_offset])
+
+        # Use SPSDK CRC calculation
+        crc_obj = from_crc_algorithm(CrcAlg.CRC32_MPEG)
+        crc_value = crc_obj.calculate(data_for_crc)
+
+        return crc_value
 
     @classmethod
     def get_validation_schemas_from_cfg(cls, config: Config) -> list[dict[str, Any]]:
@@ -850,6 +898,19 @@ class BaseConfigArea(AbstractBaseConfigArea):
         if draw:
             logger.info(image_info.draw())
         data = bytearray(image_info.export())
+
+        # Compute ONLY register-level computed fields (like CRC) during export
+        # Bitfield-level computed fields (like inverse operations) are handled in set_config
+        for reg_uid, fields in self.computed_fields.items():
+            if isinstance(fields, str):
+                # Register-level computed field (e.g., CRC calculation)
+                # These should be computed during export
+                reg = self.registers.get_reg(uid=reg_uid)
+                self.compute_register(reg, fields)
+                # Update the data with the computed value
+                offset = reg.offset
+                value_bytes = reg.get_bytes_value()
+                data[offset : offset + len(value_bytes)] = value_bytes
 
         if add_seal:
             try:
@@ -1113,6 +1174,65 @@ class UPDATE(BaseConfigArea):
         if self.update_field_id and update_field_value is not None:
             update_reg = self.registers.get_reg(self.update_field_id)
             update_reg.set_value(update_field_value)
+
+
+class CMPA_CFG(BaseConfigArea):
+    """Customer Manufacturing Programmable Area Configuration.
+
+    This class manages the CMPA configuration area which contains customer-specific
+    manufacturing settings for NXP MCU devices. It provides functionality for
+    reading, writing, and validating the configuration data stored in this
+    protected flash region.
+
+    :cvar FEATURE: Database feature identifier for PFR operations.
+    :cvar SUB_FEATURE: Sub-feature identifier for CMPA configuration.
+    :cvar BINARY_SIZE: Size of the CMPA configuration area in bytes (116 bytes).
+    :cvar DESCRIPTION: Human-readable description of the configuration area.
+    """
+
+    FEATURE = DatabaseManager.PFR
+    SUB_FEATURE = "cmpa_cfg"
+    BINARY_SIZE_DEFAULT = 116
+    DESCRIPTION = "Customer Manufacturing Programmable Area - Configuration"
+
+
+class CMPA_PSWD(BaseConfigArea):
+    """Customer Manufacturing Programmable Area - Password configuration.
+
+    This class manages the password section of the CMPA (Customer Manufacturing
+    Programmable Area) for NXP devices. It handles the configuration and binary
+    representation of password-related settings used during device manufacturing
+    and provisioning.
+
+    :cvar FEATURE: Database feature identifier for PFR operations.
+    :cvar SUB_FEATURE: Sub-feature identifier for CMPA password section.
+    :cvar BINARY_SIZE: Size of the binary representation in bytes (68 bytes).
+    :cvar DESCRIPTION: Human-readable description of the configuration area.
+    """
+
+    FEATURE = DatabaseManager.PFR
+    SUB_FEATURE = "cmpa_pswd"
+    BINARY_SIZE_DEFAULT = 68
+    DESCRIPTION = "Customer Manufacturing Programmable Area - Password"
+
+
+class CMPA_LC(BaseConfigArea):
+    """Customer Manufacturing Programmable Area - Life Cycle configuration.
+
+    This class manages the CMPA Life Cycle configuration area, which controls
+    the device life cycle state in NXP MCU devices. It provides functionality
+    for reading, writing, and validating life cycle configuration data.
+
+    :cvar FEATURE: Database feature identifier for PFR.
+    :cvar SUB_FEATURE: Sub-feature identifier for CMPA Life Cycle area.
+    :cvar BINARY_SIZE: Size of the binary data in bytes (8 bytes).
+    :cvar DESCRIPTION: Human-readable description of the configuration area.
+    """
+
+    FEATURE = DatabaseManager.PFR
+    SUB_FEATURE = "cmpa_lc"
+    BINARY_SIZE_DEFAULT = 8
+    DESCRIPTION = "Customer Manufacturing Programmable Area - Life Cycle"
 
 
 class MultiRegionBaseConfigArea(AbstractBaseConfigArea):
@@ -2125,6 +2245,9 @@ CONFIG_AREA_CLASSES: dict[str, Type[AbstractBaseConfigArea]] = {
     "romcfg": ROMCFG,
     "cmactable": CMACTABLE,
     "ifr": IFR,
+    "cmpa_cfg": CMPA_CFG,
+    "cmpa_pswd": CMPA_PSWD,
+    "cmpa_lc": CMPA_LC,
 }
 
 

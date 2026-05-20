@@ -122,11 +122,11 @@ def test_key_info_specific_data_ecc(family: FamilyRevision) -> None:
         key_type=KeyType.ECC_PAIR,
         smr_flags=HseSmrFlags.SMR_0,
         key_bit_len=HseKeyBits.KEY256_BITS,
-        specific_data={"eccCurveId": HseEccCurveId.SEC_SECP256R1},
+        specific_data={"eccCurveId": HseEccCurveId.SECP256R1},
     )
 
     # Check specific data encoding
-    assert key_info.specific == bytes([HseEccCurveId.SEC_SECP256R1])
+    assert key_info.specific == bytes([HseEccCurveId.SECP256R1])
 
     # Export and parse
     exported_data = key_info.export()
@@ -134,7 +134,7 @@ def test_key_info_specific_data_ecc(family: FamilyRevision) -> None:
 
     # Verify specific data was preserved
     assert "eccCurveId" in imported_key_info.specific_data
-    assert imported_key_info.specific_data["eccCurveId"] == HseEccCurveId.SEC_SECP256R1
+    assert imported_key_info.specific_data["eccCurveId"] == HseEccCurveId.SECP256R1
 
 
 def test_key_info_specific_data_rsa(family: FamilyRevision) -> None:

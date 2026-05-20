@@ -27,6 +27,7 @@ from typing_extensions import Self
 
 from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
+from spsdk.crypto.misr import calculate_misr_checksum
 from spsdk.crypto.rng import random_bytes
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
 from spsdk.crypto.spsdk_hmac import hmac
@@ -59,6 +60,7 @@ from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import (
     Endianness,
+    align,
     align_block,
     bytes_to_print,
     load_binary,
@@ -1835,12 +1837,21 @@ class Mbi_MixinIvt(Mbi_Mixin):
                 important=True,
             )
         else:
-            ver.add_record(
+            # allow unaligned images
+            ver.add_record_range(
                 name="Parsed IVT total length",
-                result=parsed_total_length == self.total_len,
-                value=f"Parsed: 0x{parsed_total_length:08X}, Generated: 0x{self.total_len:08X}",
-                important=True,
+                value=self.total_len,
+                min_val=parsed_total_length,
+                max_val=align(parsed_total_length, alignment=4),
             )
+            if self.total_len != parsed_total_length:
+                ver.add_record(
+                    name="Parsed IVT total length alignment",
+                    result=VerifierResult.WARNING,
+                    value="The total length of image is not aligned."
+                    f"Parsed total length: {parsed_total_length}, expected: {self.total_len}",
+                    important=True,
+                )
 
     def _verify_parsed_ivt_crc(self, ver: Verifier, parsed_crc_cert_block_offset: int) -> None:
         """Verify parsed IVT CRC value or certificate block offset.
@@ -5833,3 +5844,119 @@ class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
             )
 
         return ret
+
+
+class Mbi_MixinMisrIvt(Mbi_MixinIvt):
+    """Master Boot Image Interrupt Vector table class for MISR images.
+
+    MISR images only update the image length and image type flags.
+    They don't modify the CRC/Certificate offset or load address fields.
+    """
+
+    # Override to exclude image version from flags
+    image_version_to_image_type: bool = False
+
+    def update_ivt(
+        self,
+        app_data: bytes,
+        total_len: int,
+        crc_val_cert_offset: int = 0,
+    ) -> bytes:
+        """Update IVT table in application image for MISR format.
+
+        For MISR images, only the image length and flags are updated.
+        The load address and CRC/Certificate offset are preserved from the application.
+
+        :param app_data: Application data that should be modified.
+        :param total_len: Total length of bootable image
+        :param crc_val_cert_offset: Ignored for MISR images
+        :return: Updated whole application image
+        """
+        data = bytearray(app_data)
+
+        # Update image length at 0x20
+        data[self.IVT_IMAGE_LENGTH_OFFSET : self.IVT_IMAGE_LENGTH_OFFSET + 4] = struct.pack(
+            "<I", total_len
+        )
+
+        # Update flags at 0x24 (sets image type to MISR = 0xB)
+        data[self.IVT_IMAGE_FLAGS_OFFSET : self.IVT_IMAGE_FLAGS_OFFSET + 4] = struct.pack(
+            "<I", self.create_flags()
+        )
+
+        # Do NOT modify:
+        # - 0x28: CRC/Certificate offset (preserve from application)
+        # - 0x34: Load address (preserve from application)
+
+        return bytes(data)
+
+
+class Mbi_ExportMixinMisrSign(Mbi_ExportMixin, Mbi_Mixin):
+    """Export Mixin to handle MISR image alignment and signing."""
+
+    VALIDATION_SCHEMAS = ["misr_seed"]
+    NEEDED_MEMBERS = {"misr_seed": None}
+    MISR_PAGE_SIZE = 128
+    MISR_SIGNATURE_SIZE = 16
+    MISR_PADDING_VALUE = 0xFF
+    IVT_IMAGE_LENGTH_OFFSET: int
+    update_total_length: Callable[[bytes, int], bytes]
+    misr_seed: bytes
+
+    def mix_load_from_config(self, config: Config) -> None:
+        """Load MISR seed from configuration."""
+        self.misr_seed = b""
+        if config.get("misrSeed"):
+            self.misr_seed = bytes.fromhex(config.get_str("misrSeed"))
+
+    def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
+        """Align image to MISR page size and update total length.
+
+        :param image: Input raw image.
+        :param revert: Revert the operation if possible.
+        :return: Image aligned to MISR page size with updated length.
+        :raises SPSDKError: If image structure is invalid.
+        """
+        if revert:
+            if not image.binary or len(image.binary) < self.MISR_SIGNATURE_SIZE:
+                raise SPSDKError("Invalid MISR-signed image")
+            image.binary = image.binary[: -self.MISR_SIGNATURE_SIZE]
+            return image
+
+        # Get the application image
+        app_image = image.find_sub_image(Mbi_ExportMixinApp.APP_IMAGE_NAME)
+        if not app_image or not app_image.binary:
+            raise SPSDKError("Application image not found")
+
+        current_size = len(app_image.binary)
+
+        # Check if alignment is needed
+        remainder = current_size % self.MISR_PAGE_SIZE
+
+        # Calculate padding needed
+        if remainder == 0:
+            logger.debug(f"Image already aligned to {self.MISR_PAGE_SIZE} bytes")
+            padding_size = 0
+            aligned_size = current_size
+        else:
+            padding_size = self.MISR_PAGE_SIZE - remainder
+            aligned_size = current_size + padding_size
+
+            logger.debug(
+                f"Aligning MISR image from {current_size} to {aligned_size} bytes "
+                f"(padding: {padding_size} bytes with 0x{self.MISR_PADDING_VALUE:02X})"
+            )
+
+        # Add padding to application binary
+        padding = bytes([self.MISR_PADDING_VALUE] * padding_size)
+        app_image.binary = app_image.binary + padding
+
+        # Update the total length field in IVT
+        total_length = aligned_size + self.MISR_SIGNATURE_SIZE
+        app_image.binary = self.update_total_length(app_image.binary, total_length)
+
+        # Calculate and append MISR checksum
+        checksum = calculate_misr_checksum(self.misr_seed, app_image.binary)
+        app_image.binary = app_image.binary + checksum
+
+        return image

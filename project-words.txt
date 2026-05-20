@@ -64,6 +64,7 @@ apdus
 APDUs
 appauthor
 appdata
+APPDBGEN
 appdirs
 appname
 APSEL
@@ -74,6 +75,8 @@ armgcc
 ASRT
 astunparse
 ATTES
+AUTHCTL
+AUTHSTTS
 autoboot
 autoclass
 autodetection
@@ -172,6 +175,7 @@ bootrom
 BOOTSRC
 Boya
 brainpool
+BRAINPOOLP
 BSTATE
 BUFFERSMALL
 bumpversion
@@ -202,6 +206,7 @@ cardconnection
 cardconnectionevent
 CBUS
 CCID
+CDBGEN
 CDBGPWRUPACK
 CDBGPWRUPREQ
 cecho
@@ -334,6 +339,7 @@ DATSZ
 Dbbt
 DBBT
 DBGEN
+DBGENCTRL
 DBGMAILBOX
 dbgmlbx
 DBGMLBX
@@ -343,6 +349,7 @@ dcdfilepath
 dcdgen
 dcfg
 DCFG
+DEADBEEFDEADBEEFDEADBEEFDEADBEEF
 deasserting
 debabe
 debugcredential
@@ -568,6 +575,7 @@ FWUPD
 fwversioncheck
 Fxxx
 Gbit
+GDBGEN
 gdet
 Gdet
 GDET
@@ -629,6 +637,7 @@ HMACK
 HPROT
 hrdata
 hrules
+HSEAUTHREQ
 hsgpio
 HSPI
 htmlcov
@@ -730,11 +739,14 @@ Keyblob
 KEYBLOB
 keyblobs
 Keyblobs
+KEYCHAL
 KEYEN
 KEYFLUSH
 keygen
 keyid
 KEYPAIR
+KEYRES
+KEYRESP
 keysource
 keystream
 keywrap
@@ -777,6 +789,7 @@ LIGHTYELLOW
 listdev
 listdir
 llms
+lmots
 LNOT
 loadaddr
 loadcmac
@@ -855,12 +868,14 @@ MEEN
 memcfg
 MEMCFG
 memn
+Merkle
 metafunc
 metavar
 MFLAG
 MFWENCK
 MFWISK
 MGTP
+Micali
 microcontroller
 Microcontrollers
 micropower
@@ -870,6 +885,7 @@ MILISECS
 milli
 mimx
 MIMXRT
+MISR
 miyaguchi
 mkimage
 MLDSA
@@ -1126,6 +1142,8 @@ provisionings
 psect
 PSECT
 psutil
+pswd
+PSWD
 ptmc
 PTMC
 pubkey
@@ -1149,6 +1167,7 @@ pyelftools
 pyftdi
 PYFTDI
 pygments
+pyhsslms
 pyinstaller
 pylibftdi
 PYLIBFTDI
@@ -1487,6 +1506,8 @@ swmodel
 SWMODEL
 SWRST
 SYSCON
+SYSDBGEN
+SYSIMG
 SYSRESET
 tagh
 TAGH
@@ -1570,6 +1591,8 @@ uath
 uboot
 Uboot
 UCMD
+udcca
+udcdd
 udev
 udevadm
 ueid
@@ -1658,6 +1681,7 @@ WDOG
 Weblink
 Werkzeug
 Winbond
+winternitz
 wlan
 WLAN
 WPCCA

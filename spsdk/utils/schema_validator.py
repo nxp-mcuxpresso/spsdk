@@ -177,6 +177,37 @@ def _is_hex_number(param: Any) -> bool:
         return False
 
 
+def _is_array_of_numbers(param: Any, allow_comma_separated: bool = True) -> bool:
+    """Check if the input parameter represents an array of numbers.
+
+    The method validates that the input is a list/array where each element
+    can be interpreted as a numeric value (integer or hexadecimal). Optionally,
+    it can also accept comma-separated strings of numbers.
+
+    :param param: Input value to analyze for array of numbers representation.
+    :param allow_comma_separated: If True, also accepts comma-separated string format
+        like "0x1234, 0x5678, 0, 12345678". Defaults to True.
+    :return: True if input represents an array of numbers, False otherwise.
+    """
+    try:
+        # Handle list/array format
+        if isinstance(param, list):
+            if len(param) == 0:
+                return False
+            for item in param:
+                value_to_int(item)
+            return True
+
+        # Handle comma-separated string format
+        if allow_comma_separated and isinstance(param, str) and "," in param:
+            values = [value_to_int(s.strip(), 0) for s in param.split(",")]
+            return len(values) > 0
+
+        return False
+    except SPSDKError:
+        return False
+
+
 def _is_config_string(param: Any) -> bool:
     """Checks whether the input represents a valid configuration string.
 
@@ -277,6 +308,8 @@ def _print_validation_fail_reason(
         if exc.rule_definition == "file":
             message += f"; Non-existing file: {exc.value}"
             message += "; The file must exists even if the key is NOT used in configuration."
+        elif exc.rule_definition == "file-or-value-or-array":
+            message += f"; Value '{exc.value}' is neither a valid file path nor a valid number nor array of numbers."
         elif exc.rule_definition == "file-or-hex-value":
             message += (
                 f"; Value '{exc.value}' is neither a valid hex value nor an existing file path"
@@ -407,6 +440,11 @@ def check_config(
         "file-or-hex-value-or-config-string": lambda x: (
             _is_hex_number(x)
             or _is_config_string(x)
+            or bool(find_file(x, search_paths=search_paths, raise_exc=False))
+        ),
+        "file-or-value-or-array": lambda x: (
+            _is_number(x)
+            or _is_array_of_numbers(param=x, allow_comma_separated=True)
             or bool(find_file(x, search_paths=search_paths, raise_exc=False))
         ),
     }

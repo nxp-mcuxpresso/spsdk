@@ -62,6 +62,9 @@ def test_command_line_interface(cli_runner: CliRunner) -> None:
         ("nhs52sxx", "cfpa"),
         ("mcxn556s", "cmpa"),
         ("mcxl255", "cmpa"),
+        ("mcxc151", "cmpa_cfg"),
+        ("mcxc151", "cmpa_pswd"),
+        ("mcxc151", "cmpa_lc"),
     ],
 )
 def test_generate_all(
@@ -346,6 +349,9 @@ def test_parse(cli_runner: CliRunner, data_dir: str, tmpdir: str) -> None:
         ("nhs52s04", "cmpa"),
         ("mcxa457", "cfpa"),
         ("mcxa457", "update_cfpa_cmpa"),
+        ("mcxc151", "cmpa_cfg"),
+        ("mcxc151", "cmpa_pswd"),
+        ("mcxc151", "cmpa_lc"),
     ],
 )
 def test_user_config(cli_runner: CliRunner, tmpdir: str, family: str, type: str) -> None:

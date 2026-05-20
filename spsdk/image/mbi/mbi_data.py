@@ -34,6 +34,7 @@ class MbiImageTypeEnum(SpsdkEnum):
     SIGNED_XIP_IMAGE = (0x04, "SIGNED_XIP_IMAGE", "Plain Signed XIP Image")
     CRC_XIP_IMAGE = (0x05, "CRC_XIP_IMAGE", "Plain CRC XIP Image")
     SIGNED_XIP_NXP_IMAGE = (0x08, "SIGNED_XIP_NXP_IMAGE", "Plain Signed XIP Image NXP Keys")
+    MISR_IMAGE = (0x0B, "MISR_IMAGE", "MISR Image")
     NBU_SIGNED_XIP_IMAGE = (0x44, "NBU_SIGNED_XIP_IMAGE", "NBU Signed XIP Image")
     SMR_IMAGE = (0x99, "SMR_IMAGE", "SMR Image")
 
@@ -50,6 +51,7 @@ MAP_IMAGE_TARGETS = {
             "External Flash (XIP)",
         ],
         "load_to_ram": ["load-to-ram", "RAM", "ram"],
+        "misr": ["misr", "MISR"],
     }
 }
 
@@ -59,6 +61,7 @@ MAP_AUTHENTICATIONS = {
     "signed": ["signed", "Signed", "famode"],
     "nxp_signed": ["signed-nxp", "NXP Signed", "NXP signed", "nxp_signed", "famode_nxp"],
     "encrypted": ["signed-encrypted", "Encrypted + Signed", "encrypted"],
+    "misr": ["misr", "MISR"],
     "nbu_signed": ["nbu-signed", "NBU Signed", "nbu_signed"],
     "smr": ["smr", "SMR"],
 }

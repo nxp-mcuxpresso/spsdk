@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK Shadow Registers test suite.
 
 This module contains comprehensive tests for the SPSDK shadow registers functionality,
@@ -21,6 +22,8 @@ import yaml
 import spsdk.fuses.shadowregs as SR
 from spsdk.apps.shadowregs import main
 from spsdk.exceptions import SPSDKError
+from spsdk.fuses.fuse_registers import FuseRegister
+from spsdk.fuses.fuses import ShadowregsOperator
 from spsdk.utils.config import Config
 from spsdk.utils.database import Database, DevicesQuickInfo, QuickDatabase
 from spsdk.utils.exceptions import SPSDKRegsErrorBitfieldNotFound, SPSDKRegsErrorRegisterNotFound
@@ -47,6 +50,16 @@ def get_probe() -> DebugProbeVirtual:
     probe.open()
     probe.connect()
     return probe
+
+
+def get_operator(family: FamilyRevision) -> ShadowregsOperator:
+    probe = get_probe()
+    return ShadowregsOperator(family, probe)
+
+
+def get_shadow_registers(family: FamilyRevision) -> SR.ShadowRegisters:
+    operator = get_operator(family)
+    return SR.ShadowRegisters(family=family, fuse_operator=operator)
 
 
 class TestDatabaseManager:
@@ -111,9 +124,7 @@ def test_shadowreg_basic(mock_test_database: Any, data_dir: str) -> None:
     :param mock_test_database: Mocked test database fixture for testing.
     :param data_dir: Directory path containing test data files.
     """
-    probe = get_probe()
-
-    shadowregs = SR.ShadowRegisters(family=FamilyRevision("dev2"), debug_probe=probe)
+    shadowregs = get_shadow_registers(FamilyRevision("dev2"))
     assert shadowregs.family.name == TEST_DEV_NAME
 
 
@@ -128,8 +139,7 @@ def test_shadowreg_set_get_reg(mock_test_database: Any, data_dir: str) -> None:
     :param mock_test_database: Mocked test database fixture for testing environment
     :param data_dir: Directory path containing test data files
     """
-    probe = get_probe()
-    shadowregs = SR.ShadowRegisters(family=FamilyRevision("dev2"), debug_probe=probe)
+    shadowregs = get_shadow_registers(FamilyRevision("dev2"))
 
     test_val = bytearray(32)
     for i in range(32):
@@ -143,7 +153,7 @@ def test_shadowreg_set_get_reg(mock_test_database: Any, data_dir: str) -> None:
 
     assert shadowregs.get_register("REG1") == 0x12345678.to_bytes(4, Endianness.BIG.value)
     assert shadowregs.get_register("REG2") == 0x4321.to_bytes(2, Endianness.BIG.value)
-    assert shadowregs.get_register("REG_INVERTED_AP") == 0xA5A5A5A5.to_bytes(
+    assert shadowregs.get_register("REG_INVERTED_AP", force=True) == 0xA5A5A5A5.to_bytes(
         4, Endianness.BIG.value
     )
     assert shadowregs.get_register("REG_BIG") == test_val
@@ -159,9 +169,7 @@ def test_shadowreg_set_reg_invalid(mock_test_database: Any, data_dir: str) -> No
     :param mock_test_database: Mock database fixture for testing
     :param data_dir: Directory path containing test data files
     """
-    probe = get_probe()
-
-    shadowregs = SR.ShadowRegisters(family=FamilyRevision("dev2"), debug_probe=probe)
+    shadowregs = get_shadow_registers(FamilyRevision("dev2"))
     with pytest.raises(SPSDKError):
         shadowregs.set_register("REG1", 0x1234567800004321)
 
@@ -179,9 +187,7 @@ def test_shadowreg_get_reg_invalid(mock_test_database: Any, data_dir: str) -> No
     :param data_dir: Directory path containing test data files.
     :raises SPSDKError: Expected exception when accessing invalid register name.
     """
-    probe = get_probe()
-
-    shadowregs = SR.ShadowRegisters(family=FamilyRevision("dev2"), debug_probe=probe)
+    shadowregs = get_shadow_registers(FamilyRevision("dev2"))
     with pytest.raises(SPSDKError):
         shadowregs.get_register("REG1_Invalid")
 
@@ -196,43 +202,14 @@ def test_shadowreg_invalid_probe(mock_test_database: Any, data_dir: str) -> None
     :param mock_test_database: Mocked test database fixture for testing.
     :param data_dir: Directory path containing test data files.
     """
-    probe = None
-
-    shadowregs = SR.ShadowRegisters(family=FamilyRevision("dev2"), debug_probe=probe)
+    operator = ShadowregsOperator(FamilyRevision("dev2"), None)
+    shadowregs = SR.ShadowRegisters(family=FamilyRevision("dev2"), fuse_operator=operator)
 
     with pytest.raises(SPSDKError):
         shadowregs.set_register("REG1", 0x12345678)
 
     with pytest.raises(SPSDKError):
         shadowregs.get_register("REG1")
-
-
-# pylint: disable=protected-access
-def test_shadowreg_verify_write(mock_test_database: Any, data_dir: str) -> None:
-    """Test Shadow Registers write operation with verification.
-
-    This test verifies the shadow register write functionality including verification
-    mask behavior and error handling when verification fails. It tests both successful
-    writes with different verification masks and failure scenarios.
-
-    :param mock_test_database: Mock database fixture for testing environment.
-    :param data_dir: Directory path containing test data files.
-    :raises SPSDKVerificationError: When shadow register write verification fails.
-    """
-    probe = get_probe()
-
-    shadowregs = SR.ShadowRegisters(family=FamilyRevision("dev2"), debug_probe=probe)
-
-    shadowregs._write_shadow_reg(1, 0x12345678, verify_mask=0xFFFFFFFF)
-    shadowregs._write_shadow_reg(1, 0x87654321, verify_mask=0)
-
-    assert probe.mem_reg_read(1) == 0x87654321
-
-    probe.set_virtual_memory_substitute_data({1: [0x12345678, 0x5555AAAA]})
-    with pytest.raises(SR.SPSDKVerificationError):
-        shadowregs._write_shadow_reg(1, 0x87654321, verify_mask=0xFFFFFFFF)
-
-    assert probe.mem_reg_read(1) == 0x5555AAAA
 
 
 def test_shadowreg_yml(mock_test_database: Any, data_dir: str, tmpdir: Any) -> None:
@@ -250,8 +227,8 @@ def test_shadowreg_yml(mock_test_database: Any, data_dir: str, tmpdir: Any) -> N
     :param tmpdir: Temporary directory fixture for test file operations
     """
     probe = get_probe()
-
-    shadowregs = SR.ShadowRegisters(family=FamilyRevision("dev2"), debug_probe=probe)
+    operator = ShadowregsOperator(FamilyRevision("dev2"), probe)
+    shadowregs = SR.ShadowRegisters(family=FamilyRevision("dev2"), fuse_operator=operator)
 
     test_val = bytearray(32)
     for i in range(32):
@@ -267,7 +244,8 @@ def test_shadowreg_yml(mock_test_database: Any, data_dir: str, tmpdir: Any) -> N
 
     assert shadowregs.get_register("REG1") == 0x12345678.to_bytes(4, Endianness.BIG.value)
     assert shadowregs.get_register("REG2") == 0x4321.to_bytes(2, Endianness.BIG.value)
-    assert shadowregs.get_register("REG_INVERTED_AP") == 0xEDCBA987.to_bytes(
+    # REG_INVERTED_AP is reserved
+    assert shadowregs.get_register("REG_INVERTED_AP", force=True) == 0xEDCBA987.to_bytes(
         4, Endianness.BIG.value
     )
     assert shadowregs.get_register("REG_BIG") == test_val
@@ -278,13 +256,15 @@ def test_shadowreg_yml(mock_test_database: Any, data_dir: str, tmpdir: Any) -> N
 
     probe.clear()
 
-    shadowregs_load = SR.ShadowRegisters.load_from_config(cfg, debug_probe=probe)
+    shadowregs_load = SR.ShadowRegisters.load_from_config(
+        cfg, ShadowregsOperator(FamilyRevision.load_from_config(cfg), probe)
+    )
     shadowregs_load.set_all_registers(verify=True)
     # Value with updated CRC RESERVED field and DEV TEST BIT
     assert shadowregs_load.get_register("REG1") == 0x92345678.to_bytes(4, Endianness.BIG.value)
     # Stored just usable part
     assert shadowregs_load.get_register("REG2") == 0x4321.to_bytes(2, Endianness.BIG.value)
-    assert shadowregs_load.get_register("REG_INVERTED_AP") == 0xEDCBA987.to_bytes(
+    assert shadowregs_load.get_register("REG_INVERTED_AP", force=True) == 0xEDCBA987.to_bytes(
         4, Endianness.BIG.value
     )
     assert shadowregs_load.get_register("REG_BIG") == test_val
@@ -292,12 +272,16 @@ def test_shadowreg_yml(mock_test_database: Any, data_dir: str, tmpdir: Any) -> N
 
     # Test loaded registers only
     cfg["registers"] = {"REG1": 0xF0F0F0F0}
-    shadowregs = SR.ShadowRegisters.load_from_config(cfg, debug_probe=probe)
+    shadowregs = SR.ShadowRegisters.load_from_config(
+        cfg, ShadowregsOperator(FamilyRevision.load_from_config(cfg), probe)
+    )
     shadowregs.set_loaded_registers()
     assert shadowregs.get_register("REG1") == 0xF0F0F0F0.to_bytes(4, Endianness.BIG.value)
     assert shadowregs.get_register("REG2") == 0x4321.to_bytes(2, Endianness.BIG.value)
     cfg["registers"] = {"REG2": 0x0}
-    shadowregs = SR.ShadowRegisters.load_from_config(cfg, debug_probe=probe)
+    shadowregs = SR.ShadowRegisters.load_from_config(
+        cfg, ShadowregsOperator(FamilyRevision.load_from_config(cfg), probe)
+    )
     shadowregs.set_loaded_registers()
     assert shadowregs.get_register("REG1") == 0xF0F0F0F0.to_bytes(4, Endianness.BIG.value)
     assert shadowregs.get_register("REG2") == 0x0.to_bytes(2, Endianness.BIG.value)
@@ -316,8 +300,8 @@ def test_shadowreg_yml_compute_values(mock_test_database: Any, data_dir: str, tm
     :param tmpdir: Temporary directory fixture for test operations.
     """
     probe = get_probe()
-
-    shadowregs = SR.ShadowRegisters(family=FamilyRevision("dev2"), debug_probe=probe)
+    operator = ShadowregsOperator(FamilyRevision("dev2"), probe)
+    shadowregs = SR.ShadowRegisters(family=FamilyRevision("dev2"), fuse_operator=operator)
 
     test_val = bytearray(32)
     for i in range(32):
@@ -333,7 +317,8 @@ def test_shadowreg_yml_compute_values(mock_test_database: Any, data_dir: str, tm
 
     assert shadowregs.get_register("REG1") == 0x12345678.to_bytes(4, Endianness.BIG.value)
     assert shadowregs.get_register("REG2") == 0x4321.to_bytes(2, Endianness.BIG.value)
-    assert shadowregs.get_register("REG_INVERTED_AP") == 0xEDCBA987.to_bytes(
+    # REG_INVERTED_AP is reserved
+    assert shadowregs.get_register("REG_INVERTED_AP", force=True) == 0xEDCBA987.to_bytes(
         4, Endianness.BIG.value
     )
     assert shadowregs.get_register("REG_BIG") == test_val
@@ -345,13 +330,15 @@ def test_shadowreg_yml_compute_values(mock_test_database: Any, data_dir: str, tm
     cfg["registers"]["REG1"].pop("CRC8")
     probe.clear()
 
-    shadowregs_load = SR.ShadowRegisters.load_from_config(cfg, debug_probe=probe)
+    shadowregs_load = SR.ShadowRegisters.load_from_config(
+        cfg, ShadowregsOperator(FamilyRevision.load_from_config(cfg), probe)
+    )
     shadowregs_load.set_all_registers(verify=True)
     # VAlue with updated CRC RESERVED field and DEV TEST BIT
     assert shadowregs_load.get_register("REG1") == 0x92345656.to_bytes(4, Endianness.BIG.value)
     # Stored just usable part
     assert shadowregs_load.get_register("REG2") == 0x4321.to_bytes(2, Endianness.BIG.value)
-    assert shadowregs_load.get_register("REG_INVERTED_AP") == 0x6DCBA9A9.to_bytes(
+    assert shadowregs_load.get_register("REG_INVERTED_AP", force=True) == 0x6DCBA9A9.to_bytes(
         4, Endianness.BIG.value
     )
     assert shadowregs_load.get_register("REG_BIG") == test_val
@@ -370,8 +357,6 @@ def test_shadowreg_yml_corrupted(mock_test_database: Any, data_dir: str) -> None
     :param mock_test_database: Mocked test database fixture for testing environment
     :param data_dir: Directory path containing test data files including corrupted YAML
     """
-    probe = get_probe()
-
     test_val = bytearray(32)
     for i in range(32):
         test_val[i] = i
@@ -379,7 +364,6 @@ def test_shadowreg_yml_corrupted(mock_test_database: Any, data_dir: str) -> None
     with pytest.raises((SPSDKRegsErrorBitfieldNotFound, SPSDKRegsErrorRegisterNotFound)):
         SR.ShadowRegisters.load_from_config(
             Config.create_from_file(os.path.join(data_dir, "sh_regs_corrupted.yml")),
-            debug_probe=probe,
         )
 
 
@@ -395,10 +379,7 @@ def test_shadowreg_yml_invalid_computed(mock_test_database: Any, tmpdir: Any) ->
     :param tmpdir: Temporary directory fixture for test files.
     :raises SPSDKError: Expected exception when loading invalid computed configuration.
     """
-    probe = get_probe()
-    shadowregs = SR.ShadowRegisters(
-        family=FamilyRevision("dev2", "rev_test_invalid_computed"), debug_probe=probe
-    )
+    shadowregs = get_shadow_registers(FamilyRevision("dev2", "rev_test_invalid_computed"))
 
     test_val = bytearray(32)
     for i in range(32):
@@ -412,7 +393,7 @@ def test_shadowreg_yml_invalid_computed(mock_test_database: Any, tmpdir: Any) ->
 
     assert shadowregs.get_register("REG1") == 0x12345678.to_bytes(4, Endianness.BIG.value)
     assert shadowregs.get_register("REG2") == 0x4321.to_bytes(2, Endianness.BIG.value)
-    assert shadowregs.get_register("REG_INVERTED_AP") == 0xA5A5A5A5.to_bytes(
+    assert shadowregs.get_register("REG_INVERTED_AP", force=True) == 0xA5A5A5A5.to_bytes(
         4, Endianness.BIG.value
     )
     assert shadowregs.get_register("REG_BIG") == test_val
@@ -421,7 +402,9 @@ def test_shadowreg_yml_invalid_computed(mock_test_database: Any, tmpdir: Any) ->
     cfg = shadowregs.get_config()
 
     with pytest.raises(SPSDKError):
-        SR.ShadowRegisters.load_from_config(cfg, debug_probe=probe)
+        SR.ShadowRegisters.load_from_config(
+            cfg, ShadowregsOperator(FamilyRevision.load_from_config(cfg), get_probe())
+        )
 
 
 def test_shadow_register_crc8() -> None:
@@ -432,8 +415,8 @@ def test_shadow_register_crc8() -> None:
 
     :raises AssertionError: If the calculated CRC8 value does not match expected result.
     """
-    crc = SR.ShadowRegisters.crc_update(b"\x12\x34", is_final=False)
-    crc = SR.ShadowRegisters.crc_update(b"\x56", crc=crc)
+    crc = FuseRegister.crc_update(b"\x12\x34", is_final=False)
+    crc = FuseRegister.crc_update(b"\x56", crc=crc)
     assert crc == 0x29
 
 
@@ -445,11 +428,8 @@ def test_shadow_register_crc8_hook(mock_test_database: Any) -> None:
 
     :param mock_test_database: Mocked test database fixture for testing.
     """
-    shadowregs = SR.ShadowRegisters(
-        family=FamilyRevision("dev2", revision="rev_test_invalid_computed")
-    )
-    assert shadowregs.comalg_dcfg_cc_socu_crc8(0x03020100) == 0x0302011D
-    assert shadowregs.comalg_dcfg_cc_socu_crc8(0x80FFFF00) == 0x80FFFF20
+    assert FuseRegister.comalg_dcfg_cc_socu_crc8(0x03020100) == 0x0302011D
+    assert FuseRegister.comalg_dcfg_cc_socu_crc8(0x80FFFF00) == 0x80FFFF20
 
 
 def test_shadow_register_invalid_flush_hook(mock_test_database: Any) -> None:
@@ -463,13 +443,15 @@ def test_shadow_register_invalid_flush_hook(mock_test_database: Any) -> None:
     :param mock_test_database: Mocked test database fixture for testing
     :raises SPSDKError: When attempting to set register with invalid flush hook
     """
-    probe = get_probe()
-    shadowregs1 = SR.ShadowRegisters(
-        family=FamilyRevision("dev2", revision="rev_test_invalid_flush_func"), debug_probe=probe
-    )
+    shadowregs = get_shadow_registers(FamilyRevision("dev2", "rev_test_invalid_flush_func"))
 
     with pytest.raises(SPSDKError):
-        shadowregs1.set_register("REG1", 0x12345678)
+        shadowregs.set_register("REG1", 0x12345678)
+
+
+def test_shadow_register_family_with_no_fuses() -> None:
+    with pytest.raises(SPSDKError):
+        ShadowregsOperator(FamilyRevision("lpc55s6x"), None)
 
 
 def test_shadow_register_enable_debug_invalid_probe() -> None:
@@ -480,9 +462,9 @@ def test_shadow_register_enable_debug_invalid_probe() -> None:
 
     :raises SPSDKError: When probe parameter is None.
     """
-    probe = None
+    operator = ShadowregsOperator(FamilyRevision("mimxrt798s"), None)
     with pytest.raises(SPSDKError):
-        SR.enable_debug(probe, FamilyRevision("lpc55s6x"))  # type: ignore
+        operator.enable_debug()  # type: ignore
 
 
 def test_shadow_register_enable_debug_device_cannot_enable() -> None:
@@ -492,11 +474,12 @@ def test_shadow_register_enable_debug_device_cannot_enable() -> None:
     to enable debug mode on a device that cannot be accessed. It simulates a
     scenario where memory read operations fail due to connection issues.
     """
-    probe = get_probe()
+    operator = get_operator(FamilyRevision("mimxrt798s"))
     # invalid run
     # Setup the simulated data for reading of AP registers
-    probe.mem_read_cause_exception(2)
-    assert not SR.enable_debug(probe, FamilyRevision("lpc55s6x"))
+    assert isinstance(operator.probe, DebugProbeVirtual)
+    operator.probe.mem_read_cause_exception(2)
+    assert not operator.enable_debug()
 
 
 def test_shadow_register_enable_debug() -> None:
@@ -509,13 +492,14 @@ def test_shadow_register_enable_debug() -> None:
     :param: None
     :raises AssertionError: If the enable_debug function fails to return True.
     """
-    probe = get_probe()
+    operator = get_operator(FamilyRevision("mimxrt798s"))
     # valid run, the right values are prepared
 
     # Setup the simulated data for reading of AP registers
     access_port = {12: ["Exception", 0x12345678], 0x02000000: [2, 0, 2, 0], 0x02000008: [0]}
-    probe.set_coresight_ap_substitute_data(access_port)
-    assert SR.enable_debug(probe, FamilyRevision("lpc55s6x"))
+    assert isinstance(operator.probe, DebugProbeVirtual)
+    operator.probe.set_coresight_ap_substitute_data(access_port)
+    assert operator.enable_debug()
 
 
 def test_shadow_register_enable_debug_already_enabled() -> None:
@@ -527,11 +511,12 @@ def test_shadow_register_enable_debug_already_enabled() -> None:
 
     :raises AssertionError: If enable_debug does not return the expected result.
     """
-    probe = get_probe()
+    operator = get_operator(FamilyRevision("mimxrt798s"))
     # Setup the simulated data for reading of AP registers
     mem_ap = {12: [0x12345678]}
-    probe.set_coresight_ap_substitute_data(mem_ap)
-    assert SR.enable_debug(probe, FamilyRevision("lpc55s6x"))
+    assert isinstance(operator.probe, DebugProbeVirtual)
+    operator.probe.set_coresight_ap_substitute_data(mem_ap)
+    assert operator.enable_debug()
 
 
 def test_shadow_register_enable_debug_probe_exceptions() -> None:
@@ -546,10 +531,11 @@ def test_shadow_register_enable_debug_probe_exceptions() -> None:
     """
     probe = get_probe()
     with pytest.raises(SPSDKError):
-        assert isinstance(probe, DebugProbeVirtual)
-        probe.mem_read_cause_exception()  # To fail test connection function
-        probe.ap_write_cause_exception()  # To fail write to debug mailbox
-        assert not SR.enable_debug(probe, FamilyRevision("lpc55s6x"))
+        operator = ShadowregsOperator(FamilyRevision("lpc55s6x"), probe)
+        assert isinstance(operator.probe, DebugProbeVirtual)
+        operator.probe.mem_read_cause_exception()  # To fail test connection function
+        operator.probe.ap_write_cause_exception()  # To fail write to debug mailbox
+        assert not operator.enable_debug()
 
 
 def test_generate_template(cli_runner: CliRunner, tmpdir: Any) -> None:
@@ -593,12 +579,13 @@ def test_rkth_order(family: str, rkth0: str, rkth7: str, data_dir: str) -> None:
     :param rkth7: Name of the seventh RKTH register to validate
     :param data_dir: Directory path containing test configuration files
     """
-    probe = get_probe()
     # to simplify HW differences unify offsets
     cfg = Config.create_from_file(os.path.join(data_dir, "cfg_rkth.yaml"))
     cfg["family"] = family
-    sr = SR.ShadowRegisters.load_from_config(cfg, debug_probe=probe)
-    sr.offset_for_write = 0
+    operator = get_operator(FamilyRevision.load_from_config(cfg))
+    sr = SR.ShadowRegisters.load_from_config(cfg, operator)
+    assert isinstance(sr.fuse_operator, ShadowregsOperator)
+    sr.fuse_operator.write_address_offset = 0
     sr.set_all_registers()
 
     # validate expected results

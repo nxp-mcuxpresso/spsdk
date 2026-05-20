@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -98,7 +98,7 @@ def test_command_line_interface_printregs_r_exe(cli_runner: CliRunner) -> None:
     enable_debug = '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]}'
     cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} printregs -r"
     result = cli_runner.invoke(main, cmd.split())
-    assert "Register description:" in result.output
+    assert "Description:" in result.output
 
 
 def test_command_line_interface_setreg_exe(cli_runner: CliRunner) -> None:
@@ -264,7 +264,8 @@ def test_command_line_interface_printregs_exe_fail1(cli_runner: CliRunner) -> No
         '-o subs_mem={"1074987040":["Exception"]}'
     )
     cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} printregs"
-    cli_runner.invoke(main, cmd.split(), expected_code=1)
+    result = cli_runner.invoke(main, cmd.split())
+    assert "Warning: 1 shadow register(s) could not be read" in result.output
 
 
 def test_command_line_interface_setreg_exe_fail(cli_runner: CliRunner) -> None:

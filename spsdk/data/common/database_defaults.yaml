@@ -30,6 +30,8 @@ features:
     tool: blhost
     reg_spec: fuses.json
     grouped_registers: []
+    inverted_regs: {}
+    computed_fields: {}
 
   # ======== Blhost section ========
   blhost: {}
@@ -81,6 +83,7 @@ features:
     # famode_cert: [] # List of Fault analysis Mode certificates (names of MBI classes)
     # famode_cfg_defaults: {} # Dictionary of default values of standard MBI members for FAmode image
     used_beacons_on_ele: False # The DAT ELE implementation is using certificate and authentication beacons
+    clear_iee_config_on_ele: False # Flag to enable configuration for clear IEE configuration with ELE
     auth_beacon_length: 2 # The length in bytes of authentication beacon
 
     dmbox_ap_ix: -1 # Typical Index of debug mailbox access port is 2
@@ -269,8 +272,7 @@ features:
 
   # ======== Shadow registers section ========
   shadow_regs:
-    inverted_regs: {}
-    computed_fields: {}
+    tool: shadowregs
     reset_type: hw_reset # possible options: [hw_reset, nvic_reset]
 
   # ======== Device Hardware Security Module (HSM) section ========
@@ -516,3 +518,4 @@ features:
       - "EDDSA"
       - "RSASSA_PKCS1_V15"
       - "RSASSA_PSS"
+    smr_regions_count: 32

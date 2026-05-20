@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -160,6 +160,7 @@ def test_sbx_devhsm(data_dir: str) -> None:
         ("mcxa256"),
         ("mcxa366"),
         ("mcxa365"),
+        ("mcxa577"),
     ],
 )
 def test_nxpdevhsm_get_template(cli_runner: CliRunner, tmpdir: Any, family: str) -> None:

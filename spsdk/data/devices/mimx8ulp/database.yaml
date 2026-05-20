@@ -109,6 +109,8 @@ info:
       interfaces: ["usb"]
       usb:
         - vid: 0x1FC9
+          pid: 0x014A
+        - vid: 0x1FC9
           pid: 0x014B
       protocol_params:
         no_cmd: True

@@ -101,7 +101,6 @@ class HashAlgo(SpsdkEnum):
     SHA3_256 = (10, "SHA3_256", "SHA3_256 hash")
     SHA3_384 = (11, "SHA3_384", "SHA3_384 hash")
     SHA3_512 = (12, "SHA3_512", "SHA3_512 hash")
-    MP = (13, "MP", "Miyaguchi-Preneel compression using AES-ECB with 128-bit key size")
 
 
 class AuthSchemeEnum(SpsdkEnum):

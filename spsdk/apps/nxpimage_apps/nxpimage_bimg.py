@@ -121,14 +121,14 @@ def bootable_image_parse(
         preparsed = BootableImage.pre_parse_verify(data, family, mem_type)
         if preparsed.has_errors:
             click.echo("The image bases has error, it doesn't passed pre-parse check:")
-            print_verifier_to_console(preparsed)
+            print_verifier_to_console(preparsed, problems=True)
             raise SPSDKAppError("Pre-parsed check failed")
 
     bimg_image = BootableImage.parse(data, family=family, mem_type=mem_type)
     verifier = bimg_image.verify()
     if verifier.has_errors:
         click.echo("The image has errors:")
-        print_verifier_to_console(verifier)
+        print_verifier_to_console(verifier, problems=True)
         raise SPSDKAppError("Image verification failed")
     bimg_image_info = bimg_image.image_info()
     logger.info(f"Parsed Bootable image memory map: {bimg_image_info.draw()}")
@@ -574,7 +574,7 @@ def bootable_image_verify(
     preparsed = BootableImage.pre_parse_verify(data, family, mem_type)
     if preparsed.has_errors:
         click.echo("The image bases has error, it doesn't passed pre-parse check:")
-        print_verifier_to_console(preparsed)
+        print_verifier_to_console(preparsed, problems=problems)
         raise SPSDKAppError("Pre-parsed check failed")
 
     bimg_images = []
@@ -599,7 +599,7 @@ def bootable_image_verify(
             click.echo("\n" + "=" * 120)
             click.echo(f"The result for: {img.mem_type.label}".center(120))
             click.echo("=" * 120 + "\n")
-            print_verifier_to_console(ver)
+            print_verifier_to_console(ver, problems=problems)
 
     if not found_good_image:
         raise SPSDKAppError("Verify failed")
@@ -634,13 +634,19 @@ def fcb_export(config: Config, output: str) -> None:
 
 def fcb_mem_type_callback(
     ctx: click.Context, param: click.Option, value: Optional[str]
-) -> MemoryType:
+) -> Optional[MemoryType]:
     """Dynamically set memory type choices based on selected family."""
+    # If family is not available yet, return None and let Click handle validation
+    if "family" not in ctx.params or ctx.params["family"] is None:
+        return None
+
     family = FamilyRevision(ctx.params["family"], ctx.params.get("revision", "latest"))
     supported_mem_types = FCB.get_supported_memory_types(family)
     # If value is None and we need to provide a default, get the first supported memory type
     if value is None:
-        return supported_mem_types[0]
+        default_mem_type = supported_mem_types[0]
+        click.echo(f"The default memory type was selected: {default_mem_type.label}")
+        return default_mem_type
 
     supported_labels = [mem_type.label for mem_type in supported_mem_types]
     if value not in supported_labels:

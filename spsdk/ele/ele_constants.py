@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -80,6 +80,7 @@ class SocId(SpsdkSoftEnum):
     MX93 = (0x9300, "MX93", "i.MX93")
     MX95 = (0x9500, "MX95", "i.MX95")
     MX943 = (0x9430, "MX943", "i.MX943")
+    MX952 = (0x9570, "MX952", "i.MX952")
 
 
 class LifeCycle(SpsdkSoftEnum):

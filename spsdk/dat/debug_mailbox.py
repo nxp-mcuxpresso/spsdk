@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK Debug Mailbox communication interface.
 
 This module provides functionality for communicating with NXP MCU debug mailbox
@@ -306,6 +307,23 @@ class DebugMailbox:
             data=data,
         )
 
+    def write_debug_password(self, password: bytes) -> None:
+        """Write debug password to the debug mailbox.
+
+        This function writes a debug password through the debug mailbox interface.
+        The password is written in multiple register writes.
+
+        :param password: The debug password bytes to write.
+        :raises SPSDKError: When password write operation fails.
+        """
+        if len(password) != 16:
+            raise SPSDKError("Debug password must be 32 bytes long")
+
+        # Write password in 4-byte chunks
+        for i in range(0, len(password), 4):
+            data = int.from_bytes(password[i : i + 4], byteorder="big")
+            self.dbgmlbx_reg_write(addr=self.registers["AUTH0"]["address"] + i, data=data)
+
 
 REGISTERS: dict[str, Any] = {
     # Control and Status Word (CSW) is used to control
@@ -345,5 +363,8 @@ REGISTERS: dict[str, Any] = {
     "IDR": {
         "address": 0xFC,
         "expected": 0x002A0000,
+    },
+    "AUTH0": {
+        "address": 0x80,
     },
 }

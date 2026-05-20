@@ -18,6 +18,7 @@ from typing import Any, Optional, Type
 
 from typing_extensions import Self
 
+from spsdk.dat.sda import DebugAuthMode
 from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.misc import LITTLE_ENDIAN, UINT8, UINT16, UINT32, UINT64
@@ -33,6 +34,7 @@ class HseAttributeId(SpsdkEnum):
 
     FW_VERSION = (1, "FW_VERSION")
     CAPABILITIES = (2, "CAPABILITIES")
+    DEBUG_AUTH_MODE = (10, "DEBUG_AUTH_MODE")
     APP_DEBUG_KEY = (11, "APP_DEBUG_KEY")
     SECURE_LIFECYCLE = (12, "SECURE_LIFECYCLE")
     ENABLE_PUBLISH_KEYSTORE_RAM_TO_FLASH = (602, "ENABLE_PUBLISH_KEYSTORE_RAM_TO_FLASH")
@@ -802,4 +804,99 @@ class AppDebugKeyAttributeHandler(HseAttributeHandler):
         return {
             "attr_id": self.ATTR_ID.label,
             "settings": settings,
+        }
+
+
+class DebugAuthModeAttributeHandler(HseAttributeHandler):
+    """HSE Debug Authentication Mode attribute handler.
+
+    Manages the HSE_DEBUG_AUTH_MODE_ATTR_ID attribute which determines whether
+    application debug authorization uses password-based or challenge-response
+    authentication.
+
+    This is a One-Time Programmable (OTP) attribute that can only be written once.
+    Once set, the debug authentication mode cannot be changed.
+
+    Modes:
+    - PASSWORD (0x0): Static password/token based authentication
+    - CHALLENGE_RESPONSE (0x1): Dynamic challenge-response based authentication
+
+    :cvar FORMAT: Binary format specification for UINT8 encoding.
+    :cvar ATTR_ID: HSE attribute identifier for debug authentication mode.
+    :cvar ATTR_TYPE: One-time programmable attribute type.
+    """
+
+    FORMAT = LITTLE_ENDIAN + UINT8
+    ATTR_ID = HseAttributeId.DEBUG_AUTH_MODE
+    ATTR_TYPE = HseAttributeType.NVM_READ_WRITE
+
+    def __init__(self, mode: DebugAuthMode) -> None:
+        """Initialize the debug authentication mode attribute handler.
+
+        :param mode: The debug authentication mode to set (PASSWORD or CHALLENGE_RESPONSE).
+        """
+        super().__init__()
+        self.mode = mode
+
+    @classmethod
+    def parse(cls, data: bytes) -> Self:
+        """Parse debug authentication mode data from raw bytes.
+
+        Extracts the mode value from the raw data and creates a new instance
+        with the corresponding mode enumeration value.
+
+        :param data: Raw byte data containing the mode value.
+        :return: New instance of the class with parsed mode.
+        :raises SPSDKValueError: If the mode value is not recognized.
+        """
+        mode_value = data[0]
+        return cls(DebugAuthMode.from_tag(mode_value))
+
+    def export(self) -> bytes:
+        """Export the debug authentication mode value as bytes.
+
+        Serializes the mode to a byte array according to the defined format.
+
+        :return: Serialized mode value as bytes.
+        """
+        return pack(self.FORMAT, self.mode.tag)
+
+    def __str__(self) -> str:
+        """Format the debug authentication mode for display.
+
+        Creates a formatted string representation of the HSE debug authentication
+        mode including the mode label and description.
+
+        :return: Formatted string representation of the mode.
+        """
+        ret = "HSE Debug Authentication Mode:\n"
+        ret += f"  Mode: {self.mode.label} (0x{self.mode.tag:02X})\n"
+        ret += f"  Description: {self.mode.description}\n"
+        ret += "\nAttribute Properties:\n"
+        ret += "  - One-Time Programmable (OTP) - can only be written once\n"
+        ret += "  - Determines authentication method for debug access\n"
+        ret += "  - PASSWORD: Uses static token/password authentication\n"
+        ret += "  - CHALLENGE_RESPONSE: Uses dynamic challenge-response authentication\n"
+        return ret
+
+    def __repr__(self) -> str:
+        """Return a string representation of the debug authentication mode attribute.
+
+        :return: String representation indicating the mode.
+        """
+        return f"DebugAuthMode({self.mode.label})"
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the debug authentication mode attribute to dictionary representation.
+
+        Creates a dictionary containing the attribute ID label and mode settings
+        for serialization purposes.
+
+        :return: Dictionary with attribute ID and mode settings.
+        """
+        return {
+            "attr_id": self.ATTR_ID.label,
+            "settings": {
+                "mode": self.mode.label,
+            },
         }

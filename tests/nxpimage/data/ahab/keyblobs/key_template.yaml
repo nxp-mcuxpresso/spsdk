@@ -1,0 +1,83 @@
+# Copyright 2025-2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ==========================  ahab Configuration template for mimxrt2660, Revision: latest.  ===========================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mimxrt2660
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ----------------------------------------===== Lifecycle State [Required] =====----------------------------------------
+# Description: Device lifecycle state for blob generation:
+# - fab: Fabrication state
+# - prov: Provisioning state
+# - nxp_fr: NXP Field Return state
+# - oem_open: OEM Open state
+# - oem_fr: OEM Field Return state
+# - oem_swc: OEM Software Closed state
+# - oem_locked: OEM Locked state
+# - oem_closed: OEM Closed state
+# Possible options: <fab, prov, nxp_fr, oem_open, oem_fr, oem_swc, oem_locked, oem_closed>
+lifecycle: oem_open
+# -----------------------------------------===== Debug Enable [Required] =====------------------------------------------
+# Description: Enable or disable debug functionality for the blob.
+debug: false
+# ----------------------------------------===== Key Identifier [Required] =====-----------------------------------------
+# Description: Unique key identifier (4 bytes maximum) used for blob generation.
+# This identifier must match the one used during key provisioning.
+key_id: 0x00000042
+# --------------------------------------===== Customer Master Key [Required] =====--------------------------------------
+# Description: Customer master key (CUST_MK_SK) as hex string or path to file.
+# Must be 256 bits (32 bytes) in length. This key is used for
+# deriving the Key Encryption Key (KEK).
+cust_mk_sk: "0x00112233445566778899aabbccddeeff000102030405060708090a0b0c0d0e0f"
+# -------------------------------------===== Super Root Key Hash 1 [Optional] =====-------------------------------------
+# Description: First Super Root Key Hash (SRKH) as hex string or path to file.
+# Must be 256 bits (32 bytes) in length. Used in key derivation process.
+# If not provided, zero hash will be used.
+srkh0: "0xd450bf90c9ec28d3ebf0287d0c3f5a5f091f89cc6e03ff887320c0b66b0c9ce55303e6a00da9e98dc9b5838a89f04cd3b1db735cda4aa808c226da9260687350"
+# -------------------------------------===== Super Root Key Hash 2 [Optional] =====-------------------------------------
+# Description: Second Super Root Key Hash (SRKH) as hex string or path to file.
+# Must be 256 bits (32 bytes) in length. Used in key derivation process.
+# If not provided, zero hash will be used.
+srkh1: "0x5a0307e1570d798ee792c1ea79874b0816347f5980dcab1f9ba413854eff5e301a473844a69450fd09bf66b6725a84b8c25705913009d9f0911b15af12eb8164"
+# --------------------------------------===== Data Encryption Key [Optional] =====--------------------------------------
+# Description: Data Encryption Key as hex string or path to file.
+# Size must match dek_key_size parameter. If not provided,
+# a random DEK will be generated.
+dek: "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+# -----------------------------------------===== DEK Key Size [Required] =====------------------------------------------
+# Description: Data Encryption Key size in bits. Supported sizes are:
+# - 128: 128-bit AES key
+# - 192: 192-bit AES key
+# - 256: 256-bit AES key
+# Possible options: <128, 192, 256>
+dek_key_size: 256
+# -------------------------------------===== Encryption Algorithm [Optional] =====--------------------------------------
+# Description: Encryption algorithm used for the blob:
+# - AES_CBC: AES in CBC mode
+# - SM4_CBC: SM4 in CBC mode
+# Possible options: <AES_CBC, SM4_CBC>
+algorithm: AES_CBC
+# -------------------------------------------===== Blob Mode [Optional] =====-------------------------------------------
+# Description: DEK blob mode configuration value.
+mode: 0
+# ------------------------------------------===== Blob Flags [Optional] =====-------------------------------------------
+# Description: Key blob configuration flags:
+# - 0x80: KEK (Key Encryption Key) flag
+# - 0x01: DEK (Data Encryption Key) flag
+# - 0x81: Combined KEK and DEK flags
+flags: 128
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# ---------------------------------------===== Output Image name [Required] =====---------------------------------------
+# Description: The path for result binary file.
+output: ahab_blob.bin

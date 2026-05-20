@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -443,7 +443,12 @@ class Verifier:
             self.add_record(name, VerifierResult.ERROR, "Doesn't exists")
             return
 
-        if isinstance(value, enum):
+        if (
+            isinstance(value, SpsdkEnum)
+            and hasattr(value, "__class__")
+            and hasattr(enum, "__name__")
+            and value.__class__.__name__ == enum.__name__
+        ):
             value_enum = value
         elif isinstance(value, SpsdkEnum):
             self.add_record(

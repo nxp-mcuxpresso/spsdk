@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-sr_registers:
+shadow_regs:
   type: object
   required: [registers]
   properties:

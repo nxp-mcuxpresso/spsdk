@@ -110,3 +110,9 @@ features:
     smr_config_flags:
       - "INSTALL_AUTH"
       - "AUTH_AAD"
+    smr_regions_count: 8
+
+  # ======== DAT section ========
+  dat:
+    sub_features: [sda]
+    sda_ap_index: 7

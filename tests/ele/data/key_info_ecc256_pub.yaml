@@ -5,7 +5,7 @@
 # ============================  hse Configuration template for mcxe31b, Revision: latest.  =============================
 
 # ======================================================================================================================
-#                                                 == General Options ==                                                 
+#                                                 == General Options ==
 # ======================================================================================================================
 # -------------------------------------===== The chip family name [Required] =====--------------------------------------
 # Description: NXP chip family identifier.
@@ -15,7 +15,7 @@ family: mcxe31b
 # Possible options: <a0, latest>
 revision: latest
 # ======================================================================================================================
-#                                               == HSE Key Information ==                                               
+#                                               == HSE Key Information ==
 # ======================================================================================================================
 # ---------------------------------------===== Output file name [Required] =====----------------------------------------
 # Description: Output Key Info file name
@@ -69,16 +69,15 @@ smrFlags: []
 # ---------------------------------------===== Key-Specific Data [Optional] =====---------------------------------------
 # Description: Additional data specific to the key type
 specificData:
-# ======================================================================================================================
-#                                           == List of possible 3 options. ==                                           
-#                                Options [eccCurveId, pubExponentSize, aesBlockModeMask]                                
-# ======================================================================================================================
+  # ======================================================================================================================
+  #                                           == List of possible 3 options. ==
+  #                                Options [eccCurveId, pubExponentSize, aesBlockModeMask]
+  # ======================================================================================================================
 
-#  ============================ [Example of possible configuration: #0 , erase if not used] =============================
-# Specific data for ECC keys
+  #  ============================ [Example of possible configuration: #0 , erase if not used] =============================
+  # Specific data for ECC keys
   # ----------------------------------------===== ECC Curve ID [Required] =====-----------------------------------------
   # Description: Elliptic curve to use with ECC keys
-  # Possible options: <NONE, SEC_SECP256R1, SEC_SECP384R1, SEC_SECP521R1, BRAINPOOL_P256R1, BRAINPOOL_P320R1,
-  # BRAINPOOL_P384R1, BRAINPOOL_P512R1, ED25519, CURVE25519, ED448, CURVE448, USER_CURVE1, USER_CURVE2, USER_CURVE3>
-  eccCurveId: SEC_SECP256R1
-
+  # Possible options: <NONE, SECP256R1, SECP384R1, SECP521R1, BRAINPOOLP256R1, BRAINPOOLP320R1,
+  # BRAINPOOLP384R1, BRAINPOOLP512R1, ED25519, CURVE25519, ED448, CURVE448, USER_CURVE1, USER_CURVE2, USER_CURVE3>
+  eccCurveId: SECP256R1

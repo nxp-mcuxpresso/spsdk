@@ -1,0 +1,8 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/cr_entry_template.yaml
+user_cfg: inputs/cr_entry.yaml
+custom_command: "%! nxpimage hse cr-entry get-template -f mcxe31b -o workspace/cr_entry_template.yaml --force"
+
+comments:
+  preBootSmrMap: "SMR index mapping. This will be installed in the next step."

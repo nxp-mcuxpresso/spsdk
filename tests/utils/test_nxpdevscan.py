@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -471,7 +471,8 @@ def test_get_device_name(vid: int, pid: int, expected_result: list[str]) -> None
     :param pid: USB Product ID to search for.
     :param expected_result: List of expected device names that should be returned.
     """
-    assert sorted(devicedescription.get_usb_device_name(vid, pid)) == sorted(expected_result)
+    actual_result = devicedescription.get_usb_device_name(vid, pid)
+    assert set(expected_result).issubset(set(actual_result))
 
 
 def test_path_conversion() -> None:

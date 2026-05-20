@@ -1,0 +1,208 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ============================  hse Configuration template for mcxe31b, Revision: latest.  =============================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxe31b
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ======================================================================================================================
+#                                          == HSE Key Catalog Configuration ==                                          
+# ======================================================================================================================
+# ---------------------------------------===== Output file name [Required] =====----------------------------------------
+# Description: Output Key Catalog Configuration file name
+output: key_catalog.bin
+# ----------------------------------------===== NVM Key Groups [Required] =====-----------------------------------------
+# Description: Configuration for NVM key groups
+nvmKeyGroups:
+  -
+    # ------------------------------------------===== MU Mask [Optional] =====------------------------------------------
+    # Description: Specifies which Message Units can access this key group
+    # Possible options: <NONE, MU0, MU1, MU2, MU3, ALL>
+    muMask: ALL
+    # ----------------------------------------===== Group Owner [Optional] =====----------------------------------------
+    # Description: Specifies the owner of the key group
+    # Possible options: <ANY, CUST, OEM>
+    groupOwner: ANY
+    # -----------------------------------------===== Key Type [Required] =====------------------------------------------
+    # Description: Type of keys in this group
+    # Possible options: <SHE, AES, HMAC, SHARED_SECRET, SIPHASH, ECC_PAIR, ECC_PUB, ECC_PUB_EXT, RSA_PAIR, RSA_PUB,
+    # RSA_PUB_EXT, DH_PAIR, DH_PUB>
+    keyType: SHE
+    # ------------------------------------===== Number of Key Slots [Required] =====------------------------------------
+    # Description: Number of key slots in this group
+    numOfKeySlots: 12
+    # ----------------------------------===== Maximum Key Bit Length [Required] =====-----------------------------------
+    # Description: Maximum bit length for keys in this group
+    maxKeyBitLen: 128
+  -
+    # ------------------------------------------===== MU Mask [Optional] =====------------------------------------------
+    # Description: Specifies which Message Units can access this key group
+    # Possible options: <NONE, MU0, MU1, MU2, MU3, ALL>
+    muMask: ALL
+    # ----------------------------------------===== Group Owner [Optional] =====----------------------------------------
+    # Description: Specifies the owner of the key group
+    # Possible options: <ANY, CUST, OEM>
+    groupOwner: CUST
+    # -----------------------------------------===== Key Type [Required] =====------------------------------------------
+    # Description: Type of keys in this group
+    # Possible options: <SHE, AES, HMAC, SHARED_SECRET, SIPHASH, ECC_PAIR, ECC_PUB, ECC_PUB_EXT, RSA_PAIR, RSA_PUB,
+    # RSA_PUB_EXT, DH_PAIR, DH_PUB>
+    keyType: AES
+    # ------------------------------------===== Number of Key Slots [Required] =====------------------------------------
+    # Description: Number of key slots in this group
+    numOfKeySlots: 4
+    # ----------------------------------===== Maximum Key Bit Length [Required] =====-----------------------------------
+    # Description: Maximum bit length for keys in this group
+    maxKeyBitLen: 128
+  -
+    # ------------------------------------------===== MU Mask [Optional] =====------------------------------------------
+    # Description: Specifies which Message Units can access this key group
+    # Possible options: <NONE, MU0, MU1, MU2, MU3, ALL>
+    muMask: ALL
+    # ----------------------------------------===== Group Owner [Optional] =====----------------------------------------
+    # Description: Specifies the owner of the key group
+    # Possible options: <ANY, CUST, OEM>
+    groupOwner: CUST
+    # -----------------------------------------===== Key Type [Required] =====------------------------------------------
+    # Description: Type of keys in this group
+    # Possible options: <SHE, AES, HMAC, SHARED_SECRET, SIPHASH, ECC_PAIR, ECC_PUB, ECC_PUB_EXT, RSA_PAIR, RSA_PUB,
+    # RSA_PUB_EXT, DH_PAIR, DH_PUB>
+    keyType: AES
+    # ------------------------------------===== Number of Key Slots [Required] =====------------------------------------
+    # Description: Number of key slots in this group
+    numOfKeySlots: 7
+    # ----------------------------------===== Maximum Key Bit Length [Required] =====-----------------------------------
+    # Description: Maximum bit length for keys in this group
+    maxKeyBitLen: 256
+  -
+    # ------------------------------------------===== MU Mask [Optional] =====------------------------------------------
+    # Description: Specifies which Message Units can access this key group
+    # Possible options: <NONE, MU0, MU1, MU2, MU3, ALL>
+    muMask: ALL
+    # ----------------------------------------===== Group Owner [Optional] =====----------------------------------------
+    # Description: Specifies the owner of the key group
+    # Possible options: <ANY, CUST, OEM>
+    groupOwner: CUST
+    # -----------------------------------------===== Key Type [Required] =====------------------------------------------
+    # Description: Type of keys in this group
+    # Possible options: <SHE, AES, HMAC, SHARED_SECRET, SIPHASH, ECC_PAIR, ECC_PUB, ECC_PUB_EXT, RSA_PAIR, RSA_PUB,
+    # RSA_PUB_EXT, DH_PAIR, DH_PUB>
+    keyType: HMAC
+    # ------------------------------------===== Number of Key Slots [Required] =====------------------------------------
+    # Description: Number of key slots in this group
+    numOfKeySlots: 2
+    # ----------------------------------===== Maximum Key Bit Length [Required] =====-----------------------------------
+    # Description: Maximum bit length for keys in this group
+    maxKeyBitLen: 512
+  -
+    # ------------------------------------------===== MU Mask [Optional] =====------------------------------------------
+    # Description: Specifies which Message Units can access this key group
+    # Possible options: <NONE, MU0, MU1, MU2, MU3, ALL>
+    muMask: ALL
+    # ----------------------------------------===== Group Owner [Optional] =====----------------------------------------
+    # Description: Specifies the owner of the key group
+    # Possible options: <ANY, CUST, OEM>
+    groupOwner: CUST
+    # -----------------------------------------===== Key Type [Required] =====------------------------------------------
+    # Description: Type of keys in this group
+    # Possible options: <SHE, AES, HMAC, SHARED_SECRET, SIPHASH, ECC_PAIR, ECC_PUB, ECC_PUB_EXT, RSA_PAIR, RSA_PUB,
+    # RSA_PUB_EXT, DH_PAIR, DH_PUB>
+    keyType: ECC_PAIR
+    # ------------------------------------===== Number of Key Slots [Required] =====------------------------------------
+    # Description: Number of key slots in this group
+    numOfKeySlots: 3
+    # ----------------------------------===== Maximum Key Bit Length [Required] =====-----------------------------------
+    # Description: Maximum bit length for keys in this group
+    maxKeyBitLen: 521
+  -
+    # ------------------------------------------===== MU Mask [Optional] =====------------------------------------------
+    # Description: Specifies which Message Units can access this key group
+    # Possible options: <NONE, MU0, MU1, MU2, MU3, ALL>
+    muMask: ALL
+    # ----------------------------------------===== Group Owner [Optional] =====----------------------------------------
+    # Description: Specifies the owner of the key group
+    # Possible options: <ANY, CUST, OEM>
+    groupOwner: CUST
+    # -----------------------------------------===== Key Type [Required] =====------------------------------------------
+    # Description: Type of keys in this group
+    # Possible options: <SHE, AES, HMAC, SHARED_SECRET, SIPHASH, ECC_PAIR, ECC_PUB, ECC_PUB_EXT, RSA_PAIR, RSA_PUB,
+    # RSA_PUB_EXT, DH_PAIR, DH_PUB>
+    keyType: ECC_PUB
+    # ------------------------------------===== Number of Key Slots [Required] =====------------------------------------
+    # Description: Number of key slots in this group
+    numOfKeySlots: 1
+    # ----------------------------------===== Maximum Key Bit Length [Required] =====-----------------------------------
+    # Description: Maximum bit length for keys in this group
+    maxKeyBitLen: 521
+  -
+    # ------------------------------------------===== MU Mask [Optional] =====------------------------------------------
+    # Description: Specifies which Message Units can access this key group
+    # Possible options: <NONE, MU0, MU1, MU2, MU3, ALL>
+    muMask: ALL
+    # ----------------------------------------===== Group Owner [Optional] =====----------------------------------------
+    # Description: Specifies the owner of the key group
+    # Possible options: <ANY, CUST, OEM>
+    groupOwner: CUST
+    # -----------------------------------------===== Key Type [Required] =====------------------------------------------
+    # Description: Type of keys in this group
+    # Possible options: <SHE, AES, HMAC, SHARED_SECRET, SIPHASH, ECC_PAIR, ECC_PUB, ECC_PUB_EXT, RSA_PAIR, RSA_PUB,
+    # RSA_PUB_EXT, DH_PAIR, DH_PUB>
+    keyType: RSA_PAIR
+    # ------------------------------------===== Number of Key Slots [Required] =====------------------------------------
+    # Description: Number of key slots in this group
+    numOfKeySlots: 2
+    # ----------------------------------===== Maximum Key Bit Length [Required] =====-----------------------------------
+    # Description: Maximum bit length for keys in this group
+    maxKeyBitLen: 4096
+  -
+    # ------------------------------------------===== MU Mask [Optional] =====------------------------------------------
+    # Description: Specifies which Message Units can access this key group
+    # Possible options: <NONE, MU0, MU1, MU2, MU3, ALL>
+    muMask: ALL
+    # ----------------------------------------===== Group Owner [Optional] =====----------------------------------------
+    # Description: Specifies the owner of the key group
+    # Possible options: <ANY, CUST, OEM>
+    groupOwner: CUST
+    # -----------------------------------------===== Key Type [Required] =====------------------------------------------
+    # Description: Type of keys in this group
+    # Possible options: <SHE, AES, HMAC, SHARED_SECRET, SIPHASH, ECC_PAIR, ECC_PUB, ECC_PUB_EXT, RSA_PAIR, RSA_PUB,
+    # RSA_PUB_EXT, DH_PAIR, DH_PUB>
+    keyType: RSA_PUB
+    # ------------------------------------===== Number of Key Slots [Required] =====------------------------------------
+    # Description: Number of key slots in this group
+    numOfKeySlots: 2
+    # ----------------------------------===== Maximum Key Bit Length [Required] =====-----------------------------------
+    # Description: Maximum bit length for keys in this group
+    maxKeyBitLen: 4096
+# ----------------------------------------===== RAM Key Groups [Required] =====-----------------------------------------
+# Description: Configuration for RAM key groups
+ramKeyGroups:
+  -
+    # ------------------------------------------===== MU Mask [Optional] =====------------------------------------------
+    # Description: Specifies which Message Units can access this key group
+    # Possible options: <NONE, MU0, MU1, MU2, MU3, ALL>
+    muMask: ALL
+    # ----------------------------------------===== Group Owner [Optional] =====----------------------------------------
+    # Description: Specifies the owner of the key group
+    # Possible options: <ANY, CUST, OEM>
+    groupOwner: ANY
+    # -----------------------------------------===== Key Type [Required] =====------------------------------------------
+    # Description: Type of keys in this group
+    # Possible options: <SHE, AES, HMAC, SHARED_SECRET, SIPHASH, ECC_PAIR, ECC_PUB, ECC_PUB_EXT, RSA_PAIR, RSA_PUB,
+    # RSA_PUB_EXT, DH_PAIR, DH_PUB>
+    keyType: SHE
+    # ------------------------------------===== Number of Key Slots [Required] =====------------------------------------
+    # Description: Number of key slots in this group
+    numOfKeySlots: 1
+    # ----------------------------------===== Maximum Key Bit Length [Required] =====-----------------------------------
+    # Description: Maximum bit length for keys in this group
+    maxKeyBitLen: 128

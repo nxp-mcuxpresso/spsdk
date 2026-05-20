@@ -43,6 +43,13 @@ features:
 
   # ======== Fuses description section ========
   fuses:
+    inverted_regs:
+      fuse33: fuse34 # DCFG_CC_SOCU -> DCFG_CC_SOCU_AP
+    computed_fields:
+      fuse33: # DCFG_CC_SOCU
+        fuse33-bits-0-7: comalg_dcfg_cc_socu_crc8 # CRC8[7:0]
+      fuse31: # DCFG_CC_SOCU_NS
+        fuse31-bits-0-7: comalg_dcfg_cc_socu_crc8 # CRC8_NS[7:0]
     grouped_registers:
       - uid: rkth
         name: RKTH
@@ -167,16 +174,14 @@ features:
   # ======== Shadow registers section ========
   shadow_regs:
     write_address_offset: -0x0FEE_4000 # = 0x4000_A000 - 0x3012_6000 The rw61x is using different address for shadow registers write operations
-    flush_func: rw61x_update_scratch_reg
+    scratch_reg:
+      address: 0x5003B498
+      value: 0xA7C56B9E
     reset_type: nvic_reset # possible options: [hw_reset, nvic_reset]
+    nvic_reset:
+      address: 0xE000ED0C
+      value: 0x05FA0004
     possible_verification: False # RW61x doesn't allow verify writing of shadow registers
-    inverted_regs:
-      fuse33: fuse34 # DCFG_CC_SOCU -> DCFG_CC_SOCU_AP
-    computed_fields:
-      fuse33: # DCFG_CC_SOCU
-        fuse33-bits-0-7: comalg_dcfg_cc_socu_crc8 # CRC8[7:0]
-      fuse31: # DCFG_CC_SOCU_NS
-        fuse31-bits-0-7: comalg_dcfg_cc_socu_crc8 # CRC8_NS[7:0]
 
   # ======== FCB section ========
   fcb:

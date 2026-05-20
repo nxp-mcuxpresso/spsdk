@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -136,6 +136,7 @@ if IS_OSCCA_SUPPORTED:
         capture_data = False
         base64_data = b""
         for line in data.splitlines(keepends=False):
+            # PEM data may contain EC PARAMS, thus capture trigger should be the word KEY
             if b"KEY" in line:
                 capture_data = not capture_data
             elif capture_data:

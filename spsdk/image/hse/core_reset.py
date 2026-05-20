@@ -22,7 +22,7 @@ from spsdk.image.hse.common import CoreId
 from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
-from spsdk.utils.family import FamilyRevision, update_validation_schema_family
+from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
 from spsdk.utils.misc import LITTLE_ENDIAN, UINT8, UINT16, UINT32, value_to_int
 from spsdk.utils.spsdk_enum import SpsdkEnum, SpsdkIntFlag
 from spsdk.utils.verifier import Verifier
@@ -149,6 +149,7 @@ class CoreResetEntry(FeatureBaseClass):
         + UINT8  # reserved1[5]
     )
     SIZE = calcsize(FORMAT)
+    CONFIG_TITLE = "Core Reset entry configuration"
 
     def __init__(
         self,
@@ -369,12 +370,26 @@ class CoreResetEntry(FeatureBaseClass):
         """
         schemas = get_schema_file(DatabaseManager.HSE)
         family_schema = get_schema_file("general")["family"]
+        family_schema["main_title"] = cls.CONFIG_TITLE
         update_validation_schema_family(
             sch=family_schema["properties"], devices=cls.get_supported_families(), family=family
         )
         schemas["cr"]["properties"]["coreId"]["enum"] = [
             core.label for core in CoreId.get_available_core_ids(family)
         ]
+        smr_regions_count = get_db(family=family).get_int(DatabaseManager.HSE, "smr_regions_count")
+        schemas["cr"]["properties"]["preBootSmrMap"]["oneOf"][1]["maxItems"] = smr_regions_count
+        schemas["cr"]["properties"]["preBootSmrMap"]["oneOf"][1]["items"]["maximum"] = (
+            smr_regions_count - 1
+        )
+        schemas["cr"]["properties"]["altPreBootSmrMap"]["oneOf"][1]["maxItems"] = smr_regions_count
+        schemas["cr"]["properties"]["altPreBootSmrMap"]["oneOf"][1]["items"]["maximum"] = (
+            smr_regions_count - 1
+        )
+        schemas["cr"]["properties"]["postBootSmrMap"]["oneOf"][1]["maxItems"] = smr_regions_count
+        schemas["cr"]["properties"]["postBootSmrMap"]["oneOf"][1]["items"]["maximum"] = (
+            smr_regions_count - 1
+        )
         return [family_schema, schemas["cr"]]
 
     def to_dict(self) -> Dict[str, Any]:

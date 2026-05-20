@@ -214,6 +214,17 @@ info:
         no_cmd: True
         hid_ep1: True
         hid_pack_size: 1020
+    fastboot:
+      interfaces: [usb]
+      usb:
+        - vid: 0x1FC9
+          pid: 0x0152
+    sdpv:
+      protocol: sdpv
+      interfaces: [usb]
+      usb:
+        - vid: 0x1FC9
+          pid: 0x0151
 
 features:
   # ======== Fuses description section ========
@@ -254,6 +265,7 @@ features:
     based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
     dat_is_using_sha256_always: True
     auth_beacon_length: 4 # The length in bytes of authentication beacon
+    clear_iee_config_on_ele: True # Flag to enable configuration for clear IEE configuration with ELE
     ele_cnt_version: 1
     dac_version_is_swapped: True
     sub_features: ["ele_pqc"]

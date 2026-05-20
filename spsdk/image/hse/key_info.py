@@ -18,8 +18,8 @@ from spsdk.image.hse.common import HseKeyBits, KeyType
 from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
-from spsdk.utils.family import FamilyRevision, update_validation_schema_family
-from spsdk.utils.spsdk_enum import SpsdkEnum, SpsdkIntFlag
+from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
+from spsdk.utils.spsdk_enum import SpsdkIntFlag
 
 
 class HseKeyGroupOwner(IntEnum):
@@ -114,13 +114,13 @@ class HseEccCurveId(IntEnum):
     """HSE ECC Curve IDs."""
 
     NONE = 0
-    SEC_SECP256R1 = 1
-    SEC_SECP384R1 = 2
-    SEC_SECP521R1 = 3
-    BRAINPOOL_P256R1 = 4
-    BRAINPOOL_P320R1 = 5
-    BRAINPOOL_P384R1 = 6
-    BRAINPOOL_P512R1 = 7
+    SECP256R1 = 1
+    SECP384R1 = 2
+    SECP521R1 = 3
+    BRAINPOOLP256R1 = 4
+    BRAINPOOLP320R1 = 5
+    BRAINPOOLP384R1 = 6
+    BRAINPOOLP512R1 = 7
     ED25519 = 9
     CURVE25519 = 10
     ED448 = 11
@@ -157,6 +157,7 @@ class KeyInfo(FeatureBaseClass):
     FEATURE = DatabaseManager.HSE
     SUB_FEATURE = "key_import"
     FORMAT = "<HHLLBBBB"
+    CONFIG_TITLE = "Key info configuration"
 
     # Maximum key counter value
     MAX_KEY_COUNTER_VALUE = 0xFFFFFFFE
@@ -527,9 +528,16 @@ class KeyInfo(FeatureBaseClass):
         """
         schemas = get_schema_file(DatabaseManager.HSE)
         family_schema = get_schema_file("general")["family"]
+        family_schema["main_title"] = cls.CONFIG_TITLE
         update_validation_schema_family(
             sch=family_schema["properties"], devices=cls.get_supported_families(), family=family
         )
+        smr_regions_count = get_db(family=family).get_int(DatabaseManager.HSE, "smr_regions_count")
+        schemas["key_info"]["properties"]["smrFlags"]["maxItems"] = smr_regions_count
+        schemas["key_info"]["properties"]["smrFlags"]["enum_template"] = list(
+            range(smr_regions_count)
+        )
+        schemas["key_info"]["properties"]["smrFlags"]["items"]["maximum"] = smr_regions_count - 1
         return [family_schema, schemas["key_info"]]
 
     @classmethod
@@ -546,14 +554,3 @@ class KeyInfo(FeatureBaseClass):
         """
         schemas = cls.get_validation_schemas(family)
         return cls._get_config_template(family, schemas)
-
-
-class KeyFormat(SpsdkEnum):
-    """HSE Key Format (applicable for ECC keys only).
-
-    Defines the format of ECC public keys used in HSE operations.
-    """
-
-    RAW = (0, "RAW", "Raw ECC public key: X || Y")
-    UNCOMPRESSED = (1, "UNCOMPRESSED", "Standard ECC uncompressed public key: 0x04 || X || Y")
-    COMPRESSED = (2, "COMPRESSED", "Standard ECC compressed public key: 0x02/0x03 || X")

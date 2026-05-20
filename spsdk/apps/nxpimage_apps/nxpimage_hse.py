@@ -97,7 +97,7 @@ def key_info_parse_command(binary: str, family: FamilyRevision, output: str) -> 
     key_info = KeyInfo.parse(data, family)
     cfg = key_info.get_config(data_path=output)
     yaml_data = CommentedConfig(
-        main_title=("Key info configuration:"),
+        main_title=KeyInfo.CONFIG_TITLE,
         schemas=key_info.get_validation_schemas(family),
     ).get_config(cfg)
 
@@ -176,7 +176,7 @@ def key_catalog_parse_command(binary: str, family: FamilyRevision, output: str) 
     key_catalog = KeyCatalogCfg.parse(data, family)
     cfg = key_catalog.get_config(data_path=output)
     yaml_data = CommentedConfig(
-        main_title=("Key catalog configuration:"),
+        main_title=KeyCatalogCfg.CONFIG_TITLE,
         schemas=key_catalog.get_validation_schemas(family),
     ).get_config(cfg)
 
@@ -253,7 +253,7 @@ def smr_entry_parse(data: bytes, family: FamilyRevision, output: str) -> None:
     smr_entry = SmrEntry.parse(data, family)
     cfg = smr_entry.get_config(data_path=output)
     yaml_data = CommentedConfig(
-        main_title=("SME entry configuration:"),
+        main_title=SmrEntry.CONFIG_TITLE,
         schemas=smr_entry.get_validation_schemas(family),
     ).get_config(cfg)
     write_file(yaml_data, output)
@@ -274,7 +274,8 @@ def smr_entry_parse(data: bytes, family: FamilyRevision, output: str) -> None:
     "key_path",
     type=click.Path(exists=True, dir_okay=False),
     required=True,
-    help="Path to a key.",
+    help="Path to a key file. Supports PEM/DER encoded private or public keys (RSA, ECC) for asymmetric cryptography, "
+    "or binary/hex format for symmetric keys (AES, HMAC).",
 )
 @click.option(
     "-a",
@@ -393,7 +394,7 @@ def cr_entry_parse(data: bytes, family: FamilyRevision, output: str) -> None:
     smr_entry = CoreResetEntry.parse(data, family)
     cfg = smr_entry.get_config(data_path=output)
     yaml_data = CommentedConfig(
-        main_title=("Core Reset entry configuration:"),
+        main_title=CoreResetEntry.CONFIG_TITLE,
         schemas=smr_entry.get_validation_schemas(family),
     ).get_config(cfg)
     write_file(yaml_data, output)

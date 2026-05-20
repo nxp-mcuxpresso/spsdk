@@ -158,8 +158,9 @@ sb3_commands:
                         - 32-bit value. Value will be converted to binary in little endian format. Example: '0xB38AA899' or '0b111000'
                         - Array of 32-bit binary values delimited by comma to be loaded. Individual 32-bit values will be stored in little endian format. Example: 0x1234, 0x5678, 0, 12345678
                         - List of integers passed as an array.
-                        - Path to binary file. Example: my_binary.bin
+                        - Path to binary/hex/srec/sparse file. Example: my_binary.bin
                     template_value: my_binary.bin
+                    format: file-or-value-or-array
                   compress:
                     type: boolean
                     title: Data compression
@@ -286,8 +287,9 @@ sb3_commands:
                         - 32-bit value. Value will be converted to binary in little endian format. Example: '0xB38AA899' or '0b111000'
                         - Array of 32-bit binary values delimited by comma to be loaded. Individual 32-bit values will be stored in little endian format. Example: 0x1234, 0x5678, 0, 12345678
                         - List of integers passed as an array.
-                        - Path to binary file. Example: my_binary.bin
+                        - Path to binary/hex/srec/sparse file. Example: my_binary.bin
                     template_value: my_binary.bin
+                    format: file-or-value-or-array
                 required: [address]
 
           - type: object
@@ -325,8 +327,9 @@ sb3_commands:
                         - 32-bit value. Value will be converted to binary in little endian format. Example: '0xB38AA899' or '0b111000'
                         - Array of 32-bit binary values delimited by comma to be loaded. Individual 32-bit values will be stored in little endian format. Example: 0x1234, 0x5678, 0, 12345678
                         - List of integers passed as an array.
-                        - Path to binary file. Example: my_binary.bin
+                        - Path to binary/hex/srec/sparse file. Example: my_binary.bin
                     template_value: ifr_data.bin
+                    format: file-or-value-or-array
                 required: [type]
 
           - type: object

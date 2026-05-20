@@ -11,7 +11,7 @@ AHAB
     - Set up and build the complete i.MX Yocto BSP for your target platform
     - Extract the required firmware binaries from the Yocto build artifacts
     - Refer to the current `i.MX Linux Release Notes <https://www.nxp.com/docs/en/release-note/IMX_LINUX_RELEASE_NOTES.pdf>`_ for the most up-to-date information on file availability and BSP versions
-    - Consult the `i.MX Linux User's Guide <https://www.nxp.com/doc/IMX_LINUX_USERS_GUIDE>`_ for detailed build instructions
+    - Consult the `i.MX Linux User's Guide <https://www.nxp.com/docs/en/user-guide/UG10163.pdf>`_ for detailed build instructions
 
     This approach ensures you have access to all necessary proprietary firmware components while complying with licensing requirements.
 

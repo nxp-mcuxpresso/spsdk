@@ -1,0 +1,58 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ========================  PFR CMPA_PSWD configuration template for mcxc151, Revision: latest  ========================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxc151
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ------------------------------------===== Configuration area type [Required] =====------------------------------------
+# Description: PFR / IFR type
+# Possible options: <CMPA_PSWD, cmpa_pswd>
+type: CMPA_PSWD
+# --------------------------------------------===== mcxc151 [Required] =====--------------------------------------------
+settings:
+  # -------------------------------------===== DBG_AUTH_PASSWORD0 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000000, Width: 32b; DBG auth password[31:0]
+  DBG_AUTH_PASSWORD0: '0x00000000'
+  # -------------------------------------===== DBG_AUTH_PASSWORD1 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000004, Width: 32b; DBG auth password[63:32]
+  DBG_AUTH_PASSWORD1: '0x00000000'
+  # -------------------------------------===== DBG_AUTH_PASSWORD2 [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000008, Width: 32b; DBG auth password[95:64]
+  DBG_AUTH_PASSWORD2: '0x00000000'
+  # -------------------------------------===== DBG_AUTH_PASSWORD3 [Optional] =====--------------------------------------
+  # Description: Offset: 0x0000000C, Width: 32b; DBG auth password[127:96]
+  DBG_AUTH_PASSWORD3: '0x00000000'
+  # ---------------------------------------===== IMG_MISR_SEED0 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000020, Width: 32b; MISR seed[31:0]
+  IMG_MISR_SEED0: '0x00000000'
+  # ---------------------------------------===== IMG_MISR_SEED1 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000024, Width: 32b; MISR seed[63:32]
+  IMG_MISR_SEED1: '0x00000000'
+  # ---------------------------------------===== IMG_MISR_SEED2 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000028, Width: 32b; MISR seed[95:64]
+  IMG_MISR_SEED2: '0x00000000'
+  # ---------------------------------------===== IMG_MISR_SEED3 [Optional] =====----------------------------------------
+  # Description: Offset: 0x0000002C, Width: 32b; MISR seed[127:96]
+  IMG_MISR_SEED3: '0x00000000'
+  # ---------------------------------------===== ERASE_PASSWORD0 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000030, Width: 32b; Erase token[31:0]
+  ERASE_PASSWORD0: '0x00000000'
+  # ---------------------------------------===== ERASE_PASSWORD1 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000034, Width: 32b; Erase token[63:32]
+  ERASE_PASSWORD1: '0x00000000'
+  # ---------------------------------------===== ERASE_PASSWORD2 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000038, Width: 32b; Erase token[95:64]
+  ERASE_PASSWORD2: '0x00000000'
+  # ---------------------------------------===== ERASE_PASSWORD3 [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000003C, Width: 32b; Erase token[127:96]
+  ERASE_PASSWORD3: '0x00000000'

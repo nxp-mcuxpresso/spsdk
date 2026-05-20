@@ -11,11 +11,12 @@ types-requests<3,>=2.26
 types-setuptools<81
 types-pyyaml<7
 # codestyle
+mypy<2
 black<27,>=24.3.0
 nxp_codecheck<1,>=0.3.13
 spsdk-pylint-plugins<1,>=0.2.0
 # pip dependency should be moved to codecheck
-pip<26
+pip>=26.0
 # cli executables
 pyinstaller<7
 pyinstaller-hooks-contrib<2027

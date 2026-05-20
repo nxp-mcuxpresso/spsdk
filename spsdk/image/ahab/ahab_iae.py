@@ -208,8 +208,8 @@ class ImageArrayEntry(Container):
         self.image = image if image else b""
         self.image_size = self._get_valid_size(self.image)
 
-        self.image_iv = (
-            image_iv or get_hash(self.plain_image, algorithm=EnumHashAlgorithm.SHA256)
+        self.image_iv = image_iv or (
+            get_hash(self.plain_image, algorithm=EnumHashAlgorithm.SHA256)
             if self.flags_is_encrypted
             else bytes(self.IV_LEN)
         )
@@ -854,6 +854,35 @@ class ImageArrayEntry(Container):
                     "Image hash", self.image_hash == image_hash_cmp, self.image_hash.hex()
                 )
 
+        def verify_iv() -> None:
+            """Verify the image hash value.
+
+            Validates the image hash by checking its existence, length, and correctness against
+            the calculated hash. Handles special cases like empty hashes which may be allowed
+            based on chip configuration settings.
+
+            :raises SPSDKError: When hash validation fails due to missing hash, invalid length,
+                or hash mismatch.
+            """
+            if self.image_iv is None:
+                ret.add_record("Image IV", VerifierResult.ERROR, "Doesn't exists")
+            elif not any(self.image_iv) and self.flags_is_encrypted:
+                ret.add_record(
+                    "Image IV", VerifierResult.ERROR, "All zeros, but the image is encrypted"
+                )
+            elif any(self.image_iv) and not self.flags_is_encrypted:
+                ret.add_record(
+                    "Image IV", VerifierResult.WARNING, "Not zeros, but the image is NOT encrypted"
+                )
+            elif len(self.image_iv) != self.IV_LEN:
+                ret.add_record(
+                    "Image IV",
+                    VerifierResult.ERROR,
+                    f"Invalid length ({self.image_iv.hex()}B), it MUST be {self.IV_LEN}",
+                )
+            else:
+                ret.add_record("Image IV", VerifierResult.SUCCEEDED, self.image_iv.hex())
+
         ret = Verifier(name=repr(self), description="")
         verify_image()
         verify_offset()
@@ -863,6 +892,7 @@ class ImageArrayEntry(Container):
         verify_flags()
         verify_metadata()
         verify_hash_format()
+        verify_iv()
 
         return ret
 

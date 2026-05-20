@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -48,6 +48,7 @@ from spsdk.dat.debug_credential import (
 from spsdk.dat.debug_mailbox import DebugMailbox
 from spsdk.dat.famode_image import FaModeImage
 from spsdk.dat.rot_meta import RotMetaEcc, RotMetaRSA
+from spsdk.dat.sda import DebugAuthMode, SdaAuthentication
 from spsdk.debuggers.utils import PROBES, get_test_address, open_debug_probe, test_ahb_access
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.config import Config
@@ -972,6 +973,10 @@ def auth(
     try:
         logger.info("Starting Debug Authentication")
         family = FamilyRevision.load_from_config(config)
+        db = get_db(family)
+        auth_warning = db.get_str("dat", "dat_auth_warning", "")
+        if auth_warning:
+            click.secho(auth_warning, fg="yellow")
         with _open_debugmbox(family, debug_probe_params, debug_mailbox_params) as mail_box:
             debug_cred_data = load_binary(config.get_input_file_name("certificate"))
             debug_cred = DebugCredentialCertificate.parse(debug_cred_data, family)
@@ -1287,6 +1292,88 @@ def nxp_ssf_insert_cert(
         raise SPSDKAppError(
             f"The create self-signed certificate as part of Self sign flow (SSF) failed: {str(exc)}"
         ) from exc
+
+
+@cmd_group.command(name="password-auth", no_args_is_help=False)
+@optgroup("Password Source", cls=RequiredMutuallyExclusiveOptionGroup)
+@optgroup.option(
+    "--file", type=click.Path(exists=True, dir_okay=False), help="Path to file with password"
+)
+@optgroup.option(
+    "-p", "--password", type=str, help="Password as hex string (32 hex characters for 16 bytes)"
+)
+@click.pass_obj
+def password_auth_command(
+    pass_obj: dict,
+    file: str,
+    password: str,
+) -> None:
+    """Authenticate the device using a password file or hex string.
+
+    This command performs password-based authentication for devices that support
+    this feature. The password must be exactly 16 bytes and can be provided either
+    as a binary file or as a hexadecimal string.
+
+    :param pass_obj: Dictionary containing family, debug probe parameters, and
+        debug mailbox parameters.
+    :param file: Path to binary file containing the 16-byte password.
+    :param password: Hexadecimal string representation of the 16-byte password.
+    :raises SPSDKAppError: If password authentication is not supported for the
+        device, if neither file nor password is provided, if the hex string format
+        is invalid, or if the password length is not exactly 16 bytes.
+    """
+    # Check if password authentication is supported for this device
+    db = get_db(pass_obj["family"])
+    sub_features = db.get_list(DatabaseManager.DAT, "sub_features", [])
+    if "password_auth" not in sub_features:
+        raise SPSDKAppError(
+            f"Password authentication is not supported for device {pass_obj['family'].name}"
+        )
+
+    if file:
+        data = load_binary(file)
+    elif password:
+        try:
+            data = bytes.fromhex(password.replace(" ", "").replace("0x", ""))
+        except ValueError as e:
+            raise SPSDKAppError(f"Invalid hex string format: {e}") from e
+    else:
+        raise SPSDKAppError("Either --file or --password must be provided")
+
+    if len(data) != 16:
+        raise SPSDKAppError(f"Password must be exactly 16 bytes, got {len(data)} bytes")
+
+    password_auth(
+        pass_obj["family"],
+        pass_obj["debug_probe_params"],
+        pass_obj["debug_mailbox_params"],
+        data,
+    )
+    click.echo("Password authentication succeeded")
+
+
+def password_auth(
+    family: FamilyRevision,
+    debug_probe_params: DebugProbeParams,
+    debug_mailbox_params: DebugMailboxParams,
+    password: bytes,
+) -> None:
+    """Authenticate the device using password-based authentication.
+
+    The method establishes a debug mailbox connection and writes the provided
+    password to authenticate access to the device's debug interface.
+
+    :param family: Device family and revision information.
+    :param debug_probe_params: Configuration parameters for the debug probe.
+    :param debug_mailbox_params: Configuration parameters for the debug mailbox.
+    :param password: 16-byte password data for authentication.
+    :raises SPSDKAppError: When password authentication fails.
+    """
+    try:
+        with _open_debugmbox(family, debug_probe_params, debug_mailbox_params) as mail_box:
+            mail_box.write_debug_password(password)
+    except SPSDKError as e:
+        raise SPSDKAppError(f"Password authentication failed: {str(e)}") from e
 
 
 @dat_group.command("get-template", no_args_is_help=True)
@@ -1767,6 +1854,65 @@ def debug_resume(family: FamilyRevision, debug_probe_params: DebugProbeParams) -
     ) as debug_probe:
         debug_probe.connect_safe()
         debug_probe.debug_resume()
+
+
+@main.group("sda", cls=CommandsTreeGroup)
+def sda_group() -> None:
+    """Group of commands for SDA (Secure Debug Access) authentication."""
+
+
+@sda_group.command(name="auth", no_args_is_help=False)
+@spsdk_family_option(SdaAuthentication.get_supported_families())
+@click.option(
+    "-t",
+    "--auth-type",
+    type=click.Choice(DebugAuthMode.labels(), case_sensitive=False),
+    default=DebugAuthMode.CHALLENGE_RESPONSE.label,
+    help=f"Authentication type: '{DebugAuthMode.CHALLENGE_RESPONSE.label}' or '{DebugAuthMode.PASSWORD.label}'.",
+    show_default=True,
+    callback=lambda ctx, param, value: (DebugAuthMode.from_label(value)),
+)
+@click.option(
+    "-a",
+    "--adkp-key",
+    envvar="ADKP_KEY",
+    help="ADKP cryptographic key of length 16 bytes defined as hex-string.",
+    type=str,
+    required=True,
+    show_envvar=True,
+)
+@click.pass_obj
+def sda_auth_command(
+    pass_obj: dict, family: FamilyRevision, adkp_key: str, auth_type: DebugAuthMode
+) -> None:
+    """Perform complete SDA authentication."""
+    debug_probe_params: DebugProbeParams = pass_obj["debug_probe_params"]
+    try:
+        sda_auth(family, debug_probe_params, bytes.fromhex(adkp_key), auth_type)
+        click.echo(f"The SDA {auth_type} authentication succeeded.")
+    except SPSDKError:
+        click.secho(
+            f"SDA {auth_type} authentication failed. Power-cycle the target device before the next attempt.",
+            fg="yellow",
+        )
+        raise
+
+
+def sda_auth(
+    family: FamilyRevision,
+    debug_probe_params: DebugProbeParams,
+    adkp: bytes,
+    auth_type: DebugAuthMode,
+) -> None:
+    """Perform complete SDA authentication."""
+    with open_debug_probe(
+        interface=debug_probe_params.interface,
+        serial_no=debug_probe_params.serial_no,
+        debug_probe_params=debug_probe_params.debug_probe_user_params,
+        print_func=click.echo,
+    ) as debug_probe:
+        sda = SdaAuthentication(debug_probe=debug_probe, family=family)
+        sda.authenticate(adkp, auth_type)
 
 
 @catch_spsdk_error

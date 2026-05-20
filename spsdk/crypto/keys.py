@@ -15,6 +15,7 @@ ecosystem.
 
 import abc
 import getpass
+import logging
 import math
 from enum import Enum
 from typing import Any, Callable, Optional, Union, cast
@@ -45,6 +46,7 @@ from spsdk import SPSDK_INTERACTIVE_DISABLED
 from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.dilithium import IS_DILITHIUM_SUPPORTED
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash, get_hash_algorithm, hashes
+from spsdk.crypto.lms import IS_LMS_SUPPORTED
 from spsdk.crypto.oscca import IS_OSCCA_SUPPORTED
 from spsdk.crypto.rng import rand_below, random_hex
 from spsdk.exceptions import (
@@ -54,7 +56,9 @@ from spsdk.exceptions import (
     SPSDKValueError,
 )
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.misc import Endianness, load_binary, write_file
+from spsdk.utils.misc import Endianness, load_binary, load_file, value_to_bytes, write_file
+
+logger = logging.getLogger(__name__)
 
 if IS_OSCCA_SUPPORTED:
     from gmssl import sm2  # pylint: disable=import-error
@@ -76,6 +80,10 @@ if IS_DILITHIUM_SUPPORTED:
     if hasattr(spsdk_pqc.wrapper, "DISABLE_DIL_MLDSA_PUBLIC_KEY_MISMATCH_WARNING"):
         spsdk_pqc.wrapper.DISABLE_DIL_MLDSA_PUBLIC_KEY_MISMATCH_WARNING = True
 
+if IS_LMS_SUPPORTED:
+    # pylint: disable=import-error
+    from spsdk.crypto.lms import LMSParams, LmsPrivateKey, LmsPublicKey
+
 
 def _load_pem_private_key(data: bytes, password: Optional[bytes]) -> Any:
     """Load PEM private key from binary data.
@@ -89,29 +97,42 @@ def _load_pem_private_key(data: bytes, password: Optional[bytes]) -> Any:
     :raises SPSDKError: If the key cannot be decoded with any supported algorithm.
     :return: Loaded private key object (type depends on the key algorithm).
     """
-    last_error: Exception
+    errors: list[str] = []
+
     try:
         return _crypto_load_private_key(SPSDKEncoding.PEM, data, password)
     except (UnsupportedAlgorithm, ValueError) as exc:
-        last_error = exc
+        errors.append(f"Standard crypto: {exc}")
+
     if IS_OSCCA_SUPPORTED:
         try:
             key_data = sanitize_pem(data)
             key_set = SM2Encoder().decode_private_key(data=key_data)
             return sm2.CryptSM2(private_key=key_set.private, public_key=key_set.public)
         except SPSDKError as exc:
-            last_error = exc
+            errors.append(f"SM2: {exc}")
+    else:
+        errors.append(
+            "OSCCA (SM2) keys support is not installed. If you want to use it, install 'gmssl'"
+        )
+
     if IS_DILITHIUM_SUPPORTED:
         try:
             return DilithiumPrivateKey.parse(data=data)
         except PQCError as exc:
-            last_error = exc
+            errors.append(f"Dilithium: {exc}")
+
         try:
             return MLDSAPrivateKey.parse(data=data)
         except PQCError as exc:
-            last_error = exc
+            errors.append(f"ML-DSA: {exc}")
+    else:
+        errors.append(
+            "PQC (Dilithium/ML-DSA) keys support is not installed. If you want to use it, install 'spsdk-pqc'"
+        )
 
-    raise SPSDKError(f"Cannot load PEM private key: {last_error}")
+    error_details = "\n- ".join([""] + errors)
+    raise SPSDKError(f"Cannot load PEM private key. Attempted methods failed: {error_details}")
 
 
 def _load_der_private_key(data: bytes, password: Optional[bytes]) -> Any:
@@ -126,28 +147,64 @@ def _load_der_private_key(data: bytes, password: Optional[bytes]) -> Any:
     :raises SPSDKError: If the key cannot be decoded with any supported algorithm.
     :return: Loaded private key object (type varies based on key algorithm).
     """
-    last_error: Exception
+    errors: list[str] = []
+
     try:
         return _crypto_load_private_key(SPSDKEncoding.DER, data, password)
     except (UnsupportedAlgorithm, ValueError) as exc:
-        last_error = exc
+        errors.append(f"Standard crypto: {exc}")
+
     if IS_OSCCA_SUPPORTED:
         try:
             key_set = SM2Encoder().decode_private_key(data=data)
             return sm2.CryptSM2(private_key=key_set.private, public_key=key_set.public)
         except SPSDKError as exc:
-            last_error = exc
+            errors.append(f"SM2: {exc}")
+    else:
+        errors.append(
+            "OSCCA (SM2) keys support is not installed. If you want to use it, install 'gmssl'"
+        )
+
     if IS_DILITHIUM_SUPPORTED:
         try:
             return DilithiumPrivateKey.parse(data=data)
         except PQCError as exc:
-            last_error = exc
+            errors.append(f"Dilithium: {exc}")
+
         try:
             return MLDSAPrivateKey.parse(data=data)
         except PQCError as exc:
-            last_error = exc
+            errors.append(f"ML-DSA: {exc}")
+    else:
+        errors.append(
+            "PQC (Dilithium/ML-DSA) keys support is not installed. If you want to use it, install 'spsdk-pqc'"
+        )
 
-    raise SPSDKError(f"Cannot load DER private key: {last_error}")
+    if IS_LMS_SUPPORTED:
+        try:
+            params = LMSParams.from_data(data=data)
+            if len(data) != params.get_private_key_length():
+                raise SPSDKInvalidKeyType(
+                    "Invalid LMS private key length. "
+                    f"Expected {params.get_private_key_length()} bytes, got {len(data)} bytes"
+                )
+            key = LmsPrivateKey.deserialize(buffer=data)
+            logger.warning(
+                "Using LMS private key in a local file is strongly discouraged. "
+                "SPSDK does not update the signature counter (q) in private key file. "
+                "This may lead to signature reuse vulnerability. "
+                "Please use an HSM instead."
+            )
+            return key
+        except Exception as exc:
+            errors.append(f"LMS: {exc}")
+    else:
+        errors.append(
+            "LMS keys support is not installed. If you want to use it, install 'spsdk-pqc'"
+        )
+
+    error_details = "\n- ".join([""] + errors)
+    raise SPSDKError(f"Cannot load DER private key. Attempted methods failed: {error_details}")
 
 
 def _crypto_load_private_key(
@@ -197,29 +254,42 @@ def _load_pem_public_key(data: bytes) -> Any:
     :raises SPSDKError: If the key cannot be decoded by any supported method
     :return: Public key object (type varies based on key algorithm)
     """
-    last_error: Exception
+    errors: list[str] = []
+
     try:
         return crypto_load_pem_public_key(data)
     except (UnsupportedAlgorithm, ValueError) as exc:
-        last_error = exc
+        errors.append(f"Standard crypto: {exc}")
+
     if IS_OSCCA_SUPPORTED:
         try:
             key_data = sanitize_pem(data)
             public_key = SM2Encoder().decode_public_key(data=key_data)
             return sm2.CryptSM2(private_key=None, public_key=public_key.public)
         except SPSDKError as exc:
-            last_error = exc
+            errors.append(f"SM2: {exc}")
+    else:
+        errors.append(
+            "OSCCA (SM2) keys support is not installed. If you want to use it, install 'gmssl'"
+        )
+
     if IS_DILITHIUM_SUPPORTED:
         try:
             return DilithiumPublicKey.parse(data=data)
         except PQCError as exc:
-            last_error = exc
+            errors.append(f"Dilithium: {exc}")
+
         try:
             return MLDSAPublicKey.parse(data=data)
         except PQCError as exc:
-            last_error = exc
+            errors.append(f"ML-DSA: {exc}")
+    else:
+        errors.append(
+            "PQC (Dilithium/ML-DSA) keys support is not installed. If you want to use it, install 'spsdk-pqc'"
+        )
 
-    raise SPSDKError(f"Cannot load PEM public key: {last_error}")
+    error_details = "\n- ".join([""] + errors)
+    raise SPSDKError(f"Cannot load PEM public key. Attempted methods failed: {error_details}")
 
 
 def _load_der_public_key(data: bytes) -> Any:
@@ -233,28 +303,57 @@ def _load_der_public_key(data: bytes) -> Any:
     :raises SPSDKError: If the key cannot be decoded with any supported algorithm
     :return: Decoded public key object (type varies based on key algorithm)
     """
-    last_error: Exception
+    errors: list[str] = []
+
     try:
         return crypto_load_der_public_key(data)
     except (UnsupportedAlgorithm, ValueError) as exc:
-        last_error = exc
+        errors.append(f"Standard crypto: {exc}")
+
     if IS_OSCCA_SUPPORTED:
         try:
             public_key = SM2Encoder().decode_public_key(data=data)
             return sm2.CryptSM2(private_key=None, public_key=public_key.public)
         except SPSDKError as exc:
-            last_error = exc
+            errors.append(f"SM2: {exc}")
+    else:
+        errors.append(
+            "OSCCA (SM2) keys support is not installed. If you want to use it, install 'gmssl'"
+        )
+
     if IS_DILITHIUM_SUPPORTED:
         try:
             return DilithiumPublicKey.parse(data=data)
         except PQCError as exc:
-            last_error = exc
+            errors.append(f"Dilithium: {exc}")
+
         try:
             return MLDSAPublicKey.parse(data=data)
         except PQCError as exc:
-            last_error = exc
+            errors.append(f"ML-DSA: {exc}")
+    else:
+        errors.append(
+            "PQC (Dilithium/ML-DSA) keys support is not installed. If you want to use it, install 'spsdk-pqc'"
+        )
 
-    raise SPSDKError(f"Cannot load DER public key: {last_error}")
+    if IS_LMS_SUPPORTED:
+        try:
+            params = LMSParams.from_data(data=data)
+            if len(data) != params.get_public_key_length():
+                raise SPSDKInvalidKeyType(
+                    "Invalid LMS public key length. "
+                    f"Expected {params.get_public_key_length()} bytes, got {len(data)} bytes"
+                )
+            return LmsPublicKey.deserialize(buffer=data)
+        except Exception as exc:
+            errors.append(f"LMS: {exc}")
+    else:
+        errors.append(
+            "LMS keys support is not installed. If you want to use it, install 'spsdk-pqc'"
+        )
+
+    error_details = "\n- ".join([""] + errors)
+    raise SPSDKError(f"Cannot load DER public key. Attempted methods failed: {error_details}")
 
 
 class SPSDKInvalidKeyType(SPSDKError):
@@ -431,6 +530,8 @@ class PrivateKey(BaseClass, abc.ABC):
                 return cls.create(private_key)
             if IS_DILITHIUM_SUPPORTED and isinstance(private_key, MLDSAPrivateKey):
                 return cls.create(private_key)
+            if IS_LMS_SUPPORTED and isinstance(private_key, LmsPrivateKey):
+                return cls.create(private_key)
         except (ValueError, SPSDKInvalidKeyType) as exc:
             raise SPSDKError(f"Cannot load private key: ({str(exc)})") from exc
         raise SPSDKError(f"Unsupported private key: ({str(private_key)})")
@@ -457,6 +558,9 @@ class PrivateKey(BaseClass, abc.ABC):
         if IS_DILITHIUM_SUPPORTED:
             SUPPORTED_KEYS[PrivateKeyDilithium] = DilithiumPrivateKey
             SUPPORTED_KEYS[PrivateKeyMLDSA] = MLDSAPrivateKey
+
+        if IS_LMS_SUPPORTED:
+            SUPPORTED_KEYS[PrivateKeyLMS] = LmsPrivateKey
 
         for k, v in SUPPORTED_KEYS.items():
             if isinstance(key, v):
@@ -597,6 +701,12 @@ class PublicKey(BaseClass, abc.ABC):
             except (SPSDKError, ValueError):
                 pass
 
+        if IS_LMS_SUPPORTED:
+            try:
+                return cast(Self, PublicKeyLMS.parse(data=data))
+            except (SPSDKError, ValueError):
+                pass
+
         # No need for explicit SM2, because SM2.recreate_from_data uses PEM/DER
         # There's no NXP encoding format for SM2
 
@@ -655,6 +765,9 @@ class PublicKey(BaseClass, abc.ABC):
         if IS_DILITHIUM_SUPPORTED:
             SUPPORTED_KEYS[PublicKeyDilithium] = DilithiumPublicKey
             SUPPORTED_KEYS[PublicKeyMLDSA] = MLDSAPublicKey
+
+        if IS_LMS_SUPPORTED:
+            SUPPORTED_KEYS[PublicKeyLMS] = LmsPublicKey
 
         for k, v in SUPPORTED_KEYS.items():
             if isinstance(key, v):
@@ -1143,6 +1256,9 @@ class EccCurve(str, Enum):
     SECP256R1 = "secp256r1"
     SECP384R1 = "secp384r1"
     SECP521R1 = "secp521r1"
+    BRAINPOOLP256R1 = "brainpoolP256r1"
+    BRAINPOOLP384R1 = "brainpoolP384r1"
+    BRAINPOOLP512R1 = "brainpoolP512r1"
 
 
 class SPSDKUnsupportedEccCurve(SPSDKValueError):
@@ -1558,47 +1674,87 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
         :param data: Data blob of coordinates in bytes (X,Y in Big Endian) or DER format.
         :param curve: ECC curve, if None the curve will be auto-detected from data length.
         :raises SPSDKUnsupportedEccCurve: When curve cannot be determined from data length.
+        :raises SPSDKValueError: When no curve can successfully recreate the key.
         :return: ECC public key instance.
         """
 
-        def get_curve(data_length: int, curve: Optional[EccCurve] = None) -> tuple[EccCurve, bool]:
-            """Determine ECC curve and encoding format from signature data length.
+        def get_curves(
+            data_length: int, curve: Optional[EccCurve] = None
+        ) -> list[tuple[EccCurve, bool]]:
+            """Determine possible ECC curves and encoding formats from data length.
 
-            Analyzes the provided data length to identify the matching ECC curve and whether
+            Analyzes the provided data length to identify all matching ECC curves and whether
             the data uses DER encoding format. If a specific curve is provided, only that
             curve is checked; otherwise, all available curves are tested.
 
             :param data_length: Length of the signature data in bytes.
             :param curve: Optional specific ECC curve to check, defaults to None.
-            :return: Tuple containing the matching ECC curve and boolean indicating if DER
+            :return: List of tuples containing matching ECC curves and boolean indicating if DER
                 encoded (True for DER, False for raw binary).
-            :raises SPSDKUnsupportedEccCurve: When no curve matches the provided data length.
             """
             curve_list = [curve] if curve else list(EccCurve)
+            matching_curves: list[tuple[EccCurve, bool]] = []
+
             for cur in curve_list:
                 curve_obj = KeyEccCommon._get_ec_curve_object(EccCurve(cur))
                 curve_sign_size = math.ceil(curve_obj.key_size / 8) * 2
                 # Check raw binary format
                 if curve_sign_size == data_length:
-                    return (cur, False)
+                    matching_curves.append((cur, False))
                 # Check DER binary format
                 curve_sign_size += 7
                 if curve_sign_size <= data_length <= curve_sign_size + 2:
-                    return (cur, True)
-            raise SPSDKUnsupportedEccCurve(f"Cannot recreate ECC curve with {data_length} length")
+                    matching_curves.append((cur, True))
+
+            return matching_curves
 
         data_length = len(data)
-        curve, der_format = get_curve(data_length, curve)
+        possible_curves = get_curves(data_length, curve)
 
-        if der_format:
-            der = _load_der_public_key(data)
-            assert isinstance(der, ec.EllipticCurvePublicKey)
-            return cls(der)
+        if not possible_curves:
+            raise SPSDKUnsupportedEccCurve(f"Cannot recreate ECC curve with {data_length} length")
 
+        der_curves = [c for c in possible_curves if c[1]]  # Filter DER format curves
+        if der_curves:
+            try:
+                der_key = _load_der_public_key(data)
+                if isinstance(der_key, ec.EllipticCurvePublicKey):
+                    # Successfully parsed DER, curve is determined from OID
+                    return cls(der_key)
+            except Exception:
+                # DER parsing failed, continue with raw binary format
+                pass
+
+        # Handle NXP binary format - try each possible curve until one works
+        raw_curves = [c for c in possible_curves if not c[1]]  # Filter raw binary format curves
+
+        if not raw_curves:
+            raise SPSDKUnsupportedEccCurve(
+                f"Cannot recreate ECC curve with {data_length} length in raw binary format"
+            )
+
+        # Parse raw binary format (X,Y coordinates)
         coordinate_length = data_length // 2
         coor_x = int.from_bytes(data[:coordinate_length], byteorder=Endianness.BIG.value)
         coor_y = int.from_bytes(data[coordinate_length:], byteorder=Endianness.BIG.value)
-        return cls.recreate(coor_x=coor_x, coor_y=coor_y, curve=curve)
+
+        # Try each possible curve until one successfully validates the coordinates
+        errors = []
+        for selected_curve, _ in raw_curves:
+            try:
+                return cls.recreate(coor_x=coor_x, coor_y=coor_y, curve=selected_curve)
+            except (SPSDKValueError, ValueError) as e:
+                errors.append(f"{selected_curve.value}: {str(e)}")
+                continue
+
+        # If we get here, none of the curves worked
+        curve_names = [str(c[0].value) for c in raw_curves]
+        error_details = "\n  - ".join([""] + errors)
+        raise SPSDKValueError(
+            f"Cannot recreate ECC public key with data length {data_length} bytes. "
+            f"Tried curves: {', '.join(curve_names)}. "
+            f"Validation errors:{error_details}"
+        )
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
@@ -2502,6 +2658,191 @@ else:
     PrivateKeyMLDSA = NonSupportingPrivateKey  # type: ignore
     PublicKeyMLDSA = NonSupportingPublicKey  # type: ignore
 
+
+# ===================================================================================================
+# ===================================================================================================
+#
+#                                      LMS Key
+#
+# ===================================================================================================
+# ===================================================================================================
+if IS_LMS_SUPPORTED:
+
+    class PrivateKeyLMS(PrivateKey):
+        """LMS Private Key."""
+
+        key: LmsPrivateKey
+
+        def __init__(self, key: LmsPrivateKey):
+            """Initialize PrivateKeyLMS."""
+            self.key = key
+            self.params = LMSParams.from_key(key)
+
+        def __repr__(self) -> str:
+            """Object description in string format."""
+            return f"<Private LMS key: {self.params}>"
+
+        def __str__(self) -> str:
+            """Object description in string format."""
+            return self.key.prettyPrint()
+
+        @property
+        def default_hash_algorithm(self) -> EnumHashAlgorithm:
+            """Default hash algorithm for signing/verifying."""
+            return EnumHashAlgorithm.NONE
+
+        @property
+        def signature_size(self) -> int:
+            """Size of signature data."""
+            return LMSParams.calc_signature_length(self.key)
+
+        @property
+        def key_size(self) -> int:
+            """Key size in bits."""
+            return self.params.get_public_key_length() * 8
+
+        # pylint: disable=arguments-differ
+        @classmethod
+        def generate_key(cls, params: LMSParams) -> Self:  # type: ignore[override]
+            """Generate SPSDK Key (private key)."""
+            key = params.generate_private_key()
+            return cls(key)
+
+        def get_params(self) -> LMSParams:
+            """Get the LMS parameters used for this key."""
+            return LMSParams.from_key(self.key)
+
+        def get_public_key(self) -> "PublicKeyLMS":
+            """Generate public key."""
+            return PublicKeyLMS(self.key.publicKey())
+
+        def verify_public_key(self, public_key: PublicKey) -> bool:
+            """Verify public key."""
+            if not isinstance(public_key, PublicKeyLMS):
+                return NotImplemented
+            return self.key.publicKey().serialize() == public_key.key.serialize()
+
+        @classmethod
+        def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
+            """Parse object from bytes array."""
+            try:
+                return cls(LmsPrivateKey.deserialize(buffer=data))
+            except ValueError as e:
+                raise SPSDKError(f"Could not parse LMS private key: {e}") from e
+
+        def export(
+            self, password: Optional[str] = None, encoding: SPSDKEncoding = SPSDKEncoding.DER
+        ) -> bytes:
+            """Export key into bytes in requested format."""
+            return self.key.serialize()
+
+        def sign(
+            self,
+            data: bytes,
+            algorithm: Optional[EnumHashAlgorithm] = None,
+            prehashed: bool = False,
+            **kwargs: Any,
+        ) -> bytes:
+            """Sign input data."""
+            if prehashed:
+                data_to_sign = data
+            else:
+                data_to_sign = get_hash(data, algorithm or self.default_hash_algorithm)
+
+            signature = self.key.sign(message=data_to_sign)
+            # trim down the HSS prefix if present
+            if len(signature) == self.signature_size + 4:
+                logger.warning("Detected possible HSS prefix in signature, trimming it.")
+                signature = signature[4:]
+            if len(signature) != self.signature_size:
+                raise SPSDKError(f"Invalid signature length: {len(signature)}")
+            return signature
+
+    class PublicKeyLMS(PublicKey):
+        """LMS Public Key."""
+
+        RECOMMENDED_ENCODING = SPSDKEncoding.NXP
+        key: LmsPublicKey
+
+        def __init__(self, key: LmsPublicKey):
+            """Initialize PublicKeyLMS."""
+            self.key = key
+            self.params = LMSParams.from_key(key)
+
+        def __repr__(self) -> str:
+            """Object description in string format."""
+            return f"<Public LMS key: {self.params}>"
+
+        def __str__(self) -> str:
+            """Object description in string format."""
+            return self.key.prettyPrint()
+
+        @property
+        def default_hash_algorithm(self) -> EnumHashAlgorithm:
+            """Default hash algorithm for signing/verifying."""
+            return EnumHashAlgorithm.NONE
+
+        @property
+        def signature_size(self) -> int:
+            """Size of signature data."""
+            return LMSParams.calc_signature_length(self.key)
+
+        @property
+        def public_numbers(self) -> bytes:
+            """Public numbers."""
+            return self.key.serialize()
+
+        @property
+        def key_size(self) -> int:
+            """Key size in bits."""
+            return self.params.get_public_key_length() * 8
+
+        @classmethod
+        def parse(cls, data: bytes) -> Self:
+            """Parse object from bytes array."""
+            try:
+                return cls(LmsPublicKey.deserialize(buffer=data))
+            except ValueError as e:
+                raise SPSDKError(f"Could not parse LMS public key: {e}") from e
+
+        def export(self, encoding: SPSDKEncoding = SPSDKEncoding.NXP) -> bytes:
+            """Export key into bytes in requested format."""
+            return self.key.serialize()
+
+        def verify_signature(
+            self,
+            signature: bytes,
+            data: bytes,
+            algorithm: Optional[EnumHashAlgorithm] = None,
+            prehashed: bool = False,
+            **kwargs: Any,
+        ) -> bool:
+            """Verify input data.
+
+            :param signature: The signature of input data
+            :param data: Input data
+            :param algorithm: Used algorithm, defaults, automatic selection - None
+            :param prehashed: Use pre hashed value as input
+            :param kwargs: Keyword arguments for specific type of key
+            :return: True if signature is valid, False otherwise
+            """
+            # trim down the HSS prefix if present
+            if len(signature) == self.signature_size + 4:
+                logger.warning("Detected possible HSS prefix in signature, trimming it.")
+                signature = signature[4:]
+            if len(signature) != self.signature_size:
+                raise SPSDKError(f"Invalid signature length: {len(signature)}")
+            if prehashed:
+                data_to_verify = data
+            else:
+                data_to_verify = get_hash(data, algorithm or self.default_hash_algorithm)
+            return self.key.verify(message=data_to_verify, sig=signature)
+
+else:
+    PrivateKeyLMS = NonSupportingPrivateKey  # type: ignore
+    PublicKeyLMS = NonSupportingPublicKey  # type: ignore
+
+
 # # ===================================================================================================
 # # ===================================================================================================
 # #
@@ -2547,6 +2888,9 @@ def get_supported_keys_generators(basic: bool = False) -> KeyGeneratorInfo:
         ret["mldsa44"] = (PrivateKeyMLDSA.generate_key, {"level": 2})
         ret["mldsa65"] = (PrivateKeyMLDSA.generate_key, {"level": 3})
         ret["mldsa87"] = (PrivateKeyMLDSA.generate_key, {"level": 5})
+
+    if IS_LMS_SUPPORTED:
+        ret["lms"] = (PrivateKeyLMS.generate_key, {})  # LMSParams must be provided by caller
 
     return ret
 
@@ -2604,10 +2948,20 @@ def load_key(key_path: str) -> Union[PrivateKey, PublicKey, bytes]:
     :return: Loaded key as PrivateKey, PublicKey, or raw bytes depending on the file format
     :raises SPSDKError: If the key cannot be loaded with any of the available parsers
     """
+
+    def load_hex(key_path: str) -> bytes:
+        """Load binary from a hex file."""
+        str_key = load_file(key_path)
+        assert isinstance(str_key, str)
+        if not str_key.startswith(("0x", "0X")):
+            str_key = "0x" + str_key
+        return value_to_bytes(str_key)
+
     parsers: list[Callable[[str], Union[PrivateKey, PublicKey, bytes]]] = [
         PrivateKey.load,
         PublicKey.load,
         load_binary,
+        load_hex,
     ]
     for parser in parsers:
         try:

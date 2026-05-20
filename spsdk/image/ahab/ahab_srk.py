@@ -17,18 +17,20 @@ import logging
 import math
 import os
 from struct import pack, unpack
-from typing import Any, Optional, Sequence, cast
+from typing import Any, Optional, Sequence, TypedDict, cast
 
 from typing_extensions import Self, TypeAlias
 
-from spsdk.crypto.dilithium import IS_DILITHIUM_SUPPORTED
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.keys import (
+    IS_DILITHIUM_SUPPORTED,
+    IS_LMS_SUPPORTED,
     IS_OSCCA_SUPPORTED,
     EccCurve,
     PublicKey,
     PublicKeyDilithium,
     PublicKeyEcc,
+    PublicKeyLMS,
     PublicKeyMLDSA,
     PublicKeyRsa,
     PublicKeySM2,
@@ -91,6 +93,14 @@ def get_key_by_val(dictionary: dict, val: Any) -> Any:
     )
 
 
+class KeyParameters(TypedDict):
+    """Parameters for creating an SRK record from a key."""
+
+    signing_algorithm: SpsdkEnum
+    hash_type: SpsdkEnum
+    key_size: int
+
+
 class SRKRecordBase(HeaderContainerInverted):
     """SRK (Super Root Key) record representation for AHAB container SRK tables.
 
@@ -126,6 +136,7 @@ class SRKRecordBase(HeaderContainerInverted):
     SM2_KEY_TYPE = 0x8
     DILITHIUM_KEY_TYPE = {3: 0x9, 5: 0xA}
     MLDSA_KEY_TYPE = {65: 0x9, 87: 0xA}
+    LMS_KEY_TYPE = {32: 0xB, 24: 0xC}
 
     # Dictionary of key sizes for different algorithms.
     KEY_SIZES = {
@@ -138,6 +149,8 @@ class SRKRecordBase(HeaderContainerInverted):
         0x8: (32, 32),  # SM2: (32, 32) bytes for X and Y coordinates
         0x9: (1952, 0),  # Dilithium 3 / ML-DSA-65: (1952, 0) bytes for raw key data
         0xA: (2592, 0),  # Dilithium 5 / ML-DSA-87: (2592, 0) bytes for raw key data
+        0xB: (56, 0),  # LMS SHA256 key
+        0xC: (48, 0),  # LMS SHA256-192 key
     }
 
     FLAGS_CA_MASK = 0x80
@@ -1200,76 +1213,16 @@ class SRKRecordV2(SRKRecordBase):
         :raises SPSDKUnsupportedOperation: Unsupported key type or operation.
         :return: New instance of the class configured with the provided key data.
         """
-        sig_enum = get_signature_algorithm_enum(chip_config)
-        hash_enum = get_hash_algorithm_enum(chip_config)
-
-        signing_algorithm = None
-        hash_type = hash_algorithm or hash_enum.from_label("SHA256")
-        key_size = 0
-
         if hasattr(public_key, "ca"):
             srk_flags |= cls.FLAGS_CA_MASK
 
-        if isinstance(public_key, PublicKeyRsa):
-            signing_algorithm = sig_enum.from_label("RSA_PSS")
-            hash_type = hash_algorithm or hash_enum.from_label("SHA256")
-            key_size = cls.RSA_KEY_TYPE[public_key.key_size]
-
-        elif isinstance(public_key, PublicKeyEcc):
-            signing_algorithm = AHABSignAlgorithm.ECDSA
-            key_size = cls.ECC_KEY_TYPE[public_key.curve]
-
-            if public_key.key_size not in [256, 384, 521]:
-                raise SPSDKValueError(
-                    f"Unsupported ECC key for AHAB container: {public_key.key_size}"
-                )
-            if hash_algorithm:
-                hash_type = hash_algorithm
-            else:
-                hash_type = {
-                    256: hash_enum.from_label("SHA256"),
-                    384: hash_enum.from_label("SHA384"),
-                    521: hash_enum.from_label("SHA512"),
-                }[public_key.key_size]
-
-        elif IS_OSCCA_SUPPORTED and isinstance(public_key, PublicKeySM2):
-            signing_algorithm = sig_enum.from_label("SM2")
-            hash_type = hash_algorithm or hash_enum.from_label("SM3")
-            key_size = cls.SM2_KEY_TYPE
-
-        elif IS_DILITHIUM_SUPPORTED and isinstance(public_key, PublicKeyDilithium):
-            signing_algorithm = AHABSignAlgorithm.DILITHIUM
-            key_size = cls.DILITHIUM_KEY_TYPE[public_key.level]
-            if hash_algorithm:
-                hash_type = hash_algorithm
-            else:
-                hash_type = {
-                    3: hash_enum.from_label("SHA384"),
-                    5: hash_enum.from_label("SHA512"),
-                }[public_key.level]
-        elif IS_DILITHIUM_SUPPORTED and isinstance(public_key, PublicKeyMLDSA):
-            signing_algorithm = AHABSignAlgorithm.ML_DSA
-            try:
-                key_size = cls.DILITHIUM_KEY_TYPE[public_key.level]
-            except KeyError as exc:
-                raise SPSDKUnsupportedOperation(
-                    f"Unsupported ML-DSA key level: {public_key.level}"
-                ) from exc
-            if hash_algorithm:
-                hash_type = hash_algorithm
-            else:
-                hash_type = {3: hash_enum.from_label("SHA384"), 5: hash_enum.from_label("SHA512")}[
-                    public_key.level
-                ]
-
-        else:
-            raise SPSDKValueError("Unsupported public key by AHAB SPSDK support.")
+        params = cls._get_key_parameters(public_key, hash_algorithm, chip_config)
 
         ret = cls(
             src_key=public_key,
-            signing_algorithm=signing_algorithm,
-            hash_type=hash_type,
-            key_size=key_size,
+            signing_algorithm=params["signing_algorithm"],
+            hash_type=params["hash_type"],
+            key_size=params["key_size"],
             srk_flags=srk_flags,
             legacy_rsa_exponent_size=legacy_rsa_exponent_size,
             chip_config=chip_config,
@@ -1279,6 +1232,228 @@ class SRKRecordV2(SRKRecordBase):
         )
 
         return ret
+
+    @classmethod
+    def _get_key_parameters(
+        cls,
+        public_key: PublicKey,
+        hash_algorithm: Optional[SpsdkEnum],
+        chip_config: Optional[AhabChipConfig],
+    ) -> KeyParameters:
+        """Get key parameters based on public key type.
+
+        :param public_key: Public key to extract parameters from.
+        :param hash_algorithm: Optional hash algorithm override.
+        :param chip_config: Optional chip configuration.
+        :return: Dictionary with signing_algorithm, hash_type, and key_size.
+        :raises SPSDKValueError: Unsupported public key type.
+        :raises SPSDKUnsupportedOperation: Unsupported key operation.
+        """
+        if isinstance(public_key, PublicKeyRsa):
+            return cls._get_rsa_parameters(public_key, hash_algorithm, chip_config)
+
+        if isinstance(public_key, PublicKeyEcc):
+            return cls._get_ecc_parameters(public_key, hash_algorithm, chip_config)
+
+        if IS_OSCCA_SUPPORTED and isinstance(public_key, PublicKeySM2):
+            return cls._get_sm2_parameters(hash_algorithm, chip_config)
+
+        if IS_DILITHIUM_SUPPORTED and isinstance(public_key, PublicKeyDilithium):
+            return cls._get_dilithium_parameters(public_key, hash_algorithm, chip_config)
+
+        if IS_DILITHIUM_SUPPORTED and isinstance(public_key, PublicKeyMLDSA):
+            return cls._get_mldsa_parameters(public_key, hash_algorithm, chip_config)
+
+        if IS_LMS_SUPPORTED and isinstance(public_key, PublicKeyLMS):
+            return cls._get_lms_parameters(public_key, hash_algorithm, chip_config)
+
+        # Build detailed error message
+        error_parts = [f"Unsupported public key type: {type(public_key).__name__}"]
+        error_parts.append("Supported key types:")
+        error_parts.append("  - RSA (2048, 3072, 4096 bits)")
+        error_parts.append("  - ECC (secp256r1, secp384r1, secp521r1)")
+
+        if IS_OSCCA_SUPPORTED:
+            error_parts.append("  - SM2")
+        else:
+            error_parts.append("  - SM2 (install 'gmssl' to enable)")
+
+        if IS_DILITHIUM_SUPPORTED:
+            error_parts.append("  - Dilithium (level 3, 5)")
+            error_parts.append("  - ML-DSA (level 3, 5)")
+        else:
+            error_parts.append("  - Dilithium/ML-DSA (install 'spsdk-pqc' to enable)")
+
+        raise SPSDKValueError("\n".join(error_parts))
+
+    @classmethod
+    def _get_rsa_parameters(
+        cls,
+        public_key: PublicKeyRsa,
+        hash_algorithm: Optional[SpsdkEnum],
+        chip_config: Optional[AhabChipConfig],
+    ) -> KeyParameters:
+        """Get RSA key parameters.
+
+        :param public_key: RSA public key.
+        :param hash_algorithm: Optional hash algorithm override.
+        :param chip_config: Optional chip configuration.
+        :return: Dictionary with signing_algorithm, hash_type, and key_size.
+        """
+        sig_enum = get_signature_algorithm_enum(chip_config)
+        hash_enum = get_hash_algorithm_enum(chip_config)
+
+        return KeyParameters(
+            signing_algorithm=sig_enum.from_label("RSA_PSS"),
+            hash_type=hash_algorithm or hash_enum.from_label("SHA256"),
+            key_size=cls.RSA_KEY_TYPE[public_key.key_size],
+        )
+
+    @classmethod
+    def _get_ecc_parameters(
+        cls,
+        public_key: PublicKeyEcc,
+        hash_algorithm: Optional[SpsdkEnum],
+        chip_config: Optional[AhabChipConfig],
+    ) -> KeyParameters:
+        """Get ECC key parameters.
+
+        :param public_key: ECC public key.
+        :param hash_algorithm: Optional hash algorithm override.
+        :param chip_config: Optional chip configuration.
+        :return: Dictionary with signing_algorithm, hash_type, and key_size.
+        :raises SPSDKValueError: Unsupported ECC key size.
+        """
+        hash_enum = get_hash_algorithm_enum(chip_config)
+
+        if public_key.key_size not in [256, 384, 521]:
+            raise SPSDKValueError(f"Unsupported ECC key for AHAB container: {public_key.key_size}")
+
+        hash_type = (
+            hash_algorithm
+            or {
+                256: hash_enum.from_label("SHA256"),
+                384: hash_enum.from_label("SHA384"),
+                521: hash_enum.from_label("SHA512"),
+            }[public_key.key_size]
+        )
+
+        return KeyParameters(
+            signing_algorithm=AHABSignAlgorithm.ECDSA,
+            hash_type=hash_type,
+            key_size=cls.ECC_KEY_TYPE[public_key.curve],
+        )
+
+    @classmethod
+    def _get_sm2_parameters(
+        cls,
+        hash_algorithm: Optional[SpsdkEnum],
+        chip_config: Optional[AhabChipConfig],
+    ) -> KeyParameters:
+        """Get SM2 key parameters.
+
+        :param hash_algorithm: Optional hash algorithm override.
+        :param chip_config: Optional chip configuration.
+        :return: Dictionary with signing_algorithm, hash_type, and key_size.
+        """
+        sig_enum = get_signature_algorithm_enum(chip_config)
+        hash_enum = get_hash_algorithm_enum(chip_config)
+
+        return KeyParameters(
+            signing_algorithm=sig_enum.from_label("SM2"),
+            hash_type=hash_algorithm or hash_enum.from_label("SM3"),
+            key_size=cls.SM2_KEY_TYPE,
+        )
+
+    @classmethod
+    def _get_dilithium_parameters(
+        cls,
+        public_key: PublicKeyDilithium,
+        hash_algorithm: Optional[SpsdkEnum],
+        chip_config: Optional[AhabChipConfig],
+    ) -> KeyParameters:
+        """Get Dilithium key parameters.
+
+        :param public_key: Dilithium public key.
+        :param hash_algorithm: Optional hash algorithm override.
+        :param chip_config: Optional chip configuration.
+        :return: Dictionary with signing_algorithm, hash_type, and key_size.
+        """
+        hash_enum = get_hash_algorithm_enum(chip_config)
+
+        hash_type = (
+            hash_algorithm
+            or {
+                3: hash_enum.from_label("SHA384"),
+                5: hash_enum.from_label("SHA512"),
+            }[public_key.level]
+        )
+
+        return KeyParameters(
+            signing_algorithm=AHABSignAlgorithm.DILITHIUM,
+            hash_type=hash_type,
+            key_size=cls.DILITHIUM_KEY_TYPE[public_key.level],
+        )
+
+    @classmethod
+    def _get_mldsa_parameters(
+        cls,
+        public_key: PublicKeyMLDSA,
+        hash_algorithm: Optional[SpsdkEnum],
+        chip_config: Optional[AhabChipConfig],
+    ) -> KeyParameters:
+        """Get ML-DSA key parameters.
+
+        :param public_key: ML-DSA public key.
+        :param hash_algorithm: Optional hash algorithm override.
+        :param chip_config: Optional chip configuration.
+        :return: Dictionary with signing_algorithm, hash_type, and key_size.
+        :raises SPSDKUnsupportedOperation: Unsupported ML-DSA key level.
+        """
+        hash_enum = get_hash_algorithm_enum(chip_config)
+
+        try:
+            key_size = cls.DILITHIUM_KEY_TYPE[public_key.level]
+        except KeyError as exc:
+            raise SPSDKUnsupportedOperation(
+                f"Unsupported ML-DSA key level: {public_key.level}"
+            ) from exc
+
+        hash_type = (
+            hash_algorithm
+            or {
+                3: hash_enum.from_label("SHA384"),
+                5: hash_enum.from_label("SHA512"),
+            }[public_key.level]
+        )
+
+        return KeyParameters(
+            signing_algorithm=AHABSignAlgorithm.ML_DSA,
+            hash_type=hash_type,
+            key_size=key_size,
+        )
+
+    @classmethod
+    def _get_lms_parameters(
+        cls,
+        public_key: PublicKeyLMS,
+        hash_algorithm: Optional[SpsdkEnum],
+        chip_config: Optional[AhabChipConfig],
+    ) -> KeyParameters:
+        """Get LMS key parameters.
+
+        :param public_key: LMS public key.
+        :param hash_algorithm: Optional hash algorithm override.
+        :param chip_config: Optional chip configuration.
+        :return: Dictionary with signing_algorithm, hash_type, and key_size.
+        """
+        hash_enum = get_hash_algorithm_enum(chip_config)
+
+        return KeyParameters(
+            signing_algorithm=AHABSignAlgorithm.LMS,
+            hash_type=hash_algorithm or hash_enum.from_label("SHA256"),
+            key_size=cls.LMS_KEY_TYPE[public_key.params.hash_length],
+        )
 
     def get_public_key(self) -> PublicKey:
         """Recreate the SRK public key from stored SRK data.
@@ -1338,8 +1513,43 @@ class SRKRecordV2(SRKRecordBase):
                 "ML-DSA"
             ):
                 return PublicKeyMLDSA.parse(self.srk_data.data)
+        if IS_LMS_SUPPORTED:
+            if "LMS" in sig_enum.labels() and self.signing_algorithm == sig_enum.from_label("LMS"):
+                return PublicKeyLMS.parse(self.srk_data.data)
 
-        raise SPSDKUnsupportedOperation("Unsupported public key type")
+        # Build and raise detailed error message
+        raise SPSDKUnsupportedOperation(self._build_unsupported_algorithm_error(sig_enum))
+
+    def _build_unsupported_algorithm_error(self, sig_enum: type[SpsdkEnum]) -> str:
+        """Build detailed error message for unsupported algorithm.
+
+        :param sig_enum: Signature algorithm enumeration.
+        :return: Formatted error message with supported algorithms.
+        """
+        error_parts = [f"Unsupported public key algorithm: {self.signing_algorithm}"]
+        error_parts.append("Supported algorithms:")
+
+        # Show what's actually available based on sig_enum
+        if "RSA" in sig_enum.labels() or "RSA_PSS" in sig_enum.labels():
+            error_parts.append("  - RSA/RSA-PSS")
+        if "ECDSA" in sig_enum.labels():
+            error_parts.append("  - ECDSA")
+
+        if IS_OSCCA_SUPPORTED:
+            if "SM2" in sig_enum.labels():
+                error_parts.append("  - SM2")
+        else:
+            error_parts.append("  - SM2 (install 'gmssl' to enable)")
+
+        if IS_DILITHIUM_SUPPORTED:
+            if "DILITHIUM" in sig_enum.labels():
+                error_parts.append("  - Dilithium")
+            if "ML-DSA" in sig_enum.labels():
+                error_parts.append("  - ML-DSA")
+        else:
+            error_parts.append("  - Dilithium/ML-DSA (install 'spsdk-pqc' to enable)")
+
+        return "\n".join(error_parts)
 
 
 class SRKData(HeaderContainer):
@@ -1552,6 +1762,10 @@ class SRKData(HeaderContainer):
             return cls(src_key=public_key, srk_id=srk_id, data=data)
 
         if isinstance(public_key, (PublicKeyDilithium, PublicKeyMLDSA)):
+            data = public_key.public_numbers
+            return cls(src_key=public_key, srk_id=srk_id, data=data)
+
+        if isinstance(public_key, PublicKeyLMS):
             data = public_key.public_numbers
             return cls(src_key=public_key, srk_id=srk_id, data=data)
 

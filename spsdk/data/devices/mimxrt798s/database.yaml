@@ -167,12 +167,12 @@ info:
   memory_map:
     # Memory map basic info
     xspi1:
-      start_int: 0x08000000
-      size_int: 0x08000000
+      start_int: 0x0800_0000
+      size_int: 0x0800_0000
       external: true
     xspi0:
-      start_int: 0x28000000
-      size_int: 0x08000000
+      start_int: 0x2800_0000
+      size_int: 0x0800_0000
       external: true
     sram:
       start_int: 0x2000_0000
@@ -185,7 +185,7 @@ features:
   blhost:
     sub_features: [overridden_properties]
     overridden_properties:
-       17: "life-cycle"
+      17: "life-cycle"
 
   # ======== Communication buffer section ========
   comm_buffer:

@@ -38,6 +38,7 @@ from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.dilithium import IS_DILITHIUM_SUPPORTED
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import (
+    IS_LMS_SUPPORTED,
     PrivateKey,
     PrivateKeyEcc,
     PrivateKeyRsa,
@@ -70,6 +71,10 @@ from spsdk.utils.misc import (
     load_text,
     write_file,
 )
+
+if IS_LMS_SUPPORTED:
+    # pylint: disable=import-error
+    from spsdk.crypto.keys import LMSParams
 
 logger = logging.getLogger(__name__)
 
@@ -494,7 +499,31 @@ def key_group() -> None:
     type=click.Choice(list(SPSDKEncoding.all()), case_sensitive=False),
     default="PEM",
 )
-def key_generate(key_type: str, output: str, password: str, encoding: str) -> None:
+@optgroup.group("LMS key generation parameters")
+@optgroup.option(
+    "--lms-hash-size",
+    type=click.Choice(["32", "24"], case_sensitive=False),
+    help="Length of hash for LMS signature.",
+)
+@optgroup.option(
+    "--lms-tree-height",
+    type=click.Choice(["5", "10", "15", "20", "25"], case_sensitive=False),
+    help="Height of Leighton-Micali Signature (LMS) Merkle tree. Defines number of possible signatures (2^height).",
+)
+@optgroup.option(
+    "--lms-winternitz",
+    type=click.Choice(["1", "2", "4", "8"], case_sensitive=False),
+    help="Winternitz parameter for LMS key generation.",
+)
+def key_generate(
+    key_type: str,
+    output: str,
+    password: str,
+    encoding: str,
+    lms_hash_size: str,
+    lms_tree_height: str,
+    lms_winternitz: str,
+) -> None:
     """NXP Key Generator Tool."""
     key_param = key_type.lower().strip()
     encoding_param = encoding.upper().strip()
@@ -507,8 +536,18 @@ def key_generate(key_type: str, output: str, password: str, encoding: str) -> No
 
     generators = get_supported_keys_generators()
     func, params = generators[key_param]
-
-    private_key = func(**params)
+    if key_param == "lms":
+        if lms_hash_size is None or lms_tree_height is None or lms_winternitz is None:
+            raise SPSDKAppError("For LMS key generation, all LMS parameters must be specified")
+        # pylint: disable=possibly-used-before-assignment  # not really sure what's PyLint's concern here
+        lms_params = LMSParams(
+            hash_length=int(lms_hash_size),  # type: ignore[arg-type]
+            height=int(lms_tree_height),  # type: ignore[arg-type]
+            w=int(lms_winternitz),  # type: ignore[arg-type]
+        )
+        private_key = func(lms_params)
+    else:
+        private_key = func(**params)
     public_key = private_key.get_public_key()
 
     private_key.save(output, password if password else None, encoding=encoding_enum)

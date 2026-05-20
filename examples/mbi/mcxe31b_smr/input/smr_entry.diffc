@@ -1,0 +1,9 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/smr_entry_template.yaml
+user_cfg: inputs/smr_entry.yaml
+custom_command: "%! nxpimage hse smr-entry get-template -f mcxe31b -o workspace/smr_entry_template.yaml --force"
+
+comments:
+  smrSize: "Size of generated  MBI in bytes"
+  authKeyHandle: "Key handle used for authentication"

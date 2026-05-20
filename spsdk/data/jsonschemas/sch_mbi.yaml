@@ -142,7 +142,6 @@ cert_block_v21:
       format: file
   required: [certBlock]
 
-
 ahab_sign_support:
   type: object
   title: AHAB Container format to add to ECC + PQC sign.
@@ -446,6 +445,7 @@ image_type:
           NXP signed,
           NBU Signed,
           encrypted,
+          misr,
           smr,
           SMR,
         ]
@@ -584,3 +584,15 @@ hse_lifecycle:
       description: "Defines the lifecycle state of the device: 'none' - default state with no lifecycle change, 'oem_prod' - OEM production state with increased security, 'in_field' - deployed state with highest security level and restricted debug access."
       enum: ["none", "oem_prod", "in_field"]
       template_value: "none"
+
+misr_seed:
+  type: object
+  title: MISR Seed Settings
+  description: "Configuration for MISR (Multiple Input Signature Register) seed value used in cryptographic operations"
+  properties:
+    misrSeed:
+      type: string
+      title: MISR Seed
+      description: "MISR seed value for cryptographic operations (16 bytes hexadecimal)."
+      template_value: "00000000000000000000000000000000"
+  required: [misrSeed]

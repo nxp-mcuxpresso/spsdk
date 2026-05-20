@@ -12,6 +12,7 @@ loading, and various helper utilities for binary data processing.
 """
 
 import contextlib
+import functools
 import hashlib
 import json
 import logging
@@ -21,6 +22,7 @@ import re
 import struct
 import textwrap
 import time
+import warnings
 from enum import Enum
 from math import ceil
 from pathlib import Path
@@ -1392,3 +1394,35 @@ def align_block_iso7816(data: bytes, alignment: int = 16) -> bytes:
     # ISO7816-4: first byte is 0x80, rest are 0x00
     padding = bytes([0x80]) + bytes(padding_len - 1)
     return data + padding
+
+
+def deprecated(reason: str) -> Callable:
+    """Decorator to mark functions as deprecated.
+
+    :param reason: Explanation of why the function is deprecated and what to use instead.
+    :return: Decorator function that wraps the deprecated function.
+    """
+
+    def decorator(func: Callable) -> Callable:
+        """Decorator wrapper for deprecated functions.
+
+        :param func: Function to be marked as deprecated.
+        :return: Wrapped function that emits deprecation warning.
+        """
+
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            """Wrapper that emits deprecation warning before calling function.
+
+            :param args: Positional arguments to pass to the wrapped function.
+            :param kwargs: Keyword arguments to pass to the wrapped function.
+            :return: Return value from the wrapped function.
+            """
+            warnings.warn(
+                f"{func.__name__}() is deprecated. {reason}", DeprecationWarning, stacklevel=2
+            )
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator

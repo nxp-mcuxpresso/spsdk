@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK debug probe interface and management utilities.
 
 This module provides abstract base classes and concrete implementations for debug probe
@@ -138,6 +139,47 @@ class DebugProbe(ABC):
         if family:
             self.family = FamilyRevision(family, revision)
         self.mem_ap_ix = -1
+
+    def __enter__(self) -> "DebugProbe":
+        """Enter context manager - open the debug probe.
+
+        This method is called when entering a 'with' statement block.
+        It opens the debug probe connection, making it ready for use.
+
+        :return: Self reference to the debug probe instance.
+        :raises SPSDKError: If opening the debug probe fails.
+
+        Example:
+            with debug_probe:
+                debug_probe.connect()
+                # Use debug probe
+        """
+        self.open()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[object],
+    ) -> None:
+        """Exit context manager - close the debug probe.
+
+        This method is called when exiting a 'with' statement block.
+        It ensures the debug probe is properly closed, even if an
+        exception occurred during the context.
+
+        :param exc_type: Exception type if an exception was raised, None otherwise.
+        :param exc_val: Exception value if an exception was raised, None otherwise.
+        :param exc_tb: Exception traceback if an exception was raised, None otherwise.
+
+        Example:
+            with debug_probe:
+                debug_probe.connect()
+                # Use debug probe
+            # Probe is automatically closed here
+        """
+        self.close()
 
     @classmethod
     @abstractmethod
@@ -1369,11 +1411,12 @@ class DebugProbes(list[ProbeDescription]):
         table.vrules = prettytable.VRuleStyle.NONE
         i = 0
         for probe in self:
+            hardware_id = probe.hardware_id or "Not available"
             table.add_row(
                 [
                     colorama.Fore.YELLOW + str(i),
                     colorama.Fore.WHITE + probe.interface,
-                    colorama.Fore.CYAN + probe.hardware_id,
+                    colorama.Fore.CYAN + hardware_id,
                     colorama.Fore.GREEN + probe.description,
                 ]
             )

@@ -92,6 +92,7 @@ mbi_basic_tests = [
     ("mb_xip_plain_lc.yaml", "mcxe31b"),
     ("mb_xip_plain_lc_with_addr.yaml", "mcxe31b"),
     ("mb_xip_crc.yaml", "mcxn556s"),
+    ("mb_misr.yaml", "mcxc151"),
 ]
 
 mbi_signed_tests = [
@@ -233,17 +234,495 @@ def test_mbi_parser_basic(
     input_image = os.path.normpath(os.path.join(nxpimage_data_dir, sub_path.replace("\\", "/")))
     parsed_app = os.path.join(tmpdir, "parsed", "application.bin")
     assert os.path.isfile(parsed_app)
+
     if os.path.splitext(input_image)[1] == ".bin":
+        # Special handling for MISR images (mcxc151)
+        is_misr = family == "mcxc151" and "misr" in os.path.basename(config_file)
+
         if filecmp.cmp(input_image, parsed_app):
             assert True
         else:
-            # There might be passing at the end of the file
+            # There might be padding at the end of the file
             ref_data = load_binary(input_image)
             new_data = load_binary(parsed_app)
             # compare the first N bytes of reference data
             assert ref_data == new_data[: len(ref_data)]
-            # remaining data must be all zeros
-            assert new_data[len(ref_data) :] == bytes([0] * (len(new_data) - len(ref_data)))
+
+            # Check remaining data based on image type
+            remaining_data = new_data[len(ref_data) :]
+            if is_misr:
+                # MISR images use 0xFF padding
+                assert all(b == 0xFF for b in remaining_data), "MISR padding should be 0xFF"
+                # Verify total size is 128-byte aligned
+                assert (
+                    len(new_data) % 128 == 0
+                ), "Parsed MISR application should be 128-byte aligned"
+            else:
+                # Other images use 0x00 padding
+                assert remaining_data == bytes(
+                    [0] * len(remaining_data)
+                ), "Non-MISR padding should be 0x00"
+
+
+def test_mbi_misr_alignment(cli_runner: CliRunner, tmpdir: str, nxpimage_data_dir: str) -> None:
+    """Test MISR image alignment to 128-byte page size with 0xFF padding."""
+    mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
+    config_file = os.path.join(mbi_data_dir, "cfgs", "mcxc151", "mb_misr.yaml")
+
+    ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+
+    cmd = f"mbi export -c {new_config}"
+    with use_working_directory(nxpimage_data_dir):
+        cli_runner.invoke(nxpimage.main, cmd.split())
+
+    assert os.path.isfile(new_binary)
+
+    # Load the generated MISR image
+    misr_data = load_binary(new_binary)
+
+    # Verify image without signature is aligned to 128 bytes
+    assert (len(misr_data) - 16) % 128 == 0, "MISR image should be aligned to 128-byte page size"
+
+    # Verify image length at offset 0x20
+    image_length = int.from_bytes(misr_data[0x20:0x24], Endianness.LITTLE.value)
+    assert image_length == len(misr_data), "Image length at 0x20 should match actual file size"
+
+    # Verify image type at offset 0x24 is MISR (0x0B)
+    image_flags = int.from_bytes(misr_data[0x24:0x28], Endianness.LITTLE.value)
+    image_type = image_flags & 0x3F  # Lower 6 bits contain image type
+    assert image_type == 0x0B, "Image type should be MISR (0x0B)"
+
+    # Load original application to check padding
+    sub_path: str = load_configuration(config_file)["inputImageFile"]
+    input_image = os.path.normpath(os.path.join(nxpimage_data_dir, sub_path.replace("\\", "/")))
+    original_data = load_binary(input_image)
+
+    # Calculate expected padding
+    original_size = len(original_data)
+    remainder = original_size % 128
+    if remainder != 0:
+        expected_padding_size = 128 - remainder
+        # Verify padding is 0xFF
+        padding_start = original_size
+        padding_data = misr_data[padding_start : padding_start + expected_padding_size]
+        assert all(b == 0xFF for b in padding_data), "Padding should be 0xFF bytes"
+
+
+def test_mbi_misr_ivt_fields(cli_runner: CliRunner, tmpdir: str, nxpimage_data_dir: str) -> None:
+    """Test that MISR images only modify specific IVT fields."""
+    mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
+    config_file = os.path.join(mbi_data_dir, "cfgs", "mcxc151", "mb_misr.yaml")
+
+    ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+
+    # Load original application
+    sub_path: str = load_configuration(config_file)["inputImageFile"]
+    input_image = os.path.normpath(os.path.join(nxpimage_data_dir, sub_path.replace("\\", "/")))
+    original_data = load_binary(input_image)
+
+    cmd = f"mbi export -c {new_config}"
+    with use_working_directory(nxpimage_data_dir):
+        cli_runner.invoke(nxpimage.main, cmd.split())
+
+    assert os.path.isfile(new_binary)
+
+    # Load the generated MISR image
+    misr_data = load_binary(new_binary)
+
+    # Verify that load address at 0x34 is preserved from original
+    original_load_addr = int.from_bytes(original_data[0x34:0x38], Endianness.LITTLE.value)
+    misr_load_addr = int.from_bytes(misr_data[0x34:0x38], Endianness.LITTLE.value)
+    assert original_load_addr == misr_load_addr, "Load address at 0x34 should be preserved"
+
+    # Verify that CRC/Certificate offset at 0x28 is preserved from original
+    original_crc_offset = int.from_bytes(original_data[0x28:0x2C], Endianness.LITTLE.value)
+    misr_crc_offset = int.from_bytes(misr_data[0x28:0x2C], Endianness.LITTLE.value)
+    assert (
+        original_crc_offset == misr_crc_offset
+    ), "CRC/Certificate offset at 0x28 should be preserved"
+
+
+def test_mbi_misr_config_template(cli_runner: CliRunner, tmpdir: str) -> None:
+    """Test that MISR template doesn't include outputImageExecutionTarget or outputImageAuthenticationType."""
+    cmd = f"mbi get-templates -f mcxc151 --output {tmpdir}"
+    result = cli_runner.invoke(nxpimage.main, cmd.split())
+    assert result.exit_code == 0
+
+    misr_template = os.path.join(tmpdir, "mcxc151_xip_misr.yaml")
+    assert os.path.isfile(misr_template), "MISR template should be named mcxc151_xip_misr.yaml"
+
+    # Load and verify template content
+    with open(misr_template, "r") as f:
+        template_content = yaml.safe_load(f)
+
+    assert "imageVersion" not in template_content, "MISR template should not include imageVersion"
+
+    # Verify required fields ARE present
+    assert "family" in template_content
+    assert "masterBootOutputFile" in template_content
+    assert "inputImageFile" in template_content
+
+
+def test_mbi_misr_alignment_unaligned_input(
+    cli_runner: CliRunner, tmpdir: str, nxpimage_data_dir: str
+) -> None:
+    """Test MISR image alignment with various unaligned input sizes."""
+    mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
+    config_file = os.path.join(mbi_data_dir, "cfgs", "mcxc151", "mb_misr.yaml")
+
+    ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+
+    # Load original application
+    sub_path: str = load_configuration(config_file)["inputImageFile"]
+    input_image = os.path.normpath(os.path.join(nxpimage_data_dir, sub_path.replace("\\", "/")))
+    original_data = load_binary(input_image)
+    original_size = len(original_data)
+
+    cmd = f"mbi export -c {new_config}"
+    with use_working_directory(nxpimage_data_dir):
+        cli_runner.invoke(nxpimage.main, cmd.split())
+
+    assert os.path.isfile(new_binary)
+
+    # Load the generated MISR image
+    misr_data = load_binary(new_binary)
+
+    # Calculate expected aligned size
+    remainder = original_size % 128
+    if remainder == 0:
+        expected_size = original_size
+        expected_padding = 0
+    else:
+        expected_padding = 128 - remainder
+        expected_size = original_size + expected_padding
+
+    # Verify final size is aligned
+    assert (
+        len(misr_data) - 16
+    ) == expected_size, f"Expected size {expected_size}, got {len(misr_data)}"
+    assert (len(misr_data) - 16) % 128 == 0, "MISR image must be aligned to 128 bytes"
+
+    # Verify padding bytes are 0xFF
+    if expected_padding > 0:
+        padding_start = original_size
+        padding_end = padding_start + expected_padding
+        padding_bytes = misr_data[padding_start:padding_end]
+        assert all(
+            b == 0xFF for b in padding_bytes
+        ), f"All {expected_padding} padding bytes should be 0xFF"
+
+    # Verify original data is preserved EXCEPT for IVT fields that are modified
+    # IVT modifications are at offsets:
+    # 0x20-0x24: Image length
+    # 0x24-0x28: Image flags (including image type)
+    # 0x28-0x2C: CRC/Certificate offset (should remain 0 for MISR)
+    # 0x34-0x38: Load address (preserved from original)
+
+    # Compare data before IVT modifications (0x00-0x20)
+    assert (
+        misr_data[:0x20] == original_data[:0x20]
+    ), "Data before IVT (0x00-0x20) should be preserved"
+
+    # Skip IVT modified fields (0x20-0x38)
+    # Compare data after IVT modifications (0x38 onwards, excluding padding)
+    assert (
+        misr_data[0x38:original_size] == original_data[0x38:original_size]
+    ), "Data after IVT (0x38 onwards) should be preserved before padding"
+
+
+def test_mbi_misr_alignment_already_aligned(
+    cli_runner: CliRunner, tmpdir: str, nxpimage_data_dir: str
+) -> None:
+    """Test MISR image when input is already aligned to 128 bytes."""
+    mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
+
+    # Create a test application that's already aligned to 128 bytes
+    # Must be at least 0x38 bytes for valid IVT
+    aligned_size = 128 * 10  # 1280 bytes - already aligned
+    total_size = aligned_size + 16  # Add 16 bytes for MISR signature
+    # Create a valid IVT structure (first 0x38 bytes)
+    test_app = bytearray([0xAA] * aligned_size)
+    # Set up minimal valid IVT (stack pointer, reset vector, etc.)
+    # Stack pointer at 0x00
+    test_app[0:4] = (0x20000000).to_bytes(4, "little")
+    # Reset vector at 0x04
+    test_app[4:8] = (0x00000100).to_bytes(4, "little")
+    # NMI at 0x08 (different from SP and PC)
+    test_app[8:12] = (0x00000200).to_bytes(4, "little")
+
+    test_app_path = os.path.join(tmpdir, "aligned_app.bin")
+    with open(test_app_path, "wb") as f:
+        f.write(test_app)
+
+    # Create a test config
+    config_file = os.path.join(mbi_data_dir, "cfgs", "mcxc151", "mb_misr.yaml")
+    config_data = load_configuration(config_file)
+    config_data["inputImageFile"] = test_app_path
+    config_data["masterBootOutputFile"] = os.path.join(tmpdir, "aligned_misr.bin")
+
+    test_config = os.path.join(tmpdir, "test_aligned.yaml")
+    with open(test_config, "w") as f:
+        yaml.dump(config_data, f)
+
+    cmd = f"mbi export -c {test_config}"
+    with use_working_directory(nxpimage_data_dir):
+        result = cli_runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0
+
+    output_file = config_data["masterBootOutputFile"]
+    assert os.path.isfile(output_file)
+
+    # Load the generated MISR image
+    misr_data = load_binary(output_file)
+
+    # Verify no padding was added (size should remain the same)
+    assert (
+        len(misr_data)
+    ) == total_size, f"Already aligned image should not have padding added. Expected {total_size}, got {len(misr_data)}"
+    assert (len(misr_data) - 16) % 128 == 0, "Image should still be aligned to 128 bytes"
+
+    # Verify image length field at 0x20 matches the aligned size
+    image_length = int.from_bytes(misr_data[0x20:0x24], Endianness.LITTLE.value)
+    assert (
+        image_length == total_size
+    ), f"Image length at 0x20 should be {total_size}, got {image_length}"
+
+    # Verify image type is MISR (0x0B)
+    image_flags = int.from_bytes(misr_data[0x24:0x28], Endianness.LITTLE.value)
+    image_type = image_flags & 0x3F
+    assert image_type == 0x0B, f"Image type should be MISR (0x0B), got {image_type}"
+
+
+def test_mbi_misr_alignment_various_sizes(
+    cli_runner: CliRunner, tmpdir: str, nxpimage_data_dir: str
+) -> None:
+    """Test MISR alignment with various input sizes to verify padding calculation."""
+    mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
+    config_file = os.path.join(mbi_data_dir, "cfgs", "mcxc151", "mb_misr.yaml")
+    base_config = load_configuration(config_file)
+
+    # Test cases: (input_size, expected_final_size)
+    # Note: Input is first aligned to 4 bytes, then to 128 bytes
+    test_cases = [
+        (128, 128),  # Already aligned to both 4 and 128
+        (129, 256),  # 129 -> 132 (4-byte align) -> 256 (128-byte align)
+        (255, 256),  # 255 -> 256 (4-byte align) -> 256 (already 128-aligned)
+        (256, 256),  # Already aligned to both 4 and 128
+        (257, 384),  # 257 -> 260 (4-byte align) -> 384 (128-byte align)
+        (100, 128),  # 100 -> 100 (4-byte align) -> 128 (128-byte align)
+        (1000, 1024),  # 1000 -> 1000 (4-byte align) -> 1024 (128-byte align)
+    ]
+
+    for input_size, expected_final_size in test_cases:
+        # Create test application with valid IVT
+        test_app = bytearray([0x55] * input_size)
+
+        # Set up minimal valid IVT (first 0x38 bytes)
+        if input_size >= 0x38:
+            # Stack pointer at 0x00
+            test_app[0:4] = (0x20000000).to_bytes(4, "little")
+            # Reset vector at 0x04
+            test_app[4:8] = (0x00000100).to_bytes(4, "little")
+            # NMI at 0x08 (different from SP and PC)
+            test_app[8:12] = (0x00000200).to_bytes(4, "little")
+
+        test_app_path = os.path.join(tmpdir, f"test_app_{input_size}.bin")
+        with open(test_app_path, "wb") as f:
+            f.write(test_app)
+
+        # Create test config
+        config_data = base_config.copy()
+        config_data["inputImageFile"] = test_app_path
+        output_file = os.path.join(tmpdir, f"misr_{input_size}.bin")
+        config_data["masterBootOutputFile"] = output_file
+
+        test_config = os.path.join(tmpdir, f"test_{input_size}.yaml")
+        with open(test_config, "w") as f:
+            yaml.dump(config_data, f)
+
+        # Generate MISR image
+        cmd = f"mbi export -c {test_config}"
+        with use_working_directory(nxpimage_data_dir):
+            result = cli_runner.invoke(nxpimage.main, cmd.split())
+            assert result.exit_code == 0, f"Failed for input size {input_size}"
+
+        assert os.path.isfile(output_file)
+
+        # Verify alignment
+        misr_data = load_binary(output_file)
+
+        assert (
+            len(misr_data) - 16
+        ) == expected_final_size, (
+            f"For input size {input_size}: expected {expected_final_size}, got {len(misr_data)}"
+        )
+        assert (
+            len(misr_data) - 16
+        ) % 128 == 0, f"For input size {input_size}: output not aligned to 128 bytes"
+
+        # Calculate actual 4-byte aligned size
+        aligned_4_size = (input_size + 3) & ~3
+
+        # Verify padding if any was added for 128-byte alignment
+        if aligned_4_size % 128 != 0:
+            padding_start = aligned_4_size
+            padding_end = expected_final_size
+            padding_bytes = misr_data[padding_start:padding_end]
+            assert all(
+                b == 0xFF for b in padding_bytes
+            ), f"For input size {input_size}: padding should be 0xFF"
+
+        # Verify image length field at 0x20
+        image_length = int.from_bytes(misr_data[0x20:0x24], "little")
+        assert image_length == len(
+            misr_data
+        ), f"For input size {input_size}: image length at 0x20 should match file size"
+
+
+def test_mbi_misr_padding_boundary_cases(
+    cli_runner: CliRunner, tmpdir: str, nxpimage_data_dir: str
+) -> None:
+    """Test MISR padding at page boundaries (maximum and minimum padding)."""
+    mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
+    config_file = os.path.join(mbi_data_dir, "cfgs", "mcxc151", "mb_misr.yaml")
+    base_config = load_configuration(config_file)
+
+    # Test maximum padding (124 bytes after 4-byte alignment)
+    # 129 bytes -> 132 bytes (4-byte align) -> 256 bytes (128-byte align)
+    test_app_max = bytearray([0x11] * 129)
+    # Set up valid IVT
+    test_app_max[0:4] = (0x20000000).to_bytes(4, "little")
+    test_app_max[4:8] = (0x00000100).to_bytes(4, "little")
+    test_app_max[8:12] = (0x00000200).to_bytes(4, "little")
+
+    test_app_max_path = os.path.join(tmpdir, "max_padding_app.bin")
+    with open(test_app_max_path, "wb") as f:
+        f.write(test_app_max)
+
+    config_max = base_config.copy()
+    config_max["inputImageFile"] = test_app_max_path
+    config_max["masterBootOutputFile"] = os.path.join(tmpdir, "max_padding_misr.bin")
+
+    test_config_max = os.path.join(tmpdir, "test_max_padding.yaml")
+    with open(test_config_max, "w") as f:
+        yaml.dump(config_max, f)
+
+    cmd = f"mbi export -c {test_config_max}"
+    with use_working_directory(nxpimage_data_dir):
+        result = cli_runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0
+
+    misr_max = load_binary(config_max["masterBootOutputFile"])
+    assert len(misr_max) == 256 + 16, f"Should pad to 256 bytes, got {len(misr_max)}"
+    # After 4-byte alignment, size is 132, so padding is from 132 to 256
+    assert all(b == 0xFF for b in misr_max[132:256]), "Padding should be 0xFF"
+
+    # Test minimum padding (1 byte after 4-byte alignment)
+    # 127 bytes -> 128 bytes (4-byte align) -> 128 bytes (already 128-aligned)
+    test_app_min = bytearray([0x22] * 127)
+    # Set up valid IVT
+    test_app_min[0:4] = (0x20000000).to_bytes(4, "little")
+    test_app_min[4:8] = (0x00000100).to_bytes(4, "little")
+    test_app_min[8:12] = (0x00000200).to_bytes(4, "little")
+
+    test_app_min_path = os.path.join(tmpdir, "min_padding_app.bin")
+    with open(test_app_min_path, "wb") as f:
+        f.write(test_app_min)
+
+    config_min = base_config.copy()
+    config_min["inputImageFile"] = test_app_min_path
+    config_min["masterBootOutputFile"] = os.path.join(tmpdir, "min_padding_misr.bin")
+
+    test_config_min = os.path.join(tmpdir, "test_min_padding.yaml")
+    with open(test_config_min, "w") as f:
+        yaml.dump(config_min, f)
+
+    cmd = f"mbi export -c {test_config_min}"
+    with use_working_directory(nxpimage_data_dir):
+        result = cli_runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0
+
+    misr_min = load_binary(config_min["masterBootOutputFile"])
+    assert len(misr_min) == 128 + 16, f"Should pad to 128 bytes, got {len(misr_min)}"
+
+
+def test_mbi_misr_padding_preserves_data_integrity(
+    cli_runner: CliRunner, tmpdir: str, nxpimage_data_dir: str
+) -> None:
+    """Test that padding doesn't corrupt original application data."""
+    mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
+    config_file = os.path.join(mbi_data_dir, "cfgs", "mcxc151", "mb_misr.yaml")
+
+    # Create test application with known pattern
+    # Must be at least 0x38 bytes for valid IVT
+    pattern_size = 500  # Unaligned size
+    test_pattern = bytearray([(i % 256) for i in range(pattern_size)])
+
+    # Set up minimal valid IVT (first 0x38 bytes)
+    # Stack pointer at 0x00
+    test_pattern[0:4] = (0x20000000).to_bytes(4, "little")
+    # Reset vector at 0x04
+    test_pattern[4:8] = (0x00000100).to_bytes(4, "little")
+    # NMI at 0x08 (different from SP and PC)
+    test_pattern[8:12] = (0x00000200).to_bytes(4, "little")
+
+    test_app_path = os.path.join(tmpdir, "pattern_app.bin")
+    with open(test_app_path, "wb") as f:
+        f.write(test_pattern)
+
+    # Create test config
+    config_data = load_configuration(config_file)
+    config_data["inputImageFile"] = test_app_path
+    config_data["masterBootOutputFile"] = os.path.join(tmpdir, "pattern_misr.bin")
+
+    test_config = os.path.join(tmpdir, "test_pattern.yaml")
+    with open(test_config, "w") as f:
+        yaml.dump(config_data, f)
+
+    cmd = f"mbi export -c {test_config}"
+    with use_working_directory(nxpimage_data_dir):
+        result = cli_runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0
+
+    misr_data = load_binary(config_data["masterBootOutputFile"])
+
+    # Verify original data is intact EXCEPT for IVT fields that are modified
+    # Compare data before IVT modifications (0x00-0x20)
+    assert (
+        misr_data[:0x20] == test_pattern[:0x20]
+    ), "Data before IVT (0x00-0x20) should be preserved"
+
+    # Skip IVT modified fields (0x20-0x38)
+    # Compare data after IVT modifications (0x38 onwards, up to original size)
+    assert (
+        misr_data[0x38:pattern_size] == test_pattern[0x38:pattern_size]
+    ), "Data after IVT (0x38 onwards) should be preserved exactly"
+
+    # Verify padding area
+    remainder = pattern_size % 128
+    if remainder != 0:
+        padding_size = 128 - remainder
+        padding_start = pattern_size
+        padding_end = padding_start + padding_size
+
+        # Ensure padding doesn't overlap with original data
+        assert (
+            misr_data[padding_start:padding_end] != test_pattern[-padding_size:]
+        ), "Padding should not overlap with original data"
+
+        # Verify padding is 0xFF
+        assert all(
+            b == 0xFF for b in misr_data[padding_start:padding_end]
+        ), "Padding area should be 0xFF"
+
+    # Verify total size is aligned
+    assert (len(misr_data) - 16) % 128 == 0, "Final image should be aligned to 128 bytes"
+
+    # Verify image length field at 0x20
+    image_length = int.from_bytes(misr_data[0x20:0x24], "little")
+    assert image_length == len(
+        misr_data
+    ), f"Image length at 0x20 should match file size: {image_length} vs {len(misr_data)}"
 
 
 def test_mbi_parser_basic_mcxe31_image_with_ivt(
@@ -1220,6 +1699,7 @@ def test_mbi_lpc55s3x_invalid() -> None:
         "mcxn947",
         "rw612",
         "mcxe31b",
+        "mcxc151",
     ],
 )
 def test_mbi_get_templates(cli_runner: CliRunner, tmpdir: str, family: str) -> None:
@@ -1237,12 +1717,12 @@ def test_mbi_get_templates(cli_runner: CliRunner, tmpdir: str, family: str) -> N
     cmd = f"mbi get-templates -f {family} --output {tmpdir}"
     result = cli_runner.invoke(nxpimage.main, cmd.split())
     assert result.exit_code == 0
-    images = get_db(FamilyRevision(family)).get_dict(DatabaseManager.MBI, "images")
 
-    for image in images:
-        for config in images[image]:
-            file_path = os.path.join(tmpdir, f"{family}_{image}_{config}.yaml")
-            assert os.path.isfile(file_path)
+    images = get_db(FamilyRevision(family)).get_dict(DatabaseManager.MBI, "images")
+    for target in images:
+        for authentication in images[target]:
+            file_path = os.path.join(tmpdir, f"{family}_{target}_{authentication}.yaml")
+            assert os.path.isfile(file_path), f"Template file not found: {file_path}"
 
 
 @pytest.mark.parametrize(

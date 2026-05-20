@@ -21,6 +21,8 @@ info:
       usb:
         - vid: 0x15a2
           pid: 0x007D
+        - vid: 0x15A2
+          pid: 0x004F
       protocol_params:
         no_cmd: False
         hid_ep1: False
