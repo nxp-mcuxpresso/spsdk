@@ -1,0 +1,10 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/key_info_template.yaml
+user_cfg: inputs/key_info_ecc.yaml
+custom_command: "%! nxpimage hse key-info get-template -f mcxe31b -o workspace/key_info_template.yaml --force"
+
+comments:
+  keyFlags: "Use USAGE_VERIFY and USAGE_AUTHORIZATION for SMR entry verification"
+  specificData: "Keep ECC key specific data"
+  keyType: "We will use ECC P-256 key type in this example"

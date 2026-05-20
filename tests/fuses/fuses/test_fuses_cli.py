@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """Test module for SPSDK NXP Fuses CLI functionality.
 
 This module contains comprehensive test cases for the nxpfuses command-line
@@ -152,10 +153,10 @@ def test_nxpfuses_fuses_print_single(
     result = cli_runner.invoke(nxpfuses.main, cmd.split())
     assert TestBlhostFuseOperator.ACTIONS[-1].action_type == "read"
     assert TestBlhostFuseOperator.ACTIONS[-1].fuse_index == 0x91
-    assert "Fuse name:        XSPI0_IPED_CTX1" in result.output
-    assert "Fuse OTP index:   0x91" in result.output
-    assert "Fuse value:       0x00000000" in result.output
-    assert "Fuse locks:       No locks" in result.output
+    assert "Name:        XSPI0_IPED_CTX1" in result.output
+    assert "OTP index:   0x91" in result.output
+    assert "Value:       0x00000000" in result.output
+    assert "Locks:       No locks" in result.output
 
 
 @patch("spsdk.apps.nxpfuses.get_fuse_operator", mock_fuses_operator)

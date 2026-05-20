@@ -45,7 +45,7 @@ jlink = ["spsdk-jlink<1,>=0.3.1"]
 lauterbach = ["spsdk-lauterbach<1,>=0.4.0"]
 pemicro = ["spsdk-pemicro<1,>=0.3.1"]
 pkcs11 = ["spsdk-pkcs11<1,>=0.3.1"]
-pqc = ["spsdk-pqc<1,>=0.6.1"]
+pqc = ["spsdk-pqc<1.0,>=0.6.1", "pyhsslms>=2.0.0,<3"]
 rblhost = ["pymboot-rs<1"]
 all = [
     "spsdk[examples]",

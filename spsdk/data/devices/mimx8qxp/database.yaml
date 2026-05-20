@@ -12,6 +12,13 @@ info:
   purpose: i.MX Application Processors
   # Web page of MCU representative
   web: https://www.nxp.com/products/i.MX8
+  isp:
+    rom:
+      protocol: sdps
+      interfaces: [usb]
+      usb:
+        - vid: 0x1FC9
+          pid: 0x012F
 
 features:
   # ======== Communication buffer section ========

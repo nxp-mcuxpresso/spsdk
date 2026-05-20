@@ -1,0 +1,731 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ========================  PFR CMPA_CFG configuration template for mcxc151, Revision: latest  =========================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxc151
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ------------------------------------===== Configuration area type [Required] =====------------------------------------
+# Description: PFR / IFR type
+# Possible options: <CMPA_CFG, cmpa_cfg>
+type: CMPA_CFG
+# --------------------------------------------===== mcxc151 [Required] =====--------------------------------------------
+settings:
+  # ------------------------------------------===== BOOT_CFG0 [Optional] =====------------------------------------------
+  # Description: Offset: 0x00000000, Width: 32b; Boot configuration
+  BOOT_CFG0:
+    # ----------------------------------------===== BOOT_SPEED [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 2b, Core clock
+    # - 36MHZ_FRO_@1V0_0, (0): 36Mhz FRO @1v0
+    # - 72MHZ_FRO_@1V1?, (1): 72MHz FRO @1v1?
+    # - 36MHZ_FRO_@1V0_2, (2): 36Mhz FRO @1v0
+    # - 36MHZ_FRO_@1V0_3, (3): 36Mhz FRO @1v0
+    # Possible options: <36MHZ_FRO_@1V0_0, 72MHZ_FRO_@1V1?, 36MHZ_FRO_@1V0_2, 36MHZ_FRO_@1V0_3>
+    BOOT_SPEED: 36MHZ_FRO_@1V0_0
+    # ------------------------------------------===== Header [Optional] =====-------------------------------------------
+    # Description: Offset: 16b, Width: 16b, CMPA Header marker should be set to 0x5963
+    Header: 22883
+  # ------------------------------------------===== BOOT_CFG1 [Optional] =====------------------------------------------
+  # Description: Offset: 0x00000004, Width: 32b; Boot configuration
+  BOOT_CFG1:
+    # ----------------------------------------===== ISP_UART_EN [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 1b, ISP_UART_EN
+    # - DISABLE, (0): Disable
+    # - ENABLE, (1): Enable
+    # Possible options: <DISABLE, ENABLE>
+    ISP_UART_EN: ENABLE
+    # ----------------------------------------===== ISP_I2C_EN [Optional] =====-----------------------------------------
+    # Description: Offset: 1b, Width: 1b, ISP_I2C_EN
+    # - DISABLE, (0): Disable
+    # - ENABLE, (1): Enable
+    # Possible options: <DISABLE, ENABLE>
+    ISP_I2C_EN: ENABLE
+    # ----------------------------------------===== ISP_SPI_EN [Optional] =====-----------------------------------------
+    # Description: Offset: 2b, Width: 1b, ISP_SPI_EN
+    # - DISABLE, (0): Disable
+    # - ENABLE, (1): Enable
+    # Possible options: <DISABLE, ENABLE>
+    ISP_SPI_EN: ENABLE
+    # ---------------------------------------===== ISP_PIN_ENTRY [Optional] =====---------------------------------------
+    # Description: Offset: 8b, Width: 2b, Disable ISP mode entry through pin assertion
+    # - ISP_ENTRY_ALLOWED_0, (0): ISP entry allowed
+    # - ISP_ENTRY_DISABLED, (1): ISP entry disabled
+    # - ISP_ENTRY_ALLOWED_2, (2): ISP entry allowed
+    # - ISP_ENTRY_ALLOWED_3, (3): ISP entry allowed
+    # Possible options: <ISP_ENTRY_ALLOWED_0, ISP_ENTRY_DISABLED, ISP_ENTRY_ALLOWED_2, ISP_ENTRY_ALLOWED_3>
+    ISP_PIN_ENTRY: ISP_ENTRY_ALLOWED_0
+    # ---------------------------------------===== ISP_API_ENTRY [Optional] =====---------------------------------------
+    # Description: Offset: 12b, Width: 2b, Disable ISP mode entry through ROM API call. ISP mode can be entered through
+    # ROM API invocation
+    # - ISP_ENTRY_ALLOWED_0, (0): ISP entry allowed
+    # - ISP_ENTRY_DISABLED, (1): ISP entry disabled
+    # - ISP_ENTRY_ALLOWED_2, (2): ISP entry allowed
+    # - ISP_ENTRY_ALLOWED_3, (3): ISP entry allowed
+    # Possible options: <ISP_ENTRY_ALLOWED_0, ISP_ENTRY_DISABLED, ISP_ENTRY_ALLOWED_2, ISP_ENTRY_ALLOWED_3>
+    ISP_API_ENTRY: ISP_ENTRY_ALLOWED_0
+    # ---------------------------------------===== ISP_FT_ENTRY [Optional] =====----------------------------------------
+    # Description: Offset: 14b, Width: 2b, Disable ISP mode entry on image authentication failure
+    # - ISP_ENTRY_ALLOWED_0, (0): ISP entry allowed
+    # - ISP_ENTRY_DISABLED, (1): ISP entry disabled
+    # - ISP_ENTRY_ALLOWED_2, (2): ISP entry allowed
+    # - ISP_ENTRY_ALLOWED_3, (3): ISP entry allowed
+    # Possible options: <ISP_ENTRY_ALLOWED_0, ISP_ENTRY_DISABLED, ISP_ENTRY_ALLOWED_2, ISP_ENTRY_ALLOWED_3>
+    ISP_FT_ENTRY: ISP_ENTRY_ALLOWED_0
+  # -----------------------------------------===== BOOT_TIMERS [Optional] =====-----------------------------------------
+  # Description: Offset: 0x0000000C, Width: 32b; Boot timers
+  BOOT_TIMERS:
+    # ----------------------------------===== POWERDOWN_TIMEOUT_SECS [Optional] =====-----------------------------------
+    # Description: Offset: 0b, Width: 16b, Powerdown timeout: Timeout value in seconds. When a non-zero value is
+    # programmed in this field ROM uses it as idle timeout value to enter power-down state to conserve power
+    POWERDOWN_TIMEOUT_SECS: 0
+  # ----------------------------------------===== ISP_UART_CFG [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000010, Width: 32b; ISP UART configuration
+  ISP_UART_CFG:
+    # ----------------------------------------===== UART_RX_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 8b, Override default UART RX ISP pin. Identifies the pin to be used as UART_RX
+    # pin. [4:0] GPIO Pin number [7:5] GPIO port number
+    UART_RX_PIN: 0
+    # -------------------------------------===== UART_RX_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 8b, Width: 4b, Identifies the pin mux function slot
+    UART_RX_FUNC_SLOT: 0
+    # -----------------------------------===== UART_ISP_INSTANCE_SEL [Optional] =====-----------------------------------
+    # Description: Offset: 12b, Width: 4b, Identifies the UART instance for UART ISP mode
+    UART_ISP_INSTANCE_SEL: 0
+    # ----------------------------------------===== UART_TX_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 16b, Width: 8b, Override default UART TX ISP pin. Identifies the pin to be used as UART_TX
+    # pin. [4:0] GPIO Pin number [7:5] GPIO port number
+    UART_TX_PIN: 0
+    # -------------------------------------===== UART_TX_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 24b, Width: 4b, Identifies the pin mux function slot
+    UART_TX_FUNC_SLOT: 0
+  # -----------------------------------------===== ISP_I2C_CFG [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000014, Width: 32b; ISP I2C configuration
+  ISP_I2C_CFG:
+    # ----------------------------------------===== I2C_SCL_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 8b, Override default UART RX ISP pin. Identifies the pin to be used as UART_RX
+    # pin. [4:0] GPIO Pin number [7:5] GPIO port number
+    I2C_SCL_PIN: 0
+    # -------------------------------------===== I2C_SCL_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 8b, Width: 4b, Identifies the pin mux function slot
+    I2C_SCL_FUNC_SLOT: 0
+    # -----------------------------------===== I2C_ISP_INSTANCE_SEL [Optional] =====------------------------------------
+    # Description: Offset: 12b, Width: 4b, Identifies the i2c instance used for UART ISP mode
+    I2C_ISP_INSTANCE_SEL: 0
+    # ----------------------------------------===== I2C_SDA_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 16b, Width: 8b, Override default UART TX ISP pin. Identifies the pin to be used as UART_TX
+    # pin. [4:0] GPIO Pin number [7:5] GPIO port number
+    I2C_SDA_PIN: 0
+    # -------------------------------------===== I2C_SDA_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 24b, Width: 4b, Identifies the pin mux function slot
+    I2C_SDA_FUNC_SLOT: 0
+  # ----------------------------------------===== ISP_SPI_CFG0 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000018, Width: 32b; ISP SPI configuration0
+  ISP_SPI_CFG0:
+    # ----------------------------------------===== SPI_SCK_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 8b, Override default SPI_SCK ISP pin. Identifies the pin to be used as SPI_SCK
+    # pin. [4:0] GPIO Pin number [7:5] GPIO port number
+    SPI_SCK_PIN: 0
+    # -------------------------------------===== SPI_SCK_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 8b, Width: 4b, Identifies the pin mux function slot
+    SPI_SCK_FUNC_SLOT: 0
+    # -----------------------------------===== SPI_ISP_INSTANCE_SEL [Optional] =====------------------------------------
+    # Description: Offset: 12b, Width: 4b, Identifies the SPI instance used for SPI ISP mode
+    SPI_ISP_INSTANCE_SEL: 0
+    # ---------------------------------------===== SPI_MOSI_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 16b, Width: 8b, Override default SPI_MOSI ISP pin. Identifies the pin to be used as SPI_MOSI
+    # pin. [4:0] GPIO Pin number [7:5] GPIO port number
+    SPI_MOSI_PIN: 0
+    # ------------------------------------===== SPI_MOSI_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 24b, Width: 4b, Identifies the pin mux function slot
+    SPI_MOSI_FUNC_SLOT: 0
+  # ----------------------------------------===== ISP_SPI_CFG1 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x0000001C, Width: 32b; ISP SPI configuration1
+  ISP_SPI_CFG1:
+    # ---------------------------------------===== SPI_MISO_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 8b, Override default SPI_MISO ISP pin. Identifies the pin to be used as SPI_MISO
+    # pin. [4:0] GPIO Pin number [7:5] GPIO port number
+    SPI_MISO_PIN: 0
+    # ------------------------------------===== SPI_MISO_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 8b, Width: 4b, Identifies the pin mux function slot
+    SPI_MISO_FUNC_SLOT: 0
+    # ---------------------------------------===== SPI_SSEL_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 16b, Width: 8b, Override default SPI_SSEL ISP pin. Identifies the pin to be used as SPI_SSEL
+    # pin. [4:0] GPIO Pin number [7:5] GPIO port number
+    SPI_SSEL_PIN: 0
+    # ------------------------------------===== SPI_SSEL_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 24b, Width: 4b, Identifies the pin mux function slot
+    SPI_SSEL_FUNC_SLOT: 0
+    # --------------------------------------===== ISP_SPI_SSEL_X [Optional] =====---------------------------------------
+    # Description: Offset: 28b, Width: 2b, SPI chip select number. FlexComm SPI interfaces supports up to four chip
+    # selects
+    ISP_SPI_SSEL_X: 0
+  # ----------------------------------------===== ISP_MISC_CFG [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000020, Width: 32b; ISP misc configuration
+  ISP_MISC_CFG:
+    # --------------------------------------===== I2C_SLAVE_ADDR [Optional] =====---------------------------------------
+    # Description: Offset: 0b, Width: 8b, I2C slave address A 7-bit Address used for selecting our device on shared I2C
+    # bus system. By default ROM uses 0x10 as slave address. If this address conflicts with another slave on board
+    # customer could use this field to override the address
+    I2C_SLAVE_ADDR: 0
+    # ---------------------------------------===== ISP_SPI_CUST [Optional] =====----------------------------------------
+    # Description: Offset: 26b, Width: 2b, Use customer defined SPI ISP pins
+    # - DEFAULT_ROM_DEFINED_PIN_0, (0): Default ROM defined pins
+    # - CUSTOMER_DEFINED, (1): Customer defined
+    # - DEFAULT_ROM_DEFINED_PIN_2, (2): Default ROM defined pins
+    # - DEFAULT_ROM_DEFINED_PIN_3, (3): Default ROM defined pins
+    # Possible options: <DEFAULT_ROM_DEFINED_PIN_0, CUSTOMER_DEFINED, DEFAULT_ROM_DEFINED_PIN_2,
+    # DEFAULT_ROM_DEFINED_PIN_3>
+    ISP_SPI_CUST: DEFAULT_ROM_DEFINED_PIN_0
+    # ---------------------------------------===== ISP_I2C_CUST [Optional] =====----------------------------------------
+    # Description: Offset: 28b, Width: 2b, Use customer defined I2C ISP pins
+    # - DEFAULT_ROM_DEFINED_PIN_0, (0): Default ROM defined pins
+    # - CUSTOMER_DEFINED, (1): Customer defined
+    # - DEFAULT_ROM_DEFINED_PIN_2, (2): Default ROM defined pins
+    # - DEFAULT_ROM_DEFINED_PIN_3, (3): Default ROM defined pins
+    # Possible options: <DEFAULT_ROM_DEFINED_PIN_0, CUSTOMER_DEFINED, DEFAULT_ROM_DEFINED_PIN_2,
+    # DEFAULT_ROM_DEFINED_PIN_3>
+    ISP_I2C_CUST: DEFAULT_ROM_DEFINED_PIN_0
+    # ---------------------------------------===== ISP_UART_CUST [Optional] =====---------------------------------------
+    # Description: Offset: 30b, Width: 2b, Use customer defined UART ISP pins
+    # - DEFAULT_ROM_DEFINED_PIN_0, (0): Default ROM defined pins
+    # - CUSTOMER_DEFINED, (1): Customer defined
+    # - DEFAULT_ROM_DEFINED_PIN_2, (2): Default ROM defined pins
+    # - DEFAULT_ROM_DEFINED_PIN_3, (3): Default ROM defined pins
+    # Possible options: <DEFAULT_ROM_DEFINED_PIN_0, CUSTOMER_DEFINED, DEFAULT_ROM_DEFINED_PIN_2,
+    # DEFAULT_ROM_DEFINED_PIN_3>
+    ISP_UART_CUST: DEFAULT_ROM_DEFINED_PIN_0
+  # ----------------------------------------===== BOOT_IMG_CFG [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000024, Width: 32b; Boot IMG configuration
+  BOOT_IMG_CFG:
+    # ---------------------------------------===== IMG_CHECK_ENF [Optional] =====---------------------------------------
+    # Description: Offset: 0b, Width: 2b, Image check enforcement. This field defines the minimum image verification
+    # procedure (CRC32, MISR)
+    # - ALL_ALLOWED, (0): All Image types are allowed
+    # - CRC_IMAGE, (1): CRC image is allowed. CRC32 is used to do the check
+    # - MISR_IMAGE, (2): MISR image is allowed. MISR is used to do the check
+    # - ALL_ALLOWED_OVERRIDE, (3): All Image types are allowed
+    # Possible options: <ALL_ALLOWED, CRC_IMAGE, MISR_IMAGE, ALL_ALLOWED_OVERRIDE>
+    IMG_CHECK_ENF: ALL_ALLOWED
+    # -----------------------------------------===== LP_CRC_EN [Optional] =====-----------------------------------------
+    # Description: Offset: 6b, Width: 2b, Image check enforcement for low power wakeup flow. This field defines the
+    # whether do CRC32 check for image
+    # - IMAGE_CHECK_DISABLED_0, (0): Image check is disabled
+    # - CRC32_CHECK, (1): CRC32 is used to do the check
+    # - IMAGE_CHECK_DISABLED_2, (2): Image check is disabled
+    # - IMAGE_CHECK_DISABLED_3, (3): Image check is disabled
+    # Possible options: <IMAGE_CHECK_DISABLED_0, CRC32_CHECK, IMAGE_CHECK_DISABLED_2, IMAGE_CHECK_DISABLED_3>
+    LP_CRC_EN: IMAGE_CHECK_DISABLED_0
+    # --------------------------------------===== ACTIVE_IMG_PROT [Optional] =====--------------------------------------
+    # Description: Offset: 14b, Width: 2b, Protection of active image. This field defines protection of flash area
+    # occupied by the active image. Only applicable to internal flash
+    # - GLBAC4_USED_0, (0): GLBAC4 is used. FLASH_ACL settings are ignored
+    # - GLBAC4_USED_1, (1): GLBAC4 is used. FLASH_ACL settings are ignored
+    # - FLASH_ACL_PROT, (2): Protection is defined using the CMPA FLASH_ACL settings
+    # - GLBAC4_USED_3, (3): GLBAC4 is used. FLASH_ACL settings are ignored
+    # Possible options: <GLBAC4_USED_0, GLBAC4_USED_1, FLASH_ACL_PROT, GLBAC4_USED_3>
+    ACTIVE_IMG_PROT: GLBAC4_USED_0
+    # ---------------------------------------===== RAM_ECC_CLEAR [Optional] =====---------------------------------------
+    # Description: Offset: 30b, Width: 2b, Clear ECC for the whole RAM at boot stage
+    # - NOT_CLEAR_0, (0): Not clear
+    # - CLEAR, (1): clear
+    # - NOT_CLEAR_2, (2): Not clear
+    # - NOT_CLEAR_3, (3): Not clear
+    # Possible options: <NOT_CLEAR_0, CLEAR, NOT_CLEAR_2, NOT_CLEAR_3>
+    RAM_ECC_CLEAR: NOT_CLEAR_0
+  # --------------------------------------===== QUICK_SET_GPIO_0 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000030, Width: 32b; Drive GPIO 0 port pins high after reset. Each bit corresponds to the
+  # pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up
+  # as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting
+  # till complete boot
+  QUICK_SET_GPIO_0: '0x00000000'
+  # --------------------------------------===== QUICK_CLR_GPIO_0 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000034, Width: 32b; Drive GPIO 0 port pins low. See description of QUICK_SET_GPIO_0 field
+  QUICK_CLR_GPIO_0: '0x00000000'
+  # --------------------------------------===== QUICK_SET_GPIO_1 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000038, Width: 32b; Drive GPIO 1 port pins high. See description of QUICK_SET_GPIO_0 field
+  QUICK_SET_GPIO_1: '0x00000000'
+  # --------------------------------------===== QUICK_CLR_GPIO_1 [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000003C, Width: 32b; Drive GPIO 1 port pins low. See description of QUICK_SET_GPIO_0 field
+  QUICK_CLR_GPIO_1: '0x00000000'
+  # --------------------------------------===== QUICK_SET_GPIO_2 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000040, Width: 32b; Drive GPIO 0 port pins high after reset. Each bit corresponds to the
+  # pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up
+  # as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting
+  # till complete boot
+  QUICK_SET_GPIO_2: '0x00000000'
+  # --------------------------------------===== QUICK_CLR_GPIO_2 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000044, Width: 32b; Drive GPIO 0 port pins low. See description of QUICK_SET_GPIO_0 field
+  QUICK_CLR_GPIO_2: '0x00000000'
+  # --------------------------------------===== QUICK_SET_GPIO_3 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000048, Width: 32b; Drive GPIO 1 port pins high. See description of QUICK_SET_GPIO_0 field
+  QUICK_SET_GPIO_3: '0x00000000'
+  # --------------------------------------===== QUICK_CLR_GPIO_3 [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000004C, Width: 32b; Drive GPIO 1 port pins low. See description of QUICK_SET_GPIO_0 field
+  QUICK_CLR_GPIO_3: '0x00000000'
+  # --------------------------------------===== QUICK_SET_GPIO_4 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000050, Width: 32b; Drive GPIO 0 port pins high after reset. Each bit corresponds to the
+  # pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up
+  # as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting
+  # till complete boot
+  QUICK_SET_GPIO_4: '0x00000000'
+  # --------------------------------------===== QUICK_CLR_GPIO_4 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000054, Width: 32b; Drive GPIO 0 port pins low. See description of QUICK_SET_GPIO_0 field
+  QUICK_CLR_GPIO_4: '0x00000000'
+  # ----------------------------------------===== FLASH_ACL_0_7 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000060, Width: 32b; Flash ACL 0 7
+  FLASH_ACL_0_7:
+    # -----------------------------------------===== ACL_SEC_0 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, ACL sec 0
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_0: ROM_RX_UNLOCKED
+    # -----------------------------------------===== ACL_SEC_1 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, ACL sec 1
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_1: ROM_RX_UNLOCKED
+    # -----------------------------------------===== ACL_SEC_2 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, ACL sec 2
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_2: ROM_RX_UNLOCKED
+    # -----------------------------------------===== ACL_SEC_3 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, ACL sec 3
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_3: ROM_RX_UNLOCKED
+    # -----------------------------------------===== ACL_SEC_4 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, ACL sec 4
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_4: ROM_RX_UNLOCKED
+    # -----------------------------------------===== ACL_SEC_5 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, ACL sec 5
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_5: ROM_RX_UNLOCKED
+    # -----------------------------------------===== ACL_SEC_6 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, ACL sec 6
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_6: ROM_RX_UNLOCKED
+    # -----------------------------------------===== ACL_SEC_7 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, ACL sec 7
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_7: ROM_RX_UNLOCKED
+  # ----------------------------------------===== FLASH_ACL_8_9 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000064, Width: 32b; Flash ACL 8 9
+  FLASH_ACL_8_9:
+    # -----------------------------------------===== ACL_SEC_8 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, ACL sec 8
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_8: ROM_RX_UNLOCKED
+    # -----------------------------------------===== ACL_SEC_9 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, ACL sec 9
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_9: ROM_RX_UNLOCKED
+  # ---------------------------------------===== FLASH_ACL_10_17 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000068, Width: 32b; Flash ACL 10 17
+  FLASH_ACL_10_17:
+    # ----------------------------------------===== ACL_SEC_10 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, ACL sec 10
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_10: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_11 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, ACL sec 11
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_11: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_12 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, ACL sec 12
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_12: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_13 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, ACL sec 13
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_13: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_14 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, ACL sec 14
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_14: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_15 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, ACL sec 15
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_15: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_16 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, ACL sec 16
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_16: ROM_RX_UNLOCKED
+    # ----------------------------------------===== ACL_SEC_17 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, ACL sec 17
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_17: ROM_RX_UNLOCKED
+  # ----------------------------------------===== FLASH_ACL_18 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x0000006C, Width: 32b; Flash ACL 18
+  FLASH_ACL_18:
+    # ----------------------------------------===== ACL_SEC_18 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, ACL sec 18
+    # - DEFAULT_RW_UNLOCKED, (0): Data flash and unlocked (RW__). Default flash behavior with read and write access
+    # only. Instruction fetches (execute access) are blocked and generates security violation. Blocks assigned with this
+    # access control index can be changed to another index by software
+    # - DATA_RW_LOCKED, (1): Data flash and locked (RW_L). Read and write operations are allowed but execution is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - ROM_RX_LOCKED, (2): Read only Memory (ROM) and locked (R_XL). Read & execute operations are allowed but write is
+    # blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - DATA_ROM_LOCKED, (3): Data Read only memory (DROM) and locked (R__L). Read operations is allowed but write &
+    # execute are blocked. Blocks assigned with this access control index cannot be changed to another index until next
+    # reset
+    # - ROM_RX_UNLOCKED, (4): Read-Only-Memory (ROM) and un-locked (R_X_). Read & execute operations are allowed but
+    # write is blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_UNLOCKED, (5): eXecute-only Memory (XOM) and un-locked (__X_). Execute operations are allowed but read &
+    # write are blocked. Blocks assigned with this access control index can be changed to another index by software
+    # - XOM_LOCKED, (6): eXecute-Only-Memory (XOM) and locked (__XL). Execute operations are allowed but read & write
+    # are blocked. Blocks assigned with this access control index cannot be changed to another index until next reset
+    # - NO_ACCESS_LOCKED, (7): Hidden (___L). Read, Write & execute operations are blocked. Once this access control
+    # index is assigned to a block, the memory range associated with block is hidden until next reset
+    # Possible options: <DEFAULT_RW_UNLOCKED, DATA_RW_LOCKED, ROM_RX_LOCKED, DATA_ROM_LOCKED, ROM_RX_UNLOCKED,
+    # XOM_UNLOCKED, XOM_LOCKED, NO_ACCESS_LOCKED>
+    ACL_SEC_18: ROM_RX_UNLOCKED

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK database management and device information utilities.
 
 This module provides comprehensive functionality for managing SPSDK databases
@@ -461,7 +462,7 @@ class Bootloader:
         :param protocol_params: Dictionary of protocol-specific parameters
         :raises SPSDKValueError: If an invalid protocol value is provided
         """
-        if protocol and protocol not in ["mboot", "sdp", "sdps", "lpc"]:
+        if protocol and protocol not in ["mboot", "sdp", "sdps", "lpc", "sdpv"]:
             raise SPSDKValueError(f"Invalid protocol value: {protocol}")
         self.protocol = protocol
         self.interfaces = interfaces
@@ -906,92 +907,154 @@ class MemMap:
 class IspCfg:
     """ISP Configuration Manager for NXP MCU bootloaders.
 
-    This class manages In-System Programming (ISP) configuration data for both ROM
-    and flashloader bootloaders, providing unified access to protocol support,
-    USB identification, and configuration management across the SPSDK framework.
+    This class manages In-System Programming (ISP) configuration data for ROM,
+    flashloader, fastboot, and SDPV bootloaders, providing unified access to protocol
+    support, USB identification, and configuration management across the SPSDK framework.
     """
 
-    def __init__(self, rom: Bootloader, flashloader: Bootloader) -> None:
-        """Initialize ISP configuration with ROM and flashloader instances.
+    BOOTLOADER_TYPES = ["rom", "flashloader", "fastboot", "sdpv"]
+
+    def __init__(
+        self,
+        rom: Bootloader,
+        flashloader: Bootloader,
+        fastboot: Optional[Bootloader] = None,
+        sdpv: Optional[Bootloader] = None,
+    ) -> None:
+        """Initialize ISP configuration with ROM, flashloader, fastboot, and SDPV.
 
         :param rom: ROM bootloader instance for initial communication.
         :param flashloader: Flashloader bootloader instance for memory operations.
+        :param fastboot: Optional Fastboot bootloader instance for Android-style flashing.
+        :param sdpv: Optional SDPV (SDP Variant) bootloader instance for U-Boot SPL mode.
         """
         self.rom = rom
         self.flashloader = flashloader
+        self.fastboot = fastboot
+        self.sdpv = sdpv
 
     def __str__(self) -> str:
         """Return string representation of the database entry.
 
-        Provides a formatted string containing ROM and FlashLoader information
-        with proper indentation for readability.
+        Provides a formatted string containing ROM, FlashLoader, Fastboot, and SDPV
+        information with proper indentation for readability.
 
         :return: Formatted string representation of the database entry.
         """
-        ret = ""
-        if self.rom:
-            ret += f"ROM:\n{textwrap.indent(str(self.rom), '  ')}\n"
-        if self.flashloader.protocol:
-            ret += f"FlashLoader:\n{textwrap.indent(str(self.flashloader), '  ')}\n"
+        bootloader_labels = {
+            "rom": "ROM",
+            "flashloader": "FlashLoader",
+            "fastboot": "Fastboot",
+            "sdpv": "SDPV",
+        }
 
-        return ret
+        lines = []
+        for attr_name, label in bootloader_labels.items():
+            bootloader = getattr(self, attr_name, None)
+            if bootloader and bootloader.protocol:
+                lines.append(f"{label}:\n{textwrap.indent(str(bootloader), '  ')}")
+
+        return "\n".join(lines) + "\n" if lines else ""
 
     @classmethod
     def load(cls, config: dict) -> Self:
         """Load database configuration from dictionary.
 
-        Creates a new instance by loading ROM and flashloader bootloader configurations
-        from the provided configuration dictionary.
+        Creates a new instance by loading ROM, flashloader, fastboot, and SDPV bootloader
+        configurations from the provided configuration dictionary.
 
-        :param config: Configuration dictionary containing 'rom' and 'flashloader' keys.
+        :param config: Configuration dictionary containing 'rom', 'flashloader', and
+            optional 'fastboot' and 'sdpv' keys.
         :return: New instance loaded from the configuration.
         """
         return cls(
             rom=Bootloader.load(config.get("rom", {})),
             flashloader=Bootloader.load(config.get("flashloader", {})),
+            fastboot=Bootloader.load(config["fastboot"]) if "fastboot" in config else None,
+            sdpv=Bootloader.load(config["sdpv"]) if "sdpv" in config else None,
         )
 
     def update(self, config: dict) -> None:
         """Update the object from configuration.
 
-        This method updates both ROM and flashloader configurations from the provided
-        configuration dictionary.
+        This method updates ROM, flashloader, fastboot, and SDPV configurations from the
+        provided configuration dictionary.
 
-        :param config: Configuration dictionary containing 'rom' and/or 'flashloader' keys.
+        :param config: Configuration dictionary containing 'rom', 'flashloader',
+            'fastboot', and/or 'sdpv' keys.
         """
+        # Update mandatory bootloaders
         self.rom.update(config.get("rom", {}))
         self.flashloader.update(config.get("flashloader", {}))
+
+        # Update optional bootloaders
+        for bootloader_type in ["fastboot", "sdpv"]:
+            if bootloader_type in config:
+                bootloader = getattr(self, bootloader_type, None)
+                if bootloader is None:
+                    setattr(self, bootloader_type, Bootloader.load(config[bootloader_type]))
+                else:
+                    bootloader.update(config[bootloader_type])
 
     def is_protocol_supported(self, protocol: str) -> bool:
         """Check if any interface supports the given protocol.
 
-        The method verifies whether either the ROM or flashloader interface
+        The method verifies whether ROM, flashloader, fastboot, or SDPV interface
         supports the specified communication protocol.
 
         :param protocol: Protocol name to check for support.
-        :return: True if either ROM or flashloader supports the protocol, False otherwise.
+        :return: True if any bootloader supports the protocol, False otherwise.
         """
-        return self.rom.protocol == protocol or self.flashloader.protocol == protocol
+        bootloaders = [self.rom, self.flashloader, self.fastboot, self.sdpv]
+        return any(bootloader and bootloader.protocol == protocol for bootloader in bootloaders)
 
     def get_usb_ids(self, protocol: str) -> list[UsbId]:
         """Get USB parameters for interfaces supporting given protocol.
 
-        The method searches through ROM and flashloader interfaces to find
+        The method searches through ROM, flashloader, fastboot, and SDPV interfaces to find
         USB IDs that support the specified protocol.
 
         :param protocol: Protocol name to search for in interfaces.
         :return: List of USB IDs supporting the specified protocol.
         """
         usb_ids: list[UsbId] = []
-        if self.rom.protocol == protocol and self.rom.usb_ids.all_valid():
-            usb_ids.extend(self.rom.usb_ids)
-        if self.flashloader.protocol == protocol and self.flashloader.usb_ids.all_valid():
-            usb_ids.extend(self.flashloader.usb_ids)
+        bootloaders = [self.rom, self.flashloader, self.fastboot, self.sdpv]
+
+        for bootloader in bootloaders:
+            if bootloader and bootloader.protocol == protocol and bootloader.usb_ids.all_valid():
+                usb_ids.extend(bootloader.usb_ids)
+
         return usb_ids
+
+    def get_all_bootloaders(self) -> dict[str, Bootloader]:
+        """Get all configured bootloaders.
+
+        :return: Dictionary mapping bootloader type names to Bootloader instances.
+        """
+        bootloaders = {}
+        for bootloader_type in self.BOOTLOADER_TYPES:
+            bootloader = getattr(self, bootloader_type, None)
+            if bootloader:
+                bootloaders[bootloader_type] = bootloader
+        return bootloaders
+
+    def get_bootloader(self, bootloader_type: str) -> Optional[Bootloader]:
+        """Get a specific bootloader by type.
+
+        :param bootloader_type: Type of bootloader ('rom', 'flashloader', 'fastboot', 'sdpv').
+        :return: Bootloader instance if found, None otherwise.
+        :raises SPSDKValueError: If bootloader_type is not valid.
+        """
+        if bootloader_type not in self.BOOTLOADER_TYPES:
+            raise SPSDKValueError(
+                f"Invalid bootloader type '{bootloader_type}'. "
+                f"Valid types are: {', '.join(self.BOOTLOADER_TYPES)}"
+            )
+        return getattr(self, bootloader_type, None)
 
 
 class DeviceInfo:
-    """Device information container for NXP MCU devices.
+    """Device information container for NXP MCU/MPU devices.
 
     This class encapsulates comprehensive device information including purpose,
     memory mapping, ISP configuration, and web resources. It provides functionality
@@ -2506,3 +2569,148 @@ def get_whole_db() -> Database:
     :return: The loaded main Database object.
     """
     return DatabaseManager().db
+
+
+def generate_udev_rules(feature: str, rule_name: Optional[str] = None) -> str:
+    """Generate udev rules content for USB devices supporting a specific SPSDK feature.
+
+    This function generates udev rules for USB devices based on VID:PID pairs fetched
+    from the SPSDK database for devices that support the specified feature. The generated
+    rules grant user access to the specified USB devices.
+
+    :param feature: SPSDK feature name to generate rules for (e.g., 'nxpuuu')
+    :param rule_name: Name to use in the rules file header, defaults to feature name
+    :return: String containing the complete udev rules content
+    :raises SPSDKError: If the feature is not supported or no devices found
+    """
+    if rule_name is None:
+        rule_name = feature.upper()
+
+    # Generate header
+    rules_lines = _generate_udev_header(rule_name)
+
+    # Get USB IDs from database
+    usb_ids_dict = _collect_usb_ids_for_feature(feature)
+
+    if not usb_ids_dict:
+        raise SPSDKError(f"No USB IDs found for devices supporting feature '{feature}'")
+
+    # Generate rules for each device
+    for device_name in sorted(usb_ids_dict.keys()):
+        rules_lines.extend(_generate_device_rules(device_name, usb_ids_dict[device_name]))
+
+    return "\n".join(rules_lines)
+
+
+def _generate_udev_header(rule_name: str) -> list[str]:
+    """Generate udev rules file header.
+
+    :param rule_name: Name to use in the header
+    :return: List of header lines
+    """
+    return [
+        f"# NXP {rule_name} USB Device Rules",
+        "# Generated by SPSDK",
+        "#",
+        "# This file grants user access to NXP USB devices",
+        "# Copy this file to /etc/udev/rules.d/70-nxp-spsdk.rules",
+        "#",
+        "# After copying, reload udev rules with:",
+        "#   sudo udevadm control --reload-rules",
+        "#   sudo udevadm trigger",
+        "",
+    ]
+
+
+def _collect_usb_ids_for_feature(feature: str) -> dict[str, list[Any]]:
+    """Collect USB IDs for all devices supporting a specific feature.
+
+    :param feature: SPSDK feature name to search for
+    :return: Dictionary mapping device names to lists of USB IDs
+    :raises SPSDKError: If no devices found supporting the feature
+    """
+    db_manager = DatabaseManager()
+
+    # Get all devices that support the specified feature
+    devices_with_feature = db_manager.quick_info.devices.get_devices_with_feature(feature)
+
+    if not devices_with_feature:
+        raise SPSDKError(f"No devices found supporting feature '{feature}'")
+
+    usb_ids_dict: dict[str, list[Any]] = {}
+
+    for device_name in sorted(devices_with_feature.keys()):
+        usb_ids = _get_device_usb_ids(db_manager, device_name)
+        if usb_ids:
+            usb_ids_dict[device_name] = usb_ids
+
+    return usb_ids_dict
+
+
+def _get_device_usb_ids(db_manager: DatabaseManager, device_name: str) -> list[UsbId]:
+    """Get all USB IDs for a specific device from all bootloader types.
+
+    :param db_manager: DatabaseManager instance
+    :param device_name: Name of the device to get USB IDs for
+    :return: List of USB IDs for the device
+    """
+    usb_ids: list[UsbId] = []
+
+    try:
+        device = db_manager.db.devices.get(device_name)
+
+        # Check if device has ISP configuration
+        if not hasattr(device.info, "isp"):
+            return usb_ids
+
+        # Collect USB IDs from all bootloader types
+        bootloaders = device.info.isp.get_all_bootloaders()
+        for bootloader in bootloaders.values():
+            if bootloader.usb_ids:
+                usb_ids.extend(bootloader.usb_ids)
+
+    except Exception as exc:
+        logger.debug(f"Could not get USB IDs for device {device_name}: {exc}")
+
+    return usb_ids
+
+
+def _generate_device_rules(device_name: str, usb_ids: list[UsbId]) -> list[str]:
+    """Generate udev rules for a specific device.
+
+    :param device_name: Name of the device
+    :param usb_ids: List of USB IDs for the device
+    :return: List of rule lines for the device
+    """
+    if not usb_ids:
+        return []
+
+    rules_lines = [f"# {device_name.upper()}"]
+
+    for usb_id in usb_ids:
+        rule = _format_udev_rule(usb_id)
+        if rule:
+            rules_lines.append(rule)
+
+    rules_lines.append("")
+    return rules_lines
+
+
+def _format_udev_rule(usb_id: UsbId) -> Optional[str]:
+    """Format a single udev rule for a USB ID.
+
+    :param usb_id: USB ID object with vid and pid attributes
+    :return: Formatted udev rule string or None if invalid
+    """
+    if not (hasattr(usb_id, "vid") and hasattr(usb_id, "pid")):
+        return None
+
+    if usb_id.vid is None or usb_id.pid is None:
+        return None
+
+    return (
+        f'SUBSYSTEM=="usb", '
+        f'ATTRS{{idVendor}}=="{usb_id.vid:04x}", '
+        f'ATTRS{{idProduct}}=="{usb_id.pid:04x}", '
+        f'MODE="0666"'
+    )

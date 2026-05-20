@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -24,6 +24,7 @@ mission-critical production systems - SPSDK has got you covered!
 Ready to supercharge your NXP development experience? Let's get started!
 """
 
+import logging
 import os
 import sys
 from typing import Optional, Union
@@ -167,3 +168,16 @@ SPSDK_SCHEMA_STRICT = value_to_bool(os.environ.get("SPSDK_SCHEMA_STRICT"))
 SPSDK_SECRETS_PATH = os.environ.get(
     "SPSDK_SECRETS_PATH", os.path.expanduser("~/.spsdk/secrets.yaml")
 )
+
+
+def get_logger(name: str) -> logging.Logger:
+    """Compatibility shim for the 3.10.0+ ``get_logger`` API.
+
+    Returns a standard :class:`logging.Logger` so that external plugins that
+    do ``from spsdk import get_logger`` continue to work against this 3.9.x
+    release without modification.
+
+    :param name: Logger name, typically ``__name__``.
+    :return: Standard Python logger.
+    """
+    return logging.getLogger(name)

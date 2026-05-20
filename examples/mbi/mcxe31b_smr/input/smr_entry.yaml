@@ -1,0 +1,85 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ============================  hse Configuration template for mcxe31b, Revision: latest.  =============================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxe31b
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ======================================================================================================================
+#                                          == HSE Secure Memory Region Entry ==
+# Configuration for a Secure Memory Region (SMR) entry that defines memory regions to be verified during boot or runtime
+# ======================================================================================================================
+# ---------------------------------------===== Output file name [Required] =====----------------------------------------
+# Description: Output SME entry file name
+output: emr_entry.bin
+# --------------------------------------===== SMR Source Address [Required] =====---------------------------------------
+# Description: Source address where the SMR needs to be loaded from. This address must be an absolute address.
+smrSrcAddr: "0x0040_0000"
+# -------------------------------------------===== SMR Size [Required] =====--------------------------------------------
+# Description: The size in bytes of the SMR to be loaded/verified
+smrSize: 19568
+# ------------------------------------===== SMR Destination Address [Optional] =====------------------------------------
+# Description: Destination address of SMR (where to copy the SMR after authentication).
+# For HSE_B, if specified (non-zero), smrDest and (smrDest + smrSize) must be aligned to 16 bytes.
+# Set to 0 if no copy is needed.
+smrDest: "0"
+# -----------------------------------------===== Check Period [Optional] =====------------------------------------------
+# Description: If non-zero, HSE verifies the SMR entry periodically (in background).
+# Specifies the verification period in x100 milliseconds when HSE is running at maximum frequency.
+# The value 0xFFFFFFFF is invalid; the checkPeriod max value must be [MAX_UNSIGNED32_INT - 1].
+# If checkPeriod is non-zero, smrDest must be non-zero and configFlags must be zero.
+# Set to 0 to disable periodic verification.
+checkPeriod: "0x0"
+# -----------------------------------===== Authentication Key Handle [Required] =====-----------------------------------
+# Description: The key handle used to check the authenticity of the plaintext SMR.
+# If INSTALL_AUTH flag is cleared, the authKeyHandle is used only in the Installation Phase.
+# The key flags must be configured with USAGE_VERIFY set and USAGE_SIGN NOT set.
+authKeyHandle:
+  # ---------------------------------------===== Key Catalog ID [Required] =====----------------------------------------
+  # Description: Key catalog type (ROM, NVM, or RAM)
+  # Possible options: <ROM, NVM, RAM>
+  catalogId: NVM
+  # -----------------------------------------===== Group Index [Required] =====-----------------------------------------
+  # Description: Group index in catalog
+  groupIdx: 5
+  # -----------------------------------------===== Slot Index [Required] =====------------------------------------------
+  # Description: Key slot index within the group
+  slotIdx: 0
+# -------------------------------------===== Authentication Scheme [Required] =====-------------------------------------
+# Description: The authentication scheme used to verify the SMR either during the Installation Phase or Verification
+# phase.
+# If INSTALL_AUTH flag is set, the same authentication scheme (installation TAG) can be used
+# to verify the authenticity of SMR during verification phase too; otherwise an internal authentication scheme is used.
+authScheme:
+  # ======================================================================================================================
+  #                                           == List of possible 8 options. ==
+  #                    Options [ecdsa, eddsa, rsassa_pss, rsassa_pkcs1_v15, cmac, gmac, xcbc_mac, hmac]
+  # ======================================================================================================================
+
+  #  ============================ [Example of possible configuration: #0 , erase if not used] =============================
+  # ECDSA signature scheme for SMR authentication
+  # --------------------------------------===== ECDSA Parameters [Required] =====---------------------------------------
+  ecdsa:
+    # --------------------------------------===== Hash Algorithm [Required] =====---------------------------------------
+    # Description: Hash algorithm for ECDSA signature
+    # Possible options: <SHA_1, SHA224, SHA256, SHA384, SHA512, SHA512_224, SHA512_256, SHA3_224, SHA3_256, SHA3_384,
+    # SHA3_512, MP>
+    hashAlgo: SHA256
+# ----------------------------------------===== Version Offset [Optional] =====-----------------------------------------
+# Description: Optional - The offset in SMR where the image version can be found.
+# Provides anti-rollback protection for the image against attacks during update.
+# Set to 0 to disable version checking.
+# If used, must be a valid offset within the SMR in range [4, smrSize - 4].
+# Must be aligned to 4 bytes.
+# Once used, all subsequent updates must have a version GREATER than the previous one.
+# Not used for SHE based secure boot.
+versionOffset: 0

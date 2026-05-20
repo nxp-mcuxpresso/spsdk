@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK U-Boot UUU library wrapper.
 
 This module provides a Python interface to the libuuu library for U-Boot
@@ -18,7 +19,6 @@ from functools import wraps
 from types import TracebackType
 from typing import Any, Callable, Optional, no_type_check
 
-import click
 from libuuu import LibUUU, UUUNotifyCallback, UUUState
 from libuuu.libuuu import UUUNotifyStruct, UUUNotifyType, _default_notify_callback
 
@@ -26,6 +26,7 @@ from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.database import DatabaseManager, UsbId
 from spsdk.utils.family import FamilyRevision, get_db, get_families
 from spsdk.utils.misc import load_text
+from spsdk.utils.progress_bar import ProgressBarManager
 from spsdk.utils.threading import CancellableWait
 
 logger = logging.getLogger(__name__)
@@ -70,9 +71,7 @@ class SPSDKUUUState(UUUState):
     :cvar progress_bars: Dictionary storing active progress bar instances for concurrent tasks.
     """
 
-    progress_bars: dict[str, Any] = {}
-
-    def __init__(self, progress_bar: bool = True) -> None:
+    def __init__(self, progress_bar_enabled: bool = True) -> None:
         """Initialize SPSDK UUU state manager.
 
         Creates a new instance of the SPSDK UUU state manager with configurable progress bar display
@@ -80,37 +79,10 @@ class SPSDKUUUState(UUUState):
 
         :param progress_bar: Enable progress bar display during operations, defaults to True
         """
-        self.progress_bar = progress_bar
+        self.progress_bar_enabled = progress_bar_enabled
+        self.progress_manager = ProgressBarManager()
         self.status = 0
         super().__init__()
-
-    def update_progress_bar(self, task_name: str, total_steps: int, step: int) -> None:
-        """Update the progress bar for a task.
-
-        Creates a new progress bar if it doesn't exist for the given task, updates the current
-        progress, and cleans up when the task is completed.
-
-        :param task_name: The name of the task to display in progress bar.
-        :param total_steps: The total number of steps for the task.
-        :param step: The current step number of the task.
-        """
-        # Check if the progress bar for the task already exists
-        if task_name not in self.progress_bars:
-            # Create a new progress bar and store it in the dictionary
-            self.progress_bars[task_name] = click.progressbar(
-                length=total_steps, label=task_name, bar_template="%(info)s [%(bar)s] %(label)s"
-            )
-
-        # Update the existing progress bar
-        bar = self.progress_bars[task_name]
-        bar.update(step - bar.pos)
-
-        # If the current step is the last step print new line
-        if step == total_steps:
-            del self.progress_bars[task_name]
-            click.echo("\r")
-            # Enable cursor again
-            click.echo("\033[?25h", nl=False)
 
     def update(self, struct: UUUNotifyStruct) -> None:
         """Update the state with a notification from uuu.
@@ -144,8 +116,8 @@ class SPSDKUUUState(UUUState):
             self.trans_size = struct.response.total
         elif struct.type == UUUNotifyType.NOTIFY_TRANS_POS:
             self.trans_pos = struct.response.total
-            if self.progress_bar:
-                self.update_progress_bar(self.cmd, self.trans_size, self.trans_pos)
+            if self.progress_bar_enabled:
+                self.progress_manager.update(self.cmd, self.trans_size, self.trans_pos)
             self.logger.debug(f"Transfer {self.trans_pos}/{self.trans_size}")
 
         self.logger.debug(f"{self.cmd=},{self.dev=},{self.waiting=},{self.error=}")
@@ -210,6 +182,7 @@ class SPSDKUUU:
 
     SCRIPT_ARG_REGEX = r"# @(\S+)\s*(\[(\S+)\])?\s*\|\s*(.+)"
     _state = SPSDKUUUState()
+    fastboot_output_enabled = False
 
     def __init__(
         self,
@@ -315,7 +288,9 @@ class SPSDKUUU:
         """
         devices = {}
         for device, quick_info in DatabaseManager().quick_info.devices.devices.items():
-            usb_ids = quick_info.info.isp.get_usb_ids("sdps")
+            usb_ids = quick_info.info.isp.get_usb_ids("sdps") + quick_info.info.isp.get_usb_ids(
+                "sdpv"
+            )
             if usb_ids:
                 devices[device] = usb_ids
         return devices
@@ -448,15 +423,30 @@ class SPSDKUUU:
         return success
 
     def enable_fastboot_output(self) -> bool:
-        """Enable fastboot output for stdout and stderr of uboot commands.
+        """Enable fastboot output for stdout of uboot commands.
 
-        This method configures the U-Boot environment to redirect both standard output
-        and standard error streams to serial and fastboot interfaces, enabling output
-        capture during fastboot operations.
+        This method configures the U-Boot environment to redirect standard output
+        stream to fastboot interface, enabling output capture during fastboot operations.
 
         :return: True if the command executed successfully, False otherwise.
         """
-        return self.run_uboot("setenv stdout serial,fastboot")
+        logger.debug("Enabling fastboot output for stdout")
+        if not self.fastboot_output_enabled:
+            self.fastboot_output_enabled = self.run_uboot("setenv stdout fastboot")
+        return self.fastboot_output_enabled
+
+    def disable_fastboot_output(self) -> bool:
+        """Disable fastboot output for stdout of uboot commands.
+
+        This method configures the U-Boot environment to restore standard output
+        stream to serial interface, disabling output redirection to fastboot.
+
+        :return: True if the command executed successfully, False otherwise.
+        """
+        logger.debug("Disabling fastboot output for stdout")
+        if self.fastboot_output_enabled:
+            self.fastboot_output_enabled = not self.run_uboot("setenv stdout serial")
+        return self.fastboot_output_enabled
 
     @check_uuu_error_state_after_command
     def run_cmd(self, cmd: str, dry: bool = False) -> int:

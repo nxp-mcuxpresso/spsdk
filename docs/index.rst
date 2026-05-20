@@ -37,7 +37,7 @@ Delivery
 
 =======
 Rblhost
-======= 
+=======
 
 If you are interested in using the blhost tool, consider *rblhost* as a faster alternative. Implemented in Rust, *rblhost* offers similar functionality for interacting with MCU bootloader.
 
@@ -146,6 +146,7 @@ All products, including those with advanced security features, may be subject to
     examples/el2go/index
     examples/ele/index
     examples/hab/index
+    examples/hse/index
     examples/lpcprog/lpcprog
     examples/mbi/index
     examples/memcfg/index

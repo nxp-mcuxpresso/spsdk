@@ -16,26 +16,30 @@ fuse scripting and configuration management.
 import functools
 import logging
 from abc import abstractmethod
-from typing import Any, Callable, Iterator, Optional, Type
+from typing import Any, Callable, Iterator, Optional, Type, Union
 
 from typing_extensions import Self
 
 from spsdk import version as spsdk_version
+from spsdk.dat.debug_mailbox import DebugMailbox
+from spsdk.dat.dm_commands import StartDebugSession
+from spsdk.debuggers.debug_probe import DebugProbe, SPSDKDebugProbeError
 from spsdk.exceptions import (
     SPSDKAttributeError,
     SPSDKError,
     SPSDKKeyError,
     SPSDKTypeError,
     SPSDKValueError,
+    SPSDKVerificationError,
 )
 from spsdk.fuses.fuse_registers import FuseLock, FuseRegister, FuseRegisters, IndividualWriteLock
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.utils.abstract_features import FeatureBaseClassComm
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.exceptions import SPSDKRegsError
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
 from spsdk.utils.misc import Endianness, get_abs_path, value_to_int, write_file
-from spsdk.utils.schema_validator import check_config
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +58,15 @@ class SPSDKFuseConfigurationError(SPSDKError):
 
     This exception is raised when fuse configuration operations fail due to
     invalid parameters, unsupported configurations, or other fuse-related errors.
+    """
+
+
+class SPSDKRegsInvalidAttribute(SPSDKRegsError):
+    """Invalid attribute error for register operations.
+
+    Exception raised when attempting to access or use an invalid or undefined
+    attribute on a register object, such as missing shadow register addresses,
+    undefined OTP indices, or other required register properties.
     """
 
 
@@ -96,7 +109,9 @@ class FuseOperator:
         """
 
     @abstractmethod
-    def write_fuse(self, index: int, value: int, length: int, lock: bool = False) -> None:
+    def write_fuse(
+        self, index: int, value: int, length: int, lock: bool = False, verify: bool = True
+    ) -> None:
         """Write a single fuse.
 
         The method writes a value to the specified fuse index with given bit length
@@ -106,6 +121,7 @@ class FuseOperator:
         :param value: Fuse value to be written.
         :param length: Length of fuse in bits.
         :param lock: Lock fuse after write to prevent further modifications.
+        :param verify: Verify the fuse value after writing, defaults to True.
         """
 
     @classmethod
@@ -226,7 +242,9 @@ class BlhostFuseOperator(FuseOperator):
         return ret
 
     @mboot_operation_decorator
-    def write_fuse(self, index: int, value: int, length: int, lock: bool = False) -> None:
+    def write_fuse(
+        self, index: int, value: int, length: int, lock: bool = False, verify: bool = True
+    ) -> None:
         """Write a single fuse to the device.
 
         The method programs a fuse at the specified index with the given value and
@@ -236,6 +254,7 @@ class BlhostFuseOperator(FuseOperator):
         :param value: Fuse value to be programmed.
         :param length: Length of fuse in bits.
         :param lock: Lock fuse after write to prevent further modifications.
+        :param verify: Verify the fuse value after writing, defaults to True.
         :raises SPSDKFuseOperationFailure: Writing of fuse failed.
         """
         if lock:
@@ -329,7 +348,9 @@ class BlhostFuseOperatorLegacy(FuseOperator):
         return value_to_int(ret)
 
     @mboot_operation_decorator
-    def write_fuse(self, index: int, value: int, length: int, lock: bool = False) -> None:
+    def write_fuse(
+        self, index: int, value: int, length: int, lock: bool = False, verify: bool = True
+    ) -> None:
         """Write a single fuse.
 
         This method programs a fuse at the specified index with the given value by setting
@@ -339,6 +360,7 @@ class BlhostFuseOperatorLegacy(FuseOperator):
         :param value: Fuse value to be programmed.
         :param length: Length of fuse in bits (currently not used in implementation).
         :param lock: Lock fuse after write (currently not implemented).
+        :param verify: Verify the fuse value after writing, defaults to True.
         :raises SPSDKFuseOperationFailure: When the fuse programming operation fails.
         """
         ret = self.mboot.set_property(22, 1)  # Set voltage for fuse programming
@@ -371,7 +393,7 @@ class BlhostFuseOperatorLegacy(FuseOperator):
 
         for fuse in fuses:
             if fuse.otp_index is None:
-                raise SPSDKAttributeError(f"OTP index is nto defined for fuse {fuse.name}")
+                raise SPSDKAttributeError(f"OTP index is not defined for fuse {fuse.name}")
             otp_value = "0x" + fuse.get_bytes_value(raw=True).hex()
             ret += f"# Fuse {fuse.name}, index {fuse.otp_index} and value: {otp_value}.\n"
             ret += cls.get_fuse_write_cmd(fuse.otp_index, fuse.get_value(raw=True))
@@ -443,7 +465,9 @@ class NxpeleFuseOperator(FuseOperator):
             self.ele_handler.send_message(read_common_fuse_msg)
         return read_common_fuse_msg.fuse_value
 
-    def write_fuse(self, index: int, value: int, length: int, lock: bool = False) -> None:
+    def write_fuse(
+        self, index: int, value: int, length: int, lock: bool = False, verify: bool = True
+    ) -> None:
         """Write a single fuse.
 
         This method writes a value to a specific fuse register using the ELE (EdgeLock Enclave)
@@ -454,6 +478,7 @@ class NxpeleFuseOperator(FuseOperator):
         :param value: Fuse value to be written to the register.
         :param length: Length of fuse in bits (currently unused, fixed at 32 bits).
         :param lock: Lock fuse after write to prevent further modifications.
+        :param verify: Verify the fuse value after writing, defaults to True.
         """
         from spsdk.ele import ele_message
 
@@ -513,6 +538,266 @@ class NxpeleFuseOperator(FuseOperator):
         return ret
 
 
+class ShadowregsOperator(FuseOperator):
+    """Shadow registers fuse operator for direct memory-mapped register access.
+
+    This class provides fuse operations through shadow registers, which are memory-mapped
+    representations of OTP fuses. It enables reading and writing fuse values via debug
+    probe access to shadow register addresses, supporting devices that expose fuses
+    through memory-mapped registers rather than dedicated fuse programming commands.
+
+    The operator handles debug interface enablement, scratch register updates for some
+    devices, and verification of written values with configurable verification masks.
+
+    :cvar NAME: Operator identifier for shadow registers operations.
+    """
+
+    NAME = "shadowregs"
+
+    def __init__(self, family: FamilyRevision, probe: Optional[DebugProbe] = None):
+        """Initialize shadow registers operator.
+
+        Creates a new instance of the shadow registers operator for the specified family.
+        If a debug probe is provided, it attempts to enable debug access on the device.
+
+        :param family: Target MCU family and revision information.
+        :param probe: Optional debug probe for device communication. If provided,
+            debug interface will be enabled automatically.
+        :raises SPSDKError: When debug interface cannot be enabled with provided probe.
+        """
+        self._probe = probe
+        self.family = family
+        self.regs = FuseRegisters(family=self.family)
+        self._db = get_db(family)
+        self.write_address_offset = self._db.get_int(
+            DatabaseManager.SHADOW_REGS, "write_address_offset", 0
+        )
+        self.scratch_reg = self._db.get_dict(DatabaseManager.SHADOW_REGS, "scratch_reg", {})
+        self.possible_verification = self._db.get_bool(
+            DatabaseManager.SHADOW_REGS, "possible_verification", True
+        )
+        if probe:
+            if not self.enable_debug():
+                raise SPSDKError("Cannot enable debug interface")
+
+    def enable_debug(self) -> bool:
+        """Enable debug access ports on devices with debug mailbox.
+
+        The method checks if AHB access is available and if not, attempts to unlock
+        the device using debug mailbox system. It handles probe reconnection and
+        validates the unlock operation.
+
+        :return: True if debug port is enabled, False otherwise.
+        :raises SPSDKError: Invalid input parameters or unlock method failed.
+        """
+        from spsdk.debuggers.utils import test_ahb_access
+
+        debug_enabled = False
+        try:
+            logger.debug("Check if AHB is enabled")
+
+            if not test_ahb_access(self.probe):
+                logger.debug("Locked Device. Launching unlock sequence.")
+                # Reopen the probe after failed attempt of AHB Access
+                self.probe.close()
+                self.probe.open()
+                self.probe.connect_safe()
+                # Start debug mailbox system
+                StartDebugSession(dm=DebugMailbox(debug_probe=self.probe, family=self.family)).run()
+
+                # Recheck the AHB access
+                if test_ahb_access(self.probe):
+                    logger.debug("Access granted")
+                    debug_enabled = True
+                else:
+                    logger.debug("Enable debug operation failed!")
+            else:
+                logger.debug("Unlocked Device")
+                debug_enabled = True
+
+        except AttributeError as exc:
+            raise SPSDKError(f"Invalid input parameters({str(exc)})") from exc
+
+        except SPSDKDebugProbeError as exc:
+            raise SPSDKError(f"Can't unlock device ({str(exc)})") from exc
+
+        return debug_enabled
+
+    def _update_scratch_reg(self) -> None:
+        """Update scratch register for to enable shadow register functionality.
+
+        This method writes a specific value to the scratch register address to activate
+        the shadow register functionality on some devices.
+        """
+        if not self.scratch_reg:
+            return
+        address = self.scratch_reg.get("address")
+        if not isinstance(address, int):
+            raise SPSDKTypeError("Scratch register address must be an integer")
+        value = self.scratch_reg.get("value")
+        if not isinstance(value, int):
+            raise SPSDKTypeError("Scratch register value must be an integer")
+        if not address or not value:
+            raise SPSDKError("Scratch register address and value must be defined")
+        logger.debug("Flushing shadow registers data")
+        self.probe.mem_reg_write(address, value)
+
+    def _get_reg_by_index(self, index: int) -> FuseRegister:
+        """Get register by index."""
+        reg = self.regs.get_by_otp_index(index)
+        if reg.shadow_register_addr is None:
+            raise SPSDKRegsInvalidAttribute(
+                f"Register at index {index} has no shadow register addr"
+            )
+        return reg
+
+    @property
+    def probe(self) -> DebugProbe:
+        """Get debug probe instance.
+
+        Property to access the debug probe for performing shadow register operations.
+
+        :raises SPSDKDebugProbeError: When debug probe is not defined.
+        :return: The debug probe instance.
+        """
+        if not self._probe:
+            raise SPSDKDebugProbeError(
+                "Shadow registers: Cannot use the communication function without defined debug probe."
+            )
+        return self._probe
+
+    def read_fuse(self, index: int, length: int) -> int:
+        """Read a single fuse value from shadow register.
+
+        This method reads the fuse value from the memory-mapped shadow register
+        address corresponding to the specified OTP index.
+
+        :param index: OTP index of the fuse to read.
+        :param length: Length of fuse in bits (not used for shadow registers).
+        :return: The fuse value read from the shadow register.
+        :raises SPSDKRegsInvalidAttribute: When register has no shadow register address.
+        """
+        reg = self._get_reg_by_index(index)
+        if not reg.shadow_register_addr:
+            raise SPSDKRegsInvalidAttribute(
+                f"Register at index {index} has no shadow register address defined"
+            )
+        return self.probe.mem_reg_read(reg.shadow_register_addr)
+
+    def write_fuse(
+        self, index: int, value: int, length: int, lock: bool = False, verify: bool = True
+    ) -> None:
+        """Write a single fuse value to shadow register.
+
+        This method writes a value to the memory-mapped shadow register address
+        corresponding to the specified OTP index. It handles write address offsets,
+        scratch register updates, and optional verification.
+
+        :param index: OTP index of the fuse to write.
+        :param value: Fuse value to be written.
+        :param length: Length of fuse in bits (not used for shadow registers).
+        :param lock: Lock fuse after write (not supported for shadow registers).
+        :param verify: Verify the write operation after writing.
+        :raises SPSDKError: When register width exceeds 32 bits.
+        :raises SPSDKRegsInvalidAttribute: When register has no shadow register address.
+        :raises SPSDKVerificationError: When verification fails.
+        """
+        reg = self._get_reg_by_index(index)
+        if not reg.shadow_register_addr:
+            raise SPSDKRegsInvalidAttribute(
+                f"Register at index {index} has no shadow register address defined"
+            )
+        if reg.width > 32:
+            raise SPSDKError(
+                f"Invalid width ({reg.width}b) of shadow register ({reg.name}) to write to device."
+            )
+        logger.info(
+            f"Writing shadow register address: {hex(reg.shadow_register_addr)}, data: {hex(value)}"
+        )
+        write_address = (
+            self.write_address_offset + reg.shadow_register_addr
+        )  # some device has different write address then read
+        self.probe.mem_reg_write(write_address, value)
+        if self.scratch_reg:
+            self._update_scratch_reg()
+        if lock:
+            logger.info("Lock parameter is not supported for shadow registers")
+        if verify:
+            self._verify_register(index, value)
+
+    def _verify_register(self, index: int, value: int) -> None:
+        if not self.possible_verification:
+            logger.info(f"Verification is not supported for family {self.family}")
+            return
+
+        def create_verify_mask(reg: FuseRegister) -> int:
+            verify_mask = 0
+            bitfields = reg.get_bitfields()
+            if bitfields:
+                for bitfield in bitfields:
+                    verify_mask = verify_mask | (((1 << bitfield.width) - 1) << bitfield.offset)
+            else:
+                verify_mask = (1 << reg.width) - 1
+            return verify_mask
+
+        reg = self._get_reg_by_index(index)
+        assert reg.otp_index is not None
+        verify_mask = create_verify_mask(reg)
+        if verify_mask and self.possible_verification:
+            read_back = self.read_fuse(reg.otp_index, reg.width // 8)
+            if (read_back & verify_mask) != (value & verify_mask):
+                raise SPSDKVerificationError(
+                    f"Written value: 0x{(value & verify_mask):08X}, read value: 0x{(read_back & verify_mask):08X}"
+                )
+
+    @classmethod
+    def get_fuse_script(cls, family: FamilyRevision, fuses: list[FuseRegister]) -> str:
+        """Get fuse script for programming Fuses."""
+        ret = (
+            "# BLHOST fuses programming script\n"
+            f"# Generated by SPSDK {spsdk_version}\n"
+            f"# Chip: {family}\n\n\n"
+        )
+        for fuse in fuses:
+            if fuse.otp_index is None:
+                raise SPSDKAttributeError(f"OTP index is not defined for fuse {fuse.name}")
+            # recalculate the value in a "fuse mode"
+            orig_value = fuse.get_value(raw=True)
+            try:
+                fuse.shadow_mode = False
+                fuse.compute_register()
+                new_value = fuse.get_value(raw=True)
+            finally:
+                fuse.shadow_mode = False
+                fuse.set_value(orig_value, raw=True)
+            otp_value = "0x" + fuse.get_bytes_value(raw=True).hex()
+            ret += f"# Fuse {fuse.name}, index {fuse.otp_index} and value: {otp_value}.\n"
+            ret += cls.get_fuse_write_cmd(fuse.otp_index, new_value)
+            ret += "\n\n"
+        return ret
+
+    @classmethod
+    def get_fuse_write_cmd(
+        cls, index: int, value: int, lock: bool = False, verify: bool = False
+    ) -> str:
+        """Get fuse write command for shadow registers.
+
+        Generates a BLHOST-compatible command string for programming shadow registers
+        through efuse-program-once command with optional verification.
+
+        :param index: OTP index of the fuse to write.
+        :param value: Value to write to the fuse.
+        :param lock: Lock the fuse after writing (appends 'lock' to command).
+        :param verify: Verify the fuse value after writing.
+        :return: Formatted fuse programming command string.
+        """
+        ret = f"efuse-program-once {hex(index)} {value}\n"
+        ret = f"{ret} {'--verify' if verify else '--no-verify'}"
+        if lock:
+            ret = f"{ret} lock"
+        return ret
+
+
 class Fuses(FeatureBaseClassComm):
     """SPSDK Fuses Manager.
 
@@ -546,12 +831,8 @@ class Fuses(FeatureBaseClassComm):
         """
         self.family = family
         self.db = get_db(family)
-        if DatabaseManager.FUSES not in self.db.features:
-            raise SPSDKError(f"The {self.family} has no fuses definition")
         self._operator = fuse_operator
-        self.fuse_regs = self.get_init_regs(family)
-        # keep the context based on the latest operation: load_from_config/read_all etc.
-        self.fuse_context: list[FuseRegister] = []
+        self.registers = self.get_init_regs(family)
         self._cache_enabled = cache
         self._cache: set[str] = set()  # Store UIDs of cached lock fuse registers
 
@@ -560,7 +841,7 @@ class Fuses(FeatureBaseClassComm):
 
         :return: String representation containing the family name.
         """
-        return f"Fuses class for {self.family}."
+        return f"{self.__class__.__name__} class for {self.family}."
 
     def __str__(self) -> str:
         """Get string representation of the fuses class.
@@ -571,7 +852,7 @@ class Fuses(FeatureBaseClassComm):
         :return: String representation containing object info and fuse registers details.
         """
         ret = self.__repr__()
-        ret += "\n" + str(self.fuse_regs)
+        ret += "\n" + str(self.registers)
         return ret
 
     def __iter__(self) -> Iterator[FuseRegister]:
@@ -582,7 +863,7 @@ class Fuses(FeatureBaseClassComm):
 
         :return: Iterator over FuseRegister objects.
         """
-        return iter(self.fuse_regs)
+        return iter(self.registers)
 
     @property
     def fuse_operator(self) -> FuseOperator:
@@ -635,7 +916,7 @@ class Fuses(FeatureBaseClassComm):
         :return: FuseOperator class type for the specified family.
         :raises SPSDKError: If family is not supported or database query fails.
         """
-        return FuseOperator.get_operator_type(get_db(family).get_str(DatabaseManager.FUSES, "tool"))
+        return FuseOperator.get_operator_type(get_db(family).get_str(cls.FEATURE, "tool"))
 
     @classmethod
     def get_init_regs(cls, family: FamilyRevision) -> FuseRegisters:
@@ -665,7 +946,7 @@ class Fuses(FeatureBaseClassComm):
         :param reg: Fuse register to check.
         :return: True if the register is a lock fuse and its value is cached, False otherwise.
         """
-        return self._cache_enabled and self.fuse_regs.is_lock_fuse(reg) and reg.uid in self._cache
+        return self._cache_enabled and self.registers.is_lock_fuse(reg) and reg.uid in self._cache
 
     def add_to_cache(self, reg: FuseRegister) -> None:
         """Add a lock fuse register to the cache.
@@ -674,60 +955,63 @@ class Fuses(FeatureBaseClassComm):
 
         :param reg: Fuse register to add to cache.
         """
-        if self._cache_enabled and self.fuse_regs.is_lock_fuse(reg):
+        if self._cache_enabled and self.registers.is_lock_fuse(reg):
             self._cache.add(reg.uid)
             logger.debug(f"Added lock fuse {reg.name} to cache")
 
-    def load_config(self, config: dict[str, Any]) -> None:
-        """Load the fuses configuration from dictionary.
-
-        The method validates the configuration against schema, loads register values,
-        and sets up the fuse context with the configured registers.
-
-        :param config: Dictionary containing fuses configuration with registers section.
-        :raises SPSDKError: Invalid configuration format or validation failure.
-        """
-        sch_full = self.get_validation_schemas(self.family)
-        check_config(config, sch_full)
-        self.fuse_regs.load_from_config(config["registers"])
-        # set the fuse context to currently loaded registers
-        self.fuse_context = [
-            self.fuse_regs.find_reg(reg_name, include_group_regs=True)
-            for reg_name in config["registers"].keys()
-        ]
-
     @classmethod
-    def load_from_config(cls, config: Config) -> Self:
+    def load_from_config(cls, config: Config, fuse_operator: Optional[FuseOperator] = None) -> Self:
         """Create fuses object from given configuration.
 
         This class method instantiates a new fuses object using the provided configuration
         data, including family revision information and fuse-specific settings.
 
         :param config: The configuration object containing fuses settings and family revision data.
+        :param fuse_operator: Optional operator for performing actual fuse operations,
+            defaults to None.
         :return: New fuses object configured according to the provided configuration.
         """
-        fuses = cls(FamilyRevision.load_from_config(config))
-        fuses.load_config(config)
+        fuses = cls(FamilyRevision.load_from_config(config), fuse_operator=fuse_operator)
+        fuses.registers.load_from_config(config.get_config("registers"))
+        for reg_name in config["registers"].keys():
+            reg = fuses.registers.find_reg(reg_name, include_group_regs=True)
+            reg.loaded_from_config = True
         return fuses
 
-    def read_all(self) -> None:
+    def read_all(
+        self,
+        check_locks: bool = True,
+        force: bool = False,
+        progress_callback: Optional[Callable[[int, int], None]] = None,
+    ) -> None:
         """Read all fuses from connected device.
 
-        Attempts to read every fuse register from the connected device and updates the fuse context
-        with successfully read registers. Failed reads are logged as warnings but do not stop the
-        operation.
+        Attempts to read every fuse register from the connected device.
+        Failed reads are logged as warnings but do not stop the operation.
 
         :raises SPSDKFuseOperationFailure: When individual fuse read operations fail (logged as
             warnings, does not interrupt the overall operation).
+        :raises SPSDKError: When individual fuse read fails. It causes the exception after all registers are read
         """
-        ctx = []
-        for reg in self.fuse_regs:
+        errors = 0
+        processed = 0
+        total_registers = len(self.registers)
+        if progress_callback:
+            progress_callback(0, total_registers)  # Initialize progress bar at 0%
+        for reg in self.registers:
             try:
-                self.read_single(reg.uid)
-                ctx.append(reg)
+                self.read_single(reg.uid, check_locks, force)
             except SPSDKFuseOperationFailure as e:
-                logger.warning(f"Unable to read the fuse {reg.name}: {str(e)}")
-        self.fuse_context = ctx
+                logger.debug(f"Register '{reg.name}' was not read as it is not readable: {e}")
+            except SPSDKError as e:
+                logger.error(f"Error when reading the register '{reg.name}' from the device: {e}")
+                errors += 1
+            finally:
+                processed += 1
+                if progress_callback:
+                    progress_callback(processed, total_registers)
+        if errors:
+            raise SPSDKError(f"Reading the fuses failed with {errors} error(s)")
 
     def read_single(self, name: str, check_locks: bool = True, force: bool = False) -> int:
         """Read single fuse from device.
@@ -746,7 +1030,7 @@ class Fuses(FeatureBaseClassComm):
             the fuse.
         :return: Value read from the fuse register.
         """
-        reg = self.fuse_regs.find_reg(name, include_group_regs=True)
+        reg = self.registers.find_reg(name, include_group_regs=True)
 
         # Check cache first (only for lock fuses)
         if self.is_cached(reg):
@@ -758,9 +1042,9 @@ class Fuses(FeatureBaseClassComm):
                 f"Unable to read fuse {name}. Fuse access: {reg.access.description}"
             )
         if reg.reserved and not force:
-            raise SPSDKFuseConfigurationError(f"Unable to read fuse {name}. Fuse is reserved.")
+            raise SPSDKFuseOperationFailure(f"Unable to read fuse {name}. Fuse is reserved.")
 
-        lock_fuse = self.fuse_regs.get_lock_fuse(reg)
+        lock_fuse = self.registers.get_lock_fuse(reg)
         if lock_fuse and check_locks:
             logger.debug(f"Reading the value of lock register first. {lock_fuse.name}")
             # if the fuse locks itself, do not read it
@@ -775,34 +1059,19 @@ class Fuses(FeatureBaseClassComm):
                 self.read_single(sub_reg.uid, check_locks=check_locks, force=force)
             # Cache group register if it's a lock fuse
             self.add_to_cache(reg)
-            self.fuse_context = [reg]
             return reg.get_value()
 
         if reg.otp_index is None:
             raise SPSDKFuseConfigurationError("OTP index is not defined")
 
         value = self.fuse_operator.read_fuse(reg.otp_index, reg.width)
-        reg.set_value(value)
-        self.fuse_regs.update_locks()
+        reg.set_value(value, raw=True)
+        self.registers.update_locks()
         # Cache only if it's a lock fuse
         self.add_to_cache(reg)
-        self.fuse_context = [reg]
         return value
 
-    def write_multiple(self, names: list[str]) -> None:
-        """Write multiple fuses to the device.
-
-        This method iterates through the provided list of fuse names or UIDs,
-        finds the corresponding registers, and writes each one individually to the device.
-
-        :param names: List of fuse names or UIDs to be written to the device.
-        :raises SPSDKError: If any fuse name/UID is not found or write operation fails.
-        """
-        for name in names:
-            reg = self.fuse_regs.find_reg(name, include_group_regs=True)
-            self.write_single(reg.uid)
-
-    def write_single(self, name: str, lock: bool = False) -> None:
+    def write_single(self, name: str, lock: bool = False, verify: bool = True) -> None:
         """Write single fuse to the device.
 
         The method handles both individual fuses and group registers. It performs
@@ -812,79 +1081,191 @@ class Fuses(FeatureBaseClassComm):
 
         :param name: Fuse name or uid to write.
         :param lock: Set lock after write operation.
+        :param verify: Verify the fuse value after writing, defaults to True.
         :raises SPSDKError: OTP index for fuse is not set.
         :raises SPSDKFuseOperationFailure: Fuse is not writable, write-locked, or has
-                                            non-reset value with write lock.
+                                           non-reset value with write lock.
         """
-
-        def write_single_reg(reg: FuseRegister, lock: bool = False) -> None:
-            """Write a single fuse register to the device.
-
-            This method writes the value of a fuse register to the OTP memory with comprehensive
-            validation including access rights, lock status checks, and individual write lock
-            handling. The method automatically manages lock states and validates write permissions
-            before performing the operation. After writing a lock fuse, its cache entry is removed.
-
-            :param reg: The fuse register to write to the device.
-            :param lock: Whether to lock the fuse after writing, defaults to False.
-            :raises SPSDKError: If the OTP index for the fuse is not set.
-            :raises SPSDKFuseOperationFailure: If the fuse is not writable, write-locked by another
-                fuse, or has non-reset value with write-lock restrictions.
-            """
-            if reg.otp_index is None:
-                raise SPSDKError(f"OTP index for fuse {reg.name} is not set.")
-            if not reg.access.is_writable:
-                raise SPSDKFuseOperationFailure(
-                    f"Unable to write fuse {name}. Fuse access: {reg.access.description}"
-                )
-            lock_reg = self.fuse_regs.get_lock_fuse(reg)
-            if lock_reg:
-                logger.debug("Reading the value of lock register first.")
-                # if the fuse locks itself, do not check locks when reading
-                self.read_single(lock_reg.uid, check_locks=lock_reg != reg)
-                if FuseLock.WRITE_LOCK in reg.get_active_locks():
-                    raise SPSDKFuseOperationFailure(
-                        f"Fuse {reg.name} write operation is locked by lock fuse {lock_reg.name}."
-                    )
-            if reg.individual_write_lock in [
-                IndividualWriteLock.ALWAYS,
-                IndividualWriteLock.IMPLICIT,
-            ]:
-                reset = reg.get_reset_value()
-                if self.read_single(reg.uid) != reset:
-                    raise SPSDKFuseOperationFailure(
-                        f"Fuse {reg.name} has non reset value {reset} and is write-locked."
-                    )
-
-            if lock and reg.individual_write_lock == IndividualWriteLock.IMPLICIT:
-                logger.warning(
-                    "The user's lock is ignored as the fuse will be implicitly locked after write"
-                )
-                lock = False
-            if not lock and reg.individual_write_lock == IndividualWriteLock.ALWAYS:
-                logger.info(
-                    "Enabling the lock flag as the fuse has individual write lock set to 'always'"
-                )
-                lock = True
-            self.fuse_operator.write_fuse(reg.otp_index, reg.get_value(), reg.width, lock)
-            # lock the local register so it matches the real state in chip
-            if lock or reg.individual_write_lock == IndividualWriteLock.IMPLICIT:
-                reg.lock(FuseLock.WRITE_LOCK)
-
-            # Remove from cache after write if it's a lock fuse
-            if self.fuse_regs.is_lock_fuse(reg) and reg.uid in self._cache:
-                self._cache.remove(reg.uid)
-                logger.debug(f"Removed lock fuse {reg.name} from cache after write")
-
-        reg = self.fuse_regs.find_reg(name, include_group_regs=True)
+        reg = self.registers.find_reg(name, include_group_regs=True)
         if reg.has_group_registers():
             for sub_reg in reg.sub_regs:
-                write_single_reg(sub_reg, lock)
+                self._write_register(sub_reg, lock, verify)
             # Remove group register from cache if it's a lock fuse
-            if self.fuse_regs.is_lock_fuse(reg) and reg.uid in self._cache:
+            if self.registers.is_lock_fuse(reg) and reg.uid in self._cache:
                 self._cache.remove(reg.uid)
         else:
-            write_single_reg(reg, lock)
+            self._write_register(reg, lock, verify)
+
+    def write_multiple(self, names: list[str], verify: bool = True) -> None:
+        """Write multiple fuses to the device.
+
+        This method iterates through the provided list of fuse names or UIDs,
+        finds the corresponding registers, and writes each one individually to the device.
+
+        :param names: List of fuse names or UIDs to be written to the device.
+        :param verify: Verify the fuse value after writing, defaults to True.
+        :raises SPSDKError: If any fuse name/UID is not found or write operation fails.
+        """
+        regs = [self.registers.find_reg(name, include_group_regs=True) for name in names]
+        # permission error not skipped as user-defined registers should be writable
+        self._write_multiple(regs, verify=verify)
+
+    def write_all(self, verify: bool = True) -> None:
+        """Write all fuse registers to the device.
+
+        This method writes all fuse registers in the collection to the device.
+        It processes registers in a specific order, writing non-lock fuses first
+        to prevent lock fuses from blocking subsequent write operations.
+
+        :param verify: Verify write operation after writing each register, defaults to True.
+        :raises SPSDKFuseOperationFailure: When one or more fuse write operations fail.
+        :raises SPSDKError: When register write operation encounters an error.
+        """
+        # skip permission error as some registers may be read-only
+        self._write_multiple(self.registers._registers, verify=verify, skip_permission_error=True)
+
+    def write_loaded(self, verify: bool = True) -> None:
+        """Update shadow registers in target using their local values.
+
+        This method iterates through all loaded registers and writes their current local values
+        to the target device using the set_register method.
+
+        :param verify: Verify write operation after setting each register.
+        :raises SPSDKError: If register write operation fails.
+        """
+        regs = {r for r in self if r.loaded_from_config}
+        # add also antipole registers
+        regs.update(r.antipole_register for r in list(regs) if r.antipole_register)
+        self._write_multiple(list(regs), verify=verify)
+
+    def _write_multiple(
+        self,
+        regs: list[FuseRegister],
+        allow_order_change: bool = True,
+        verify: bool = True,
+        skip_permission_error: bool = False,
+    ) -> None:
+        """Write multiple registers to the device."""
+        errors = 0
+
+        def _write_single(reg: FuseRegister, verify: bool = True) -> int:
+            try:
+                self.write_single(reg.name, verify=verify)
+                return 0
+            except SPSDKFuseOperationFailure as exc:
+                log_func = logger.debug if skip_permission_error else logger.error
+                log_func(f"Fuse '{reg.name}' was not written as it is not writeable: {exc}")
+                return 1 if not skip_permission_error else 0
+            except SPSDKError as exc:
+                logger.error(f"Error when writing the fuse '{reg.name}' to the device: {exc}")
+                return 1
+
+        # first we need to write non-lock fuses as lock fuses may lock other fuses to be written
+        if allow_order_change:
+            lock_regs, normal_regs = self._split_registers(regs)
+        else:
+            lock_regs, normal_regs = [], regs
+        for reg in normal_regs:
+            errors += _write_single(reg, verify)
+        for reg in lock_regs:
+            errors += _write_single(reg, verify)
+        if errors:
+            raise SPSDKFuseOperationFailure(f"Writing the fuses failed with {errors} error(s)")
+
+    def set_value(
+        self, name: str, value: Union[bytes, bytearray, int, str], raw: bool = False
+    ) -> None:
+        """Set the value of a fuse register without writing to device.
+
+        This method updates the local value of a fuse register identified by name,
+        UID, or OTP index. The value is stored locally and can be written to the
+        device later using write methods.
+
+        :param name: Fuse register name, UID, or OTP index to set.
+        :param value: The value to set for the fuse register.
+        :param raw: If True, set raw value without applying modification hooks;
+            if False, apply computed value with modification hooks, defaults to False.
+        """
+        value = value_to_int(value)
+        fuse = self.registers.find_reg(name, include_group_regs=True)
+        fuse.set_value(value, raw=raw)
+
+    def _split_registers(
+        self, regs: list[FuseRegister]
+    ) -> tuple[list[FuseRegister], list[FuseRegister]]:
+        """Split a group register into lock and normal registers.
+
+        :param reg: The group register to split.
+        :return: List of sub-registers if group
+        """
+        lock_fuses: list[FuseRegister] = []
+        non_lock_fuses: list[FuseRegister] = []
+        for reg in regs:
+            if reg in self.registers.get_lock_fuses():
+                lock_fuses.append(reg)
+            else:
+                non_lock_fuses.append(reg)
+        return lock_fuses, non_lock_fuses
+
+    def _write_register(self, reg: FuseRegister, lock: bool = False, verify: bool = True) -> None:
+        """Write a single fuse register to the device.
+
+        This method writes the value of a fuse register to the OTP memory with comprehensive
+        validation including access rights, lock status checks, and individual write lock
+        handling. The method automatically manages lock states and validates write permissions
+        before performing the operation. After writing a lock fuse, its cache entry is removed.
+
+        :param reg: The fuse register to write to the device.
+        :param lock: Whether to lock the fuse after writing, defaults to False.
+        :param verify: Verify the fuse value after writing, defaults to True.
+        :raises SPSDKError: If the OTP index for the fuse is not set.
+        :raises SPSDKFuseOperationFailure: If the fuse is not writable, write-locked by another
+            fuse, or has non-reset value with write-lock restrictions.
+        """
+        if reg.otp_index is None:
+            raise SPSDKError(f"OTP index for fuse {reg.name} is not set.")
+        if not reg.access.is_writable:
+            raise SPSDKFuseOperationFailure(
+                f"Unable to write fuse {reg.name}. Fuse access: {reg.access.description}"
+            )
+        lock_reg = self.registers.get_lock_fuse(reg)
+        if lock_reg:
+            logger.debug("Reading the value of lock register first.")
+            # if the fuse locks itself, do not check locks when reading
+            self.read_single(lock_reg.uid, check_locks=lock_reg != reg)
+            if FuseLock.WRITE_LOCK in reg.get_active_locks():
+                raise SPSDKFuseOperationFailure(
+                    f"Fuse {reg.name} write operation is locked by lock fuse {lock_reg.name}."
+                )
+        if reg.individual_write_lock in [
+            IndividualWriteLock.ALWAYS,
+            IndividualWriteLock.IMPLICIT,
+        ]:
+            reset = reg.get_reset_value()
+            value = self.fuse_operator.read_fuse(reg.otp_index, reg.width)
+            if value != reset:
+                raise SPSDKFuseOperationFailure(
+                    f"Fuse {reg.name} has non reset value {reset} and is write-locked."
+                )
+
+        if lock and reg.individual_write_lock == IndividualWriteLock.IMPLICIT:
+            logger.warning(
+                "The user's lock is ignored as the fuse will be implicitly locked after write"
+            )
+            lock = False
+        if not lock and reg.individual_write_lock == IndividualWriteLock.ALWAYS:
+            logger.info(
+                "Enabling the lock flag as the fuse has individual write lock set to 'always'"
+            )
+            lock = True
+        self.fuse_operator.write_fuse(reg.otp_index, reg.get_value(), reg.width, lock, verify)
+        # lock the local register so it matches the real state in chip
+        if lock or reg.individual_write_lock == IndividualWriteLock.IMPLICIT:
+            reg.lock(FuseLock.WRITE_LOCK)
+        # Remove from cache after write if it's a lock fuse
+        if self.registers.is_lock_fuse(reg) and reg.uid in self._cache:
+            self._cache.remove(reg.uid)
+            logger.debug(f"Removed lock fuse {reg.name} from cache after write")
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
@@ -901,29 +1282,52 @@ class Fuses(FeatureBaseClassComm):
         update_validation_schema_family(
             sch_family[0]["properties"], cls.get_supported_families(), family
         )
-        sch_cfg = get_schema_file(DatabaseManager.FUSES)
+        sch_cfg = get_schema_file(cls.FEATURE)
         init_regs = cls.get_init_regs(family)
-        sch_cfg["fuses"]["properties"]["registers"][
+        sch_cfg[cls.FEATURE]["properties"]["registers"][
             "properties"
         ] = init_regs.get_validation_schema()["properties"]
-        return sch_family + [sch_cfg["fuses"]]
+        return sch_family + [sch_cfg[cls.FEATURE]]
 
-    def create_fuse_script(self) -> str:
+    def create_fuse_script(
+        self,
+        reg_list: Optional[list[str]] = None,
+        loaded_only: bool = False,
+        non_default_only: bool = False,
+    ) -> str:
         """Generate fuse programming script for blhost or nxpele tools.
 
         This method processes all fuse registers in the context, handling both simple registers
         and group registers with sub-registers. For group registers, it processes sub-registers
         in the appropriate order based on the reverse_subregs_order flag.
 
+        :param reg_list: Limit to list of registers.
+        :param loaded_only: Limit to registers loaded from config.
+        :param non_default_only: Limit to registers with non-default value.
         :return: Content of the fuse programming script file as a string.
         """
         fuse_regs = []
-        for reg in self.fuse_context:
+        # Determine which registers to process
+        if reg_list is not None:
+            # Filter registers based on the provided list
+            registers_to_process = [
+                self.registers.find_reg(reg_name, include_group_regs=True) for reg_name in reg_list
+            ]
+        else:
+            # Process all registers
+            registers_to_process = self.registers._registers
+        if loaded_only:
+            registers_to_process = [r for r in self.registers._registers if r.loaded_from_config]
+        if non_default_only:
+            registers_to_process = [r for r in registers_to_process if not r.has_reset_value]
+        for reg in registers_to_process:
             if reg.has_group_registers():
                 for sub_reg in reg.sub_regs[:: -1 if reg.reverse_subregs_order else 1]:
                     fuse_regs.append(sub_reg)
             else:
                 fuse_regs.append(reg)
+            if reg.antipole_register:
+                fuse_regs.append(reg.antipole_register)
         return self.fuse_operator_type.get_fuse_script(family=self.family, fuses=fuse_regs)
 
     def get_config(self, data_path: str = "./", diff: bool = False) -> Config:
@@ -939,7 +1343,7 @@ class Fuses(FeatureBaseClassComm):
         ret = Config()
         ret["family"] = self.family.name
         ret["revision"] = self.family.revision
-        ret["registers"] = self.fuse_regs.get_config(diff=diff)
+        ret["registers"] = self.registers.get_config(diff=diff)
         logger.debug("The fuse configuration was created.")
         return ret
 

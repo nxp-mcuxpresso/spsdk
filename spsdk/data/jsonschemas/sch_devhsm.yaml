@@ -93,6 +93,11 @@ loadCFPA: >2
         address: {address:#_x}
         file: cfpa.bin
 
+writeIFR: >2
+    # Write IFR (PFR) data
+    - writeIFR:
+        type: {type}
+
 loadKeyBlob: >2
     # In case you have the encryption key in plain (set via containerKeyBlobEncryptionKey)
     # a default loadKeyBlob command will be injected automatically
@@ -112,11 +117,3 @@ loadKeyBlob: >2
     #     wrappingKeyId: NXP_CUST_KEK_EXT_SK
     #     file: wrapped_key_blob.bin
     #
-
-writeIFR: >2
-    # Write IFR command - IMPORTANT: This command must ALWAYS be placed after loadKeyBlob
-    # This command instructs the ROM to write the generated key blob to the flash
-    # The type must be set to CFPA_AND_CMPA to ensure both CFPA and CMPA regions are written
-    # - writeIFR:
-    #     type: CFPA_AND_CMPA
-    #     file: ifr_data.bin

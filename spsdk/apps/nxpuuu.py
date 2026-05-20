@@ -32,6 +32,7 @@ from spsdk.apps.utils.common_cli_options import (
     usbserial_option,
 )
 from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error
+from spsdk.exceptions import SPSDKError
 from spsdk.image.bootable_image.bimg import BootableImage
 from spsdk.uboot.spsdk_uuu import SPSDKUUU
 from spsdk.utils.family import FamilyRevision
@@ -443,6 +444,58 @@ def list_devices(ctx: click.Context, usb: Optional[str]) -> None:
 
     click.echo(table)
     click.echo(colorama.Style.RESET_ALL)
+
+
+@main.command(name="udev", no_args_is_help=False)
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(dir_okay=False, writable=True),
+    required=False,
+    help="Output file path for udev rules (default: print to stdout)",
+)
+def udev(output: Optional[str]) -> None:
+    """Generate udev rules for NXP devices supporting UUU.
+
+    This command generates udev rules for all NXP devices that support the
+    Universal Update Utility (UUU) protocol. The VID:PID pairs are fetched
+    from the SPSDK database.
+
+    The generated rules file can be copied to /etc/udev/rules.d/ to grant
+    user access to NXP devices in Serial Download Protocol (SDP) mode.
+
+    \b
+    Usage examples:
+      # Print rules to stdout
+      nxpuuu udev
+
+      # Save rules to a file
+      nxpuuu udev -o 70-nxp-uuu.rules
+
+      # Install rules (requires sudo)
+      nxpuuu udev -o /etc/udev/rules.d/70-nxp-uuu.rules
+      sudo udevadm control --reload-rules
+      sudo udevadm trigger
+    """
+    from spsdk.utils.database import generate_udev_rules
+
+    try:
+        rules_content = generate_udev_rules(feature="nxpuuu", rule_name="UUU")
+    except SPSDKError as e:
+        raise SPSDKAppError(f"Failed to generate udev rules: {e}") from e
+
+    if output:
+        try:
+            with open(output, "w", encoding="utf-8") as f:
+                f.write(rules_content)
+            click.echo(f"udev rules written to: {output}")
+            click.echo("\nTo activate the rules, run:")
+            click.echo("  sudo udevadm control --reload-rules")
+            click.echo("  sudo udevadm trigger")
+        except (OSError, IOError) as e:
+            raise SPSDKAppError(f"Failed to write udev rules to {output}: {e}") from e
+    else:
+        click.echo(rules_content)
 
 
 @catch_spsdk_error

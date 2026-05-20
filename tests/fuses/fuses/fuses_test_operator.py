@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK Fuse testing utilities and operators.
 
 This module provides test implementations and utilities for fuse operations
@@ -71,7 +72,9 @@ class TestFuseOperator(FuseOperator):
         self.actions.append(FuseAction(action_type="read", fuse_index=index))
         return self.return_values.get(index, 0)
 
-    def write_fuse(self, index: int, value: int, length: int, lock: bool = False) -> None:
+    def write_fuse(
+        self, index: int, value: int, length: int, lock: bool = False, verify: bool = False
+    ) -> None:
         """Write a fuse value and record the operation.
 
         This method simulates writing a value to a fuse at the specified index and records
@@ -167,7 +170,9 @@ class TestBlhostFuseOperator(FuseOperator):
             or self.registers.get_by_otp_index(index).get_reset_value()
         )
 
-    def write_fuse(self, index: int, value: int, length: int, lock: bool = False) -> None:
+    def write_fuse(
+        self, index: int, value: int, length: int, lock: bool = False, verify: bool = True
+    ) -> None:
         """Write a fuse value to the test operator's memory.
 
         This method simulates writing a fuse value by storing it in the RETURN_VALUES

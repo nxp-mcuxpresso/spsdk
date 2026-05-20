@@ -1117,6 +1117,8 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
             signature=None,
             signature_provider=None,
         )
+        db = get_db(family)
+        self.clear_iee_config = db.get_bool(DatabaseManager.DAT, "clear_iee_config_on_ele", False)
 
     def __eq__(self, value: object) -> bool:
         """Check equality between two DebugCredentialEdgeLockEnclaveV2 instances.
@@ -1284,12 +1286,15 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
         ret[1]["properties"].pop("permission_data")
 
         use_beacon = db.get_bool(DatabaseManager.DAT, "used_beacons_on_ele", False)
+        clear_iee_config = db.get_bool(DatabaseManager.DAT, "clear_iee_config_on_ele", False)
         vu_instead_fuse_version = db.get_bool(DatabaseManager.DAT, "vu_instead_fuse_version", False)
         if use_beacon:
             ret.insert(2, schema["ele_dc_beacon"])
         if vu_instead_fuse_version:
             ret[1]["properties"].pop("fuse_version")
             ret.insert(3, schema["ahab_certificate_vendor_usage"])
+        if clear_iee_config:
+            ret.insert(1, schema["iee_clear_regions"])
 
         ret.insert(1, schema["ele_socu"])
         return ret
@@ -1310,6 +1315,7 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
         db = get_db(family=family)
         use_beacon = db.get_bool(DatabaseManager.DAT, "used_beacons_on_ele", False)
         vu_instead_fuse_version = db.get_bool(DatabaseManager.DAT, "vu_instead_fuse_version", False)
+        clear_iee_config = db.get_bool(DatabaseManager.DAT, "clear_iee_config_on_ele", False)
         socc = get_db(family).get_int(DatabaseManager.DAT, "socc")
         socu = value_to_int(config.pop("cc_socu", 0))
         beacon = value_to_int(config.pop("cc_beacon", 0)) if use_beacon else 0
@@ -1319,8 +1325,56 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
         if vu_instead_fuse_version and "cc_vendor_usage" in config:
             config["fuse_version"] = config.get_int("cc_vendor_usage", 0)
 
+        if clear_iee_config:
+            config["permission_data_ext"] = config.pop("iee_clear_regions", 0)
+
         dc = get_ahab_certificate_class(family).load_from_config(config)
         return cls(certificate=dc, family=family)
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Get configuration for debug credential.
+
+        Creates a configuration dictionary from the current debug credential instance
+        that can be used to recreate the credential or export to YAML format.
+
+        :param data_path: Path to directory where configuration data files will be stored.
+        :return: Configuration object containing all debug credential settings.
+        """
+        config = Config()
+
+        # Add family configuration
+        config["family"] = self.family.name
+        if self.family.revision != "latest":
+            config["revision"] = self.family.revision
+
+        # Add SOCU and beacon values
+        config["cc_socu"] = hex(self.socu)
+
+        db = get_db(self.family)
+        use_beacon = db.get_bool(DatabaseManager.DAT, "used_beacons_on_ele", False)
+        if use_beacon:
+            config["cc_beacon"] = self.beacon
+
+        # Add vendor usage if applicable
+        vu_instead_fuse_version = db.get_bool(DatabaseManager.DAT, "vu_instead_fuse_version", False)
+        if vu_instead_fuse_version:
+            config["cc_vendor_usage"] = self.certificate.fuse_version
+        else:
+            config["fuse_version"] = self.certificate.fuse_version
+
+        # Add IEE clear regions if applicable
+        if self.clear_iee_config:
+            config["iee_clear_regions"] = self.certificate.permission_data_ext
+
+        # Get certificate configuration
+        cert_config = self.certificate.get_config(index=0, data_path=data_path)
+
+        # Merge certificate config (excluding permissions and permission_data)
+        for key, value in cert_config.items():
+            if key not in ["permissions", "permission_data", "fuse_version"]:
+                config[key] = value
+
+        return config
 
     @classmethod
     def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:

@@ -128,8 +128,9 @@ class MasterBootImage(FeatureBaseClass):
         for target in images.keys():
             for authentication in images[target]:
                 cls_name = images[target][authentication]
+                template_key = f"{family.name}_{target}_{authentication}"
 
-                ret[f"{family.name}_{target}_{authentication}"] = (
+                ret[template_key] = (
                     cls.create_mbi_class(cls_name, family),
                     MAP_IMAGE_TARGETS["targets"][target][0],
                     MAP_AUTHENTICATIONS[authentication][0],
@@ -151,15 +152,15 @@ class MasterBootImage(FeatureBaseClass):
                                            is not supported for the specified family.
         :return: MBI Class type for the specified configuration.
         """
-        # Validate needed configuration to recognize MBI class
+        family = FamilyRevision.load_from_config(config)
+        db = get_db(family)
+
         image_type = config.get("outputImageExecutionTarget", "Non-specified image type")
         if image_type not in cls.IMAGE_TYPES:
             raise SPSDKUnsupportedImageType(
                 f"Unsupported image type: {image_type}, cannot get MBI class."
             )
 
-        family = FamilyRevision.load_from_config(config)
-        db = get_db(family)
         try:
             target = get_key_by_val(
                 config["outputImageExecutionTarget"], MAP_IMAGE_TARGETS["targets"]
@@ -597,7 +598,7 @@ class MasterBootImage(FeatureBaseClass):
 
         cfg_values["family"] = self.family.name
         cfg_values["revision"] = self.family.revision
-        cfg_values["masterBootOutputFile"] = f"mbi_{self.family.name}_{target}_{authentication}.bin"
+        cfg_values["masterBootOutputFile"] = f"mbi_{self.family.name}_{authentication}.bin"
         cfg_values["outputImageExecutionTarget"] = target
         cfg_values["outputImageAuthenticationType"] = authentication
 
@@ -634,6 +635,7 @@ class MasterBootImage(FeatureBaseClass):
             schema_family["properties"], cls.get_supported_families(), family
         )
         schemas.append(schema_family)
+
         schema_image_type = schema_cfg["image_type"]
         schema_image_type["properties"]["outputImageExecutionTarget"][
             "template_value"
@@ -642,9 +644,11 @@ class MasterBootImage(FeatureBaseClass):
             "template_value"
         ] = cls.IMAGE_AUTHENTICATIONS
         images: dict[str, dict[str, str]] = get_db(family).get_dict(DatabaseManager.MBI, "images")
+
         schema_image_type["properties"]["outputImageExecutionTarget"]["enum_template"] = [
             MAP_IMAGE_TARGETS["targets"][target][0] for target in images.keys()
         ]
+
         authentication_types = []
         for target in images.keys():
             for authentication in images[target]:
@@ -653,6 +657,7 @@ class MasterBootImage(FeatureBaseClass):
             set(authentication_types)
         )
         schemas.append(schema_image_type)
+
         schemas.append(schema_cfg["output_file"])
         for base in cls._get_mixins():
             schemas.extend(base.mix_get_validation_schemas(family))

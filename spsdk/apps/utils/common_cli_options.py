@@ -228,6 +228,13 @@ def lpcusbsio_option() -> Callable[[FC], FC]:
 
         Optional USB device filtering formats:
         [usb,vid:pid|usb_path|serial_number]
+        \b
+        usb,vid:pid - Filter by USB Vendor ID and Product ID (hexadecimal)
+          Example: usb,0x1fc9:0x0090
+        usb,usb_path - Filter by USB device path
+          Example: usb,1-1.3.2
+        usb,serial_number - Filter by USB device serial number
+          Example: usb,ABCD1234
 
         Following serial interfaces are supported:
 
@@ -258,6 +265,13 @@ def lpcusbsio_option() -> Callable[[FC], FC]:
         - string with coma separated arguments i.e. spi1,0,15,1000,1
         - string with coma separated keyword arguments (the order may not be maintained) i.e.spi1,port=0,speed_kHz=1000,nirq_port=1,nirq_pin=7
         - string with combination of coma separated arguments and keyword arguments i.e.spi1,0,15,nirq_port=1,nirq_pin=7
+
+        \b
+        Complete examples with USB filtering:
+        - usb,0x1fc9:0x0090,spi - SPI interface filtered by USB VID:PID
+        - usb,1-1.1,i2c,0x10,100 - I2C interface filtered by USB path
+        - usb,ABCD1234,spi1,0,15,1000 - SPI1 interface filtered by USB serial number
+        - spi - SPI interface without USB filtering (auto-detect first device)
 
         """,
     )
@@ -496,6 +510,7 @@ def spsdk_family_option(
     default: Optional[FamilyRevision] = None,
     help: Optional[str] = None,  # pylint: disable=redefined-builtin
     add_revision: bool = True,
+    **option_kwargs: Any,
 ) -> Callable:
     """Click decorator handling family selection.
 
@@ -506,6 +521,7 @@ def spsdk_family_option(
     :param default: Default selection, defaults to None (user selection is required)
     :param help: Customized help message, defaults to None
     :param add_revision: Add revision to the family name, defaults to True
+    :param option_kwargs: Option kwargs passed to family and revision option
     :return: Click decorator.
     """
     FAMILY_OPTION = "family"
@@ -546,6 +562,7 @@ def spsdk_family_option(
                 default="latest",
                 required=False,
                 help="Chip revision; if not specified, most recent one will be used",
+                **option_kwargs,
             )(func)
 
         wrapper = click.option(
@@ -555,6 +572,7 @@ def spsdk_family_option(
             default=default,
             required=False,  # will be validated in the wrapper method
             help=help or f"{'[required] ' if required else ''}Select the chip family.",
+            **option_kwargs,
         )(wrapper)
 
         return wrapper

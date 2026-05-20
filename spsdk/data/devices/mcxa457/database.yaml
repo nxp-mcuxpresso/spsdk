@@ -61,6 +61,7 @@ features:
     dac_rot_type: ecc_pqc_sha521_truncated # The Dac packet is using truncated SHA512 hash and in case of 2 signatures
     test_address: 0x2002_8000
     dmbox_ap_ix: 1
+    dat_auth_warning: Be aware that this device needs to be in ISP mode to perform DAT authentication.
     command_delays: # Additional standard command delays per individual DM commands [seconds]
       ERASE_FLASH: 0.5
       DBG_AUTH_START: 1.0
@@ -178,9 +179,6 @@ features:
       - reset
 
     command_rules:
-      - type: must_appear_after
-        command: LoadKeyBlob
-        target_command: WriteIFR
       - type: max_occurrences
         command: LoadKeyBlob
         count: 1
@@ -202,6 +200,18 @@ features:
       internal:
         segments:
           mbi: 0x00
+      flexspi_nor:
+        segments:
+          fcb: 0x0400
+          image_version_ap: 0x0600
+          mbi: 0x1000
+
+  # ======== FCB section ========
+  fcb:
+    mem_types:
+      flexspi_nor:
+        reg_spec: fcb_flexspi_nor.json
+        reg_spec_modification: ../../common/fcb_flexspi_nor_modification.yaml
 
   # ======== TrustZone section ========
   tz:
@@ -239,7 +249,6 @@ features:
         field000: # HEADER
           field000-bits8-15: pfr_reg_inverse_lower_8_bits # INV_CFPA_LC_STATE
       support_additional_data: True
-
 
     cmpa:
       read_address: 0x100_0200
@@ -336,8 +345,6 @@ features:
         type: CFPA_CMPA_SPLIT
         offset: BOOT_CFG1/EXT_CMPA_32B_SIZE
         max_size: 0x1400
-
-
 
   # ======== Device Hardware Security Module (HSM) section ========
   devhsm:

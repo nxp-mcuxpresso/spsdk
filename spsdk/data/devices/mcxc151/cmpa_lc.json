@@ -1,0 +1,137 @@
+{
+    "cpu": "mcxc151",
+    "groups": [
+        {
+            "group": {
+                "name": "Lifecycle State",
+                "description": "Device lifecycle state"
+            },
+            "registers": [
+                {
+                    "id": "field000",
+                    "name": "LIFECYCLE_STATE",
+                    "description": "lifecycle[31:0]",
+                    "offset_int": "0",
+                    "default_value_int": "0x9635FC03",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "field000-bits0-31",
+                            "name": "lifecycle",
+                            "description": "lifecycle[31:0]",
+                            "values": [
+                                {
+                                    "name": "IN_FIELD_LOCKED",
+                                    "value": 2520068303,
+                                    "description": "Alternative in-field state that prevents use of field return states",
+                                    "deprecated_names": [
+                                        "ROP_LEVEL3"
+                                    ]
+                                },
+                                {
+                                    "name": "BRICKED",
+                                    "value": 2520098138,
+                                    "description": "Bricked state to prevent device use"
+                                },
+                                {
+                                    "name": "IN_FIELD2",
+                                    "value": 2520117263,
+                                    "description": "Optional in-field application state for end customer use",
+                                    "deprecated_names": [
+                                        "ROP_LEVEL2"
+                                    ]
+                                },
+                                {
+                                    "name": "IN_FIELD1",
+                                    "value": 2520119303,
+                                    "description": "In-field application state for end customer use (debug authentication required)",
+                                    "deprecated_names": [
+                                        "ROP_LEVEL1"
+                                    ]
+                                },
+                                {
+                                    "name": "DEVELOP",
+                                    "value": 2520120323,
+                                    "description": "Initial customer development state after leaving NXP manufacturing",
+                                    "deprecated_names": [
+                                        "ROP_LEVEL0"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "field004",
+                    "name": "LIFECYCLE_STATE_DP",
+                    "description": "lifecycle dp[31:0]",
+                    "offset_int": "0x0004",
+                    "default_value_int": "0x9635FC03",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "field004-bits0-31",
+                            "name": "lifecycle_dp",
+                            "description": "lifecycle dp[31:0]",
+                            "values": [
+                                {
+                                    "name": "IN_FIELD_LOCKED",
+                                    "value": 2520068303,
+                                    "description": "Alternative in-field state that prevents use of field return states",
+                                    "deprecated_names": [
+                                        "ROP_LEVEL3"
+                                    ]
+                                },
+                                {
+                                    "name": "BRICKED",
+                                    "value": 2520098138,
+                                    "description": "Bricked state to prevent device use"
+                                },
+                                {
+                                    "name": "IN_FIELD2",
+                                    "value": 2520117263,
+                                    "description": "Optional in-field application state for end customer use",
+                                    "deprecated_names": [
+                                        "ROP_LEVEL2"
+                                    ]
+                                },
+                                {
+                                    "name": "IN_FIELD1",
+                                    "value": 2520119303,
+                                    "description": "In-field application state for end customer use (debug authentication required)",
+                                    "deprecated_names": [
+                                        "ROP_LEVEL1"
+                                    ]
+                                },
+                                {
+                                    "name": "DEVELOP",
+                                    "value": 2520120323,
+                                    "description": "Initial customer development state after leaving NXP manufacturing",
+                                    "deprecated_names": [
+                                        "ROP_LEVEL0"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "Reserved00008",
+                    "name": "Reserved 0x00008",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0008",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved0000C",
+                    "name": "Reserved 0x0000C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x000C",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                }
+            ]
+        }
+    ]
+}

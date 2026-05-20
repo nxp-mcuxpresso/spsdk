@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,13 +14,24 @@ algorithms and sizes, ECDSA signature handling, and password-protected keys.
 """
 
 import os
-from typing import Any
+from pathlib import Path
+from typing import Any, Callable, Type
 
 import pytest
 
 from spsdk.crypto.crypto_types import SPSDKEncoding
-from spsdk.crypto.keys import EccCurve, ECDSASignature, PrivateKeyEcc, PrivateKeyRsa, PublicKeyEcc
+from spsdk.crypto.keys import (
+    EccCurve,
+    ECDSASignature,
+    PrivateKeyEcc,
+    PrivateKeyRsa,
+    PublicKeyEcc,
+    PublicKeyRsa,
+    load_key,
+)
+from spsdk.crypto.rng import random_bytes
 from spsdk.exceptions import SPSDKValueError
+from spsdk.utils.misc import write_file
 
 
 def test_rsa_sign(data_dir: str) -> None:
@@ -307,3 +318,118 @@ def test_ecdsa_signature_get_encoding_rsa() -> None:
         signature = rsa_key.sign(b"")
         with pytest.raises(SPSDKValueError):
             ECDSASignature.get_encoding(signature)
+
+
+@pytest.mark.parametrize(
+    "secp_curve,brainpool_curve,key_length",
+    [
+        (EccCurve.SECP256R1, EccCurve.BRAINPOOLP256R1, 32),
+        (EccCurve.SECP384R1, EccCurve.BRAINPOOLP384R1, 48),
+    ],
+)
+def test_same_length_different_curves(
+    secp_curve: EccCurve, brainpool_curve: EccCurve, key_length: int
+) -> None:
+    """Test that SECP and Brainpool curves with same length are different."""
+    secp_key = PrivateKeyEcc.generate_key(curve_name=secp_curve)
+    brainpool_key = PrivateKeyEcc.generate_key(curve_name=brainpool_curve)
+
+    # Both should have same coordinate size
+    assert secp_key.coordinate_size == key_length
+    assert brainpool_key.coordinate_size == key_length
+
+    # But different curves
+    assert secp_key.curve != brainpool_key.curve
+    assert secp_key.curve == secp_curve
+    assert brainpool_key.curve == brainpool_curve
+
+
+@pytest.mark.parametrize(
+    "curve,coordinate_size",
+    [
+        (EccCurve.SECP256R1, 32),
+        (EccCurve.BRAINPOOLP256R1, 32),
+        (EccCurve.SECP384R1, 48),
+        (EccCurve.BRAINPOOLP384R1, 48),
+    ],
+)
+def test_recreate_from_data(curve: EccCurve, coordinate_size: int) -> None:
+    """Test recreating public key from data with explicit curve specification."""
+    # Generate a key
+    private_key = PrivateKeyEcc.generate_key(curve_name=curve)
+    public_key = private_key.get_public_key()
+
+    # Export to NXP format (raw x,y coordinates)
+    nxp_data = public_key.export(encoding=SPSDKEncoding.NXP)
+    assert len(nxp_data) == coordinate_size * 2
+
+    # Recreate with explicit curve - should work
+    recreated_key = PublicKeyEcc.recreate_from_data(data=nxp_data)
+    assert recreated_key.curve == curve
+    assert recreated_key.x == public_key.x
+    assert recreated_key.y == public_key.y
+
+
+@pytest.mark.parametrize(
+    "key_data,key_type",
+    [
+        pytest.param(
+            lambda: PrivateKeyRsa.generate_key().export(encoding=SPSDKEncoding.DER),
+            PrivateKeyRsa,
+            id="rsa_private_der",
+        ),
+        pytest.param(
+            lambda: PrivateKeyRsa.generate_key().export(encoding=SPSDKEncoding.PEM),
+            PrivateKeyRsa,
+            id="rsa_private_pem",
+        ),
+        pytest.param(
+            lambda: PrivateKeyRsa.generate_key()
+            .get_public_key()
+            .export(encoding=SPSDKEncoding.PEM),
+            PublicKeyRsa,
+            id="rsa_public_pem",
+        ),
+        pytest.param(
+            lambda: PrivateKeyRsa.generate_key()
+            .get_public_key()
+            .export(encoding=SPSDKEncoding.DER),
+            PublicKeyRsa,
+            id="rsa_public_der",
+        ),
+        pytest.param(
+            lambda: PrivateKeyEcc.generate_key().export(encoding=SPSDKEncoding.PEM),
+            PrivateKeyEcc,
+            id="ecc_private_pem",
+        ),
+        pytest.param(
+            lambda: PrivateKeyEcc.generate_key()
+            .get_public_key()
+            .export(encoding=SPSDKEncoding.DER),
+            PublicKeyEcc,
+            id="ecc_public_der",
+        ),
+        pytest.param(lambda: random_bytes(16), bytes, id="bytes"),
+        pytest.param(lambda: random_bytes(16).hex(), bytes, id="hex_string"),
+    ],
+)
+def test_load_key_formats(tmpdir: str, key_data: Callable, key_type: Type) -> None:
+    """Test load_key function with different key types and formats.
+
+    This test verifies that load_key can correctly load various key types from files:
+    - RSA private/public keys in PEM, DER, and NXP formats
+    - ECC private/public keys in PEM, DER, and NXP formats
+    - Hex string format keys
+
+    :param key_data: Callable that generates key data or raw key bytes.
+    :param key_type: Expected type of the loaded key.
+    """
+    actual_key_data = key_data()
+    is_bin = isinstance(actual_key_data, bytes)
+    # Save the key in the specified format
+    file_path = Path(tmpdir) / f"test_key.{'bin' if is_bin else 'hex'}"
+    write_file(actual_key_data, str(file_path), mode="wb" if is_bin else "w")
+    # Load the key using load_key
+    loaded_key = load_key(str(file_path))
+    # Verify the loaded key type
+    assert isinstance(loaded_key, key_type), f"Expected {key_type}, got {type(loaded_key)}"

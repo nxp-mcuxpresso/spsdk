@@ -1,0 +1,5 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/key_catalog_template.yaml
+user_cfg: inputs/key_catalog.yaml
+custom_command: "%! nxpimage hse key-catalog get-template -f mcxe31b -o workspace/key_catalog_template.yaml --force"

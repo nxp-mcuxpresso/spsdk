@@ -25,6 +25,7 @@ from spsdk.apps.utils.common_cli_options import (
 )
 from spsdk.apps.utils.utils import INT
 from spsdk.crypto.keys import load_key
+from spsdk.dat.sda import DebugAuthMode
 from spsdk.ele.ele_comm import EleMessageHandler
 from spsdk.ele.ele_constants import ResponseStatus
 from spsdk.ele.ele_message_hse import (
@@ -49,6 +50,7 @@ from spsdk.ele.ele_message_hse import (
     KeyImportPayload,
 )
 from spsdk.ele.hse_attrs import (
+    DebugAuthModeAttributeHandler,
     EnablePublishKeyStoreRamToFlashAttributeHandler,
     HseAttributeHandler,
     HseAttributeId,
@@ -59,7 +61,7 @@ from spsdk.exceptions import SPSDKError
 from spsdk.image.hse.common import KeyCatalogId, KeyHandle
 from spsdk.image.hse.core_reset import CoreResetEntry
 from spsdk.image.hse.key_catalog import KeyCatalogCfg
-from spsdk.image.hse.key_info import KeyFormat, KeyInfo
+from spsdk.image.hse.key_info import KeyInfo
 from spsdk.image.hse.smr import SmrEntry
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.utils.config import Config
@@ -313,7 +315,7 @@ def enable_publish_keystore_ram_to_flash(
     )
 
 
-@set_attribute_group.command(name="secure_lifecycle", no_args_is_help=True)
+@set_attribute_group.command(name="secure-lifecycle", no_args_is_help=True)
 @click.option(
     "-v",
     "--value",
@@ -329,6 +331,28 @@ def secure_lifecycle(
 ) -> None:
     """Advance the secure lifecycle."""
     attr_handler = SecureLifecycleAttributeHandler(value)
+    cmd: EleMessageHseSetAttr = set_attr(ele_handler, attr_handler)
+    click.echo(
+        f"Setting up the attribute '{attr_handler.ATTR_ID.label}' finished: {cmd.status_string}."
+    )
+
+
+@set_attribute_group.command(name="debug-auth-mode", no_args_is_help=True)
+@click.option(
+    "-v",
+    "--value",
+    type=click.Choice(DebugAuthMode.labels(), case_sensitive=False),
+    callback=lambda ctx, param, value: DebugAuthMode.from_label(value.lower()),
+    required=True,
+    help="Config value to be set",
+)
+@click.pass_obj
+def debug_auth_mode(
+    ele_handler: EleMessageHandler,
+    value: DebugAuthMode,
+) -> None:
+    """Advance the secure lifecycle."""
+    attr_handler = DebugAuthModeAttributeHandler(value)
     cmd: EleMessageHseSetAttr = set_attr(ele_handler, attr_handler)
     click.echo(
         f"Setting up the attribute '{attr_handler.ATTR_ID.label}' finished: {cmd.status_string}."
@@ -404,16 +428,8 @@ def format_key_catalog(ele_handler: EleMessageHandler, key_catalog: str) -> None
     "--key-path",
     type=click.Path(exists=True, file_okay=True, dir_okay=False, resolve_path=True),
     required=True,
-    help="Path to a key to be loaded.",
-)
-@click.option(
-    "--key-format",
-    type=click.Choice(KeyFormat.labels(), case_sensitive=False),
-    required=False,
-    callback=lambda ctx, param, value: (
-        KeyFormat.from_label(value.lower()) if value is not None else None
-    ),
-    help="Key format of the imported key. Applicable only for ECC keys.",
+    help="Path to a key file. Supports PEM/DER encoded private or public keys (RSA, ECC) for asymmetric cryptography, "
+    "or binary/hex format for symmetric keys (AES, HMAC).",
 )
 def key_import(
     ele_handler: EleMessageHandler,
@@ -422,7 +438,6 @@ def key_import(
     slot_idx: int,
     key_info: str,
     key_path: str,
-    key_format: Optional[KeyFormat],
 ) -> None:
     """Import key in HSE key catalog."""
     key = load_key(key_path)
@@ -432,7 +447,7 @@ def key_import(
         key_info_obj = KeyInfo.parse(load_binary(key_info))
     payload = KeyImportPayload(key_info=key_info_obj, key=key)
     key_handle = KeyHandle.from_attributes(catalog_id, group_idx, slot_idx)
-    cmd = EleMessageHseImportKey(key_handle=key_handle, payload=payload, key_format=key_format)
+    cmd = EleMessageHseImportKey(key_handle=key_handle, payload=payload)
     cmd.set_buffer_params(ele_handler.comm_buff_addr, ele_handler.comm_buff_size)
     if cmd.free_space_size < payload.size:
         raise SPSDKError(
@@ -612,11 +627,12 @@ def smr_entry_erase(
     disabling the secure memory region configuration for that entry index.
 
     Requirements:
-
     - SuperUser (SU) access rights with privileges over HSE_SYS_AUTH_NVM_CONFIG data
-      are required to perform this service
+    are required to perform this service
     - Erasing an SMR entry will remove all associated secure memory configurations
     - The operation is irreversible - the entry must be reinstalled if needed again
+
+    Notes:
     - Ensure no Core Reset entries reference this SMR entry before erasing
     - Consider the impact on secure boot flow before erasing
     """
@@ -712,13 +728,11 @@ def core_reset_install(
     processor cores in the system.
 
     Requirements:
-
     - SMR entries linked with the CR entry (via preBoot/altPreBoot/postBoot SMR maps)
-      must be installed in HSE prior to the CR installation
+    must be installed in HSE prior to the CR installation
     - SuperUser rights (for NVM Configuration) are needed to perform this service
     - Updating an existing CR entry requires all preBoot and postBoot SMR(s) linked
-      with the previous entry to be verified successfully (applicable only in
-      OEM_PROD/IN_FIELD life cycles)
+    with the previous entry to be verified successfully (applicable only in OEM_PROD/IN_FIELD life cycles)
     """
     try:
         cr_entry = CoreResetEntry.load_from_config(Config.create_from_file(cr_entry_path))

@@ -405,6 +405,10 @@ class UbootFastboot:
         """
         self.is_opened = False
 
+    def __del__(self) -> None:
+        """Destructor to ensure Fastboot is disable to possibly use serial console again."""
+        self.uuu.disable_fastboot_output()
+
     def __enter__(self) -> "UbootFastboot":
         """Enter the runtime context for UbootFastboot.
 

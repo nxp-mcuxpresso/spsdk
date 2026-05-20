@@ -14,18 +14,18 @@ the SPSDK framework for NXP MCU provisioning.
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 from typing_extensions import Self
 
-from spsdk.exceptions import SPSDKKeyError, SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.exceptions import (
     SPSDKRegsErrorRegisterGroupMishmash,
     SPSDKRegsErrorRegisterNotFound,
 )
-from spsdk.utils.family import FamilyRevision
+from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import Endianness, value_to_int
 from spsdk.utils.registers import Register, _RegistersBase
 from spsdk.utils.spsdk_enum import SpsdkEnum
@@ -168,6 +168,9 @@ class FuseRegister(Register):
         shadow_register_base_addr: Optional[int] = None,
         individual_write_lock: IndividualWriteLock = IndividualWriteLock.NONE,
         fuse_lock_register: Optional[FuseLockRegister] = None,
+        antipole_register: Optional["FuseRegister"] = None,
+        computed_hooks: Optional[list[str]] = None,
+        shadow_mode: bool = False,
         **kwargs: Any,
     ):
         """Initialize fuse register with configuration parameters.
@@ -180,6 +183,9 @@ class FuseRegister(Register):
         :param shadow_register_base_addr: Base address for shadow register mapping.
         :param individual_write_lock: Individual write lock configuration type.
         :param fuse_lock_register: Optional fuse lock register configuration object.
+        :param antipole_register: Optional reference to antipole register for inverted value storage.
+        :param calculated_hook: Optional name of computation method for register value calculation.
+        :param shadow_mode: Enable shadow mode for register calculated hooks operations, defaults to False.
         """
         super().__init__(*args, **kwargs)
         self.individual_write_lock = individual_write_lock
@@ -187,11 +193,15 @@ class FuseRegister(Register):
         self.otp_index = value_to_int(otp_index) if otp_index is not None else None
         self.shadow_register_offset = shadow_register_offset
         self.shadow_register_base_addr = shadow_register_base_addr
+        self.antipole_register = antipole_register
         self._locks: dict = {
             FuseLock.READ_LOCK: False,
             FuseLock.WRITE_LOCK: False,
             FuseLock.OPERATION_LOCK: False,
         }
+        self.computed_hooks = computed_hooks or []
+        self.loaded_from_config = False
+        self.shadow_mode = shadow_mode
 
     @property
     def is_readable(self) -> bool:
@@ -395,6 +405,119 @@ class FuseRegister(Register):
             raise SPSDKValueError("Shadow registers offset is not set.")
         return self.shadow_register_base_addr + self.shadow_register_offset
 
+    def set_value(self, val: Any, raw: bool = False) -> None:
+        """Set the new value of register.
+
+        The method validates the input value fits within the register width and handles
+        endianness conversion if reverse mode is enabled. For group registers, it also
+        updates all sub-registers with appropriate bit portions of the value.
+
+        :param val: The new value to set (integer or convertible to integer).
+        :param raw: Do not use any modification hooks if True.
+        :raises SPSDKError: When invalid value is loaded into register or value exceeds
+            register width.
+        """
+        super().set_value(val, raw)
+        if not raw and self.computed_hooks:
+            self.compute_register()
+        if self.antipole_register:
+            antipole_val = self.get_antipole_value()
+            if antipole_val != self.antipole_register.get_value(raw=True):
+                self.antipole_register.set_value(antipole_val, raw=True)
+                logger.debug(
+                    f"The {self.antipole_register.name} register has been used to compute antipole value,"
+                    f"and it has been used in {self.name}."
+                )
+
+    def get_antipole_value(self) -> int:
+        """Antipolize given registers by applying bitwise XOR with 0xFFFFFFFF.
+
+        This method takes the value from the source register and applies bitwise NOT operation
+        (XOR with 0xFFFFFFFF) to create an antipole value, which is then set to the destination
+        register.
+        """
+        return self.get_value(True) ^ 0xFFFFFFFF
+
+    def compute_register(self) -> None:
+        """Recalculate register value using specified computation method.
+
+        The method dynamically calls the specified computation function to update the register's value.
+        The computation method must exist as an attribute of the current object.
+
+        :raises SPSDKError: When the specified computing routine is not found.
+        """
+        if not self.computed_hooks:
+            return
+        for hook in self.computed_hooks:
+            if hasattr(self, hook):
+                method_ref = getattr(self, hook)
+                self.set_value(method_ref(self.get_value(True)), raw=True)
+                logger.debug(
+                    f"The {self.name} register has been recomputed to value: {self.get_value()}"
+                )
+            else:
+                raise SPSDKError(f"The '{hook}' compute function doesn't exists.")
+
+    @staticmethod
+    def crc_update(data: bytes, crc: int = 0, is_final: bool = True) -> int:
+        """Compute CRC8 ITU checksum from given bytes.
+
+        The function implements CRC8 ITU algorithm with polynomial 0x07 and final XOR value 0x55.
+        Supports incremental CRC calculation for large data processing.
+
+        :param data: Input data bytes to compute CRC checksum.
+        :param crc: Initial CRC seed value for incremental calculation.
+        :param is_final: Flag indicating whether to apply final XOR transformation.
+        :return: Computed CRC8 checksum value.
+        """
+        k = 0
+        data_len = len(data)
+        while data_len != 0:
+            data_len -= 1
+            carry = data[k]
+            k += 1
+            for i in range(8):
+                bit = (crc & 0x80) != 0
+                if (carry & (0x80 >> i)) != 0:
+                    bit = not bit
+                crc <<= 1
+                if bit:
+                    crc ^= 0x07
+            crc &= 0xFF
+        if is_final:
+            return (crc & 0xFF) ^ 0x55
+        return crc & 0xFF
+
+    @staticmethod
+    def comalg_dcfg_cc_socu_crc8(val: int) -> int:
+        """Compute CRC8 for DCFG_CC_SOCU register value.
+
+        This function extracts the upper 24 bits of the input value, computes a CRC8
+        checksum over those bytes, and replaces the lower 8 bits with the computed CRC.
+
+        :param val: Input DCFG_CC_SOCU register value (32-bit integer).
+        :return: DCFG_CC_SOCU value with CRC8 field in the lower 8 bits.
+        """
+        in_val = bytearray(3)
+        for i in range(3):
+            in_val[i] = (val >> (8 + i * 8)) & 0xFF
+        val &= ~0xFF
+        val |= FuseRegister.crc_update(in_val)
+        return val
+
+    def comalg_dcfg_cc_socu_test_en(self, val: int) -> int:
+        """Configure DCFG_CC_SOCU register with appropriate test mode setting.
+
+        The method modifies the DEV_TEST_EN bit in DCFG_CC_SOCU register based on the current
+        fuse mode to satisfy MCU operational requirements.
+
+        :param val: Input DCFG_CC_SOCU register value to be modified.
+        :return: Modified DCFG_CC_SOCU value with test mode bit configured appropriately.
+        """
+        if self.shadow_mode:
+            return val | 0x80000000
+        return val & ~0x80000000
+
 
 class FuseRegisters(_RegistersBase[FuseRegister]):
     """SPSDK Fuse Registers Manager.
@@ -407,6 +530,7 @@ class FuseRegisters(_RegistersBase[FuseRegister]):
     """
 
     register_class = FuseRegister
+    FEATURE = DatabaseManager.FUSES
 
     def __init__(
         self,
@@ -426,9 +550,14 @@ class FuseRegisters(_RegistersBase[FuseRegister]):
         :param just_standard_library_data: Use only standard library data if True, defaults to False.
         """
         self.shadow_reg_base_addr: Optional[int] = None
+        self.db = get_db(family)
+        self.computed_fields: dict[str, dict[str, str]] = self.db.get_dict(
+            self.FEATURE, "computed_fields", {}
+        )
+        self.antipole_regs: dict[str, str] = self.db.get_dict(self.FEATURE, "inverted_regs", {})
         super().__init__(
             family,
-            DatabaseManager.FUSES,
+            self.FEATURE,
             base_key,
             base_endianness,
             just_standard_library_data,
@@ -461,6 +590,18 @@ class FuseRegisters(_RegistersBase[FuseRegister]):
                 if reg.has_group_registers():
                     for sub_reg in reg.sub_regs:
                         sub_reg.shadow_register_base_addr = self.shadow_reg_base_addr
+        # set antipole register handlers
+        for src_uid, dst_uid in self.antipole_regs.items():
+            src_reg = self.get_reg(src_uid)
+            dst_reg = self.get_reg(dst_uid)
+            src_reg.antipole_register = dst_reg
+            dst_reg.reserved = True
+        # set computed registers hooks
+        for reg_uid, bitfields_rec in self.computed_fields.items():
+            reg = self.get_reg(reg_uid)
+            for bitfield_uid, method in bitfields_rec.items():
+                reg.computed_hooks.append(method)
+                reg.get_bitfield(bitfield_uid).reserved = True
         self.update_locks()
 
     def load_from_config(self, config: Config) -> None:
@@ -472,6 +613,27 @@ class FuseRegisters(_RegistersBase[FuseRegister]):
 
         :param config: Configuration data containing register values and settings.
         """
+        for reg_uid, bitfields_rec in self.computed_fields.items():
+            reg = self.get_reg(reg_uid)
+            if reg.name in config:
+                for bitfield_uid in bitfields_rec.keys():
+                    bitfield = reg.get_bitfield(bitfield_uid)
+                    if not isinstance(config[reg.name], dict) or bitfield.name in config[reg.name]:
+                        hook_name = bitfields_rec[bitfield_uid]
+                        if hook_name in reg.computed_hooks:
+                            reg.computed_hooks.remove(hook_name)
+                            logger.debug(
+                                f"Calculated hook {hook_name} has been removed as the bitfield "
+                                f"{bitfield_uid} value is defined explicitly"
+                            )
+        for src_uid, dst_uid in self.antipole_regs.items():
+            src_reg = self.get_reg(src_uid)
+            dst_reg = self.get_reg(dst_uid)
+            if dst_reg.name in config:
+                logger.debug(
+                    f"The antipole register {dst_reg.name} was removed from {src_reg.name} as it was defined explicitly"
+                )
+                src_reg.antipole_register = None
         super().load_from_config(config)
         self.update_locks()
 
@@ -561,3 +723,37 @@ class FuseRegisters(_RegistersBase[FuseRegister]):
         if not fuse.fuse_lock_register:
             return None
         return self.find_reg(fuse.fuse_lock_register.register_id, include_group_regs=True)
+
+
+def print_register_info(
+    fuse_register: FuseRegister, rich: bool = False, print_func: Callable[[str], None] = print
+) -> None:
+    """Print info about a fuse register.
+
+    :param fuse_register: Fuse register to be printed
+    :param rich: Print additional information
+    :param print_func: Function for output messages, defaults to print.
+    """
+    print_func(f"Name:        {fuse_register.name}")
+    if fuse_register.otp_index is not None:  # all non-grouped registers
+        print_func(f"OTP index:   {hex(fuse_register.otp_index)}")
+    value = fuse_register.get_hex_value()
+    print_func(f"Value:       {fuse_register.get_hex_value()}")
+    print_func(f"Access:      {fuse_register.access.description}")
+    locks = fuse_register.get_active_locks()
+    print_func(f"Locks:       {','.join([lock.label for lock in locks]) if locks else 'No locks'}")
+    if value != fuse_register.get_hex_value(raw=True):
+        print_func(f"Raw value:   {fuse_register.get_hex_value(raw=True)}")
+    if rich:
+        print_func(f"Description: {fuse_register.description}")
+        print_func(f"Width:       {fuse_register.width} bits")
+        if fuse_register.get_bitfields():
+            print_func("Bitfields:")
+            for bitfield in fuse_register.get_bitfields():
+                bf_value = bitfield.get_value()
+                print_func(f"  - {bitfield.name}:")
+                print_func(f"      Offset: {bitfield.offset}")
+                print_func(f"      Width:  {bitfield.width} bits")
+                print_func(f"      Value:  {hex(bf_value)} ({bf_value})")
+                if bitfield.description:
+                    print_func(f"      Description: {bitfield.description}")

@@ -706,7 +706,7 @@ def get_property(
     34 or 'fuse-program-voltage'        Fuse Program Voltage
 
     \b
-    for mcxaxxx/mimxrt7xx devices:
+    for mcxaxxx/mimxrt7xx/mcxc151/161/162 devices:
     17 or 'life-cycle'                  Life Cycle
 
     \b

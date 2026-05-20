@@ -26,7 +26,7 @@ from spsdk.apps import nxpimage
 from spsdk.crypto.dilithium import IS_DILITHIUM_SUPPORTED
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import IS_OSCCA_SUPPORTED
-from spsdk.image.ahab.ahab_blob import AhabBlob
+from spsdk.image.ahab.ahab_blob import AhabBlob, AhabBlobOffline
 from spsdk.image.ahab.ahab_data import FlagsSrkSet
 from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.ahab.signed_msg import MessageCommands, SignedMessage
@@ -45,6 +45,7 @@ from spsdk.utils.misc import (
     value_to_int,
 )
 from tests.cli_runner import CliRunner
+from tests.misc import compare_bin_files
 from tests.nxpimage.test_nxpimage_cert_block import process_config_file
 
 
@@ -87,6 +88,7 @@ def test_nxpimage_ahab_export(
         ("ctcm_cm33_signed_sb.yaml", None),
         ("ctcm_cm33_signed_sb_mx93.yaml", None),
         ("ctcm_cm33_signed_nand.yaml", None),
+        ("ctcm_cm33_signed_fastboot.yaml", None),
         ("ctcm_cm33_encrypted_img.yaml", None),
         ("ctcm_cm33_signed_rsa4096.yaml", "nxpele"),
         pytest.param(
@@ -1494,3 +1496,147 @@ def test_nxpimage_ahab_sign(
                         assert (
                             len(srk_hash) == expected_hash_len
                         ), f"Container {i}, SRK {srk_id}: length {len(srk_hash)}, expected {expected_hash_len}"
+
+
+@pytest.mark.skip(reason="not ready yet")
+def test_nxpimage_ahab_keyblob_export(cli_runner: CliRunner, tmpdir: str, data_dir: str) -> None:
+    """Test AHAB keyblob export functionality.
+
+    Verifies that the 'ahab keyblob export' command correctly generates an encrypted
+    keyblob binary from a YAML configuration file. Tests the complete keyblob generation
+    process including key derivation, encryption, and binary output creation.
+
+    :param cli_runner: CLI runner instance for executing nxpimage commands.
+    :param tmpdir: Temporary directory for storing generated keyblob files.
+    :param data_dir: Directory containing test data and configuration files.
+    """
+    with use_working_directory(data_dir):
+        config_file = f"{data_dir}/ahab/keyblobs/key_template.yaml"
+        output_file = f"{tmpdir}/ahab_blob.bin"
+
+        cmd = f"-vv ahab keyblob export -c {config_file} -o {output_file} --force"
+        result = cli_runner.invoke(nxpimage.main, cmd.split())
+
+        assert result.exit_code == 0, f"Command failed with output: {result.output}"
+        assert os.path.isfile(output_file), f"Output file not created: {output_file}"
+
+        # Verify the output file has expected structure (header + encrypted data)
+        keyblob_data = load_binary(output_file)
+        assert len(keyblob_data) == 88, "Keyblob invalid size"
+
+        fam = FamilyRevision("rt266x")
+        parsed_blob = AhabBlobOffline.parse(keyblob_data, fam)  # Skip header for parsing
+        assert parsed_blob is not None
+        parsed_blob.verify().validate()
+
+
+@pytest.mark.skip(reason="not ready yet")
+def test_nxpimage_ahab_keyblob_export_reference(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str
+) -> None:
+    """Test AHAB keyblob export functionality.
+
+    Verifies that the 'ahab keyblob export' command correctly generates an encrypted
+    keyblob binary from a YAML configuration file. Tests the complete keyblob generation
+    process including key derivation, encryption, and binary output creation.
+
+    :param cli_runner: CLI runner instance for executing nxpimage commands.
+    :param tmpdir: Temporary directory for storing generated keyblob files.
+    :param data_dir: Directory containing test data and configuration files.
+    """
+    with use_working_directory(data_dir):
+        config_file = f"{data_dir}/ahab/keyblobs/key_template_reference.yaml"
+        output_file = f"{tmpdir}/ahab_blob.bin"
+        reference_binary = f"{data_dir}/ahab/keyblobs/encrypted_blob_reference.bin"
+
+        cmd = f"-vv ahab keyblob export -c {config_file} -o {output_file} --force"
+        result = cli_runner.invoke(nxpimage.main, cmd.split())
+
+        assert result.exit_code == 0, f"Command failed with output: {result.output}"
+        assert os.path.isfile(output_file), f"Output file not created: {output_file}"
+
+        # Verify the output file has expected structure (header + encrypted data)
+        keyblob_data = load_binary(output_file)
+        assert len(keyblob_data) == 88, "Keyblob invalid size"
+
+        fam = FamilyRevision("rt266x")
+        parsed_blob = AhabBlobOffline.parse(keyblob_data, fam)  # Skip header for parsing
+        assert parsed_blob is not None
+        parsed_blob.verify().validate()
+
+        # compare that the file is same as reference
+        compare_bin_files(reference_binary, keyblob_data)
+
+
+@pytest.mark.skip(reason="not ready yet")
+def test_nxpimage_ahab_keyblob_parse(cli_runner: CliRunner, tmpdir: str, data_dir: str) -> None:
+    """Test AHAB keyblob parsing functionality.
+
+    Verifies that the 'ahab keyblob parse' command correctly decrypts and parses
+    an encrypted keyblob binary file using the provided configuration. Tests the
+    complete keyblob decryption process and validates the extracted DEK.
+
+    :param cli_runner: CLI runner instance for executing nxpimage commands.
+    :param tmpdir: Temporary directory for storing parsed output files.
+    :param data_dir: Directory containing test data files.
+    """
+    with use_working_directory(data_dir):
+        keyblob_file = f"{data_dir}/ahab/keyblobs/encrypted_blob.bin"
+        config_file = f"{data_dir}/ahab/keyblobs/key_template.yaml"
+        output_dir = f"{tmpdir}/parsed"
+
+        cmd = f"ahab keyblob parse -b {keyblob_file} -c {config_file} -o {output_dir}"
+        result = cli_runner.invoke(nxpimage.main, cmd.split())
+
+        assert result.exit_code == 0, f"Command failed with output: {result.output}"
+        assert os.path.exists(output_dir), f"Output directory not created: {output_dir}"
+        assert os.path.isdir(output_dir), f"Output path is not a directory: {output_dir}"
+
+        # Verify DEK file was extracted
+        dek_file = os.path.join(output_dir, "decrypted_dek.bin")
+        if os.path.isfile(dek_file):
+            dek_data = load_binary(dek_file)
+            assert len(dek_data) in [16, 24, 32], f"Invalid DEK size: {len(dek_data)}"
+
+
+@pytest.mark.skip(reason="not ready yet")
+def test_nxpimage_ahab_keyblob_export_parse_roundtrip(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str
+) -> None:
+    """Test AHAB keyblob export and parse roundtrip functionality.
+
+    Verifies that a keyblob can be exported and then parsed back, with the
+    decrypted DEK matching the original DEK from the configuration. This tests
+    the complete encryption and decryption cycle.
+
+    :param cli_runner: CLI runner instance for executing nxpimage commands.
+    :param tmpdir: Temporary directory for test output files.
+    :param data_dir: Directory containing test data files.
+    """
+    with use_working_directory(data_dir):
+        config_file = f"{data_dir}/ahab/keyblobs/key_template.yaml"
+        exported_keyblob = f"{tmpdir}/exported_blob.bin"
+        parsed_output = f"{tmpdir}/parsed_roundtrip"
+
+        # Step 1: Export keyblob
+        export_cmd = f"-vv ahab keyblob export -c {config_file} -o {exported_keyblob} --force"
+        export_result = cli_runner.invoke(nxpimage.main, export_cmd.split())
+        assert export_result.exit_code == 0, f"Export failed: {export_result.output}"
+        assert os.path.isfile(exported_keyblob)
+
+        # Step 2: Parse the exported keyblob
+        parse_cmd = f"ahab keyblob parse -b {exported_keyblob} -c {config_file} -o {parsed_output}"
+        parse_result = cli_runner.invoke(nxpimage.main, parse_cmd.split())
+        assert parse_result.exit_code == 0, f"Parse failed: {parse_result.output}"
+
+        # Step 3: Verify the roundtrip
+        # Load original configuration to get original DEK
+
+        original_config = Config.create_from_file(config_file)
+        original_dek = original_config.load_symmetric_key("dek", expected_size=32)
+
+        # Load decrypted DEK from parsed output
+        dek_file = os.path.join(parsed_output, "decrypted_dek.bin")
+        if os.path.isfile(dek_file):
+            decrypted_dek = load_binary(dek_file)
+            assert decrypted_dek == original_dek, "Decrypted DEK does not match original"

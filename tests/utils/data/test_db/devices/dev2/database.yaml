@@ -6,14 +6,15 @@ revisions:
   rev1: {}
   rev_test_invalid_computed:
     features:
-      shadow_regs:
+      fuses:
         computed_fields:
           field010: # REG1
             field010-bit-31: comalg_dcfg_cc_socu_invalid # DEV_TEST_EN
   rev_test_invalid_flush_func:
     features:
       shadow_regs:
-        flush_func: flush_func_invalid
+        scratch_reg:
+          address: 0x50040000 # missing value
 
 latest: rev1
 
@@ -38,14 +39,16 @@ features:
   # ======== Feature Fuses Testing ========
   fuses:
     tool: test_operator
-
-
-  # ======== Feature Shadow registers Testing ========
-  shadow_regs:
+    scratch_reg:
+      address: 0x5003B498
+      value: 0xA7C56B9E
     inverted_regs:
       field010: field020 #  REG1 -> REG_INVERTED_AP
-    flush_func: rw61x_update_scratch_reg
     computed_fields:
       field010: #  REG1
         field010-bit-31: comalg_dcfg_cc_socu_test_en # DEV_TEST_EN
         field010-bits0-7: comalg_dcfg_cc_socu_crc8 # CRC8
+
+  # ======== Feature Shadow registers Testing ========
+  shadow_regs:
+    tool: shadowregs

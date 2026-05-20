@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -104,6 +104,7 @@ class StatusCode(SpsdkEnum):
     OTFAD_INVALID_KEY_BLOB      = (503, "OtfadInvalidKeyBlob", "OTFAD Driver: Invalid Key Blob")
 
     # Sending errors.
+    SDMMC_CARD_COMMUNICATION_ERROR    = (1801, "SDMMCTransferFailed", "Communication Error with the SDMMC Memory Card")
     SENDING_OPERATION_CONDITION_ERROR = (1812, "SendOperationConditionError", "Send Operation Condition failed")
 
     # SDMMC driver errors.

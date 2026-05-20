@@ -23,7 +23,16 @@ from spsdk.crypto.keys import PrivateKeyRsa
 from spsdk.crypto.utils import extract_public_keys
 from spsdk.exceptions import SPSDKError
 from spsdk.pfr.exceptions import SPSDKPfrError
-from spsdk.pfr.pfr import CFPA, CMPA, UPDATE_CFPA_CMPA, BaseConfigArea, SPSDKPfrRotkhIsNotPresent
+from spsdk.pfr.pfr import (
+    CFPA,
+    CMPA,
+    CMPA_CFG,
+    CMPA_LC,
+    CMPA_PSWD,
+    UPDATE_CFPA_CMPA,
+    BaseConfigArea,
+    SPSDKPfrRotkhIsNotPresent,
+)
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision
@@ -602,3 +611,325 @@ def test_multi_region_additional_data_parse() -> None:
     # Verify additional data was preserved
     parsed_cfpa = parsed.get_region("CFPA")
     assert parsed_cfpa.additional_data == test_data
+
+
+def test_mcxc151_cmpa_cfg_instantiation() -> None:
+    """Test CMPA_CFG instantiation for mcxc151.
+
+    Verifies that a CMPA_CFG object can be created for mcxc151 family without errors.
+    """
+    cmpa_cfg = CMPA_CFG(FamilyRevision("mcxc151"))
+    assert cmpa_cfg is not None
+    assert cmpa_cfg.SUB_FEATURE == "cmpa_cfg"
+
+
+def test_mcxc151_cmpa_pswd_instantiation() -> None:
+    """Test CMPA_PSWD instantiation for mcxc151.
+
+    Verifies that a CMPA_PSWD object can be created for mcxc151 family without errors.
+    """
+    cmpa_pswd = CMPA_PSWD(FamilyRevision("mcxc151"))
+    assert cmpa_pswd is not None
+    assert cmpa_pswd.SUB_FEATURE == "cmpa_pswd"
+
+
+def test_mcxc151_cmpa_lc_instantiation() -> None:
+    """Test CMPA_LC instantiation for mcxc151.
+
+    Verifies that a CMPA_LC object can be created for mcxc151 family without errors.
+    """
+    cmpa_lc = CMPA_LC(FamilyRevision("mcxc151"))
+    assert cmpa_lc is not None
+    assert cmpa_lc.SUB_FEATURE == "cmpa_lc"
+
+
+def test_mcxc151_cmpa_pswd_export(tmpdir: str) -> None:
+    """Test CMPA_PSWD binary export for mcxc151.
+
+    Verifies that CMPA_PSWD can export binary data correctly.
+
+    :param tmpdir: Temporary directory for creating test files
+    """
+    cmpa_pswd = CMPA_PSWD(FamilyRevision("mcxc151"))
+
+    # Export the binary
+    binary = cmpa_pswd.export(add_seal=False)
+
+    # Verify binary was created and has expected size
+    assert len(binary) > 0
+    assert isinstance(binary, bytes)
+
+
+def test_mcxc151_cmpa_pswd_config_uses_individual_registers() -> None:
+    """Test CMPA_PSWD template layout for mcxc151."""
+    cmpa_pswd = CMPA_PSWD(FamilyRevision("mcxc151"))
+
+    settings = cmpa_pswd.get_config()["settings"]
+    reg_names = [
+        reg.name
+        for reg in cmpa_pswd.registers.get_registers(include_group_regs=True, include_reserved=True)
+    ]
+
+    assert "DBG_AUTH_PASSWORD0" in reg_names
+    assert "DBG_AUTH_PASSWORD1" in reg_names
+    assert "DBG_AUTH_PASSWORD2" in reg_names
+    assert "DBG_AUTH_PASSWORD3" in reg_names
+    assert "Reserved 0x00010" in reg_names
+    assert "Reserved 0x0001C" in reg_names
+    assert "IMG_MISR_SEED0" in reg_names
+    assert "IMG_MISR_SEED3" in reg_names
+    assert "ERASE_PASSWORD0" in reg_names
+    assert "ERASE_PASSWORD3" in reg_names
+
+    assert "DBG_AUTH_PASSWORD0" in settings
+    assert "DBG_AUTH_PASSWORD3" in settings
+    assert "IMG_MISR_SEED0" in settings
+    assert "IMG_MISR_SEED3" in settings
+    assert "ERASE_PASSWORD0" in settings
+    assert "ERASE_PASSWORD3" in settings
+    assert "PASSWORD_AREA_CRC32" in settings
+    assert "DBG_AUTH_PASSWORD" not in settings
+    assert "IMG_MISR_SEED" not in settings
+    assert "ERASE_PASSWORD" not in settings
+
+
+def test_mcxc151_cmpa_pswd_load_individual_registers() -> None:
+    """Test CMPA_PSWD loads individual mcxc151 register names."""
+    current_cfg = Config(
+        {
+            "family": "mcxc151",
+            "revision": "latest",
+            "type": "CMPA_PSWD",
+            "settings": {
+                "DBG_AUTH_PASSWORD0": "0x11223344",
+                "DBG_AUTH_PASSWORD1": "0x55667788",
+                "DBG_AUTH_PASSWORD2": "0x99AABBCC",
+                "DBG_AUTH_PASSWORD3": "0xDDEEFF00",
+                "IMG_MISR_SEED0": "0x0F1E2D3C",
+                "IMG_MISR_SEED1": "0x4B5A6978",
+                "IMG_MISR_SEED2": "0x8796A5B4",
+                "IMG_MISR_SEED3": "0xC3D2E1F0",
+                "ERASE_PASSWORD0": "0x33221100",
+                "ERASE_PASSWORD1": "0x88776655",
+                "ERASE_PASSWORD2": "0xDDCCBBAA",
+                "ERASE_PASSWORD3": "0x04030201",
+            },
+        }
+    )
+
+    cmpa_pswd = CMPA_PSWD.load_from_config(current_cfg)
+    settings = cmpa_pswd.get_config()["settings"]
+
+    assert settings["DBG_AUTH_PASSWORD0"] == "0x11223344"
+    assert settings["DBG_AUTH_PASSWORD1"] == "0x55667788"
+    assert settings["DBG_AUTH_PASSWORD2"] == "0x99AABBCC"
+    assert settings["DBG_AUTH_PASSWORD3"] == "0xDDEEFF00"
+    assert settings["IMG_MISR_SEED0"] == "0x0F1E2D3C"
+    assert settings["IMG_MISR_SEED1"] == "0x4B5A6978"
+    assert settings["IMG_MISR_SEED2"] == "0x8796A5B4"
+    assert settings["IMG_MISR_SEED3"] == "0xC3D2E1F0"
+    assert settings["ERASE_PASSWORD0"] == "0x33221100"
+    assert settings["ERASE_PASSWORD1"] == "0x88776655"
+    assert settings["ERASE_PASSWORD2"] == "0xDDCCBBAA"
+    assert settings["ERASE_PASSWORD3"] == "0x04030201"
+    assert (
+        cmpa_pswd.registers.find_reg("DBG_AUTH_PASSWORD0", include_group_regs=True).get_value(
+            raw=True
+        )
+        == 0x11223344
+    )
+    assert (
+        cmpa_pswd.registers.find_reg("DBG_AUTH_PASSWORD1", include_group_regs=True).get_value(
+            raw=True
+        )
+        == 0x55667788
+    )
+    assert (
+        cmpa_pswd.registers.find_reg("DBG_AUTH_PASSWORD2", include_group_regs=True).get_value(
+            raw=True
+        )
+        == 0x99AABBCC
+    )
+    assert (
+        cmpa_pswd.registers.find_reg("DBG_AUTH_PASSWORD3", include_group_regs=True).get_value(
+            raw=True
+        )
+        == 0xDDEEFF00
+    )
+    assert (
+        cmpa_pswd.registers.find_reg("IMG_MISR_SEED0", include_group_regs=True).get_value(raw=True)
+        == 0x0F1E2D3C
+    )
+    assert (
+        cmpa_pswd.registers.find_reg("IMG_MISR_SEED1", include_group_regs=True).get_value(raw=True)
+        == 0x4B5A6978
+    )
+    assert (
+        cmpa_pswd.registers.find_reg("IMG_MISR_SEED2", include_group_regs=True).get_value(raw=True)
+        == 0x8796A5B4
+    )
+    assert (
+        cmpa_pswd.registers.find_reg("IMG_MISR_SEED3", include_group_regs=True).get_value(raw=True)
+        == 0xC3D2E1F0
+    )
+    assert (
+        cmpa_pswd.registers.find_reg("ERASE_PASSWORD0", include_group_regs=True).get_value(raw=True)
+        == 0x33221100
+    )
+    assert (
+        cmpa_pswd.registers.find_reg("ERASE_PASSWORD1", include_group_regs=True).get_value(raw=True)
+        == 0x88776655
+    )
+    assert (
+        cmpa_pswd.registers.find_reg("ERASE_PASSWORD2", include_group_regs=True).get_value(raw=True)
+        == 0xDDCCBBAA
+    )
+    assert (
+        cmpa_pswd.registers.find_reg("ERASE_PASSWORD3", include_group_regs=True).get_value(raw=True)
+        == 0x04030201
+    )
+
+
+def test_mcxc151_cmpa_lc_export(tmpdir: str) -> None:
+    """Test CMPA_LC binary export for mcxc151.
+
+    Verifies that CMPA_LC can export binary data correctly.
+
+    :param tmpdir: Temporary directory for creating test files
+    """
+    cmpa_lc = CMPA_LC(FamilyRevision("mcxc151"))
+
+    # Export the binary
+    binary = cmpa_lc.export(add_seal=False)
+
+    # Verify binary was created and has expected size
+    assert len(binary) > 0
+    assert isinstance(binary, bytes)
+
+
+def test_mcxc151_supported_families() -> None:
+    """Test that mcxc151 is in supported families for all sub-features.
+
+    Verifies that mcxc151 appears in the supported families list for
+    CMPA_CFG, CMPA_PSWD, and CMPA_LC.
+    """
+    cmpa_cfg_families = CMPA_CFG.get_supported_families()
+    cmpa_pswd_families = CMPA_PSWD.get_supported_families()
+    cmpa_lc_families = CMPA_LC.get_supported_families()
+
+    # Check mcxc151 is in all lists
+    assert any(f.name == "mcxc151" for f in cmpa_cfg_families)
+    assert any(f.name == "mcxc151" for f in cmpa_pswd_families)
+    assert any(f.name == "mcxc151" for f in cmpa_lc_families)
+
+
+def test_mcxc151_cmpa_cfg_export_with_crc() -> None:
+    """Test CMPA_CFG export with CRC calculation for mcxc151.
+
+    Verifies that CRC is automatically calculated and placed at offset 0x70
+    when exporting CMPA_CFG binary.
+    """
+    import logging
+
+    cmpa_cfg = CMPA_CFG(FamilyRevision("mcxc151"))
+
+    # Export the binary
+    binary = cmpa_cfg.export(add_seal=False)
+
+    # Verify binary size matches registers_size
+    assert len(binary) == cmpa_cfg.registers_size
+
+    # Get the CRC register to find its actual offset
+    crc_reg = cmpa_cfg.registers.find_reg("CMPA_CRC32")
+    crc_offset = crc_reg.offset
+
+    # Verify binary has data at CRC offset
+    assert len(binary) >= crc_offset + 4
+
+    # Extract CRC value from binary at the CRC register offset
+    crc_from_binary = int.from_bytes(binary[crc_offset : crc_offset + 4], byteorder="little")
+
+    # CRC should be calculated (we can't predict exact value, but it should be set)
+    # For empty/default data, CRC will be a specific value
+    assert isinstance(crc_from_binary, int)
+
+    # Log the calculated CRC value for debugging
+    logger = logging.getLogger(__name__)
+    logger.info(f"CRC register offset: 0x{crc_offset:04X}")
+    logger.info(f"Calculated CRC value: 0x{crc_from_binary:08X}")
+
+    # Verify CRC was actually calculated by checking it's not just zeros
+    # (unless the data happens to have a CRC of 0, which is unlikely)
+    # We can verify by recalculating the CRC ourselves
+    from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
+
+    data_for_crc = binary[:crc_offset]
+    crc_obj = from_crc_algorithm(CrcAlg.CRC32_MPEG)
+    expected_crc = crc_obj.calculate(data_for_crc)
+
+    # Verify the CRC in the binary matches what we calculate
+    assert crc_from_binary == expected_crc, (
+        f"CRC mismatch: binary has 0x{crc_from_binary:08X}, " f"expected 0x{expected_crc:08X}"
+    )
+
+
+def test_mcxc151_cmpa_cfg_crc_register_hidden() -> None:
+    """Test that CRC register is hidden in CMPA_CFG template.
+
+    Verifies that the CRC register is marked as reserved and won't appear
+    in generated configuration templates.
+    """
+    cmpa_cfg = CMPA_CFG(FamilyRevision("mcxc151"))
+
+    # Find the CRC register
+    try:
+        crc_reg = cmpa_cfg.registers.find_reg("CMPA_CRC32")
+
+        # Verify it's marked as reserved (hidden from templates)
+        assert crc_reg.reserved is True
+    except Exception:
+        # If register is not found or reserved attribute doesn't exist,
+        # verify it's not in the config output
+        config = cmpa_cfg.get_config(diff=True)
+        assert "CMPA_CRC32" not in str(config.get("settings", {}))
+
+
+def test_mcxc151_cmpa_cfg_config_roundtrip(tmpdir: str) -> None:
+    """Test CMPA_CFG configuration export and import roundtrip for mcxc151.
+
+    Verifies that configuration can be exported to YAML, modified, and
+    imported back correctly.
+
+    :param tmpdir: Temporary directory for creating test files
+    """
+    yaml = YAML()
+    yaml.indent(sequence=4, offset=2)
+
+    # Create CMPA_CFG instance
+    cmpa_cfg = CMPA_CFG(FamilyRevision("mcxc151"))
+
+    # Get configuration (diff=True to get only non-default values)
+    config = cmpa_cfg.get_config(diff=True)
+
+    # Verify basic structure
+    assert config["family"] == "mcxc151"
+    assert config["type"] == "CMPA_CFG"
+
+    # Save to YAML
+    config_file = os.path.join(tmpdir, "cmpa_cfg.yml")
+    with open(config_file, "w", encoding="ascii") as yml_file:
+        yaml.dump(dict(config), yml_file)
+
+    # Load back from YAML
+    loaded_config = Config.create_from_file(config_file)
+    cmpa_cfg2 = CMPA_CFG.load_from_config(loaded_config)
+
+    # Verify configurations match (compare diff versions)
+    config2 = cmpa_cfg2.get_config(diff=True)
+    assert config2["family"] == config["family"]
+    assert config2["type"] == config["type"]
+
+    # Export both and compare binaries
+    binary1 = cmpa_cfg.export(add_seal=False)
+    binary2 = cmpa_cfg2.export(add_seal=False)
+    assert binary1 == binary2

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -1047,7 +1047,7 @@ def get_el2go_otp_binary(config: Config) -> bytes:
     selected_registers: list[FuseRegister] = []
     for reg_name in selected_register_names:
         try:
-            reg = defaults.fuse_regs.find_reg(name=reg_name, include_group_regs=True)
+            reg = defaults.registers.find_reg(name=reg_name, include_group_regs=True)
             selected_registers.append(reg)
         except SPSDKRegsErrorRegisterNotFound as e:
             raise SPSDKError(f"Invalid fuse name found in user configuration: {reg_name}") from e

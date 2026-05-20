@@ -44,6 +44,7 @@ class AhabTargetMemory(SpsdkEnum):
     TARGET_MEMORY_NAND_2K = (3, "nand_2k")
     TARGET_MEMORY_STANDARD = (4, "standard")
     TARGET_MEMORY_SD_EMMC = (5, "sd_emmc")
+    TARGET_FASTBOOT = (6, "fastboot")
 
 
 @dataclass
@@ -91,6 +92,11 @@ MEMORY_TARGET_DESCRIPTIONS = {
         image_offset_alignment=1024,
         image_size_alignment=512,
     ),
+    AhabTargetMemory.TARGET_FASTBOOT: TargetMemoryDescr(
+        memory_type=AhabTargetMemory.TARGET_FASTBOOT,
+        image_offset_alignment=1024,
+        image_size_alignment=128,
+    ),
 }
 
 
@@ -131,6 +137,7 @@ class AHABSignAlgorithm(SpsdkEnum):
     SM2 = (0x28, "SM2", "Chinese national cryptography standard")
     DILITHIUM = (0xD1, "DILITHIUM", "Post quantum cryptography standard candidate")
     ML_DSA = (0xD2, "ML-DSA", "Post quantum cryptography standard candidate")
+    LMS = (0xD3, "LMS", "Leighton-Micali Signature scheme")
 
 
 class AHABSignHashAlgorithm(SpsdkEnum):
@@ -420,6 +427,27 @@ class LifeCycle(SpsdkEnum):
     CLOSED = (0x02, "CLOSED")
     OPEN_CLOSED = (0x03, "OPEN_CLOSED")
     LOCKED = (0x04, "LOCKED")
+
+
+class KeyblobLifeCycle(SpsdkEnum):
+    """Life Cycle State enumeration for blob generation."""
+
+    FAB = (0x33, "FAB", "Fabrication lifecycle state")
+    PROV = (0x55, "PROV", "Provisioning lifecycle state")
+    NXP_FR = (0x55, "NXP_FR", "NXP field return lifecycle state")
+    OEM_OPEN = (0x66, "OEM_OPEN", "OEM open lifecycle state")
+    OEM_FR = (0x66, "OEM_FR", "OEM field return lifecycle state")
+    OEM_SWC = (0x99, "OEM_SWC", "OEM software closed lifecycle state")
+    OEM_LOCKED = (0x99, "OEM_LOCKED", "OEM locked lifecycle state")
+    OEM_CLOSED = (0x99, "OEM_CLOSED", "OEM closed lifecycle state")
+    FAILURE = (0xFF, "FAILURE", "Failure lifecycle state")
+
+
+class DebugEnable(SpsdkEnum):
+    """Debug Enable enumeration for blob generation."""
+
+    YES = (0xAA, "Debug enabled")
+    NO = (0x55, "Debug disabled")
 
 
 class LifeTime(SpsdkEnum):

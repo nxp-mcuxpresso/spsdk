@@ -15,21 +15,30 @@ operations for NXP MCUs.
 import logging
 import os
 from struct import pack, unpack
-from typing import Optional
+from typing import Any, Optional
 
 from typing_extensions import Self
 
+from spsdk.crypto.cmac import cmac
+from spsdk.crypto.rng import random_bytes
 from spsdk.crypto.symmetric import (
     aes_cbc_decrypt,
     aes_cbc_encrypt,
+    aes_ccm_decrypt,
+    aes_ccm_encrypt,
+    aes_ecb_decrypt,
+    aes_ecb_encrypt,
     sm4_cbc_decrypt,
     sm4_cbc_encrypt,
 )
 from spsdk.ele.ele_constants import KeyBlobEncryptionAlgorithm
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer, HeaderContainerData
-from spsdk.image.ahab.ahab_data import AHABTags
-from spsdk.utils.config import Config
+from spsdk.image.ahab.ahab_data import AHABTags, DebugEnable, KeyblobLifeCycle
+from spsdk.utils.abstract_features import FeatureBaseClass
+from spsdk.utils.config import Config, FamilyRevision
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import get_db, update_validation_schema_family
 from spsdk.utils.misc import UINT8, write_file
 from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
@@ -207,6 +216,24 @@ class AhabBlob(HeaderContainer):
         # return super()._total_length() + len(self.dek_keyblob)
         return self.length
 
+    def export_header(self) -> bytes:
+        """Export AHAB Blob header.
+
+        Packs the header fields of the blob into their binary representation format.
+
+        :return: Binary data representing the AHAB Blob header.
+        """
+        return pack(
+            self.format(),
+            self.version,
+            self.length,
+            self.tag,
+            self.flags,
+            self._size // 8,
+            self.algorithm.tag,
+            self.mode,
+        )
+
     def export(self) -> bytes:
         """Export Signature Block Blob.
 
@@ -215,21 +242,7 @@ class AhabBlob(HeaderContainer):
 
         :return: Binary data representing the Signature Block Blob.
         """
-        blob = (
-            pack(
-                self.format(),
-                self.version,
-                self.length,
-                self.tag,
-                self.flags,
-                self._size // 8,
-                self.algorithm.tag,
-                self.mode,
-            )
-            + self.dek_keyblob
-        )
-
-        return blob
+        return self.export_header() + self.dek_keyblob
 
     def verify(self) -> Verifier:
         """Verify container blob data.
@@ -402,3 +415,452 @@ class AhabBlob(HeaderContainer):
         if not decryption_methods.get(self.algorithm):
             raise SPSDKError(f"Unsupported encryption algorithm: {self.algorithm}")
         return decryption_methods[self.algorithm](self.dek, encrypted_data, iv)
+
+
+class AhabBlobOffline(FeatureBaseClass, AhabBlob):
+    """AHAB Blob generator for offline key wrapping and blob creation.
+
+    This class extends AhabBlob to provide offline generation capabilities for AHAB key blobs,
+    supporting both common key and die individual key strategies. It implements the complete
+    key derivation and wrapping process.
+
+    The blob generation process follows these steps:
+    1. Derive master key using CKDF
+    2. Derive KEK from master key
+    3. Generate blob key (256-bit) and DEK
+    4. Generate nonce with integrity protection
+    5. Encrypt DEK with blob key (AES-CCM)
+    6. Encrypt blob key with KEK (AES-ECB)
+    7. Combine header, encrypted blob key, encrypted DEK, and tag
+    """
+
+    FEATURE = DatabaseManager.AHAB
+    SUB_FEATURE = "offline_keyblob"
+
+    def __init__(
+        self,
+        family: FamilyRevision,
+        flags: int = AhabBlob.FLAGS_DFLT,
+        size: int = 256,
+        algorithm: KeyBlobEncryptionAlgorithm = KeyBlobEncryptionAlgorithm.AES_CBC,
+        mode: int = 0,
+        dek: Optional[bytes] = None,
+        dek_keyblob: Optional[bytes] = None,
+        key_identifier: int = 0,
+        customer_master_key: Optional[bytes] = None,
+        lifecycle_state: KeyblobLifeCycle = KeyblobLifeCycle.OEM_OPEN,
+        debug_enable: DebugEnable = DebugEnable.NO,
+        srkh0: Optional[bytes] = None,
+        srkh1: Optional[bytes] = None,
+        blob_key: Optional[bytes] = None,
+    ) -> None:
+        """Initialize AHAB blob generator.
+
+        :param flags: Key blob configuration flags
+        :param size: DEK key size in bits (128, 192, or 256)
+        :param algorithm: Encryption algorithm for key blob
+        :param mode: DEK blob mode configuration value
+        :param dek: Data Encryption Key bytes, will be generated if not provided
+        :param dek_keyblob: Encrypted DEK key blob data
+        :param key_identifier: Unique key identifier (4 bytes)
+        :param customer_master_key: Customer master key CUST_MK_SK (256-bit)
+        :param lifecycle_state: Life cycle state for nonce generation
+        :param debug_enable: Debug enable flag for nonce generation
+        :param srkh0: Classic SRK hash (64 bytes)
+        :param srkh1: PQC SRK hash (64 bytes)
+        :param blob_key: Blob key for encryption, will be generated if not provided
+        """
+        super().__init__(
+            flags=flags,
+            size=size,
+            algorithm=algorithm,
+            mode=mode,
+            dek=dek,
+            dek_keyblob=dek_keyblob,
+            key_identifier=key_identifier,
+        )
+        self.family = family
+        self.customer_master_key = customer_master_key
+        self.lifecycle_state = lifecycle_state
+        self.debug_enable = debug_enable
+        self.srkh0 = srkh0 or b"\x00" * 64
+        self.srkh1 = srkh1 or b"\x00" * 64
+        self.blob_key = blob_key
+
+        self.db = get_db(family)
+        self.product_string = self.db.get_str(
+            DatabaseManager.AHAB, "offline_keyblob_constant", "2660 S110A0"
+        )
+        # convert product string to bytes
+        self.product_string_bytes = self.product_string.encode(encoding="ascii")
+
+        # Validate key identifier fits in 4 bytes
+        if key_identifier > 0xFFFFFFFF:
+            raise SPSDKValueError("Key identifier must fit in 4 bytes")
+
+    def derive_master_key(self) -> bytes:
+        """Derive master key using CKDF implementation.
+
+        This implements the exact CKDF from the reference implementation.
+
+        :return: Derived master key (32 bytes)
+        :raises SPSDKError: If required parameters are missing
+        """
+        if not self.customer_master_key:
+            raise SPSDKError("Customer master key is required for key derivation")
+
+        logger.debug(f"Customer master key: {self.customer_master_key.hex()}")
+        # Build common derivation data
+        common_derivation_data = b"\x64"  # Fixed prefix
+        common_derivation_data += self.product_string_bytes
+        common_derivation_data += self.srkh0
+        common_derivation_data += self.srkh1
+        common_derivation_data += self.lifecycle_state.tag.to_bytes(length=4, byteorder="little")
+        common_derivation_data += bytes(12)  # 12 zero bytes
+        common_derivation_data += (0x100).to_bytes(length=4, byteorder="big")  # Length field
+
+        # Generate MAC using CMAC-AES
+        mac = b""
+        for i in range(1, 3):  # Two iterations
+            derivation_data = common_derivation_data + i.to_bytes(length=4, byteorder="big")
+
+            mac_block = cmac(self.customer_master_key, derivation_data)
+            mac += mac_block
+
+        return mac[:32]  # Return first 32 bytes as master key
+
+    def derive_kek(self, master_key: bytes) -> bytes:
+        """Derive KEK (Key Encryption Key) from master key.
+
+        :param master_key: Master key derived from customer master key
+        :return: Derived KEK (32 bytes)
+        """
+        # Build common derivation data for KEK
+        common_derivation_data = b"\x6a"  # Different prefix for KEK
+        common_derivation_data += self.product_string_bytes
+        common_derivation_data += bytes(12)  # 12 zero bytes
+        common_derivation_data += (0x100).to_bytes(length=4, byteorder="big")  # Length field
+
+        # Generate MAC using CMAC-AES
+        mac = b""
+        for i in range(1, 3):  # Two iterations
+            derivation_data = common_derivation_data + i.to_bytes(length=4, byteorder="big")
+            mac_block = cmac(master_key, derivation_data)
+            mac += mac_block
+
+        return mac[:32]  # Return first 32 bytes as KEK
+
+    def add_nonce_integrity_protection(self, nonce: bytes) -> bytes:
+        """Add integrity protection to nonce.
+
+        :param nonce: Input nonce
+        :return: Nonce with integrity protection (checksum)
+        """
+        checksum = 0
+        for byte_val in nonce:
+            checksum ^= byte_val
+        return nonce + checksum.to_bytes(1, "little")
+
+    def generate_nonce(self) -> bytes:
+        """Generate nonce for AES-CCM encryption following reference implementation.
+
+        Nonce format (13 bytes before integrity protection):
+        Byte 0: Life Cycle State
+        Byte 1: Mode (from header)
+        Byte 2: Flags (from header)
+        Byte 3: Debug Enable
+        Byte 4: Flags (from header) - repeated
+        Byte 5: Size (from header)
+        Byte 6: Algorithm (from header)
+        Byte 7: Reserved (0x00)
+        Bytes 8-11: Key ID (4 bytes, little-endian)
+        Byte 12: Integrity checksum (XOR of all previous bytes)
+
+        :return: 13-byte nonce with integrity protection
+        """
+        # Build nonce components from header values
+        lc = self.lifecycle_state.tag.to_bytes(1, "big")
+        mode = self.mode.to_bytes(1, "big")
+        flags = self.flags.to_bytes(1, "big")
+        debug = self.debug_enable.tag.to_bytes(1, "big")
+        size = (self._size // 8).to_bytes(1, "big")
+        algorithm = self.algorithm.tag.to_bytes(1, "big")
+        reserved = b"\x00"
+        key_id = self.key_identifier.to_bytes(4, "little")
+
+        # Combine: LC + mode + flags + debug + flags + size + algorithm + reserved + key_id
+        iv = lc + mode + flags + debug + flags + size + algorithm + reserved + key_id
+
+        # Add integrity protection (XOR checksum as 13th byte)
+        return self.add_nonce_integrity_protection(iv)
+
+    def generate_blob_key(self) -> bytes:
+        """Generate a random 256-bit blob key.
+
+        :return: 32-byte blob key
+        """
+        return random_bytes(32)
+
+    def generate_dek(self) -> bytes:
+        """Generate a random DEK of the specified size.
+
+        :return: DEK of size specified in self._size
+        """
+        dek = random_bytes(self._size // 8)
+        self.dek = dek
+        return dek
+
+    def export(self) -> bytes:
+        """Generate the complete encrypted keyblob.
+
+        1. Derive master key using CKDF
+        2. Derive KEK from master key
+        3. Generate blob key and DEK if not provided
+        4. Generate nonce with integrity protection
+        5. Encrypt DEK with blob key (AES-CCM)
+        6. Encrypt blob key with KEK (AES-ECB)
+        7. Create header and combine all components
+
+        :return: Complete encrypted keyblob with header
+        """
+        logger.debug("Starting keyblob generation process")
+
+        if not self.customer_master_key:
+            raise SPSDKError("Customer master key is required for blob generation")
+
+        logger.debug(f"Using lifecycle state: {self.lifecycle_state.label}")
+        logger.debug(f"Debug enable: {self.debug_enable.label}")
+        logger.debug(f"Key identifier: 0x{self.key_identifier:08x}")
+        logger.debug(f"DEK size: {self._size} bits")
+
+        # Step 1: Derive master key
+        logger.debug("Step 1: Deriving master key using CKDF")
+        master_key = self.derive_master_key()
+        logger.debug(f"Master key derived: {len(master_key)} bytes")
+        logger.debug(f"Master key: {master_key.hex()}")
+
+        # Step 2: Derive KEK
+        logger.debug("Step 2: Deriving KEK from master key")
+        kek = self.derive_kek(master_key)
+        logger.debug(f"KEK derived: {len(kek)} bytes")
+        logger.debug(f"KEK: {kek.hex()}")
+
+        # Step 3: Generate components if not provided
+        if not self.blob_key:
+            logger.debug("Step 3a: Generating blob key (not provided)")
+            self.blob_key = self.generate_blob_key()
+            logger.debug("Blob key generated")
+        else:
+            logger.debug("Step 3a: Using provided blob key")
+
+        if not self.dek:
+            logger.debug("Step 3b: Generating DEK (not provided)")
+            self.generate_dek()
+            logger.debug("DEK generated")
+        else:
+            logger.debug("Step 3b: Using provided DEK")
+
+        # Step 4: Generate nonce
+        logger.debug("Step 4: Generating nonce with integrity protection")
+        iv = self.generate_nonce()
+        logger.debug(f"Nonce generated: {len(iv)} bytes - {iv.hex()}")
+
+        # Step 5: Encrypt DEK with blob key (AES-CCM)
+        logger.debug("Step 5: Encrypting DEK with blob key using AES-CCM")
+        assert self.dek, "Dek not provided"
+        enc_dek = aes_ccm_encrypt(self.blob_key, self.dek, iv)
+        logger.debug(f"Encrypted DEK: {len(enc_dek)} bytes")
+
+        # Step 6: Encrypt blob key with KEK (AES-ECB)
+        logger.debug("Step 6: Encrypting blob key with KEK using AES-ECB")
+        enc_blob_key = aes_ecb_encrypt(kek, self.blob_key)
+        logger.debug(f"Encrypted blob key: {len(enc_blob_key)} bytes")
+
+        # Step 7: Create header and combine
+        logger.debug("Step 7: Creating header and combining components")
+        header = self.export_header()
+        logger.debug(f"Header created: {header.hex()}")
+
+        # Combine all components
+        keyblob_with_header = header + enc_blob_key + enc_dek
+
+        # Store the keyblob data (without header for AHAB blob compatibility)
+        self.dek_keyblob = enc_blob_key + enc_dek
+        self.length = len(keyblob_with_header)
+
+        logger.debug("Keyblob generation completed successfully")
+        return keyblob_with_header
+
+    def decrypt_keyblob(self, keyblob_with_header: bytes) -> bytes:
+        """Decrypt the keyblob to extract the original DEK.
+
+        This reverses the encryption process to verify the blob or extract the DEK.
+
+        :param keyblob_with_header: Complete keyblob with header
+        :return: Decrypted DEK
+        """
+        if not self.customer_master_key:
+            raise SPSDKError("Customer master key is required for blob decryption")
+
+        # Parse header
+        if len(keyblob_with_header) < 8:
+            raise SPSDKValueError("Keyblob too short to contain valid header")
+
+        # Extract header components
+        header = keyblob_with_header[:8]
+        # version = header[0]
+        total_length = unpack("<H", header[1:3])[0]  # Little-endian 2-byte length
+        tag = header[3]
+        # usage = header[4:8]
+
+        # Validate header
+        if tag != 0x81:
+            raise SPSDKValueError(f"Invalid keyblob tag: 0x{tag:02x}, expected 0x81")
+
+        if len(keyblob_with_header) != total_length:
+            raise SPSDKValueError(
+                f"Keyblob length mismatch: got {len(keyblob_with_header)}, expected {total_length}"
+            )
+
+        # Extract encrypted components
+        payload = keyblob_with_header[8:]
+        enc_blob_key = payload[:32]  # First 32 bytes are encrypted blob key
+        enc_dek = payload[32:]  # Remaining bytes are encrypted DEK
+
+        # Step 1: Derive master key
+        master_key = self.derive_master_key()
+
+        # Step 2: Derive KEK
+        kek = self.derive_kek(master_key)
+
+        # Step 3: Decrypt blob key with KEK (AES-ECB)
+        blob_key = aes_ecb_decrypt(kek, enc_blob_key)
+
+        # Step 4: Generate nonce for decryption
+        iv = self.generate_nonce()
+
+        # Step 5: Decrypt DEK with blob key (AES-CCM)
+        decrypted_dek = aes_ccm_decrypt(blob_key, enc_dek, iv, b"")
+
+        return decrypted_dek
+
+    @classmethod
+    def load_from_config(cls, config: Config) -> Self:
+        """Load AHAB blob generator from configuration matching reference implementation.
+
+        Expected configuration format:
+        {
+            "family": "xxx",
+            "revision" "a0"
+            "lifecycle": "oem_open",
+            "debug": false,
+            "key_id": 12345,
+            "cust_mk_sk": "hex_string_or_path",
+            "srkh0": "hex_string_or_path",
+            "srkh1": "hex_string_or_path",
+            "dek": "hex_string_or_path",
+            "dek_key_size": 256,
+            "flags": 0x81
+            "mode": 0
+            "algorithm": AES_CBC
+        }
+
+        :param config: Configuration containing blob generation parameters
+        :return: Configured AhabBlobGenerator instance
+        """
+        # Load basic configuration
+        family = config.get_family()
+        lifecycle = config.get_str("lifecycle", "oem_open").lower()
+        debug_enable = config.get_bool("debug", False)
+        key_identifier = config.get_int("key_id", 0)
+        dek_size = config.get_int("dek_key_size", 256)
+        algorithm = KeyBlobEncryptionAlgorithm.from_label(config.get_str("algorithm", "AES_CBC"))
+        flags = config.get_int("flags", 0x4)
+        mode = config.get_int("mode", 0)
+
+        lifecycle_state = KeyblobLifeCycle.from_label(lifecycle)
+        debug_enable_state = DebugEnable.YES if debug_enable else DebugEnable.NO
+
+        # Load keys
+        customer_master_key = config.load_symmetric_key("cust_mk_sk", expected_size=32)
+        srkh0 = config.load_symmetric_key("srkh0", expected_size=64)
+        srkh1 = config.load_symmetric_key("srkh1", expected_size=64)
+        if "dek" not in config:
+            dek = None
+        else:
+            dek = config.load_symmetric_key("dek", expected_size=dek_size // 8)
+
+        if "blob_key" not in config:
+            blob_key = None
+        else:
+            blob_key = config.load_symmetric_key("blob_key", expected_size=32)
+
+        # Create generator instance
+        generator = cls(
+            family=family,
+            flags=flags,
+            size=dek_size,
+            algorithm=algorithm,
+            mode=mode,
+            key_identifier=key_identifier,
+            customer_master_key=customer_master_key,
+            lifecycle_state=lifecycle_state,
+            debug_enable=debug_enable_state,
+            srkh0=srkh0,
+            srkh1=srkh1,
+            dek=dek,
+            blob_key=blob_key,
+        )
+
+        return generator
+
+    @classmethod
+    def get_validation_schemas(cls, family: FamilyRevision) -> list[Any]:
+        """Get validation schemas for AHAB blob configuration."""
+        sch_cfg = DatabaseManager().db.get_schema_file(DatabaseManager.AHAB)
+        sch_family = DatabaseManager().db.get_schema_file("general")["family"]
+        update_validation_schema_family(
+            sch_family["properties"], cls.get_supported_families(), family
+        )
+        return [sch_family, sch_cfg["ahab_blob"]]
+
+    @classmethod
+    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
+        """Parse binary data into an AhabBlobGenerator object.
+
+        Extracts blob information from the provided binary data and creates
+        a corresponding AhabBlobGenerator instance with parsed header and configuration.
+        This method extends the base AhabBlob.parse() to include family-specific parameters.
+
+        :param data: Binary data containing the Blob block to be parsed.
+        :param family: Family and revision information for the target device.
+        :raises SPSDKParsingError: Invalid or corrupted binary data format.
+        :return: AhabBlobGenerator object recreated from the binary data.
+        """
+        # First parse using parent class to get basic blob structure
+        AhabBlob.check_container_head(data).validate()
+        (
+            _,  # version
+            container_length,
+            _,  # tag
+            flags,
+            size,
+            algorithm,
+            mode,
+        ) = unpack(AhabBlobOffline.format(), data[: AhabBlobOffline.fixed_length()])
+
+        dek_keyblob = data[AhabBlobOffline.fixed_length() : container_length]
+
+        # Create AhabBlobGenerator instance with parsed data
+        blob_generator = cls(
+            family=family,
+            size=size * 8,
+            flags=flags,
+            dek_keyblob=dek_keyblob,
+            mode=mode,
+            algorithm=KeyBlobEncryptionAlgorithm.from_tag(algorithm),
+        )
+        blob_generator.length = container_length
+        blob_generator._parsed_header = HeaderContainerData.parse(binary=data)
+
+        return blob_generator

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -161,7 +161,7 @@ def test_hse_key_info_export_different_key_types(cli_runner: CliRunner, tmpdir: 
         {
             "keyType": "ECC_PAIR",
             "keyBitLen": 256,
-            "specificData": {"eccCurveId": "SEC_SECP256R1"},
+            "specificData": {"eccCurveId": "SECP256R1"},
         },
         {
             "keyType": "RSA_PAIR",
@@ -279,7 +279,7 @@ def test_hse_key_info_export_with_counter(cli_runner: CliRunner, tmpdir: str) ->
 def test_hse_key_info_export_with_ecc_curves(cli_runner: CliRunner, tmpdir: str) -> None:
     """Test exporting key info with different ECC curves."""
     # Test with different ECC curves
-    ecc_curves = ["SEC_SECP256R1", "SEC_SECP384R1", "BRAINPOOL_P256R1", "ED25519"]
+    ecc_curves = ["SECP256R1", "SECP384R1", "BRAINPOOLP256R1", "ED25519"]
 
     for i, curve in enumerate(ecc_curves):
         # Create config with this ECC curve

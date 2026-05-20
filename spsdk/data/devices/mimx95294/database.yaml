@@ -226,14 +226,15 @@ features:
 
   # ======== DAT section ========
   dat:
-    socc: 0x4D58005F # SOCC identification
+    socc: 0x4D5803B8 # SOCC identification
     based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
     dat_is_using_sha256_always: True
     auth_beacon_length: 4 # The length in bytes of authentication beacon
+    clear_iee_config_on_ele: True # Flag to enable configuration for clear IEE configuration with ELE
     ele_cnt_version: 2
     dac_version_is_swapped: True
     sub_features: ["ele_pqc"]
-    test_address: 0x2048_0000
+    test_address: 0x2000_0000
     dmbox_ap_ix: 0
     dac_rot_type: not_available # The Dac packet doesn't contains the ROT hash
 
@@ -412,6 +413,49 @@ features:
         segments:
           primary_image_container_set: 0x00
           secondary_image_container_set: -1 # Just behind previous segment
+
+    # Template definitions for bootable image generation
+    templates:
+      imx_boot_flash_all:
+        description: "Complete imx-bootloader image"
+        mem_type: serial_downloader
+        configs:
+          - name: spl
+            type: spl
+            containers:
+              - name: nxp_container
+                path: "mx952a0-ahab-container.img"
+              - name: spl_container
+                images: [oei_ddr_no_qb, system_manager, v2x_dummy, spl]
+          - name: uboot
+            type: uboot
+            containers:
+              - name: uboot_container
+                images: [atf, uboot, tee]
+
+    boards:
+      imx952-15x15-lpddr4x-evk:
+        lpddr_imem: lpddr4x_imem_v202409.bin
+        lpddr_dmem: lpddr4x_dmem_v202409.bin
+        lpddr_imem_qb: lpddr4x_imem_qb_v202409.bin
+        lpddr_dmem_qb: lpddr4x_dmem_qb_v202409.bin
+        oei_ddr: oei-m33-ddr.bin
+        system_manager: m33_image-mx952evk.bin
+        spl: u-boot-spl.bin-imx952-15x15-lpddr4x-evk-sd
+        atf: bl31-imx952.bin
+        uboot: u-boot-imx952-15x15-lpddr4x-evk.bin-sd
+        tee: tee.bin
+      imx952-19x19-lpddr5-evk:
+        lpddr_imem: lpddr5_imem_v202409.bin
+        lpddr_dmem: lpddr5_dmem_v202409.bin
+        lpddr_imem_qb: lpddr5_imem_qb_v202409.bin
+        lpddr_dmem_qb: lpddr5_dmem_qb_v202409.bin
+        oei_ddr: oei-m33-ddr.bin
+        system_manager: m33_image-mx952evk.bin
+        spl: u-boot-spl.bin-imx952-19x19-lpddr5-evk-sd
+        atf: bl31-imx952.bin
+        uboot: u-boot-imx952-19x19-lpddr5-evk.bin-sd
+        tee: tee.bin
 
   # # ======== OTFAD section ========
   otfad:

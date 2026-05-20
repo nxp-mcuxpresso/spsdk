@@ -1,0 +1,84 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ============================  hse Configuration template for mcxe31b, Revision: latest.  =============================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxe31b
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ======================================================================================================================
+#                                               == HSE Core Reset Entry ==                                              
+#      Configuration for a Core Reset entry that defines the parameters for advanced secure boot configurations for     
+#                                                   Application Cores                                                   
+# ======================================================================================================================
+# ---------------------------------------===== Output file name [Required] =====----------------------------------------
+# Description: Output Core Reset entry file name
+output: cr_entry.bin
+# --------------------------------------------===== Core ID [Required] =====--------------------------------------------
+# Description: Identifies the core ID to be started (application core mapping)
+# Possible options: <M7_0>
+coreId: M7_0
+# --------------------------------------===== Core Reset Sanction [Required] =====--------------------------------------
+# Description: The sanction applied if one of the SMR(s) linked to the CR entry failed verification.
+# - KEEP_CORE_IN_RESET: Keep the core in reset state (no effect for POST-BOOT SMR failures)
+# - DIS_INDIV_KEYS: Disable individual keys at runtime (affects key usage, not core behavior)
+# - RESET_SOC: Reset the entire SoC
+# Possible options: <KEEP_CORE_IN_RESET, DIS_INDIV_KEYS, RESET_SOC>
+crSanction: KEEP_CORE_IN_RESET
+# ---------------------------------------===== Pre-Boot SMR Map [Optional] =====----------------------------------------
+# Description: The PRE-BOOT SMR(s) which need to be verified before releasing the core from passResetAddr address.
+# Can be specified as:
+# - Integer: 32-bit value where each bit specifies SMR entry index from 0-31
+# - String: Hex value (e.g., "0x00000001")
+# - Array of integers: List of SMR flags (e.g., [0, 1])
+# If set to 0 or empty, parallel secure boot mode is enabled (requires postBootSmrMap to be non-zero).
+preBootSmrMap: [1]
+# --------------------------------------===== Pass Reset Address [Optional] =====---------------------------------------
+# Description: The primary address of the first instruction after a regular reset.
+# The core starts execution from this address if all preBootSmrMap SMR(s) have been successfully verified.
+# Must be within a SMR specified by preBootSmrMap (or postBootSmrMap if preBootSmrMap == 0).
+# Must be aligned to 4 bytes.
+passResetAddr: '0x00401000'
+# ---------------------------------===== Alternative Pre-Boot SMR Map [Optional] =====----------------------------------
+# Description: The ALT-PRE-BOOT SMR(s) which need to be verified before releasing the core from altResetAddr address.
+# It's a 32-bit value, each bit specifying the particular SMR entry index from 0-31.
+# These SMR(s) are verified ONLY if one of the SMR(s) specified by preBootSmrMap failed.
+# Must be 0 if preBootSmrMap == 0 (cannot be used in parallel boot mode).
+# Once loaded, preBootSmrMap SMR(s) will be considered overwritten/not loaded.
+# Can be specified as:
+# - Integer: 32-bit value where each bit specifies SMR entry index from 0-31
+# - String: Hex value (e.g., "0x00000001")
+# - Array of integers: List of SMR flags (e.g., [0, 1])
+altPreBootSmrMap: []
+# -----------------------------------===== Alternative Reset Address [Optional] =====-----------------------------------
+# Description: The alternative address of the first instruction after a regular reset.
+# The core starts execution from this address if all altPreBootSmrMap SMR(s) have been successfully verified.
+# HSE will try to boot from this address only if preBootSmrMap SMR(s) verification failed.
+# Must be within a SMR specified by altPreBootSmrMap.
+# Ignored if altPreBootSmrMap == 0. Must be aligned to 4 bytes.
+altResetAddr: '0x00000000'
+# ---------------------------------------===== Post-Boot SMR Map [Optional] =====---------------------------------------
+# Description: The POST-BOOT SMR(s) which need to be loaded after verifying the preBootSmrMap SMR(s).
+# It's a 32-bit value, each bit specifying the particular SMR entry index from 0-31.
+# If preBootSmrMap == 0, these SMR(s) will be loaded before core is released from passResetAddr
+# (parallel secure boot - verification happens after core release).
+# For parallel boot, SMRs must be in memory-mapped locations (QuadSPI Flash, not SD/eMMC).
+# Can be specified as:
+# - Integer: 32-bit value where each bit specifies SMR entry index from 0-31
+# - String: Hex value (e.g., "0x00000001")
+# - Array of integers: List of SMR flags (e.g., [0, 1])
+postBootSmrMap: []
+# -----------------------------------------===== Start Option [Required] =====------------------------------------------
+# Description: Specifies if the Application Core is automatically released from reset or requires manual intervention.
+# - AUTO_START: Core is automatically released from reset after successful SMR verification
+# - MANUAL_START: Core release requires manual intervention after SMR verification
+# Possible options: <AUTO_START, MANUAL_START>
+startOption: AUTO_START

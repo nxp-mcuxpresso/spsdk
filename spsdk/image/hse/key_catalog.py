@@ -224,6 +224,7 @@ class KeyCatalogCfg(FeatureBaseClass):
 
     FEATURE = DatabaseManager.HSE
     SUB_FEATURE = "key_catalog"
+    CONFIG_TITLE = "Key catalog configuration"
 
     def __init__(
         self,
@@ -520,6 +521,7 @@ class KeyCatalogCfg(FeatureBaseClass):
         """
         schemas = get_schema_file(DatabaseManager.HSE)
         family_schema = get_schema_file("general")["family"]
+        family_schema["main_title"] = cls.CONFIG_TITLE
         update_validation_schema_family(
             sch=family_schema["properties"], devices=cls.get_supported_families(), family=family
         )

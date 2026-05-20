@@ -1,0 +1,8 @@
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/mcxe31b_xip_smr.yaml
+user_cfg: inputs/mcxe31_mbi_smr_config.yaml
+custom_command: "%! nxpimage mbi get-templates -f mcxe31b -o workspace --force"
+
+comments:
+  lifecycle: "We are not dealing with lifecycle in this example"

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK SB3.1 secure boot file command implementations.
 
 This module provides command classes and utilities for creating and managing
@@ -24,6 +25,7 @@ from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.sbfile.sb31.constants import EnumCmdTag
 from spsdk.utils.abstract import BaseClass
+from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import (
@@ -615,7 +617,9 @@ def load_cmd_data_from_cfg(config: Config) -> bytes:
 
     # Try to load from file
     try:
-        return load_binary(find_file(data, search_paths=config.search_paths))
+        return BinaryImage.load_binary_image(
+            path=find_file(data, search_paths=config.search_paths)
+        ).export()
     except SPSDKError as exc:
         raise SPSDKError(f"Cannot load the data for LOAD SBx.x command from {data}") from exc
 

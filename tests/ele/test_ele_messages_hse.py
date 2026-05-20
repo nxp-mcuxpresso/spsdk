@@ -206,7 +206,7 @@ def ecc_key_info(family: FamilyRevision) -> KeyInfo:
         key_type=KeyType.ECC_PAIR,
         smr_flags=HseSmrFlags.SMR_0,
         key_bit_len=HseKeyBits.KEY256_BITS,
-        specific_data={"eccCurveId": HseEccCurveId.SEC_SECP256R1.value},
+        specific_data={"eccCurveId": HseEccCurveId.SECP256R1.value},
     )
 
 

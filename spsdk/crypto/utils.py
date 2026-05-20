@@ -85,6 +85,8 @@ def extract_public_key_from_data(object_data: bytes, password: Optional[str] = N
     :raises SPSDKError: Raised when data cannot be parsed as any supported key format.
     :return: Extracted public key of any supported type.
     """
+    errors: list[str] = []
+
     try:
         cert = Certificate.parse(object_data)
         key = cert.get_public_key()
@@ -94,20 +96,30 @@ def extract_public_key_from_data(object_data: bytes, password: Optional[str] = N
 
         return key
     except SPSDKError as exc:
-        logger.debug(f"Failed to parse certificate: {exc}")
+        errors.append(f"Certificate: {exc}")
 
     try:
         return PrivateKey.parse(
             object_data, password=password if password else None
         ).get_public_key()
     except SPSDKError as exc:
-        logger.debug(f"Failed to parse private key: {exc}")
+        errors.append(f"Private key: {exc}")
 
     try:
         return PublicKey.parse(object_data)
     except SPSDKError as exc:
-        logger.debug(f"Failed to parse public key: {exc}")
-        raise SPSDKError("Unable to load secret data.") from exc
+        errors.append(f"Public key: {exc}")
+
+    # Build comprehensive error message with proper indentation
+    # Add extra indentation to nested error messages from source methods
+    formatted_errors = []
+    for i, error in enumerate(errors, 1):
+        # Add 2 spaces of indentation to each line in the error message
+        indented_error = error.replace("\n", "\n    ")
+        formatted_errors.append(f"{i}. {indented_error}")
+
+    error_details = "\n  ".join([""] + formatted_errors)
+    raise SPSDKError(f"Unable to load secret data. Attempted to parse as:{error_details}")
 
 
 def extract_public_key(
@@ -128,7 +140,7 @@ def extract_public_key(
         object_data = load_binary(file_path, search_paths=search_paths)
         return extract_public_key_from_data(object_data, password)
     except SPSDKError as exc:
-        raise SPSDKError(f"Unable to load secret file '{file_path}'.") from exc
+        raise SPSDKError(f"Unable to load secret file '{file_path}'. \n{str(exc)}") from exc
 
 
 def extract_public_keys(

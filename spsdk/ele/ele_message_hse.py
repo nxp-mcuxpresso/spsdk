@@ -32,7 +32,7 @@ from spsdk.ele.ele_message import EleMessage
 from spsdk.ele.hse_attrs import HseAttributeHandler, HseAttributeId
 from spsdk.exceptions import SPSDKValueError
 from spsdk.image.hse.common import HseAeadScheme, HseCipherSchemeBase, KeyContainer, KeyHandle
-from spsdk.image.hse.key_info import KeyFormat, KeyInfo, KeyType
+from spsdk.image.hse.key_info import KeyInfo, KeyType
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.misc import LITTLE_ENDIAN, UINT8, UINT16, UINT32, Endianness
 from spsdk.utils.spsdk_enum import SpsdkEnum
@@ -927,9 +927,8 @@ class EleMessageHseSmrVerify(EleMessageHse):
     on the specified verification options.
 
     Important notes for HSE_H/M:
-
     - SMRs used in CORE RESET table can be verified on-demand only if they were loaded
-      before in SRAM or BOOT_SEQ = 0. Otherwise, NOT_ALLOWED error will be reported.
+    before in SRAM or BOOT_SEQ = 0. Otherwise, NOT_ALLOWED error will be reported.
     - SMRs not part of CORE RESET table can be loaded and verified at run time.
     - On second call, HSE will only perform verification in SRAM.
     - SMRs cannot be loaded and verified from SD/MMC memory using this service.
@@ -1009,9 +1008,8 @@ class EleMessageHseSmrEntryErase(EleMessageHse):
     the secure memory region configuration for that entry index.
 
     Important notes:
-
     - SuperUser (SU) access rights with privileges over HSE_SYS_AUTH_NVM_CONFIG data
-      are required to perform this service
+    are required to perform this service
     - Erasing an SMR entry will remove all associated secure memory configurations
     - The operation is irreversible - the entry must be reinstalled if needed again
     - Care should be taken when erasing SMR entries that are referenced by Core Reset entries
@@ -1111,7 +1109,6 @@ class EleMessageHseImportKey(EleMessageHse):
         payload: "KeyImportPayload",
         cipher_key_handle: Optional[KeyHandle] = None,
         cipher_scheme: Optional[HseCipherSchemeBase] = None,
-        key_format: Optional[KeyFormat] = None,
         key_container: Optional[KeyContainer] = None,
         srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
         mu_channel: MuChannel = MuChannel.CHANNEL_1,
@@ -1125,7 +1122,6 @@ class EleMessageHseImportKey(EleMessageHse):
         :param payload: Key import payload containing key data and metadata
         :param cipher_key_handle: Handle of the key used for decryption if key is encrypted
         :param cipher_scheme: Cipher scheme used for encrypted keys
-        :param key_format: Format of the key being imported (defaults to RAW)
         :param srv_version: Service version to use for this message
         """
         super().__init__(srv_version, mu_channel)
@@ -1133,7 +1129,6 @@ class EleMessageHseImportKey(EleMessageHse):
         self.payload = payload
         self.cipher_key_handle = cipher_key_handle or KeyHandle(KeyHandle.INVALID_KEY_HANDLE)
         self.cipher_scheme = cipher_scheme or HseAeadScheme()
-        self.key_format = key_format
         self.key_container = key_container or KeyContainer()
         # No response data expected for this command beyond status
         self.response_data_size = 0
@@ -1178,11 +1173,7 @@ class EleMessageHseImportKey(EleMessageHse):
         ret += self.cipher_key_handle.export()
         ret += self.cipher_scheme.export()
         ret += self.key_container.export()
-        ret += (
-            (self.key_format.tag).to_bytes(4, Endianness.LITTLE.value)
-            if self.key_format
-            else bytes(4)
-        )
+        ret += bytes(4)  # raw format field padding
         return ret
 
     def response_info(self) -> str:
@@ -1374,7 +1365,7 @@ class KeyImportPayload:
             else:
                 public_key_ecc = key
 
-            # Raw format: X || Y
+            # Raw format: X || Y - the only supported for now
             key_parts[0] = public_key_ecc.export(encoding=SPSDKEncoding.NXP)
 
             # If it's a private key, add the private scalar (d)
@@ -1524,7 +1515,6 @@ class EleMessageHseFirmwareIntegrityCheck(EleMessageHse):
     to ensure they have not been corrupted or tampered with.
 
     Important notes:
-
     - Available for HSE_B variant only
     - No input data structure required
     - Returns success/failure status indicating firmware integrity state
@@ -1592,13 +1582,11 @@ class EleMessageHseCoreResetEntryInstall(EleMessageHse):
     processor cores in the system.
 
     Important notes:
-
     - SMR entries linked with the CR entry (via preBoot/altPreBoot/postBoot SMR maps)
-      must be installed in HSE prior to the CR installation
+    must be installed in HSE prior to the CR installation
     - SuperUser rights (for NVM Configuration) are needed to perform this service
     - Updating an existing CR entry requires all preBoot and postBoot SMR(s) linked
-      with the previous entry to be verified successfully (applicable only in
-      OEM_PROD/IN_FIELD life cycles)
+    with the previous entry to be verified successfully (applicable only in OEM_PROD/IN_FIELD life cycles)
 
     :cvar CMD: Command identifier for Core Reset entry installation service.
     :cvar CMD_DESCRIPTOR_FORMAT: Binary format specification for command descriptor.
@@ -1678,9 +1666,8 @@ class EleMessageHseCoreResetEntryErase(EleMessageHse):
     disabling the core reset configuration for that entry index.
 
     Important notes:
-
     - SuperUser (SU) access rights with privileges over HSE_SYS_AUTH_NVM_CONFIG data
-      are required to perform this service
+    are required to perform this service
     - Erasing a CR entry will remove all associated boot configurations for that core
     - The operation is irreversible - the entry must be reinstalled if needed again
 
@@ -1754,7 +1741,6 @@ class EleMessageHseActivatePassiveBlock(EleMessageHse):
     It activates the passive block, making it the active block for subsequent operations.
 
     Important notes:
-
     - Available for HSE_B variant only
     - Used for A/B swap functionality in dual-bank flash configurations
     - Switches between active and passive flash block areas
