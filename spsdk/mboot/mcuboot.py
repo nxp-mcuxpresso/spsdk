@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,12 +13,12 @@ enabling secure provisioning operations, firmware updates, and device configurat
 through various transport protocols.
 """
 
-import logging
 import struct
 import time
 from types import TracebackType
 from typing import Callable, Optional, Sequence, Type, Union
 
+from spsdk import get_logger
 from spsdk.mboot.commands import (
     CmdPacket,
     CmdResponse,
@@ -61,7 +61,7 @@ from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.interfaces.device.usb_device import UsbDevice
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 ########################################################################################################################
@@ -173,7 +173,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             logger.info("TX: Device not opened")
             raise McuBootConnectionError("Device not opened")
 
-        logger.debug(f"TX-PACKET: {str(cmd_packet)}")
+        logger.trace(f"TX-PACKET: {str(cmd_packet)}")
 
         try:
             self._interface.write_command(cmd_packet)
@@ -184,7 +184,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             response = NoResponse(cmd_tag=cmd_packet.header.tag)
 
         assert isinstance(response, CmdResponse)
-        logger.debug(f"RX-PACKET: {str(response)}")
+        logger.trace(f"RX-PACKET: {str(response)}")
         self._status_code = response.status
 
         if self._cmd_exception and self._status_code != StatusCode.SUCCESS:
@@ -236,7 +236,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
                     progress_callback(len(data), length)
 
             elif isinstance(response, GenericResponse):
-                logger.debug(f"RX-PACKET: {str(response)}")
+                logger.trace(f"RX-PACKET: {str(response)}")
                 self._status_code = response.status
                 if response.cmd_tag == cmd_tag:
                     break
@@ -310,7 +310,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         if expect_response:
             assert isinstance(response, CmdResponse)
-            logger.debug(f"RX-PACKET: {str(response)}")
+            logger.trace(f"RX-PACKET: {str(response)}")
             self._status_code = response.status
             if response.status != StatusCode.SUCCESS:
                 status_info = (
@@ -882,8 +882,22 @@ class McuBoot:  # pylint: disable=too-many-public-methods
                     self._pause_point = sb3_header.image_total_length
                 except SPSDKError:
                     pass
-            result = self._send_data(CommandTag.RECEIVE_SB_FILE, data_chunks, progress_callback)
-            self.enable_data_abort = False
+            try:
+                result = self._send_data(CommandTag.RECEIVE_SB_FILE, data_chunks, progress_callback)
+            except McuBootCommandError:
+                result = False
+            finally:
+                self.enable_data_abort = False
+            # ROMLDR_PENDING_JUMP_COMMAND / ROMLDR_PENDING_RESET_COMMAND are returned when
+            # the last command in the SB file is an execute or reset. The full file was
+            # already transmitted, so treat these as success.
+            if not result and self._status_code in (
+                StatusCode.ROMLDR_PENDING_JUMP_COMMAND.tag,
+                StatusCode.ROMLDR_PENDING_RESET_COMMAND.tag,
+            ):
+                logger.info(f"CMD: SB file returned {self.status_string} - treating as success")
+                self._status_code = StatusCode.SUCCESS.tag
+                result = True
             return result
         return False
 
@@ -1706,7 +1720,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :param key_blob_output_size: Output buffer size in bytes
         :return: Key blob header and byte count (header excluded) on success, None on failure
         """
-        logger.info("CMD: [TrustProvisioning] OEM generate common keys")
+        logger.info("CMD: [TrustProvisioning] Store OEM common keys")
         cmd_packet = CmdPacket(
             CommandTag.TRUST_PROVISIONING,
             CommandFlag.NONE.tag,

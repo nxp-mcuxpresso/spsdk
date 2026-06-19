@@ -95,6 +95,7 @@ features:
           fcb: 0x0400
           primary_image_container_set: 0x1_000
           secondary_image_container_set: -1 # Just behind previous segment
+        image_pattern: ones
       emmc:
         segments:
           primary_image_container_set: 0x8_000

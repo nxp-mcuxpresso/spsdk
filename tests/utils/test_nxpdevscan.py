@@ -27,6 +27,7 @@ import spsdk.utils.devicedescription as devicedescription
 import spsdk.utils.nxpdevscan as nds
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.exceptions import McuBootConnectionError
+from spsdk.utils.interfaces.protocol.protocol_base import SpsdkNoDeviceFoundError
 
 
 def test_usb_device_search() -> None:
@@ -162,7 +163,7 @@ def test_usb_device_search_extended() -> None:
 # following mock functions are only for `test_uart_device_search usage`
 
 
-def mock_mb_scan_uart(port: str, timeout: int = 0) -> bool:
+def mock_mb_scan_uart(port: str, timeout: int = 0, baudrate: Optional[int] = None) -> bool:
     """Mock UART scanning function for testing purposes.
 
     Simulates the behavior of scanning a UART port for mboot communication.
@@ -171,6 +172,7 @@ def mock_mb_scan_uart(port: str, timeout: int = 0) -> bool:
 
     :param port: UART port identifier to scan (e.g., "COM1", "COM2").
     :param timeout: Timeout value in seconds for the scan operation.
+    :param baudrate: Baud rate for the scan (unused in mock).
     :return: True if port is COM1, False otherwise.
     """
     return bool(port == "COM1")
@@ -719,3 +721,49 @@ def test_serial_device_permission_error() -> None:
 
     for dev, res in zip(devices, result):
         assert str(dev) == str(res)
+
+
+@pytest.mark.skipif(
+    platform.system() == "Darwin", reason="macOS is not supported due to filtering of devices"
+)
+@patch("spsdk.utils.nxpdevscan.SDP.read_status", mock_sdp_read_status)
+@patch(
+    "spsdk.utils.interfaces.device.serial_device.SerialDevice.__init__",
+    mock_sdp_uart_init,
+)
+@patch("spsdk.utils.nxpdevscan.comports", MagicMock(return_value=list_port_info_mock))
+@patch("spsdk.uboot.uboot.UbootSerial.__init__", mock_uboot_init)
+@patch("spsdk.uboot.uboot.UbootSerial.is_serial_console_open", mock_uboot_is_serial_console_open)
+def test_uart_device_search_no_device_found_error_continues() -> None:
+    """Test that SpsdkNoDeviceFoundError from mboot ping does not abort scanning.
+
+    Verifies that when a port is accessible but the device does not respond to
+    mboot PING (raising SpsdkNoDeviceFoundError), the scan must continue and still
+    detect SDP and U-Boot devices on the remaining ports. The non-mboot port should
+    not appear as an mboot device in the result.
+
+    :raises AssertionError: If scanning aborts on SpsdkNoDeviceFoundError or the
+        expected SDP / U-Boot devices are not found.
+    """
+
+    def mock_mb_scan_raises(
+        port: Optional[str] = None,
+        baudrate: Optional[int] = None,
+        timeout: Optional[int] = None,
+    ) -> list:
+        """Raise SpsdkNoDeviceFoundError for every port to simulate non-mboot devices."""
+        raise SpsdkNoDeviceFoundError(
+            "uart",
+            f"port={port}",
+            hint="Device found on the port but did not respond to PING.",
+        )
+
+    with patch("spsdk.utils.nxpdevscan.MbootUARTInterface.scan", mock_mb_scan_raises):
+        devices = nds.search_nxp_uart_devices(scan_uboot=True)
+
+    # COM5 and COM9 should still be detected as SDP device and U-Boot console
+    # respectively via the fallback probing; no mboot devices expected.
+    device_types = {d.name: d.dev_type for d in devices}
+    assert "COM1" not in device_types or device_types.get("COM1") != "mboot device"
+    assert device_types.get("COM5") == "SDP device"
+    assert device_types.get("COM9") == "U-Boot console"

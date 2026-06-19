@@ -1,0 +1,12 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+family: mcxc162
+revision: latest
+type: CMPA_PSWD
+settings:
+  ERASE_PASSWORD0: '0xA'
+  ERASE_PASSWORD1: '0xB'
+  ERASE_PASSWORD2: '0xC'
+  ERASE_PASSWORD3: '0xD'

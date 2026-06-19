@@ -14,7 +14,7 @@ supporting various image types, encryption, and hash verification for NXP secure
 import logging
 import os
 from struct import pack, unpack
-from typing import Any, Optional, Type, TypeVar, Union
+from typing import Any, Optional, Type, TypeVar, Union, cast
 
 from typing_extensions import Self
 
@@ -161,6 +161,8 @@ class ImageArrayEntry(Container):
         image_name: Optional[str] = None,
         gap_after_image: int = 0,
         image_size_alignment: int = 1,
+        iae_header_position: Optional[int] = None,
+        align_next_to: int = 0,
     ) -> None:
         """Initialize an Image Array Entry object.
 
@@ -190,6 +192,14 @@ class ImageArrayEntry(Container):
             defaults to 0
         :param image_size_alignment: Optional override for standard image size alignment,
             defaults to None
+        :param iae_header_position: Optional explicit position index for this entry in the
+            IAE header table. When set, the container export will emit the IAE table entries
+            sorted by this value rather than by list order. The list order still controls
+            data-offset assignment. If None the natural list index is used.
+        :param align_next_to: If non-zero, the offset of the image that follows this one will
+            be aligned up to this boundary (in bytes). Use this instead of a fixed
+            gap_after_image when you want the next image to land on a power-of-two boundary
+            regardless of where this image ends.
         """
         self._image_offset = 0
         self.chip_config = chip_config
@@ -214,6 +224,8 @@ class ImageArrayEntry(Container):
             else bytes(self.IV_LEN)
         )
         self.gap_after_image = gap_after_image
+        self.iae_header_position: Optional[int] = iae_header_position
+        self.align_next_to: int = align_next_to
 
     @property
     def image_offset(self) -> int:
@@ -281,10 +293,11 @@ class ImageArrayEntry(Container):
             f"  Image offset in table:  {hex(self._image_offset)}\n"
             f"  Entry point:            {hex(self.entry_point)}\n"
             f"  Load address:           {hex(self.load_address)}\n"
-            f"  Flags:                  {hex(self.flags)})\n"
-            f"  Meta data:              {hex(self.image_meta_data)})\n"
+            f"  Flags:                  {hex(self.flags)}\n"
+            f"  Meta data:              {hex(self.image_meta_data)}\n"
+            f"  Hash type:              {self.get_hash_from_flags(self.flags)}\n"
             f"  Image hash:             {self.image_hash.hex() if self.image_hash else 'Not available'})\n"
-            f"  Image IV:               {self.image_iv.hex()})\n"
+            f"  Image IV:               {self.image_iv.hex()}\n"
             f"  Image type:             {self.flags_image_type_name}\n"
             f"  Core ID:                {self.flags_core_id_name}\n"
             f"  Is encrypted:           {self.flags_is_encrypted}\n"
@@ -367,7 +380,10 @@ class ImageArrayEntry(Container):
         if not self.image_hash:
             algorithm = self.get_hash_from_flags(self.flags)
             self.image_hash = extend_block(
-                get_hash(extend_block(self.image, self.image_size), algorithm=algorithm),
+                get_hash(
+                    extend_block(self.image, self.image_size),
+                    algorithm=EnumHashAlgorithm.from_label(algorithm.label),
+                ),
                 self.HASH_LEN,
                 padding=0,
             )
@@ -492,7 +508,7 @@ class ImageArrayEntry(Container):
 
         return flags_data
 
-    def get_hash_from_flags(self, flags: int) -> EnumHashAlgorithm:
+    def get_hash_from_flags(self, flags: int) -> AHABSignHashAlgorithm:
         """Extract the hash algorithm from the flags field.
 
         Extracts the hash type bits from the flags and converts them to the
@@ -502,8 +518,11 @@ class ImageArrayEntry(Container):
         :return: Corresponding hash algorithm enum.
         """
         hash_val = (flags >> self.FLAGS_HASH_OFFSET) & ((1 << self.FLAGS_HASH_SIZE) - 1)
-        return EnumHashAlgorithm.from_label(
-            self.FLAGS_HASH_ALGORITHM_TYPE.from_tag(hash_val).label.lower()
+        return cast(
+            AHABSignHashAlgorithm,
+            self.chip_config.base.hash_algorithms.from_label(
+                self.FLAGS_HASH_ALGORITHM_TYPE.from_tag(hash_val).label.lower()
+            ),
         )
 
     @staticmethod
@@ -750,11 +769,14 @@ class ImageArrayEntry(Container):
                     VerifierResult.ERROR,
                     f"Invalid length: {self._get_valid_size(self.image)}B != {self.image_size}B",
                 )
-            elif self.image_size == 0 and self.flags_image_type_name != "v2x_dummy":
+            elif self.image_size == 0 and self.flags_image_type_name not in (
+                "v2x_dummy",
+                "oei_ddr",
+            ):
                 ret.add_record(
                     "Image",
                     VerifierResult.WARNING,
-                    "The zero length is used just for V2X dummy image.",
+                    "Zero image length is typically used for V2X dummy or OEI DDR dummy entries.",
                 )
             else:
                 ret.add_record("Image", VerifierResult.SUCCEEDED)
@@ -845,7 +867,9 @@ class ImageArrayEntry(Container):
                 image_hash_cmp = extend_block(
                     get_hash(
                         extend_block(self.image, self.image_size),
-                        algorithm=self.get_hash_from_flags(self.flags),
+                        algorithm=EnumHashAlgorithm.from_label(
+                            self.get_hash_from_flags(self.flags).label
+                        ),
                     ),
                     self.HASH_LEN,
                     padding=0,
@@ -1863,8 +1887,6 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
                     image_type=image_type, core_id=0, hash_type=AHABSignHashAlgorithm.SHA384
                 )
                 gap_after_image = 0
-                if qb_data_dummy:
-                    gap_after_image = 0x10000
 
                 qb_iae = iae_cls(
                     chip_config=chip_config,
@@ -1876,9 +1898,27 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
                     image_meta_data=meta_data,
                     image_name=cls.IMAGE_NAME,
                     gap_after_image=gap_after_image,
-                    image_size_alignment=64 * 1024,
+                    image_size_alignment=cls.QB_DATA_SIZE,
                 )
-                ret.append(qb_iae)
+                if qb_data_dummy:
+                    # For the dummy case the desired layout (matching imx-mkimage) is:
+                    #   Container header IAE table (sorted by iae_header_position):
+                    #     [0] QB data dummy  – size=0, hash present, load/entry=0
+                    #     [1] OEI DDR image  – real binary, hash present
+                    #   Binary data region (list / offset-walk order):
+                    #     OEI DDR data       – at base offset
+                    #     QB data dummy      – zero-size, after gap
+                    #
+                    # The list stays [OEI, dummy] so offset assignment gives:
+                    #   OEI → base offset; dummy → base + OEI_size + gap
+                    # iae_header_position overrides the header-table emit order so that
+                    # the dummy appears first and OEI second in the signed IAE table.
+                    ret[0].iae_header_position = 1  # OEI: second in header
+                    qb_iae.iae_header_position = 0  # dummy: first in header
+                    qb_iae.gap_after_image = cls.QB_DATA_SIZE
+                    ret.append(qb_iae)  # list order: [OEI, dummy] → correct data offsets
+                else:
+                    ret.append(qb_iae)
 
         return ret
 

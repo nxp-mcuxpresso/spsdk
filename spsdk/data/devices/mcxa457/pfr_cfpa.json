@@ -1,5 +1,5 @@
 {
-    "cpu": "mcxa457",
+    "cpu": "MCXA457",
     "groups": [
         {
             "group": {
@@ -10,7 +10,7 @@
                 {
                     "id": "field000",
                     "name": "Header",
-                    "description": "header",
+                    "description": "Header",
                     "offset_int": "0",
                     "default_value_int": "0x96350003",
                     "bitfields": [
@@ -21,14 +21,20 @@
                             "description": "Life cycle state. This field is used to advance life cycle state to OEM LC states (Develop, Develop2, In-Field, In-field locked, Bricked, FA). Below are the allowed values for this field. Use of other values may lead to bricked state",
                             "values": [
                                 {
-                                    "name": "DEVELOP__STATE",
+                                    "name": "DEVELOP_STATE",
                                     "value": 3,
-                                    "description": "Develop state"
+                                    "description": "Develop state",
+                                    "deprecated_names": [
+                                        "DEVELOP__STATE"
+                                    ]
                                 },
                                 {
-                                    "name": "DEVELOP_2__STATE",
+                                    "name": "DEVELOP_2_STATE",
                                     "value": 7,
-                                    "description": "Develop 2 state"
+                                    "description": "Develop 2 state",
+                                    "deprecated_names": [
+                                        "DEVELOP_2__STATE"
+                                    ]
                                 },
                                 {
                                     "name": "IN-FIELD_STATE",
@@ -84,7 +90,7 @@
                 {
                     "id": "field00C",
                     "name": "DBG_REVOKE_VU",
-                    "description": "dbg revoke vu",
+                    "description": "DBG revoke vu",
                     "offset_int": "0x000C",
                     "default_value_int": "0",
                     "bitfields": [
@@ -147,9 +153,20 @@
                 {
                     "id": "field010",
                     "name": "EE0_FW_Version",
-                    "description": "Secure Firmware version. This monotonic counter field tracks the firmware version of secure partition. ROM uses this field to enforce anti-rollback checking during secure boot and secure update (SB3 header). For image authentication pass during secure boot the FW version in image manifest must be equal or greater than this value. During secure update & recovery boot the version number in SB3 header Must be equal or greater than the value in this field. Apart from SB3 header check, user can enforce anti-rollback check during SB3 processing by using \"kSB3_COMMAND_fwVersionCheck\" SB command with 'kNBOOT_CNT_secure' counter ID parameter, in SB3 file",
+                    "description": "EE0 FW Version",
                     "offset_int": "0x0010",
-                    "default_value_int": "0"
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "field010-bits0-15",
+                            "name": "Rollback_counter_for_Execution_Environment_0_firmware",
+                            "description": "Secure Firmware version. This monotonic counter field tracks the firmware version of secure partition. ROM uses this field to enforce anti-rollback checking during secure boot and secure update (SB3 header). For image authentication pass during secure boot the FW version in image manifest must be equal or greater than this value. During secure update & recovery boot the version number in SB3 header Must be equal or greater than the value in this field. Apart from SB3 header check, user can enforce anti-rollback check during SB3 processing by using \"kSB3_COMMAND_fwVersionCheck\" SB command with 'kNBOOT_CNT_secure' counter ID parameter, in SB3 file"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
                 },
                 {
                     "id": "field014",
@@ -203,7 +220,7 @@
                 {
                     "id": "field030",
                     "name": "ROTK_REVOKE",
-                    "description": "rotk revoke",
+                    "description": "ROTK revoke",
                     "offset_int": "0x0030",
                     "default_value_int": "0",
                     "bitfields": [
@@ -656,7 +673,7 @@
                 {
                     "id": "field0B0",
                     "name": "FLASH_ACL_0_7",
-                    "description": "flash acl 0 7",
+                    "description": "Flash ACL 0 7",
                     "offset_int": "0x00B0",
                     "default_value_int": "0",
                     "bitfields": [
@@ -664,7 +681,7 @@
                             "width": 3,
                             "id": "field0B0-bits0-2",
                             "name": "ACL_SEC_0",
-                            "description": "Access control for flash sector (offset range 0x00_0000 - 0x00_7FFF). Select one of the 8 pre-defined access control attributes for the given Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x00_0000 - 0x00_7FFF). Select one of the 8 pre-defined access control attributes for the given Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -702,9 +719,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -715,7 +735,7 @@
                             "width": 3,
                             "id": "field0B0-bits4-6",
                             "name": "ACL_SEC_1",
-                            "description": "Access control for flash sector (offset range 0x00_8000 - 0x00_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x00_8000 - 0x00_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -753,9 +773,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -766,7 +789,7 @@
                             "width": 3,
                             "id": "field0B0-bits8-10",
                             "name": "ACL_SEC_2",
-                            "description": "Access control for flash sector (offset range 0x01_0000 - 0x01_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x01_0000 - 0x01_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -804,9 +827,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -817,7 +843,7 @@
                             "width": 3,
                             "id": "field0B0-bits12-14",
                             "name": "ACL_SEC_3",
-                            "description": "Access control for flash sector. (offset range 0x01_8000 - 0x01_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector. (offset range 0x01_8000 - 0x01_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -855,9 +881,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -868,7 +897,7 @@
                             "width": 3,
                             "id": "field0B0-bits16-18",
                             "name": "ACL_SEC_4",
-                            "description": "Access control for flash sector (offset range 0x02_0000 - 0x02_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x02_0000 - 0x02_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -906,9 +935,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -919,7 +951,7 @@
                             "width": 3,
                             "id": "field0B0-bits20-22",
                             "name": "ACL_SEC_5",
-                            "description": "Access control for flash sector (offset range 0x02_8000 - 0x02_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x02_8000 - 0x02_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -957,9 +989,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -970,7 +1005,7 @@
                             "width": 3,
                             "id": "field0B0-bits24-26",
                             "name": "ACL_SEC_6",
-                            "description": "Access control for flash sector (offset range 0x03_0000 - 0x03_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x03_0000 - 0x03_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1008,9 +1043,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1021,7 +1059,7 @@
                             "width": 3,
                             "id": "field0B0-bits28-30",
                             "name": "ACL_SEC_7",
-                            "description": "Access control for flash sector (offset range 0x03_8000 - 0x03_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x03_8000 - 0x03_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1059,9 +1097,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1073,7 +1114,7 @@
                 {
                     "id": "field0B4",
                     "name": "FLASH_ACL_8_15",
-                    "description": "flash acl 8 15",
+                    "description": "Flash ACL 8 15",
                     "offset_int": "0x00B4",
                     "default_value_int": "0",
                     "bitfields": [
@@ -1081,7 +1122,7 @@
                             "width": 3,
                             "id": "field0B4-bits0-2",
                             "name": "ACL_SEC_8",
-                            "description": "Access control for flash sector (offset range 0x04_0000 - 0x04_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x04_0000 - 0x04_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1119,9 +1160,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1132,7 +1176,7 @@
                             "width": 3,
                             "id": "field0B4-bits4-6",
                             "name": "ACL_SEC_9",
-                            "description": "Access control for flash sector (offset range 0x04_8000 - 0x04_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x04_8000 - 0x04_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1170,9 +1214,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1183,7 +1230,7 @@
                             "width": 3,
                             "id": "field0B4-bits8-10",
                             "name": "ACL_SEC_10",
-                            "description": "Access control for flash sector (offset range 0x05_0000 - 0x05_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x05_0000 - 0x05_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1221,9 +1268,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1234,7 +1284,7 @@
                             "width": 3,
                             "id": "field0B4-bits12-14",
                             "name": "ACL_SEC_11",
-                            "description": "Access control for flash sector. (offset range 0x05_8000 - 0x05_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector. (offset range 0x05_8000 - 0x05_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1272,9 +1322,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1285,7 +1338,7 @@
                             "width": 3,
                             "id": "field0B4-bits16-18",
                             "name": "ACL_SEC_12",
-                            "description": "Access control for flash sector (offset range 0x06_0000 - 0x06_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x06_0000 - 0x06_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1323,9 +1376,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1336,7 +1392,7 @@
                             "width": 3,
                             "id": "field0B4-bits20-22",
                             "name": "ACL_SEC_13",
-                            "description": "Access control for flash sector (offset range 0x06_8000 - 0x06_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x06_8000 - 0x06_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1374,9 +1430,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1387,7 +1446,7 @@
                             "width": 3,
                             "id": "field0B4-bits24-26",
                             "name": "ACL_SEC_14",
-                            "description": "Access control for flash sector (offset range 0x07_0000 - 0x07_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x07_0000 - 0x07_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1425,9 +1484,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1438,7 +1500,7 @@
                             "width": 3,
                             "id": "field0B4-bits28-30",
                             "name": "ACL_SEC_15",
-                            "description": "Access control for flash sector (offset range 0x07_8000 - 0x07_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x07_8000 - 0x07_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1476,9 +1538,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1490,7 +1555,7 @@
                 {
                     "id": "field0B8",
                     "name": "FLASH_ACL_16_23",
-                    "description": "flash acl 16 23",
+                    "description": "Flash ACL 16 23",
                     "offset_int": "0x00B8",
                     "default_value_int": "0",
                     "bitfields": [
@@ -1498,7 +1563,7 @@
                             "width": 3,
                             "id": "field0B8-bits0-2",
                             "name": "ACL_SEC_16",
-                            "description": "Access control for flash sector (offset range 0x08_0000 - 0x08_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x08_0000 - 0x08_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1536,9 +1601,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1549,7 +1617,7 @@
                             "width": 3,
                             "id": "field0B8-bits4-6",
                             "name": "ACL_SEC_17",
-                            "description": "Access control for flash sector (offset range 0x08_8000 - 0x08_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x08_8000 - 0x08_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1587,9 +1655,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1600,7 +1671,7 @@
                             "width": 3,
                             "id": "field0B8-bits8-10",
                             "name": "ACL_SEC_18",
-                            "description": "Access control for flash sector (offset range 0x09_0000 - 0x09_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x09_0000 - 0x09_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1638,9 +1709,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1651,7 +1725,7 @@
                             "width": 3,
                             "id": "field0B8-bits12-14",
                             "name": "ACL_SEC_19",
-                            "description": "Access control for flash sector. (offset range 0x09_8000 - 0x09_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector. (offset range 0x09_8000 - 0x09_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1689,9 +1763,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1702,7 +1779,7 @@
                             "width": 3,
                             "id": "field0B8-bits16-18",
                             "name": "ACL_SEC_20",
-                            "description": "Access control for flash sector (offset range 0x0A_0000 - 0x0A_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x0A_0000 - 0x0A_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1740,9 +1817,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1753,7 +1833,7 @@
                             "width": 3,
                             "id": "field0B8-bits20-22",
                             "name": "ACL_SEC_21",
-                            "description": "Access control for flash sector (offset range 0x0A_8000 - 0x0A_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x0A_8000 - 0x0A_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1791,9 +1871,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1804,7 +1887,7 @@
                             "width": 3,
                             "id": "field0B8-bits24-26",
                             "name": "ACL_SEC_22",
-                            "description": "Access control for flash sector (offset range 0x0B_0000 - 0x0B_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x0B_0000 - 0x0B_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1842,9 +1925,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1855,7 +1941,7 @@
                             "width": 3,
                             "id": "field0B8-bits28-30",
                             "name": "ACL_SEC_23",
-                            "description": "Access control for flash sector (offset range 0x0B_8000 - 0x0B_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x0B_8000 - 0x0B_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1893,9 +1979,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1915,7 +2004,7 @@
                             "width": 3,
                             "id": "field0BC-bits0-2",
                             "name": "ACL_SEC_24",
-                            "description": "Access control for flash sector (offset range 0x0C_0000 - 0x0C_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x0C_0000 - 0x0C_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -1953,9 +2042,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -1966,7 +2058,7 @@
                             "width": 3,
                             "id": "field0BC-bits4-6",
                             "name": "ACL_SEC_25",
-                            "description": "Access control for flash sector (offset range 0x0C_8000 - 0x0C_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x0C_8000 - 0x0C_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2004,9 +2096,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2017,7 +2112,7 @@
                             "width": 3,
                             "id": "field0BC-bits8-10",
                             "name": "ACL_SEC_26",
-                            "description": "Access control for flash sector (offset range 0x0D_0000 - 0x0D_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x0D_0000 - 0x0D_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2055,9 +2150,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2068,7 +2166,7 @@
                             "width": 3,
                             "id": "field0BC-bits12-14",
                             "name": "ACL_SEC_27",
-                            "description": "Access control for flash sector. (offset range 0x0D_8000 - 0x0D_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector. (offset range 0x0D_8000 - 0x0D_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2106,9 +2204,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2119,7 +2220,7 @@
                             "width": 3,
                             "id": "field0BC-bits16-18",
                             "name": "ACL_SEC_28",
-                            "description": "Access control for flash sector (offset range 0x0E_0000 - 0x0E_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x0E_0000 - 0x0E_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2157,9 +2258,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2170,7 +2274,7 @@
                             "width": 3,
                             "id": "field0BC-bits20-22",
                             "name": "ACL_SEC_29",
-                            "description": "Access control for flash sector (offset range 0x0E_8000 - 0x0E_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x0E_8000 - 0x0E_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2208,9 +2312,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2221,7 +2328,7 @@
                             "width": 3,
                             "id": "field0BC-bits24-26",
                             "name": "ACL_SEC_30",
-                            "description": "Access control for flash sector (offset range 0x0F_0000 - 0x0F_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x0F_0000 - 0x0F_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2259,9 +2366,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2272,7 +2382,7 @@
                             "width": 3,
                             "id": "field0BC-bits28-30",
                             "name": "ACL_SEC_31",
-                            "description": "Access control for flash sector (offset range 0x0F_8000 - 0x0F_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x0F_8000 - 0x0F_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2310,9 +2420,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2324,7 +2437,7 @@
                 {
                     "id": "field0C0",
                     "name": "FLASH_ACL_32_39",
-                    "description": "flash acl 32 39",
+                    "description": "Flash ACL 32 39",
                     "offset_int": "0x00C0",
                     "default_value_int": "0",
                     "bitfields": [
@@ -2332,7 +2445,7 @@
                             "width": 3,
                             "id": "field0C0-bits0-2",
                             "name": "ACL_SEC_32",
-                            "description": "Access control for flash sector (offset range 0x10_0000 - 0x10_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x10_0000 - 0x10_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2370,9 +2483,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2383,7 +2499,7 @@
                             "width": 3,
                             "id": "field0C0-bits4-6",
                             "name": "ACL_SEC_33",
-                            "description": "Access control for flash sector (offset range 0x10_8000 - 0x10_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x10_8000 - 0x10_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2421,9 +2537,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2434,7 +2553,7 @@
                             "width": 3,
                             "id": "field0C0-bits8-10",
                             "name": "ACL_SEC_34",
-                            "description": "Access control for flash sector (offset range 0x11_0000 - 0x11_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x11_0000 - 0x11_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2472,9 +2591,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2485,7 +2607,7 @@
                             "width": 3,
                             "id": "field0C0-bits12-14",
                             "name": "ACL_SEC_35",
-                            "description": "Access control for flash sector. (offset range 0x11_8000 - 0x11_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector. (offset range 0x11_8000 - 0x11_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2523,9 +2645,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2536,7 +2661,7 @@
                             "width": 3,
                             "id": "field0C0-bits16-18",
                             "name": "ACL_SEC_36",
-                            "description": "Access control for flash sector (offset range 0x12_0000 - 0x12_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x12_0000 - 0x12_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2574,9 +2699,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2587,7 +2715,7 @@
                             "width": 3,
                             "id": "field0C0-bits20-22",
                             "name": "ACL_SEC_37",
-                            "description": "Access control for flash sector (offset range 0x12_8000 - 0x12_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x12_8000 - 0x12_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2625,9 +2753,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2638,7 +2769,7 @@
                             "width": 3,
                             "id": "field0C0-bits24-26",
                             "name": "ACL_SEC_38",
-                            "description": "Access control for flash sector (offset range 0x13_0000 - 0x13_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x13_0000 - 0x13_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2676,9 +2807,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2689,7 +2823,7 @@
                             "width": 3,
                             "id": "field0C0-bits28-30",
                             "name": "ACL_SEC_39",
-                            "description": "Access control for flash sector (offset range 0x13_8000 - 0x13_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x13_8000 - 0x13_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2727,9 +2861,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2741,7 +2878,7 @@
                 {
                     "id": "field0C4",
                     "name": "FLASH_ACL_40_47",
-                    "description": "flash acl 40 47",
+                    "description": "Flash ACL 40 47",
                     "offset_int": "0x00C4",
                     "default_value_int": "0",
                     "bitfields": [
@@ -2749,7 +2886,7 @@
                             "width": 3,
                             "id": "field0C4-bits0-2",
                             "name": "ACL_SEC_40",
-                            "description": "Access control for flash sector (offset range 0x14_0000 - 0x14_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x14_0000 - 0x14_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2787,9 +2924,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2800,7 +2940,7 @@
                             "width": 3,
                             "id": "field0C4-bits4-6",
                             "name": "ACL_SEC_41",
-                            "description": "Access control for flash sector (offset range 0x14_8000 - 0x14_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x14_8000 - 0x14_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2838,9 +2978,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2851,7 +2994,7 @@
                             "width": 3,
                             "id": "field0C4-bits8-10",
                             "name": "ACL_SEC_42",
-                            "description": "Access control for flash sector (offset range 0x15_0000 - 0x15_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x15_0000 - 0x15_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2889,9 +3032,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2902,7 +3048,7 @@
                             "width": 3,
                             "id": "field0C4-bits12-14",
                             "name": "ACL_SEC_43",
-                            "description": "Access control for flash sector. (offset range 0x15_8000 - 0x15_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector. (offset range 0x15_8000 - 0x15_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2940,9 +3086,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -2953,7 +3102,7 @@
                             "width": 3,
                             "id": "field0C4-bits16-18",
                             "name": "ACL_SEC_44",
-                            "description": "Access control for flash sector (offset range 0x16_0000 - 0x16_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x16_0000 - 0x16_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -2991,9 +3140,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -3004,7 +3156,7 @@
                             "width": 3,
                             "id": "field0C4-bits20-22",
                             "name": "ACL_SEC_45",
-                            "description": "Access control for flash sector (offset range 0x16_8000 - 0x16_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x16_8000 - 0x16_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3042,9 +3194,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -3055,7 +3210,7 @@
                             "width": 3,
                             "id": "field0C4-bits24-26",
                             "name": "ACL_SEC_46",
-                            "description": "Access control for flash sector (offset range 0x17_0000 - 0x17_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x17_0000 - 0x17_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3093,9 +3248,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -3106,7 +3264,7 @@
                             "width": 3,
                             "id": "field0C4-bits28-30",
                             "name": "ACL_SEC_47",
-                            "description": "Access control for flash sector (offset range 0x17_8000 - 0x17_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x17_8000 - 0x17_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3144,9 +3302,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -3158,7 +3319,7 @@
                 {
                     "id": "field0C8",
                     "name": "FLASH_ACL_48_55",
-                    "description": "flash acl 48 55",
+                    "description": "Flash ACL 48 55",
                     "offset_int": "0x00C8",
                     "default_value_int": "0",
                     "bitfields": [
@@ -3166,7 +3327,7 @@
                             "width": 3,
                             "id": "field0C8-bits0-2",
                             "name": "ACL_SEC_48",
-                            "description": "Access control for flash sector (offset range 0x18_0000 - 0x18_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x18_0000 - 0x18_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3204,9 +3365,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -3217,7 +3381,7 @@
                             "width": 3,
                             "id": "field0C8-bits4-6",
                             "name": "ACL_SEC_49",
-                            "description": "Access control for flash sector (offset range 0x18_8000 - 0x18_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x18_8000 - 0x18_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3255,9 +3419,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -3268,7 +3435,7 @@
                             "width": 3,
                             "id": "field0C8-bits8-10",
                             "name": "ACL_SEC_50",
-                            "description": "Access control for flash sector (offset range 0x19_0000 - 0x19_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x19_0000 - 0x19_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3306,9 +3473,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -3319,7 +3489,7 @@
                             "width": 3,
                             "id": "field0C8-bits12-14",
                             "name": "ACL_SEC_51",
-                            "description": "Access control for flash sector. (offset range 0x19_8000 - 0x19_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector. (offset range 0x19_8000 - 0x19_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3357,9 +3527,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -3370,7 +3543,7 @@
                             "width": 3,
                             "id": "field0C8-bits16-18",
                             "name": "ACL_SEC_52",
-                            "description": "Access control for flash sector (offset range 0x1A_0000 - 0x1A_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x1A_0000 - 0x1A_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3408,9 +3581,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -3421,7 +3597,7 @@
                             "width": 3,
                             "id": "field0C8-bits20-22",
                             "name": "ACL_SEC_53",
-                            "description": "Access control for flash sector (offset range 0x1A_8000 - 0x1A_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x1A_8000 - 0x1A_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3459,9 +3635,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -3472,7 +3651,7 @@
                             "width": 3,
                             "id": "field0C8-bits24-26",
                             "name": "ACL_SEC_54",
-                            "description": "Access control for flash sector (offset range 0x1B_0000 - 0x1B_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x1B_0000 - 0x1B_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3510,9 +3689,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -3523,7 +3705,7 @@
                             "width": 3,
                             "id": "field0C8-bits28-30",
                             "name": "ACL_SEC_55",
-                            "description": "Access control for flash sector (offset range 0x1B_8000 - 0x1B_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x1B_8000 - 0x1B_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3561,9 +3743,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -3575,7 +3760,7 @@
                 {
                     "id": "field0CC",
                     "name": "FLASH_ACL_55_63",
-                    "description": "flash acl 55 63",
+                    "description": "Flash ACL 55 63",
                     "offset_int": "0x00CC",
                     "default_value_int": "0",
                     "bitfields": [
@@ -3583,7 +3768,7 @@
                             "width": 3,
                             "id": "field0CC-bits0-2",
                             "name": "ACL_SEC_56",
-                            "description": "Access control for flash sector (offset range 0x1C_0000 - 0x1C_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x1C_0000 - 0x1C_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3621,9 +3806,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -3634,7 +3822,7 @@
                             "width": 3,
                             "id": "field0CC-bits4-6",
                             "name": "ACL_SEC_57",
-                            "description": "Access control for flash sector (offset range 0x1C_8000 - 0x1C_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x1C_8000 - 0x1C_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3672,9 +3860,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -3685,7 +3876,7 @@
                             "width": 3,
                             "id": "field0CC-bits8-10",
                             "name": "ACL_SEC_58",
-                            "description": "Access control for flash sector (offset range 0x1D_0000 - 0x1D_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x1D_0000 - 0x1D_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3723,9 +3914,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -3736,7 +3930,7 @@
                             "width": 3,
                             "id": "field0CC-bits12-14",
                             "name": "ACL_SEC_59",
-                            "description": "Access control for flash sector. (offset range 0x1D_8000 - 0x1D_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector. (offset range 0x1D_8000 - 0x1D_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3774,9 +3968,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -3787,7 +3984,7 @@
                             "width": 3,
                             "id": "field0CC-bits16-18",
                             "name": "ACL_SEC_60",
-                            "description": "Access control for flash sector (offset range 0x1E_0000 - 0x1E_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x1E_0000 - 0x1E_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3825,9 +4022,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCK_1",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)1"
+                                    "description": "Hidden (no access + locked)1",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCK_1"
+                                    ]
                                 }
                             ]
                         },
@@ -3838,7 +4038,7 @@
                             "width": 3,
                             "id": "field0CC-bits20-22",
                             "name": "ACL_SEC_61",
-                            "description": "Access control for flash sector (offset range 0x1E_8000 - 0x1E_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x1E_8000 - 0x1E_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3876,9 +4076,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -3889,7 +4092,7 @@
                             "width": 3,
                             "id": "field0CC-bits24-26",
                             "name": "ACL_SEC_62",
-                            "description": "Access control for flash sector (offset range 0x1F_0000 - 0x1F_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x1F_0000 - 0x1F_7FFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3927,9 +4130,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -3940,7 +4146,7 @@
                             "width": 3,
                             "id": "field0CC-bits28-30",
                             "name": "ACL_SEC_63",
-                            "description": "Access control for flash sector (offset range 0x1F_8000 - 0x1F_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. • If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. ○ 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) • If current sector ACL value is 0, 4, or 5 then any new value is permitted",
+                            "description": "Access control for flash sector (offset range 0x1F_8000 - 0x1F_FFFF). Select one of the 8 pre-defined access control attributes for the given sector. Access attributes control read, write and execute access along with sticky lock protection. After a locked access level is selected, the sub-sequent updates of this field can be done with higher lock level only. - If current sector ACL value (GLBACn index) is greater than the new value, then it is permitted except if the new value is 4 or 5. o 7 (___L) > 6 (__XL) > 3 (R__L) > 2 (R_XL) > 1 (RW_L) > 0 (RWX_) - If current sector ACL value is 0, 4, or 5 then any new value is permitted",
                             "values": [
                                 {
                                     "name": "DEFAULT_FLASH_RW_UNLOCK",
@@ -3978,9 +4184,12 @@
                                     "description": "XOM with this setting: XOM + locked"
                                 },
                                 {
-                                    "name": "HIDDEN_NO_ACCESS_LOCKED",
+                                    "name": "HIDDEN",
                                     "value": 7,
-                                    "description": "Hidden (no access + locked)"
+                                    "description": "Hidden (no access + locked)",
+                                    "deprecated_names": [
+                                        "HIDDEN_NO_ACCESS_LOCKED"
+                                    ]
                                 }
                             ]
                         },
@@ -4072,56 +4281,56 @@
                 {
                     "id": "field0F0",
                     "name": "SBL_IMG0_CMAC_CACHE0",
-                    "description": "cmac of hash (sha384/256) of authenticated image manifest",
+                    "description": "CMAC of hash (SHA384/256) of authenticated image manifest",
                     "offset_int": "0x00F0",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field0F4",
                     "name": "SBL_IMG0_CMAC_CACHE1",
-                    "description": "cmac of hash (sha384/sha256) of authenticated image manifest",
+                    "description": "CMAC of hash (SHA384/SHA256) of authenticated image manifest",
                     "offset_int": "0x00F4",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field0F8",
                     "name": "SBL_IMG0_CMAC_CACHE2",
-                    "description": "cmac of hash (sha384/sha256) of authenticated image manifest",
+                    "description": "CMAC of hash (SHA384/SHA256) of authenticated image manifest",
                     "offset_int": "0x00F8",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field0FC",
                     "name": "SBL_IMG0_CMAC_CACHE3",
-                    "description": "cmac of hash (sha384/256) of authenticated image manifest",
+                    "description": "CMAC of hash (SHA384/256) of authenticated image manifest",
                     "offset_int": "0x00FC",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field100",
                     "name": "IMG1_CMAC_CACHE0",
-                    "description": "cmac of hash (sha384/256) of authenticated image manifest",
+                    "description": "CMAC of hash (SHA384/256) of authenticated image manifest",
                     "offset_int": "0x0100",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field104",
                     "name": "IMG1_CMAC_CACHE1",
-                    "description": "cmac of hash (sha384/sha256) of authenticated image manifest",
+                    "description": "CMAC of hash (SHA384/SHA256) of authenticated image manifest",
                     "offset_int": "0x0104",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field108",
                     "name": "IMG1_CMAC_CACHE2",
-                    "description": "cmac of hash (sha384/sha256) of authenticated image manifest",
+                    "description": "CMAC of hash (SHA384/SHA256) of authenticated image manifest",
                     "offset_int": "0x0108",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field10C",
                     "name": "IMG1_CMAC_CACHE3",
-                    "description": "cmac of hash (sha384/256) of authenticated image manifest",
+                    "description": "CMAC of hash (SHA384/256) of authenticated image manifest",
                     "offset_int": "0x010C",
                     "default_value_int": "0"
                 }
@@ -4383,56 +4592,56 @@
                 {
                     "id": "field180",
                     "name": "IPED_GCM_AAD_CTX0",
-                    "description": "additional authentication data for iped context 0",
+                    "description": "Additional Authentication Data for IPED context 0",
                     "offset_int": "0x0180",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field184",
                     "name": "IPED_GCM_AAD_CTX1",
-                    "description": "additional authentication data for iped context 1",
+                    "description": "Additional Authentication Data for IPED context 1",
                     "offset_int": "0x0184",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field188",
                     "name": "IPED_GCM_AAD_CTX2",
-                    "description": "additional authentication data for iped context 2",
+                    "description": "Additional Authentication Data for IPED context 2",
                     "offset_int": "0x0188",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field18C",
                     "name": "IPED_GCM_AAD_CTX3",
-                    "description": "additional authentication data for iped context 3",
+                    "description": "Additional Authentication Data for IPED context 3",
                     "offset_int": "0x018C",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field190",
                     "name": "IPED_GCM_AAD_CTX4",
-                    "description": "additional authentication data for iped context 4",
+                    "description": "Additional Authentication Data for IPED context 4",
                     "offset_int": "0x0190",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field194",
                     "name": "IPED_GCM_AAD_CTX5",
-                    "description": "additional authentication data for iped context 5",
+                    "description": "Additional Authentication Data for IPED context 5",
                     "offset_int": "0x0194",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field198",
                     "name": "IPED_GCM_AAD_CTX6",
-                    "description": "additional authentication data for iped context 6",
+                    "description": "Additional Authentication Data for IPED context 6",
                     "offset_int": "0x0198",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field19C",
                     "name": "IPED_GCM_AAD_CTX7",
-                    "description": "additional authentication data for iped context 7",
+                    "description": "Additional Authentication Data for IPED context 7",
                     "offset_int": "0x019C",
                     "default_value_int": "0"
                 }

@@ -20,12 +20,9 @@ revision: latest
 type: CMPA_PSWD
 # --------------------------------------------===== mcxc151 [Required] =====--------------------------------------------
 settings:
-  # -------------------------------------===== DBG_AUTH_PASSWORD0 [Optional] =====--------------------------------------
-  # Description: Offset: 0x00000000, Width: 32b; DBG auth password[31:0]
-  DBG_AUTH_PASSWORD0: '0x00000000'
-  # -------------------------------------===== DBG_AUTH_PASSWORD1 [Optional] =====--------------------------------------
-  # Description: Offset: 0x00000004, Width: 32b; DBG auth password[63:32]
-  DBG_AUTH_PASSWORD1: '0x00000000'
+  # --------------------------------------===== DBG_AUTH_PASSWORD [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000000, Width: 128b; DBG_AUTH_PASSWORD[127:0]
+  DBG_AUTH_PASSWORD: '00000000000000000000000000000000'
   # -------------------------------------===== DBG_AUTH_PASSWORD2 [Optional] =====--------------------------------------
   # Description: Offset: 0x00000008, Width: 32b; DBG auth password[95:64]
   DBG_AUTH_PASSWORD2: '0x00000000'

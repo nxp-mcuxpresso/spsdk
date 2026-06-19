@@ -12,7 +12,6 @@ USB recovery operations. It enables communication with NXP devices in
 Serial Download Protocol (SDP) mode for flashing and recovery purposes.
 """
 
-import logging
 import re
 from ctypes import CFUNCTYPE, POINTER, c_char_p, c_int, c_uint16, c_void_p
 from functools import wraps
@@ -22,6 +21,7 @@ from typing import Any, Callable, Optional, no_type_check
 from libuuu import LibUUU, UUUNotifyCallback, UUUState
 from libuuu.libuuu import UUUNotifyStruct, UUUNotifyType, _default_notify_callback
 
+from spsdk import get_logger
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.database import DatabaseManager, UsbId
 from spsdk.utils.family import FamilyRevision, get_db, get_families
@@ -29,7 +29,7 @@ from spsdk.utils.misc import load_text
 from spsdk.utils.progress_bar import ProgressBarManager
 from spsdk.utils.threading import CancellableWait
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 UUULsUsbDevices = CFUNCTYPE(
     c_int,  # Return type
@@ -77,12 +77,15 @@ class SPSDKUUUState(UUUState):
         Creates a new instance of the SPSDK UUU state manager with configurable progress bar display
         and initializes the status tracking.
 
-        :param progress_bar: Enable progress bar display during operations, defaults to True
+        :param progress_bar_enabled: Enable progress bar display during operations, defaults to True
         """
         self.progress_bar_enabled = progress_bar_enabled
         self.progress_manager = ProgressBarManager()
         self.status = 0
         super().__init__()
+        # Override the plain Logger set by UUUState.__init__ with an SPSDKLogger
+        # so that trace() calls work correctly.
+        self.logger = get_logger(__name__)
 
     def update(self, struct: UUUNotifyStruct) -> None:
         """Update the state with a notification from uuu.
@@ -118,7 +121,7 @@ class SPSDKUUUState(UUUState):
             self.trans_pos = struct.response.total
             if self.progress_bar_enabled:
                 self.progress_manager.update(self.cmd, self.trans_size, self.trans_pos)
-            self.logger.debug(f"Transfer {self.trans_pos}/{self.trans_size}")
+            self.logger.trace(f"Transfer {self.trans_pos}/{self.trans_size}")
 
         self.logger.debug(f"{self.cmd=},{self.dev=},{self.waiting=},{self.error=}")
 
@@ -396,29 +399,33 @@ class SPSDKUUU:
             ) from e
         return script
 
-    def run_uboot(self, command: str) -> bool:
+    def run_uboot(self, command: str, interruptible: bool = True) -> bool:
         """Execute U-Boot command via UUU protocol.
 
         Sends the specified command to U-Boot through the libuuu interface and logs
         the execution result along with any response received.
 
         :param command: U-Boot command string to execute
+        :param interruptible: If set to True, the command execution can be interrupted by user.
+
         :return: True if command executed successfully, False otherwise
         """
-        success = self.uuu.run_cmd(f"FB:UCMD {command}", 0) == 0
+        success = self.run_cmd(f"FB:UCMD {command}", 0, interruptible) == 0
         logger.info(f"{command} {success=} response={self.response}")
         return success
 
-    def run_uboot_acmd(self, command: str) -> bool:
+    def run_uboot_acmd(self, command: str, interruptible: bool = True) -> bool:
         """Run uboot command ACMD.
 
         Executes a U-Boot command using the ACMD (Application Command) interface through UUU
         (Universal Update Utility). The command execution status is logged for debugging purposes.
 
         :param command: U-Boot command string to execute.
+        :param interruptible: If set to True, the command execution can be interrupted by user.
+
         :return: True if command executed successfully, False otherwise.
         """
-        success = self.uuu.run_cmd(f"FB:ACMD {command}", 0) == 0
+        success = self.run_cmd(f"FB:ACMD {command}", 0, interruptible) == 0
         logger.info(f"{command} {success=} response={self.response}")
         return success
 
@@ -432,7 +439,9 @@ class SPSDKUUU:
         """
         logger.debug("Enabling fastboot output for stdout")
         if not self.fastboot_output_enabled:
-            self.fastboot_output_enabled = self.run_uboot("setenv stdout fastboot")
+            self.fastboot_output_enabled = self.run_uboot(
+                "setenv stdout fastboot", interruptible=False
+            )
         return self.fastboot_output_enabled
 
     def disable_fastboot_output(self) -> bool:
@@ -445,20 +454,30 @@ class SPSDKUUU:
         """
         logger.debug("Disabling fastboot output for stdout")
         if self.fastboot_output_enabled:
-            self.fastboot_output_enabled = not self.run_uboot("setenv stdout serial")
+            self.fastboot_output_enabled = not self.run_uboot(
+                "setenv stdout serial", interruptible=False
+            )
         return self.fastboot_output_enabled
 
     @check_uuu_error_state_after_command
-    def run_cmd(self, cmd: str, dry: bool = False) -> int:
+    def run_cmd(self, cmd: str, dry: bool = False, interruptible: bool = True) -> int:
         """Run a uuu command.
 
         Execute the specified uuu command either in dry run mode or actual execution mode.
 
+        This should not be called as interruptible in destructors, since it tries creating a new thread,
+        when interpreter is shutting down.
+
         :param cmd: The command to run.
         :param dry: If set to False command will be executed, otherwise it's a dry run.
+        :param interruptible: If set to True, the command execution can be interrupted by user.
+
         :return: 0 if success.
         """
-        return self.uuu.run_cmd(cmd, dry)
+        if not interruptible:
+            return self.uuu.run_cmd(cmd, int(dry))
+        wait_helper = CancellableWait()
+        return wait_helper.run_interruptible(self.uuu.run_cmd, cmd, int(dry))
 
     @check_uuu_error_state_after_command
     def run_script(self, script_path: str, dry: bool = False) -> int:
@@ -471,7 +490,10 @@ class SPSDKUUU:
         :return: The result code of the script execution.
         """
         self.uuu._response.value = b""
-        return self.uuu.lib.uuu_run_cmd_script(c_char_p(str.encode(script_path)), c_int(int(dry)))
+        wait_helper = CancellableWait()
+        return wait_helper.run_interruptible(
+            self.uuu.lib.uuu_run_cmd_script, c_char_p(str.encode(script_path)), c_int(int(dry))
+        )
 
     def auto_detect_file(self, filename: str) -> int:
         """Auto detect file type and format.

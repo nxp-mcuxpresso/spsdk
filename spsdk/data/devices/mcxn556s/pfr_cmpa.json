@@ -10,7 +10,7 @@
                 {
                     "id": "field000",
                     "name": "BOOT_CFG",
-                    "description": "boot cfg",
+                    "description": "Boot configuration",
                     "offset_int": "0",
                     "default_value_int": "0x59630000",
                     "bitfields": [
@@ -78,11 +78,6 @@
                                     "name": "USB1_HID",
                                     "value": 5,
                                     "description": "USB1 HID"
-                                },
-                                {
-                                    "name": "CAN_ISP",
-                                    "value": 6,
-                                    "description": "CAN ISP"
                                 }
                             ]
                         },
@@ -122,24 +117,36 @@
                             "description": "Boot speed. Selects the core frequency and voltage to use during ROM execution",
                             "values": [
                                 {
-                                    "name": "48_MHZ_FRO_@_1.0V",
+                                    "name": "48_MHz",
                                     "value": 0,
-                                    "description": "48 MHz FRO @ 1.0V"
+                                    "description": "48 MHz FRO @ 1.0V",
+                                    "deprecated_names": [
+                                        "48_MHZ_FRO_@_1.0V"
+                                    ]
                                 },
                                 {
-                                    "name": "72_MHZ_FRO_@_1.1V",
+                                    "name": "72_MHz",
                                     "value": 1,
-                                    "description": "72 MHz FRO @ 1.1V"
+                                    "description": "72 MHz FRO @ 1.1V",
+                                    "deprecated_names": [
+                                        "72_MHZ_FRO_@_1.1V"
+                                    ]
                                 },
                                 {
-                                    "name": "144_MHZ_FRO_@_1.2V",
+                                    "name": "144_MHz",
                                     "value": 2,
-                                    "description": "144 MHz FRO @ 1.2V"
+                                    "description": "144 MHz FRO @ 1.2V",
+                                    "deprecated_names": [
+                                        "144_MHZ_FRO_@_1.2V"
+                                    ]
                                 },
                                 {
-                                    "name": "150_MHZ_PLL_@_1.2V",
+                                    "name": "150_MHz",
                                     "value": 3,
-                                    "description": "150 MHz PLL @ 1.2V"
+                                    "description": "150 MHz PLL @ 1.2V",
+                                    "deprecated_names": [
+                                        "150_MHZ_PLL_@_1.2V"
+                                    ]
                                 }
                             ]
                         },
@@ -164,7 +171,7 @@
                 {
                     "id": "field004",
                     "name": "FLASH_CFG",
-                    "description": "flash cfg",
+                    "description": "Flash configuration",
                     "offset_int": "0x0004",
                     "default_value_int": "0",
                     "bitfields": [
@@ -178,7 +185,49 @@
                             "width": 3,
                             "id": "field004-bits5-7",
                             "name": "OEM_BANK1_IFR0_PROT",
-                            "description": "Defines flash protection of Bank1_IFR0 area based on usage. The MBC module is used to configure the access protections as readable (R), writeable (W), and/or executable (X). The access protections can also be configured as locked (L) which prevents later application code from changing the access protection configuration. The final MBC protection bits used for Bank1_IFR0 depend on the boot mode configuration, the boot path that is selected and the device life cycle state. The access This field will only modify the MBC protection bits for the Bank1_IFR0 area after the life cycle is advanced out of Develop. In the Develop life cycle state this field has no effect. For example, if using the In-Field life cycle and Bank1_IFR0 is being used as a recovery boot image (REC_BOOT_SRC = 1) and OEM_BANK1_IFR0_PROT value = 5 is selected), then for a regular boot using the primary image Bank1_IFR0 is mapped to GLBAC2. If the primary boot fails, and the recovery path is taken, then Bank1_IFR0 is mapped to GLBAC4 instead. Note: Settings 5-7 should not be used if Bank1_IFR0 is used as OEM_SBL (BOOT_SRC = 2). In Develop life cycle - All settings: MBC protection bits set as RWXL = 1110 (GLBAC0) In other life cycles –"
+                            "description": "Defines flash protection of Bank1_IFR0 area based on usage. The MBC module is used to configure the access protections as readable (R), writeable (W), and/or executable (X). The access protections can also be configured as locked (L) which prevents later application code from changing the access protection configuration. The final MBC protection bits used for Bank1_IFR0 depend on the boot mode configuration, the boot path that is selected and the device life cycle state. The access This field will only modify the MBC protection bits for the Bank1_IFR0 area after the life cycle is advanced out of Develop. In the Develop life cycle state this field has no effect. For example, if using the In-Field life cycle and Bank1_IFR0 is being used as a recovery boot image (REC_BOOT_SRC = 1) and OEM_BANK1_IFR0_PROT value = 5 is selected), then for a regular boot using the primary image Bank1_IFR0 is mapped to GLBAC2. If the primary boot fails, and the recovery path is taken, then Bank1_IFR0 is mapped to GLBAC4 instead. Note: Settings 5-7 should not be used if Bank1_IFR0 is used as OEM_SBL (BOOT_SRC = 2). In Develop life cycle - All settings: MBC protection bits set as RWXL = 1110 (GLBAC0) In other life cycles -",
+                            "values": [
+                                {
+                                    "name": "MBC_PROTECTION_BITS_SET_0",
+                                    "value": 0,
+                                    "description": "MBC protection bits set as RWXL = 1010 (GLBAC4)"
+                                },
+                                {
+                                    "name": "MBC_PROTECTION_BITS_SET_1",
+                                    "value": 1,
+                                    "description": "MBC protection bits set as RWXL = 1010 (GLBAC4)"
+                                },
+                                {
+                                    "name": "USED_AS_OEM_SBL",
+                                    "value": 2,
+                                    "description": "Used as OEM_SBL (BOOT_SRC = 2) - MBC protection bits set as RWXL = 1011 (GLBAC2). Other boot modes - MBC protection bits set as RWXL = 1010 (GLBAC4)"
+                                },
+                                {
+                                    "name": "USED_AS_OEM_SBL_3",
+                                    "value": 3,
+                                    "description": "Used as OEM_SBL (BOOT_SRC = 2) - MBC protection bits set as RWXL = 0011 (GLBAC6). Other boot modes - MBC protection bits set as RWXL = 1010 (GLBAC4)"
+                                },
+                                {
+                                    "name": "MBC_PROTECTION_BITS_SET_4",
+                                    "value": 4,
+                                    "description": "MBC protection bits set as RWXL = 1010 (GLBAC4)"
+                                },
+                                {
+                                    "name": "BOOTED_AS_OEM_RCVRY_IMG",
+                                    "value": 5,
+                                    "description": "Booted as OEM_RCVRY_IMG (REC_BOOT_SRC = 1) - MBC protection bits set as RWXL = 1010 (GLBAC4). Exiting to primary image (not SBL or recovery boot) - MBC protection bits set as RWXL = 1011 (GLBAC2)"
+                                },
+                                {
+                                    "name": "BOOTED_AS_OEM_RCVRY_IMG_6",
+                                    "value": 6,
+                                    "description": "Booted as OEM_RCVRY_IMG (REC_BOOT_SRC = 1) - MBC protection bits set as RWXL = 1010 (GLBAC4). Exiting to primary image (not SBL or recovery boot) - MBC protection bits set as RWXL = 0011 (GLBAC6)"
+                                },
+                                {
+                                    "name": "BOOTED_AS_OEM_RCVRY_IMG_7",
+                                    "value": 7,
+                                    "description": "Booted as OEM_RCVRY_IMG (REC_BOOT_SRC = 1) - MBC protection bits set as RWXL = 1010 (GLBAC4). Exiting to primary image (not SBL or recovery boot) - MBC protection bits set as RWXL = 0001 (GLBAC7)"
+                                }
+                            ]
                         },
                         {
                             "width": 2,
@@ -300,7 +349,7 @@
                 {
                     "id": "field008",
                     "name": "BOOT_LED_STATUS",
-                    "description": "boot led status",
+                    "description": "Boot LED status",
                     "offset_int": "0x0008",
                     "default_value_int": "0",
                     "bitfields": [
@@ -330,7 +379,7 @@
                 {
                     "id": "field00C",
                     "name": "BOOT_TIMERS",
-                    "description": "boot timers",
+                    "description": "Boot timers",
                     "offset_int": "0x000C",
                     "default_value_int": "0",
                     "bitfields": [
@@ -354,45 +403,137 @@
                     "description": "ROM code will not manage these fields, but SDK driver can manage these.",
                     "offset_int": "0x0010",
                     "default_value_int": "0",
-                    "deprecated_names": [
-                        "FLEXSPI_BOOT_CFG0"
-                    ],
                     "bitfields": [
                         {
                             "width": 1,
                             "id": "field010-bit0",
                             "name": "FLEXSPI_AUTO_PROBE_EN",
-                            "description": "Quad/Octal-SPI flash auto probe feature enable"
+                            "description": "Quad/Octal-SPI flash auto probe feature enable",
+                            "values": [
+                                {
+                                    "name": "DISABLE",
+                                    "value": 0,
+                                    "description": "Disable"
+                                },
+                                {
+                                    "name": "ENABLE",
+                                    "value": 1,
+                                    "description": "Enable"
+                                }
+                            ]
                         },
                         {
                             "width": 3,
                             "id": "field010-bits1-3",
                             "name": "FLEXSPI_PROBE_TYPE",
-                            "description": "Quad/Octal-SPI flash probe type"
+                            "description": "Quad/Octal-SPI flash probe type",
+                            "values": [
+                                {
+                                    "name": "QUADSPI_NOR",
+                                    "value": 0,
+                                    "description": "QuadSPI NOR"
+                                },
+                                {
+                                    "name": "MACRONIX_OCTAL_FLASH",
+                                    "value": 1,
+                                    "description": "Macronix Octal FLASH"
+                                },
+                                {
+                                    "name": "MICRON_OCTAL_FLASH",
+                                    "value": 2,
+                                    "description": "Micron Octal FLASH"
+                                },
+                                {
+                                    "name": "ADESTO_OCTAL_FLASH",
+                                    "value": 3,
+                                    "description": "Adesto Octal FLASH"
+                                }
+                            ]
                         },
                         {
                             "width": 3,
                             "id": "field010-bits4-6",
                             "name": "FLEXSPI_FLASH_TYPE",
-                            "description": "Define typical Serial NOR Flash types"
+                            "description": "Define typical Serial NOR Flash types",
+                            "values": [
+                                {
+                                    "name": "QSPI_ADDR_3B",
+                                    "value": 0,
+                                    "description": "QSPI ADDR 3B"
+                                },
+                                {
+                                    "name": "HYPER_1V8",
+                                    "value": 2,
+                                    "description": "HYPER 1V8"
+                                },
+                                {
+                                    "name": "HYPER_3V3",
+                                    "value": 3,
+                                    "description": "HYPER 3V3"
+                                },
+                                {
+                                    "name": "FLEXSPI_DDR_MXIC",
+                                    "value": 4,
+                                    "description": "FlexSPI_DDR_MXIC"
+                                },
+                                {
+                                    "name": "FLEXSPI_DDR_MICRON",
+                                    "value": 5,
+                                    "description": "FlexSPI_DDR_MICRON"
+                                }
+                            ]
                         },
                         {
                             "width": 4,
                             "id": "field010-bits7-10",
                             "name": "FLEXSPI_DUMMY_CYCLES",
-                            "description": "Quad/Octal-SPI dummy cycles for read command. If a non-zero value is programmed in this field, then the value is used to override the default number of dummy cycles for a fast read command read from the serial flash’s SFDP information. Note: this field is only used if FLEXSPI_AUTO_PROBE_EN is set"
+                            "description": "Quad/Octal-SPI dummy cycles for read command. If a non-zero value is programmed in this field, then the value is used to override the default number of dummy cycles for a fast read command read from the serial flash's SFDP information. Note: this field is only used if FLEXSPI_AUTO_PROBE_EN is set"
                         },
                         {
                             "width": 3,
                             "id": "field010-bits11-13",
                             "name": "FLEXSPI_FREQUENCY",
-                            "description": "Q/O-SPI flash interface frequency"
+                            "description": "Q/O-SPI flash interface frequency",
+                            "values": [
+                                {
+                                    "name": "75MHZ",
+                                    "value": 0,
+                                    "description": "75Mhz"
+                                },
+                                {
+                                    "name": "60MHZ",
+                                    "value": 1,
+                                    "description": "60Mhz"
+                                },
+                                {
+                                    "name": "50MHZ",
+                                    "value": 2,
+                                    "description": "50Mhz"
+                                },
+                                {
+                                    "name": "100MHZ",
+                                    "value": 3,
+                                    "description": "100Mhz"
+                                }
+                            ]
                         },
                         {
                             "width": 1,
                             "id": "field010-bit14",
                             "name": "FLEXSPI_RESET_ENABLE",
-                            "description": "Use O/QSPI_RESET_PIN to reset the flash device"
+                            "description": "Use O/QSPI_RESET_PIN to reset the flash device",
+                            "values": [
+                                {
+                                    "name": "NO_RESET",
+                                    "value": 0,
+                                    "description": "NO_RESET(O/QSPI device reset pin is not connected or available.)"
+                                },
+                                {
+                                    "name": "EN_RESET",
+                                    "value": 1,
+                                    "description": "EN_RESET(O/QSPI device reset pin is connected to a GPIO (QSPI_RESET_PIN).)"
+                                }
+                            ]
                         },
                         {
                             "width": 3,
@@ -410,13 +551,117 @@
                             "width": 2,
                             "id": "field010-bits23-24",
                             "name": "FLEXSPI_HOLD_TIME",
-                            "description": "Delay after reset before accessing Quad/Octal-SPI flash devices. Note, for POR in addition to this wait time FLEXSPI_PWR_HOLD_TIME is added"
+                            "description": "Delay after reset before accessing Quad/Octal-SPI flash devices. Note, for POR in addition to this wait time FLEXSPI_PWR_HOLD_TIME is added",
+                            "values": [
+                                {
+                                    "name": "WAIT_FOR_500_MICROSECONDS",
+                                    "value": 0,
+                                    "description": "Wait for 500 microseconds"
+                                },
+                                {
+                                    "name": "WAIT_FOR_1_MILLISECOND",
+                                    "value": 1,
+                                    "description": "Wait for 1 millisecond"
+                                },
+                                {
+                                    "name": "WAIT_FOR_3_MILLISECONDS",
+                                    "value": 2,
+                                    "description": "Wait for 3 milliseconds"
+                                },
+                                {
+                                    "name": "WAIT_FOR_10_MILLISECONDS",
+                                    "value": 3,
+                                    "description": "Wait for 10 milliseconds"
+                                }
+                            ]
                         },
                         {
                             "width": 4,
                             "id": "field010-bits25-28",
                             "name": "FLEXSPI_PWR_HOLD_TIME",
-                            "description": "Delay after POR before accessing Quad/Octal-SPI flash devices in addition to delay defined by FLEXSPI_HOLD TIME field"
+                            "description": "Delay after POR before accessing Quad/Octal-SPI flash devices in addition to delay defined by FLEXSPI_HOLD TIME field",
+                            "values": [
+                                {
+                                    "name": "NO_DELAY",
+                                    "value": 0,
+                                    "description": "No delay"
+                                },
+                                {
+                                    "name": "WAITS_ADDITIONAL_100_MICR",
+                                    "value": 1,
+                                    "description": "Waits additional 100 microseconds"
+                                },
+                                {
+                                    "name": "WAITS_ADDITIONAL_500_MICR",
+                                    "value": 2,
+                                    "description": "Waits additional 500 microseconds"
+                                },
+                                {
+                                    "name": "WAITS_ADDITIONAL_1_MILLIS",
+                                    "value": 3,
+                                    "description": "Waits additional 1 millisecond"
+                                },
+                                {
+                                    "name": "WAITS_ADDITIONAL_10_MILLI",
+                                    "value": 4,
+                                    "description": "Waits additional 10 milliseconds"
+                                },
+                                {
+                                    "name": "WAITS_ADDITIONAL_20_MILLI",
+                                    "value": 5,
+                                    "description": "Waits additional 20 milliseconds"
+                                },
+                                {
+                                    "name": "WAITS_ADDITIONAL_40_MILLI",
+                                    "value": 6,
+                                    "description": "Waits additional 40 milliseconds"
+                                },
+                                {
+                                    "name": "WAITS_ADDITIONAL_60_MILLI",
+                                    "value": 7,
+                                    "description": "Waits additional 60 milliseconds"
+                                },
+                                {
+                                    "name": "WAITS_ADDITIONAL_80_MILLI",
+                                    "value": 8,
+                                    "description": "Waits additional 80 milliseconds"
+                                },
+                                {
+                                    "name": "WAITS_ADDITIONAL_100_MILL",
+                                    "value": 9,
+                                    "description": "Waits additional 100 milliseconds"
+                                },
+                                {
+                                    "name": "WAITS_ADDITIONAL_120_MILL",
+                                    "value": 10,
+                                    "description": "Waits additional 120 milliseconds"
+                                },
+                                {
+                                    "name": "WAITS_ADDITIONAL_140_MILL",
+                                    "value": 11,
+                                    "description": "Waits additional 140 milliseconds"
+                                },
+                                {
+                                    "name": "WAITS_ADDITIONAL_160_MILL",
+                                    "value": 12,
+                                    "description": "Waits additional 160 milliseconds"
+                                },
+                                {
+                                    "name": "WAITS_ADDITIONAL_180_MILL",
+                                    "value": 13,
+                                    "description": "Waits additional 180 milliseconds"
+                                },
+                                {
+                                    "name": "WAITS_ADDITIONAL_200_MILL",
+                                    "value": 14,
+                                    "description": "Waits additional 200 milliseconds"
+                                },
+                                {
+                                    "name": "WAITS_ADDITIONAL_220_MILL",
+                                    "value": 15,
+                                    "description": "Waits additional 220 milliseconds"
+                                }
+                            ]
                         },
                         {
                             "width": 2
@@ -447,9 +692,6 @@
                     "description": "ROM code will not manage these fields, but SDK driver can manage these.",
                     "offset_int": "0x0014",
                     "default_value_int": "0",
-                    "deprecated_names": [
-                        "FLEXSPI_BOOT_CFG1"
-                    ],
                     "bitfields": [
                         {
                             "width": 7,
@@ -461,7 +703,7 @@
                             "width": 10,
                             "id": "field014-bits7-16",
                             "name": "FLEXSPI_IMAGE_OFFSET",
-                            "description": "Any offset in memory mapped FlexSPI Flash area could be remapped to offset zero to support eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. FlLEXSPI_IMAGE_OFFSET field specifies the offset location of the second image. FLEXSPI_REMAP_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped. If this field is left blank boot ROM will not enable FlexSPI remap feature. The physical flash offset is computed as below: physical offset = FLEXSPI_IMAGE_OFFSET"
+                            "description": "Any offset in memory mapped FlexSPI Flash area could be remapped to offset zero to support eXecute In Place (XIP) of image programmed at different offset. This allows to build all update images with same RO base address, which are programmed at offset 0 or higher offset. FLEXSPI_IMAGE_OFFSET field specifies the offset location of the second image. FLEXSPI_REMAP_IMAGE_SIZE field specifies the size multiple to determine the size of area to be remapped. If this field is left blank boot ROM will not enable FlexSPI remap feature. The physical flash offset is computed as below: physical offset = FLEXSPI_IMAGE_OFFSET"
                         },
                         {
                             "width": 4,
@@ -477,7 +719,7 @@
                 {
                     "id": "field018",
                     "name": "REC_SPI_FLASH_CFG0",
-                    "description": "rec spi flash cfg0",
+                    "description": "Rec SPI flash configuration0",
                     "offset_int": "0x0018",
                     "default_value_int": "0",
                     "bitfields": [
@@ -519,7 +761,7 @@
                 {
                     "id": "field01C",
                     "name": "REC_SPI_FLASH_CFG1",
-                    "description": "REC SPI FLASH CFG1",
+                    "description": "Rec SPI flash configuration1",
                     "offset_int": "0x001C",
                     "default_value_int": "0",
                     "bitfields": [
@@ -560,14 +802,36 @@
                             "width": 2,
                             "id": "field01C-bits30-31",
                             "name": "REC_BOOT_PIN_CUST",
-                            "description": "Use customer defined pins for 1-bit SPI recovery boot pins"
+                            "description": "Use customer defined pins for 1-bit SPI recovery boot pins",
+                            "values": [
+                                {
+                                    "name": "DEFAULT_ROM_DEFINED_PIN_0",
+                                    "value": 0,
+                                    "description": "Default ROM defined pins"
+                                },
+                                {
+                                    "name": "CUSTOMER_DEFINED",
+                                    "value": 1,
+                                    "description": "Customer defined"
+                                },
+                                {
+                                    "name": "DEFAULT_ROM_DEFINED_PIN_2",
+                                    "value": 2,
+                                    "description": "Default ROM defined pins"
+                                },
+                                {
+                                    "name": "DEFAULT_ROM_DEFINED_PIN_3",
+                                    "value": 3,
+                                    "description": "Default ROM defined pins"
+                                }
+                            ]
                         }
                     ]
                 },
                 {
                     "id": "field020",
                     "name": "ISP_UART_CFG",
-                    "description": "isp uart cfg",
+                    "description": "ISP UART configuration",
                     "offset_int": "0x0020",
                     "default_value_int": "0",
                     "bitfields": [
@@ -609,7 +873,7 @@
                 {
                     "id": "field024",
                     "name": "ISP_I2C_CFG",
-                    "description": "isp i2c cfg",
+                    "description": "ISP I2C configuration",
                     "offset_int": "0x0024",
                     "default_value_int": "0",
                     "bitfields": [
@@ -659,7 +923,7 @@
                 {
                     "id": "field02C",
                     "name": "ISP_SPI_CFG0",
-                    "description": "isp spi cfg0",
+                    "description": "ISP SPI configuration0",
                     "offset_int": "0x002C",
                     "default_value_int": "0",
                     "bitfields": [
@@ -701,7 +965,7 @@
                 {
                     "id": "field030",
                     "name": "ISP_SPI_CFG1",
-                    "description": "ISP SPI CFG1",
+                    "description": "ISP SPI configuration1",
                     "offset_int": "0x0030",
                     "default_value_int": "0",
                     "bitfields": [
@@ -746,7 +1010,7 @@
                 {
                     "id": "field034",
                     "name": "ISP_USB_ID",
-                    "description": "isp usb id",
+                    "description": "ISP USB ID",
                     "offset_int": "0x0034",
                     "default_value_int": "0",
                     "bitfields": [
@@ -767,7 +1031,7 @@
                 {
                     "id": "field038",
                     "name": "ISP_USB_CFG",
-                    "description": "isp usb cfg",
+                    "description": "ISP USB configuration",
                     "offset_int": "0x0038",
                     "default_value_int": "0",
                     "bitfields": [
@@ -790,13 +1054,25 @@
                             "width": 3,
                             "id": "field038-bits16-18",
                             "name": "EXT_XTAL_CLK",
-                            "description": "USB PHY input clock frequency. For USB high speed PHY external XTAL input is needed. This field specifies the frequency of XTAL used on board. • 000 - 24MHz input clock (Divide by 20) - Default option when CMPA is blank. • 001 - 30MHz input clock (Divide by 16) • 010 - 32MHz input clock (Divide by 15) • 011 - Reserved • 100 - 20MHz input clock (Divide by 24) • 101 - 19.2MHz input clock (Divide by 25) • 110 - 16MHz input clock (Divide by 30) • 111 - 12MHz input clock (Divide by 40)"
+                            "description": "USB PHY input clock frequency. For USB high speed PHY external XTAL input is needed. This field specifies the frequency of XTAL used on board. - 000 - 24MHz input clock (Divide by 20) - Default option when CMPA is blank. - 001 - 30MHz input clock (Divide by 16) - 010 - 32MHz input clock (Divide by 15) - 011 - Reserved - 100 - 20MHz input clock (Divide by 24) - 101 - 19.2MHz input clock (Divide by 25) - 110 - 16MHz input clock (Divide by 30) - 111 - 12MHz input clock (Divide by 40)"
                         },
                         {
                             "width": 1,
                             "id": "field038-bit19",
                             "name": "PRE_DIV",
-                            "description": "Enable Pre-divider. Needed to support 48MHz and other high speed crystals"
+                            "description": "Enable Pre-divider. Needed to support 48MHz and other high speed crystals",
+                            "values": [
+                                {
+                                    "name": "DISABLE",
+                                    "value": 0,
+                                    "description": "Disable"
+                                },
+                                {
+                                    "name": "ENABLE",
+                                    "value": 1,
+                                    "description": "Enable"
+                                }
+                            ]
                         },
                         {
                             "width": 12
@@ -806,7 +1082,7 @@
                 {
                     "id": "field03C",
                     "name": "ISP_MISC_CFG",
-                    "description": "isp misc cfg",
+                    "description": "ISP misc configuration",
                     "offset_int": "0x003C",
                     "default_value_int": "0",
                     "bitfields": [
@@ -823,38 +1099,123 @@
                             "width": 2,
                             "id": "field03C-bits22-23",
                             "name": "ISP_USB_CUST",
-                            "description": "Use customer defined GPIO for USB VBUS detect function during ISP mode"
+                            "description": "Use customer defined GPIO for USB VBUS detect function during ISP mode",
+                            "values": [
+                                {
+                                    "name": "USE_DEDICATED_VBUS_PINS",
+                                    "value": 0,
+                                    "description": "Use dedicated VBUS pins"
+                                },
+                                {
+                                    "name": "CUSTOMER_DEFINED_GPIO_F_1",
+                                    "value": 1,
+                                    "description": "Customer defined GPIO for USB0_VBUS detect"
+                                },
+                                {
+                                    "name": "CUSTOMER_DEFINED_GPIO_F_2",
+                                    "value": 2,
+                                    "description": "Customer defined GPIO for USB1_VBUS detect"
+                                },
+                                {
+                                    "name": "USE_VDD_USB_FOR_VBUS_PRES",
+                                    "value": 3,
+                                    "description": "Use VDD_USB for VBUS presence. On board regulator should generate VDD_USB voltage using 5V input fo VBUS pin on connector"
+                                }
+                            ]
                         },
                         {
-                            "width": 2,
-                            "id": "field03C-bits24-25",
-                            "name": "ISP_CAN_CUST",
-                            "description": "Use customer defined CAN ISP pins"
+                            "width": 2
                         },
                         {
                             "width": 2,
                             "id": "field03C-bits26-27",
                             "name": "ISP_SPI_CUST",
-                            "description": "Use customer defined SPI ISP pins"
+                            "description": "Use customer defined SPI ISP pins",
+                            "values": [
+                                {
+                                    "name": "DEFAULT_ROM_DEFINED_PIN_0",
+                                    "value": 0,
+                                    "description": "Default ROM defined pins"
+                                },
+                                {
+                                    "name": "CUSTOMER_DEFINED",
+                                    "value": 1,
+                                    "description": "Customer defined"
+                                },
+                                {
+                                    "name": "DEFAULT_ROM_DEFINED_PIN_2",
+                                    "value": 2,
+                                    "description": "Default ROM defined pins"
+                                },
+                                {
+                                    "name": "DEFAULT_ROM_DEFINED_PIN_3",
+                                    "value": 3,
+                                    "description": "Default ROM defined pins"
+                                }
+                            ]
                         },
                         {
                             "width": 2,
                             "id": "field03C-bits28-29",
                             "name": "ISP_I2C_CUST",
-                            "description": "Use customer defined I2C ISP pins"
+                            "description": "Use customer defined I2C ISP pins",
+                            "values": [
+                                {
+                                    "name": "DEFAULT_ROM_DEFINED_PIN_0",
+                                    "value": 0,
+                                    "description": "Default ROM defined pins"
+                                },
+                                {
+                                    "name": "CUSTOMER_DEFINED",
+                                    "value": 1,
+                                    "description": "Customer defined"
+                                },
+                                {
+                                    "name": "DEFAULT_ROM_DEFINED_PIN_2",
+                                    "value": 2,
+                                    "description": "Default ROM defined pins"
+                                },
+                                {
+                                    "name": "DEFAULT_ROM_DEFINED_PIN_3",
+                                    "value": 3,
+                                    "description": "Default ROM defined pins"
+                                }
+                            ]
                         },
                         {
                             "width": 2,
                             "id": "field03C-bits30-31",
                             "name": "ISP_UART_CUST",
-                            "description": "Use customer defined UART ISP pins"
+                            "description": "Use customer defined UART ISP pins",
+                            "values": [
+                                {
+                                    "name": "DEFAULT_ROM_DEFINED_PIN_0",
+                                    "value": 0,
+                                    "description": "Default ROM defined pins"
+                                },
+                                {
+                                    "name": "CUSTOMER_DEFINED",
+                                    "value": 1,
+                                    "description": "Customer defined"
+                                },
+                                {
+                                    "name": "DEFAULT_ROM_DEFINED_PIN_2",
+                                    "value": 2,
+                                    "description": "Default ROM defined pins"
+                                },
+                                {
+                                    "name": "DEFAULT_ROM_DEFINED_PIN_3",
+                                    "value": 3,
+                                    "description": "Default ROM defined pins"
+                                }
+                            ]
                         }
                     ]
                 },
                 {
                     "id": "field040",
                     "name": "CC_SOCU_PIN",
-                    "description": "cc socu pin",
+                    "description": "CC SOCU pin",
                     "offset_int": "0x0040",
                     "default_value_int": "0",
                     "bitfields": [
@@ -1051,14 +1412,20 @@
                             "description": "Enforce UUID match during Debug authentication",
                             "values": [
                                 {
-                                    "name": "All devices",
+                                    "name": "DEBUG_CERT_ALL_DEVICES",
                                     "value": 0,
-                                    "description": "Debug certificate can be used with all devices"
+                                    "description": "Debug certificate can be used with all devices",
+                                    "deprecated_names": [
+                                        "All devices"
+                                    ]
                                 },
                                 {
-                                    "name": "Matching UUID",
+                                    "name": "DEBUG_CERT_PER_DEVICE",
                                     "value": 1,
-                                    "description": "Debug certificate per device with matching UUID is needed"
+                                    "description": "Debug certificate per device with matching UUID is needed",
+                                    "deprecated_names": [
+                                        "Matching UUID"
+                                    ]
                                 }
                             ]
                         },
@@ -1066,7 +1433,7 @@
                             "width": 16,
                             "id": "field040-bits16-31",
                             "name": "Inverse_value",
-                            "description": "inverse value of [15:0]",
+                            "description": "Inverse value of [15:0]",
                             "calculated": "INVERSE"
                         }
                     ]
@@ -1074,7 +1441,7 @@
                 {
                     "id": "field044",
                     "name": "CC_SOCU_DFLT",
-                    "description": "cc socu dflt",
+                    "description": "CC SOCU DFLT",
                     "offset_int": "0x0044",
                     "default_value_int": "0",
                     "bitfields": [
@@ -1268,7 +1635,7 @@
                             "width": 16,
                             "id": "field044-bits16-31",
                             "name": "Inverse_value",
-                            "description": "inverse value of [15:0]",
+                            "description": "Inverse value of [15:0]",
                             "calculated": "INVERSE"
                         }
                     ]
@@ -1276,7 +1643,7 @@
                 {
                     "id": "field048",
                     "name": "VENDOR_USAGE",
-                    "description": "vendor usage",
+                    "description": "Vendor usage",
                     "offset_int": "0x0048",
                     "default_value_int": "0",
                     "bitfields": [
@@ -1302,7 +1669,7 @@
                 {
                     "id": "field050",
                     "name": "SECURE_BOOT_CFG",
-                    "description": "secure boot cfg",
+                    "description": "Secure boot configuration",
                     "offset_int": "0x0050",
                     "default_value_int": "0",
                     "bitfields": [
@@ -1313,24 +1680,36 @@
                             "description": "Secure boot enforcement. This field defines the minimum image verification procedure (CRC32, CMAC, ECDSA sign). The Image type field in header indicates the type of verification data (checksum or signature) included in it",
                             "values": [
                                 {
-                                    "name": "All",
+                                    "name": "ALL_IMAGE_TYPES_ALLOWED",
                                     "value": 0,
-                                    "description": "All Image types are allowed"
+                                    "description": "All Image types are allowed",
+                                    "deprecated_names": [
+                                        "All"
+                                    ]
                                 },
                                 {
-                                    "name": "CRC32 or signed",
+                                    "name": "ONLY_CRC32_OR_CRYPTO_SIG",
                                     "value": 1,
-                                    "description": "Only CRC32 or cryptographically signed (CMAC or ECDSA or MLDSA) images are allowed"
+                                    "description": "Only CRC32 or cryptographically signed (CMAC or ECDSA or MLDSA) images are allowed",
+                                    "deprecated_names": [
+                                        "CRC32 or signed"
+                                    ]
                                 },
                                 {
-                                    "name": "Signed only",
+                                    "name": "ONLY_CRYPTO_SIGNED",
                                     "value": 2,
-                                    "description": "Only cryptographically Signed (CMAC or ECDSA or MLDSA) images are allowed"
+                                    "description": "Only cryptographically Signed (CMAC or ECDSA or MLDSA) images are allowed",
+                                    "deprecated_names": [
+                                        "Signed only"
+                                    ]
                                 },
                                 {
-                                    "name": "PKI signed only",
+                                    "name": "ONLY_PKI_SIGNED",
                                     "value": 3,
-                                    "description": "Only PKI signed (ECDSA or MLDSA) images are allowed"
+                                    "description": "Only PKI signed (ECDSA or MLDSA) images are allowed",
+                                    "deprecated_names": [
+                                        "PKI signed only"
+                                    ]
                                 }
                             ]
                         },
@@ -1344,24 +1723,36 @@
                             "description": "LP_SEC_BOOT: Secure boot option for low-power wake from power-down & deep-power down. For CFPA/CMPA do CRC check always",
                             "values": [
                                 {
-                                    "name": "Same as cold boot",
+                                    "name": "COLD_BOOT",
                                     "value": 0,
-                                    "description": "Same as cold boot"
+                                    "description": "Same as cold boot",
+                                    "deprecated_names": [
+                                        "Same as cold boot"
+                                    ]
                                 },
                                 {
-                                    "name": "CFPA-CMPA & CRC32",
+                                    "name": "CRC32_IMG",
                                     "value": 1,
-                                    "description": "CRC check for CFPA/CMPA & CRC32 check of active image. Uses AHB_CRC image type to check image CRC and loads TZ-M preset data if present before jumping to the image"
+                                    "description": "CRC check for CFPA/CMPA & CRC32 check of active image. Uses AHB_CRC image type to check image CRC and loads TZ-M preset data if present before jumping to the image",
+                                    "deprecated_names": [
+                                        "CFPA/CMPA & CRC32"
+                                    ]
                                 },
                                 {
-                                    "name": "CFPA-CMPA & vector addr",
+                                    "name": "VECTOR_ADDR",
                                     "value": 2,
-                                    "description": "CRC check for CFPA/CMPA & jump to vector address specified in CFPA"
+                                    "description": "CRC check for CFPA/CMPA & jump to vector address specified in CFPA",
+                                    "deprecated_names": [
+                                        "CFPA/CMPA & vector addr"
+                                    ]
                                 },
                                 {
-                                    "name": "CFPA-CMPA & CMAC",
+                                    "name": "CMAC",
                                     "value": 3,
-                                    "description": "CRC check for CFPA/CMPA & CMAC check of active image. Uses AHB_CRC image type to check image CRC and loads TZ-M preset data if present before jumping to the image"
+                                    "description": "CRC check for CFPA/CMPA & CMAC check of active image. Uses AHB_CRC image type to check image CRC and loads TZ-M preset data if present before jumping to the image",
+                                    "deprecated_names": [
+                                        "CFPA/CMPA & CMAC"
+                                    ]
                                 }
                             ]
                         },
@@ -1375,24 +1766,38 @@
                             "description": "Define the DICE csr and key generation type",
                             "values": [
                                 {
-                                    "name": "ECC_P384_KEYS_0",
+                                    "name": "GEN_DICE_ECC_P384_KEYS_0",
                                     "value": 0,
-                                    "description": "Generate DICE ECC P-384 keys"
+                                    "description": "Generate DICE ECC P-384 keys",
+                                    "deprecated_names": [
+                                        "ECC_P384_KEYS_0"
+                                    ]
                                 },
                                 {
-                                    "name": "ECC_P384_KEYS_1",
+                                    "name": "GEN_DICE_ECC_P384_KEYS_1",
                                     "value": 1,
-                                    "description": "Generate DICE ECC P-384 keys"
+                                    "description": "Generate DICE ECC P-384 keys",
+                                    "deprecated_names": [
+                                        "ECC_P384_KEYS_1"
+                                    ]
                                 },
                                 {
-                                    "name": "SHA384_AND_MLDSA_KEYS_2",
+                                    "name": "GEN_DICE_SHA384_MLDSA_2",
                                     "value": 2,
-                                    "description": "Generate DICE SHA384 & MLDSA keys"
+                                    "description": "Generate DICE SHA384 & MLDSA keys",
+                                    "deprecated_names": [
+                                        "SHA384_MLDSA_KEYS_2",
+                                        "SHA384_AND_MLDSA_KEYS_2"
+                                    ]
                                 },
                                 {
-                                    "name": "SHA384_AND_MLDSA_KEYS_3",
+                                    "name": "GEN_DICE_SHA384_MLDSA_3",
                                     "value": 3,
-                                    "description": "Generate DICE SHA384 & MLDSA keys"
+                                    "description": "Generate DICE SHA384 & MLDSA keys",
+                                    "deprecated_names": [
+                                        "SHA384_MLDSA_KEYS_3",
+                                        "SHA384_AND_MLDSA_KEYS_3"
+                                    ]
                                 }
                             ]
                         },
@@ -1403,24 +1808,36 @@
                             "description": "Enforce CNSA suite approved algorithms for secure boot, secure update and debug authentication",
                             "values": [
                                 {
-                                    "name": "AT_LEAST_CNSA10_0",
+                                    "name": "AT_LEAST_CNSA_10_ALGORI_0",
                                     "value": 0,
-                                    "description": "At least CNSA 1.0 algorithms are used. (ECC P-384, SHA384 & AES256)"
+                                    "description": "At least CNSA 1.0 algorithms are used. (ECC P-384)",
+                                    "deprecated_names": [
+                                        "AT_LEAST_CNSA10_0"
+                                    ]
                                 },
                                 {
-                                    "name": "AT_LEAST_CNSA10_1",
+                                    "name": "AT_LEAST_CNSA_10_ALGORI_1",
                                     "value": 1,
-                                    "description": "At least CNSA 1.0 algorithms are used. (ECC P-384, SHA384 & AES256)"
+                                    "description": "At least CNSA 1.0 algorithms are used. (ECC P-384)",
+                                    "deprecated_names": [
+                                        "AT_LEAST_CNSA10_1"
+                                    ]
                                 },
                                 {
-                                    "name": "ONLY_CNSA20_2",
+                                    "name": "ONLY_CNSA_20_ALGORITHMS_2",
                                     "value": 2,
-                                    "description": "Only CNSA 2.0 algorithms are used.(ECDSA P-384 + MLDSA-87, ML-KEM, SHA384 & AES256)"
+                                    "description": "Only CNSA 2.0 algorithms are used.(ECDSA P-384 + MLDSA-87)",
+                                    "deprecated_names": [
+                                        "ONLY_CNSA20_2"
+                                    ]
                                 },
                                 {
-                                    "name": "ONLY_CNSA20_3",
+                                    "name": "ONLY_CNSA_20_ALGORITHMS_3",
                                     "value": 3,
-                                    "description": "Only CNSA 2.0 algorithms are used.(ECDSA P-384 + MLDSA-87, ML-KEM, SHA384 & AES256)"
+                                    "description": "Only CNSA 2.0 algorithms are used.(ECDSA P-384 + MLDSA-87)",
+                                    "deprecated_names": [
+                                        "ONLY_CNSA20_3"
+                                    ]
                                 }
                             ]
                         },
@@ -1436,19 +1853,28 @@
                                     "description": "Ignored"
                                 },
                                 {
-                                    "name": "ENFORCED_1",
+                                    "name": "ENFORCE_PRESET_TZM_DATA_1",
                                     "value": 1,
-                                    "description": "Enforce preset TZM data in image manifest"
+                                    "description": "Enforce preset TZM data in image manifest",
+                                    "deprecated_names": [
+                                        "ENFORCED_1"
+                                    ]
                                 },
                                 {
-                                    "name": "ENFORCED_2",
+                                    "name": "ENFORCE_PRESET_TZM_DATA_2",
                                     "value": 2,
-                                    "description": "Enforce preset TZM data in image manifest"
+                                    "description": "Enforce preset TZM data in image manifest",
+                                    "deprecated_names": [
+                                        "ENFORCED_2"
+                                    ]
                                 },
                                 {
-                                    "name": "ENFORCED_3",
+                                    "name": "ENFORCE_PRESET_TZM_DATA_3",
                                     "value": 3,
-                                    "description": "Enforce preset TZM data in image manifest"
+                                    "description": "Enforce preset TZM data in image manifest",
+                                    "deprecated_names": [
+                                        "ENFORCED_3"
+                                    ]
                                 }
                             ]
                         },
@@ -1459,24 +1885,36 @@
                             "description": "RAM zeroize on ITRC event. Zeroize long-term storage RAM (RAMA) on subsequent boot when Intrusion & Tamper control signals an intrusion event (ITRC_OUT3)",
                             "values": [
                                 {
-                                    "name": "No action",
+                                    "name": "NO_ACTION",
                                     "value": 0,
-                                    "description": "No action"
+                                    "description": "No action",
+                                    "deprecated_names": [
+                                        "No action"
+                                    ]
                                 },
                                 {
-                                    "name": "Always on ITRC",
+                                    "name": "ALWAYS_ZEROIZE_PKC_RAM_ON",
                                     "value": 1,
-                                    "description": "Always Zeroize PKC RAM on ITRC event only"
+                                    "description": "Always Zeroize PKC RAM on ITRC event only",
+                                    "deprecated_names": [
+                                        "Always on ITRC"
+                                    ]
                                 },
                                 {
-                                    "name": "On ITRC",
+                                    "name": "ZEROIZE_PKC_&_RAMA_ON_ITR",
                                     "value": 2,
-                                    "description": "Zeroize PKC & RAMA on ITRC event only"
+                                    "description": "Zeroize PKC & RAMA on ITRC event only",
+                                    "deprecated_names": [
+                                        "On ITRC"
+                                    ]
                                 },
                                 {
-                                    "name": "Always on all reset boot",
+                                    "name": "ALWAYS_ZEROIZE_PKC_&_RAMA",
                                     "value": 3,
-                                    "description": "Always Zeroize PKC & RAMA on all reset boot"
+                                    "description": "Always Zeroize PKC & RAMA on all reset boot",
+                                    "deprecated_names": [
+                                        "Always on all reset boot"
+                                    ]
                                 }
                             ]
                         },
@@ -1487,24 +1925,36 @@
                             "description": "Protection of active image. This field defines protection of flash area occupied by the active image. Only applicable to internal flash",
                             "values": [
                                 {
-                                    "name": "CFPA Flash",
+                                    "name": "PROTECT_CFPA_FLASH_ACL",
                                     "value": 0,
-                                    "description": "Protection is defined using the CFPA FLASH_ACL settings"
+                                    "description": "Protection is defined using the CFPA FLASH_ACL settings",
+                                    "deprecated_names": [
+                                        "CFPA Flash"
+                                    ]
                                 },
                                 {
-                                    "name": "Write with sticky lock",
+                                    "name": "WP_ACT_IMG_STICKY_GLBAC2",
                                     "value": 1,
-                                    "description": "Write protect active image area with sticky lock. GLBAC2 is used. FLASH_ACL settings are ignored"
+                                    "description": "Write protect active image area with sticky lock. GLBAC2 is used. FLASH_ACL settings are ignored",
+                                    "deprecated_names": [
+                                        "Write with sticky lock"
+                                    ]
                                 },
                                 {
-                                    "name": "Write without sticky lock",
+                                    "name": "WP_ACT_IMG_NOSTKY_GLBAC4",
                                     "value": 2,
-                                    "description": "Write protect active image area without sticky lock. GLBAC4 is used. FLASH_ACL settings are ignored"
+                                    "description": "Write protect active image area without sticky lock. GLBAC4 is used. FLASH_ACL settings are ignored",
+                                    "deprecated_names": [
+                                        "Write without sticky lock"
+                                    ]
                                 },
                                 {
-                                    "name": "XOM with sticky lock",
+                                    "name": "XOM_ACT_IMG_STICKY_GLBAC6",
                                     "value": 3,
-                                    "description": "XOM protect active image area with sticky lock. GLBAC6 is used. FLASH_ACL settings are ignored"
+                                    "description": "XOM protect active image area with sticky lock. GLBAC6 is used. FLASH_ACL settings are ignored",
+                                    "deprecated_names": [
+                                        "XOM with sticky lock"
+                                    ]
                                 }
                             ]
                         },
@@ -1515,24 +1965,36 @@
                             "description": "Enable self-test for SHA2 block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]",
                             "values": [
                                 {
-                                    "name": "Not included",
+                                    "name": "NOT_INCLUDED",
                                     "value": 0,
-                                    "description": "not included"
+                                    "description": "not included",
+                                    "deprecated_names": [
+                                        "Not included"
+                                    ]
                                 },
                                 {
-                                    "name": "Boot on failure",
+                                    "name": "ON_FAIL_CONTINUE_BOOT",
                                     "value": 1,
-                                    "description": "On failure continue to boot"
+                                    "description": "On failure continue to boot",
+                                    "deprecated_names": [
+                                        "Boot on failure"
+                                    ]
                                 },
                                 {
-                                    "name": "ISP on failure",
+                                    "name": "ON_FAIL_ISP_RECOVERY",
                                     "value": 2,
-                                    "description": "On failure enter ISP mode for recovery"
+                                    "description": "On failure enter ISP mode for recovery",
+                                    "deprecated_names": [
+                                        "ISP on failure"
+                                    ]
                                 },
                                 {
-                                    "name": "Lock on failure",
+                                    "name": "ON_FAIL_LOCK_DEVICE",
                                     "value": 3,
-                                    "description": "On failure lock the device to enforce power-cycle"
+                                    "description": "On failure lock the device to enforce power-cycle",
+                                    "deprecated_names": [
+                                        "Lock on failure"
+                                    ]
                                 }
                             ]
                         },
@@ -1543,24 +2005,36 @@
                             "description": "Enable self-test for AES block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]",
                             "values": [
                                 {
-                                    "name": "Not included",
+                                    "name": "NOT_INCLUDED",
                                     "value": 0,
-                                    "description": "not included"
+                                    "description": "not included",
+                                    "deprecated_names": [
+                                        "Not included"
+                                    ]
                                 },
                                 {
-                                    "name": "Boot on failure",
+                                    "name": "ON_FAIL_CONTINUE_BOOT",
                                     "value": 1,
-                                    "description": "On failure continue to boot"
+                                    "description": "On failure continue to boot",
+                                    "deprecated_names": [
+                                        "Boot on failure"
+                                    ]
                                 },
                                 {
-                                    "name": "ISP on failure",
+                                    "name": "ON_FAIL_ISP_RECOVERY",
                                     "value": 2,
-                                    "description": "On failure enter ISP mode for recovery"
+                                    "description": "On failure enter ISP mode for recovery",
+                                    "deprecated_names": [
+                                        "ISP on failure"
+                                    ]
                                 },
                                 {
-                                    "name": "Lock on failure",
+                                    "name": "ON_FAIL_LOCK_DEVICE",
                                     "value": 3,
-                                    "description": "On failure lock the device to enforce power-cycle"
+                                    "description": "On failure lock the device to enforce power-cycle",
+                                    "deprecated_names": [
+                                        "Lock on failure"
+                                    ]
                                 }
                             ]
                         },
@@ -1571,24 +2045,36 @@
                             "description": "Enable self-test for ECDSA block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]",
                             "values": [
                                 {
-                                    "name": "Not included",
+                                    "name": "NOT_INCLUDED",
                                     "value": 0,
-                                    "description": "not included"
+                                    "description": "not included",
+                                    "deprecated_names": [
+                                        "Not included"
+                                    ]
                                 },
                                 {
-                                    "name": "Boot on failure",
+                                    "name": "ON_FAIL_CONTINUE_BOOT",
                                     "value": 1,
-                                    "description": "On failure continue to boot"
+                                    "description": "On failure continue to boot",
+                                    "deprecated_names": [
+                                        "Boot on failure"
+                                    ]
                                 },
                                 {
-                                    "name": "ISP on failure",
+                                    "name": "ON_FAIL_ISP_RECOVERY",
                                     "value": 2,
-                                    "description": "On failure enter ISP mode for recovery"
+                                    "description": "On failure enter ISP mode for recovery",
+                                    "deprecated_names": [
+                                        "ISP on failure"
+                                    ]
                                 },
                                 {
-                                    "name": "Lock on failure",
+                                    "name": "ON_FAIL_LOCK_DEVICE",
                                     "value": 3,
-                                    "description": "On failure lock the device to enforce power-cycle"
+                                    "description": "On failure lock the device to enforce power-cycle",
+                                    "deprecated_names": [
+                                        "Lock on failure"
+                                    ]
                                 }
                             ]
                         },
@@ -1599,24 +2085,36 @@
                             "description": "Enable self-test for DRBG block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]",
                             "values": [
                                 {
-                                    "name": "Not included",
+                                    "name": "NOT_INCLUDED",
                                     "value": 0,
-                                    "description": "not included"
+                                    "description": "not included",
+                                    "deprecated_names": [
+                                        "Not included"
+                                    ]
                                 },
                                 {
-                                    "name": "Boot on failure",
+                                    "name": "ON_FAIL_CONTINUE_BOOT",
                                     "value": 1,
-                                    "description": "On failure continue to boot"
+                                    "description": "On failure continue to boot",
+                                    "deprecated_names": [
+                                        "Boot on failure"
+                                    ]
                                 },
                                 {
-                                    "name": "ISP on failure",
+                                    "name": "ON_FAIL_ISP_RECOVERY",
                                     "value": 2,
-                                    "description": "On failure enter ISP mode for recovery"
+                                    "description": "On failure enter ISP mode for recovery",
+                                    "deprecated_names": [
+                                        "ISP on failure"
+                                    ]
                                 },
                                 {
-                                    "name": "Lock on failure",
+                                    "name": "ON_FAIL_LOCK_DEVICE",
                                     "value": 3,
-                                    "description": "On failure lock the device to enforce power-cycle"
+                                    "description": "On failure lock the device to enforce power-cycle",
+                                    "deprecated_names": [
+                                        "Lock on failure"
+                                    ]
                                 }
                             ]
                         },
@@ -1627,24 +2125,36 @@
                             "description": "Enable self-test for HMAC block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]",
                             "values": [
                                 {
-                                    "name": "Not included",
+                                    "name": "NOT_INCLUDED",
                                     "value": 0,
-                                    "description": "not included"
+                                    "description": "not included",
+                                    "deprecated_names": [
+                                        "Not included"
+                                    ]
                                 },
                                 {
-                                    "name": "Boot on failure",
+                                    "name": "ON_FAIL_CONTINUE_BOOT",
                                     "value": 1,
-                                    "description": "On failure continue to boot"
+                                    "description": "On failure continue to boot",
+                                    "deprecated_names": [
+                                        "Boot on failure"
+                                    ]
                                 },
                                 {
-                                    "name": "ISP on failure",
+                                    "name": "ON_FAIL_ISP_RECOVERY",
                                     "value": 2,
-                                    "description": "On failure enter ISP mode for recovery"
+                                    "description": "On failure enter ISP mode for recovery",
+                                    "deprecated_names": [
+                                        "ISP on failure"
+                                    ]
                                 },
                                 {
-                                    "name": "Lock on failure",
+                                    "name": "ON_FAIL_LOCK_DEVICE",
                                     "value": 3,
-                                    "description": "On failure lock the device to enforce power-cycle"
+                                    "description": "On failure lock the device to enforce power-cycle",
+                                    "deprecated_names": [
+                                        "Lock on failure"
+                                    ]
                                 }
                             ]
                         },
@@ -1655,24 +2165,36 @@
                             "description": "Enable self-test for KDF & CMAC blocks on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]",
                             "values": [
                                 {
-                                    "name": "Not included",
+                                    "name": "NOT_INCLUDED",
                                     "value": 0,
-                                    "description": "not included"
+                                    "description": "not included",
+                                    "deprecated_names": [
+                                        "Not included"
+                                    ]
                                 },
                                 {
-                                    "name": "Boot on failure",
+                                    "name": "ON_FAIL_CONTINUE_BOOT",
                                     "value": 1,
-                                    "description": "On failure continue to boot"
+                                    "description": "On failure continue to boot",
+                                    "deprecated_names": [
+                                        "Boot on failure"
+                                    ]
                                 },
                                 {
-                                    "name": "ISP on failure",
+                                    "name": "ON_FAIL_ISP_RECOVERY",
                                     "value": 2,
-                                    "description": "On failure enter ISP mode for recovery"
+                                    "description": "On failure enter ISP mode for recovery",
+                                    "deprecated_names": [
+                                        "ISP on failure"
+                                    ]
                                 },
                                 {
-                                    "name": "Lock on failure",
+                                    "name": "ON_FAIL_LOCK_DEVICE",
                                     "value": 3,
-                                    "description": "On failure lock the device to enforce power-cycle"
+                                    "description": "On failure lock the device to enforce power-cycle",
+                                    "deprecated_names": [
+                                        "Lock on failure"
+                                    ]
                                 }
                             ]
                         },
@@ -1683,24 +2205,36 @@
                             "description": "Enable self-test for PUF block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]",
                             "values": [
                                 {
-                                    "name": "Not included",
+                                    "name": "NOT_INCLUDED",
                                     "value": 0,
-                                    "description": "not included"
+                                    "description": "not included",
+                                    "deprecated_names": [
+                                        "Not included"
+                                    ]
                                 },
                                 {
-                                    "name": "Boot on failure",
+                                    "name": "ON_FAIL_CONTINUE_BOOT",
                                     "value": 1,
-                                    "description": "On failure continue to boot"
+                                    "description": "On failure continue to boot",
+                                    "deprecated_names": [
+                                        "Boot on failure"
+                                    ]
                                 },
                                 {
-                                    "name": "ISP on failure",
+                                    "name": "ON_FAIL_ISP_RECOVERY",
                                     "value": 2,
-                                    "description": "On failure enter ISP mode for recovery"
+                                    "description": "On failure enter ISP mode for recovery",
+                                    "deprecated_names": [
+                                        "ISP on failure"
+                                    ]
                                 },
                                 {
-                                    "name": "Lock on failure",
+                                    "name": "ON_FAIL_LOCK_DEVICE",
                                     "value": 3,
-                                    "description": "On failure lock the device to enforce power-cycle"
+                                    "description": "On failure lock the device to enforce power-cycle",
+                                    "deprecated_names": [
+                                        "Lock on failure"
+                                    ]
                                 }
                             ]
                         },
@@ -1712,7 +2246,7 @@
                 {
                     "id": "field054",
                     "name": "RoTK_USAGE",
-                    "description": "rotk usage",
+                    "description": "RoTK usage",
                     "offset_int": "0x0054",
                     "default_value_int": "0",
                     "bitfields": [
@@ -1723,44 +2257,68 @@
                             "description": "RoT key 0 usage properties",
                             "values": [
                                 {
-                                    "name": "Usable",
+                                    "name": "USE_ALL_CA_AND_KEYS",
                                     "value": 0,
-                                    "description": "Usable as debug CA, boot image CA, FW update CA, boot image and FW update key"
+                                    "description": "Usable as debug CA, boot image CA, FW update CA, boot image and FW update key",
+                                    "deprecated_names": [
+                                        "Usable"
+                                    ]
                                 },
                                 {
-                                    "name": "Debug",
+                                    "name": "USABLE_AS_DEBUG_CA_ONLY",
                                     "value": 1,
-                                    "description": "Usable as debug CA only"
+                                    "description": "Usable as debug CA only",
+                                    "deprecated_names": [
+                                        "Debug"
+                                    ]
                                 },
                                 {
-                                    "name": "Img boot fw",
+                                    "name": "USE_IMG_FW_KEY_ONLY",
                                     "value": 2,
-                                    "description": "Usable as boot image and FW update CA only"
+                                    "description": "Usable as boot image and FW update CA only",
+                                    "deprecated_names": [
+                                        "Img boot fw"
+                                    ]
                                 },
                                 {
-                                    "name": "Debug boot fw img",
+                                    "name": "USE_DBG_BOOT_FW_CA",
                                     "value": 3,
-                                    "description": "Usable as debug, boot image, and FW image CA"
+                                    "description": "Usable as debug, boot image, and FW image CA",
+                                    "deprecated_names": [
+                                        "Debug boot fw img"
+                                    ]
                                 },
                                 {
-                                    "name": "Img fw update key",
+                                    "name": "USE_IMG_FW_KEY_ONLY_4",
                                     "value": 4,
-                                    "description": "Usable as boot image key and FW update key only"
+                                    "description": "Usable as boot image key and FW update key only",
+                                    "deprecated_names": [
+                                        "Img fw update key"
+                                    ]
                                 },
                                 {
-                                    "name": "Boot image key",
+                                    "name": "USE_BOOT_KEY_ONLY",
                                     "value": 5,
-                                    "description": "Usable as boot image key only"
+                                    "description": "Usable as boot image key only",
+                                    "deprecated_names": [
+                                        "Boot image key"
+                                    ]
                                 },
                                 {
-                                    "name": "Fw update img key",
+                                    "name": "USE_FW_UPDATE_KEY_ONLY",
                                     "value": 6,
-                                    "description": "Usable as FW update image key only"
+                                    "description": "Usable as FW update image key only",
+                                    "deprecated_names": [
+                                        "Fw update img key"
+                                    ]
                                 },
                                 {
-                                    "name": "Key slot not used",
+                                    "name": "KEY_SLOT_IS_NOT_USED",
                                     "value": 7,
-                                    "description": "Key slot is not used"
+                                    "description": "Key slot is not used",
+                                    "deprecated_names": [
+                                        "Key slot not used"
+                                    ]
                                 }
                             ]
                         },
@@ -1771,44 +2329,68 @@
                             "description": "RoT key 1 usage properties",
                             "values": [
                                 {
-                                    "name": "Usable",
+                                    "name": "USE_ALL_CA_AND_KEYS",
                                     "value": 0,
-                                    "description": "Usable as debug CA, boot image CA, FW update CA, boot image and FW update key"
+                                    "description": "Usable as debug CA, boot image CA, FW update CA, boot image and FW update key",
+                                    "deprecated_names": [
+                                        "Usable"
+                                    ]
                                 },
                                 {
-                                    "name": "Debug",
+                                    "name": "USABLE_AS_DEBUG_CA_ONLY",
                                     "value": 1,
-                                    "description": "Usable as debug CA only"
+                                    "description": "Usable as debug CA only",
+                                    "deprecated_names": [
+                                        "Debug"
+                                    ]
                                 },
                                 {
-                                    "name": "Img boot fw",
+                                    "name": "USE_IMG_FW_KEY_ONLY",
                                     "value": 2,
-                                    "description": "Usable as boot image and FW update CA only"
+                                    "description": "Usable as boot image and FW update CA only",
+                                    "deprecated_names": [
+                                        "Img boot fw"
+                                    ]
                                 },
                                 {
-                                    "name": "Debug boot fw img",
+                                    "name": "USE_DBG_BOOT_FW_CA",
                                     "value": 3,
-                                    "description": "Usable as debug, boot image, and FW image CA"
+                                    "description": "Usable as debug, boot image, and FW image CA",
+                                    "deprecated_names": [
+                                        "Debug boot fw img"
+                                    ]
                                 },
                                 {
-                                    "name": "Img fw update key",
+                                    "name": "USE_IMG_FW_KEY_ONLY_4",
                                     "value": 4,
-                                    "description": "Usable as boot image key and FW update key only"
+                                    "description": "Usable as boot image key and FW update key only",
+                                    "deprecated_names": [
+                                        "Img fw update key"
+                                    ]
                                 },
                                 {
-                                    "name": "Boot image key",
+                                    "name": "USE_BOOT_KEY_ONLY",
                                     "value": 5,
-                                    "description": "Usable as boot image key only"
+                                    "description": "Usable as boot image key only",
+                                    "deprecated_names": [
+                                        "Boot image key"
+                                    ]
                                 },
                                 {
-                                    "name": "Fw update img key",
+                                    "name": "USE_FW_UPDATE_KEY_ONLY",
                                     "value": 6,
-                                    "description": "Usable as FW update image key only"
+                                    "description": "Usable as FW update image key only",
+                                    "deprecated_names": [
+                                        "Fw update img key"
+                                    ]
                                 },
                                 {
-                                    "name": "Key slot not used",
+                                    "name": "KEY_SLOT_IS_NOT_USED",
                                     "value": 7,
-                                    "description": "Key slot is not used"
+                                    "description": "Key slot is not used",
+                                    "deprecated_names": [
+                                        "Key slot not used"
+                                    ]
                                 }
                             ]
                         },
@@ -1819,44 +2401,68 @@
                             "description": "RoT key 2 usage properties",
                             "values": [
                                 {
-                                    "name": "Usable",
+                                    "name": "USE_ALL_CA_AND_KEYS",
                                     "value": 0,
-                                    "description": "Usable as debug CA, boot image CA, FW update CA, boot image and FW update key"
+                                    "description": "Usable as debug CA, boot image CA, FW update CA, boot image and FW update key",
+                                    "deprecated_names": [
+                                        "Usable"
+                                    ]
                                 },
                                 {
-                                    "name": "Debug",
+                                    "name": "USABLE_AS_DEBUG_CA_ONLY",
                                     "value": 1,
-                                    "description": "Usable as debug CA only"
+                                    "description": "Usable as debug CA only",
+                                    "deprecated_names": [
+                                        "Debug"
+                                    ]
                                 },
                                 {
-                                    "name": "Img boot fw",
+                                    "name": "USE_IMG_FW_KEY_ONLY",
                                     "value": 2,
-                                    "description": "Usable as boot image and FW update CA only"
+                                    "description": "Usable as boot image and FW update CA only",
+                                    "deprecated_names": [
+                                        "Img boot fw"
+                                    ]
                                 },
                                 {
-                                    "name": "Debug boot fw img",
+                                    "name": "USE_DBG_BOOT_FW_CA",
                                     "value": 3,
-                                    "description": "Usable as debug, boot image, and FW image CA"
+                                    "description": "Usable as debug, boot image, and FW image CA",
+                                    "deprecated_names": [
+                                        "Debug boot fw img"
+                                    ]
                                 },
                                 {
-                                    "name": "Img fw update key",
+                                    "name": "USE_IMG_FW_KEY_ONLY_4",
                                     "value": 4,
-                                    "description": "Usable as boot image key and FW update key only"
+                                    "description": "Usable as boot image key and FW update key only",
+                                    "deprecated_names": [
+                                        "Img fw update key"
+                                    ]
                                 },
                                 {
-                                    "name": "Boot image key",
+                                    "name": "USE_BOOT_KEY_ONLY",
                                     "value": 5,
-                                    "description": "Usable as boot image key only"
+                                    "description": "Usable as boot image key only",
+                                    "deprecated_names": [
+                                        "Boot image key"
+                                    ]
                                 },
                                 {
-                                    "name": "Fw update img key",
+                                    "name": "USE_FW_UPDATE_KEY_ONLY",
                                     "value": 6,
-                                    "description": "Usable as FW update image key only"
+                                    "description": "Usable as FW update image key only",
+                                    "deprecated_names": [
+                                        "Fw update img key"
+                                    ]
                                 },
                                 {
-                                    "name": "Key slot not used",
+                                    "name": "KEY_SLOT_IS_NOT_USED",
                                     "value": 7,
-                                    "description": "Key slot is not used"
+                                    "description": "Key slot is not used",
+                                    "deprecated_names": [
+                                        "Key slot not used"
+                                    ]
                                 }
                             ]
                         },
@@ -1867,44 +2473,68 @@
                             "description": "RoT key 3 usage properties",
                             "values": [
                                 {
-                                    "name": "Usable",
+                                    "name": "USE_ALL_CA_AND_KEYS",
                                     "value": 0,
-                                    "description": "Usable as debug CA, boot image CA, FW update CA, boot image and FW update key"
+                                    "description": "Usable as debug CA, boot image CA, FW update CA, boot image and FW update key",
+                                    "deprecated_names": [
+                                        "Usable"
+                                    ]
                                 },
                                 {
-                                    "name": "Debug",
+                                    "name": "USABLE_AS_DEBUG_CA_ONLY",
                                     "value": 1,
-                                    "description": "Usable as debug CA only"
+                                    "description": "Usable as debug CA only",
+                                    "deprecated_names": [
+                                        "Debug"
+                                    ]
                                 },
                                 {
-                                    "name": "Img boot fw",
+                                    "name": "USE_IMG_FW_KEY_ONLY",
                                     "value": 2,
-                                    "description": "Usable as boot image and FW update CA only"
+                                    "description": "Usable as boot image and FW update CA only",
+                                    "deprecated_names": [
+                                        "Img boot fw"
+                                    ]
                                 },
                                 {
-                                    "name": "Debug boot fw img",
+                                    "name": "USE_DBG_BOOT_FW_CA",
                                     "value": 3,
-                                    "description": "Usable as debug, boot image, and FW image CA"
+                                    "description": "Usable as debug, boot image, and FW image CA",
+                                    "deprecated_names": [
+                                        "Debug boot fw img"
+                                    ]
                                 },
                                 {
-                                    "name": "Img fw update key",
+                                    "name": "USE_IMG_FW_KEY_ONLY_4",
                                     "value": 4,
-                                    "description": "Usable as boot image key and FW update key only"
+                                    "description": "Usable as boot image key and FW update key only",
+                                    "deprecated_names": [
+                                        "Img fw update key"
+                                    ]
                                 },
                                 {
-                                    "name": "Boot image key",
+                                    "name": "USE_BOOT_KEY_ONLY",
                                     "value": 5,
-                                    "description": "Usable as boot image key only"
+                                    "description": "Usable as boot image key only",
+                                    "deprecated_names": [
+                                        "Boot image key"
+                                    ]
                                 },
                                 {
-                                    "name": "Fw update img key",
+                                    "name": "USE_FW_UPDATE_KEY_ONLY",
                                     "value": 6,
-                                    "description": "Usable as FW update image key only"
+                                    "description": "Usable as FW update image key only",
+                                    "deprecated_names": [
+                                        "Fw update img key"
+                                    ]
                                 },
                                 {
-                                    "name": "Key slot not used",
+                                    "name": "KEY_SLOT_IS_NOT_USED",
                                     "value": 7,
-                                    "description": "Key slot is not used"
+                                    "description": "Key slot is not used",
+                                    "deprecated_names": [
+                                        "Key slot not used"
+                                    ]
                                 }
                             ]
                         },
@@ -2106,14 +2736,14 @@
                 {
                     "id": "field058",
                     "name": "DICE_CSR_SRAM_ADDR",
-                    "description": "dice csr sram addr",
+                    "description": "If set as zero, then use the 0x30018000 RAM address as the default",
                     "offset_int": "0x0058",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field05C",
                     "name": "DICE_ALIAS_KEY_SRAM_ADDR",
-                    "description": "dice alias key sram addr",
+                    "description": "If set as zero, then use the 0x30005000 RAM address as the default",
                     "offset_int": "0x005C",
                     "default_value_int": "0"
                 }
@@ -2128,84 +2758,84 @@
                 {
                     "id": "field060",
                     "name": "ROTKH0",
-                    "description": "rotkh[383:352]",
+                    "description": "Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage",
                     "offset_int": "0x0060",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field064",
                     "name": "ROTKH1",
-                    "description": "rotkh[351:320]",
+                    "description": "SHA384[351:320] / SHA256[223:192]",
                     "offset_int": "0x0064",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field068",
                     "name": "ROTKH2",
-                    "description": "rotkh[319:288]",
+                    "description": "SHA384[319:288] / SHA256[191:160]",
                     "offset_int": "0x0068",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field06C",
                     "name": "ROTKH3",
-                    "description": "rotkh[287:256]",
+                    "description": "SHA384[287:256] / SHA256[159:128]",
                     "offset_int": "0x006C",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field070",
                     "name": "ROTKH4",
-                    "description": "rotkh[255:224]",
+                    "description": "SHA384[255:224] / SHA256[127:096]",
                     "offset_int": "0x0070",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field074",
                     "name": "ROTKH5",
-                    "description": "rotkh[223:192]",
+                    "description": "SHA384[223:192] / SHA256[095:064]",
                     "offset_int": "0x0074",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field078",
                     "name": "ROTKH6",
-                    "description": "rotkh[191:160]",
+                    "description": "SHA384[191:160] / SHA256[063:032]",
                     "offset_int": "0x0078",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field07C",
                     "name": "ROTKH7",
-                    "description": "rotkh[159:128]",
+                    "description": "SHA384[159:128] / SHA256[031:000]",
                     "offset_int": "0x007C",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field080",
                     "name": "ROTKH8",
-                    "description": "rotkh[127:96]",
+                    "description": "SHA384[127:096] / 0",
                     "offset_int": "0x0080",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field084",
                     "name": "ROTKH9",
-                    "description": "rotkh[95:64]",
+                    "description": "SHA384[095:064] / 0",
                     "offset_int": "0x0084",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field088",
                     "name": "ROTKH10",
-                    "description": "rotkh[63:32]",
+                    "description": "SHA384[063:032] / 0",
                     "offset_int": "0x0088",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field08C",
                     "name": "ROTKH11",
-                    "description": "rotkh[31:0]",
+                    "description": "SHA384[031:000] / 0",
                     "offset_int": "0x008C",
                     "default_value_int": "0"
                 }
@@ -2220,56 +2850,56 @@
                 {
                     "id": "field090",
                     "name": "NPX_CTX0_WD0",
-                    "description": "npx ctx0 wd0",
+                    "description": "ROM copies this value to NPX->VMAPCTX0_WD0 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX0 key & IV",
                     "offset_int": "0x0090",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field094",
                     "name": "NPX_CTX0_WD1",
-                    "description": "NPX CTX0 WD1",
+                    "description": "ROM copies this value to NPX->VMAPCTX0_WD1 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX0 key & IV",
                     "offset_int": "0x0094",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field098",
                     "name": "NPX_CTX1_WD0",
-                    "description": "npx ctx1 wd0",
+                    "description": "ROM copies this value to NPX->VMAPCTX1_WD0 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX1 key & IV",
                     "offset_int": "0x0098",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field09C",
                     "name": "NPX_CTX1_WD1",
-                    "description": "NPX CTX1 WD1",
+                    "description": "ROM copies this value to NPX->VMAPCTX1_WD1 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX1 key & IV",
                     "offset_int": "0x009C",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field0A0",
                     "name": "NPX_CTX2_WD0",
-                    "description": "npx ctx2 wd0",
+                    "description": "ROM copies this value to NPX->VMAPCTX2_WD0 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX2 key & IV",
                     "offset_int": "0x00A0",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field0A4",
                     "name": "NPX_CTX2_WD1",
-                    "description": "NPX CTX2 WD1",
+                    "description": "ROM copies this value to NPX->VMAPCTX2_WD1 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX2 key & IV",
                     "offset_int": "0x00A4",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field0A8",
                     "name": "NPX_CTX3_WD0",
-                    "description": "npx ctx3 wd0",
+                    "description": "ROM copies this value to NPX->VMAPCTX3_WD0 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX3 key & IV",
                     "offset_int": "0x00A8",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field0AC",
                     "name": "NPX_CTX3_WD1",
-                    "description": "NPX CTX3 WD1",
+                    "description": "ROM copies this value to NPX->VMAPCTX3_WD1 register during flash initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX3 key & IV",
                     "offset_int": "0x00AC",
                     "default_value_int": "0"
                 }
@@ -2338,7 +2968,7 @@
                 {
                     "id": "field0B4",
                     "name": "IPED0_END",
-                    "description": "iped0 end",
+                    "description": "IPED0 end",
                     "offset_int": "0x00B4",
                     "default_value_int": "0",
                     "bitfields": [
@@ -2384,7 +3014,7 @@
                 {
                     "id": "field0B8",
                     "name": "IPED1_START",
-                    "description": "iped1 start",
+                    "description": "IPED1 start",
                     "offset_int": "0x00B8",
                     "default_value_int": "0",
                     "bitfields": [
@@ -2438,7 +3068,7 @@
                 {
                     "id": "field0BC",
                     "name": "IPED1_END",
-                    "description": "iped1 end",
+                    "description": "IPED1 end",
                     "offset_int": "0x00BC",
                     "default_value_int": "0",
                     "bitfields": [
@@ -2484,7 +3114,7 @@
                 {
                     "id": "field0C0",
                     "name": "IPED2_START",
-                    "description": "iped2 start",
+                    "description": "IPED2 start",
                     "offset_int": "0x00C0",
                     "default_value_int": "0",
                     "bitfields": [
@@ -2538,7 +3168,7 @@
                 {
                     "id": "field0C4",
                     "name": "IPED2_END",
-                    "description": "iped2 end",
+                    "description": "IPED2 end",
                     "offset_int": "0x00C4",
                     "default_value_int": "0",
                     "bitfields": [
@@ -2584,7 +3214,7 @@
                 {
                     "id": "field0C8",
                     "name": "IPED3_START",
-                    "description": "iped3 start",
+                    "description": "IPED3 start",
                     "offset_int": "0x00C8",
                     "default_value_int": "0",
                     "bitfields": [
@@ -2638,7 +3268,7 @@
                 {
                     "id": "field0CC",
                     "name": "IPED3_END",
-                    "description": "iped3 end",
+                    "description": "IPED3 end",
                     "offset_int": "0x00CC",
                     "default_value_int": "0",
                     "bitfields": [
@@ -2684,7 +3314,7 @@
                 {
                     "id": "field0D0",
                     "name": "IPED4_START",
-                    "description": "iped4 start",
+                    "description": "IPED4 start",
                     "offset_int": "0x00D0",
                     "default_value_int": "0",
                     "bitfields": [
@@ -2738,7 +3368,7 @@
                 {
                     "id": "field0D4",
                     "name": "IPED4_END",
-                    "description": "iped4 end",
+                    "description": "IPED4 end",
                     "offset_int": "0x00D4",
                     "default_value_int": "0",
                     "bitfields": [
@@ -2784,7 +3414,7 @@
                 {
                     "id": "field0D8",
                     "name": "IPED5_START",
-                    "description": "iped5 start",
+                    "description": "IPED5 start",
                     "offset_int": "0x00D8",
                     "default_value_int": "0",
                     "bitfields": [
@@ -2838,7 +3468,7 @@
                 {
                     "id": "field0DC",
                     "name": "IPED5_END",
-                    "description": "iped5 end",
+                    "description": "IPED5 end",
                     "offset_int": "0x00DC",
                     "default_value_int": "0",
                     "bitfields": [
@@ -2884,7 +3514,7 @@
                 {
                     "id": "field0E0",
                     "name": "IPED6_START",
-                    "description": "iped6 start",
+                    "description": "IPED6 start",
                     "offset_int": "0x00E0",
                     "default_value_int": "0",
                     "bitfields": [
@@ -2938,7 +3568,7 @@
                 {
                     "id": "field0E4",
                     "name": "IPED6_END",
-                    "description": "iped6 end",
+                    "description": "IPED6 end",
                     "offset_int": "0x00E4",
                     "default_value_int": "0",
                     "bitfields": [
@@ -2984,7 +3614,7 @@
                 {
                     "id": "field0E8",
                     "name": "IPED7_START",
-                    "description": "iped7 start",
+                    "description": "IPED7 start",
                     "offset_int": "0x00E8",
                     "default_value_int": "0",
                     "bitfields": [
@@ -3038,7 +3668,7 @@
                 {
                     "id": "field0EC",
                     "name": "IPED7_END",
-                    "description": "iped7 end",
+                    "description": "IPED7 end",
                     "offset_int": "0x00EC",
                     "default_value_int": "0",
                     "bitfields": [
@@ -3092,7 +3722,7 @@
                 {
                     "id": "field0F0",
                     "name": "REC_IMG_EXT0",
-                    "description": "rec img ext0",
+                    "description": "Rec IMG ext0",
                     "offset_int": "0x00F0",
                     "default_value_int": "0",
                     "bitfields": [
@@ -3121,7 +3751,7 @@
                             "width": 24,
                             "id": "field0F4-bits8-31",
                             "name": "REC_IMG_EXT1",
-                            "description": "rec img ext1 (bitmap mask for recovery image extended sectors 40 -63)"
+                            "description": "Rec IMG ext1 (Bitmap mask for recovery image extended sectors 40-63)"
                         }
                     ]
                 }
@@ -3136,7 +3766,7 @@
                 {
                     "id": "field0F8",
                     "name": "PROV_FW_SRAM_ADDR",
-                    "description": "prov fw sram addr",
+                    "description": "Used for programming the SB4 file for the run Bootloader or mailbox to process. The first Word of the RAM address region is for storing the SB4 file total size, and second word start to store the SB4file. If not set, then use the 0x30018000 as the default RAM address, the 0x30018000 for storing the SB4 file size, and 0x30018004 is for storing the SB4 file",
                     "offset_int": "0x00F8",
                     "default_value_int": "0"
                 },
@@ -3223,84 +3853,84 @@
                 {
                     "id": "field120",
                     "name": "QUICK_SET_GPIO_0",
-                    "description": "quick set gpio 0",
+                    "description": "Drive GPIO 0 port pins high after reset. Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot. Note, if a pin is selected in both QUICK_SET_GPIO_x and QUICK_CLR_GPIO_x fields then pin will be set to high-level with quick transition to low",
                     "offset_int": "0x0120",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field124",
                     "name": "QUICK_CLR_GPIO_0",
-                    "description": "quick clr gpio 0",
+                    "description": "Drive GPIO 0 port pins low. See description of QUICK_SET_GPIO_0 field. Note, if a pin is selected in both QUICK_SET_GPIO_x and QUICK_CLR_GPIO_x fields then pin will be set to high-level with quick transition to low",
                     "offset_int": "0x0124",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field128",
                     "name": "QUICK_SET_GPIO_1",
-                    "description": "QUICK SET GPIO 1",
+                    "description": "Drive GPIO 1 port pins high. See description of QUICK_SET_GPIO_0 field",
                     "offset_int": "0x0128",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field12C",
                     "name": "QUICK_CLR_GPIO_1",
-                    "description": "QUICK CLR GPIO 1",
+                    "description": "Drive GPIO 1 port pins low. See description of QUICK_SET_GPIO_0 field",
                     "offset_int": "0x012C",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field130",
                     "name": "QUICK_SET_GPIO_2",
-                    "description": "quick set gpio 2",
+                    "description": "Drive GPIO 2 port pins high. See description of QUICK_SET_GPIO_0 field",
                     "offset_int": "0x0130",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field134",
                     "name": "QUICK_CLR_GPIO_2",
-                    "description": "quick clr gpio 2",
+                    "description": "Drive GPIO 2 port pins low. See description of QUICK_SET_GPIO_0 field",
                     "offset_int": "0x0134",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field138",
                     "name": "QUICK_SET_GPIO_3",
-                    "description": "quick set gpio 3",
+                    "description": "Drive GPIO 3 port pins high. See description of QUICK_SET_GPIO_0 field",
                     "offset_int": "0x0138",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field13C",
                     "name": "QUICK_CLR_GPIO_3",
-                    "description": "quick clr gpio 3",
+                    "description": "Drive GPIO 3 port pins low. See description of QUICK_SET_GPIO_0 field",
                     "offset_int": "0x013C",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field140",
                     "name": "QUICK_SET_GPIO_4",
-                    "description": "quick set gpio 4",
+                    "description": "Drive GPIO 4 port pins high. See description of QUICK_SET_GPIO_0 field",
                     "offset_int": "0x0140",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field144",
                     "name": "QUICK_CLR_GPIO_4",
-                    "description": "quick clr gpio 4",
+                    "description": "Drive GPIO 4 port pins low. See description of QUICK_SET_GPIO_0 field",
                     "offset_int": "0x0144",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field148",
                     "name": "QUICK_SET_GPIO_5",
-                    "description": "quick set gpio 5",
+                    "description": "Drive GPIO 5 port pins high. See description of QUICK_SET_GPIO_0 field",
                     "offset_int": "0x0148",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field14C",
                     "name": "QUICK_CLR_GPIO_5",
-                    "description": "quick clr gpio 5",
+                    "description": "Drive GPIO 5 port pins low. See description of QUICK_SET_GPIO_0 field",
                     "offset_int": "0x014C",
                     "default_value_int": "0"
                 }
@@ -3315,28 +3945,28 @@
                 {
                     "id": "field150",
                     "name": "CHALLENGE_0",
-                    "description": "challenge 0",
+                    "description": "Used for configuration of the DICE CSR challenge fields",
                     "offset_int": "0x0150",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field154",
                     "name": "CHALLENGE_1",
-                    "description": "CHALLENGE 1",
+                    "description": "Used for configuration of the DICE CSR challenge fields",
                     "offset_int": "0x0154",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field158",
                     "name": "CHALLENGE_2",
-                    "description": "challenge 2",
+                    "description": "Used for configuration of the DICE CSR challenge fields",
                     "offset_int": "0x0158",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field15C",
                     "name": "CHALLENGE_3",
-                    "description": "challenge 3",
+                    "description": "Used for configuration of the DICE CSR challenge fields",
                     "offset_int": "0x015C",
                     "default_value_int": "0"
                 }
@@ -3351,84 +3981,84 @@
                 {
                     "id": "field160",
                     "name": "CUST_MK_SK0",
-                    "description": "cust mk sk key blob",
+                    "description": "CUST MK SK key blob",
                     "offset_int": "0x0160",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field164",
                     "name": "CUST_MK_SK1",
-                    "description": "cust mk sk key blob",
+                    "description": "CUST MK SK key blob",
                     "offset_int": "0x0164",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field168",
                     "name": "CUST_MK_SK2",
-                    "description": "cust mk sk key blob",
+                    "description": "CUST MK SK key blob",
                     "offset_int": "0x0168",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field16C",
                     "name": "CUST_MK_SK3",
-                    "description": "cust mk sk key blob",
+                    "description": "CUST MK SK key blob",
                     "offset_int": "0x016C",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field170",
                     "name": "CUST_MK_SK4",
-                    "description": "cust mk sk key blob",
+                    "description": "CUST MK SK key blob",
                     "offset_int": "0x0170",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field174",
                     "name": "CUST_MK_SK5",
-                    "description": "cust mk sk key blob",
+                    "description": "CUST MK SK key blob",
                     "offset_int": "0x0174",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field178",
                     "name": "CUST_MK_SK6",
-                    "description": "cust mk sk key blob",
+                    "description": "CUST MK SK key blob",
                     "offset_int": "0x0178",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field17C",
                     "name": "CUST_MK_SK7",
-                    "description": "cust mk sk key blob",
+                    "description": "CUST MK SK key blob",
                     "offset_int": "0x017C",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field180",
                     "name": "CUST_MK_SK8",
-                    "description": "cust mk sk key blob",
+                    "description": "CUST MK SK key blob",
                     "offset_int": "0x0180",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field184",
                     "name": "CUST_MK_SK9",
-                    "description": "cust mk sk key blob",
+                    "description": "CUST MK SK key blob",
                     "offset_int": "0x0184",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field188",
                     "name": "CUST_MK_SK10",
-                    "description": "cust mk sk key blob",
+                    "description": "CUST MK SK key blob",
                     "offset_int": "0x0188",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field18C",
                     "name": "CUST_MK_SK11",
-                    "description": "cust mk sk key blob",
+                    "description": "CUST MK SK key blob",
                     "offset_int": "0x018C",
                     "default_value_int": "0"
                 }
@@ -3443,84 +4073,84 @@
                 {
                     "id": "field190",
                     "name": "PQC_ROTKH0",
-                    "description": "pqc rotkh[383:352]",
+                    "description": "Root of Trust Key Hash is SHA256 or SHA384 of RoTKpublic. Hash algorithm is selected based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384). Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage",
                     "offset_int": "0x0190",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field194",
                     "name": "PQC_ROTKH1",
-                    "description": "pqc rotkh[351:320]",
+                    "description": "SHA384[351:320]",
                     "offset_int": "0x0194",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field198",
                     "name": "PQC_ROTKH2",
-                    "description": "pqc rotkh[319:288]",
+                    "description": "SHA384[319:288]",
                     "offset_int": "0x0198",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field19C",
                     "name": "PQC_ROTKH3",
-                    "description": "pqc rotkh[287:256]",
+                    "description": "SHA384[287:256]",
                     "offset_int": "0x019C",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field1A0",
                     "name": "PQC_ROTKH4",
-                    "description": "pqc rotkh[255:224]",
+                    "description": "SHA384[255:224]",
                     "offset_int": "0x01A0",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field1A4",
                     "name": "PQC_ROTKH5",
-                    "description": "pqc rotkh[223:192]",
+                    "description": "SHA384[223:192]",
                     "offset_int": "0x01A4",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field1A8",
                     "name": "PQC_ROTKH6",
-                    "description": "pqc rotkh[191:160]",
+                    "description": "SHA384[191:160]",
                     "offset_int": "0x01A8",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field1AC",
                     "name": "PQC_ROTKH7",
-                    "description": "pqc rotkh[159:128]",
+                    "description": "SHA384[159:128]",
                     "offset_int": "0x01AC",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field1B0",
                     "name": "PQC_ROTKH8",
-                    "description": "pqc rotkh[127:96]",
+                    "description": "SHA384[127:096]",
                     "offset_int": "0x01B0",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field1B4",
                     "name": "PQC_ROTKH9",
-                    "description": "pqc rotkh[95:64]",
+                    "description": "SHA384[095:064]",
                     "offset_int": "0x01B4",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field1B8",
                     "name": "PQC_ROTKH10",
-                    "description": "pqc rotkh[63:32]",
+                    "description": "SHA384[063:032]",
                     "offset_int": "0x01B8",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field1BC",
                     "name": "PQC_ROTKH11",
-                    "description": "pqc rotkh[31:0]",
+                    "description": "SHA384[031:000]",
                     "offset_int": "0x01BC",
                     "default_value_int": "0"
                 }
@@ -3631,7 +4261,7 @@
                 {
                     "id": "field1EC",
                     "name": "CMPA_CRC32",
-                    "description": "cmpa crc32",
+                    "description": "ROM updates this field along with CMPA_CMAC. ROM uses this field based on CMPA.LP_SEC_BOOT field option",
                     "offset_int": "0x01EC",
                     "access": "RO",
                     "default_value_int": "0"
@@ -3647,28 +4277,28 @@
                 {
                     "id": "field1F0",
                     "name": "CMPA_CMAC0",
-                    "description": "cmpa cmac",
+                    "description": "CMAC of CMPA page data from offset 0x00 to 0x1EB. ROM updates this field on subsequent boot after page update",
                     "offset_int": "0x01F0",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field1F4",
                     "name": "CMPA_CMAC1",
-                    "description": "CMPA CMAC1",
+                    "description": "CMAC of CMPA page data from offset 0x00 to 0x1EB. ROM updates this field on subsequent boot after page update",
                     "offset_int": "0x01F4",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field1F8",
                     "name": "CMPA_CMAC2",
-                    "description": "CMPA CMAC2",
+                    "description": "CMAC of CMPA page data from offset 0x00 to 0x1EB. ROM updates this field on subsequent boot after page update",
                     "offset_int": "0x01F8",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field1FC",
                     "name": "CMPA_CMAC3",
-                    "description": "CMPA CMAC3",
+                    "description": "CMAC of CMPA page data from offset 0x00 to 0x1EB. ROM updates this field on subsequent boot after page update",
                     "offset_int": "0x01FC",
                     "default_value_int": "0"
                 }

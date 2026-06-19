@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -65,6 +65,7 @@ hidden_imports = {
     "spsdk_pyocd",
     "spsdk_lauterbach",
     "spsdk_mcu_link",
+    "spsdk_jlink",
     "pyocd.rtos.threadx",
     "spsdk.image.mbi.mbi_mixin_hse",
 }
@@ -154,6 +155,7 @@ try:
 except OSError:
     pass
 
+datas.extend([("SBOM-spsdk.spdx.json", "./")])
 datas.extend([("spsdk/data", "spsdk/data")])
 
 

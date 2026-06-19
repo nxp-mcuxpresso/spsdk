@@ -160,7 +160,6 @@ def test_sbx_devhsm(data_dir: str) -> None:
         ("mcxa256"),
         ("mcxa366"),
         ("mcxa365"),
-        ("mcxa577"),
     ],
 )
 def test_nxpdevhsm_get_template(cli_runner: CliRunner, tmpdir: Any, family: str) -> None:

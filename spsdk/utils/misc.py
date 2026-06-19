@@ -12,6 +12,7 @@ loading, and various helper utilities for binary data processing.
 """
 
 import contextlib
+import copy
 import functools
 import hashlib
 import json
@@ -40,6 +41,10 @@ from spsdk.utils.exceptions import SPSDKTimeoutError
 T = TypeVar("T")  # pylint: disable=invalid-name
 
 logger = logging.getLogger(__name__)
+
+# Cache for parsed configuration files, keyed by (abs_path, mtime).
+# Avoids re-parsing large YAML/JSON files on repeated calls (e.g., TrustZone templates).
+_configuration_cache: dict[tuple, dict] = {}
 
 
 # Struct format constants for common data types
@@ -317,7 +322,7 @@ def load_file(
 
 
 def write_file(
-    data: Union[str, bytes],
+    data: Union[str, bytes, bytearray],
     path: str,
     mode: str = "w",
     encoding: str = "utf-8",
@@ -757,17 +762,17 @@ def change_endianness(bin_data: bytes) -> bytes:
     data = bytearray(bin_data)
     length = len(data)
     if length == 1:
-        return data
+        return bytes(data)
 
     if length == 2:
         data.reverse()
-        return data
+        return bytes(data)
 
     # The length of 24 bits is not supported yet
     if length == 3:
         raise SPSDKError("Unsupported length (3) for change endianness.")
 
-    return reverse_bytes_in_longs(data)
+    return reverse_bytes_in_longs(bytes(data))
 
 
 class Timeout:
@@ -1054,11 +1059,25 @@ def load_configuration(path: str, search_paths: Optional[list[str]] = None) -> d
     to YAML parsing if JSON parsing fails. It uses SecretsLoader for YAML parsing
     to handle sensitive data securely.
 
+    Parsed results are cached in memory keyed by ``(absolute_path, mtime)`` so that
+    repeated calls with the same unchanged file avoid re-parsing overhead.
+
     :param path: Path to configuration file (relative or absolute).
     :param search_paths: List of paths where to search for the file, defaults to None.
     :raises SPSDKError: When file cannot be loaded, parsed, or contains invalid format.
     :return: Content of configuration as dictionary.
     """
+    # Resolve the absolute path early so the cache key is stable across cwd changes.
+    try:
+        resolved_path = find_file(path, search_paths=search_paths)
+        mtime = os.path.getmtime(resolved_path)
+        cache_key = (resolved_path, mtime)
+        if cache_key in _configuration_cache:
+            return copy.deepcopy(_configuration_cache[cache_key])
+    except Exception:
+        # If path resolution or stat fails, fall through to normal load (raises below).
+        cache_key = None
+
     try:
         config = load_text(path, search_paths=search_paths)
     except SPSDKNotTextFileError as exc:
@@ -1089,6 +1108,9 @@ def load_configuration(path: str, search_paths: Optional[list[str]] = None) -> d
         ) from error_to_show
     if not isinstance(config_data, dict):
         raise SPSDKError(f"Invalid configuration file: {path}")
+
+    if cache_key is not None:
+        _configuration_cache[cache_key] = copy.deepcopy(config_data)
 
     return config_data
 
@@ -1131,7 +1153,7 @@ def split_data(data: Union[bytearray, bytes], size: int) -> Generator[bytes, Non
     :return: Generator yielding byte chunks of the specified size.
     """
     for i in range(0, len(data), size):
-        yield data[i : i + size]
+        yield bytes(data[i : i + size])
 
 
 def get_hash(text: Union[str, bytes]) -> str:
@@ -1155,13 +1177,20 @@ def deep_update(d: dict, u: dict) -> dict:
     rather than replacing the entire nested dictionary. For lists containing
     dictionaries, the dictionaries are also merged recursively.
 
+    A nested dict in ``u`` that contains the special key ``__replace__`` set to ``True``
+    will fully replace the corresponding entry in ``d`` instead of being merged into it.
+    The ``__replace__`` sentinel key is stripped from the result.
+
     :param d: Dictionary that will be updated.
     :param u: Dictionary with update information.
     :return: Updated dictionary.
     """
     for k, v in u.items():
         if isinstance(v, dict):
-            d[k] = deep_update(d.get(k, {}), v)
+            if v.get("__replace__"):
+                d[k] = {key: val for key, val in v.items() if key != "__replace__"}
+            else:
+                d[k] = deep_update(d.get(k, {}), v)
         else:
             d[k] = v
     return d

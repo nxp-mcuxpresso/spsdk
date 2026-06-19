@@ -22,9 +22,15 @@ from typing_extensions import Self
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
 from spsdk.crypto.utils import extract_public_key
-from spsdk.exceptions import SPSDKParsingError, SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKValueError
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer, HeaderContainerData
-from spsdk.image.ahab.ahab_data import RESERVED, AHABSignHashAlgorithm, AHABTags, FlagsSrkSet
+from spsdk.image.ahab.ahab_data import (
+    RESERVED,
+    AHABSignHashAlgorithm,
+    AHABTags,
+    FlagsSrkSet,
+    create_chip_config,
+)
 from spsdk.image.ahab.ahab_signature import ContainerSignature
 from spsdk.image.ahab.ahab_srk import SRKData, SRKRecordV2, SRKTableArray
 from spsdk.utils.abstract_features import FeatureBaseClass
@@ -892,7 +898,8 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         This method retrieves and configures validation schemas from the database manager,
         including AHAB, certificate block, and general family schemas. It removes required
         fields from the certificate block output schema and updates the family schema
-        with supported families.
+        with supported families. The hash algorithm enums are filtered to only include
+        algorithms supported by the given chip family.
 
         :param family: Family revision for which the validation schema should be generated.
         :return: List of validation schemas containing family, certificate block output,
@@ -905,7 +912,22 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         update_validation_schema_family(
             sch_family["properties"], cls.get_supported_families(), family
         )
-        ret = [sch_family, sch_cfg["cert_block_output"], sch["ahab_certificate"]]
+
+        # Filter hash algorithm enums to only those supported by this chip family
+        sch_cert = sch["ahab_certificate"]
+        try:
+            chip_config = create_chip_config(family)
+            hash_algo_labels = ["default"] + [
+                algo.label.lower() for algo in chip_config.hash_algorithms
+            ]
+            for field in ("hash_algorithm_0", "hash_algorithm_1"):
+                if field in sch_cert.get("properties", {}):
+                    sch_cert["properties"][field]["enum"] = hash_algo_labels
+                    sch_cert["properties"][field]["template_value"] = "default"
+        except SPSDKError:
+            pass  # Fall back to the full list defined in the schema
+
+        ret = [sch_family, sch_cfg["cert_block_output"], sch_cert]
         if cls.USED_PERM_DATA_EXT:
             ret.append(sch["ahab_certificate_permission_data_ext"])
         return ret

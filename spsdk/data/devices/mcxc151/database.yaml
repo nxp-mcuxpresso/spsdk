@@ -69,6 +69,40 @@ features:
     cmpa_pswd:
       address: 0x0100_2800
       reg_spec: cmpa_pswd.json
+      grouped_registers:
+        - uid: dbg_auth_password
+          name: DBG_AUTH_PASSWORD
+          width: 128
+          config_as_hexstring: true
+          reverse_subregs_order: True
+          description: DBG_AUTH_PASSWORD[127:0]
+          sub_regs:
+            - field000
+            - field004
+            - field008
+            - field00C
+        - uid: img_misr_seed
+          name: IMG_MISR_SEED
+          width: 128
+          config_as_hexstring: true
+          reverse_subregs_order: True
+          description: IMG_MISR_SEED[127:0]
+          sub_regs:
+            - field020
+            - field024
+            - field028
+            - field02C
+        - uid: erase_password
+          name: ERASE_PASSWORD
+          width: 128
+          config_as_hexstring: true
+          reverse_subregs_order: True
+          description: ERASE_PASSWORD[127:0]
+          sub_regs:
+            - field030
+            - field034
+            - field038
+            - field03C
       computed_fields:
         field040: pfr_calculate_crc # CRC
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,10 +13,10 @@ The module implements the ReportId enumeration for protocol identification
 and MbootBulkProtocol class for handling bulk transfer operations.
 """
 
-import logging
 from struct import pack, unpack_from
 from typing import Optional, Union
 
+from spsdk import get_logger
 from spsdk.exceptions import SPSDKAttributeError
 from spsdk.mboot.commands import CmdResponse, parse_cmd_response
 from spsdk.mboot.exceptions import McuBootConnectionError, McuBootDataAbortError
@@ -39,7 +39,7 @@ class ReportId(SpsdkEnum):
     DATA_IN = (0x04, "DATA_IN")
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class MbootBulkProtocol(MbootProtocolBase):
@@ -96,7 +96,7 @@ class MbootBulkProtocol(MbootProtocolBase):
             except Exception as e:
                 raise McuBootConnectionError(str(e)) from e
             if abort_data:
-                logger.debug(f"{', '.join(f'{b:02X}' for b in abort_data)}")
+                logger.trace(f"{', '.join(f'{b:02X}' for b in abort_data)}")
                 raise McuBootDataAbortError()
         self.device.write(frame)
 
@@ -140,7 +140,7 @@ class MbootBulkProtocol(MbootProtocolBase):
         """
         raw_data = pack("<2BH", report_id.tag, 0x00, len(data))
         raw_data += data
-        logger.debug(f"OUT[{len(raw_data)}]: {', '.join(f'{b:02X}' for b in raw_data)}")
+        logger.trace(f"OUT[{len(raw_data)}]: {', '.join(f'{b:02X}' for b in raw_data)}")
         return raw_data
 
     @staticmethod
@@ -154,7 +154,7 @@ class MbootBulkProtocol(MbootProtocolBase):
         :return: CmdResponse object for command reports or raw bytes for data reports
         :raises McuBootDataAbortError: Transaction aborted by target when payload length is zero
         """
-        logger.debug(f"IN [{len(raw_data)}]: {', '.join(f'{b:02X}' for b in raw_data)}")
+        logger.trace(f"IN [{len(raw_data)}]: {', '.join(f'{b:02X}' for b in raw_data)}")
         report_id, _, plen = unpack_from("<2BH", raw_data)
         if plen == 0:
             raise McuBootDataAbortError()

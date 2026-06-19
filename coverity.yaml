@@ -36,4 +36,4 @@ commit:
 reports:
   project-name: "SPSDK"
   coverity-name: "SPSDK"
-  types: [syn-integrity, cov-integrity, cov-security]
+  types: [bd-integrity, cov-integrity, cov-security]

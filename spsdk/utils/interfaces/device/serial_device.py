@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,18 +12,18 @@ over serial/UART interfaces, including device discovery and connection
 management functionality.
 """
 
-import logging
 from typing import Optional
 
 from serial import Serial, SerialTimeoutException
 from serial.tools.list_ports import comports
 from typing_extensions import Self
 
+from spsdk import get_logger
 from spsdk.exceptions import SPSDKConnectionError, SPSDKPermissionError
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.interfaces.device.base import DeviceBase
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class SerialDevice(DeviceBase):
@@ -150,7 +150,7 @@ class SerialDevice(DeviceBase):
             raise SPSDKConnectionError(str(e)) from e
         if not data:
             raise SPSDKTimeoutError()
-        logger.debug(f"<{' '.join(f'{b:02x}' for b in data)}>")
+        logger.trace(f"<{' '.join(f'{b:02x}' for b in data)}>")
         return data
 
     def write(self, data: bytes, timeout: Optional[int] = None) -> None:
@@ -166,7 +166,7 @@ class SerialDevice(DeviceBase):
         """
         if not self.is_opened:
             raise SPSDKConnectionError("Device is not opened for writing")
-        logger.debug(f"[{' '.join(f'{b:02x}' for b in data)}]")
+        logger.trace(f"[{' '.join(f'{b:02x}' for b in data)}]")
         try:
             self._device.reset_input_buffer()
             self._device.reset_output_buffer()

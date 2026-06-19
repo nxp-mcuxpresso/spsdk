@@ -111,8 +111,23 @@ features:
       - "INSTALL_AUTH"
       - "AUTH_AAD"
     smr_regions_count: 8
+    rsa_pub_exponent_max_size: 8  # HSE-B supports max 8 bytes RSA public exponent (HSE-H/M support 16)
+    supported_key_types:
+      - "SHE"
+      - "AES"
+      - "HMAC"
+      - "SHARED_SECRET"
+      - "ECC_PAIR"
+      - "ECC_PUB"
+      - "RSA_PAIR"
+      - "RSA_PUB"
 
   # ======== DAT section ========
   dat:
     sub_features: [sda]
     sda_ap_index: 7
+    mem_ap_index: 5  # AP5: AHB-AP with SPIDEN=1 (CSW=0x43000042), confirmed working via SWD capture
+    enable_power_domains_after_connect: True
+    enable_sda_debug_paths_after_connect: True
+    mem_ap_preserve_csw_ro_bits: True
+    mem_ap_scan_write_before_read: True

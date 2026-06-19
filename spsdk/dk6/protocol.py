@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,11 +11,11 @@ This module provides the core communication protocol for DK6 devices,
 including ISP mode handling and low-level command/response processing.
 """
 
-import logging
 import struct
 import time
 from typing import Union
 
+from spsdk import get_logger
 from spsdk.dk6.commands import (
     CmdPacket,
     CommandTag,
@@ -36,7 +36,7 @@ from spsdk.dk6.interface import Uart
 from spsdk.utils.misc import Endianness
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 DEFAULT_KEY = b"\x11\x22\x33\x44\x55\x66\x77\x88\x11\x22\x33\x44\x55\x66\x77\x88"
@@ -85,7 +85,7 @@ class DK6Protocol:
         """
         self.uart.write(CommandTag.UNLOCK_ISP, b"\x00")
         response = self.uart.read()
-        logger.debug(response.info())
+        logger.trace(response.info())
 
         return response
 
@@ -109,7 +109,7 @@ class DK6Protocol:
         packet = CmdPacket(data)
         self.uart.write(CommandTag.UNLOCK_ISP, packet)
         response = self.uart.read()
-        logger.debug(response.info())
+        logger.trace(response.info())
 
         return response
 
@@ -123,7 +123,7 @@ class DK6Protocol:
         """
         self.uart.write(CommandTag.GET_CHIPID, None)
         response = self.uart.read()
-        logger.debug(response.info())
+        logger.trace(response.info())
 
         return response
 
@@ -144,7 +144,7 @@ class DK6Protocol:
         packet = CmdPacket(data)
         self.uart.write(CommandTag.MEM_GET_INFO, packet)
         response = self.uart.read()
-        logger.debug(response.info())
+        logger.trace(response.info())
 
         return response
 
@@ -170,7 +170,7 @@ class DK6Protocol:
         packet = CmdPacket(data)
         self.uart.write(CommandTag.MEM_OPEN, packet)
         response = self.uart.read()
-        logger.debug(response.info())
+        logger.trace(response.info())
 
         return response
 
@@ -192,7 +192,7 @@ class DK6Protocol:
         packet = CmdPacket(data)
         self.uart.write(CommandTag.MEM_READ, packet)
         response = self.uart.read()
-        logger.debug(response.info())
+        logger.trace(response.info())
 
         return response
 
@@ -216,7 +216,7 @@ class DK6Protocol:
 
         self.uart.write(CommandTag.MEM_WRITE, packet)
         response = self.uart.read()
-        logger.debug(response.info())
+        logger.trace(response.info())
 
         return response
 
@@ -231,7 +231,7 @@ class DK6Protocol:
         """
         self.uart.write(CommandTag.MEM_CLOSE, handle.to_bytes(1, Endianness.BIG.value))
         response = self.uart.read()
-        logger.debug(response.info())
+        logger.trace(response.info())
 
         return response
 
@@ -252,7 +252,7 @@ class DK6Protocol:
         packet = CmdPacket(frame)
         self.uart.write(CommandTag.MEM_ERASE, packet)
         response = self.uart.read()
-        logger.debug(response.info())
+        logger.trace(response.info())
         return response
 
     def mem_blank_check(
@@ -273,7 +273,7 @@ class DK6Protocol:
         packet = CmdPacket(frame)
         self.uart.write(CommandTag.MEM_BLANK_CHECK, packet)
         response = self.uart.read()
-        logger.debug(response.info())
+        logger.trace(response.info())
 
         return response
 
@@ -303,7 +303,7 @@ class DK6Protocol:
         """
         self.uart.write(CommandTag.RESET, None)
         response = self.uart.read()
-        logger.debug(response.info())
+        logger.trace(response.info())
 
         return response
 
@@ -321,6 +321,6 @@ class DK6Protocol:
 
         self.uart.write(CommandTag.EXECUTE, packet)
         response = self.uart.read()
-        logger.debug(response.info())
+        logger.trace(response.info())
 
         return response

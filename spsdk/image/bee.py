@@ -14,6 +14,7 @@ boot and runtime protection of code and data.
 """
 
 import logging
+import os
 from struct import calcsize, pack, unpack_from
 from typing import Any, Optional, Sequence
 
@@ -40,6 +41,7 @@ from spsdk.utils.misc import (
     load_binary,
     split_data,
     value_to_int,
+    write_file,
 )
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -865,6 +867,7 @@ class Bee(FeatureBaseClass):
         family: FamilyRevision,
         headers: list[Optional[BeeRegionHeader]],
         input_images: list[tuple[bytes, int]],
+        generated_keys: Optional[dict[int, dict[str, bytes]]] = None,
     ):
         """Initialize BEE (Bus Encryption Engine) configuration.
 
@@ -874,10 +877,14 @@ class Bee(FeatureBaseClass):
         :param family: The target MCU/MPU family and revision information.
         :param headers: List of BEE region headers, may contain None values for unused regions.
         :param input_images: List of tuples containing image data and corresponding base addresses.
+        :param generated_keys: Optional dict of auto-generated engine keys per engine index.
+            Used by save_engine_keys() to persist randomly generated keys to files.
+            Typically populated by load_from_config() when keys are not explicitly provided.
         """
         self.family = family
         self.headers = headers
         self.input_images = input_images
+        self._generated_keys: dict[int, dict[str, bytes]] = generated_keys or {}
 
     def __repr__(self) -> str:
         """Get string representation of BEE object.
@@ -1065,7 +1072,7 @@ class Bee(FeatureBaseClass):
         family = FamilyRevision.load_from_config(config)
 
         # Handle new multi-image mode
-        input_images = []
+        input_images: list[tuple[bytes, int]] = []
         if "data_blobs" in config:
             data_blobs = config.get_list_of_configs("data_blobs")
             for data_blob in data_blobs:
@@ -1080,24 +1087,64 @@ class Bee(FeatureBaseClass):
         bee_engines = config.get_list_of_configs("bee_engine")
 
         bee_headers: list[Optional[BeeRegionHeader]] = [None, None]
+        generated_keys: dict[int, dict[str, bytes]] = {}
 
         engine_selections = {"engine0": [0], "engine1": [1], "both": [0, 1]}
 
         for engine_idx in engine_selections[engine_selection]:
-            prdb = BeeProtectRegionBlock()
-            kib = BeeKIB()
             header_idx = engine_idx
             if engine_idx == len(bee_engines) and engine_selections[engine_selection] == [1]:
                 engine_idx = 0
             elif engine_idx >= len(bee_engines):
                 raise SPSDKError("The count of BEE engines is invalid")
-            # BEE Configuration
 
+            # BEE Configuration
             if "bee_cfg" in bee_engines[engine_idx]:
                 bee_cfg = bee_engines[engine_idx].get_config("bee_cfg")
-                key = bee_cfg.load_symmetric_key("user_key", expected_size=16)
-                bee_headers[header_idx] = BeeRegionHeader(prdb, key, kib)
-                protected_regions = bee_cfg.get("protected_region", [])
+                sw_key = bee_cfg.load_symmetric_key("user_key", expected_size=16)
+
+                # Load or generate engine keys
+                gen_keys: dict[str, bytes] = {}
+
+                if "engine_key" in bee_cfg:
+                    kib_key = bee_cfg.load_symmetric_key(
+                        "engine_key", expected_size=16, name="BEE KIB key"
+                    )
+                else:
+                    kib_key = random_bytes(16)
+                    gen_keys["engine_key"] = kib_key
+
+                if "engine_iv" in bee_cfg:
+                    kib_iv = bee_cfg.load_symmetric_key(
+                        "engine_iv", expected_size=16, name="BEE KIB IV"
+                    )
+                else:
+                    kib_iv = random_bytes(16)
+                    gen_keys["engine_iv"] = kib_iv
+
+                if "engine_counter" in bee_cfg:
+                    counter_nonce = bee_cfg.load_symmetric_key(
+                        "engine_counter", expected_size=12, name="BEE AES-CTR counter nonce"
+                    )
+                    counter = counter_nonce + b"\x00\x00\x00\x00"
+                else:
+                    counter = random_bytes(12) + b"\x00\x00\x00\x00"
+                    gen_keys["engine_counter"] = counter[:12]
+
+                if kib_key == bytes(16) or kib_iv == bytes(16) or counter == bytes(16):
+                    logger.warning(
+                        f"Engine {header_idx}: All-zero key detected. "
+                        "This is insecure and should only be used for debugging."
+                    )
+
+                kib = BeeKIB(kib_key=kib_key, kib_iv=kib_iv)
+                prdb = BeeProtectRegionBlock(counter=counter)
+                bee_headers[header_idx] = BeeRegionHeader(prdb, sw_key, kib)
+
+                if gen_keys:
+                    generated_keys[header_idx] = gen_keys
+
+                protected_regions = bee_cfg.get_list("protected_region", [])
                 for protected_region in protected_regions:
                     fac = BeeFacRegion(
                         value_to_int(protected_region["start_address"]),
@@ -1113,9 +1160,39 @@ class Bee(FeatureBaseClass):
             # BEE Binary configuration
             if "bee_binary_cfg" in bee_engines[engine_idx]:
                 bee_bin_cfg = bee_engines[engine_idx].get_config("bee_binary_cfg")
-                key = bee_bin_cfg.load_symmetric_key("user_key", expected_size=16)
+                sw_key = bee_bin_cfg.load_symmetric_key("user_key", expected_size=16)
                 bin_ehdr = load_binary(bee_bin_cfg.get_input_file_name("header_path"))
-                bee_headers[header_idx] = BeeRegionHeader.parse(bin_ehdr, sw_key=key)
+                bee_headers[header_idx] = BeeRegionHeader.parse(bin_ehdr, sw_key=sw_key)
                 continue
 
-        return cls(family, bee_headers, input_images=input_images)
+        bee = cls(family, bee_headers, input_images=input_images, generated_keys=generated_keys)
+        return bee
+
+    def save_engine_keys(self, output_folder: str) -> list[str]:
+        """Save auto-generated engine keys to output folder.
+
+        Saves randomly generated engine keys (KIB key, KIB IV, AES-CTR counter) to
+        files in the output folder. These files can be referenced in subsequent
+        configurations to reuse the same keys for encrypting updated images.
+        A warning is logged for each saved key, as it is sensitive material.
+
+        :param output_folder: Directory to save the key files.
+        :return: List of paths to saved key files.
+        """
+        saved_files: list[str] = []
+        key_names = {
+            "engine_key": "bee_engine{}_kib_key",
+            "engine_iv": "bee_engine{}_kib_iv",
+            "engine_counter": "bee_engine{}_counter",
+        }
+        for engine_idx, keys in self._generated_keys.items():
+            for key_name, key_value in keys.items():
+                file_base = key_names[key_name].format(engine_idx)
+                file_path = os.path.join(output_folder, file_base + ".bin")
+                write_file(key_value, file_path, mode="wb")
+                logger.warning(
+                    f"Sensitive: Auto-generated {key_name} for engine {engine_idx} "
+                    f"saved to '{file_path}'. Store securely and use in config for key reuse."
+                )
+                saved_files.append(file_path)
+        return saved_files

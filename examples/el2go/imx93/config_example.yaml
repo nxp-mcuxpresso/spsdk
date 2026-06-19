@@ -50,9 +50,10 @@ download_timeout: 300
 # Description: Address where to store Secure Objects obtained from EL2GO. Please note, that if you're using external
 # memory, you have to configure the memory first.
 secure_objects_address: 0xE0000000
-# -------------------------------------===== Path to U-Boot binary [Optional] =====-------------------------------------
-# Description: Path to U-Boot binary that will be used for writing assets to EMMC/SD
-uboot_path: imx-boot-imx93-9x9-lpddr4-qsb-sd.bin-flash_singleboot
+# ----------------------------------===== Path to imx-bootloader [Optional] =====-------------------------------------
+# Description: Path to imx-bootloader binary that will be used for writing assets to EMMC/SD.
+#   This is the whole imx-boot image (e.g., imx-boot-<board>.bin), not just the U-Boot component.
+imx_bootloader_path: imx-boot-imx93-9x9-lpddr4-qsb-sd.bin-flash_singleboot
 # ----------------------===== Filename of the secure objects stored in partition [Optional] =====-----------------------
 # Description: Filename of the secure objects stored in partition. Passed to U-Boot fatwrite command.
 fatwrite_filename: assets.bin
@@ -63,9 +64,14 @@ fatwrite_interface: mmc
 # Description: Device and partition for writing the secure objects, separated by colon. Passed to U-Boot fatwrite
 # command.
 fatwrite_device_partition: "0:1"
-# ------------------===== Filename of the configuration file for OEM Provisioning App [Optional] =====------------------
-# Description: Filename of the configuration file for OEM Provisioning App that will be stored in partition together
-# with the secure objects.
+# ----------------===== Path to the configuration file for OEM Provisioning App [Optional] =====------------------
+# Description: Path to the configuration file for OEM Provisioning App on the host. The file
+#   will be written to the device partition together with the secure objects.
+oem_provisioning_config_path: /path/to/config.yaml
+# ------------------===== Device-side filename for the OEM Provisioning App config [Optional] =====------------------
+# Description: Filename used when writing the OEM Provisioning App configuration file to the
+#   device partition (passed to U-Boot fatwrite). Defaults to the basename of
+#   oem_provisioning_config_path if not set.
 oem_provisioning_config_filename: config.yaml
 # ------------------------------------------===== Boot Linux [Optional] =====-------------------------------------------
 # Description: Boot Linux after provisioning

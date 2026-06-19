@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023,2025 NXP
+# Copyright 2023,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,14 +11,15 @@ This module provides the abstract base class for all device communication
 interfaces in SPSDK, defining the common contract for device operations.
 """
 
-import logging
 from abc import ABC, abstractmethod
 from types import TracebackType
 from typing import Optional, Type
 
 from typing_extensions import Self
 
-logger = logging.getLogger(__name__)
+from spsdk import get_logger
+
+logger = get_logger(__name__)
 
 
 class DeviceBase(ABC):

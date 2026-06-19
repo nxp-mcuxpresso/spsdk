@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# ==========================  PFR CMPA configuration template for mcxn556s, Revision: latest  ===========================
+# ==========================  PFR CMPA configuration template for mcxn556s, Revision: latest  ==========================
 
 # ======================================================================================================================
-#                                                 == General Options ==
+#                                                 == General Options ==                                                 
 # ======================================================================================================================
 # -------------------------------------===== The chip family name [Required] =====--------------------------------------
 # Description: NXP chip family identifier.
@@ -21,7 +21,7 @@ type: CMPA
 # -------------------------------------------===== mcxn556s [Required] =====--------------------------------------------
 settings:
   # ------------------------------------------===== BOOT_CFG [Optional] =====-------------------------------------------
-  # Description: Offset: 0x00000000, Width: 32b; boot cfg
+  # Description: Offset: 0x00000000, Width: 32b; Boot configuration
   BOOT_CFG:
     # -----------------------------------------===== BOOT_SRC [Optional] =====------------------------------------------
     # Description: Offset: 0b, Width: 2b, Primary boot source
@@ -38,8 +38,7 @@ settings:
     # - I2C_SLAVE_ISP, (3): I2C slave ISP
     # - USB0_HID, (4): USB0 HID
     # - USB1_HID, (5): USB1 HID
-    # - CAN_ISP, (6): CAN ISP
-    # Possible options: <AUTO_ISP, UART_ISP, SPI_SLAVE_ISP, I2C_SLAVE_ISP, USB0_HID, USB1_HID, CAN_ISP>
+    # Possible options: <AUTO_ISP, UART_ISP, SPI_SLAVE_ISP, I2C_SLAVE_ISP, USB0_HID, USB1_HID>
     ISP_BOOT_IF: AUTO_ISP
     # ---------------------------------------===== REC_BOOT_SRC [Optional] =====----------------------------------------
     # Description: Offset: 8b, Width: 2b, Recovery boot source
@@ -51,19 +50,21 @@ settings:
     # ----------------------------------------===== BOOT_SPEED [Optional] =====-----------------------------------------
     # Description: Offset: 12b, Width: 2b, Boot speed. Selects the core frequency and voltage to use during ROM
     # execution
-    # - 48_MHZ_FRO_@_1.0V, (0): 48 MHz FRO @ 1.0V
-    # - 72_MHZ_FRO_@_1.1V, (1): 72 MHz FRO @ 1.1V
-    # - 144_MHZ_FRO_@_1.2V, (2): 144 MHz FRO @ 1.2V
-    # - 150_MHZ_PLL_@_1.2V, (3): 150 MHz PLL @ 1.2V
-    # Possible options: <48_MHZ_FRO_@_1.0V, 72_MHZ_FRO_@_1.1V, 144_MHZ_FRO_@_1.2V, 150_MHZ_PLL_@_1.2V>
-    BOOT_SPEED: 48_MHZ_FRO_@_1.0V
-    # ------------------------------------------===== HEADER [Optional] =====-------------------------------------------
-    # Description: Offset: 16b, Width: 16b, N/A
+    # - 48_MHz, (0): 48 MHz FRO @ 1.0V
+    # - 72_MHz, (1): 72 MHz FRO @ 1.1V
+    # - 144_MHz, (2): 144 MHz FRO @ 1.2V
+    # - 150_MHz, (3): 150 MHz PLL @ 1.2V
+    # Possible options: <48_MHz, 72_MHz, 144_MHz, 150_MHz>
+    BOOT_SPEED: 48_MHz
+    # ------------------------------------------===== Header [Optional] =====-------------------------------------------
+    # Description: Offset: 16b, Width: 16b, After this header is set, all non-zero values will take effect; leaving all
+    # settings at 0xff will cause undefined behavior. It is recommended to set all values to 0x00 before setting the
+    # CMPA header value
     # - DEFAULT, (22883): CMPA Header marker should be set to 0x9635
     # Possible options: <DEFAULT>
-    HEADER: DEFAULT
+    Header: DEFAULT
   # ------------------------------------------===== FLASH_CFG [Optional] =====------------------------------------------
-  # Description: Offset: 0x00000004, Width: 32b; flash cfg
+  # Description: Offset: 0x00000004, Width: 32b; Flash configuration
   FLASH_CFG:
     # -------------------------------------===== FLASH_REMAP_SIZE [Optional] =====--------------------------------------
     # Description: Offset: 0b, Width: 5b, Flash remap size. FLASH_REMAP_SIZE defines the size of the secondary boot
@@ -82,8 +83,26 @@ settings:
     # using the primary image Bank1_IFR0 is mapped to GLBAC2. If the primary boot fails, and the recovery path is taken,
     # then Bank1_IFR0 is mapped to GLBAC4 instead. Note: Settings 5-7 should not be used if Bank1_IFR0 is used as
     # OEM_SBL (BOOT_SRC = 2). In Develop life cycle - All settings: MBC protection bits set as RWXL = 1110 (GLBAC0) In
-    # other life cycles –
-    OEM_BANK1_IFR0_PROT: 0
+    # other life cycles -
+    # - MBC_PROTECTION_BITS_SET_0, (0): MBC protection bits set as RWXL = 1010 (GLBAC4)
+    # - MBC_PROTECTION_BITS_SET_1, (1): MBC protection bits set as RWXL = 1010 (GLBAC4)
+    # - USED_AS_OEM_SBL, (2): Used as OEM_SBL (BOOT_SRC = 2) - MBC protection bits set as RWXL = 1011 (GLBAC2). Other
+    # boot modes - MBC protection bits set as RWXL = 1010 (GLBAC4)
+    # - USED_AS_OEM_SBL_3, (3): Used as OEM_SBL (BOOT_SRC = 2) - MBC protection bits set as RWXL = 0011 (GLBAC6). Other
+    # boot modes - MBC protection bits set as RWXL = 1010 (GLBAC4)
+    # - MBC_PROTECTION_BITS_SET_4, (4): MBC protection bits set as RWXL = 1010 (GLBAC4)
+    # - BOOTED_AS_OEM_RCVRY_IMG, (5): Booted as OEM_RCVRY_IMG (REC_BOOT_SRC = 1) - MBC protection bits set as RWXL =
+    # 1010 (GLBAC4). Exiting to primary image (not SBL or recovery boot) - MBC protection bits set as RWXL = 1011
+    # (GLBAC2)
+    # - BOOTED_AS_OEM_RCVRY_IMG_6, (6): Booted as OEM_RCVRY_IMG (REC_BOOT_SRC = 1) - MBC protection bits set as RWXL =
+    # 1010 (GLBAC4). Exiting to primary image (not SBL or recovery boot) - MBC protection bits set as RWXL = 0011
+    # (GLBAC6)
+    # - BOOTED_AS_OEM_RCVRY_IMG_7, (7): Booted as OEM_RCVRY_IMG (REC_BOOT_SRC = 1) - MBC protection bits set as RWXL =
+    # 1010 (GLBAC4). Exiting to primary image (not SBL or recovery boot) - MBC protection bits set as RWXL = 0001
+    # (GLBAC7)
+    # Possible options: <MBC_PROTECTION_BITS_SET_0, MBC_PROTECTION_BITS_SET_1, USED_AS_OEM_SBL, USED_AS_OEM_SBL_3,
+    # MBC_PROTECTION_BITS_SET_4, BOOTED_AS_OEM_RCVRY_IMG, BOOTED_AS_OEM_RCVRY_IMG_6, BOOTED_AS_OEM_RCVRY_IMG_7>
+    OEM_BANK1_IFR0_PROT: MBC_PROTECTION_BITS_SET_0
     # ---------------------------------------===== ISP_PIN_ENTRY [Optional] =====---------------------------------------
     # Description: Offset: 8b, Width: 2b, Disable ISP mode entry through pin assertion
     # - ISP_ENTRY_ALLOWED_0, (0): ISP entry allowed
@@ -118,7 +137,7 @@ settings:
     # Possible options: <ISP_ENTRY_ALLOWED_0, ISP_ENTRY_DISABLED, ISP_ENTRY_ALLOWED_2, ISP_ENTRY_ALLOWED_3>
     ISP_FT_ENTRY: ISP_ENTRY_ALLOWED_0
   # ---------------------------------------===== BOOT_LED_STATUS [Optional] =====---------------------------------------
-  # Description: Offset: 0x00000008, Width: 32b; boot led status
+  # Description: Offset: 0x00000008, Width: 32b; Boot LED status
   BOOT_LED_STATUS:
     # ---------------------------------------===== REC_BOOT_LED [Optional] =====----------------------------------------
     # Description: Offset: 0b, Width: 8b, Assert on recovery boot. ROM drives the GPIO pin high, identified by this
@@ -139,7 +158,7 @@ settings:
     # set this field to 0x00
     BOOT_FAIL_LED: 0
   # -----------------------------------------===== BOOT_TIMERS [Optional] =====-----------------------------------------
-  # Description: Offset: 0x0000000C, Width: 32b; boot timers
+  # Description: Offset: 0x0000000C, Width: 32b; Boot timers
   BOOT_TIMERS:
     # ----------------------------------===== POWERDOWN_TIMEOUT_SECS [Optional] =====-----------------------------------
     # Description: Offset: 0b, Width: 16b, Powerdown timeout: ISP mode peripheral detection timeout value in seconds. If
@@ -152,30 +171,52 @@ settings:
     # field ROM configures the watch dog timer to reset the device on timeout before passing execution control to user
     # code
     WDOG_TIMEOUT_COUNT: 0
-  # --------------------------------------===== FLEXSPI_BOOT_CFG0 [Optional] =====--------------------------------------
+  # ----------------------------------------===== FLEXSPI_CFG0 [Optional] =====-----------------------------------------
   # Description: Offset: 0x00000010, Width: 32b; ROM code will not manage these fields, but SDK driver can manage these.
   FLEXSPI_CFG0:
     # -----------------------------------===== FLEXSPI_AUTO_PROBE_EN [Optional] =====-----------------------------------
     # Description: Offset: 0b, Width: 1b, Quad/Octal-SPI flash auto probe feature enable
-    FLEXSPI_AUTO_PROBE_EN: 0
+    # - DISABLE, (0): Disable
+    # - ENABLE, (1): Enable
+    # Possible options: <DISABLE, ENABLE>
+    FLEXSPI_AUTO_PROBE_EN: DISABLE
     # ------------------------------------===== FLEXSPI_PROBE_TYPE [Optional] =====-------------------------------------
     # Description: Offset: 1b, Width: 3b, Quad/Octal-SPI flash probe type
-    FLEXSPI_PROBE_TYPE: 0
+    # - QUADSPI_NOR, (0): QuadSPI NOR
+    # - MACRONIX_OCTAL_FLASH, (1): Macronix Octal FLASH
+    # - MICRON_OCTAL_FLASH, (2): Micron Octal FLASH
+    # - ADESTO_OCTAL_FLASH, (3): Adesto Octal FLASH
+    # Possible options: <QUADSPI_NOR, MACRONIX_OCTAL_FLASH, MICRON_OCTAL_FLASH, ADESTO_OCTAL_FLASH>
+    FLEXSPI_PROBE_TYPE: QUADSPI_NOR
     # ------------------------------------===== FLEXSPI_FLASH_TYPE [Optional] =====-------------------------------------
     # Description: Offset: 4b, Width: 3b, Define typical Serial NOR Flash types
-    FLEXSPI_FLASH_TYPE: 0
+    # - QSPI_ADDR_3B, (0): QSPI ADDR 3B
+    # - HYPER_1V8, (2): HYPER 1V8
+    # - HYPER_3V3, (3): HYPER 3V3
+    # - FLEXSPI_DDR_MXIC, (4): FlexSPI_DDR_MXIC
+    # - FLEXSPI_DDR_MICRON, (5): FlexSPI_DDR_MICRON
+    # Possible options: <QSPI_ADDR_3B, HYPER_1V8, HYPER_3V3, FLEXSPI_DDR_MXIC, FLEXSPI_DDR_MICRON>
+    FLEXSPI_FLASH_TYPE: QSPI_ADDR_3B
     # -----------------------------------===== FLEXSPI_DUMMY_CYCLES [Optional] =====------------------------------------
     # Description: Offset: 7b, Width: 4b, Quad/Octal-SPI dummy cycles for read command. If a non-zero value is
     # programmed in this field, then the value is used to override the default number of dummy cycles for a fast read
-    # command read from the serial flash’s SFDP information. Note: this field is only used if FLEXSPI_AUTO_PROBE_EN is
+    # command read from the serial flash's SFDP information. Note: this field is only used if FLEXSPI_AUTO_PROBE_EN is
     # set
     FLEXSPI_DUMMY_CYCLES: 0
     # -------------------------------------===== FLEXSPI_FREQUENCY [Optional] =====-------------------------------------
     # Description: Offset: 11b, Width: 3b, Q/O-SPI flash interface frequency
-    FLEXSPI_FREQUENCY: 0
+    # - 75MHZ, (0): 75Mhz
+    # - 60MHZ, (1): 60Mhz
+    # - 50MHZ, (2): 50Mhz
+    # - 100MHZ, (3): 100Mhz
+    # Possible options: <75MHZ, 60MHZ, 50MHZ, 100MHZ>
+    FLEXSPI_FREQUENCY: 75MHZ
     # -----------------------------------===== FLEXSPI_RESET_ENABLE [Optional] =====------------------------------------
     # Description: Offset: 14b, Width: 1b, Use O/QSPI_RESET_PIN to reset the flash device
-    FLEXSPI_RESET_ENABLE: 0
+    # - NO_RESET, (0): NO_RESET(O/QSPI device reset pin is not connected or available.)
+    # - EN_RESET, (1): EN_RESET(O/QSPI device reset pin is connected to a GPIO (QSPI_RESET_PIN).)
+    # Possible options: <NO_RESET, EN_RESET>
+    FLEXSPI_RESET_ENABLE: NO_RESET
     # ----------------------------------===== FLEXSPI_RESET_GPIO_PORT [Optional] =====----------------------------------
     # Description: Offset: 15b, Width: 3b, When FLEXSPI_RESET_ENABLE = 1, this field determines the GPIO port number to
     # use for O/QSPI reset function
@@ -187,18 +228,44 @@ settings:
     # -------------------------------------===== FLEXSPI_HOLD_TIME [Optional] =====-------------------------------------
     # Description: Offset: 23b, Width: 2b, Delay after reset before accessing Quad/Octal-SPI flash devices. Note, for
     # POR in addition to this wait time FLEXSPI_PWR_HOLD_TIME is added
-    FLEXSPI_HOLD_TIME: 0
+    # - WAIT_FOR_500_MICROSECONDS, (0): Wait for 500 microseconds
+    # - WAIT_FOR_1_MILLISECOND, (1): Wait for 1 millisecond
+    # - WAIT_FOR_3_MILLISECONDS, (2): Wait for 3 milliseconds
+    # - WAIT_FOR_10_MILLISECONDS, (3): Wait for 10 milliseconds
+    # Possible options: <WAIT_FOR_500_MICROSECONDS, WAIT_FOR_1_MILLISECOND, WAIT_FOR_3_MILLISECONDS,
+    # WAIT_FOR_10_MILLISECONDS>
+    FLEXSPI_HOLD_TIME: WAIT_FOR_500_MICROSECONDS
     # -----------------------------------===== FLEXSPI_PWR_HOLD_TIME [Optional] =====-----------------------------------
     # Description: Offset: 25b, Width: 4b, Delay after POR before accessing Quad/Octal-SPI flash devices in addition to
     # delay defined by FLEXSPI_HOLD TIME field
-    FLEXSPI_PWR_HOLD_TIME: 0
+    # - NO_DELAY, (0): No delay
+    # - WAITS_ADDITIONAL_100_MICR, (1): Waits additional 100 microseconds
+    # - WAITS_ADDITIONAL_500_MICR, (2): Waits additional 500 microseconds
+    # - WAITS_ADDITIONAL_1_MILLIS, (3): Waits additional 1 millisecond
+    # - WAITS_ADDITIONAL_10_MILLI, (4): Waits additional 10 milliseconds
+    # - WAITS_ADDITIONAL_20_MILLI, (5): Waits additional 20 milliseconds
+    # - WAITS_ADDITIONAL_40_MILLI, (6): Waits additional 40 milliseconds
+    # - WAITS_ADDITIONAL_60_MILLI, (7): Waits additional 60 milliseconds
+    # - WAITS_ADDITIONAL_80_MILLI, (8): Waits additional 80 milliseconds
+    # - WAITS_ADDITIONAL_100_MILL, (9): Waits additional 100 milliseconds
+    # - WAITS_ADDITIONAL_120_MILL, (10): Waits additional 120 milliseconds
+    # - WAITS_ADDITIONAL_140_MILL, (11): Waits additional 140 milliseconds
+    # - WAITS_ADDITIONAL_160_MILL, (12): Waits additional 160 milliseconds
+    # - WAITS_ADDITIONAL_180_MILL, (13): Waits additional 180 milliseconds
+    # - WAITS_ADDITIONAL_200_MILL, (14): Waits additional 200 milliseconds
+    # - WAITS_ADDITIONAL_220_MILL, (15): Waits additional 220 milliseconds
+    # Possible options: <NO_DELAY, WAITS_ADDITIONAL_100_MICR, WAITS_ADDITIONAL_500_MICR, WAITS_ADDITIONAL_1_MILLIS,
+    # WAITS_ADDITIONAL_10_MILLI, WAITS_ADDITIONAL_20_MILLI, WAITS_ADDITIONAL_40_MILLI, WAITS_ADDITIONAL_60_MILLI,
+    # WAITS_ADDITIONAL_80_MILLI, WAITS_ADDITIONAL_100_MILL, WAITS_ADDITIONAL_120_MILL, WAITS_ADDITIONAL_140_MILL,
+    # WAITS_ADDITIONAL_160_MILL, WAITS_ADDITIONAL_180_MILL, WAITS_ADDITIONAL_200_MILL, WAITS_ADDITIONAL_220_MILL>
+    FLEXSPI_PWR_HOLD_TIME: NO_DELAY
     # -----------------------------------------===== PORT_SEL [Optional] =====------------------------------------------
     # Description: Offset: 31b, Width: 1b, Defines which FlexSPI portA/B is used for boot
     # - PORT_A, (0): Port A
     # - PORT_B, (1): Port B
     # Possible options: <PORT_A, PORT_B>
     PORT_SEL: PORT_A
-  # --------------------------------------===== FLEXSPI_BOOT_CFG1 [Optional] =====--------------------------------------
+  # ----------------------------------------===== FLEXSPI_CFG1 [Optional] =====-----------------------------------------
   # Description: Offset: 0x00000014, Width: 32b; ROM code will not manage these fields, but SDK driver can manage these.
   FLEXSPI_CFG1:
     # ----------------------------------===== FLEXSPI_DELAY_CELL_NUM [Optional] =====-----------------------------------
@@ -208,7 +275,7 @@ settings:
     # -----------------------------------===== FLEXSPI_IMAGE_OFFSET [Optional] =====------------------------------------
     # Description: Offset: 7b, Width: 10b, Any offset in memory mapped FlexSPI Flash area could be remapped to offset
     # zero to support eXecute In Place (XIP) of image programmed at different offset. This allows to build all update
-    # images with same RO base address, which are programmed at offset 0 or higher offset. FlLEXSPI_IMAGE_OFFSET field
+    # images with same RO base address, which are programmed at offset 0 or higher offset. FLEXSPI_IMAGE_OFFSET field
     # specifies the offset location of the second image. FLEXSPI_REMAP_IMAGE_SIZE field specifies the size multiple to
     # determine the size of area to be remapped. If this field is left blank boot ROM will not enable FlexSPI remap
     # feature. The physical flash offset is computed as below: physical offset = FLEXSPI_IMAGE_OFFSET
@@ -221,7 +288,7 @@ settings:
     # determine the size of area to be remapped. b'0000 Remap size = FLEXSPI_IMAGE_OFFSET
     FLEXSPI_REMAP_IMAGE_SIZE: 0
   # -------------------------------------===== REC_SPI_FLASH_CFG0 [Optional] =====--------------------------------------
-  # Description: Offset: 0x00000018, Width: 32b; rec spi flash cfg0
+  # Description: Offset: 0x00000018, Width: 32b; Rec SPI flash configuration0
   REC_SPI_FLASH_CFG0:
     # --------------------------------------===== REC_SPI_SCK_PIN [Optional] =====--------------------------------------
     # Description: Offset: 0b, Width: 8b, Override default SPI_SCK ISP pin. Identifies the pin to be used as SPI_SCK
@@ -243,7 +310,7 @@ settings:
     # REC_SPI_MOSI_PIN
     REC_SPI_MOSI_FUNC_SLOT: 0
   # -------------------------------------===== REC_SPI_FLASH_CFG1 [Optional] =====--------------------------------------
-  # Description: Offset: 0x0000001C, Width: 32b; REC SPI FLASH CFG1
+  # Description: Offset: 0x0000001C, Width: 32b; Rec SPI flash configuration1
   REC_SPI_FLASH_CFG1:
     # -------------------------------------===== REC_SPI_MISO_PIN [Optional] =====--------------------------------------
     # Description: Offset: 0b, Width: 8b, Override default SPI_MISO ISP pin. Identifies the pin to be used as SPI_MISO
@@ -267,9 +334,15 @@ settings:
     REC_SPI_SSEL_X: 0
     # -------------------------------------===== REC_BOOT_PIN_CUST [Optional] =====-------------------------------------
     # Description: Offset: 30b, Width: 2b, Use customer defined pins for 1-bit SPI recovery boot pins
-    REC_BOOT_PIN_CUST: 0
+    # - DEFAULT_ROM_DEFINED_PIN_0, (0): Default ROM defined pins
+    # - CUSTOMER_DEFINED, (1): Customer defined
+    # - DEFAULT_ROM_DEFINED_PIN_2, (2): Default ROM defined pins
+    # - DEFAULT_ROM_DEFINED_PIN_3, (3): Default ROM defined pins
+    # Possible options: <DEFAULT_ROM_DEFINED_PIN_0, CUSTOMER_DEFINED, DEFAULT_ROM_DEFINED_PIN_2,
+    # DEFAULT_ROM_DEFINED_PIN_3>
+    REC_BOOT_PIN_CUST: DEFAULT_ROM_DEFINED_PIN_0
   # ----------------------------------------===== ISP_UART_CFG [Optional] =====-----------------------------------------
-  # Description: Offset: 0x00000020, Width: 32b; isp uart cfg
+  # Description: Offset: 0x00000020, Width: 32b; ISP UART configuration
   ISP_UART_CFG:
     # ----------------------------------------===== UART_RX_PIN [Optional] =====----------------------------------------
     # Description: Offset: 0b, Width: 8b, Override default UART RX ISP pin. Identifies the pin to be used as UART_RX
@@ -290,7 +363,7 @@ settings:
     # UART_TX_PIN
     UART_TX_FUNC_SLOT: 0
   # -----------------------------------------===== ISP_I2C_CFG [Optional] =====-----------------------------------------
-  # Description: Offset: 0x00000024, Width: 32b; isp i2c cfg
+  # Description: Offset: 0x00000024, Width: 32b; ISP I2C configuration
   ISP_I2C_CFG:
     # ----------------------------------------===== I2C_SCL_PIN [Optional] =====----------------------------------------
     # Description: Offset: 0b, Width: 8b, Override default I2C SCL ISP pin. Identifies the pin to be used as I2C_SCL
@@ -311,7 +384,7 @@ settings:
     # I2C_SDA_PIN
     I2C_SDA_FUNC_SLOT: 0
   # ----------------------------------------===== ISP_SPI_CFG0 [Optional] =====-----------------------------------------
-  # Description: Offset: 0x0000002C, Width: 32b; isp spi cfg0
+  # Description: Offset: 0x0000002C, Width: 32b; ISP SPI configuration0
   ISP_SPI_CFG0:
     # ----------------------------------------===== SPI_SCK_PIN [Optional] =====----------------------------------------
     # Description: Offset: 0b, Width: 8b, Override default SPI_SCK ISP pin. Identifies the pin to be used as SPI_SCK
@@ -332,7 +405,7 @@ settings:
     # SPI_MOSI_PIN
     SPI_MOSI_FUNC_SLOT: 0
   # ----------------------------------------===== ISP_SPI_CFG1 [Optional] =====-----------------------------------------
-  # Description: Offset: 0x00000030, Width: 32b; ISP SPI CFG1
+  # Description: Offset: 0x00000030, Width: 32b; ISP SPI configuration1
   ISP_SPI_CFG1:
     # ---------------------------------------===== SPI_MISO_PIN [Optional] =====----------------------------------------
     # Description: Offset: 0b, Width: 8b, Override default SPI_MISO ISP pin. Identifies the pin to be used as SPI_MISO
@@ -355,37 +428,40 @@ settings:
     # selects
     ISP_SPI_SSEL_X: 0
   # -----------------------------------------===== ISP_USB_ID [Optional] =====------------------------------------------
-  # Description: Offset: 0x00000034, Width: 32b; isp usb id
+  # Description: Offset: 0x00000034, Width: 32b; ISP USB ID
   ISP_USB_ID:
-    # ---------------------------------------===== USB_VENDOR_ID [Optional] =====---------------------------------------
+    # ---------------------------------------===== USB_Vendor_ID [Optional] =====---------------------------------------
     # Description: Offset: 0b, Width: 16b, Customer defined USB vendor ID used during USB-ISP mode device enumeration
-    USB_VENDOR_ID: 0
-    # --------------------------------------===== USB_PRODUCT_ID [Optional] =====---------------------------------------
+    USB_Vendor_ID: 0
+    # --------------------------------------===== USB_Product_ID [Optional] =====---------------------------------------
     # Description: Offset: 16b, Width: 16b, Customer defined USB product ID used during USB-ISP mode device enumeration
-    USB_PRODUCT_ID: 0
+    USB_Product_ID: 0
   # -----------------------------------------===== ISP_USB_CFG [Optional] =====-----------------------------------------
-  # Description: Offset: 0x00000038, Width: 32b; isp usb cfg
+  # Description: Offset: 0x00000038, Width: 32b; ISP USB configuration
   ISP_USB_CFG:
-    # ---------------------------------------===== USBX_VBUS_PIN [Optional] =====---------------------------------------
+    # ---------------------------------------===== USBx_VBUS_PIN [Optional] =====---------------------------------------
     # Description: Offset: 0b, Width: 8b, Override default USBx_VBUS_DETECT ISP pin. Identifies the pin to be used as
     # USBx_VBUS detect pin. [4:0] GPIO Pin number [7:5] GPIO port number
-    USBX_VBUS_PIN: 0
-    # ------------------------------------===== USBX_VBUS_FUNC_SLOT [Optional] =====------------------------------------
+    USBx_VBUS_PIN: 0
+    # ------------------------------------===== USBx_VBUS_FUNC_SLOT [Optional] =====------------------------------------
     # Description: Offset: 8b, Width: 4b, Identifies the ALT pin mux function to use for the pin selected by
     # USBx_VBUS_PIN
-    USBX_VBUS_FUNC_SLOT: 0
+    USBx_VBUS_FUNC_SLOT: 0
     # ---------------------------------------===== EXT_XTAL_CLK [Optional] =====----------------------------------------
     # Description: Offset: 16b, Width: 3b, USB PHY input clock frequency. For USB high speed PHY external XTAL input is
-    # needed. This field specifies the frequency of XTAL used on board. • 000 - 24MHz input clock (Divide by 20) -
-    # Default option when CMPA is blank. • 001 - 30MHz input clock (Divide by 16) • 010 - 32MHz input clock (Divide by
-    # 15) • 011 - Reserved • 100 - 20MHz input clock (Divide by 24) • 101 - 19.2MHz input clock (Divide by 25) • 110 -
-    # 16MHz input clock (Divide by 30) • 111 - 12MHz input clock (Divide by 40)
+    # needed. This field specifies the frequency of XTAL used on board. - 000 - 24MHz input clock (Divide by 20) -
+    # Default option when CMPA is blank. - 001 - 30MHz input clock (Divide by 16) - 010 - 32MHz input clock (Divide by
+    # 15) - 011 - Reserved - 100 - 20MHz input clock (Divide by 24) - 101 - 19.2MHz input clock (Divide by 25) - 110 -
+    # 16MHz input clock (Divide by 30) - 111 - 12MHz input clock (Divide by 40)
     EXT_XTAL_CLK: 0
     # ------------------------------------------===== PRE_DIV [Optional] =====------------------------------------------
     # Description: Offset: 19b, Width: 1b, Enable Pre-divider. Needed to support 48MHz and other high speed crystals
-    PRE_DIV: 0
+    # - DISABLE, (0): Disable
+    # - ENABLE, (1): Enable
+    # Possible options: <DISABLE, ENABLE>
+    PRE_DIV: DISABLE
   # ----------------------------------------===== ISP_MISC_CFG [Optional] =====-----------------------------------------
-  # Description: Offset: 0x0000003C, Width: 32b; isp misc cfg
+  # Description: Offset: 0x0000003C, Width: 32b; ISP misc configuration
   ISP_MISC_CFG:
     # --------------------------------------===== I2C_SLAVE_ADDR [Optional] =====---------------------------------------
     # Description: Offset: 0b, Width: 8b, I2C slave address A 7-bit Address used for selecting our device on shared I2C
@@ -394,18 +470,43 @@ settings:
     I2C_SLAVE_ADDR: 0
     # ---------------------------------------===== ISP_USB_CUST [Optional] =====----------------------------------------
     # Description: Offset: 22b, Width: 2b, Use customer defined GPIO for USB VBUS detect function during ISP mode
-    ISP_USB_CUST: 0
+    # - USE_DEDICATED_VBUS_PINS, (0): Use dedicated VBUS pins
+    # - CUSTOMER_DEFINED_GPIO_F_1, (1): Customer defined GPIO for USB0_VBUS detect
+    # - CUSTOMER_DEFINED_GPIO_F_2, (2): Customer defined GPIO for USB1_VBUS detect
+    # - USE_VDD_USB_FOR_VBUS_PRES, (3): Use VDD_USB for VBUS presence. On board regulator should generate VDD_USB
+    # voltage using 5V input fo VBUS pin on connector
+    # Possible options: <USE_DEDICATED_VBUS_PINS, CUSTOMER_DEFINED_GPIO_F_1, CUSTOMER_DEFINED_GPIO_F_2,
+    # USE_VDD_USB_FOR_VBUS_PRES>
+    ISP_USB_CUST: USE_DEDICATED_VBUS_PINS
     # ---------------------------------------===== ISP_SPI_CUST [Optional] =====----------------------------------------
     # Description: Offset: 26b, Width: 2b, Use customer defined SPI ISP pins
-    ISP_SPI_CUST: 0
+    # - DEFAULT_ROM_DEFINED_PIN_0, (0): Default ROM defined pins
+    # - CUSTOMER_DEFINED, (1): Customer defined
+    # - DEFAULT_ROM_DEFINED_PIN_2, (2): Default ROM defined pins
+    # - DEFAULT_ROM_DEFINED_PIN_3, (3): Default ROM defined pins
+    # Possible options: <DEFAULT_ROM_DEFINED_PIN_0, CUSTOMER_DEFINED, DEFAULT_ROM_DEFINED_PIN_2,
+    # DEFAULT_ROM_DEFINED_PIN_3>
+    ISP_SPI_CUST: DEFAULT_ROM_DEFINED_PIN_0
     # ---------------------------------------===== ISP_I2C_CUST [Optional] =====----------------------------------------
     # Description: Offset: 28b, Width: 2b, Use customer defined I2C ISP pins
-    ISP_I2C_CUST: 0
+    # - DEFAULT_ROM_DEFINED_PIN_0, (0): Default ROM defined pins
+    # - CUSTOMER_DEFINED, (1): Customer defined
+    # - DEFAULT_ROM_DEFINED_PIN_2, (2): Default ROM defined pins
+    # - DEFAULT_ROM_DEFINED_PIN_3, (3): Default ROM defined pins
+    # Possible options: <DEFAULT_ROM_DEFINED_PIN_0, CUSTOMER_DEFINED, DEFAULT_ROM_DEFINED_PIN_2,
+    # DEFAULT_ROM_DEFINED_PIN_3>
+    ISP_I2C_CUST: DEFAULT_ROM_DEFINED_PIN_0
     # ---------------------------------------===== ISP_UART_CUST [Optional] =====---------------------------------------
     # Description: Offset: 30b, Width: 2b, Use customer defined UART ISP pins
-    ISP_UART_CUST: 0
+    # - DEFAULT_ROM_DEFINED_PIN_0, (0): Default ROM defined pins
+    # - CUSTOMER_DEFINED, (1): Customer defined
+    # - DEFAULT_ROM_DEFINED_PIN_2, (2): Default ROM defined pins
+    # - DEFAULT_ROM_DEFINED_PIN_3, (3): Default ROM defined pins
+    # Possible options: <DEFAULT_ROM_DEFINED_PIN_0, CUSTOMER_DEFINED, DEFAULT_ROM_DEFINED_PIN_2,
+    # DEFAULT_ROM_DEFINED_PIN_3>
+    ISP_UART_CUST: DEFAULT_ROM_DEFINED_PIN_0
   # -----------------------------------------===== CC_SOCU_PIN [Optional] =====-----------------------------------------
-  # Description: Offset: 0x00000040, Width: 32b; cc socu pin
+  # Description: Offset: 0x00000040, Width: 32b; CC SOCU pin
   CC_SOCU_PIN:
     # -------------------------------------------===== NIDEN [Optional] =====-------------------------------------------
     # Description: Offset: 0b, Width: 1b, Non Secure non-invasive debug enable
@@ -469,12 +570,12 @@ settings:
     CPU1_DBGEN: DISABLED
     # ----------------------------------------===== UUID_CHECK [Optional] =====-----------------------------------------
     # Description: Offset: 15b, Width: 1b, Enforce UUID match during Debug authentication
-    # - All devices, (0): Debug certificate can be used with all devices
-    # - Matching UUID, (1): Debug certificate per device with matching UUID is needed
-    # Possible options: <All devices, Matching UUID>
-    UUID_CHECK: All devices
+    # - DEBUG_CERT_ALL_DEVICES, (0): Debug certificate can be used with all devices
+    # - DEBUG_CERT_PER_DEVICE, (1): Debug certificate per device with matching UUID is needed
+    # Possible options: <DEBUG_CERT_ALL_DEVICES, DEBUG_CERT_PER_DEVICE>
+    UUID_CHECK: DEBUG_CERT_ALL_DEVICES
   # ----------------------------------------===== CC_SOCU_DFLT [Optional] =====-----------------------------------------
-  # Description: Offset: 0x00000044, Width: 32b; cc socu dflt
+  # Description: Offset: 0x00000044, Width: 32b; CC SOCU DFLT
   CC_SOCU_DFLT:
     # -------------------------------------------===== NIDEN [Optional] =====-------------------------------------------
     # Description: Offset: 0b, Width: 1b, Non Secure non-invasive debug Fixed state
@@ -537,200 +638,204 @@ settings:
     # Possible options: <DISABLED, ENABLED>
     CPU1_DBGEN: DISABLED
   # ----------------------------------------===== VENDOR_USAGE [Optional] =====-----------------------------------------
-  # Description: Offset: 0x00000048, Width: 32b; vendor usage
+  # Description: Offset: 0x00000048, Width: 32b; Vendor usage
   VENDOR_USAGE:
     # ---------------------------------------===== VENDOR_USAGE [Optional] =====----------------------------------------
     # Description: Offset: 16b, Width: 16b, Upper 16 bits of vendor usage field defined in DAP. Lower 16-bits come from
     # customer field area (CFPA.DBG_REVOKE_VU)
     VENDOR_USAGE: 0
   # ---------------------------------------===== SECURE_BOOT_CFG [Optional] =====---------------------------------------
-  # Description: Offset: 0x00000050, Width: 32b; secure boot cfg
+  # Description: Offset: 0x00000050, Width: 32b; Secure boot configuration
   SECURE_BOOT_CFG:
     # ----------------------------------------===== SEC_BOOT_EN [Optional] =====----------------------------------------
     # Description: Offset: 0b, Width: 2b, Secure boot enforcement. This field defines the minimum image verification
     # procedure (CRC32, CMAC, ECDSA sign). The Image type field in header indicates the type of verification data
     # (checksum or signature) included in it
-    # - All, (0): All Image types are allowed
-    # - CRC32 or signed, (1): Only CRC32 or cryptographically signed (CMAC or ECDSA or MLDSA) images are allowed
-    # - Signed only, (2): Only cryptographically Signed (CMAC or ECDSA or MLDSA) images are allowed
-    # - PKI signed only, (3): Only PKI signed (ECDSA or MLDSA) images are allowed
-    # Possible options: <All, CRC32 or signed, Signed only, PKI signed only>
-    SEC_BOOT_EN: All
+    # - ALL_IMAGE_TYPES_ALLOWED, (0): All Image types are allowed
+    # - ONLY_CRC32_OR_CRYPTO_SIG, (1): Only CRC32 or cryptographically signed (CMAC or ECDSA or MLDSA) images are
+    # allowed
+    # - ONLY_CRYPTO_SIGNED, (2): Only cryptographically Signed (CMAC or ECDSA or MLDSA) images are allowed
+    # - ONLY_PKI_SIGNED, (3): Only PKI signed (ECDSA or MLDSA) images are allowed
+    # Possible options: <ALL_IMAGE_TYPES_ALLOWED, ONLY_CRC32_OR_CRYPTO_SIG, ONLY_CRYPTO_SIGNED, ONLY_PKI_SIGNED>
+    SEC_BOOT_EN: ALL_IMAGE_TYPES_ALLOWED
     # ----------------------------------------===== LP_SEC_BOOT [Optional] =====----------------------------------------
     # Description: Offset: 3b, Width: 2b, LP_SEC_BOOT: Secure boot option for low-power wake from power-down & deep-
     # power down. For CFPA/CMPA do CRC check always
-    # - Same as cold boot, (0): Same as cold boot
-    # - CFPA/CMPA & CRC32, (1): CRC check for CFPA/CMPA & CRC32 check of active image. Uses AHB_CRC image type to check
-    # image CRC and loads TZ-M preset data if present before jumping to the image
-    # - CFPA/CMPA & vector addr, (2): CRC check for CFPA/CMPA & jump to vector address specified in CFPA
-    # - CFPA/CMPA & CMAC, (3): CRC check for CFPA/CMPA & CMAC check of active image. Uses AHB_CRC image type to check
-    # image CRC and loads TZ-M preset data if present before jumping to the image
-    # Possible options: <Same as cold boot, CFPA/CMPA & CRC32, CFPA/CMPA & vector addr, CFPA/CMPA & CMAC>
-    LP_SEC_BOOT: Same as cold boot
+    # - COLD_BOOT, (0): Same as cold boot
+    # - CRC32_IMG, (1): CRC check for CFPA/CMPA & CRC32 check of active image. Uses AHB_CRC image type to check image
+    # CRC and loads TZ-M preset data if present before jumping to the image
+    # - VECTOR_ADDR, (2): CRC check for CFPA/CMPA & jump to vector address specified in CFPA
+    # - CMAC, (3): CRC check for CFPA/CMPA & CMAC check of active image. Uses AHB_CRC image type to check image CRC and
+    # loads TZ-M preset data if present before jumping to the image
+    # Possible options: <COLD_BOOT, CRC32_IMG, VECTOR_ADDR, CMAC>
+    LP_SEC_BOOT: COLD_BOOT
     # -------------------------------------===== DICE_CSR_KEY_TYPE [Optional] =====-------------------------------------
     # Description: Offset: 6b, Width: 2b, Define the DICE csr and key generation type
-    # - ECC_P384_KEYS_0, (0): Generate DICE ECC P-384 keys
-    # - ECC_P384_KEYS_1, (1): Generate DICE ECC P-384 keys
-    # - SHA384_AND_MLDSA_KEYS_2, (2): Generate DICE SHA384 & MLDSA keys
-    # - SHA384_AND_MLDSA_KEYS_3, (3): Generate DICE SHA384 & MLDSA keys
-    # Possible options: <ECC_P384_KEYS_0, ECC_P384_KEYS_1, SHA384_AND_MLDSA_KEYS_2, SHA384_AND_MLDSA_KEYS_3>
-    DICE_CSR_KEY_TYPE: ECC_P384_KEYS_0
+    # - GEN_DICE_ECC_P384_KEYS_0, (0): Generate DICE ECC P-384 keys
+    # - GEN_DICE_ECC_P384_KEYS_1, (1): Generate DICE ECC P-384 keys
+    # - GEN_DICE_SHA384_MLDSA_2, (2): Generate DICE SHA384 & MLDSA keys
+    # - GEN_DICE_SHA384_MLDSA_3, (3): Generate DICE SHA384 & MLDSA keys
+    # Possible options: <GEN_DICE_ECC_P384_KEYS_0, GEN_DICE_ECC_P384_KEYS_1, GEN_DICE_SHA384_MLDSA_2,
+    # GEN_DICE_SHA384_MLDSA_3>
+    DICE_CSR_KEY_TYPE: GEN_DICE_ECC_P384_KEYS_0
     # -----------------------------------------===== ENF_CNSA [Optional] =====------------------------------------------
     # Description: Offset: 8b, Width: 2b, Enforce CNSA suite approved algorithms for secure boot, secure update and
     # debug authentication
-    # - AT_LEAST_CNSA10_0, (0): At least CNSA 1.0 algorithms are used. (ECC P-384, SHA384 & AES256)
-    # - AT_LEAST_CNSA10_1, (1): At least CNSA 1.0 algorithms are used. (ECC P-384, SHA384 & AES256)
-    # - ONLY_CNSA20_2, (2): Only CNSA 2.0 algorithms are used.(ECDSA P-384 + MLDSA-87, ML-KEM, SHA384 & AES256)
-    # - ONLY_CNSA20_3, (3): Only CNSA 2.0 algorithms are used.(ECDSA P-384 + MLDSA-87, ML-KEM, SHA384 & AES256)
-    # Possible options: <AT_LEAST_CNSA10_0, AT_LEAST_CNSA10_1, ONLY_CNSA20_2, ONLY_CNSA20_3>
-    ENF_CNSA: AT_LEAST_CNSA10_0
+    # - AT_LEAST_CNSA_10_ALGORI_0, (0): At least CNSA 1.0 algorithms are used. (ECC P-384)
+    # - AT_LEAST_CNSA_10_ALGORI_1, (1): At least CNSA 1.0 algorithms are used. (ECC P-384)
+    # - ONLY_CNSA_20_ALGORITHMS_2, (2): Only CNSA 2.0 algorithms are used.(ECDSA P-384 + MLDSA-87)
+    # - ONLY_CNSA_20_ALGORITHMS_3, (3): Only CNSA 2.0 algorithms are used.(ECDSA P-384 + MLDSA-87)
+    # Possible options: <AT_LEAST_CNSA_10_ALGORI_0, AT_LEAST_CNSA_10_ALGORI_1, ONLY_CNSA_20_ALGORITHMS_2,
+    # ONLY_CNSA_20_ALGORITHMS_3>
+    ENF_CNSA: AT_LEAST_CNSA_10_ALGORI_0
     # --------------------------------------===== ENF_TZM_PRESET [Optional] =====---------------------------------------
     # Description: Offset: 10b, Width: 2b, TrustZone-M mode
     # - IGNORED, (0): Ignored
-    # - ENFORCED_1, (1): Enforce preset TZM data in image manifest
-    # - ENFORCED_2, (2): Enforce preset TZM data in image manifest
-    # - ENFORCED_3, (3): Enforce preset TZM data in image manifest
-    # Possible options: <IGNORED, ENFORCED_1, ENFORCED_2, ENFORCED_3>
+    # - ENFORCE_PRESET_TZM_DATA_1, (1): Enforce preset TZM data in image manifest
+    # - ENFORCE_PRESET_TZM_DATA_2, (2): Enforce preset TZM data in image manifest
+    # - ENFORCE_PRESET_TZM_DATA_3, (3): Enforce preset TZM data in image manifest
+    # Possible options: <IGNORED, ENFORCE_PRESET_TZM_DATA_1, ENFORCE_PRESET_TZM_DATA_2, ENFORCE_PRESET_TZM_DATA_3>
     ENF_TZM_PRESET: IGNORED
     # ---------------------------------------===== ITRC_ZEROIZE [Optional] =====----------------------------------------
     # Description: Offset: 12b, Width: 2b, RAM zeroize on ITRC event. Zeroize long-term storage RAM (RAMA) on subsequent
     # boot when Intrusion & Tamper control signals an intrusion event (ITRC_OUT3)
-    # - No action, (0): No action
-    # - Always on ITRC, (1): Always Zeroize PKC RAM on ITRC event only
-    # - On ITRC, (2): Zeroize PKC & RAMA on ITRC event only
-    # - Always on all reset boot, (3): Always Zeroize PKC & RAMA on all reset boot
-    # Possible options: <No action, Always on ITRC, On ITRC, Always on all reset boot>
-    ITRC_ZEROIZE: No action
+    # - NO_ACTION, (0): No action
+    # - ALWAYS_ZEROIZE_PKC_RAM_ON, (1): Always Zeroize PKC RAM on ITRC event only
+    # - ZEROIZE_PKC_&_RAMA_ON_ITR, (2): Zeroize PKC & RAMA on ITRC event only
+    # - ALWAYS_ZEROIZE_PKC_&_RAMA, (3): Always Zeroize PKC & RAMA on all reset boot
+    # Possible options: <NO_ACTION, ALWAYS_ZEROIZE_PKC_RAM_ON, ZEROIZE_PKC_&_RAMA_ON_ITR, ALWAYS_ZEROIZE_PKC_&_RAMA>
+    ITRC_ZEROIZE: NO_ACTION
     # --------------------------------------===== ACTIVE_IMG_PROT [Optional] =====--------------------------------------
     # Description: Offset: 14b, Width: 2b, Protection of active image. This field defines protection of flash area
     # occupied by the active image. Only applicable to internal flash
-    # - CFPA Flash, (0): Protection is defined using the CFPA FLASH_ACL settings
-    # - Write with sticky lock, (1): Write protect active image area with sticky lock. GLBAC2 is used. FLASH_ACL
+    # - PROTECT_CFPA_FLASH_ACL, (0): Protection is defined using the CFPA FLASH_ACL settings
+    # - WP_ACT_IMG_STICKY_GLBAC2, (1): Write protect active image area with sticky lock. GLBAC2 is used. FLASH_ACL
     # settings are ignored
-    # - Write without sticky lock, (2): Write protect active image area without sticky lock. GLBAC4 is used. FLASH_ACL
+    # - WP_ACT_IMG_NOSTKY_GLBAC4, (2): Write protect active image area without sticky lock. GLBAC4 is used. FLASH_ACL
     # settings are ignored
-    # - XOM with sticky lock, (3): XOM protect active image area with sticky lock. GLBAC6 is used. FLASH_ACL settings
-    # are ignored
-    # Possible options: <CFPA Flash, Write with sticky lock, Write without sticky lock, XOM with sticky lock>
-    ACTIVE_IMG_PROT: CFPA Flash
+    # - XOM_ACT_IMG_STICKY_GLBAC6, (3): XOM protect active image area with sticky lock. GLBAC6 is used. FLASH_ACL
+    # settings are ignored
+    # Possible options: <PROTECT_CFPA_FLASH_ACL, WP_ACT_IMG_STICKY_GLBAC2, WP_ACT_IMG_NOSTKY_GLBAC4,
+    # XOM_ACT_IMG_STICKY_GLBAC6>
+    ACTIVE_IMG_PROT: PROTECT_CFPA_FLASH_ACL
     # ---------------------------------------===== FIPS_SHA_STEN [Optional] =====---------------------------------------
     # Description: Offset: 16b, Width: 2b, Enable self-test for SHA2 block on power-up. Needed for FIPS certification.
     # If this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]
-    # - Not included, (0): not included
-    # - Boot on failure, (1): On failure continue to boot
-    # - ISP on failure, (2): On failure enter ISP mode for recovery
-    # - Lock on failure, (3): On failure lock the device to enforce power-cycle
-    # Possible options: <Not included, Boot on failure, ISP on failure, Lock on failure>
-    FIPS_SHA_STEN: Not included
+    # - NOT_INCLUDED, (0): not included
+    # - ON_FAIL_CONTINUE_BOOT, (1): On failure continue to boot
+    # - ON_FAIL_ISP_RECOVERY, (2): On failure enter ISP mode for recovery
+    # - ON_FAIL_LOCK_DEVICE, (3): On failure lock the device to enforce power-cycle
+    # Possible options: <NOT_INCLUDED, ON_FAIL_CONTINUE_BOOT, ON_FAIL_ISP_RECOVERY, ON_FAIL_LOCK_DEVICE>
+    FIPS_SHA_STEN: NOT_INCLUDED
     # ---------------------------------------===== FIPS_AES_STEN [Optional] =====---------------------------------------
     # Description: Offset: 18b, Width: 2b, Enable self-test for AES block on power-up. Needed for FIPS certification. If
     # this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]
-    # - Not included, (0): not included
-    # - Boot on failure, (1): On failure continue to boot
-    # - ISP on failure, (2): On failure enter ISP mode for recovery
-    # - Lock on failure, (3): On failure lock the device to enforce power-cycle
-    # Possible options: <Not included, Boot on failure, ISP on failure, Lock on failure>
-    FIPS_AES_STEN: Not included
+    # - NOT_INCLUDED, (0): not included
+    # - ON_FAIL_CONTINUE_BOOT, (1): On failure continue to boot
+    # - ON_FAIL_ISP_RECOVERY, (2): On failure enter ISP mode for recovery
+    # - ON_FAIL_LOCK_DEVICE, (3): On failure lock the device to enforce power-cycle
+    # Possible options: <NOT_INCLUDED, ON_FAIL_CONTINUE_BOOT, ON_FAIL_ISP_RECOVERY, ON_FAIL_LOCK_DEVICE>
+    FIPS_AES_STEN: NOT_INCLUDED
     # --------------------------------------===== FIPS_ECDSA_STEN [Optional] =====--------------------------------------
     # Description: Offset: 20b, Width: 2b, Enable self-test for ECDSA block on power-up. Needed for FIPS certification.
     # If this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]
-    # - Not included, (0): not included
-    # - Boot on failure, (1): On failure continue to boot
-    # - ISP on failure, (2): On failure enter ISP mode for recovery
-    # - Lock on failure, (3): On failure lock the device to enforce power-cycle
-    # Possible options: <Not included, Boot on failure, ISP on failure, Lock on failure>
-    FIPS_ECDSA_STEN: Not included
+    # - NOT_INCLUDED, (0): not included
+    # - ON_FAIL_CONTINUE_BOOT, (1): On failure continue to boot
+    # - ON_FAIL_ISP_RECOVERY, (2): On failure enter ISP mode for recovery
+    # - ON_FAIL_LOCK_DEVICE, (3): On failure lock the device to enforce power-cycle
+    # Possible options: <NOT_INCLUDED, ON_FAIL_CONTINUE_BOOT, ON_FAIL_ISP_RECOVERY, ON_FAIL_LOCK_DEVICE>
+    FIPS_ECDSA_STEN: NOT_INCLUDED
     # --------------------------------------===== FIPS_DRBG_STEN [Optional] =====---------------------------------------
     # Description: Offset: 22b, Width: 2b, Enable self-test for DRBG block on power-up. Needed for FIPS certification.
     # If this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]
-    # - Not included, (0): not included
-    # - Boot on failure, (1): On failure continue to boot
-    # - ISP on failure, (2): On failure enter ISP mode for recovery
-    # - Lock on failure, (3): On failure lock the device to enforce power-cycle
-    # Possible options: <Not included, Boot on failure, ISP on failure, Lock on failure>
-    FIPS_DRBG_STEN: Not included
+    # - NOT_INCLUDED, (0): not included
+    # - ON_FAIL_CONTINUE_BOOT, (1): On failure continue to boot
+    # - ON_FAIL_ISP_RECOVERY, (2): On failure enter ISP mode for recovery
+    # - ON_FAIL_LOCK_DEVICE, (3): On failure lock the device to enforce power-cycle
+    # Possible options: <NOT_INCLUDED, ON_FAIL_CONTINUE_BOOT, ON_FAIL_ISP_RECOVERY, ON_FAIL_LOCK_DEVICE>
+    FIPS_DRBG_STEN: NOT_INCLUDED
     # --------------------------------------===== FIPS_HMAC_STEN [Optional] =====---------------------------------------
     # Description: Offset: 24b, Width: 2b, Enable self-test for HMAC block on power-up. Needed for FIPS certification.
     # If this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]
-    # - Not included, (0): not included
-    # - Boot on failure, (1): On failure continue to boot
-    # - ISP on failure, (2): On failure enter ISP mode for recovery
-    # - Lock on failure, (3): On failure lock the device to enforce power-cycle
-    # Possible options: <Not included, Boot on failure, ISP on failure, Lock on failure>
-    FIPS_HMAC_STEN: Not included
+    # - NOT_INCLUDED, (0): not included
+    # - ON_FAIL_CONTINUE_BOOT, (1): On failure continue to boot
+    # - ON_FAIL_ISP_RECOVERY, (2): On failure enter ISP mode for recovery
+    # - ON_FAIL_LOCK_DEVICE, (3): On failure lock the device to enforce power-cycle
+    # Possible options: <NOT_INCLUDED, ON_FAIL_CONTINUE_BOOT, ON_FAIL_ISP_RECOVERY, ON_FAIL_LOCK_DEVICE>
+    FIPS_HMAC_STEN: NOT_INCLUDED
     # ---------------------------------------===== FIPS_KDF_STEN [Optional] =====---------------------------------------
     # Description: Offset: 26b, Width: 2b, Enable self-test for KDF & CMAC blocks on power-up. Needed for FIPS
     # certification. If this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]
-    # - Not included, (0): not included
-    # - Boot on failure, (1): On failure continue to boot
-    # - ISP on failure, (2): On failure enter ISP mode for recovery
-    # - Lock on failure, (3): On failure lock the device to enforce power-cycle
-    # Possible options: <Not included, Boot on failure, ISP on failure, Lock on failure>
-    FIPS_KDF_STEN: Not included
+    # - NOT_INCLUDED, (0): not included
+    # - ON_FAIL_CONTINUE_BOOT, (1): On failure continue to boot
+    # - ON_FAIL_ISP_RECOVERY, (2): On failure enter ISP mode for recovery
+    # - ON_FAIL_LOCK_DEVICE, (3): On failure lock the device to enforce power-cycle
+    # Possible options: <NOT_INCLUDED, ON_FAIL_CONTINUE_BOOT, ON_FAIL_ISP_RECOVERY, ON_FAIL_LOCK_DEVICE>
+    FIPS_KDF_STEN: NOT_INCLUDED
     # ---------------------------------------===== FIPS_PUF_STEN [Optional] =====---------------------------------------
     # Description: Offset: 28b, Width: 2b, Enable self-test for PUF block on power-up. Needed for FIPS certification. If
     # this field is non-zero run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS]
-    # - Not included, (0): not included
-    # - Boot on failure, (1): On failure continue to boot
-    # - ISP on failure, (2): On failure enter ISP mode for recovery
-    # - Lock on failure, (3): On failure lock the device to enforce power-cycle
-    # Possible options: <Not included, Boot on failure, ISP on failure, Lock on failure>
-    FIPS_PUF_STEN: Not included
-  # -----------------------------------------===== ROTK_USAGE [Optional] =====------------------------------------------
-  # Description: Offset: 0x00000054, Width: 32b; rotk usage
-  ROTK_USAGE:
-    # ----------------------------------------===== ROTK0_USAGE [Optional] =====----------------------------------------
+    # - NOT_INCLUDED, (0): not included
+    # - ON_FAIL_CONTINUE_BOOT, (1): On failure continue to boot
+    # - ON_FAIL_ISP_RECOVERY, (2): On failure enter ISP mode for recovery
+    # - ON_FAIL_LOCK_DEVICE, (3): On failure lock the device to enforce power-cycle
+    # Possible options: <NOT_INCLUDED, ON_FAIL_CONTINUE_BOOT, ON_FAIL_ISP_RECOVERY, ON_FAIL_LOCK_DEVICE>
+    FIPS_PUF_STEN: NOT_INCLUDED
+  # -----------------------------------------===== RoTK_USAGE [Optional] =====------------------------------------------
+  # Description: Offset: 0x00000054, Width: 32b; RoTK usage
+  RoTK_USAGE:
+    # ----------------------------------------===== RoTK0_Usage [Optional] =====----------------------------------------
     # Description: Offset: 0b, Width: 3b, RoT key 0 usage properties
-    # - Usable, (0): Usable as debug CA, boot image CA, FW update CA, boot image and FW update key
-    # - Debug, (1): Usable as debug CA only
-    # - Img boot fw, (2): Usable as boot image and FW update CA only
-    # - Debug boot fw img, (3): Usable as debug, boot image, and FW image CA
-    # - Img fw update key, (4): Usable as boot image key and FW update key only
-    # - Boot image key, (5): Usable as boot image key only
-    # - Fw update img key, (6): Usable as FW update image key only
-    # - Key slot not used, (7): Key slot is not used
-    # Possible options: <Usable, Debug, Img boot fw, Debug boot fw img, Img fw update key, Boot image key, Fw update img
-    # key, Key slot not used>
-    ROTK0_USAGE: Usable
-    # ----------------------------------------===== ROTK1_USAGE [Optional] =====----------------------------------------
+    # - USE_ALL_CA_AND_KEYS, (0): Usable as debug CA, boot image CA, FW update CA, boot image and FW update key
+    # - USABLE_AS_DEBUG_CA_ONLY, (1): Usable as debug CA only
+    # - USE_IMG_FW_KEY_ONLY, (2): Usable as boot image and FW update CA only
+    # - USE_DBG_BOOT_FW_CA, (3): Usable as debug, boot image, and FW image CA
+    # - USE_IMG_FW_KEY_ONLY_4, (4): Usable as boot image key and FW update key only
+    # - USE_BOOT_KEY_ONLY, (5): Usable as boot image key only
+    # - USE_FW_UPDATE_KEY_ONLY, (6): Usable as FW update image key only
+    # - KEY_SLOT_IS_NOT_USED, (7): Key slot is not used
+    # Possible options: <USE_ALL_CA_AND_KEYS, USABLE_AS_DEBUG_CA_ONLY, USE_IMG_FW_KEY_ONLY, USE_DBG_BOOT_FW_CA,
+    # USE_IMG_FW_KEY_ONLY_4, USE_BOOT_KEY_ONLY, USE_FW_UPDATE_KEY_ONLY, KEY_SLOT_IS_NOT_USED>
+    RoTK0_Usage: USE_ALL_CA_AND_KEYS
+    # ----------------------------------------===== RoTK1_Usage [Optional] =====----------------------------------------
     # Description: Offset: 3b, Width: 3b, RoT key 1 usage properties
-    # - Usable, (0): Usable as debug CA, boot image CA, FW update CA, boot image and FW update key
-    # - Debug, (1): Usable as debug CA only
-    # - Img boot fw, (2): Usable as boot image and FW update CA only
-    # - Debug boot fw img, (3): Usable as debug, boot image, and FW image CA
-    # - Img fw update key, (4): Usable as boot image key and FW update key only
-    # - Boot image key, (5): Usable as boot image key only
-    # - Fw update img key, (6): Usable as FW update image key only
-    # - Key slot not used, (7): Key slot is not used
-    # Possible options: <Usable, Debug, Img boot fw, Debug boot fw img, Img fw update key, Boot image key, Fw update img
-    # key, Key slot not used>
-    ROTK1_USAGE: Usable
-    # ----------------------------------------===== ROTK2_USAGE [Optional] =====----------------------------------------
+    # - USE_ALL_CA_AND_KEYS, (0): Usable as debug CA, boot image CA, FW update CA, boot image and FW update key
+    # - USABLE_AS_DEBUG_CA_ONLY, (1): Usable as debug CA only
+    # - USE_IMG_FW_KEY_ONLY, (2): Usable as boot image and FW update CA only
+    # - USE_DBG_BOOT_FW_CA, (3): Usable as debug, boot image, and FW image CA
+    # - USE_IMG_FW_KEY_ONLY_4, (4): Usable as boot image key and FW update key only
+    # - USE_BOOT_KEY_ONLY, (5): Usable as boot image key only
+    # - USE_FW_UPDATE_KEY_ONLY, (6): Usable as FW update image key only
+    # - KEY_SLOT_IS_NOT_USED, (7): Key slot is not used
+    # Possible options: <USE_ALL_CA_AND_KEYS, USABLE_AS_DEBUG_CA_ONLY, USE_IMG_FW_KEY_ONLY, USE_DBG_BOOT_FW_CA,
+    # USE_IMG_FW_KEY_ONLY_4, USE_BOOT_KEY_ONLY, USE_FW_UPDATE_KEY_ONLY, KEY_SLOT_IS_NOT_USED>
+    RoTK1_Usage: USE_ALL_CA_AND_KEYS
+    # ----------------------------------------===== RoTK2_Usage [Optional] =====----------------------------------------
     # Description: Offset: 6b, Width: 3b, RoT key 2 usage properties
-    # - Usable, (0): Usable as debug CA, boot image CA, FW update CA, boot image and FW update key
-    # - Debug, (1): Usable as debug CA only
-    # - Img boot fw, (2): Usable as boot image and FW update CA only
-    # - Debug boot fw img, (3): Usable as debug, boot image, and FW image CA
-    # - Img fw update key, (4): Usable as boot image key and FW update key only
-    # - Boot image key, (5): Usable as boot image key only
-    # - Fw update img key, (6): Usable as FW update image key only
-    # - Key slot not used, (7): Key slot is not used
-    # Possible options: <Usable, Debug, Img boot fw, Debug boot fw img, Img fw update key, Boot image key, Fw update img
-    # key, Key slot not used>
-    ROTK2_USAGE: Usable
-    # ----------------------------------------===== ROTK3_USAGE [Optional] =====----------------------------------------
+    # - USE_ALL_CA_AND_KEYS, (0): Usable as debug CA, boot image CA, FW update CA, boot image and FW update key
+    # - USABLE_AS_DEBUG_CA_ONLY, (1): Usable as debug CA only
+    # - USE_IMG_FW_KEY_ONLY, (2): Usable as boot image and FW update CA only
+    # - USE_DBG_BOOT_FW_CA, (3): Usable as debug, boot image, and FW image CA
+    # - USE_IMG_FW_KEY_ONLY_4, (4): Usable as boot image key and FW update key only
+    # - USE_BOOT_KEY_ONLY, (5): Usable as boot image key only
+    # - USE_FW_UPDATE_KEY_ONLY, (6): Usable as FW update image key only
+    # - KEY_SLOT_IS_NOT_USED, (7): Key slot is not used
+    # Possible options: <USE_ALL_CA_AND_KEYS, USABLE_AS_DEBUG_CA_ONLY, USE_IMG_FW_KEY_ONLY, USE_DBG_BOOT_FW_CA,
+    # USE_IMG_FW_KEY_ONLY_4, USE_BOOT_KEY_ONLY, USE_FW_UPDATE_KEY_ONLY, KEY_SLOT_IS_NOT_USED>
+    RoTK2_Usage: USE_ALL_CA_AND_KEYS
+    # ----------------------------------------===== RoTK3_Usage [Optional] =====----------------------------------------
     # Description: Offset: 9b, Width: 3b, RoT key 3 usage properties
-    # - Usable, (0): Usable as debug CA, boot image CA, FW update CA, boot image and FW update key
-    # - Debug, (1): Usable as debug CA only
-    # - Img boot fw, (2): Usable as boot image and FW update CA only
-    # - Debug boot fw img, (3): Usable as debug, boot image, and FW image CA
-    # - Img fw update key, (4): Usable as boot image key and FW update key only
-    # - Boot image key, (5): Usable as boot image key only
-    # - Fw update img key, (6): Usable as FW update image key only
-    # - Key slot not used, (7): Key slot is not used
-    # Possible options: <Usable, Debug, Img boot fw, Debug boot fw img, Img fw update key, Boot image key, Fw update img
-    # key, Key slot not used>
-    ROTK3_USAGE: Usable
+    # - USE_ALL_CA_AND_KEYS, (0): Usable as debug CA, boot image CA, FW update CA, boot image and FW update key
+    # - USABLE_AS_DEBUG_CA_ONLY, (1): Usable as debug CA only
+    # - USE_IMG_FW_KEY_ONLY, (2): Usable as boot image and FW update CA only
+    # - USE_DBG_BOOT_FW_CA, (3): Usable as debug, boot image, and FW image CA
+    # - USE_IMG_FW_KEY_ONLY_4, (4): Usable as boot image key and FW update key only
+    # - USE_BOOT_KEY_ONLY, (5): Usable as boot image key only
+    # - USE_FW_UPDATE_KEY_ONLY, (6): Usable as FW update image key only
+    # - KEY_SLOT_IS_NOT_USED, (7): Key slot is not used
+    # Possible options: <USE_ALL_CA_AND_KEYS, USABLE_AS_DEBUG_CA_ONLY, USE_IMG_FW_KEY_ONLY, USE_DBG_BOOT_FW_CA,
+    # USE_IMG_FW_KEY_ONLY_4, USE_BOOT_KEY_ONLY, USE_FW_UPDATE_KEY_ONLY, KEY_SLOT_IS_NOT_USED>
+    RoTK3_Usage: USE_ALL_CA_AND_KEYS
     # -----------------------------------------===== SKIP_DICE [Optional] =====-----------------------------------------
     # Description: Offset: 12b, Width: 1b, Skip DICE computation
     # - ENABLE_DICE, (0): Enable DICE
@@ -807,10 +912,10 @@ settings:
     # Possible options: <REGION_IS_NOT_LOCKED, REGION_IS_LOCKED_1, REGION_IS_LOCKED_2, REGION_IS_LOCKED_3>
     NPX_LOCK_CTX3: REGION_IS_NOT_LOCKED
   # -------------------------------------===== DICE_CSR_SRAM_ADDR [Optional] =====--------------------------------------
-  # Description: Offset: 0x00000058, Width: 32b; dice csr sram addr
+  # Description: Offset: 0x00000058, Width: 32b; If set as zero, then use the 0x30018000 RAM address as the default
   DICE_CSR_SRAM_ADDR: '0x00000000'
   # ----------------------------------===== DICE_ALIAS_KEY_SRAM_ADDR [Optional] =====-----------------------------------
-  # Description: Offset: 0x0000005C, Width: 32b; dice alias key sram addr
+  # Description: Offset: 0x0000005C, Width: 32b; If set as zero, then use the 0x30005000 RAM address as the default
   DICE_ALIAS_KEY_SRAM_ADDR: '0x00000000'
   # --------------------------------------------===== ROTKH [Optional] =====--------------------------------------------
   # Description: Offset: 0x00000060, Width: 384b; ROTKH field is compounded by 12 32-bit fields and contains Root key
@@ -819,28 +924,36 @@ settings:
   # authentication, SB3.1 firmware updates container and signed boot image based on CMPA.RoTKx_Usage.
   ROTKH: '0000000000000000000000000000000000000000000000000000000000000000'
   # ----------------------------------------===== NPX_CTX0_WD0 [Optional] =====-----------------------------------------
-  # Description: Offset: 0x00000090, Width: 32b; npx ctx0 wd0
+  # Description: Offset: 0x00000090, Width: 32b; ROM copies this value to NPX->VMAPCTX0_WD0 register during flash
+  # initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX0 key & IV
   NPX_CTX0_WD0: '0x00000000'
   # ----------------------------------------===== NPX_CTX0_WD1 [Optional] =====-----------------------------------------
-  # Description: Offset: 0x00000094, Width: 32b; NPX CTX0 WD1
+  # Description: Offset: 0x00000094, Width: 32b; ROM copies this value to NPX->VMAPCTX0_WD1 register during flash
+  # initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX0 key & IV
   NPX_CTX0_WD1: '0x00000000'
   # ----------------------------------------===== NPX_CTX1_WD0 [Optional] =====-----------------------------------------
-  # Description: Offset: 0x00000098, Width: 32b; npx ctx1 wd0
+  # Description: Offset: 0x00000098, Width: 32b; ROM copies this value to NPX->VMAPCTX1_WD0 register during flash
+  # initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX1 key & IV
   NPX_CTX1_WD0: '0x00000000'
   # ----------------------------------------===== NPX_CTX1_WD1 [Optional] =====-----------------------------------------
-  # Description: Offset: 0x0000009C, Width: 32b; NPX CTX1 WD1
+  # Description: Offset: 0x0000009C, Width: 32b; ROM copies this value to NPX->VMAPCTX1_WD1 register during flash
+  # initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX1 key & IV
   NPX_CTX1_WD1: '0x00000000'
   # ----------------------------------------===== NPX_CTX2_WD0 [Optional] =====-----------------------------------------
-  # Description: Offset: 0x000000A0, Width: 32b; npx ctx2 wd0
+  # Description: Offset: 0x000000A0, Width: 32b; ROM copies this value to NPX->VMAPCTX2_WD0 register during flash
+  # initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX2 key & IV
   NPX_CTX2_WD0: '0x00000000'
   # ----------------------------------------===== NPX_CTX2_WD1 [Optional] =====-----------------------------------------
-  # Description: Offset: 0x000000A4, Width: 32b; NPX CTX2 WD1
+  # Description: Offset: 0x000000A4, Width: 32b; ROM copies this value to NPX->VMAPCTX2_WD1 register during flash
+  # initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX2 key & IV
   NPX_CTX2_WD1: '0x00000000'
   # ----------------------------------------===== NPX_CTX3_WD0 [Optional] =====-----------------------------------------
-  # Description: Offset: 0x000000A8, Width: 32b; npx ctx3 wd0
+  # Description: Offset: 0x000000A8, Width: 32b; ROM copies this value to NPX->VMAPCTX3_WD0 register during flash
+  # initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX3 key & IV
   NPX_CTX3_WD0: '0x00000000'
   # ----------------------------------------===== NPX_CTX3_WD1 [Optional] =====-----------------------------------------
-  # Description: Offset: 0x000000AC, Width: 32b; NPX CTX3 WD1
+  # Description: Offset: 0x000000AC, Width: 32b; ROM copies this value to NPX->VMAPCTX3_WD1 register during flash
+  # initialization. This bitmask indicates which 32KB block is encrypted/decrypted using CTX3 key & IV
   NPX_CTX3_WD1: '0x00000000'
   # -----------------------------------------===== IPED0_START [Optional] =====-----------------------------------------
   # Description: Offset: 0x000000B0, Width: 32b; ROM code will not manage these fields, but SDK driver can manage these.
@@ -862,7 +975,7 @@ settings:
     # 0
     IPED_CTX0_START_ADDR: 0
   # ------------------------------------------===== IPED0_END [Optional] =====------------------------------------------
-  # Description: Offset: 0x000000B4, Width: 32b; iped0 end
+  # Description: Offset: 0x000000B4, Width: 32b; IPED0 end
   IPED0_END:
     # ------------------------------------------===== LOCK_EN [Optional] =====------------------------------------------
     # Description: Offset: 0b, Width: 2b, Lock the IPED context settings
@@ -876,7 +989,7 @@ settings:
     # Description: Offset: 8b, Width: 24b, Upper 24-bits of IPED region 0 end address. Lower 8 address bits are always 0
     IPED_CTX0_END_ADDR: 0
   # -----------------------------------------===== IPED1_START [Optional] =====-----------------------------------------
-  # Description: Offset: 0x000000B8, Width: 32b; iped1 start
+  # Description: Offset: 0x000000B8, Width: 32b; IPED1 start
   IPED1_START:
     # -----------------------------------------===== GCM_MODE [Optional] =====------------------------------------------
     # Description: Offset: 0b, Width: 1b, GCM mode enable
@@ -895,7 +1008,7 @@ settings:
     # 0
     IPED_CTX1_START_ADDR: 0
   # ------------------------------------------===== IPED1_END [Optional] =====------------------------------------------
-  # Description: Offset: 0x000000BC, Width: 32b; iped1 end
+  # Description: Offset: 0x000000BC, Width: 32b; IPED1 end
   IPED1_END:
     # ------------------------------------------===== LOCK_EN [Optional] =====------------------------------------------
     # Description: Offset: 0b, Width: 2b, Lock the IPED context settings
@@ -909,7 +1022,7 @@ settings:
     # Description: Offset: 8b, Width: 24b, Upper 24-bits of IPED region 1 end address. Lower 8 address bits are always 0
     IPED_CTX1_END_ADDR: 0
   # -----------------------------------------===== IPED2_START [Optional] =====-----------------------------------------
-  # Description: Offset: 0x000000C0, Width: 32b; iped2 start
+  # Description: Offset: 0x000000C0, Width: 32b; IPED2 start
   IPED2_START:
     # -----------------------------------------===== GCM_MODE [Optional] =====------------------------------------------
     # Description: Offset: 0b, Width: 1b, GCM mode enable
@@ -928,7 +1041,7 @@ settings:
     # 0
     IPED_CTX2_START_ADDR: 0
   # ------------------------------------------===== IPED2_END [Optional] =====------------------------------------------
-  # Description: Offset: 0x000000C4, Width: 32b; iped2 end
+  # Description: Offset: 0x000000C4, Width: 32b; IPED2 end
   IPED2_END:
     # ------------------------------------------===== LOCK_EN [Optional] =====------------------------------------------
     # Description: Offset: 0b, Width: 2b, Lock the IPED context settings
@@ -942,7 +1055,7 @@ settings:
     # Description: Offset: 8b, Width: 24b, Upper 24-bits of IPED region 2 end address. Lower 8 address bits are always 0
     IPED_CTX2_END_ADDR: 0
   # -----------------------------------------===== IPED3_START [Optional] =====-----------------------------------------
-  # Description: Offset: 0x000000C8, Width: 32b; iped3 start
+  # Description: Offset: 0x000000C8, Width: 32b; IPED3 start
   IPED3_START:
     # -----------------------------------------===== GCM_MODE [Optional] =====------------------------------------------
     # Description: Offset: 0b, Width: 1b, GCM mode enable
@@ -961,7 +1074,7 @@ settings:
     # 0
     IPED_CTX3_START_ADDR: 0
   # ------------------------------------------===== IPED3_END [Optional] =====------------------------------------------
-  # Description: Offset: 0x000000CC, Width: 32b; iped3 end
+  # Description: Offset: 0x000000CC, Width: 32b; IPED3 end
   IPED3_END:
     # ------------------------------------------===== LOCK_EN [Optional] =====------------------------------------------
     # Description: Offset: 0b, Width: 2b, Lock the IPED context settings
@@ -975,7 +1088,7 @@ settings:
     # Description: Offset: 8b, Width: 24b, Upper 24-bits of IPED region 3 end address. Lower 8 address bits are always 0
     IPED_CTX3_END_ADDR: 0
   # -----------------------------------------===== IPED4_START [Optional] =====-----------------------------------------
-  # Description: Offset: 0x000000D0, Width: 32b; iped4 start
+  # Description: Offset: 0x000000D0, Width: 32b; IPED4 start
   IPED4_START:
     # -----------------------------------------===== GCM_MODE [Optional] =====------------------------------------------
     # Description: Offset: 0b, Width: 1b, GCM mode enable
@@ -994,7 +1107,7 @@ settings:
     # 0
     IPED_CTX4_START_ADDR: 0
   # ------------------------------------------===== IPED4_END [Optional] =====------------------------------------------
-  # Description: Offset: 0x000000D4, Width: 32b; iped4 end
+  # Description: Offset: 0x000000D4, Width: 32b; IPED4 end
   IPED4_END:
     # ------------------------------------------===== LOCK_EN [Optional] =====------------------------------------------
     # Description: Offset: 0b, Width: 2b, Lock the IPED context settings
@@ -1008,7 +1121,7 @@ settings:
     # Description: Offset: 8b, Width: 24b, Upper 24-bits of IPED region 4 end address. Lower 8 address bits are always 0
     IPED_CTX4_END_ADDR: 0
   # -----------------------------------------===== IPED5_START [Optional] =====-----------------------------------------
-  # Description: Offset: 0x000000D8, Width: 32b; iped5 start
+  # Description: Offset: 0x000000D8, Width: 32b; IPED5 start
   IPED5_START:
     # -----------------------------------------===== GCM_MODE [Optional] =====------------------------------------------
     # Description: Offset: 0b, Width: 1b, GCM mode enable
@@ -1027,7 +1140,7 @@ settings:
     # 0
     IPED_CTX5_START_ADDR: 0
   # ------------------------------------------===== IPED5_END [Optional] =====------------------------------------------
-  # Description: Offset: 0x000000DC, Width: 32b; iped5 end
+  # Description: Offset: 0x000000DC, Width: 32b; IPED5 end
   IPED5_END:
     # ------------------------------------------===== LOCK_EN [Optional] =====------------------------------------------
     # Description: Offset: 0b, Width: 2b, Lock the IPED context settings
@@ -1041,7 +1154,7 @@ settings:
     # Description: Offset: 8b, Width: 24b, Upper 24-bits of IPED region 5 end address. Lower 8 address bits are always 0
     IPED_CTX5_END_ADDR: 0
   # -----------------------------------------===== IPED6_START [Optional] =====-----------------------------------------
-  # Description: Offset: 0x000000E0, Width: 32b; iped6 start
+  # Description: Offset: 0x000000E0, Width: 32b; IPED6 start
   IPED6_START:
     # -----------------------------------------===== GCM_MODE [Optional] =====------------------------------------------
     # Description: Offset: 0b, Width: 1b, GCM mode enable
@@ -1060,7 +1173,7 @@ settings:
     # 0
     IPED_CTX6_START_ADDR: 0
   # ------------------------------------------===== IPED6_END [Optional] =====------------------------------------------
-  # Description: Offset: 0x000000E4, Width: 32b; iped6 end
+  # Description: Offset: 0x000000E4, Width: 32b; IPED6 end
   IPED6_END:
     # ------------------------------------------===== LOCK_EN [Optional] =====------------------------------------------
     # Description: Offset: 0b, Width: 2b, Lock the IPED context settings
@@ -1074,7 +1187,7 @@ settings:
     # Description: Offset: 8b, Width: 24b, Upper 24-bits of IPED region 6 end address. Lower 8 address bits are always 0
     IPED_CTX6_END_ADDR: 0
   # -----------------------------------------===== IPED7_START [Optional] =====-----------------------------------------
-  # Description: Offset: 0x000000E8, Width: 32b; iped7 start
+  # Description: Offset: 0x000000E8, Width: 32b; IPED7 start
   IPED7_START:
     # -----------------------------------------===== GCM_MODE [Optional] =====------------------------------------------
     # Description: Offset: 0b, Width: 1b, GCM mode enable
@@ -1093,7 +1206,7 @@ settings:
     # 0
     IPED_CTX7_START_ADDR: 0
   # ------------------------------------------===== IPED7_END [Optional] =====------------------------------------------
-  # Description: Offset: 0x000000EC, Width: 32b; iped7 end
+  # Description: Offset: 0x000000EC, Width: 32b; IPED7 end
   IPED7_END:
     # ------------------------------------------===== LOCK_EN [Optional] =====------------------------------------------
     # Description: Offset: 0b, Width: 2b, Lock the IPED context settings
@@ -1107,7 +1220,7 @@ settings:
     # Description: Offset: 8b, Width: 24b, Upper 24-bits of IPED region 7 end address. Lower 8 address bits are always 0
     IPED_CTX7_END_ADDR: 0
   # ----------------------------------------===== REC_IMG_EXT0 [Optional] =====-----------------------------------------
-  # Description: Offset: 0x000000F0, Width: 32b; rec img ext0
+  # Description: Offset: 0x000000F0, Width: 32b; Rec IMG ext0
   REC_IMG_EXT0:
     # ---------------------------------------===== REC_IMG_EXT0 [Optional] =====----------------------------------------
     # Description: Offset: 8b, Width: 24b, Bitmap mask to indicate sectors included in recovery image. Recovery image is
@@ -1120,58 +1233,67 @@ settings:
   # Description: Offset: 0x000000F4, Width: 32b; REC IMG EXT1
   REC_IMG_EXT1:
     # ---------------------------------------===== REC_IMG_EXT1 [Optional] =====----------------------------------------
-    # Description: Offset: 8b, Width: 24b, rec img ext1 (bitmap mask for recovery image extended sectors 40 -63)
+    # Description: Offset: 8b, Width: 24b, Rec IMG ext1 (Bitmap mask for recovery image extended sectors 40-63)
     REC_IMG_EXT1: 0
   # --------------------------------------===== PROV_FW_SRAM_ADDR [Optional] =====--------------------------------------
-  # Description: Offset: 0x000000F8, Width: 32b; prov fw sram addr
+  # Description: Offset: 0x000000F8, Width: 32b; Used for programming the SB4 file for the run Bootloader or mailbox to
+  # process. The first Word of the RAM address region is for storing the SB4 file total size, and second word start to
+  # store the SB4file. If not set, then use the 0x30018000 as the default RAM address, the 0x30018000 for storing the
+  # SB4 file size, and 0x30018004 is for storing the SB4 file
   PROV_FW_SRAM_ADDR: '0x00000000'
   # --------------------------------------===== QUICK_SET_GPIO_0 [Optional] =====---------------------------------------
-  # Description: Offset: 0x00000120, Width: 32b; quick set gpio 0
+  # Description: Offset: 0x00000120, Width: 32b; Drive GPIO 0 port pins high after reset. Each bit corresponds to the
+  # pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up
+  # as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting
+  # till complete boot. Note, if a pin is selected in both QUICK_SET_GPIO_x and QUICK_CLR_GPIO_x fields then pin will be
+  # set to high-level with quick transition to low
   QUICK_SET_GPIO_0: '0x00000000'
   # --------------------------------------===== QUICK_CLR_GPIO_0 [Optional] =====---------------------------------------
-  # Description: Offset: 0x00000124, Width: 32b; quick clr gpio 0
+  # Description: Offset: 0x00000124, Width: 32b; Drive GPIO 0 port pins low. See description of QUICK_SET_GPIO_0 field.
+  # Note, if a pin is selected in both QUICK_SET_GPIO_x and QUICK_CLR_GPIO_x fields then pin will be set to high-level
+  # with quick transition to low
   QUICK_CLR_GPIO_0: '0x00000000'
   # --------------------------------------===== QUICK_SET_GPIO_1 [Optional] =====---------------------------------------
-  # Description: Offset: 0x00000128, Width: 32b; QUICK SET GPIO 1
+  # Description: Offset: 0x00000128, Width: 32b; Drive GPIO 1 port pins high. See description of QUICK_SET_GPIO_0 field
   QUICK_SET_GPIO_1: '0x00000000'
   # --------------------------------------===== QUICK_CLR_GPIO_1 [Optional] =====---------------------------------------
-  # Description: Offset: 0x0000012C, Width: 32b; QUICK CLR GPIO 1
+  # Description: Offset: 0x0000012C, Width: 32b; Drive GPIO 1 port pins low. See description of QUICK_SET_GPIO_0 field
   QUICK_CLR_GPIO_1: '0x00000000'
   # --------------------------------------===== QUICK_SET_GPIO_2 [Optional] =====---------------------------------------
-  # Description: Offset: 0x00000130, Width: 32b; quick set gpio 2
+  # Description: Offset: 0x00000130, Width: 32b; Drive GPIO 2 port pins high. See description of QUICK_SET_GPIO_0 field
   QUICK_SET_GPIO_2: '0x00000000'
   # --------------------------------------===== QUICK_CLR_GPIO_2 [Optional] =====---------------------------------------
-  # Description: Offset: 0x00000134, Width: 32b; quick clr gpio 2
+  # Description: Offset: 0x00000134, Width: 32b; Drive GPIO 2 port pins low. See description of QUICK_SET_GPIO_0 field
   QUICK_CLR_GPIO_2: '0x00000000'
   # --------------------------------------===== QUICK_SET_GPIO_3 [Optional] =====---------------------------------------
-  # Description: Offset: 0x00000138, Width: 32b; quick set gpio 3
+  # Description: Offset: 0x00000138, Width: 32b; Drive GPIO 3 port pins high. See description of QUICK_SET_GPIO_0 field
   QUICK_SET_GPIO_3: '0x00000000'
   # --------------------------------------===== QUICK_CLR_GPIO_3 [Optional] =====---------------------------------------
-  # Description: Offset: 0x0000013C, Width: 32b; quick clr gpio 3
+  # Description: Offset: 0x0000013C, Width: 32b; Drive GPIO 3 port pins low. See description of QUICK_SET_GPIO_0 field
   QUICK_CLR_GPIO_3: '0x00000000'
   # --------------------------------------===== QUICK_SET_GPIO_4 [Optional] =====---------------------------------------
-  # Description: Offset: 0x00000140, Width: 32b; quick set gpio 4
+  # Description: Offset: 0x00000140, Width: 32b; Drive GPIO 4 port pins high. See description of QUICK_SET_GPIO_0 field
   QUICK_SET_GPIO_4: '0x00000000'
   # --------------------------------------===== QUICK_CLR_GPIO_4 [Optional] =====---------------------------------------
-  # Description: Offset: 0x00000144, Width: 32b; quick clr gpio 4
+  # Description: Offset: 0x00000144, Width: 32b; Drive GPIO 4 port pins low. See description of QUICK_SET_GPIO_0 field
   QUICK_CLR_GPIO_4: '0x00000000'
   # --------------------------------------===== QUICK_SET_GPIO_5 [Optional] =====---------------------------------------
-  # Description: Offset: 0x00000148, Width: 32b; quick set gpio 5
+  # Description: Offset: 0x00000148, Width: 32b; Drive GPIO 5 port pins high. See description of QUICK_SET_GPIO_0 field
   QUICK_SET_GPIO_5: '0x00000000'
   # --------------------------------------===== QUICK_CLR_GPIO_5 [Optional] =====---------------------------------------
-  # Description: Offset: 0x0000014C, Width: 32b; quick clr gpio 5
+  # Description: Offset: 0x0000014C, Width: 32b; Drive GPIO 5 port pins low. See description of QUICK_SET_GPIO_0 field
   QUICK_CLR_GPIO_5: '0x00000000'
   # -----------------------------------------===== CHALLENGE_0 [Optional] =====-----------------------------------------
-  # Description: Offset: 0x00000150, Width: 32b; challenge 0
+  # Description: Offset: 0x00000150, Width: 32b; Used for configuration of the DICE CSR challenge fields
   CHALLENGE_0: '0x00000000'
   # -----------------------------------------===== CHALLENGE_1 [Optional] =====-----------------------------------------
-  # Description: Offset: 0x00000154, Width: 32b; CHALLENGE 1
+  # Description: Offset: 0x00000154, Width: 32b; Used for configuration of the DICE CSR challenge fields
   CHALLENGE_1: '0x00000000'
   # -----------------------------------------===== CHALLENGE_2 [Optional] =====-----------------------------------------
-  # Description: Offset: 0x00000158, Width: 32b; challenge 2
+  # Description: Offset: 0x00000158, Width: 32b; Used for configuration of the DICE CSR challenge fields
   CHALLENGE_2: '0x00000000'
   # -----------------------------------------===== CHALLENGE_3 [Optional] =====-----------------------------------------
-  # Description: Offset: 0x0000015C, Width: 32b; challenge 3
+  # Description: Offset: 0x0000015C, Width: 32b; Used for configuration of the DICE CSR challenge fields
   CHALLENGE_3: '0x00000000'
   # -------------------------------------===== CUST_MK_SK_KEY_BLOB [Optional] =====-------------------------------------
   # Description: Offset: 0x00000160, Width: 384b; CUST_MK_SK key blob. CUST_MK_SK is stored in form of RFC3394 blob and
@@ -1185,17 +1307,22 @@ settings:
   # between debug authentication, SB4 firmware updates container and signed boot image based on CMPA.RoTKx_Usage.
   PQC_ROTKH: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
   # -----------------------------------------===== CMPA_CRC32 [Optional] =====------------------------------------------
-  # Description: Offset: 0x000001EC, Width: 32b; cmpa crc32
+  # Description: Offset: 0x000001EC, Width: 32b; ROM updates this field along with CMPA_CMAC. ROM uses this field based
+  # on CMPA.LP_SEC_BOOT field option
   CMPA_CRC32: '0x00000000'
   # -----------------------------------------===== CMPA_CMAC0 [Optional] =====------------------------------------------
-  # Description: Offset: 0x000001F0, Width: 32b; CMPA CMAC0
+  # Description: Offset: 0x000001F0, Width: 32b; CMAC of CMPA page data from offset 0x00 to 0x1EB. ROM updates this
+  # field on subsequent boot after page update
   CMPA_CMAC0: '0x00000000'
   # -----------------------------------------===== CMPA_CMAC1 [Optional] =====------------------------------------------
-  # Description: Offset: 0x000001F4, Width: 32b; CMPA CMAC1
+  # Description: Offset: 0x000001F4, Width: 32b; CMAC of CMPA page data from offset 0x00 to 0x1EB. ROM updates this
+  # field on subsequent boot after page update
   CMPA_CMAC1: '0x00000000'
   # -----------------------------------------===== CMPA_CMAC2 [Optional] =====------------------------------------------
-  # Description: Offset: 0x000001F8, Width: 32b; CMPA CMAC2
+  # Description: Offset: 0x000001F8, Width: 32b; CMAC of CMPA page data from offset 0x00 to 0x1EB. ROM updates this
+  # field on subsequent boot after page update
   CMPA_CMAC2: '0x00000000'
   # -----------------------------------------===== CMPA_CMAC3 [Optional] =====------------------------------------------
-  # Description: Offset: 0x000001FC, Width: 32b; CMPA CMAC3
+  # Description: Offset: 0x000001FC, Width: 32b; CMAC of CMPA page data from offset 0x00 to 0x1EB. ROM updates this
+  # field on subsequent boot after page update
   CMPA_CMAC3: '0x00000000'

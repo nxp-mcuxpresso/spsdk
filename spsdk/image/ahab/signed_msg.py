@@ -1224,11 +1224,23 @@ class MessageKeyExchange(Message):
             )
             logger.info(f"ECDH shared secret: {self._shared_secret.hex()}")
 
+            # salt_flags bit 0: use peer public key hash as salt in HKDF-extract step
+            mk_sk_salt = (
+                self.input_peer_public_key_digest if (self.salt_flags & 0x01) else bytes(32)
+            )
+            # Use user-provided fixed info digest as HKDF info if non-zero
+            mk_sk_info = (
+                self.input_user_fixed_info_digest
+                if self.input_user_fixed_info_digest
+                and self.input_user_fixed_info_digest != bytes(32)
+                else b""
+            )
+
             # Derive OEM_Import_MK_SK from shared secret using HKDF
             self._oem_import_mk_sk = hkdf(
-                salt=bytes(32),  # No salt for first derivation
+                salt=mk_sk_salt,
                 ikm=self._shared_secret,
-                info=b"",  # No info for first derivation
+                info=mk_sk_info,
                 length=32,
             )
             logger.info(f"Derived OEM_Import_MK_SK: {self._oem_import_mk_sk.hex()}")

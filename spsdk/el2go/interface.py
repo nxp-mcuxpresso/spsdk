@@ -194,7 +194,6 @@ class EL2GOInterfaceHandler:
         :return: Configured EL2GO interface handler instance for the specified interface type.
         """
         port = interface_params.get_scan_args().get("port")
-        timeout = interface_params.get_scan_args().get("timeout", 1)
 
         default_interface = None
         if not interface and not family:
@@ -220,9 +219,13 @@ class EL2GOInterfaceHandler:
             db = get_db(family=family)
             fb_buff_addr = fb_addr or db.get_int(DatabaseManager.FASTBOOT, "address")
             fb_buff_size = fb_size or db.get_int(DatabaseManager.FASTBOOT, "size")
+            # Use UbootFastboot default (5000 ms) when timeout is not explicitly specified.
+            # A raw get("timeout", 1) default would produce 0-second UUU wait after integer
+            # division, preventing fastboot from being detected after SDPS boot.
+            fb_timeout = interface_params.get_scan_args().get("timeout", 5000)
 
             uboot_device = UbootFastboot(
-                timeout=timeout,
+                timeout=fb_timeout,
                 buffer_address=fb_buff_addr,
                 buffer_size=fb_buff_size,
                 serial_port=port,
@@ -236,7 +239,8 @@ class EL2GOInterfaceHandler:
                 raise SPSDKError("Family must be provided for U-Boot Serial connection")
             if not port:
                 raise SPSDKError("Port must be specified")
-            uboot_serial = UbootSerial(port, timeout)
+            serial_timeout = interface_params.get_scan_args().get("timeout", 1)
+            uboot_serial = UbootSerial(port, serial_timeout)
             return El2GoInterfaceHandlerUboot(uboot_serial, family)
 
         interface_cls = MbootProtocolBase.get_interface_class(interface_params.IDENTIFIER)

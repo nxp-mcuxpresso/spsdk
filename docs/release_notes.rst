@@ -17,9 +17,72 @@
 Release Notes
 =============
 
----------------------
-3.9.0 (24-April-2026)
----------------------
+------
+3.10.0
+------
+
+**New Product Introduction or Updates**
+
+* add mcxn246t, mcxn247t, mcxn527t, mcxn536t, mcxn537t, mcxn546t, mcxn547t, mcxn556t, mcxn557t, mcxn946t, and mcxn947t
+* add i.mx93 and i.mx95 part numbers
+
+**New features**
+
+* `nxpimage`_:
+    - add LZMA compression support to SB3.1 CmdLoad commands
+    - add AHAB SRKH fuse generation for supported devices
+    - add signed template generation to ``bootable-image get-templates`` with ``--sign`` and ``-s``
+    - add xSPI NAND support in memcfg
+    - change the default bootable image output filename to ``flash.bin``
+* `nxpdebugmbox`_:
+    - add Jupyter notebook examples for debug authentication, including password-based authentication for mcxc151, mcxc161, and mcxc162
+* :ref:`nxpdevhsm`:
+    - add ``writeIFR`` provisioning step support
+* :ref:`nxpele`:
+    - add address-based ``authKeyHandle`` support for ``HSE_KEY_TYPE_*_PUB_EXT`` keys in SMR configuration
+* :ref:`nxpdevscan`:
+    - add ``--baudrate`` support for UART scans
+
+**Bugfixes**
+
+* `blhost`_:
+    - treat ``ROMLDR_PENDING_JUMP_COMMAND`` and ``ROMLDR_PENDING_RESET_COMMAND`` as successful ``receive-sb-file`` completion
+* `el2go-host`_:
+    - fix default UUU wait timeout for ``UBOOT_FASTBOOT`` provisioning
+    - separate ``oem_provisioning_config`` host path from uploaded device filename
+* `nxpcrypto`_:
+    - fix SM2 support
+    - remove unsupported ``none`` hash choice from the CLI
+* `nxpdebugmbox`_:
+    - accept zero value in debug credential UUID
+* `nxpimage`_:
+    - keep existing AHAB container flags when signing bootable images for MPUs
+    - fix AHAB verification for images with multiple data encryption keys
+    - fix key exchange salt and user-provided info handling in signed messages
+    - fix HAB encryption to reuse an existing random key
+    - prevent eMMC bootable image corruption when ``init_offset`` changes
+    - validate family and revision consistency between bootable-image and AHAB sub-configs
+    - require ``image_path`` in whole-AHAB image configurations
+    - validate ``wrappingKeyId`` in SB3.1 ``CmdLoadKeyBlob`` configurations
+* `pfr`_:
+    - correct mcxc151 CPU identifier in CMPA configuration files
+    - group mcxc151 128-bit password fields as one configuration item
+* :ref:`nxpdevhsm`:
+    - log the loadKeyBlob position warning only once per image generation
+* :ref:`nxpele`:
+    - accept ``port,baudrate`` syntax for U-Boot serial connections
+    - prevent unsupported ``DH_PAIR`` key type selection in HSE key info configuration
+* :ref:`nxpdevscan`:
+    - prevent one failing UART port from aborting the whole scan
+    - improve UART ping failure hints and narrow-terminal output
+* :ref:`nxpuuu`:
+    - make the run command and scripts interruptible with Ctrl-C
+    - fix missing ``Logger.trace`` handling in the UUU runner
+* improve libusbsio scan diagnostics and UART ping error reporting
+
+-------------------
+3.9.0 (20-May-2026)
+-------------------
 
 **New Product Introduction**
 
@@ -45,6 +108,7 @@ Release Notes
 * :ref:`nxpfuses`:
     - unify shadowregs and fuses under same base class to eliminate code duplication and improve maintainability
 * `nxpimage`_:
+    - implement SBc v2 support for MCXL255, MCXL254, and MCXL253 devices
     - **AHAB container enhancements:**
         - add support for i.MX943 AHAB debug authentication with IEE region clearing capability
         - add support for i.MX952 unsigned AHAB container building for multiple boot memories (eMMC, SD card, Serial Downloader)
@@ -52,7 +116,8 @@ Release Notes
     - **Boot image support:**
         - add FlexSPI NOR flash boot image support for MCXA55x device
         - add support for i.MX952 imx-bootloader integration
-    - add support for MCXC151, MCXC161, and MCXC162 device families with Plain, CRC, and MISR boot types
+        - add support for MCXC151, MCXC161, and MCXC162 device families with Plain, CRC, and MISR boot image types
+* add secure installer (SI) support for MCXL255, MCXL254, and MCXL253 devices with P-256 secure boot and OEM provisioning firmware
 * `pfr`_:
     - **Documentation improvements:**
         - update documentation to recommend pfr tool for writing PFR regions instead of write-memory command for better reliability
@@ -61,8 +126,7 @@ Release Notes
         - add support for MISR image format generation with IMG_MISR_SEED configuration
     - **Enhanced signing and security:**
         - add support for MCXA55x signed boot with ECC and ECC+MLDSA signing for FlexSPI NOR boot
-        - Enhance WriteIfr command with monotonic counter field interpretation (0xFFFFFFFF for keep same, 0xFFFFFFFE for auto-increment)   
-* add secure installer support for MCXL255, MCXL254, and MCXL253 devices with P-256 secure boot and OEM provisioning firmware
+        - Enhance WriteIfr command with monotonic counter field interpretation (0xFFFFFFFF for keep same, 0xFFFFFFFE for auto-increment)
 * fix RW61x boot failure when using LOCK_CFG with shadow registers
 * add dynamic Universal Update Utility (UUU) rules generation from device database with helper subcommand for improved device detection
 * fix pip path traversal security vulnerability
@@ -91,9 +155,9 @@ Release Notes
     - fix stdout environment variable handling to prevent synchronous abort after cancelling fastboot mode
 * fix broken link to Linux user guide in documentation
 
----------------------
+-----------------------
 3.8.0 (27-March-2026)
----------------------
+-----------------------
 
 **Backwards incompatible**
 
@@ -117,7 +181,7 @@ Release Notes
     - fix signed message flag handling for i.MX95 B0 HSM keystore reprovisioning
     - resolve ML-DSA PQC signing issues for i.MX95 platform
 * add signature provider support for MCXN55xS
-* create jupyter notebook documentation for Secure Memory Region feature on mcxe31b, mcxc315, mcxe316, mcxe317
+* create jupyter notebook documentation for Secure Memory Region feature on MCX E31
 * unify indentation of data files across SPSDK for consistency
 * notify user when PQC support is not available
 
@@ -157,7 +221,7 @@ Release Notes
 
 **New Product Introduction or Updates**
 
-* add support for mcxe31b, mcxc315, mcxe316, mcxe317 devices
+* add support for MCXE31x device family
 * add support for MCXA577/567/566/557/556/537/536/457/456 devices
 
 **New features**
@@ -166,14 +230,14 @@ Release Notes
     - add SPI support for RT118x
     - add support with AHAB QB data for i.MX95 
 * `pfr`_:
-    - update PFR implementation for mcxa55 devices
+    - update PFR implementation for mw30/mcxa55 devices
     - improve mcxa55 CFPA/CMPA grouping
     - improve error messages for incorrect YAML indentation in configuration files
 * :ref:`nxpele`:
-    - add support for mcxe31b, mcxc315, mcxe316, mcxe317 devices with Core Reset Entry Install command
-    - implement key import functionality for mcxe31b, mcxc315, mcxe316, mcxe317 with hardware testing and fixes
-    - add automatic authentication tag calculation for Secure Memory Regions (SMR) on mcxe31b, mcxc315, mcxe316, mcxe317
-    - add HSE_SRV_ID_ACTIVATE_PASSIVE_BLOCK service for mcxe31b, mcxc315, mcxe316, mcxe317 passive block activation
+    - add support for MCXE31 device family with Core Reset Entry Install command
+    - implement key import functionality for MCXE31 with hardware testing and fixes
+    - add automatic authentication tag calculation for Secure Memory Regions (SMR) on MCX E31
+    - add HSE_SRV_ID_ACTIVATE_PASSIVE_BLOCK service for MCXE31 passive block activation
 
 **Bugfixes**
 
@@ -191,7 +255,7 @@ Release Notes
 
 **New Product Introduction or Updates**
 
-* mcxe31b, mcxc315, mcxe316, mcxe317
+* MCXE31
 * MCXN556S
 * i.MX952
 * i.MX95
@@ -200,10 +264,10 @@ Release Notes
 
 * Highlights:
     - SPARSE file format support added
-    - added support for the imx-bootloader, which simplifies bootloader creation compared to generic templates. When generating templates for a bootable image using the nxpimage bootable-image get-templates command, comprehensive templates are created, including SPL and U-Boot configurations. All required files can be copied directly to the inputs directory without modifying configuration files. Currently, i.MX95 and i.MX93 flash_all imx bootloaders are supported.
+    - Added support for the imx-bootloader, which simplifies bootloader creation compared to generic templates. When generating templates for a bootable image using the nxpimage bootable-image get-templates command, comprehensive templates are created, including SPL and U-Boot configurations. All required files can be copied directly to the inputs directory without modifying configuration files. Currently, i.MX95 and i.MX93 flash_all imx bootloaders are supported.
 
 * `nxpimage`_:
-    - implement SBc v2 support for mcxl255, mcxl254, mcxl253 devices
+    - implement SBc v2 support for MCXL20 new product introduction
     - add support for RSA and ECC P-521 keys in TLV blob functionality
     - implement SPARSE format support
     - enable hash algorithm specification in nxpcrypto rot calculate-hash command
@@ -216,9 +280,9 @@ Release Notes
     - add SPARSE format support
 
 * :ref:`nxpele`:
-    - add mcxe31b, mcxc315, mcxe316, mcxe317 set attribute command support for new product introduction
-    - implement secure memory region (SMR) based secure boot for mcxe31b, mcxc315, mcxe316, mcxe317
-    - support multiple MU channels in HSE commands for mcxe31b, mcxc315, mcxe316, mcxe317
+    - add MCX E31 set attribute command support for new product introduction
+    - implement secure memory region (SMR) based secure boot for MCX E31 device
+    - support multiple MU channels in HSE commands for MCX E31
     - add optional parameter to get info command for retrieving specific attributes
 
 * create jupyter notebook describing basic secure boot feature
@@ -228,7 +292,7 @@ Release Notes
 * `nxpimage`_:
     - fix trust zone template that was bricking MCXN556S devices
     - resolve signed image boot failure due to incorrect firmware version check on MCXN556S
-    - fix authenticated image boot failure for mcxe31b, mcxc315, mcxe316, mcxe317 devices
+    - fix authenticated image boot failure for MCXE3x devices
     - correct CSF/IMG certificate issuer from CA to SRK for pki-tree command
 
 * :ref:`nxpwpc`:
@@ -254,7 +318,7 @@ Release Notes
     - sync error codes between SPSDK and TP FW
 
 * `nxpimage`_:
-    - implement Key Import feature for mcxe31b, mcxc315, mcxe316, mcxe317
+    - implement Key Import feature for MCX E31
     - add NBU signing support for KW47
 
 * add support for reserved bitfields access information in database JSON files

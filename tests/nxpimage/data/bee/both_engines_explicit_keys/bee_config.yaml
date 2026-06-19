@@ -1,0 +1,30 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+family: mimxrt1050
+output_folder: bee_output
+data_blobs:
+  - data: evkbimxrt1050_iled_blinky_ext_FLASH_unencrypted_nopadding.bin
+    address: "0x60001000"
+
+engine_selection: both
+bee_engine:
+  - bee_cfg:
+      user_key: "0x0123456789abcdeffedcba9876543210"
+      engine_key: "0xaabbccddeeff00112233445566778899"
+      engine_iv: "0x112233445566778899aabbccddeeff00"
+      engine_counter: "0x00112233445566778899aabb"
+      protected_region:
+        - start_address: "0x60001000"
+          length: "0x1000"
+          protected_level: 0
+  - bee_cfg:
+      user_key: "0xfedcba98765432100123456789abcdef"
+      engine_key: "0x99887766554433221100ffeeddccbbaa"
+      engine_iv: "0x00ffeeddccbbaa99887766554433221"
+      engine_counter: "0xbbaa99887766554433221100"
+      protected_region:
+        - start_address: "0x60002000"
+          length: "0x1000"
+          protected_level: 0

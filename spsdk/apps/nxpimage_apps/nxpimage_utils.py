@@ -258,6 +258,11 @@ def binary_convert(
     if not keep_padding and not split_image:
         image.update_offsets()
         if image.offset:
+            logger.warning(
+                f"Input image base offset 0x{image.offset:X} ({image.offset} bytes) was "
+                "trimmed during conversion. Use '-p/--keep-padding' to preserve the original "
+                "base address."
+            )
             image.offset = 0
 
     logger.info(image.draw())

@@ -250,6 +250,7 @@ features:
           keystore: 0x0800
           mbi: 0x1000
         remap_align: 0x40000 # 256 KB
+        image_pattern: ones
       sd:
         segments:
           mbi: 0x1000

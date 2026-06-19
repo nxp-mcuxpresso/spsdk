@@ -10,7 +10,7 @@
                 {
                     "id": "field000",
                     "name": "BOOT_CFG",
-                    "description": "Boot Configuration",
+                    "description": "Boot configuration",
                     "offset_int": "0",
                     "default_value_int": "0x59630000",
                     "bitfields": [
@@ -40,14 +40,20 @@
                                     "description": "UART ISP"
                                 },
                                 {
-                                    "name": "SPI_SLAVE",
+                                    "name": "SPI_SLAVE_ISP",
                                     "value": 2,
-                                    "description": "LPSPI Slave ISP"
+                                    "description": "SPI Slave ISP",
+                                    "deprecated_names": [
+                                        "SPI_SLAVE"
+                                    ]
                                 },
                                 {
-                                    "name": "I2C_SLAVE",
+                                    "name": "I2C_SLAVE_ISP",
                                     "value": 3,
-                                    "description": "LPI2C slave ISP"
+                                    "description": "I2C slave ISP",
+                                    "deprecated_names": [
+                                        "I2C_SLAVE"
+                                    ]
                                 }
                             ]
                         },
@@ -70,17 +76,20 @@
                             "width": 2,
                             "id": "field000-bits12-13",
                             "name": "BOOT_SPEED",
-                            "description": "Core Clock Default value is 48MHz",
+                            "description": "Core clock",
                             "values": [
                                 {
-                                    "name": "FRO_48_MHZ",
+                                    "name": "48_MHZ",
                                     "value": 0,
-                                    "description": "48Mhz FRO @1v0"
+                                    "description": "48 MHz",
+                                    "deprecated_names": [
+                                        "FRO_48_MHZ"
+                                    ]
                                 },
                                 {
-                                    "name": "FRO_96_MHZ",
+                                    "name": "96_MHZ",
                                     "value": 1,
-                                    "description": "96MHz FRO @1v1"
+                                    "description": "96 MHz (not available on L14)"
                                 }
                             ]
                         },
@@ -91,24 +100,36 @@
                             "description": "Enablement and arming of security detectors (LVD, HVD, AGDET)",
                             "values": [
                                 {
-                                    "name": "ENABLED_0b00",
+                                    "name": "ENABLED/ARMED",
                                     "value": 0,
-                                    "description": "Enable AGDET reset"
+                                    "description": "Enabled/Armed",
+                                    "deprecated_names": [
+                                        "ENABLED_0b00"
+                                    ]
                                 },
                                 {
-                                    "name": "DISABLED_0b01",
+                                    "name": "DISABLED/DISARMED",
                                     "value": 1,
-                                    "description": "Don't enable AGDET reset"
+                                    "description": "Disabled/Disarmed",
+                                    "deprecated_names": [
+                                        "DISABLED_0b01"
+                                    ]
                                 },
                                 {
-                                    "name": "ENABLED_0b10",
+                                    "name": "ENABLED/ARMED_2",
                                     "value": 2,
-                                    "description": "Enable AGDET reset"
+                                    "description": "Enabled/Armed",
+                                    "deprecated_names": [
+                                        "ENABLED_0b10"
+                                    ]
                                 },
                                 {
-                                    "name": "ENABLED_0b11",
+                                    "name": "ENABLED/ARMED_3",
                                     "value": 3,
-                                    "description": "Enable AGDET reset"
+                                    "description": "Enabled/Armed",
+                                    "deprecated_names": [
+                                        "ENABLED_0b11"
+                                    ]
                                 }
                             ]
                         },
@@ -117,22 +138,25 @@
                             "access": "WRITE_CONST",
                             "id": "field000-bits16-31",
                             "name": "HEADER",
-                            "description": "CMPA Header marker should be set to 0x5963. If the CMPA header marker is 16'hFFFF and the device is in the Develop lifecycle state, the main flash permission is R/W/X. When the CMPA header marker is valid, the permissions of the sectors of the main flash will depend on the values written for the flash access control. The flash access control values start at offset 0x40 in the CMPA"
+                            "description": "CMPA Header marker should be set to 0x5963"
                         }
                     ]
                 },
                 {
                     "id": "field004",
                     "name": "FLASH_CFG",
-                    "description": "Flash Configuration",
+                    "description": "Flash configuration",
                     "offset_int": "0x0004",
                     "default_value_int": "0",
                     "bitfields": [
                         {
                             "width": 7,
                             "id": "field004-bits0-6",
-                            "name": "FLASH_REMAP_SIZE",
-                            "description": "Flash remap size. This field should be written to remap field in flash"
+                            "name": "FLASH_REMAP_SZ",
+                            "deprecated_names": [
+                                "FLASH_REMAP_SIZE"
+                            ],
+                            "description": "Flash remap size. FLASH_REMAP_SIZE defines the size of the secondary boot image (the range of flash addresses that will be remapped)in internal flash, where remapped address end = (FLASH_REMAP_SIZE + 1)"
                         },
                         {
                             "width": 1
@@ -150,24 +174,36 @@
                             "description": "Disable ISP mode entry through pin assertion",
                             "values": [
                                 {
-                                    "name": "ALLOWED_0b00",
+                                    "name": "ISP_ENTRY_ALLOWED_0",
                                     "value": 0,
-                                    "description": "ISP entry allowed"
+                                    "description": "ISP entry allowed",
+                                    "deprecated_names": [
+                                        "ALLOWED_0b00"
+                                    ]
                                 },
                                 {
-                                    "name": "DISABLED_0b01",
+                                    "name": "ISP_ENTRY_DISABLED",
                                     "value": 1,
-                                    "description": "ISP entry disabled"
+                                    "description": "ISP entry disabled",
+                                    "deprecated_names": [
+                                        "DISABLED_0b01"
+                                    ]
                                 },
                                 {
-                                    "name": "ALLOWED_0b10",
+                                    "name": "ISP_ENTRY_ALLOWED_2",
                                     "value": 2,
-                                    "description": "ISP entry allowed"
+                                    "description": "ISP entry allowed",
+                                    "deprecated_names": [
+                                        "ALLOWED_0b10"
+                                    ]
                                 },
                                 {
-                                    "name": "ALLOWED_0b11",
+                                    "name": "ISP_ENTRY_ALLOWED_3",
                                     "value": 3,
-                                    "description": "ISP entry allowed"
+                                    "description": "ISP entry allowed",
+                                    "deprecated_names": [
+                                        "ALLOWED_0b11"
+                                    ]
                                 }
                             ]
                         },
@@ -178,24 +214,36 @@
                             "description": "Disable ISP mode entry through debug mailbox command",
                             "values": [
                                 {
-                                    "name": "ALLOWED_0b00",
+                                    "name": "ISP_ENTRY_ALLOWED_0",
                                     "value": 0,
-                                    "description": "ISP entry allowed"
+                                    "description": "ISP entry allowed",
+                                    "deprecated_names": [
+                                        "ALLOWED_0b00"
+                                    ]
                                 },
                                 {
-                                    "name": "DISABLED_0b01",
+                                    "name": "ISP_ENTRY_DISABLED",
                                     "value": 1,
-                                    "description": "ISP entry disabled"
+                                    "description": "ISP entry disabled",
+                                    "deprecated_names": [
+                                        "DISABLED_0b01"
+                                    ]
                                 },
                                 {
-                                    "name": "ALLOWED_0b10",
+                                    "name": "ISP_ENTRY_ALLOWED_2",
                                     "value": 2,
-                                    "description": "ISP entry allowed"
+                                    "description": "ISP entry allowed",
+                                    "deprecated_names": [
+                                        "ALLOWED_0b10"
+                                    ]
                                 },
                                 {
-                                    "name": "ALLOWED_0b11",
+                                    "name": "ISP_ENTRY_ALLOWED_3",
                                     "value": 3,
-                                    "description": "ISP entry allowed"
+                                    "description": "ISP entry allowed",
+                                    "deprecated_names": [
+                                        "ALLOWED_0b11"
+                                    ]
                                 }
                             ]
                         },
@@ -258,7 +306,7 @@
                 {
                     "id": "field008",
                     "name": "BOOT_LED_STATUS",
-                    "description": "Boot LED Status",
+                    "description": "Boot LED status",
                     "offset_int": "0x0008",
                     "default_value_int": "0",
                     "bitfields": [
@@ -345,7 +393,7 @@
                 {
                     "id": "field00C",
                     "name": "BOOT_TIMERS",
-                    "description": "Boot Timers",
+                    "description": "Boot timers",
                     "offset_int": "0x000C",
                     "default_value_int": "0",
                     "bitfields": [
@@ -408,7 +456,7 @@
                 {
                     "id": "field010",
                     "name": "ISP_UART_CFG",
-                    "description": "ISP UART Configuration",
+                    "description": "ISP UART configuration",
                     "offset_int": "0x0010",
                     "default_value_int": "0",
                     "bitfields": [
@@ -427,8 +475,11 @@
                         {
                             "width": 4,
                             "id": "field010-bits12-15",
-                            "name": "UART_ISP_INSTANCE",
-                            "description": "Identifies the LPUART instance used for UART ISP mode"
+                            "name": "UART_ISP_FLEXCOM",
+                            "deprecated_names": [
+                                "UART_ISP_INSTANCE"
+                            ],
+                            "description": "Identifies the FlexComm used for UART ISP mode"
                         },
                         {
                             "width": 8,
@@ -446,12 +497,15 @@
                             "width": 4,
                             "id": "field010-bits28-31",
                             "name": "UART_BAUD_RATE",
-                            "description": "UART baud rate.Baud rate configured during UART ISP mode",
+                            "description": "UART baud rate. Baud rate configured during UART ISP mode",
                             "values": [
                                 {
-                                    "name": "AUTO_BAUD_DETECTION",
+                                    "name": "AUTO_BAUDRATE",
                                     "value": 0,
-                                    "description": "Auto baud detection"
+                                    "description": "Auto baud detection",
+                                    "deprecated_names": [
+                                        "AUTO_BAUD_DETECTION"
+                                    ]
                                 }
                             ]
                         }
@@ -460,7 +514,7 @@
                 {
                     "id": "field014",
                     "name": "ISP_I2C_CFG",
-                    "description": "ISP I2C Configuration",
+                    "description": "ISP I2C configuration",
                     "offset_int": "0x0014",
                     "default_value_int": "0",
                     "bitfields": [
@@ -468,7 +522,7 @@
                             "width": 8,
                             "id": "field014-bits0-7",
                             "name": "I2C_SCL_PIN",
-                            "description": "Override default I2C SCL ISP pin. Identifies the pin to be used as I2C_SCL pin. [4:0] GPIO Pin number [7:5] GPIO port number"
+                            "description": "Override default UART RX ISP pin. Identifies the pin to be used as UART_RX pin. [4:0] GPIO Pin number [7:5] GPIO port number"
                         },
                         {
                             "width": 4,
@@ -479,14 +533,17 @@
                         {
                             "width": 4,
                             "id": "field014-bits12-15",
-                            "name": "I2C_ISP_INSTANCE",
-                            "description": "Identifies the LPI2C instance used for I2C ISP mode"
+                            "name": "I2C_ISP_FLEXCOM",
+                            "deprecated_names": [
+                                "I2C_ISP_INSTANCE"
+                            ],
+                            "description": "Identifies the FlexComm used for UART ISP mode"
                         },
                         {
                             "width": 8,
                             "id": "field014-bits16-23",
                             "name": "I2C_SDA_PIN",
-                            "description": "Override default I2C SDA ISP pin. Identifies the pin to be used as I2C_SDA pin. [4:0] GPIO Pin number [7:5] GPIO port number"
+                            "description": "Override default UART TX ISP pin. Identifies the pin to be used as UART_TX pin. [4:0] GPIO Pin number [7:5] GPIO port number"
                         },
                         {
                             "width": 4,
@@ -519,7 +576,7 @@
                 {
                     "id": "field01C",
                     "name": "ISP_SPI_CFG0",
-                    "description": "ISP SPI Configuration 0",
+                    "description": "ISP SPI configuration0",
                     "offset_int": "0x001C",
                     "default_value_int": "0",
                     "bitfields": [
@@ -527,7 +584,7 @@
                             "width": 8,
                             "id": "field01C-bits0-7",
                             "name": "SPI_SCK_PIN",
-                            "description": "Override default SPI SCK ISP pin. Identifies the pin to be used as SPI_SCK pin. [4:0] GPIO Pin number [7:5] GPIO port number"
+                            "description": "Override default SPI_SCK ISP pin. Identifies the pin to be used as SPI_SCK pin. [4:0] GPIO Pin number [7:5] GPIO port number"
                         },
                         {
                             "width": 4,
@@ -538,14 +595,17 @@
                         {
                             "width": 4,
                             "id": "field01C-bits12-15",
-                            "name": "SPI_ISP_INSTANCE",
-                            "description": "Identifies the LPSPI instance used for SPI ISP mode"
+                            "name": "SPI_ISP_FLEXCOM",
+                            "deprecated_names": [
+                                "SPI_ISP_INSTANCE"
+                            ],
+                            "description": "Identifies the FlexComm used for SPI ISP mode"
                         },
                         {
                             "width": 8,
                             "id": "field01C-bits16-23",
                             "name": "SPI_MOSI_PIN",
-                            "description": "Override default SPI MOSI ISP pin. Identifies the pin to be used as SPI_MOSI pin. [4:0] GPIO Pin number [7:5] GPIO port number"
+                            "description": "Override default SPI_MOSI ISP pin. Identifies the pin to be used as SPI_MOSI pin. [4:0] GPIO Pin number [7:5] GPIO port number"
                         },
                         {
                             "width": 4,
@@ -570,7 +630,7 @@
                 {
                     "id": "field020",
                     "name": "ISP_SPI_CFG1",
-                    "description": "ISP SPI Configuration 1",
+                    "description": "ISP SPI configuration1",
                     "offset_int": "0x0020",
                     "default_value_int": "0",
                     "bitfields": [
@@ -578,7 +638,7 @@
                             "width": 8,
                             "id": "field020-bits0-7",
                             "name": "SPI_MISO_PIN",
-                            "description": "Override default SPI MISO ISP pin. Identifies the pin to be used as SPI_MISO pin. [4:0] GPIO Pin number [7:5] GPIO port number"
+                            "description": "Override default SPI_MISO ISP pin. Identifies the pin to be used as SPI_MISO pin. [4:0] GPIO Pin number [7:5] GPIO port number"
                         },
                         {
                             "width": 4,
@@ -602,7 +662,7 @@
                             "width": 8,
                             "id": "field020-bits16-23",
                             "name": "SPI_SSEL_PIN",
-                            "description": "Override default SPI SSEL ISP pin. Identifies the pin to be used as SPI_SSEL pin. [4:0] GPIO Pin number [7:5] GPIO port number"
+                            "description": "Override default SPI_SSEL ISP pin. Identifies the pin to be used as SPI_SSEL pin. [4:0] GPIO Pin number [7:5] GPIO port number"
                         },
                         {
                             "width": 4,
@@ -643,7 +703,7 @@
                 {
                     "id": "field02C",
                     "name": "ISP_MISC_CFG",
-                    "description": "ISP MISC Configuration",
+                    "description": "ISP misc configuration",
                     "offset_int": "0x002C",
                     "default_value_int": "0",
                     "bitfields": [
@@ -711,7 +771,7 @@
                             "description": "Use customer defined SPI ISP pins",
                             "values": [
                                 {
-                                    "name": "DEFAULT_0b00",
+                                    "name": "DEFAULT_0",
                                     "value": 0,
                                     "description": "Default ROM defined pins"
                                 },
@@ -721,12 +781,12 @@
                                     "description": "Customer defined"
                                 },
                                 {
-                                    "name": "DEFAULT_0b10",
+                                    "name": "DEFAULT_2",
                                     "value": 2,
                                     "description": "Default ROM defined pins"
                                 },
                                 {
-                                    "name": "DEFAULT_0b11",
+                                    "name": "DEFAULT_3",
                                     "value": 3,
                                     "description": "Default ROM defined pins"
                                 }
@@ -739,7 +799,7 @@
                             "description": "Use customer defined I2C ISP pins",
                             "values": [
                                 {
-                                    "name": "DEFAULT_0b00",
+                                    "name": "DEFAULT_0",
                                     "value": 0,
                                     "description": "Default ROM defined pins"
                                 },
@@ -749,12 +809,12 @@
                                     "description": "Customer defined"
                                 },
                                 {
-                                    "name": "DEFAULT_0b10",
+                                    "name": "DEFAULT_2",
                                     "value": 2,
                                     "description": "Default ROM defined pins"
                                 },
                                 {
-                                    "name": "DEFAULT_0b11",
+                                    "name": "DEFAULT_3",
                                     "value": 3,
                                     "description": "Default ROM defined pins"
                                 }
@@ -767,7 +827,7 @@
                             "description": "Use customer defined UART ISP pins",
                             "values": [
                                 {
-                                    "name": "DEFAULT_0b00",
+                                    "name": "DEFAULT_0",
                                     "value": 0,
                                     "description": "Default ROM defined pins"
                                 },
@@ -777,12 +837,12 @@
                                     "description": "Customer defined"
                                 },
                                 {
-                                    "name": "DEFAULT_0b10",
+                                    "name": "DEFAULT_2",
                                     "value": 2,
                                     "description": "Default ROM defined pins"
                                 },
                                 {
-                                    "name": "DEFAULT_0b11",
+                                    "name": "DEFAULT_3",
                                     "value": 3,
                                     "description": "Default ROM defined pins"
                                 }
@@ -823,11 +883,10 @@
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved0003C",
-                    "name": "Reserved 0x0003C",
-                    "description": "This field is reserved for internal use",
+                    "id": "field03C",
+                    "name": "Misc_Control",
+                    "description": "Misc Control",
                     "offset_int": "0x003C",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 }
             ]
@@ -841,7 +900,7 @@
                 {
                     "id": "field040",
                     "name": "FLASH_ACL_0_7",
-                    "description": "Access control for flash sector",
+                    "description": "Flash ACL 0 7",
                     "offset_int": "0x0040",
                     "default_value_int": "0x44444444",
                     "bitfields": [
@@ -1257,9 +1316,12 @@
                 },
                 {
                     "id": "field044",
-                    "name": "FLASH_ACL_8_15",
-                    "description": "Access control for flash sector",
+                    "name": "FLASH_ACL_15_8",
+                    "description": "Flash ACL 15 8",
                     "offset_int": "0x0044",
+                    "deprecated_names": [
+                        "FLASH_ACL_8_15"
+                    ],
                     "default_value_int": "0x44444444",
                     "bitfields": [
                         {
@@ -1674,9 +1736,12 @@
                 },
                 {
                     "id": "field048",
-                    "name": "FLASH_ACL_16_23",
-                    "description": "Access control for flash sector",
+                    "name": "FLASH_ACL_23_16",
+                    "description": "Flash ACL 23 16",
                     "offset_int": "0x0048",
+                    "deprecated_names": [
+                        "FLASH_ACL_16_23"
+                    ],
                     "default_value_int": "0x44444444",
                     "bitfields": [
                         {
@@ -2091,9 +2156,12 @@
                 },
                 {
                     "id": "field04C",
-                    "name": "FLASH_ACL_24_31",
-                    "description": "Access control for flash sector",
+                    "name": "FLASH_ACL_31_24",
+                    "description": "Flash ACL 31 24",
                     "offset_int": "0x004C",
+                    "deprecated_names": [
+                        "FLASH_ACL_24_31"
+                    ],
                     "default_value_int": "0x44444444",
                     "bitfields": [
                         {
@@ -2508,9 +2576,12 @@
                 },
                 {
                     "id": "field050",
-                    "name": "FLASH_ACL_32_39",
-                    "description": "Access control for flash sector",
+                    "name": "FLASH_ACL_39_32",
+                    "description": "(flash ACL 39 32)",
                     "offset_int": "0x0050",
+                    "deprecated_names": [
+                        "FLASH_ACL_32_39"
+                    ],
                     "default_value_int": "0x44444444",
                     "bitfields": [
                         {
@@ -2925,9 +2996,12 @@
                 },
                 {
                     "id": "field054",
-                    "name": "FLASH_ACL_40_47",
-                    "description": "Access control for flash sector",
+                    "name": "FLASH_ACL_47_40",
+                    "description": "(flash ACL 47 40)",
                     "offset_int": "0x0054",
+                    "deprecated_names": [
+                        "FLASH_ACL_40_47"
+                    ],
                     "default_value_int": "0x44444444",
                     "bitfields": [
                         {
@@ -3342,10 +3416,13 @@
                 },
                 {
                     "id": "field058",
-                    "name": "FLASH_ACL_48_55",
-                    "description": "Access control for flash sector",
+                    "name": "FLASH_ACL_55_48",
+                    "description": "(flash ACL 55 48)",
                     "offset_int": "0x0058",
-                    "default_value_int": "0x44444444",
+                    "deprecated_names": [
+                        "FLASH_ACL_48_55"
+                    ],
+                    "default_value_int": "0x77777444",
                     "bitfields": [
                         {
                             "width": 3,
@@ -3759,10 +3836,13 @@
                 },
                 {
                     "id": "field05C",
-                    "name": "FLASH_ACL_56_63",
-                    "description": "Access control for flash sector",
+                    "name": "FLASH_ACL_63_56",
+                    "description": "(flash ACL 63 56)",
                     "offset_int": "0x005C",
-                    "default_value_int": "0x44444444",
+                    "deprecated_names": [
+                        "FLASH_ACL_56_63"
+                    ],
+                    "default_value_int": "0x47777777",
                     "bitfields": [
                         {
                             "width": 3,
@@ -4185,42 +4265,42 @@
                 {
                     "id": "field060",
                     "name": "QUICK_SET_GPIO_0",
-                    "description": "Quick Set to Drive GPIO 0 port [31:0] pins high after reset. Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "description": "Drive GPIO 0 port pins high after reset. Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot",
                     "offset_int": "0x0060",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field064",
                     "name": "QUICK_CLR_GPIO_0",
-                    "description": "Quick Clear to Drive GPIO 0 port [31:0] pins low after reset. Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "description": "Drive GPIO 0 port pins low. See description of QUICK_SET_GPIO_0 field",
                     "offset_int": "0x0064",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field068",
                     "name": "QUICK_SET_GPIO_1",
-                    "description": "Quick Set to Drive GPIO 1 port [31:0] pins high after reset. Each bit corresponds to the pin in GPIO port 1. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "description": "Drive GPIO 1 port pins high. See description of QUICK_SET_GPIO_0 field",
                     "offset_int": "0x0068",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field06C",
                     "name": "QUICK_CLR_GPIO_1",
-                    "description": "Quick Clear to Drive GPIO 1 port [31:0] pins low after reset. Each bit corresponds to the pin in GPIO port 1. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "description": "Drive GPIO 1 port pins low. See description of QUICK_SET_GPIO_0 field",
                     "offset_int": "0x006C",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field070",
                     "name": "QUICK_SET_GPIO_2",
-                    "description": "Quick Set to Drive GPIO 2 port [31:0] pins high after reset. Each bit corresponds to the pin in GPIO port 2. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "description": "Drive GPIO 0 port pins high after reset. Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot",
                     "offset_int": "0x0070",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field074",
                     "name": "QUICK_CLR_GPIO_2",
-                    "description": "Quick Clear to Drive GPIO 2 port [31:0] pins low after reset. Each bit corresponds to the pin in GPIO port 2. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "description": "Drive GPIO 0 port pins low. See description of QUICK_SET_GPIO_0 field",
                     "offset_int": "0x0074",
                     "default_value_int": "0"
                 }
@@ -4291,7 +4371,7 @@
                 {
                     "id": "field090",
                     "name": "ROP_STATE",
-                    "description": "Read Out Protection (ROP) State value. Device does not support secure boot, but it does support four levels of Read Out Protection, referred as ROP_STATE. This read out protection is a mechanism that allows user to enable different levels of protection in the system. ROM reads ROP_STATE from ROP_STATE and ROP_STATE_DP on IFR0, does the compare, and if it does not match, resets the device; if match then programs it to SYSCON->ROP_STATE. Any other value then four listed means ROP3-like behavior (debug disabled/locked, ISP disabled).",
+                    "description": "This fields allows the device lifecycle to be advanced to In-Field ROP1, In-Field ROP2, or In-Field ROP3 from Develop life cycle",
                     "offset_int": "0x0090",
                     "default_value_int": "0xFFFFFFFF",
                     "bitfields": [
@@ -4299,7 +4379,7 @@
                             "width": 32,
                             "id": "field090-bits0-31",
                             "name": "ROP_STATE",
-                            "description": "ROP_STATE[31:0]",
+                            "description": "This fields allows the device lifecycle to be advanced to In-Field ROP1, In-Field ROP2, or In-Field ROP3 from Develop life cycle",
                             "values": [
                                 {
                                     "name": "ROP_LEVEL2",
@@ -4328,14 +4408,14 @@
                 {
                     "id": "field094",
                     "name": "SBL_PROT",
-                    "description": "Secondary Boot Loader Protection.If the field contains a value other than 0x0000_0000 or 0xFFFF_FFFF, Debug Mailbox commands and ISP commands will not be allowed at In-Field ROP1 and In-Field life cycles.",
+                    "description": "If the field contains a value other than 0x0000_0000 or 0xFFFF_FFFF, Debug Mailbox commands and ISP commands will not be allowed at In-Field ROP1 and In-Field life cycles",
                     "offset_int": "0x0094",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field098",
                     "name": "SBL_START_ADDR",
-                    "description": "Secondary Boot Loader Start Address.At the end of boot ROM execution, if the user does not wish boot ROM to jump at address 0x0000_0000 (default jump address) of the main flash, this field needs to be programmed with a valid flash jump address.",
+                    "description": "At the end of boot ROM execution, if the user does not wish boot ROM to jump at address 0x0000_0000 (default jump address) of the main flash, this field needs to be programmed with a valid flash jump address",
                     "offset_int": "0x0098",
                     "default_value_int": "0"
                 },
@@ -4350,7 +4430,7 @@
                 {
                     "id": "field0A0",
                     "name": "ROP_STATE_DP",
-                    "description": "Read Out Protection (ROP) State duplicate value. ROM reads ROP_STATE from ROP_STATE and ROP_STATE_DP on IFR0, does the compare, and if it does not match, resets the device; if match then programs it to SYSCON->ROP_STATE. Any other value then four listed means ROP3-like behavior (debug disabled/locked, ISP disabled). Duplicate of ROP_STATE at offset 0x90",
+                    "description": "Duplicate of ROP_STATE",
                     "offset_int": "0x00A0",
                     "default_value_int": "0xFFFFFFFF",
                     "bitfields": [
@@ -4358,7 +4438,7 @@
                             "width": 32,
                             "id": "field0A0-bits0-31",
                             "name": "ROP_STATE_DP",
-                            "description": "ROP_STATE_DP[31:0]",
+                            "description": "Duplicate of ROP_STATE",
                             "values": [
                                 {
                                     "name": "ROP_LEVEL2",
@@ -4387,25 +4467,17 @@
                 {
                     "id": "field0A4",
                     "name": "SBL_PROT_DP",
-                    "description": "Secondary Boot Loader Protection (Duplicate). Duplicate of SBL_PROT at offset 0x94",
+                    "description": "Duplicate of SBL_PROT",
                     "offset_int": "0x00A4",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field0A8",
                     "name": "SBL_START_ADDR_DP",
-                    "description": "Duplicate of SBL_START_ADDR at offset 0xA0",
+                    "description": "Duplicate of SBL_START_ADDR",
                     "offset_int": "0x00A8",
                     "default_value_int": "0"
-                }
-            ]
-        },
-        {
-            "group": {
-                "name": "Reserved 000AC-000CC",
-                "description": "Reserved 000AC-000CC"
-            },
-            "registers": [
+                },
                 {
                     "id": "Reserved000AC",
                     "name": "Reserved 0x000AC",
@@ -4413,15 +4485,30 @@
                     "offset_int": "0x00AC",
                     "is_reserved": true,
                     "default_value_int": "0"
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "WAKEUP CRC",
+                "description": "WAKEUP CRC"
+            },
+            "registers": [
                 {
-                    "id": "Reserved000B0",
-                    "name": "Reserved 0x000B0",
-                    "description": "This field is reserved for internal use",
+                    "id": "field0B0",
+                    "name": "WAKEUP_CRC",
+                    "description": "Wake-up CRC for the first 48 bytes of the wakeup image. This CRC will be checked upon chip wake-up from Deep power down, if CRC checking is required for the wakeup image",
                     "offset_int": "0x00B0",
-                    "is_reserved": true,
                     "default_value_int": "0"
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved 000B4-000CC",
+                "description": "Reserved 000B4-000CC"
+            },
+            "registers": [
                 {
                     "id": "Reserved000B4",
                     "name": "Reserved 0x000B4",
@@ -4489,35 +4576,35 @@
                 {
                     "id": "field0D0",
                     "name": "SI_ERASE_TOKEN0",
-                    "description": "Secure Installer Erase Token [0:31]. Very important: This field is used by boot ROM when the secure installer is erased. Corrupting this field will lead to the region of the flash where the secure installer is located being non-writable and non-readable.",
+                    "description": "This field is used to let the bootloader know that the SI is erased. It is programmed by the bootloader after the bootloader erases the SI. This token is device unique",
                     "offset_int": "0x00D0",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field0D4",
                     "name": "SI_ERASE_TOKEN1",
-                    "description": "Secure Installer Erase Token [32:63]. Very important: This field is used by boot ROM when the secure installer is erased. Corrupting this field will lead to the region of the flash where the secure installer is located being non-writable and non-readable.",
+                    "description": "SI erase token [32:63]",
                     "offset_int": "0x00D4",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field0D8",
                     "name": "SI_ERASE_TOKEN2",
-                    "description": "Secure Installer Erase Token [64:95]. Very important: This field is used by boot ROM when the secure installer is erased. Corrupting this field will lead to the region of the flash where the secure installer is located being non-writable and non-readable.",
+                    "description": "SI erase token [64: 95]",
                     "offset_int": "0x00D8",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field0DC",
                     "name": "SI_ERASE_TOKEN3",
-                    "description": "Secure Installer Erase Token [96:127]. Very important: This field is used by boot ROM when the secure installer is erased. Corrupting this field will lead to the region of the flash where the secure installer is located being non-writable and non-readable.",
+                    "description": "SI erase token [96:127]",
                     "offset_int": "0x00DC",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field0E0",
                     "name": "SI_DELETE_TOKEN",
-                    "description": "Secure Installer Delete Token. Token provided by NXP to indicate the desire for the user to erase the secure installer in order to reclaim the flash portion occupied by the secure installer.",
+                    "description": "This field is used for the customer to signal the bootloader to erase the SI. Program this field with the DELETE_INSTALLER_MAGIC value (0x4027FF65) to erase secure installer",
                     "offset_int": "0x00E0",
                     "default_value_int": "0"
                 }
@@ -4525,8 +4612,8 @@
         },
         {
             "group": {
-                "name": "Reserved 000E4-000FC",
-                "description": "Reserved 000E4-000FC"
+                "name": "Reserved 000E4-000EC",
+                "description": "Reserved 000E4-000EC"
             },
             "registers": [
                 {
@@ -4552,36 +4639,292 @@
                     "offset_int": "0x00EC",
                     "is_reserved": true,
                     "default_value_int": "0"
-                },
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "ROTKH",
+                "description": "ROTKH fields"
+            },
+            "registers": [
                 {
-                    "id": "Reserved000F0",
-                    "name": "Reserved 0x000F0",
-                    "description": "This field is reserved for internal use",
+                    "id": "field0F0",
+                    "name": "ROTKH0",
+                    "description": "Root of Trust Keys Table hash - SHA256[255:224]",
                     "offset_int": "0x00F0",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved000F4",
-                    "name": "Reserved 0x000F4",
-                    "description": "This field is reserved for internal use",
+                    "id": "field0F4",
+                    "name": "ROTKH1",
+                    "description": "SHA256[223:192]",
                     "offset_int": "0x00F4",
-                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved000F8",
-                    "name": "Reserved 0x000F8",
-                    "description": "This field is reserved for internal use",
+                    "id": "field0F8",
+                    "name": "ROTKH2",
+                    "description": "SHA256[191:160]",
                     "offset_int": "0x00F8",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field0FC",
+                    "name": "ROTKH3",
+                    "description": "SHA256[159:128]",
+                    "offset_int": "0x00FC",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field100",
+                    "name": "ROTKH4",
+                    "description": "SHA256[127:096]",
+                    "offset_int": "0x0100",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field104",
+                    "name": "ROTKH5",
+                    "description": "SHA256[095:064]",
+                    "offset_int": "0x0104",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field108",
+                    "name": "ROTKH6",
+                    "description": "SHA256[063:032]",
+                    "offset_int": "0x0108",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field10C",
+                    "name": "ROTKH7",
+                    "description": "SHA256[031:000]",
+                    "offset_int": "0x010C",
+                    "default_value_int": "0"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "CUST_MK_SK",
+                "description": "CUST_MK_SK key blob"
+            },
+            "registers": [
+                {
+                    "id": "field110",
+                    "name": "CUST_MK_SK_KEY_BLOB0",
+                    "description": "CUST MK SK blob",
+                    "offset_int": "0x0110",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field114",
+                    "name": "CUST_MK_SK_KEY_BLOB1",
+                    "description": "CUST MK SK key blob",
+                    "offset_int": "0x0114",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field118",
+                    "name": "CUST_MK_SK_KEY_BLOB2",
+                    "description": "CUST MK SK key blob",
+                    "offset_int": "0x0118",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field11C",
+                    "name": "CUST_MK_SK_KEY_BLOB3",
+                    "description": "CUST MK SK key blob",
+                    "offset_int": "0x011C",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field120",
+                    "name": "CUST_MK_SK_KEY_BLOB4",
+                    "description": "CUST MK SK key blob",
+                    "offset_int": "0x0120",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field124",
+                    "name": "CUST_MK_SK_KEY_BLOB5",
+                    "description": "CUST MK SK key blob",
+                    "offset_int": "0x0124",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field128",
+                    "name": "CUST_MK_SK_KEY_BLOB6",
+                    "description": "CUST MK SK key blob",
+                    "offset_int": "0x0128",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field12C",
+                    "name": "CUST_MK_SK_KEY_BLOB7",
+                    "description": "CUST MK SK key blob",
+                    "offset_int": "0x012C",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field130",
+                    "name": "CUST_MK_SK_KEY_BLOB8",
+                    "description": "CUST MK SK key blob",
+                    "offset_int": "0x0130",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field134",
+                    "name": "CUST_MK_SK_KEY_BLOB9",
+                    "description": "CUST MK SK key blob",
+                    "offset_int": "0x0134",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field138",
+                    "name": "CUST_MK_SK_KEY_BLOB10",
+                    "description": "CUST MK SK key blob",
+                    "offset_int": "0x0138",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field13C",
+                    "name": "CUST_MK_SK_KEY_BLOB11",
+                    "description": "CUST MK SK key blob",
+                    "offset_int": "0x013C",
+                    "default_value_int": "0"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "SEC Configuration",
+                "description": "Secure boot Configuration"
+            },
+            "registers": [
+                {
+                    "id": "field140",
+                    "name": "SEC_BOOT_CFG",
+                    "description": "Sec boot configuration",
+                    "offset_int": "0x0140",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "field140-bits0-1",
+                            "name": "SEC_BOOT_EN",
+                            "description": "Secure boot enforcement. This field defines the minimum image verification procedure (CRC32, ECDSA p-256 sign). The Image type field in header indicates the type of verification data (checksum or signature) included in it",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "secure boot is disabled"
+                                },
+                                {
+                                    "name": "ENABLED_1",
+                                    "value": 1,
+                                    "description": "secure boot is enabled"
+                                },
+                                {
+                                    "name": "ENABLED_2",
+                                    "value": 2,
+                                    "description": "secure boot is enabled"
+                                },
+                                {
+                                    "name": "ENABLED_3",
+                                    "value": 3,
+                                    "description": "secure boot is enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 2,
+                            "id": "field140-bits3-4",
+                            "name": "LP_SEC_BOOT_EN",
+                            "description": "Secure boot option for low power wake up from deep power down 1 & 2",
+                            "values": [
+                                {
+                                    "name": "Enabled_0",
+                                    "value": 0,
+                                    "description": "Same as cold boot (enforcement dictated by SEC_BOOT_EN), application address considered as SBL_START_ADDR or 0x0",
+                                    "deprecated_names": [
+                                        "Enabled"
+                                    ]
+                                },
+                                {
+                                    "name": "Enabled_1",
+                                    "value": 1,
+                                    "description": "Same as cold boot (enforcement dictated by SEC_BOOT_EN), application address considered as SBL_START_ADDR or 0x0",
+                                    "deprecated_names": [
+                                        "Disabled_1"
+                                    ]
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 2,
+                                    "description": "Faster wakeup path supported",
+                                    "deprecated_names": [
+                                        "Disabled_2"
+                                    ]
+                                },
+                                {
+                                    "name": "Enabled_3",
+                                    "value": 3,
+                                    "description": "Same as cold boot (enforcement dictated by SEC_BOOT_EN), application address considered as SBL_START_ADDR or 0x0",
+                                    "deprecated_names": [
+                                        "Disabled_3"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field140-bit5",
+                            "name": "BOOT_ATTEST_SKIP",
+                            "description": "Boot time attestation record generation",
+                            "values": [
+                                {
+                                    "name": "Enabled",
+                                    "value": 0,
+                                    "description": "Not skipped"
+                                },
+                                {
+                                    "name": "Disabled",
+                                    "value": 1,
+                                    "description": "Skipped"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 26
+                        }
+                    ]
+                },
+                {
+                    "id": "Reserved00144",
+                    "name": "Reserved 0x00144",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0144",
                     "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "Reserved000FC",
-                    "name": "Reserved 0x000FC",
+                    "id": "field148",
+                    "name": "PG_RECORD_ADDR",
+                    "description": "This is the address where the prove-genuinity record is dumped. If set as zero, then use the 0x28004800 RAM address as the default",
+                    "offset_int": "0x0148",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved0014C",
+                    "name": "Reserved 0x0014C",
                     "description": "This field is reserved for internal use",
-                    "offset_int": "0x00FC",
+                    "offset_int": "0x014C",
                     "is_reserved": true,
                     "default_value_int": "0"
                 }

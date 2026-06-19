@@ -337,10 +337,14 @@ class DebugCredentialCertificate(FeatureBaseClass):
                 # certificate block as a binary
                 pass
         signature_provider = get_signature_provider(config, pss_padding=pss_padding)
+        uuid_hex = config["uuid"]
+        if uuid_hex.lower().startswith("0x"):
+            uuid_hex = uuid_hex[2:]
+        uuid_hex = uuid_hex.zfill(32)
         dc_obj = klass(
             family=family,
             version=version,
-            uuid=bytes.fromhex(config["uuid"]),
+            uuid=bytes.fromhex(uuid_hex),
             rot_meta=rot_meta,
             dck_pub=extract_public_key(config.get_input_file_name("dck")),
             cc_socu=config.get_int("cc_socu"),

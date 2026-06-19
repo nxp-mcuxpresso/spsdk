@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -24,7 +24,12 @@ from typing import Optional, TextIO
 
 import colorama
 
-from spsdk import SPSDK_DEBUG_LOG_FILE, SPSDK_DEBUG_LOGGING_DISABLED, __version__
+from spsdk import (
+    SPSDK_DEBUG_LOG_FILE,
+    SPSDK_DEBUG_LOGGING_DISABLED,
+    SPSDK_LOG_LEVEL_TRACE,
+    __version__,
+)
 from spsdk.utils.misc import find_file, load_configuration
 
 colorama.just_fix_windows_console()
@@ -56,6 +61,7 @@ class ColoredFormatter(logging.Formatter):
     FORMAT_DEBUG = FORMAT + " (%(relativeCreated)dms since start, %(filename)s:%(lineno)d)"
 
     COLORED_FORMATS = {
+        SPSDK_LOG_LEVEL_TRACE: colorama.Fore.CYAN + FORMAT_DEBUG + colorama.Fore.RESET,
         logging.DEBUG: colorama.Fore.BLUE + FORMAT_DEBUG + colorama.Fore.RESET,
         logging.INFO: colorama.Fore.WHITE
         + colorama.Style.BRIGHT
@@ -71,6 +77,7 @@ class ColoredFormatter(logging.Formatter):
         + colorama.Style.RESET_ALL,
     }
     FORMATS = {
+        SPSDK_LOG_LEVEL_TRACE: FORMAT_DEBUG,
         logging.DEBUG: FORMAT_DEBUG,
         logging.INFO: FORMAT,
         logging.WARNING: FORMAT_DEBUG,
@@ -127,8 +134,8 @@ def install(
     # Use root logger by default, but allow specifying a different logger
     target_logger = logger or logging.getLogger("spsdk")
 
-    # Set root logger to DEBUG to process all messages
-    target_logger.setLevel(logging.DEBUG)
+    # Set root logger to TRACE to process all messages
+    target_logger.setLevel(SPSDK_LOG_LEVEL_TRACE)
 
     # This env variable tells us that jupyter notebook is executed
     if "JUPYTER_SPSDK" in os.environ:
@@ -174,7 +181,9 @@ def install(
                 SPSDK_DEBUG_LOG_FILE, mode="a", maxBytes=1_000_000, backupCount=5, encoding="utf-8"
             )
             debug_handler.setFormatter(ColoredFormatter(colored=False))
-            debug_handler.setLevel(logging.DEBUG)  # Log all DEBUG and above messages to file
+            debug_handler.setLevel(
+                SPSDK_LOG_LEVEL_TRACE
+            )  # Log all TRACE and above messages to file
 
             # Add the debug handler directly to the root logger
             # This ensures all messages from all loggers will be captured in the debug log

@@ -98,6 +98,9 @@ features:
     containers_max_cnt: 3
     oem_images_max_cnt: 8
     container_types: [1] # Supported container types
+    fuses_0:
+      _name: "AHAB SRKH"
+      srkh: "__srk_hash" # SRK hash fuse
     core_ids:
       RESERVED: [1, "reserved", "Reserved Core ID"]
       CORTEX_A55: [2, "cortex-a55", "Cortex A55"]
@@ -215,6 +218,7 @@ features:
           #not_used: 0xC00
           primary_image_container_set: 0x1_000
           secondary_image_container_set: -1 # Just behind previous segment
+        image_pattern: ones
       emmc:
         segments:
           primary_image_container_set: 0x8_000

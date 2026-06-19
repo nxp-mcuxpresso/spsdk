@@ -56,6 +56,8 @@ class TargetMemoryDescr:
     image_size_alignment: int = 1
     is_nand: bool = False
     force_no_gaps: bool = False
+    erased_pattern: str = "zeros"
+    """Flash erased-state pattern: 'ones' (0xFF) for NOR/NAND, 'zeros' (0x00) for RAM/SD/eMMC."""
 
 
 MEMORY_TARGET_DESCRIPTIONS = {
@@ -64,38 +66,45 @@ MEMORY_TARGET_DESCRIPTIONS = {
         image_offset_alignment=4,
         image_size_alignment=1,
         force_no_gaps=True,
+        erased_pattern="zeros",
     ),
     AhabTargetMemory.TARGET_MEMORY_NOR: TargetMemoryDescr(
         memory_type=AhabTargetMemory.TARGET_MEMORY_NOR,
         image_offset_alignment=1024,
         image_size_alignment=1,
+        erased_pattern="ones",
     ),
     AhabTargetMemory.TARGET_MEMORY_NAND_2K: TargetMemoryDescr(
         memory_type=AhabTargetMemory.TARGET_MEMORY_NAND_2K,
         image_offset_alignment=2048,
         image_size_alignment=1,
         is_nand=True,
+        erased_pattern="ones",
     ),
     AhabTargetMemory.TARGET_MEMORY_NAND_4K: TargetMemoryDescr(
         memory_type=AhabTargetMemory.TARGET_MEMORY_NAND_4K,
         image_offset_alignment=4096,
         image_size_alignment=1,
         is_nand=True,
+        erased_pattern="ones",
     ),
     AhabTargetMemory.TARGET_MEMORY_STANDARD: TargetMemoryDescr(
         memory_type=AhabTargetMemory.TARGET_MEMORY_STANDARD,
         image_offset_alignment=1024,
         image_size_alignment=1,
+        erased_pattern="ones",
     ),
     AhabTargetMemory.TARGET_MEMORY_SD_EMMC: TargetMemoryDescr(
         memory_type=AhabTargetMemory.TARGET_MEMORY_SD_EMMC,
         image_offset_alignment=1024,
         image_size_alignment=512,
+        erased_pattern="zeros",
     ),
     AhabTargetMemory.TARGET_FASTBOOT: TargetMemoryDescr(
         memory_type=AhabTargetMemory.TARGET_FASTBOOT,
         image_offset_alignment=1024,
         image_size_alignment=128,
+        erased_pattern="ones",
     ),
 }
 

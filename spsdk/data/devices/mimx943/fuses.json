@@ -2065,7 +2065,7 @@
                                 {
                                     "name": "OCTAL_MICRON",
                                     "value": 2,
-                                    "description": "Default Octal mode (Micron, Nice to have)",
+                                    "description": "Default Octal mode (Micron, Nice to have)",
                                     "deprecated_names": [
                                         "10"
                                     ]
@@ -2241,6 +2241,11 @@
                                     "name": "FREQUENCY_33MHZ",
                                     "value": 6,
                                     "description": "33 MHz"
+                                },
+                                {
+                                    "name": "FREQUENCY_33MHZ_DEFAULT",
+                                    "value": 7,
+                                    "description": "33 MHz"
                                 }
                             ]
                         },
@@ -2283,6 +2288,16 @@
                                     "deprecated_names": [
                                         "8_bit"
                                     ]
+                                },
+                                {
+                                    "name": "BIT_4_MODE_DDR",
+                                    "value": 2,
+                                    "description": "4 bit DDR (eMMC 4.4)"
+                                },
+                                {
+                                    "name": "BIT_8_MODE_DDR",
+                                    "value": 3,
+                                    "description": "8 bit DDR (eMMC 4.4)"
                                 }
                             ]
                         },
@@ -2805,24 +2820,36 @@
                             "description": "SD calibration step ",
                             "values": [
                                 {
-                                    "name": "1_DELAY_CELL",
+                                    "name": "DELAY_CELL_1",
                                     "value": 0,
-                                    "description": "1 delay cell"
+                                    "description": "1 delay cell",
+                                    "deprecated_names": [
+                                        "1_DELAY_CELL"
+                                    ]
                                 },
                                 {
-                                    "name": "2_DELAY_CELL",
+                                    "name": "DELAY_CELL_2",
                                     "value": 1,
-                                    "description": "2 delay cell"
+                                    "description": "2 delay cell",
+                                    "deprecated_names": [
+                                        "2_DELAY_CELL"
+                                    ]
                                 },
                                 {
-                                    "name": "3_DELAY_CELL",
+                                    "name": "DELAY_CELL_3",
                                     "value": 2,
-                                    "description": "3 delay cell"
+                                    "description": "3 delay cell",
+                                    "deprecated_names": [
+                                        "3_DELAY_CELL"
+                                    ]
                                 },
                                 {
-                                    "name": "5_DELAY_CELL",
+                                    "name": "DELAY_CELL_5",
                                     "value": 3,
-                                    "description": "5 delay cell"
+                                    "description": "5 delay cell",
+                                    "deprecated_names": [
+                                        "5_DELAY_CELL"
+                                    ]
                                 }
                             ]
                         },
@@ -3939,24 +3966,36 @@
                             "description": "xSPI NAND Search Stride",
                             "values": [
                                 {
-                                    "name": "64_pages",
+                                    "name": "PAGES_64",
                                     "value": 0,
-                                    "description": "64 pages"
+                                    "description": "64 pages",
+                                    "deprecated_names": [
+                                        "64_pages"
+                                    ]
                                 },
                                 {
-                                    "name": "128_pages",
+                                    "name": "PAGES_128",
                                     "value": 1,
-                                    "description": "128 pages"
+                                    "description": "128 pages",
+                                    "deprecated_names": [
+                                        "128_pages"
+                                    ]
                                 },
                                 {
-                                    "name": "256_pages",
+                                    "name": "PAGES_256",
                                     "value": 2,
-                                    "description": "256 pages"
+                                    "description": "256 pages",
+                                    "deprecated_names": [
+                                        "256_pages"
+                                    ]
                                 },
                                 {
-                                    "name": "32_pages",
+                                    "name": "PAGES_32",
                                     "value": 3,
-                                    "description": "32 pages"
+                                    "description": "32 pages",
+                                    "deprecated_names": [
+                                        "32_pages"
+                                    ]
                                 }
                             ]
                         },
@@ -4240,9 +4279,12 @@
                                     "description": "14 cycles"
                                 },
                                 {
-                                    "name": "15_cycles",
+                                    "name": "CYCLES_15",
                                     "value": 15,
-                                    "description": "15 cycles"
+                                    "description": "15 cycles",
+                                    "deprecated_names": [
+                                        "15_cycles"
+                                    ]
                                 }
                             ]
                         }
@@ -4496,6 +4538,11 @@
                                     ]
                                 },
                                 {
+                                    "name": "OFFSET_1024MB",
+                                    "value": 10,
+                                    "description": "Offset = 1024 MB"
+                                },
+                                {
                                     "name": "EMMC_LAST_128MB",
                                     "value": 254,
                                     "description": "EMMC last 128 MB",
@@ -4506,7 +4553,7 @@
                                 {
                                     "name": "EMMC_LAST_24KB",
                                     "value": 255,
-                                    "description": "EMMC last 24KB",
+                                    "description": "EMMC: last 24 KB",
                                     "deprecated_names": [
                                         "last_24_KB"
                                     ]
@@ -7036,9 +7083,12 @@
                                     "description": "PQC boot only"
                                 },
                                 {
-                                    "name": "REVERT_CLASSIC",
+                                    "name": "REVERT_CLASSIC_BOOT",
                                     "value": 4,
-                                    "description": "Revert to Classic boot"
+                                    "description": "Revert to Classic boot",
+                                    "deprecated_names": [
+                                        "REVERT_CLASSIC"
+                                    ]
                                 }
                             ]
                         },

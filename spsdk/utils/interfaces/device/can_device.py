@@ -155,7 +155,7 @@ class CANDevice(DeviceBase):
         if not data:
             raise SPSDKTimeoutError("Timeout reading the message")
 
-        logger.debug(f"<{' '.join(f'{b:02x}' for b in data)}>")
+        logger.trace(f"<{' '.join(f'{b:02x}' for b in data)}>")
         return data
 
     def write(self, data: bytes, timeout: Optional[int] = None) -> None:
@@ -171,7 +171,7 @@ class CANDevice(DeviceBase):
         """
         if not self.device or not self.is_opened:
             raise SPSDKConnectionError("Device is not opened for writing.")
-        logger.debug(f"[{' '.join(f'{b:02x}' for b in data)}]")
+        logger.trace(f"[{' '.join(f'{b:02x}' for b in data)}]")
 
         try:
             from can.message import Message

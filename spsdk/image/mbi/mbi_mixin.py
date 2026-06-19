@@ -1396,7 +1396,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
         data[self.IVT_CRC_CERTIFICATE_OFFSET : self.IVT_CRC_CERTIFICATE_OFFSET + 4] = struct.pack(
             "<I", crc_val_cert_offset
         )
-        return data
+        return bytes(data)
 
     def update_total_length(self, app_data: bytes, total_length: int) -> bytes:
         """Update total length field in the IVT table.

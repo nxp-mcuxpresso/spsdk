@@ -88,6 +88,10 @@ features:
 
     dmbox_ap_ix: -1 # Typical Index of debug mailbox access port is 2
     mem_ap_ix: -1 # Typical Index of debug mailbox access port is 0
+    enable_power_domains_after_connect: False # Power up system/debug domains after probe connect
+    enable_sda_debug_paths_after_connect: False # Enable debug paths through SDA AP after connect
+    mem_ap_preserve_csw_ro_bits: False # Preserve MEM-AP CSW read-only bits during memory transfers
+    mem_ap_scan_write_before_read: False # Use write-before-read while detecting MEM-AP
     # non_standard_statuses: # dictionary of non standard return statuses from various commands
     #   2:  # Command get_crp_level
     #     0xFFFF_FFFF: ROP_LEVEL0
@@ -148,21 +152,12 @@ features:
       RSA_PSS: [0x22, "RSA_PSS", "RSA PSS signature algorithm"]
       ECDSA: [0x27, "ECDSA", "ECDSA signature algorithm"]
       SM2: [0x28, "SM2", "SM2 signature algorithm"]
-      # V2 only
-      DILITHIUM: [0xD1, "DILITHIUM", "Dilithium PQC algorithm"]
-      ML_DSA: [0xD2, "ML-DSA", "ML-DSA PQC algorithm"]
 
     hash_algorithms:
       SHA256: [0x00, "SHA256", "SHA-256 hash algorithm"]
       SHA384: [0x01, "SHA384", "SHA-384 hash algorithm"]
       SHA512: [0x02, "SHA512", "SHA-512 hash algorithm"]
       SM3: [0x03, "SM3", "SM3 hash algorithm"]
-      # V2 only
-      SHA3_256: [0x04, "SHA3_256", "SHA3-256 hash algorithm"]
-      SHA3_384: [0x05, "SHA3_384", "SHA3-384 hash algorithm"]
-      SHA3_512: [0x06, "SHA3_512", "SHA3-512 hash algorithm"]
-      SHAKE_128_256: [0x08, "SHAKE_128_256", "SHAKE-128 with 256-bit output"]
-      SHAKE_256_512: [0x09, "SHAKE_256_512", "SHAKE-256 with 512-bit output"]
 
     srk_sets:
       NONE: [0x00, "none", "Image is not signed"]
@@ -330,6 +325,14 @@ features:
         mem_type: nand
         interfaces: [quad_spi]
         instances: []
+      xspi_nand:
+        reg_spec: ../../common/memcfg/opt_word_xspi_nand.json
+        region_number: 0x101
+        ow_counts_rule: OptionSize
+        runtime_instance: True
+        mem_type: nand
+        interfaces: [quad_spi]
+        instances: []
       semc_nor:
         reg_spec: ../../common/memcfg/opt_word_semc_nor.json
         region_number: 0x08
@@ -358,14 +361,14 @@ features:
         reg_spec: ../../common/memcfg/opt_word_mmc.json
         region_number: 0x121
         ow_counts_rule: All
-        mem_type: sd
+        mem_type: mmc
         interfaces: [instance_0, instance_1, instance_2, instance_3]
         instances: []
       emmc:
         reg_spec: ../../common/memcfg/opt_word_emmc.json
         region_number: 0x121
         ow_counts_rule: All
-        mem_type: sd
+        mem_type: emmc
         interfaces: [instance_0, instance_1, instance_2, instance_3]
         instances: []
       sd:
@@ -519,3 +522,17 @@ features:
       - "RSASSA_PKCS1_V15"
       - "RSASSA_PSS"
     smr_regions_count: 32
+    rsa_pub_exponent_max_size: 16
+    supported_key_types:
+      - "SHE"
+      - "AES"
+      - "HMAC"
+      - "SHARED_SECRET"
+      - "SIPHASH"
+      - "ECC_PAIR"
+      - "ECC_PUB"
+      - "ECC_PUB_EXT"
+      - "RSA_PAIR"
+      - "RSA_PUB"
+      - "RSA_PUB_EXT"
+      - "DH_PUB"

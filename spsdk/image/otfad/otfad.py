@@ -622,7 +622,7 @@ class Otfad(FeatureBaseClass):
             )
             logger.debug(f"The inverted scramble key is: {key_scramble_mask_bytes.hex()}")
         result = bytes()
-        scrambled = bytes()
+        scrambled: Union[bytes, bytearray] = bytes()
         for i, key_blob in enumerate(self._key_blobs):
             if scramble_enabled:
                 assert isinstance(key_scramble_mask, int) and isinstance(key_scramble_align, int)
@@ -636,7 +636,7 @@ class Otfad(FeatureBaseClass):
             )
 
             result += key_blob.export(
-                scrambled if scramble_enabled else kek, byte_swap_cnt=byte_swap_cnt
+                bytes(scrambled) if scramble_enabled else kek, byte_swap_cnt=byte_swap_cnt
             )
         return align_block(
             result, 256

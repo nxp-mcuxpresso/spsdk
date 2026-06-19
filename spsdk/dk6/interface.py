@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,17 +11,17 @@ This module provides low-level UART communication functionality for DK6 devices,
 including packet transmission, CRC calculation, and response parsing utilities.
 """
 
-import logging
 import struct
 from typing import Any, Optional, Union
 
+from spsdk import get_logger
 from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.dk6.commands import CmdPacket, CommandTag, parse_cmd_response
 from spsdk.dk6.serial_device import SerialDevice
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.misc import Endianness
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def calc_crc(data: bytes) -> int:
@@ -182,7 +182,7 @@ class Uart:
             raise SPSDKError(str(e)) from e
         if not data:
             raise TimeoutError()
-        logger.debug(f"<-READ:  <{' '.join(f'{b:02x}' for b in data)}>")
+        logger.trace(f"<-READ:  <{' '.join(f'{b:02x}' for b in data)}>")
         return data
 
     def _write(self, data: bytes) -> None:
@@ -194,7 +194,7 @@ class Uart:
         :param data: Byte data to be sent to the device.
         :raises SPSDKError: When sending the data fails due to communication issues.
         """
-        logger.debug(f"->WRITE: [{' '.join(f'{b:02x}' for b in data)}]")
+        logger.trace(f"->WRITE: [{' '.join(f'{b:02x}' for b in data)}]")
         try:
             self.device.write(data)
         except Exception as e:

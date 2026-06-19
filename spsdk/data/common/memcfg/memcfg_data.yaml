@@ -378,3 +378,21 @@ PN26G02A:
       option_words: [0xD0000002]
     instance_3:
       option_words: [0xD0000003]
+
+# ***********************************************************************
+#                            eMMC
+# ***********************************************************************
+
+# Micron
+MTFC8GAKAJCN:
+  manufacturer: Micron
+  type: emmc
+  interfaces:
+    normal_1_bit:
+      option_words: [0xc0000000, 0x00000000]
+    ddr52_8_bits:
+      option_words: [0xc0006100, 0x00000000]
+    hs200_8_bits:
+      option_words: [0xc0002200, 0x00000000]
+    hs400_8_bits:
+      option_words: [0xc0003200, 0x00000000]

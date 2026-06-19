@@ -206,6 +206,11 @@ def test_nxpimage_sb40_parse(
             fuse_version = firmware_version & 0xFF
             assert fuse_version == orig_config.get("fuse_version"), "Fuse version doesn't match"
 
+        if "referenceValue" in orig_config:
+            assert parsed_config_obj.get("referenceValue") == orig_config.get(
+                "referenceValue"
+            ), "Reference value doesn't match"
+
 
 def test_nxpimage_sb40_get_template(cli_runner: CliRunner, tmpdir: str) -> None:
     """Test SB4.0 template generation."""

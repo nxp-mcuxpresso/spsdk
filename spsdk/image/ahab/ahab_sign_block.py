@@ -318,7 +318,7 @@ class SignatureBlock(HeaderContainer):
                 self.blob.export()
             )
 
-        return signature_block
+        return bytes(signature_block)
 
     def verify(self) -> Verifier:
         """Verify container signature block data.
@@ -786,6 +786,19 @@ class SignatureBlock(HeaderContainer):
 
         return cfg
 
+    def get_signature_algorithm_info(self) -> str:
+        """Get signature algorithm information from the signature block.
+
+        Returns a string describing the signature algorithm(s) used in the signature block.
+        For signature blocks with SRK assets, it extracts the signing algorithm from SRK records.
+
+        :return: Comma-separated string of signature algorithm labels, or empty string if not available.
+        """
+        if not self.srk_assets or not self.srk_assets.srk_records:
+            return "None"
+
+        return self.srk_assets.srk_records[0].get_key_name()
+
 
 class SignatureBlockV2(HeaderContainer):
     """AHAB Signature Block Version 2 container.
@@ -1064,7 +1077,7 @@ class SignatureBlockV2(HeaderContainer):
                 self.blob.export()
             )
 
-        return signature_block
+        return bytes(signature_block)
 
     def verify(self) -> Verifier:
         """Verify container signature block data.
@@ -1607,3 +1620,20 @@ class SignatureBlockV2(HeaderContainer):
             cfg["blob"] = self.blob.get_config(data_path, index)
 
         return cfg
+
+    def get_signature_algorithm_info(self) -> str:
+        """Get signature algorithm information from the signature block V2.
+
+        Returns a string describing the signature algorithm(s) used in the signature block.
+        For V2 signature blocks with multiple SRK tables, it extracts algorithms from all tables.
+
+        :return: Comma-separated string of signature algorithm labels, or empty string if not available.
+        """
+        if not self.srk_assets or not self.srk_assets._srk_tables:
+            return "None"
+
+        sig_algorithms = []
+        for srk_table in self.srk_assets._srk_tables:
+            sig_algorithms.append(srk_table.srk_records[0].get_key_name())
+
+        return ", ".join(sig_algorithms)

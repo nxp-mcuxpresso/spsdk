@@ -48,7 +48,6 @@ sb4:
       else:
         required: []
 
-
 image_version:
   type: object
   title: AHAB Container format to add to ECC + PQC sign.
@@ -91,3 +90,17 @@ sb4_test:
       format: number
       template_value: 1234567890
       skip_in_template: true
+
+sb4_reference_value:
+  type: object
+  title: Secure Binary v4.0 Reference Value Image
+  properties:
+    referenceValue:
+      type: string
+      title: Reference Value
+      description: |
+        Hash value for reference values image (second image in AHAB array).
+        Can be specified as hex string (e.g., "0x1234...") or path to binary file containing the hash.
+        This value will be encrypted and included as the second image in the SB4 container.
+      format: file-or-hex-value
+      template_value: "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"

@@ -167,6 +167,9 @@ features:
   # ======== AHAB section ========
   ahab:
     container_types: [1] # Supported container types
+    fuses_0:
+      _name: "AHAB SRKH"
+      srkh: "__srk_hash" # SRK hash fuse
     core_ids:
       CORTEX_M33: [1, "cortex-m33", "Cortex M33"]
       CORTEX_M7: [2, "cortex-m7", "Cortex M7"]
@@ -279,6 +282,7 @@ features:
           fcb: 0x0400
           xmcd: 0x0800
           ahab_container: 0x1000
+        image_pattern: ones
       flexspi_nand:
         segments:
           xmcd: 0x00

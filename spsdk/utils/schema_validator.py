@@ -12,9 +12,14 @@ and handling commented YAML configurations within the SPSDK framework.
 """
 
 import copy
+import functools
+import hashlib
+import hmac
 import io
+import json
 import logging
 import os
+import tempfile
 from collections import OrderedDict
 from typing import Any, Callable, Optional, Union
 
@@ -27,7 +32,13 @@ from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap as CMap
 from ruamel.yaml.comments import CommentedSeq as CSeq
 
-from spsdk import SPSDK_DEBUG, SPSDK_SCHEMA_STRICT, SPSDK_YML_INDENT
+from spsdk import (
+    SPSDK_CACHE_DISABLED,
+    SPSDK_DEBUG,
+    SPSDK_PLATFORM_DIRS,
+    SPSDK_SCHEMA_STRICT,
+    SPSDK_YML_INDENT,
+)
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.misc import find_dir, find_file, value_to_int, wrap_text, write_file
 from spsdk.utils.spsdk_enum import SpsdkEnum
@@ -35,6 +46,305 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 ENABLE_DEBUG = SPSDK_DEBUG
 
 logger = logging.getLogger(__name__)
+
+# Cache for compiled fastjsonschema validators, keyed by (schema hash, search paths hash).
+# Avoids expensive schema recompilation on repeated calls with the same schema and paths.
+_compiled_validators: dict[str, Callable] = {}
+
+# Cache for successful validation results, keyed by (schema hash, config hash, paths hash).
+# Avoids re-running the compiled validator (which can be slow for large schemas) on
+# repeated calls with identical configuration and search paths.
+_validation_cache: set[str] = set()
+
+# Subdirectory inside the SPSDK user-cache dir where compiled validator modules are stored.
+_VALIDATOR_CACHE_SUBDIR = "schema_validators"
+
+# Subdirectory for persisting successful validation results (one zero-byte file per unique
+# schema+config+paths combination).  Eliminates re-running the compiled validator on cold starts.
+_VALIDATION_RESULT_CACHE_SUBDIR = "validation_results"
+
+
+def _get_disk_validator_cache_dir() -> Optional[str]:
+    """Return the directory used for persisting compiled fastjsonschema validators.
+
+    Returns ``None`` when the SPSDK cache is disabled or the directory cannot be
+    created, in which case disk caching is silently skipped.
+    The directory is created with owner-only permissions (0o700) to prevent
+    other users from injecting malicious cached code.
+
+    :return: Absolute path to the cache directory, or None if caching is disabled.
+    """
+    if SPSDK_CACHE_DISABLED:
+        return None
+    try:
+        cache_dir = os.path.join(SPSDK_PLATFORM_DIRS.user_cache_dir, _VALIDATOR_CACHE_SUBDIR)
+        os.makedirs(cache_dir, mode=0o700, exist_ok=True)
+        return cache_dir
+    except OSError:  # pragma: no cover
+        return None
+
+
+def _get_disk_validation_result_dir() -> Optional[str]:
+    """Return the directory used for persisting successful validation results.
+
+    Returns ``None`` when the SPSDK cache is disabled or the directory cannot be
+    created, in which case disk caching is silently skipped.
+
+    :return: Absolute path to the cache directory, or None if caching is disabled.
+    """
+    if SPSDK_CACHE_DISABLED:
+        return None
+    try:
+        cache_dir = os.path.join(
+            SPSDK_PLATFORM_DIRS.user_cache_dir, _VALIDATION_RESULT_CACHE_SUBDIR
+        )
+        os.makedirs(cache_dir, mode=0o700, exist_ok=True)
+        return cache_dir
+    except OSError:  # pragma: no cover
+        return None
+
+
+def _has_disk_validation_result(validation_key: str) -> bool:
+    """Check whether a prior successful validation result exists on disk.
+
+    A result is recorded as a zero-byte marker file named after the validation key.
+    The key encodes the merged schema, search paths, and config data, so any change
+    to any of these causes a cache miss.
+
+    :param validation_key: Unique string key produced by :func:`_compute_check_config_keys`.
+    :return: ``True`` if the result file exists (previous validation passed), ``False`` otherwise.
+    """
+    cache_dir = _get_disk_validation_result_dir()
+    if cache_dir is None:
+        return False
+    # Replace ":" separators so the key is safe as a file name on all platforms.
+    filename = validation_key.replace(":", "_") + ".ok"
+    return os.path.isfile(os.path.join(cache_dir, filename))
+
+
+def _save_disk_validation_result(validation_key: str) -> None:
+    """Record a successful validation result as a zero-byte marker file on disk.
+
+    Silently ignores I/O errors so a non-writable cache directory never breaks
+    the validation flow.
+
+    :param validation_key: Unique string key produced by :func:`_compute_check_config_keys`.
+    """
+    cache_dir = _get_disk_validation_result_dir()
+    if cache_dir is None:
+        return
+    filename = validation_key.replace(":", "_") + ".ok"
+    target = os.path.join(cache_dir, filename)
+    try:
+        # Atomic: write to a temp file then rename, avoiding partial writes.
+        fd, tmp = tempfile.mkstemp(dir=cache_dir)
+        os.close(fd)
+        os.replace(tmp, target)
+    except OSError:  # pragma: no cover
+        pass
+
+
+def _get_cache_hmac_key() -> bytes:
+    """Derive an HMAC key from machine-specific and user-specific data.
+
+    The key is deterministically derived using PBKDF2 from a combination of:
+    - Python executable path (ties to the specific venv/installation)
+    - OS user identifier (prevents cross-user cache attacks)
+    - Platform node identifier (ties to the specific machine)
+
+    No secret is stored on disk, so an attacker with filesystem access
+    cannot extract the key material.
+
+    :return: 32-byte HMAC key.
+    """
+    import platform
+    import sys
+
+    try:
+        user = os.environ.get("USERNAME") or os.environ.get("USER") or os.getlogin()
+    except OSError:
+        user = "unknown"
+    salt = b"spsdk-validator-cache-v1"
+    identity = f"{sys.executable}:{user}:{platform.node()}".encode()
+    return hashlib.pbkdf2_hmac("sha256", identity, salt, iterations=1)
+
+
+def _load_disk_validator(schema_hash: str, formats: dict[str, Callable]) -> Optional[Callable]:
+    """Try to load a previously compiled validator from the disk cache.
+
+    Reads cached bytecode and verifies its HMAC-SHA256 integrity using a
+    per-installation secret key before deserializing. This prevents loading
+    tampered cache files while maintaining fast load times.
+
+    :param schema_hash: MD5 hex digest that uniquely identifies the schema.
+    :param formats: Custom format validators to bind into the loaded validator.
+    :return: Callable validator, or None if no cached file is found or integrity check fails.
+    """
+    import marshal
+
+    cache_dir = _get_disk_validator_cache_dir()
+    if cache_dir is None:
+        return None
+    cache_path = os.path.join(cache_dir, f"{schema_hash}.pyc")
+    hmac_path = os.path.join(cache_dir, f"{schema_hash}.hmac")
+    if not os.path.isfile(cache_path) or not os.path.isfile(hmac_path):
+        return None
+    try:
+        with open(cache_path, "rb") as fh:
+            bytecode = fh.read()
+        with open(hmac_path, "rb") as fh:
+            stored_hmac = fh.read()
+        # Verify integrity before deserializing
+        expected_hmac = hmac.new(_get_cache_hmac_key(), bytecode, hashlib.sha256).digest()
+        if not hmac.compare_digest(stored_hmac, expected_hmac):
+            logger.warning(f"Cache integrity check failed for {schema_hash}, regenerating")
+            for p in (cache_path, hmac_path):
+                try:
+                    os.remove(p)
+                except OSError:
+                    pass
+            return None
+        code_obj = marshal.loads(bytecode)
+        module_ns: dict[str, Any] = {}
+        exec(  # nosec — HMAC-verified fastjsonschema bytecode  # noqa: S102  # pylint: disable=exec-used
+            code_obj, module_ns
+        )
+        validate_fn = module_ns.get("validate")
+        if validate_fn is None:  # pragma: no cover
+            return None
+        return functools.partial(validate_fn, custom_formats=formats)
+    except Exception:  # pragma: no cover
+        for path in (cache_path, hmac_path):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+        return None
+
+
+def _save_disk_validator(
+    schema_hash: str, schema: dict[str, Any], formats: dict[str, Callable]
+) -> Optional[Callable]:
+    """Compile a schema with fastjsonschema, persist bytecode to disk, and return the validator.
+
+    Uses an atomic write (temp file + rename) to avoid partially-written cache files.
+    The bytecode is stored via ``marshal`` for fast subsequent loads. An HMAC-SHA256
+    signature (using a per-installation secret key) is stored alongside the bytecode
+    to verify integrity on load, preventing execution of tampered cache files.
+
+    :param schema_hash: MD5 hex digest identifying the schema (used as the filename).
+    :param schema: The merged JSON schema to compile.
+    :param formats: Custom format validators to bind into the compiled validator.
+    :return: Callable validator, or None if compilation or saving fails.
+    """
+    import marshal
+
+    cache_dir = _get_disk_validator_cache_dir()
+    try:
+        validator_code = fastjsonschema.compile_to_code(schema, formats=formats)
+    except (TypeError, fastjsonschema.JsonSchemaDefinitionException):
+        return None
+
+    # Compile the generated Python source to a bytecode code object once.
+    code_obj = compile(validator_code, f"<schema_{schema_hash}>", "exec")
+
+    if cache_dir is not None:
+        cache_path = os.path.join(cache_dir, f"{schema_hash}.pyc")
+        hmac_path = os.path.join(cache_dir, f"{schema_hash}.hmac")
+        try:
+            bytecode = marshal.dumps(code_obj)
+            sig = hmac.new(_get_cache_hmac_key(), bytecode, hashlib.sha256).digest()
+            # Write bytecode atomically
+            fd, tmp_path = tempfile.mkstemp(dir=cache_dir, suffix=".pyc")
+            try:
+                with os.fdopen(fd, "wb") as fh:
+                    fh.write(bytecode)
+                os.replace(tmp_path, cache_path)
+            except Exception:  # pragma: no cover
+                try:
+                    os.remove(tmp_path)
+                except OSError:
+                    pass
+            # Write HMAC atomically
+            fd, tmp_path = tempfile.mkstemp(dir=cache_dir, suffix=".hmac")
+            try:
+                with os.fdopen(fd, "wb") as fh:
+                    fh.write(sig)
+                os.replace(tmp_path, hmac_path)
+            except Exception:  # pragma: no cover
+                try:
+                    os.remove(tmp_path)
+                except OSError:
+                    pass
+        except OSError:  # pragma: no cover
+            pass
+    module_ns: dict[str, Any] = {}
+    exec(  # nosec — freshly compiled fastjsonschema source  # noqa: S102  # pylint: disable=exec-used
+        code_obj, module_ns
+    )
+    validate_fn = module_ns.get("validate")
+    if validate_fn is None:  # pragma: no cover
+        return None
+    return functools.partial(validate_fn, custom_formats=formats)
+
+
+def _compute_check_config_keys(
+    schema: dict[str, Any],
+    config: dict[str, Any],
+    search_paths: Optional[list[str]],
+) -> tuple[Optional[str], Optional[str]]:
+    """Compute cache keys for the compiled validator and validation result caches.
+
+    Returns a ``(validator_key, validation_key)`` tuple.  Both are ``None`` when
+    key derivation fails, in which case caching is skipped for that call.
+
+    :param schema: Merged JSON schema dictionary.
+    :param config: Configuration dictionary to validate.
+    :param search_paths: File search paths used by the format validators.
+    :return: Tuple of (validator_cache_key, validation_result_key).
+    """
+    try:
+        schema_hash = hashlib.md5(
+            json.dumps(schema, sort_keys=True, default=str).encode()
+        ).hexdigest()
+        paths_hash = hashlib.md5(json.dumps(sorted(search_paths or [])).encode()).hexdigest()
+        validator_key = f"{schema_hash}:{paths_hash}"
+        config_hash = hashlib.md5(
+            json.dumps(config, sort_keys=True, default=str).encode()
+        ).hexdigest()
+        validation_key = f"{validator_key}:{config_hash}"
+        return validator_key, validation_key
+    except Exception:  # pragma: no cover
+        return None, None
+
+
+def _is_validation_cached(validation_key: Optional[str]) -> bool:
+    """Return ``True`` if this (schema, paths, config) combination has already passed validation.
+
+    Checks the in-memory set first, then the disk marker file.  Populates the in-memory
+    set from disk so subsequent calls in the same process are O(1).
+
+    :param validation_key: Key from :func:`_compute_check_config_keys`, or ``None`` to skip.
+    :return: ``True`` if the combination is known-good, ``False`` if validation must run.
+    """
+    if validation_key is None:
+        return False
+    if validation_key in _validation_cache:
+        return True
+    if _has_disk_validation_result(validation_key):
+        _validation_cache.add(validation_key)
+        return True
+    return False
+
+
+def _record_validation_passed(validation_key: Optional[str]) -> None:
+    """Record a successful validation result in both in-memory and disk caches.
+
+    :param validation_key: Key from :func:`_compute_check_config_keys`, or ``None`` to skip.
+    """
+    if validation_key is not None:
+        _validation_cache.add(validation_key)
+        _save_disk_validation_result(validation_key)
 
 
 class SPSDKErrorValidationFailed(SPSDKError):
@@ -162,15 +472,18 @@ def _is_hex_number(param: Any) -> bool:
 
     The method validates whether the input parameter can be interpreted as a valid hexadecimal
     number. It handles both string inputs (with or without '0x' prefix) and other types that
-    can be converted to hexadecimal format.
+    can be converted to hexadecimal format. Odd-length hex strings are accepted (treated as
+    if padded with a leading zero).
 
     :param param: Input value to analyze for hexadecimal format compatibility.
     :return: True if input represents a valid hexadecimal number, False otherwise.
     """
     try:
         if isinstance(param, str):
-            if param.startswith("0x"):
+            if param.startswith(("0x", "0X")):
                 param = param[2:]
+            if len(param) % 2:
+                param = "0" + param
         bytes.fromhex(param)
         return True
     except (TypeError, ValueError):
@@ -405,6 +718,84 @@ def check_unknown_properties(config_dict: dict, schema_dict: dict, path: str = "
             logger.warning(error_msg)
 
 
+def _check_config_debug(
+    schema: dict[str, Any],
+    schemas: list[dict[str, Any]],
+    config_to_check: dict[str, Any],
+    formats: dict[str, Callable],
+) -> None:
+    """Write debug artifacts and validate using the generated validator source file.
+
+    Only called when ``ENABLE_DEBUG`` is ``True``.  Writes the compiled validator
+    source and all input artifacts to the current directory, then runs the validator
+    from the written file so developers can inspect the generated code.
+
+    :param schema: Merged JSON schema.
+    :param schemas: Individual schema parts (written as ``part_schema_N.json``).
+    :param config_to_check: Deep-copied configuration dict.
+    :param formats: Custom format validators.
+    """
+    validator_code = fastjsonschema.compile_to_code(schema, formats=formats)
+    write_file(validator_code, "validator_file.py")
+    for i, part_schema in enumerate(schemas):
+        write_file(json.dumps(part_schema, indent=2), f"part_schema_{i}.json")
+    write_file(json.dumps(config_to_check, indent=2), "config.json")
+    write_file(json.dumps(schema, indent=2), "merged_schema.json")
+    # pylint: disable=import-error,import-outside-toplevel
+    import sys
+
+    sys.path.insert(0, os.path.abspath(os.curdir))
+    import validator_file  # type: ignore[import-not-found]
+
+    try:
+        validator_file.validate(config_to_check, formats)
+    except fastjsonschema.JsonSchemaValueException as exc:
+        message = _print_validation_fail_reason(exc, formats)
+        raise SPSDKErrorValidationFailed(f"Configuration validation failed: {message}") from exc
+
+
+def _get_validator(
+    validator_key: Optional[str],
+    schema: dict[str, Any],
+    formats: dict[str, Callable],
+) -> Callable:
+    """Retrieve or compile a fastjsonschema validator, using in-memory and disk caches.
+
+    The lookup order is:
+    1. In-memory ``_compiled_validators`` dict (keyed by ``validator_key``).
+    2. Disk cache — a pre-compiled bytecode file (keyed by the schema hash portion).
+    3. Fresh compilation via :func:`fastjsonschema.compile`.
+
+    The result is stored in both caches before returning.
+
+    :param validator_key: ``"{schema_hash}:{paths_hash}"`` string, or ``None`` to skip caching.
+    :param schema: Merged JSON schema to compile when a cache miss occurs.
+    :param formats: Custom format validators bound into the compiled validator.
+    :return: Callable validator function.
+    :raises TypeError: Raised by fastjsonschema for invalid schema types.
+    :raises fastjsonschema.JsonSchemaDefinitionException: Raised for invalid schema definitions.
+    """
+    if validator_key is not None and validator_key in _compiled_validators:
+        return _compiled_validators[validator_key]
+
+    schema_hash = validator_key.split(":")[0] if validator_key else None
+    validator: Optional[Callable] = None
+
+    if schema_hash is not None:
+        validator = _load_disk_validator(schema_hash, formats)
+
+    if validator is None:
+        if schema_hash is not None:
+            validator = _save_disk_validator(schema_hash, schema, formats)
+        if validator is None:
+            validator = fastjsonschema.compile(schema, formats=formats)
+
+    if validator_key is not None:
+        _compiled_validators[validator_key] = validator
+
+    return validator
+
+
 def check_config(
     config: dict[str, Any],
     schemas: list[dict[str, Any]],
@@ -453,42 +844,38 @@ def check_config(
 
     schema: dict[str, Any] = {}
     for sch in schemas:
-        always_merger.merge(schema, copy.deepcopy(sch))
-    validator = None
+        # deepmerge does not mutate the source; deepcopy is not needed here.
+        always_merger.merge(schema, sch)
     formats = always_merger.merge(custom_formatters, extra_formatters or {})
+
     # Check for unknown properties before validation
     if check_unknown_props and "properties" in schema:
         check_unknown_properties(config_to_check, schema)
 
-    try:
-        if ENABLE_DEBUG:
-            validator_code = fastjsonschema.compile_to_code(schema, formats=formats)
-            write_file(validator_code, "validator_file.py")
-            import json
+    validator_key, validation_key = _compute_check_config_keys(
+        schema, config_to_check, search_paths
+    )
 
-            for i, part_schema in enumerate(schemas):
-                write_file(json.dumps(part_schema, indent=2), f"part_schema_{i}.json")
-            write_file(json.dumps(config_to_check, indent=2), "config.json")
-            write_file(json.dumps(schema, indent=2), "merged_schema.json")
-        else:
-            validator = fastjsonschema.compile(schema, formats=formats)
+    if ENABLE_DEBUG:
+        _check_config_debug(schema, schemas, config_to_check, formats)
+        return
+
+    # Fast path: in-memory or disk cache — skip the compiled validator entirely.
+    if _is_validation_cached(validation_key):
+        return
+
+    try:
+        validator = _get_validator(validator_key, schema, formats)
     except (TypeError, fastjsonschema.JsonSchemaDefinitionException) as exc:
-        assert validator is not None, f"Invalid validation schema to check config: {str(exc)}"
+        raise SPSDKError(f"Invalid validation schema to check config: {str(exc)}") from exc
+
     try:
-        if ENABLE_DEBUG:
-            # pylint: disable=import-error,import-outside-toplevel
-            import sys
-
-            sys.path.insert(0, os.path.abspath(os.curdir))
-            import validator_file
-
-            validator_file.validate(config_to_check, formats)
-        else:
-            assert validator, "Validator is not defined"
-            validator(config_to_check)
+        validator(config_to_check)
     except fastjsonschema.JsonSchemaValueException as exc:
         message = _print_validation_fail_reason(exc, formats)
         raise SPSDKErrorValidationFailed(f"Configuration validation failed: {message}") from exc
+
+    _record_validation_passed(validation_key)
 
 
 class CommentedConfig:
@@ -559,7 +946,65 @@ class CommentedConfig:
         return ret
 
     @staticmethod
-    def get_property_optional_required(key: str, block: dict[str, Any]) -> PropertyRequired:
+    def _get_all_property_statuses(block: dict[str, Any]) -> dict[str, "PropertyRequired"]:
+        """Compute required/optional/conditional status for all properties in one pass.
+
+        This is a batch variant of :meth:`get_property_optional_required` that avoids O(n²)
+        cost when classifying every property in a large schema block.
+
+        :param block: JSON schema block containing property definitions and requirements.
+        :return: Mapping of property name → PropertyRequired status.
+        """
+        schema_kws = ["allOf", "anyOf", "oneOf", "if", "then", "else"]
+
+        def _find_required(d_in: dict[str, Any]) -> Optional[list[str]]:
+            if "required" in d_in:
+                return d_in["required"]
+            for d_v in d_in.values():
+                if isinstance(d_v, dict):
+                    ret = _find_required(d_v)
+                    if ret:
+                        return ret
+            return None
+
+        def _find_required_in_schema_kws(schema_node: Union[list, dict[str, Any]]) -> list[str]:
+            all_props: list[str] = []
+            if isinstance(schema_node, dict):
+                for k, v in schema_node.items():
+                    if k == "required":
+                        all_props.extend(v)
+                    elif k in schema_kws:
+                        all_props.extend(_find_required_in_schema_kws(v))
+            if isinstance(schema_node, list):
+                for item in schema_node:
+                    all_props.extend(_find_required_in_schema_kws(item))
+            return all_props
+
+        required_keys: set[str] = set(block.get("required", []))
+
+        conditionally_required: set[str] = set()
+        for val in block.values():
+            if isinstance(val, dict):
+                ret = _find_required(val)
+                if ret:
+                    conditionally_required.update(ret)
+
+        actual_kws = {k: v for k, v in block.items() if k in schema_kws}
+        conditionally_required.update(_find_required_in_schema_kws(actual_kws))
+
+        result: dict[str, PropertyRequired] = {}
+        properties: dict[str, Any] = block.get("properties", {})
+        for key in properties:
+            if key in required_keys:
+                result[key] = PropertyRequired.REQUIRED
+            elif key in conditionally_required:
+                result[key] = PropertyRequired.CONDITIONALLY_REQUIRED
+            else:
+                result[key] = PropertyRequired.OPTIONAL
+        return result
+
+    @staticmethod
+    def get_property_optional_required(key: str, block: dict[str, Any]) -> "PropertyRequired":
         """Determine if a configuration property is required, optional, or conditionally required.
 
         The method analyzes JSON schema blocks to classify property requirements by checking
@@ -659,6 +1104,7 @@ class CommentedConfig:
             raise SPSDKError("Block doesn't contain properties")
 
         cfg_m = CMap()
+        all_statuses = self._get_all_property_statuses(block)
         for key in self._get_schema_block_keys(block):
             # Skip the record in case that custom value key is defined,
             # but it has None value as a mark to not use this record
@@ -672,7 +1118,7 @@ class CommentedConfig:
                 raise SPSDKError(f"Cannot create the value for {key}")
 
             cfg_m[key] = value_to_add
-            required = self.get_property_optional_required(key, block).description
+            required = all_statuses.get(key, PropertyRequired.OPTIONAL).description
             if not required:
                 raise SPSDKError(f"Required property is not defined for {key}")
             if not val_p.get("no_yaml_comments", False):

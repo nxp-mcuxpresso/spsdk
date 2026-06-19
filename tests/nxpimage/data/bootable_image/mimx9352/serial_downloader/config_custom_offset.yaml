@@ -13,7 +13,7 @@ family: mimx9352
 # -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
 # Description: Revision of silicon. The 'latest' name, means most current revision.
 # Possible options: <a0, a1, latest>
-revision: latest
+revision: a0
 # ------------------------------------------===== Memory type [Required] =====------------------------------------------
 # Description: Specify type of memory used by bootable image description.
 memory_type: serial_downloader

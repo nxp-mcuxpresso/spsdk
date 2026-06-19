@@ -655,7 +655,7 @@ class RotSrkTableHab(RotBase):
         if isinstance(certificate, str):
             certificate = load_binary(certificate, search_paths)
         try:
-            return Certificate.parse(certificate)
+            return Certificate.parse(bytes(certificate))
         except SPSDKError as exc:
             raise SPSDKError("Unable to load certificate.") from exc
 

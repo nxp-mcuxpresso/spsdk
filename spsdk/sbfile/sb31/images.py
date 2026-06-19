@@ -411,6 +411,7 @@ class SecureBinary31Commands(BaseClass):
         db = get_db(family=family)
         self.data_chunk_length = db.get_int(self.FEATURE, "commands_block_length")
         self.variable_block_length = db.get_bool(self.FEATURE, "variable_block_length")
+        self.plain_commands = b""
 
     @staticmethod
     def _get_key_length(hash_type: EnumHashAlgorithm) -> int:
@@ -585,6 +586,9 @@ class SecureBinary31Commands(BaseClass):
                 cfg_commands.append(cmd.get_config(data_path))
 
             ret["commands"] = cfg_commands
+
+        if self.plain_commands:
+            write_file(self.plain_commands, os.path.join(data_path, "commands.bin"), mode="wb")
 
         return ret
 
@@ -832,6 +836,9 @@ class SecureBinary31Commands(BaseClass):
             # Move to next block
             offset = next_offset
 
+            if next_block_size == 0:
+                break
+
         # Sort blocks by number
         blocks.sort(key=lambda x: x[0])
 
@@ -875,6 +882,7 @@ class SecureBinary31Commands(BaseClass):
         if blocks:
             obj.final_hash = get_hash(blocks[0][1], hash_type)
 
+        obj.plain_commands = commands_data
         return obj
 
     def validate(self) -> None:

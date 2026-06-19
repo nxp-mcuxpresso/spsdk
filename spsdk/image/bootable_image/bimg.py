@@ -31,9 +31,9 @@ from spsdk.image.mem_type import MemoryType
 from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.binary_image import BinaryImage, BinaryPattern
 from spsdk.utils.config import Config
-from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.database import DatabaseManager, get_common_data_file_path, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
-from spsdk.utils.misc import align, value_to_int, write_file
+from spsdk.utils.misc import align, load_text, value_to_int, write_file
 from spsdk.utils.schema_validator import CommentedConfig
 from spsdk.utils.verifier import Verifier, VerifierResult
 
@@ -167,11 +167,10 @@ class BootableImage(FeatureBaseClass):
         if offset == 0:
             self._init_offset = 0
         else:
-            # Find the closest upper offset
+            # Find the closest upper offset; skip dynamic segments (full_image_offset < 0)
+            # whose position is not yet resolved and must not influence the min() result.
             upper_offsets = [
-                seg.full_image_offset
-                for seg in self._segments
-                if seg.full_image_offset >= offset or seg.full_image_offset < 0
+                seg.full_image_offset for seg in self._segments if seg.full_image_offset >= offset
             ]
             if not upper_offsets:
                 raise SPSDKValueError(
@@ -298,7 +297,49 @@ class BootableImage(FeatureBaseClass):
         """
         return all((x.BOOT_HEADER or len(x) == 0 for x in self.segments))
 
-    def _parse(self, binary: bytes) -> None:
+    def _filter_dek_map_for_segment(
+        self,
+        dek_map: Optional[dict[Optional[Union[str, int]], dict[Optional[int], str]]],
+        seg_ix: int,
+        segment: Segment,
+    ) -> Optional[dict[Optional[int], str]]:
+        """Filter DEK map to include only keys relevant to the current segment.
+
+        Extracts DEKs that apply to the specified segment, including:
+        - Global DEK (None key)
+        - Segment-specific DEK by index
+        - Segment-specific DEK by name
+
+        :param dek_map: Full DEK mapping from all segments
+        :param seg_ix: Current segment index
+        :param segment: Current segment object
+        :return: Filtered DEK map for the segment, or None if no DEKs apply
+        """
+        if not dek_map:
+            return None
+
+        segment_dek_map: dict[Optional[int], str] = {}
+
+        # Include global DEK (None key)
+        if None in dek_map and None in dek_map[None]:
+            segment_dek_map[None] = dek_map[None][None]
+
+        # Include segment-specific DEK by index
+        if seg_ix in dek_map:
+            segment_dek_map.update(dek_map[seg_ix])
+
+        # Include segment-specific DEK by name
+        if "_" + segment.NAME.label in dek_map:
+            segment_dek_map.update(dek_map["_" + segment.NAME.label])
+
+        # If no DEKs found for this segment, return None
+        return segment_dek_map if segment_dek_map else None
+
+    def _parse(
+        self,
+        binary: bytes,
+        dek_map: Optional[dict[Optional[Union[str, int]], dict[Optional[int], str]]] = None,
+    ) -> None:
         """Parse binary data into bootable image segments.
 
         Iterates through all non-excluded segments and attempts to parse the binary data
@@ -306,12 +347,16 @@ class BootableImage(FeatureBaseClass):
         with proper alignment and error handling for missing or invalid segments.
 
         :param binary: Binary data to parse into segments.
+        :param dek_map: Optional dictionary mapping segment identifier to container DEK map.
+                        {None: {None: dek}} for simple format (applies to all)
+                        {seg_id: {None: dek}} for segment-specific
+                        {seg_id: {cnt_id: dek}} for container-specific
         :raises SPSDKError: When input binary is insufficient for required boot header segments
-                           or when segment parsing fails.
+                        or when segment parsing fails.
         """
         try:
             prev_offset = prev_size = 0
-            for segment in [seg for seg in self._segments if not seg.excluded]:
+            for seg_ix, segment in enumerate([seg for seg in self._segments if not seg.excluded]):
                 offset = self.get_segment_offset(segment)
                 # cover the case with variable offset
                 if segment.full_image_offset < 0:
@@ -322,8 +367,12 @@ class BootableImage(FeatureBaseClass):
                 if len(binary) <= offset and segment.BOOT_HEADER:
                     raise SPSDKError("Insufficient length of input binary.")
                 logger.debug(f"Trying to parse segment {segment.NAME} at offset 0x{offset:08X}.")
+
+                # Filter DEK map for current segment
+                segment_dek_map = self._filter_dek_map_for_segment(dek_map, seg_ix, segment)
+
                 try:
-                    segment.parse_binary(binary[offset:])
+                    segment.parse_binary(binary[offset:], dek_map=segment_dek_map)
                     # set the actual offset, when segments are not contiguous
                     if segment.full_image_offset < 0 and start_offset != offset:
                         segment.full_image_offset = offset
@@ -344,6 +393,7 @@ class BootableImage(FeatureBaseClass):
         family: Optional[FamilyRevision] = None,
         mem_type: Optional[MemoryType] = None,
         no_errors: bool = True,
+        dek_map: Optional[dict[Optional[Union[str, int]], dict[Optional[int], str]]] = None,
     ) -> list[Self]:
         """Parse binary data into bootable image objects.
 
@@ -355,6 +405,10 @@ class BootableImage(FeatureBaseClass):
         :param family: Target chip family and revision for parsing.
         :param mem_type: Specific memory type to use, if None tries all supported types.
         :param no_errors: When True, validates parsed images and rejects any with errors.
+        :param dek_map: Optional dictionary mapping segment identifier to container DEK map.
+                        {None: {None: dek}} for simple format (applies to all)
+                        {seg_id: {None: dek}} for segment-specific
+                        {seg_id: {cnt_id: dek}} for container-specific
         :raises SPSDKValueError: When family parameter is not specified.
         :return: List of successfully parsed bootable image instances.
         """
@@ -373,7 +427,7 @@ class BootableImage(FeatureBaseClass):
             )
             try:
                 bimg = cls(family, memory_type)
-                bimg._parse(binary)
+                bimg._parse(binary, dek_map=dek_map)
                 if len(bimg.segments) == 0:
                     continue
                 if no_errors:
@@ -400,7 +454,7 @@ class BootableImage(FeatureBaseClass):
                     )
                     try:
                         bimg = cls(family, memory_type, init_offset)
-                        bimg._parse(binary)
+                        bimg._parse(binary, dek_map=dek_map)
                         if len(bimg.segments) == 0:
                             continue
                         if no_errors:
@@ -418,6 +472,7 @@ class BootableImage(FeatureBaseClass):
         binary: bytes,
         family: Optional[FamilyRevision] = None,
         mem_type: Optional[MemoryType] = None,
+        dek_map: Optional[dict[Optional[Union[str, int]], dict[Optional[int], str]]] = None,
     ) -> Self:
         """Parse binary data into a bootable image object.
 
@@ -428,10 +483,16 @@ class BootableImage(FeatureBaseClass):
         :param binary: Binary data of the bootable image to parse.
         :param family: Target chip family revision, auto-detected if not specified.
         :param mem_type: Specific memory type to use, auto-detected if not specified.
+        :param dek_map: Optional dictionary mapping segment identifier to container DEK map.
+                        {None: {None: dek}} for simple format (applies to all)
+                        {seg_id: {None: dek}} for segment-specific
+                        {seg_id: {cnt_id: dek}} for container-specific
         :raises SPSDKError: When binary parsing fails for all memory types.
         :return: Parsed bootable image object.
         """
-        bimg_instances = cls._parse_all(binary=binary, family=family, mem_type=mem_type)
+        bimg_instances = cls._parse_all(
+            binary=binary, family=family, mem_type=mem_type, dek_map=dek_map
+        )
 
         if not bimg_instances:
             raise SPSDKError(
@@ -517,6 +578,7 @@ class BootableImage(FeatureBaseClass):
             sch_cfg["memory_type"],
             sch_cfg["output_definition"],
             sch_cfg["init_offset"],
+            sch_cfg["image_pattern"],
         ]
         schemas.append(sch_cfg["post_export"])
         for segment in bimg._segments:
@@ -604,6 +666,9 @@ class BootableImage(FeatureBaseClass):
         init_offset = cls._init_offset_from_cfg(config)
 
         bimg = cls(family=family, mem_type=mem_type, init_offset=init_offset)
+
+        if "image_pattern" in config:
+            bimg.image_pattern = config.get_str("image_pattern")
 
         for segment in bimg._segments:
             try:
@@ -948,6 +1013,7 @@ class BootableImage(FeatureBaseClass):
         output_dir: str,
         board: Optional[str] = None,
         input_dir: Optional[str] = None,
+        sign: bool = False,
     ) -> list[str]:
         """Generate configuration templates based on template definition.
 
@@ -959,6 +1025,7 @@ class BootableImage(FeatureBaseClass):
         :param output_dir: Directory where template files will be created.
         :param board: Optional board name to use board-specific filenames.
         :param input_dir: Optional input directory path to prepend to filenames.
+        :param sign: When True, add signing fields and create a keys/ folder.
         :raises SPSDKError: When template generation fails.
         :return: List of generated file paths.
         """
@@ -1018,6 +1085,7 @@ class BootableImage(FeatureBaseClass):
                         container_config=container_config,
                         board_filenames=board_filenames,
                         input_dir=input_dir,
+                        sign=sign,
                     )
 
                     # Extract schemas and image names for later use
@@ -1081,6 +1149,15 @@ class BootableImage(FeatureBaseClass):
         write_file(bimg_config, bimg_file)
         generated_files.append(bimg_file)
 
+        # Create keys/ folder with README when signing is requested
+        if sign:
+            keys_dir = os.path.join(output_dir, "keys")
+            os.makedirs(keys_dir, exist_ok=True)
+            keys_readme = load_text(get_common_data_file_path("keys_readme_template.md"))
+            keys_readme_file = os.path.join(keys_dir, "README.md")
+            write_file(keys_readme, keys_readme_file)
+            generated_files.append(keys_readme_file)
+
         return generated_files
 
     @classmethod
@@ -1136,3 +1213,27 @@ class BootableImage(FeatureBaseClass):
         ]
 
         return "\n".join(header_lines) + template
+
+    def info(self) -> str:
+        """Get information about the bootable image in human-readable format.
+
+        :return: Formatted string with bootable image information.
+        """
+        output_lines = []
+        output_lines.append(f"\nBootable Image Information for {self.family}")
+        output_lines.append(f"Memory Type: {self.mem_type.description}")
+        output_lines.append(f"Init Offset: 0x{self.init_offset:08X}")
+        output_lines.append(f"Total Size: {len(self)} bytes")
+        output_lines.append(f"Header Size: {self.header_len()} bytes")
+        output_lines.append(f"\nSegments ({len(self.segments)} present):\n")
+
+        for ix, segment in enumerate(self._segments):
+            try:
+                actual_offset = self.get_segment_offset(segment)
+                output_lines.append(segment.info(ix=ix, actual_offset=actual_offset))
+            except SPSDKError:
+                # Segment is excluded or offset cannot be computed
+                output_lines.append(segment.info(ix=ix))
+            output_lines.append("")  # Empty line between segments
+
+        return "\n".join(output_lines)

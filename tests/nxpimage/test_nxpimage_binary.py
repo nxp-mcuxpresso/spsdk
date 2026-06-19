@@ -13,6 +13,7 @@ padding, alignment, and special handling conditions for empty binaries.
 """
 
 import filecmp
+import logging
 import os
 import struct
 from typing import Any, Optional
@@ -631,6 +632,27 @@ def test_nxpimage_binary_convert_split_image(
         cli_runner.invoke(nxpimage.main, cmd.split())
         for output in output_files:
             os.path.isfile(output)
+
+
+def test_nxpimage_binary_convert_warns_on_trimmed_base_offset(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str, caplog: Any
+) -> None:
+    """Test converter warning when trimming pre-image offset changes base address.
+
+    :param cli_runner: CLI test runner for invoking command line interface.
+    :param tmpdir: Temporary directory path for test output files.
+    :param data_dir: Base directory containing test data files.
+    :param caplog: Pytest fixture for capturing log messages.
+    """
+    with use_working_directory(os.path.join(data_dir, "utils", "binary")):
+        caplog.set_level(logging.WARNING)
+        output = os.path.join(tmpdir, "output.bin")
+        cmd = f"utils binary-image convert -i two_segments_offset.srec -f BIN -o {output}"
+        cli_runner.invoke(nxpimage.main, cmd.split())
+
+        assert os.path.isfile(output)
+        assert "was trimmed during conversion" in caplog.text
+        assert "-p/--keep-padding" in caplog.text
 
 
 def test_empty_binary_conditions_for_special_handling() -> None:

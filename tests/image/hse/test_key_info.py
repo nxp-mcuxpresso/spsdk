@@ -431,3 +431,81 @@ def test_key_handle_predefined_constants() -> None:
     assert key_handle.catalog_id == KeyCatalogId.ROM
     assert key_handle.group_idx == 1
     assert key_handle.slot_idx == 0
+
+
+def test_unsupported_key_types_not_in_schema_for_hse_b() -> None:
+    """Test that DH, SIPHASH and *_PUB_EXT key types are rejected for HSE-B devices.
+
+    HSE-B firmware does not support DH, SIPHASH or application-memory (*_PUB_EXT)
+    key services. These must be excluded from the schema for HSE-B families
+    (e.g. mcxe315, mcxe31b).
+    """
+    from spsdk.exceptions import SPSDKError
+    from spsdk.utils.schema_validator import check_config
+
+    family = FamilyRevision("mcxe315")
+    schemas = KeyInfo.get_validation_schemas(family)
+
+    base_config = {
+        "family": family.name,
+        "revision": "a0",
+        "output": "k.bin",
+        "keyBitLen": 256,
+    }
+
+    # All of these must be rejected for HSE-B
+    for key_type in ("DH_PAIR", "DH_PUB", "SIPHASH", "ECC_PUB_EXT", "RSA_PUB_EXT"):
+        with pytest.raises(SPSDKError, match="keyType must be one of"):
+            check_config({**base_config, "keyType": key_type}, schemas)
+
+    # AES must still be accepted
+    check_config({**base_config, "keyType": "AES"}, schemas)
+
+
+def test_rsa_pub_exponent_size_max_hseb() -> None:
+    """Test that pubExponentSize is limited to 8 bytes for HSE-B devices (e.g. mcxe31b).
+
+    HSE-B supports max 8 bytes for RSA public exponent size, while HSE-H/M support 16 bytes.
+    Values exceeding the limit must be rejected by schema validation and load_from_config.
+    """
+    from spsdk.exceptions import SPSDKError, SPSDKValueError
+    from spsdk.utils.schema_validator import check_config
+
+    family = FamilyRevision("mcxe31b")
+
+    base_config = {
+        "family": "mcxe31b",
+        "revision": "a0",
+        "output": "k.bin",
+        "keyType": "RSA_PAIR",
+        "keyBitLen": 2048,
+        "specificData": {"pubExponentSize": 3},
+    }
+
+    # Valid: 3 bytes (common value for F4 exponent)
+    check_config(base_config, KeyInfo.get_validation_schemas(family))
+
+    # Valid: exactly at the limit (8 bytes)
+    check_config(
+        {**base_config, "specificData": {"pubExponentSize": 8}},
+        KeyInfo.get_validation_schemas(family),
+    )
+
+    # Invalid: 9 bytes exceeds HSE-B max of 8
+    with pytest.raises(SPSDKError):
+        check_config(
+            {**base_config, "specificData": {"pubExponentSize": 9}},
+            KeyInfo.get_validation_schemas(family),
+        )
+
+    # Invalid: 16 bytes (HSE-H/M max) should be rejected for HSE-B
+    with pytest.raises(SPSDKError):
+        check_config(
+            {**base_config, "specificData": {"pubExponentSize": 16}},
+            KeyInfo.get_validation_schemas(family),
+        )
+
+    # load_from_config must also raise for oversized exponent
+    cfg = Config({**base_config, "specificData": {"pubExponentSize": 16}})
+    with pytest.raises(SPSDKValueError, match="pubExponentSize"):
+        KeyInfo.load_from_config(cfg)

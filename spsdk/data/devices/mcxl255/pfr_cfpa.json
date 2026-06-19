@@ -1,0 +1,119 @@
+{
+    "cpu": "mcxl255",
+    "groups": [
+        {
+            "group": {
+                "name": "Configuration",
+                "description": "Configuration"
+            },
+            "registers": [
+                {
+                    "id": "field000",
+                    "name": "nonSecureSwVersion",
+                    "description": "Non-Secure Software version. This monotonic counter field can be used to track the SW version of non-secure partition",
+                    "offset_int": "0x0000",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field004",
+                    "name": "secureSwVersion",
+                    "description": "Secure Software version. This monotonic counter field can be used to track the SW version of secure partition",
+                    "offset_int": "0x0004",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field008",
+                    "name": "keyRevokeMask",
+                    "description": "SECBOOT flags",
+                    "offset_int": "0x0008",
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "field008-bit0",
+                            "name": "RoTK0_EN",
+                            "description": "RoT Key 0 enable. Determines if ROTK0 can be used during secure boot",
+                            "values": [
+                                {
+                                    "name": "ENABLED",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "KEY_REVOKED",
+                                    "value": 1,
+                                    "description": "Key revoked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field008-bit1",
+                            "name": "RoTK1_EN",
+                            "description": "RoT Key 0 enable. Determines if ROTK1 can be used during secure boot",
+                            "values": [
+                                {
+                                    "name": "ENABLED",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "KEY_REVOKED",
+                                    "value": 1,
+                                    "description": "Key revoked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field008-bit2",
+                            "name": "RoTK2_EN",
+                            "description": "RoT Key 0 enable. Determines if ROTK2 can be used during secure boot",
+                            "values": [
+                                {
+                                    "name": "ENABLED",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "KEY_REVOKED",
+                                    "value": 1,
+                                    "description": "Key revoked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "field008-bit3",
+                            "name": "RoTK3_EN",
+                            "description": "RoT Key 0 enable. Determines if ROTK3 can be used during secure boot",
+                            "values": [
+                                {
+                                    "name": "ENABLED",
+                                    "value": 0,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "KEY_REVOKED",
+                                    "value": 1,
+                                    "description": "Key revoked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 28
+                        }
+                    ]
+                },
+                {
+                    "id": "Reserved000C",
+                    "name": "Reserved 0x000C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x000C",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                }
+            ]
+        }
+    ]
+}

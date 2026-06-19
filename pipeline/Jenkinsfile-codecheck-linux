@@ -12,6 +12,10 @@ pipeline {
         timeout(time: 1, unit: 'HOURS', activity: true)   // timeout on whole pipeline job
     }
 
+    environment {
+        PYTEST_ADDOPTS = "--no-cov"
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -30,12 +34,12 @@ pipeline {
                 stage('Codecheck') {
                     steps {
                         withVenv(
-                            'tox --recreate -e py310,py313 -- --info-check gitcov'
+                            'tox --recreate -e py310,py313'
                         )
                     }
                 }
                 stage('Docs Build') {
-                    agent { label 'linux-spsdk' }
+                    agent { label 'linux-spsdk || mac' }
                     steps {
                         checkout([
                             $class: 'GitSCM',
@@ -46,7 +50,7 @@ pipeline {
                             userRemoteConfigs: scm.userRemoteConfigs
                         ])
                         withVenv(
-                            'uv pip install ".[all]" -r docs/requirements.txt && cd docs && make html'
+                            'uv pip install ".[all]" -r docs/requirements.txt && cd docs && make html SPHINXOPTS="-W --keep-going"'
                         )
                     }
                 }

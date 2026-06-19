@@ -838,6 +838,7 @@ def test_smr_entry_parse_missing_inst_auth_tag(family: FamilyRevision) -> None:
     data += b"\x00" * 4  # Key handle
     data += b"\x80\x00\x00\x00"  # Auth scheme header (ECDSA)
     data += b"\x04\x00\x00\x00"  # Auth scheme data (SHA256)
+    data += b"\x00" * 4  # Auth scheme union padding
     # Missing inst_auth_tag
 
     with pytest.raises(
@@ -853,6 +854,7 @@ def test_smr_entry_parse_missing_smr_decrypt(family: FamilyRevision) -> None:
     data += b"\x00" * 4  # Key handle
     data += b"\x80\x00\x00\x00"  # Auth scheme header (ECDSA)
     data += b"\x04\x00\x00\x00"  # Auth scheme data (SHA256)
+    data += b"\x00" * 4  # Auth scheme union padding
     data += b"\x00" * 8  # inst_auth_tag
     # Missing smr_decrypt
 
@@ -867,6 +869,7 @@ def test_smr_entry_parse_missing_version_offset(family: FamilyRevision) -> None:
     data += b"\x00" * 4  # Key handle
     data += b"\x80\x00\x00\x00"  # Auth scheme header (ECDSA)
     data += b"\x04\x00\x00\x00"  # Auth scheme data (SHA256)
+    data += b"\x00" * 4  # Auth scheme union padding
     data += b"\x00" * 8  # inst_auth_tag
     data += b"\x00" * 16  # smr_decrypt
     # Missing version_offset
@@ -961,12 +964,12 @@ def test_smr_entry_binary_size_consistency(family: FamilyRevision, key_handle: K
     # Expected size:
     # 20 bytes (basic fields)
     # 4 bytes (key handle)
-    # 8 bytes (auth scheme: 4 header + 4 ECDSA data)
+    # 12 bytes (auth scheme union)
     # 8 bytes (inst_auth_tag)
     # 16 bytes (smr_decrypt)
     # 4 bytes (version_offset)
-    # Total: 60 bytes
-    expected_size = 60
+    # Total: 64 bytes
+    expected_size = 64
 
     assert len(exported_data) == expected_size
 

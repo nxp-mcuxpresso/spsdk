@@ -130,6 +130,7 @@ features:
           fcb: 0x0400
           hab_container: 0x1000
 
+        image_pattern: ones
   # ======== Memory configuration ========
   memcfg:
     peripherals:

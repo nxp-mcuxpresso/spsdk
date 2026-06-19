@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -762,10 +762,10 @@ def test_load_cmd_invalid_crc() -> None:
     cmd = CmdLoad(address=100, data=b"\x00" * 100)
     valid_data = cmd.export()
     invalid_data = valid_data
-    invalid_data = bytearray(invalid_data)
-    invalid_data[17:112] = bytearray(112)
+    invalid_data_mutable = bytearray(invalid_data)
+    invalid_data_mutable[17:112] = bytearray(112)
     with pytest.raises(SPSDKError):
-        cmd.parse(invalid_data)
+        cmd.parse(bytes(invalid_data_mutable))
 
 
 def test_invalid_cmd_header() -> None:

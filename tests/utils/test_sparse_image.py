@@ -13,6 +13,7 @@ import struct
 import pytest
 
 from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKValueError
+from spsdk.utils.binary_image import BinaryImage, BinaryPattern
 from spsdk.utils.sparse_image import SparseChunk, SparseChunkType, SparseImage, SparseImageHeader
 
 
@@ -902,3 +903,64 @@ def test_sparse_image_crc_only_chunk_checksum() -> None:
 
     # Validation should work with CRC32 chunk
     assert sparse.validate_crc() is True
+
+
+def test_export_sparse_subimage_zeros_become_fill() -> None:
+    """Zero-filled blocks inside sub-images must be FILL, not DONT_CARE.
+
+    A BinaryImage with sub-images has structure: blocks covered by a sub-image carry
+    explicitly placed content (even if it happens to be zero) and must be written to flash
+    as FILL(0x00000000). Only root-level gap blocks between sub-images may be DONT_CARE.
+    """
+    block_size = 4096
+
+    # Layout:
+    #   offset 0x0000 – 0x0FFF : sub-image A (non-repeating RAW data)
+    #   offset 0x1000 – 0x1FFF : gap (root pattern = zeros → DONT_CARE)
+    #   offset 0x2000 – 0x2FFF : sub-image B (explicit zeros → FILL)
+    root = BinaryImage(
+        name="root",
+        size=3 * block_size,
+        offset=0,
+        pattern=BinaryPattern("zeros"),
+    )
+    # Non-repeating bytes so each 4-byte group differs → detected as RAW (not FILL)
+    raw_data = bytes(i & 0xFF for i in range(block_size))
+    sub_a = BinaryImage(name="sub_a", binary=raw_data, offset=0)
+    sub_b = BinaryImage(
+        name="sub_b", size=block_size, offset=2 * block_size, pattern=BinaryPattern("zeros")
+    )
+    root.add_image(sub_a)
+    root.add_image(sub_b)
+    root.sparse_block_size = block_size
+
+    sparse = root.export_sparse()
+
+    data_chunks = [c for c in sparse.chunks if c.chunk_type != SparseChunkType.CRC32]
+    assert len(data_chunks) == 3, f"Expected 3 chunks, got: {[c.chunk_type for c in data_chunks]}"
+    assert data_chunks[0].chunk_type == SparseChunkType.RAW, "sub_a block should be RAW"
+    assert data_chunks[1].chunk_type == SparseChunkType.DONT_CARE, "gap block should be DONT_CARE"
+    assert data_chunks[2].chunk_type == SparseChunkType.FILL, "sub_b zero block should be FILL"
+    assert data_chunks[2].data == b"\x00\x00\x00\x00", "FILL value should be 0x00000000"
+
+
+def test_export_sparse_flat_subimage_zeros_become_fill() -> None:
+    """A BinaryImage loaded as a single segment (no gaps) encodes zeros as FILL.
+
+    When a binary file is loaded it becomes a BinaryImage wrapping a single "Segment 0"
+    sub-image that covers the entire address range.  There are no gaps, so every zero
+    block is explicit content that must be written to flash as FILL(0x00000000).
+    """
+    block_size = 4096
+    # Simulate a flat binary loaded as Segment 0
+    segment = BinaryImage(name="Segment 0", binary=b"\x00" * block_size, offset=0)
+    root = BinaryImage(name="flat", size=block_size, offset=0)
+    root.add_image(segment)
+    root.sparse_block_size = block_size
+
+    sparse = root.export_sparse()
+
+    data_chunks = [c for c in sparse.chunks if c.chunk_type != SparseChunkType.CRC32]
+    assert len(data_chunks) == 1
+    # Segment covers the whole image → no gaps → zeros must be FILL
+    assert data_chunks[0].chunk_type == SparseChunkType.FILL

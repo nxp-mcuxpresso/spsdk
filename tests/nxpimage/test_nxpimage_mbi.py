@@ -92,6 +92,8 @@ mbi_basic_tests = [
     ("mb_xip_plain_lc.yaml", "mcxe31b"),
     ("mb_xip_plain_lc_with_addr.yaml", "mcxe31b"),
     ("mb_xip_crc.yaml", "mcxn556s"),
+    ("mb_xip_plain.yaml", "mcxa577"),
+    ("mb_xip_crc.yaml", "mcxa577"),
     ("mb_misr.yaml", "mcxc151"),
 ]
 
@@ -940,6 +942,19 @@ def test_nxpimage_mbi_signed_mcxe31(
         pytest.param(
             "mb_xip_signed_ecc256_mldsa65.yaml",
             "mcxn556s",
+            "SHA384",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
+            ),
+        ),
+        pytest.param(
+            "mb_xip_signed_ecc384.yaml",
+            "mcxa577",
+            "SHA384",
+        ),
+        pytest.param(
+            "mb_xip_signed_ecc384_mldsa87.yaml",
+            "mcxa577",
             "SHA384",
             marks=pytest.mark.skipif(
                 not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"

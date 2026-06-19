@@ -253,10 +253,11 @@ def store_key(file_name: str, key: bytes, reverse: bool = False) -> None:
     """
     write_file(key.hex(), file_name + ".txt", mode="w")
     if reverse:  # reverse binary order
-        key = bytearray(key)
-        key.reverse()
-        key = bytes(key)
-    write_file(key, file_name + ".bin", mode="wb")
+        key_mutable = bytearray(key)
+        key_mutable.reverse()
+        write_file(key_mutable, file_name + ".bin", mode="wb")
+    else:
+        write_file(key, file_name + ".bin", mode="wb")
 
 
 def filepath_from_config(

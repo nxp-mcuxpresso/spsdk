@@ -20,7 +20,7 @@ info:
       external: false
     sram:
       start_int: "0x20000000"
-      size_int: "0x40000"
+      size_int: "0x80000"
       external: false
       non_xip_type: int_ram
   isp:
@@ -51,6 +51,13 @@ features:
     containers_max_cnt: 1
     image_types_mapping: {}
     certificate_type: 32bit_fuse_version # The certificate with full 32-bit fuse version support
+    fuses_0:
+      _name: "AHAB SRKH"
+      rkth: "__srk_hash0" # SRK hash fuse
+    pfr_hash_1:
+      _name: "AHAB PQC SRKH"
+      sub_feature: cmpa
+      grouped_register: cmpa_pqc_rotkh
     allow_empty_hash: False # Some chips allow empty image hash in OEM Open LC
     core_ids:
       CORTEX_M33: [1, "cortex-m33", "Cortex M33 - Boot core"]
@@ -59,6 +66,10 @@ features:
     extra_containers: []
     image_hash_types: [sha384] # Supported image hash types
     iae_has_signed_offsets: True # There is a special cases when the Container is after images
+    signature_algorithms:
+      __replace__: true
+      ECDSA: [0x27, "ECDSA", "ECDSA signature algorithm"]
+      ML_DSA: [0xD2, "ML-DSA", "ML-DSA PQC algorithm"]
 
   # ======== DAT section ========
   dat:

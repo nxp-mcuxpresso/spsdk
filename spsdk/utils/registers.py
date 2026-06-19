@@ -743,7 +743,9 @@ class RegsBitField:
         for enum in self._enums:
             if enum.name.upper() == enum_name:
                 return enum.get_value_int()
-            if enum_name in enum.deprecated_names:
+            if any(
+                enum_name == deprecated_name.upper() for deprecated_name in enum.deprecated_names
+            ):
                 logger.warning(
                     f"Using deprecated enum name: {enum_name}, "
                     f"updated configuration to use: {enum.name}"
@@ -1463,6 +1465,8 @@ class _RegistersBase(Generic[RegisterClassT]):
         :raises SPSDKError: When database loading fails and do_not_raise_exception is False.
         """
         self._registers: list[RegisterClassT] = []
+        # Index for O(1) lookup by name and UID (both stored upper-cased).
+        self._reg_index: dict[str, RegisterClassT] = {}
         self.family = family
         self.base_endianness = base_endianness
         self.feature = feature
@@ -1564,35 +1568,42 @@ class _RegistersBase(Generic[RegisterClassT]):
         :return: Instance of the found register.
         :raises SPSDKRegsErrorRegisterNotFound: The register doesn't exist in loaded registers.
         """
+        key = name.upper()
 
-        def check_reg(reg: RegisterClassT) -> bool:
-            """Check if register matches the given name.
-
-            Compares the provided name against register's name, UID, and deprecated names.
-            Issues a warning if a deprecated name is used.
-
-            :param reg: Register object to check against the name.
-            :return: True if register matches the name, False otherwise.
-            """
-            if name.upper() == reg.name.upper():
-                return True
-            if name.upper() == reg.uid.upper():
-                return True
-            if name.upper() in reg.deprecated_names:
+        # O(1) index lookup — covers top-level registers (and lazily-indexed sub-registers)
+        reg = self._reg_index.get(key)
+        if reg is not None:
+            if key not in (reg.name.upper(), reg.uid.upper()):
                 logger.warning(
                     f"Register name is deprecated, use the new name: {reg.name}."
                     "Deprecated names will be removed in the next major version of SPSDK."
                 )
-                return True
-            return False
+            return reg
 
-        for reg in self._registers:
-            if check_reg(reg):
-                return reg
-            if include_group_regs and reg.has_group_registers():
-                for sub_reg in reg.sub_regs:
-                    if check_reg(sub_reg):
-                        return sub_reg
+        # Not in index: fall back to searching sub-registers if requested, then lazily cache them
+        if include_group_regs:
+            for parent_reg in self._registers:
+                if parent_reg.has_group_registers():
+                    for sub_reg in parent_reg.sub_regs:
+                        # Populate index for every sub_reg encountered (lazy bulk indexing)
+                        sub_reg_name_key = sub_reg.name.upper()
+                        sub_reg_uid_key = sub_reg.uid.upper()
+                        if sub_reg_name_key not in self._reg_index:
+                            self._reg_index[sub_reg_name_key] = sub_reg  # type: ignore[assignment]
+                        if sub_reg_uid_key not in self._reg_index:
+                            self._reg_index[sub_reg_uid_key] = sub_reg  # type: ignore[assignment]
+                        for dn in sub_reg.deprecated_names:
+                            if dn.upper() not in self._reg_index:
+                                self._reg_index[dn.upper()] = sub_reg  # type: ignore[assignment]
+                        if key in (sub_reg_name_key, sub_reg_uid_key) or key in [
+                            dn.upper() for dn in sub_reg.deprecated_names
+                        ]:
+                            if key not in (sub_reg_name_key, sub_reg_uid_key):
+                                logger.warning(
+                                    f"Register name is deprecated, use the new name: {sub_reg.name}."
+                                    "Deprecated names will be removed in the next major version of SPSDK."
+                                )
+                            return sub_reg  # type: ignore[return-value]
 
         raise SPSDKRegsErrorRegisterNotFound(
             f"The register '{name}' does not exist in the loaded register set for {self.family} device. "
@@ -1650,6 +1661,10 @@ class _RegistersBase(Generic[RegisterClassT]):
         # update base endianness for all registers in group
         reg.base_endianness = self.base_endianness
         self._registers.append(reg)
+        self._reg_index[reg.name.upper()] = reg
+        self._reg_index[reg.uid.upper()] = reg
+        for dn in reg.deprecated_names:
+            self._reg_index[dn.upper()] = reg
 
     def remove_registers(self) -> None:
         """Remove all registers.
@@ -1658,6 +1673,7 @@ class _RegistersBase(Generic[RegisterClassT]):
         effectively resetting the register container to an empty state.
         """
         self._registers.clear()
+        self._reg_index.clear()
 
     def remove_register(self, name: str) -> None:
         """Remove a register from the list.
@@ -1665,7 +1681,12 @@ class _RegistersBase(Generic[RegisterClassT]):
         :param name: Name of the register to remove.
         :raises SPSDKValueError: If register with given name is not found.
         """
-        self._registers.remove(self.find_reg(name, True))
+        reg = self.find_reg(name, True)
+        self._registers.remove(reg)
+        # Remove all index entries that point to this register
+        keys_to_remove = [k for k, v in self._reg_index.items() if v is reg]
+        for k in keys_to_remove:
+            del self._reg_index[k]
 
     def get_registers(
         self,
@@ -1760,13 +1781,19 @@ class _RegistersBase(Generic[RegisterClassT]):
         """
         image = BinaryImage(self.family.name, size=size, pattern=pattern)
         for reg in self._registers:
+            if reg.has_group_registers():
+                data = bytes()
+                for sub_reg in reg.sub_regs:
+                    data += sub_reg.get_bytes_value(raw=True)
+            else:
+                data = reg.get_bytes_value(raw=True)
             image.add_image(
                 BinaryImage(
                     reg.name,
                     reg.width // 8,
                     offset=reg.offset,
                     description=reg.description,
-                    binary=reg.get_bytes_value(raw=True),
+                    binary=data,
                 )
             )
 
@@ -1799,8 +1826,16 @@ class _RegistersBase(Generic[RegisterClassT]):
             if bin_len < reg.offset + reg.width // 8:
                 logger.debug(f"Parsing of binary block ends at {reg.name}")
                 break
-            binary_value = binary[reg.offset : reg.offset + reg.width // 8]
-            reg.set_value(int.from_bytes(binary_value, self.base_endianness.value), raw=True)
+            if reg.has_group_registers():
+                # For group registers, the value is determined by concatenating sub-register values
+                for sub_reg in reg.sub_regs:
+                    binary_value = binary[sub_reg.offset : sub_reg.offset + sub_reg.width // 8]
+                    sub_reg.set_value(
+                        int.from_bytes(binary_value, self.base_endianness.value), raw=True
+                    )
+            else:
+                binary_value = binary[reg.offset : reg.offset + reg.width // 8]
+                reg.set_value(int.from_bytes(binary_value, self.base_endianness.value), raw=True)
 
     def get_base_offset(self) -> int:
         """Get the minimal offset from all registers in the collection.

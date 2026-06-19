@@ -92,7 +92,6 @@ loadCFPA: >2
     - load:
         address: {address:#_x}
         file: cfpa.bin
-
 writeIFR: >2
     # Write IFR (PFR) data
     - writeIFR:

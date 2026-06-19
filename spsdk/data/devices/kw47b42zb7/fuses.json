@@ -1,5 +1,5 @@
 {
-    "cpu": "KW47B42ZB7",
+    "cpu": "kw47b42zb7",
     "groups": [
         {
             "group": {
@@ -210,7 +210,7 @@
                 {
                     "id": "fuse11",
                     "name": "DBG_EN_LOCK",
-                    "description": "Debug Enable Lock. To increase the flexibility of the debug controller, an option to enable the debug ports via OEM software can be done by default setting of ‘DBG_EN_LOCK’ at 0. The SMSCM[DBGEN] and SMSCM[DBGEN_B] registers will not be write-locked, meaning SW can allow specified debug ports to be opened without the challenge-response scheme. It is the responsibility of the OEM’s application to handle these registers carefully. Since this relies solely on OEM’s SW protections it reduces the overall security of the system. If this feature is not required, it is strongly recommended to burn the ‘DBG_EN_LOCK’ to 1 which disables this feature. For production lifecycles (OEM-Closed and OEM-Locked), this feature is only available in OEM-Closed. In OEM-Locked, the debug access registers are write-locked regardless of the DBG_EN_LOCK fuse value.",
+                    "description": "Debug Enable Lock. To increase the flexibility of the debug controller, an option to enable the debug ports via OEM software can be done by default setting of 'DBG_EN_LOCK' at 0. The SMSCM[DBGEN] and SMSCM[DBGEN_B] registers will not be write-locked, meaning SW can allow specified debug ports to be opened without the challenge-response scheme. It is the responsibility of the OEM's application to handle these registers carefully. Since this relies solely on OEM's SW protections it reduces the overall security of the system. If this feature is not required, it is strongly recommended to burn the 'DBG_EN_LOCK' to 1 which disables this feature. For production lifecycles (OEM-Closed and OEM-Locked), this feature is only available in OEM-Closed. In OEM-Locked, the debug access registers are write-locked regardless of the DBG_EN_LOCK fuse value.",
                     "index_int": "0x000B",
                     "reg_width": 8,
                     "bitfields": [
@@ -468,7 +468,7 @@
                     "name": "CUST_PROD_OEMFW_AUTH_PUK",
                     "description": "The RoTKTH for P-256 keys will be 256 bits in length, write as-is. The RoTKTH for P-384 keys will be 384 bits in length, users can truncate the value prior to writing the fuse or write it as is and will be truncated automatically.",
                     "index_int": "0x001F",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse5",
                         "write_lock_int": "0x0001"
@@ -481,7 +481,7 @@
                     "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
                     "index_int": "0x0020",
                     "access": "WO",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse6",
                         "write_lock_int": "0x0001"
@@ -501,7 +501,7 @@
                     "name": "DCFG_CC_SOCU_L1",
                     "description": "Debug authentication configuration for level 1 customer.\nCombinations of PIN and DFLT bits and resulting restriction level:\n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product.\n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate.\n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.\n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
                     "index_int": "0x0022",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse8",
                         "write_lock_int": "0x0001"
@@ -887,7 +887,7 @@
                     "name": "DCFG_CC_SOCU_L2",
                     "description": "Debug authentication configuration for level 2 customer.\nCombinations of PIN and DFLT bits and resulting restriction level:\n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product.\n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate.\n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.\n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
                     "index_int": "0x0023",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "write_lock_int": "0x0001"

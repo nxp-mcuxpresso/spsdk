@@ -24,6 +24,7 @@ import click
 import colorama
 from click_command_tree import _build_command_tree, _CommandWrapper
 
+from spsdk import SPSDK_LOG_LEVEL_TRACE
 from spsdk import __version__ as spsdk_version
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.interface_helper import load_interface_config
@@ -71,13 +72,12 @@ class FamilyChoice(click.Choice):
         self.all_families = choices
         super().__init__(choices=sorted(list(set(x.name for x in choices))), case_sensitive=False)
 
-    def to_info_dict(self) -> dict[str, Any]:
-        """Just prepare the dict with base info."""
-        info_dict = super().to_info_dict()
-        info_dict["choices"] = self.choices
+    def to_info_dict(self) -> dict[str, Any]:  # type: ignore[override]
+        """Prepare base Click choice metadata enriched with SPSDK-specific predecessor aliases."""
+        # Keep one extra key for SPSDK tooling while preserving Click's default keys.
+        info_dict = cast(dict[str, Any], super().to_info_dict())
         if self.predecessor_choices:
             info_dict["predecessor_choices"] = self.predecessor_choices
-        info_dict["case_sensitive"] = self.case_sensitive
         return info_dict
 
     def get_metavar(self, param: click.Parameter, *args: Any, **kwargs: Any) -> str:
@@ -487,6 +487,13 @@ def spsdk_apps_common_options(options: FC) -> FC:
     """
     options = click.help_option("--help")(options)
     options = click.version_option(spsdk_version, "--version")(options)
+    options = click.option(
+        "-vvv",
+        "--trace",
+        "log_level",
+        flag_value=SPSDK_LOG_LEVEL_TRACE,
+        help="Display raw communication data (bytes, packets).",
+    )(options)
     options = click.option(
         "-vv",
         "--debug",
@@ -986,12 +993,18 @@ def spsdk_mboot_interface(
                 "plugin": plugin,
                 "timeout": timeout,
             }
+            # Install logger with user-requested level before interface scan so
+            # that ping failures and connection attempts are properly logged.
+            spsdk_logger.install(level=kwargs.get("log_level") or logging.WARNING)
             try:
                 interface_params = load_interface_config(cli_params)
                 interface_cls = MbootProtocolBase.get_interface_class(interface_params.IDENTIFIER)
                 interface = interface_cls.scan_single(**interface_params.get_scan_args())
                 kwargs["interface"] = interface
-            except SPSDKAppError:
+            except SPSDKAppError as e:
+                logger.debug(
+                    f"Interface scan failed: {e}"
+                )  # pylint: disable=logging-fstring-interpolation
                 if required:
                     raise
                 kwargs["interface"] = None

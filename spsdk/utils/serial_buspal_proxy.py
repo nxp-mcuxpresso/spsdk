@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,14 +12,14 @@ to support Buspal communication protocols including I2C and SPI modes for
 NXP MCU interactions.
 """
 
-import logging
 from typing import Optional, Type  # pylint: disable=unused-import  # Type is necessary for Mypy
 
+from spsdk import get_logger
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.interfaces.buspal import I2cModeCommand, SpiModeCommand
 from spsdk.utils.serial_proxy import SerialProxy
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class SerialBuspalProxy(SerialProxy):
@@ -96,7 +96,7 @@ class SerialBuspalProxy(SerialProxy):
             # not a command frame, store expected response, defined in pre_recorded_responses
             self.rx_buffer = self.responses[data]
             self._buffer_index = 0
-        logger.debug(f"[{' '.join(hex(x) for x in data)}]")
+        logger.trace(f"[{' '.join(hex(x) for x in data)}]")
 
     def read(self, length: int) -> bytes:
         """Read portion of pre-configured data from buffer.
@@ -112,5 +112,5 @@ class SerialBuspalProxy(SerialProxy):
             self._buffer_index += 1
         else:
             segment = self.rx_buffer[:length]
-        logger.debug(f"<{' '.join(hex(x) for x in segment)}>")
+        logger.trace(f"<{' '.join(hex(x) for x in segment)}>")
         return segment

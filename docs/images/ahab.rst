@@ -83,6 +83,258 @@ For bootable images that contain FCB or XMCD segments, you need to specify the m
 ``nxpimage ahab update-keyblob -f <family> -b "bootable_image.bin" -k "path/to/new_keyblob.bin" -i <container_id> -m <memory_type>``
 
 
+AHAB Container Structure for imx-boot (i.MX 9x)
+==================================================
+
+On i.MX 9x devices (i.MX93, i.MX95, etc.), the ``imx-boot`` image is composed of multiple AHAB containers,
+each carrying different firmware and application images. The boot ROM processes these containers sequentially.
+
+Understanding this structure is essential when creating or modifying bootable images with SPSDK.
+
+Common Structure
+-----------------
+
+All i.MX 9x families share a two-stage boot concept:
+
+1. **Primary Container Set** — loaded first by boot ROM to on-chip SRAM (OCRAM)
+2. **Secondary Container Set** — loaded to DDR after memory initialization
+
+.. list-table:: Generic imx-boot Container Layout
+   :header-rows: 1
+   :widths: 15 30 20 35
+
+   * - Container
+     - Contents
+     - Signed By
+     - Purpose
+   * - Container 0
+     - ELE firmware
+     - NXP
+     - EdgeLock Enclave security subsystem; loaded and verified first by ROM
+   * - Container 1
+     - SPL + DDR firmware (LPDDR FW or OEI)
+     - OEM
+     - Initializes DDR memory and hands off to U-Boot
+   * - Container 2
+     - ATF (BL31) + U-Boot proper (+ optional OP-TEE)
+     - OEM
+     - Main bootloader loaded into DDR
+
+i.MX93 Container Layout
+-------------------------
+
+The i.MX93 uses AHAB Container v1. DDR initialization uses legacy LPDDR training firmware
+(4 separate binaries merged with SPL into a single ``spl_ddr`` image), **not** OEI.
+
+.. list-table:: i.MX93 imx-boot Structure
+   :header-rows: 1
+   :widths: 15 35 50
+
+   * - Container
+     - Contents
+     - Notes
+   * - Container 0 (NXP)
+     - ELE firmware (``mx93a1-ahab-container.img``)
+     - NXP-signed; mandatory; processed first by ROM
+   * - Container 1 (OEM, OCRAM)
+     - | ``spl_ddr`` — U-Boot SPL
+       | ``lpddr_imem_1d`` — LPDDR4 instruction memory 1D
+       | ``lpddr_dmem_1d`` — LPDDR4 data memory 1D
+       | ``lpddr_imem_2d`` — LPDDR4 instruction memory 2D
+       | ``lpddr_dmem_2d`` — LPDDR4 data memory 2D
+     - | Loaded to OCRAM; SPL initializes DDR
+       | SPL + LPDDR FW are merged into single image
+   * - Container 2 (OEM, DDR)
+     - | ``atf`` — ATF / BL31
+       | ``uboot`` — U-Boot proper
+       | ``tee`` — OP-TEE (optional)
+       | Optional: ``kernel``, ``dtb``
+     - Loaded to DDR after initialization
+
+**Supported cores**: Cortex-A55, Cortex-M33, ELE, V2X_1, V2X_2
+
+i.MX95 Container Layout
+-------------------------
+
+The i.MX95 has a more complex structure, supporting both AHAB Container v1 (a0/a1) and v2 (b0+),
+and adds System Manager, OEI-based DDR initialization, and Fast Boot capabilities.
+
+.. list-table:: i.MX95 imx-boot Structure
+   :header-rows: 1
+   :widths: 15 35 50
+
+   * - Container
+     - Contents
+     - Notes
+   * - Container 0 (NXP)
+     - ELE firmware (``mx95b0-ahab-container.img``)
+     - NXP-signed; mandatory; processed first by ROM
+   * - Container 1 (OEM, OCRAM)
+     - | ``oei_ddr`` — OEI DDR firmware
+       | ``lpddr_imem`` — LPDDR4/5 instruction memory
+       | ``lpddr_dmem`` — LPDDR4/5 data memory
+       | ``lpddr_imem_qb`` — LPDDR4/5 instruction memory (Quick Boot)
+       | ``lpddr_dmem_qb`` — LPDDR4/5 data memory (Quick Boot)
+       | ``system_manager`` — System Manager (CM33)
+       | ``cortex_m7_app`` — M7 application (optional)
+       | ``spl`` — U-Boot SPL
+       | ``v2x_dummy`` — V2X dummy image
+     - | System Manager runs on dedicated CM33 core
+       | QB data is optional (dummy variant available on b0)
+       | OEI TCM (``oei_tcm``) available as extra image
+   * - Container 2 (OEM, DDR)
+     - | ``atf`` — ATF / BL31
+       | ``uboot`` — U-Boot proper
+       | ``tee`` — OP-TEE (optional)
+       | Optional: ``kernel``, ``dtb``
+     - Loaded to DDR after initialization
+
+**Supported cores**: Cortex-A55, Cortex-M33, Cortex-M7, ELE, V2X_1, V2X_2, DDR
+
+Key Differences: i.MX93 vs i.MX95
+-----------------------------------
+
+.. list-table:: Feature Comparison
+   :header-rows: 1
+   :widths: 40 30 30
+
+   * - Feature
+     - i.MX93
+     - i.MX95
+   * - AHAB container types
+     - v1 only
+     - v1 (a0/a1), v2+v1 (b0+)
+   * - DDR initialization
+     - Legacy LPDDR training FW (merged with SPL)
+     - OEI DDR firmware (separate image)
+   * - System Manager
+     - No
+     - Yes (dedicated CM33)
+   * - OEI support
+     - No
+     - Yes (``oei_ddr``, optional ``oei_tcm``)
+   * - SPL container images
+     - ``spl_ddr`` + 4× LPDDR FW
+     - ``oei_ddr``, ``system_manager``, ``spl``, ``cortex_m7_app``, ``v2x_dummy``
+   * - Core IDs
+     - Cortex-A55, Cortex-M33, ELE, V2X_1, V2X_2
+     - Cortex-A55, Cortex-M33, Cortex-M7, ELE, V2X_1, V2X_2, DDR, Dummy
+
+SPSDK Commands for imx-boot
+-----------------------------
+
+Generate bootable image templates for a specific family::
+
+    nxpimage bootable-image get-templates -f mimx9352 -o imx93_templates/
+    nxpimage bootable-image get-templates -f mimx9596 -o imx95_templates/
+
+List available board configurations::
+
+    nxpimage bootable-image list-boards -f mimx9352
+    nxpimage bootable-image list-boards -f mimx9596
+
+Export an AHAB container::
+
+    nxpimage ahab export -c config.yaml
+
+For complete examples, see:
+
+- :doc:`../../examples/ahab/imx93/imx93_ahab_uboot`
+- :doc:`../../examples/ahab/imx95/imx95_ahab_uboot`
+
+i.MX 95 Container Parameters
+-------------------------------
+
+The following container header fields are relevant when building AHAB images for
+**i.MX 95** (``AHABContainerV2``). They control the GDET (Glitch Detector) runtime
+behavior and the fast boot hardware-acceleration mode.
+
+.. note::
+
+   Both ``gdet_runtime_behavior`` and ``fast_boot`` are **optional** in the OEM
+   container YAML. When a field is omitted, SPSDK preserves the flag bits already
+   present in the parsed container (e.g., from the NXP-signed ELE firmware container)
+   rather than overwriting them with a default. Set either field explicitly only when
+   you want to override the value that was read from the original image.
+
+GDET Runtime Behavior
+^^^^^^^^^^^^^^^^^^^^^^
+
+The ``gdet_runtime_behavior`` field controls the Glitch Detector (GDET) managed by
+the EdgeLock Secure Enclave (ELE) during and after container authentication.
+
+.. list-table:: GDET runtime behavior options
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Value
+     - Description
+   * - ``disabled`` *(default)*
+     - GDET is disabled after the first OEM container has been authenticated.
+   * - ``enabled_eleapi``
+     - GDET is automatically enabled during all ELE API calls.
+   * - ``enabled``
+     - GDET remains enabled after container authentication.
+
+Example YAML snippet::
+
+    containers:
+      - container:
+          gdet_runtime_behavior: disabled   # or enabled_eleapi / enabled
+
+Fast Boot (V2X Accelerator)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``fast_boot`` field enables hardware-accelerated authentication using the V2X
+subsystem of i.MX 95 (B0 revision and later). It corresponds to bits [17:16] in the
+32-bit container header Flags field. This acceleration can dramatically reduce boot
+time — e.g., Linux kernel verification was measured at ~2671 ms in normal mode
+vs ~445 ms with fast hash (on an i.MX 95 LPDDR5 EVK).
+
+.. list-table:: Fast boot options
+   :header-rows: 1
+   :widths: 40 60
+
+   * - Value
+     - Description
+   * - ``disabled`` *(default)*
+     - Regular secure boot, no V2X acceleration (bits 16:17 = ``0b00``).
+   * - ``hash_and_copy``
+     - ELE performs hash and copy instead of BootROM (bit 16 only, ``0b01``).
+   * - ``external_accelerator``
+     - **Fast Hash** — V2X handles container/image authentication. Works with
+       all boot sources including SD and eMMC (bit 17 only, ``0b10``).
+   * - ``hash_and_copy_with_external_accelerator``
+     - **Full Fast Boot** — ELE does hash + copy using V2X accelerator directly.
+       Requires boot from **FlexSPI NOR flash**. Maximum performance
+       (bits 16:17 = ``0b11``).
+
+.. note::
+
+   Full Fast Boot (``hash_and_copy_with_external_accelerator``) additionally
+   requires the ``FAST_BOOT_ENABLE`` hardware fuse to be programmed
+   (bit 4 of fuse word 58, fuse index 1860 on i.MX 95).
+   Fast Hash (``external_accelerator``) also requires the fuse to be programmed.
+   The fuse enables the feature globally; the container header selects the mode.
+   See the *Fast Boot with V2X Accelerator on i.MX 95* application note for details.
+
+.. note::
+
+   The V2X subsystem on i.MX 95 B0 operates in **direct mode** for fast boot:
+   no V2X firmware is running during the fast boot phase, and the ELE controls
+   the V2X hardware accelerators directly. After fast boot completes, V2X
+   firmware is downloaded and executed normally.
+
+Example YAML snippet::
+
+    containers:
+      - container:
+          fast_boot: disabled            # or hash_and_copy / external_accelerator /
+                                         # hash_and_copy_with_external_accelerator
+          gdet_runtime_behavior: disabled
+
+
+
 Supported configuration options
 ================================
 

@@ -1,5 +1,5 @@
 {
-    "cpu": "mimx9352",
+    "cpu": "MIMX9352",
     "groups": [
         {
             "group": {
@@ -2230,7 +2230,7 @@
                                 {
                                     "name": "DISABLED",
                                     "value": 0,
-                                    "description": "Normal boot mode selection applies"
+                                    "description": "Override all other Boot_Mode & Boot Mode Fuses and enter Serial Download is disabled"
                                 },
                                 {
                                     "name": "ENABLED",
@@ -2370,7 +2370,849 @@
                             "width": 8,
                             "id": "fuse25-bits-8-15",
                             "name": "uSDHC_PAD_Settings_Low_bits",
-                            "description": "uSDHC Pad Settings Low bits"
+                            "description": "uSDHC Pad Settings Low bits",
+                            "values": [
+                                {
+                                    "name": "PAD_SETTING_MIN",
+                                    "value": 0,
+                                    "description": "uSDHC pad settings override value minimum (0x00)"
+                                },
+                                {
+                                    "name": "PAD_SETTING_1",
+                                    "value": 1,
+                                    "description": "uSDHC pad settings override value 0x01"
+                                },
+                                {
+                                    "name": "PAD_SETTING_2",
+                                    "value": 2,
+                                    "description": "uSDHC pad settings override value 0x02"
+                                },
+                                {
+                                    "name": "PAD_SETTING_3",
+                                    "value": 3,
+                                    "description": "uSDHC pad settings override value 0x03"
+                                },
+                                {
+                                    "name": "PAD_SETTING_4",
+                                    "value": 4,
+                                    "description": "uSDHC pad settings override value 0x04"
+                                },
+                                {
+                                    "name": "PAD_SETTING_5",
+                                    "value": 5,
+                                    "description": "uSDHC pad settings override value 0x05"
+                                },
+                                {
+                                    "name": "PAD_SETTING_6",
+                                    "value": 6,
+                                    "description": "uSDHC pad settings override value 0x06"
+                                },
+                                {
+                                    "name": "PAD_SETTING_7",
+                                    "value": 7,
+                                    "description": "uSDHC pad settings override value 0x07"
+                                },
+                                {
+                                    "name": "PAD_SETTING_8",
+                                    "value": 8,
+                                    "description": "uSDHC pad settings override value 0x08"
+                                },
+                                {
+                                    "name": "PAD_SETTING_9",
+                                    "value": 9,
+                                    "description": "uSDHC pad settings override value 0x09"
+                                },
+                                {
+                                    "name": "PAD_SETTING_10",
+                                    "value": 10,
+                                    "description": "uSDHC pad settings override value 0x0A"
+                                },
+                                {
+                                    "name": "PAD_SETTING_11",
+                                    "value": 11,
+                                    "description": "uSDHC pad settings override value 0x0B"
+                                },
+                                {
+                                    "name": "PAD_SETTING_12",
+                                    "value": 12,
+                                    "description": "uSDHC pad settings override value 0x0C"
+                                },
+                                {
+                                    "name": "PAD_SETTING_13",
+                                    "value": 13,
+                                    "description": "uSDHC pad settings override value 0x0D"
+                                },
+                                {
+                                    "name": "PAD_SETTING_14",
+                                    "value": 14,
+                                    "description": "uSDHC pad settings override value 0x0E"
+                                },
+                                {
+                                    "name": "PAD_SETTING_15",
+                                    "value": 15,
+                                    "description": "uSDHC pad settings override value 0x0F"
+                                },
+                                {
+                                    "name": "PAD_SETTING_16",
+                                    "value": 16,
+                                    "description": "uSDHC pad settings override value 0x10"
+                                },
+                                {
+                                    "name": "PAD_SETTING_17",
+                                    "value": 17,
+                                    "description": "uSDHC pad settings override value 0x11"
+                                },
+                                {
+                                    "name": "PAD_SETTING_18",
+                                    "value": 18,
+                                    "description": "uSDHC pad settings override value 0x12"
+                                },
+                                {
+                                    "name": "PAD_SETTING_19",
+                                    "value": 19,
+                                    "description": "uSDHC pad settings override value 0x13"
+                                },
+                                {
+                                    "name": "PAD_SETTING_20",
+                                    "value": 20,
+                                    "description": "uSDHC pad settings override value 0x14"
+                                },
+                                {
+                                    "name": "PAD_SETTING_21",
+                                    "value": 21,
+                                    "description": "uSDHC pad settings override value 0x15"
+                                },
+                                {
+                                    "name": "PAD_SETTING_22",
+                                    "value": 22,
+                                    "description": "uSDHC pad settings override value 0x16"
+                                },
+                                {
+                                    "name": "PAD_SETTING_23",
+                                    "value": 23,
+                                    "description": "uSDHC pad settings override value 0x17"
+                                },
+                                {
+                                    "name": "PAD_SETTING_24",
+                                    "value": 24,
+                                    "description": "uSDHC pad settings override value 0x18"
+                                },
+                                {
+                                    "name": "PAD_SETTING_25",
+                                    "value": 25,
+                                    "description": "uSDHC pad settings override value 0x19"
+                                },
+                                {
+                                    "name": "PAD_SETTING_26",
+                                    "value": 26,
+                                    "description": "uSDHC pad settings override value 0x1A"
+                                },
+                                {
+                                    "name": "PAD_SETTING_27",
+                                    "value": 27,
+                                    "description": "uSDHC pad settings override value 0x1B"
+                                },
+                                {
+                                    "name": "PAD_SETTING_28",
+                                    "value": 28,
+                                    "description": "uSDHC pad settings override value 0x1C"
+                                },
+                                {
+                                    "name": "PAD_SETTING_29",
+                                    "value": 29,
+                                    "description": "uSDHC pad settings override value 0x1D"
+                                },
+                                {
+                                    "name": "PAD_SETTING_30",
+                                    "value": 30,
+                                    "description": "uSDHC pad settings override value 0x1E"
+                                },
+                                {
+                                    "name": "PAD_SETTING_31",
+                                    "value": 31,
+                                    "description": "uSDHC pad settings override value 0x1F"
+                                },
+                                {
+                                    "name": "PAD_SETTING_32",
+                                    "value": 32,
+                                    "description": "uSDHC pad settings override value 0x20"
+                                },
+                                {
+                                    "name": "PAD_SETTING_33",
+                                    "value": 33,
+                                    "description": "uSDHC pad settings override value 0x21"
+                                },
+                                {
+                                    "name": "PAD_SETTING_34",
+                                    "value": 34,
+                                    "description": "uSDHC pad settings override value 0x22"
+                                },
+                                {
+                                    "name": "PAD_SETTING_35",
+                                    "value": 35,
+                                    "description": "uSDHC pad settings override value 0x23"
+                                },
+                                {
+                                    "name": "PAD_SETTING_36",
+                                    "value": 36,
+                                    "description": "uSDHC pad settings override value 0x24"
+                                },
+                                {
+                                    "name": "PAD_SETTING_37",
+                                    "value": 37,
+                                    "description": "uSDHC pad settings override value 0x25"
+                                },
+                                {
+                                    "name": "PAD_SETTING_38",
+                                    "value": 38,
+                                    "description": "uSDHC pad settings override value 0x26"
+                                },
+                                {
+                                    "name": "PAD_SETTING_39",
+                                    "value": 39,
+                                    "description": "uSDHC pad settings override value 0x27"
+                                },
+                                {
+                                    "name": "PAD_SETTING_40",
+                                    "value": 40,
+                                    "description": "uSDHC pad settings override value 0x28"
+                                },
+                                {
+                                    "name": "PAD_SETTING_41",
+                                    "value": 41,
+                                    "description": "uSDHC pad settings override value 0x29"
+                                },
+                                {
+                                    "name": "PAD_SETTING_42",
+                                    "value": 42,
+                                    "description": "uSDHC pad settings override value 0x2A"
+                                },
+                                {
+                                    "name": "PAD_SETTING_43",
+                                    "value": 43,
+                                    "description": "uSDHC pad settings override value 0x2B"
+                                },
+                                {
+                                    "name": "PAD_SETTING_44",
+                                    "value": 44,
+                                    "description": "uSDHC pad settings override value 0x2C"
+                                },
+                                {
+                                    "name": "PAD_SETTING_45",
+                                    "value": 45,
+                                    "description": "uSDHC pad settings override value 0x2D"
+                                },
+                                {
+                                    "name": "PAD_SETTING_46",
+                                    "value": 46,
+                                    "description": "uSDHC pad settings override value 0x2E"
+                                },
+                                {
+                                    "name": "PAD_SETTING_47",
+                                    "value": 47,
+                                    "description": "uSDHC pad settings override value 0x2F"
+                                },
+                                {
+                                    "name": "PAD_SETTING_48",
+                                    "value": 48,
+                                    "description": "uSDHC pad settings override value 0x30"
+                                },
+                                {
+                                    "name": "PAD_SETTING_49",
+                                    "value": 49,
+                                    "description": "uSDHC pad settings override value 0x31"
+                                },
+                                {
+                                    "name": "PAD_SETTING_50",
+                                    "value": 50,
+                                    "description": "uSDHC pad settings override value 0x32"
+                                },
+                                {
+                                    "name": "PAD_SETTING_51",
+                                    "value": 51,
+                                    "description": "uSDHC pad settings override value 0x33"
+                                },
+                                {
+                                    "name": "PAD_SETTING_52",
+                                    "value": 52,
+                                    "description": "uSDHC pad settings override value 0x34"
+                                },
+                                {
+                                    "name": "PAD_SETTING_53",
+                                    "value": 53,
+                                    "description": "uSDHC pad settings override value 0x35"
+                                },
+                                {
+                                    "name": "PAD_SETTING_54",
+                                    "value": 54,
+                                    "description": "uSDHC pad settings override value 0x36"
+                                },
+                                {
+                                    "name": "PAD_SETTING_55",
+                                    "value": 55,
+                                    "description": "uSDHC pad settings override value 0x37"
+                                },
+                                {
+                                    "name": "PAD_SETTING_56",
+                                    "value": 56,
+                                    "description": "uSDHC pad settings override value 0x38"
+                                },
+                                {
+                                    "name": "PAD_SETTING_57",
+                                    "value": 57,
+                                    "description": "uSDHC pad settings override value 0x39"
+                                },
+                                {
+                                    "name": "PAD_SETTING_58",
+                                    "value": 58,
+                                    "description": "uSDHC pad settings override value 0x3A"
+                                },
+                                {
+                                    "name": "PAD_SETTING_59",
+                                    "value": 59,
+                                    "description": "uSDHC pad settings override value 0x3B"
+                                },
+                                {
+                                    "name": "PAD_SETTING_60",
+                                    "value": 60,
+                                    "description": "uSDHC pad settings override value 0x3C"
+                                },
+                                {
+                                    "name": "PAD_SETTING_61",
+                                    "value": 61,
+                                    "description": "uSDHC pad settings override value 0x3D"
+                                },
+                                {
+                                    "name": "PAD_SETTING_62",
+                                    "value": 62,
+                                    "description": "uSDHC pad settings override value 0x3E"
+                                },
+                                {
+                                    "name": "PAD_SETTING_63",
+                                    "value": 63,
+                                    "description": "uSDHC pad settings override value 0x3F"
+                                },
+                                {
+                                    "name": "PAD_SETTING_64",
+                                    "value": 64,
+                                    "description": "uSDHC pad settings override value 0x40"
+                                },
+                                {
+                                    "name": "PAD_SETTING_65",
+                                    "value": 65,
+                                    "description": "uSDHC pad settings override value 0x41"
+                                },
+                                {
+                                    "name": "PAD_SETTING_66",
+                                    "value": 66,
+                                    "description": "uSDHC pad settings override value 0x42"
+                                },
+                                {
+                                    "name": "PAD_SETTING_67",
+                                    "value": 67,
+                                    "description": "uSDHC pad settings override value 0x43"
+                                },
+                                {
+                                    "name": "PAD_SETTING_68",
+                                    "value": 68,
+                                    "description": "uSDHC pad settings override value 0x44"
+                                },
+                                {
+                                    "name": "PAD_SETTING_69",
+                                    "value": 69,
+                                    "description": "uSDHC pad settings override value 0x45"
+                                },
+                                {
+                                    "name": "PAD_SETTING_70",
+                                    "value": 70,
+                                    "description": "uSDHC pad settings override value 0x46"
+                                },
+                                {
+                                    "name": "PAD_SETTING_71",
+                                    "value": 71,
+                                    "description": "uSDHC pad settings override value 0x47"
+                                },
+                                {
+                                    "name": "PAD_SETTING_72",
+                                    "value": 72,
+                                    "description": "uSDHC pad settings override value 0x48"
+                                },
+                                {
+                                    "name": "PAD_SETTING_73",
+                                    "value": 73,
+                                    "description": "uSDHC pad settings override value 0x49"
+                                },
+                                {
+                                    "name": "PAD_SETTING_74",
+                                    "value": 74,
+                                    "description": "uSDHC pad settings override value 0x4A"
+                                },
+                                {
+                                    "name": "PAD_SETTING_75",
+                                    "value": 75,
+                                    "description": "uSDHC pad settings override value 0x4B"
+                                },
+                                {
+                                    "name": "PAD_SETTING_76",
+                                    "value": 76,
+                                    "description": "uSDHC pad settings override value 0x4C"
+                                },
+                                {
+                                    "name": "PAD_SETTING_77",
+                                    "value": 77,
+                                    "description": "uSDHC pad settings override value 0x4D"
+                                },
+                                {
+                                    "name": "PAD_SETTING_78",
+                                    "value": 78,
+                                    "description": "uSDHC pad settings override value 0x4E"
+                                },
+                                {
+                                    "name": "PAD_SETTING_79",
+                                    "value": 79,
+                                    "description": "uSDHC pad settings override value 0x4F"
+                                },
+                                {
+                                    "name": "PAD_SETTING_80",
+                                    "value": 80,
+                                    "description": "uSDHC pad settings override value 0x50"
+                                },
+                                {
+                                    "name": "PAD_SETTING_81",
+                                    "value": 81,
+                                    "description": "uSDHC pad settings override value 0x51"
+                                },
+                                {
+                                    "name": "PAD_SETTING_82",
+                                    "value": 82,
+                                    "description": "uSDHC pad settings override value 0x52"
+                                },
+                                {
+                                    "name": "PAD_SETTING_83",
+                                    "value": 83,
+                                    "description": "uSDHC pad settings override value 0x53"
+                                },
+                                {
+                                    "name": "PAD_SETTING_84",
+                                    "value": 84,
+                                    "description": "uSDHC pad settings override value 0x54"
+                                },
+                                {
+                                    "name": "PAD_SETTING_85",
+                                    "value": 85,
+                                    "description": "uSDHC pad settings override value 0x55"
+                                },
+                                {
+                                    "name": "PAD_SETTING_86",
+                                    "value": 86,
+                                    "description": "uSDHC pad settings override value 0x56"
+                                },
+                                {
+                                    "name": "PAD_SETTING_87",
+                                    "value": 87,
+                                    "description": "uSDHC pad settings override value 0x57"
+                                },
+                                {
+                                    "name": "PAD_SETTING_88",
+                                    "value": 88,
+                                    "description": "uSDHC pad settings override value 0x58"
+                                },
+                                {
+                                    "name": "PAD_SETTING_89",
+                                    "value": 89,
+                                    "description": "uSDHC pad settings override value 0x59"
+                                },
+                                {
+                                    "name": "PAD_SETTING_90",
+                                    "value": 90,
+                                    "description": "uSDHC pad settings override value 0x5A"
+                                },
+                                {
+                                    "name": "PAD_SETTING_91",
+                                    "value": 91,
+                                    "description": "uSDHC pad settings override value 0x5B"
+                                },
+                                {
+                                    "name": "PAD_SETTING_92",
+                                    "value": 92,
+                                    "description": "uSDHC pad settings override value 0x5C"
+                                },
+                                {
+                                    "name": "PAD_SETTING_93",
+                                    "value": 93,
+                                    "description": "uSDHC pad settings override value 0x5D"
+                                },
+                                {
+                                    "name": "PAD_SETTING_94",
+                                    "value": 94,
+                                    "description": "uSDHC pad settings override value 0x5E"
+                                },
+                                {
+                                    "name": "PAD_SETTING_95",
+                                    "value": 95,
+                                    "description": "uSDHC pad settings override value 0x5F"
+                                },
+                                {
+                                    "name": "PAD_SETTING_96",
+                                    "value": 96,
+                                    "description": "uSDHC pad settings override value 0x60"
+                                },
+                                {
+                                    "name": "PAD_SETTING_97",
+                                    "value": 97,
+                                    "description": "uSDHC pad settings override value 0x61"
+                                },
+                                {
+                                    "name": "PAD_SETTING_98",
+                                    "value": 98,
+                                    "description": "uSDHC pad settings override value 0x62"
+                                },
+                                {
+                                    "name": "PAD_SETTING_99",
+                                    "value": 99,
+                                    "description": "uSDHC pad settings override value 0x63"
+                                },
+                                {
+                                    "name": "PAD_SETTING_100",
+                                    "value": 100,
+                                    "description": "uSDHC pad settings override value 0x64"
+                                },
+                                {
+                                    "name": "PAD_SETTING_101",
+                                    "value": 101,
+                                    "description": "uSDHC pad settings override value 0x65"
+                                },
+                                {
+                                    "name": "PAD_SETTING_102",
+                                    "value": 102,
+                                    "description": "uSDHC pad settings override value 0x66"
+                                },
+                                {
+                                    "name": "PAD_SETTING_103",
+                                    "value": 103,
+                                    "description": "uSDHC pad settings override value 0x67"
+                                },
+                                {
+                                    "name": "PAD_SETTING_104",
+                                    "value": 104,
+                                    "description": "uSDHC pad settings override value 0x68"
+                                },
+                                {
+                                    "name": "PAD_SETTING_105",
+                                    "value": 105,
+                                    "description": "uSDHC pad settings override value 0x69"
+                                },
+                                {
+                                    "name": "PAD_SETTING_106",
+                                    "value": 106,
+                                    "description": "uSDHC pad settings override value 0x6A"
+                                },
+                                {
+                                    "name": "PAD_SETTING_107",
+                                    "value": 107,
+                                    "description": "uSDHC pad settings override value 0x6B"
+                                },
+                                {
+                                    "name": "PAD_SETTING_108",
+                                    "value": 108,
+                                    "description": "uSDHC pad settings override value 0x6C"
+                                },
+                                {
+                                    "name": "PAD_SETTING_109",
+                                    "value": 109,
+                                    "description": "uSDHC pad settings override value 0x6D"
+                                },
+                                {
+                                    "name": "PAD_SETTING_110",
+                                    "value": 110,
+                                    "description": "uSDHC pad settings override value 0x6E"
+                                },
+                                {
+                                    "name": "PAD_SETTING_111",
+                                    "value": 111,
+                                    "description": "uSDHC pad settings override value 0x6F"
+                                },
+                                {
+                                    "name": "PAD_SETTING_112",
+                                    "value": 112,
+                                    "description": "uSDHC pad settings override value 0x70"
+                                },
+                                {
+                                    "name": "PAD_SETTING_113",
+                                    "value": 113,
+                                    "description": "uSDHC pad settings override value 0x71"
+                                },
+                                {
+                                    "name": "PAD_SETTING_114",
+                                    "value": 114,
+                                    "description": "uSDHC pad settings override value 0x72"
+                                },
+                                {
+                                    "name": "PAD_SETTING_115",
+                                    "value": 115,
+                                    "description": "uSDHC pad settings override value 0x73"
+                                },
+                                {
+                                    "name": "PAD_SETTING_116",
+                                    "value": 116,
+                                    "description": "uSDHC pad settings override value 0x74"
+                                },
+                                {
+                                    "name": "PAD_SETTING_117",
+                                    "value": 117,
+                                    "description": "uSDHC pad settings override value 0x75"
+                                },
+                                {
+                                    "name": "PAD_SETTING_118",
+                                    "value": 118,
+                                    "description": "uSDHC pad settings override value 0x76"
+                                },
+                                {
+                                    "name": "PAD_SETTING_119",
+                                    "value": 119,
+                                    "description": "uSDHC pad settings override value 0x77"
+                                },
+                                {
+                                    "name": "PAD_SETTING_120",
+                                    "value": 120,
+                                    "description": "uSDHC pad settings override value 0x78"
+                                },
+                                {
+                                    "name": "PAD_SETTING_121",
+                                    "value": 121,
+                                    "description": "uSDHC pad settings override value 0x79"
+                                },
+                                {
+                                    "name": "PAD_SETTING_122",
+                                    "value": 122,
+                                    "description": "uSDHC pad settings override value 0x7A"
+                                },
+                                {
+                                    "name": "PAD_SETTING_123",
+                                    "value": 123,
+                                    "description": "uSDHC pad settings override value 0x7B"
+                                },
+                                {
+                                    "name": "PAD_SETTING_124",
+                                    "value": 124,
+                                    "description": "uSDHC pad settings override value 0x7C"
+                                },
+                                {
+                                    "name": "PAD_SETTING_125",
+                                    "value": 125,
+                                    "description": "uSDHC pad settings override value 0x7D"
+                                },
+                                {
+                                    "name": "PAD_SETTING_126",
+                                    "value": 126,
+                                    "description": "uSDHC pad settings override value 0x7E"
+                                },
+                                {
+                                    "name": "PAD_SETTING_127",
+                                    "value": 127,
+                                    "description": "uSDHC pad settings override value 0x7F"
+                                },
+                                {
+                                    "name": "PAD_SETTING_128",
+                                    "value": 128,
+                                    "description": "uSDHC pad settings override value 0x80"
+                                },
+                                {
+                                    "name": "PAD_SETTING_129",
+                                    "value": 129,
+                                    "description": "uSDHC pad settings override value 0x81"
+                                },
+                                {
+                                    "name": "PAD_SETTING_130",
+                                    "value": 130,
+                                    "description": "uSDHC pad settings override value 0x82"
+                                },
+                                {
+                                    "name": "PAD_SETTING_131",
+                                    "value": 131,
+                                    "description": "uSDHC pad settings override value 0x83"
+                                },
+                                {
+                                    "name": "PAD_SETTING_132",
+                                    "value": 132,
+                                    "description": "uSDHC pad settings override value 0x84"
+                                },
+                                {
+                                    "name": "PAD_SETTING_133",
+                                    "value": 133,
+                                    "description": "uSDHC pad settings override value 0x85"
+                                },
+                                {
+                                    "name": "PAD_SETTING_134",
+                                    "value": 134,
+                                    "description": "uSDHC pad settings override value 0x86"
+                                },
+                                {
+                                    "name": "PAD_SETTING_135",
+                                    "value": 135,
+                                    "description": "uSDHC pad settings override value 0x87"
+                                },
+                                {
+                                    "name": "PAD_SETTING_136",
+                                    "value": 136,
+                                    "description": "uSDHC pad settings override value 0x88"
+                                },
+                                {
+                                    "name": "PAD_SETTING_137",
+                                    "value": 137,
+                                    "description": "uSDHC pad settings override value 0x89"
+                                },
+                                {
+                                    "name": "PAD_SETTING_138",
+                                    "value": 138,
+                                    "description": "uSDHC pad settings override value 0x8A"
+                                },
+                                {
+                                    "name": "PAD_SETTING_139",
+                                    "value": 139,
+                                    "description": "uSDHC pad settings override value 0x8B"
+                                },
+                                {
+                                    "name": "PAD_SETTING_140",
+                                    "value": 140,
+                                    "description": "uSDHC pad settings override value 0x8C"
+                                },
+                                {
+                                    "name": "PAD_SETTING_141",
+                                    "value": 141,
+                                    "description": "uSDHC pad settings override value 0x8D"
+                                },
+                                {
+                                    "name": "PAD_SETTING_142",
+                                    "value": 142,
+                                    "description": "uSDHC pad settings override value 0x8E"
+                                },
+                                {
+                                    "name": "PAD_SETTING_143",
+                                    "value": 143,
+                                    "description": "uSDHC pad settings override value 0x8F"
+                                },
+                                {
+                                    "name": "PAD_SETTING_144",
+                                    "value": 144,
+                                    "description": "uSDHC pad settings override value 0x90"
+                                },
+                                {
+                                    "name": "PAD_SETTING_145",
+                                    "value": 145,
+                                    "description": "uSDHC pad settings override value 0x91"
+                                },
+                                {
+                                    "name": "PAD_SETTING_146",
+                                    "value": 146,
+                                    "description": "uSDHC pad settings override value 0x92"
+                                },
+                                {
+                                    "name": "PAD_SETTING_147",
+                                    "value": 147,
+                                    "description": "uSDHC pad settings override value 0x93"
+                                },
+                                {
+                                    "name": "PAD_SETTING_148",
+                                    "value": 148,
+                                    "description": "uSDHC pad settings override value 0x94"
+                                },
+                                {
+                                    "name": "PAD_SETTING_149",
+                                    "value": 149,
+                                    "description": "uSDHC pad settings override value 0x95"
+                                },
+                                {
+                                    "name": "PAD_SETTING_150",
+                                    "value": 150,
+                                    "description": "uSDHC pad settings override value 0x96"
+                                },
+                                {
+                                    "name": "PAD_SETTING_151",
+                                    "value": 151,
+                                    "description": "uSDHC pad settings override value 0x97"
+                                },
+                                {
+                                    "name": "PAD_SETTING_152",
+                                    "value": 152,
+                                    "description": "uSDHC pad settings override value 0x98"
+                                },
+                                {
+                                    "name": "PAD_SETTING_153",
+                                    "value": 153,
+                                    "description": "uSDHC pad settings override value 0x99"
+                                },
+                                {
+                                    "name": "PAD_SETTING_154",
+                                    "value": 154,
+                                    "description": "uSDHC pad settings override value 0x9A"
+                                },
+                                {
+                                    "name": "PAD_SETTING_155",
+                                    "value": 155,
+                                    "description": "uSDHC pad settings override value 0x9B"
+                                },
+                                {
+                                    "name": "PAD_SETTING_156",
+                                    "value": 156,
+                                    "description": "uSDHC pad settings override value 0x9C"
+                                },
+                                {
+                                    "name": "PAD_SETTING_157",
+                                    "value": 157,
+                                    "description": "uSDHC pad settings override value 0x9D"
+                                },
+                                {
+                                    "name": "PAD_SETTING_158",
+                                    "value": 158,
+                                    "description": "uSDHC pad settings override value 0x9E"
+                                },
+                                {
+                                    "name": "PAD_SETTING_159",
+                                    "value": 159,
+                                    "description": "uSDHC pad settings override value 0x9F"
+                                },
+                                {
+                                    "name": "PAD_SETTING_160",
+                                    "value": 160,
+                                    "description": "uSDHC pad settings override value 0xA0"
+                                },
+                                {
+                                    "name": "PAD_SETTING_161",
+                                    "value": 161,
+                                    "description": "uSDHC pad settings override value 0xA1"
+                                },
+                                {
+                                    "name": "PAD_SETTING_162",
+                                    "value": 162,
+                                    "description": "uSDHC pad settings override value 0xA2"
+                                },
+                                {
+                                    "name": "PAD_SETTING_163",
+                                    "value": 163,
+                                    "description": "uSDHC pad settings override value 0xA3"
+                                },
+                                {
+                                    "name": "PAD_SETTING_164",
+                                    "value": 164,
+                                    "description": "uSDHC pad settings override value 0xA4"
+                                },
+                                {
+                                    "name": "PAD_SETTING_165",
+                                    "value": 165,
+                                    "description": "uSDHC pad settings override value 0xA5"
+                                },
+                                {
+                                    "name": "PAD_SETTING_166",
+                                    "value": 166,
+                                    "description": "uSDHC pad settings override value 0xA6"
+                                },
+                                {
+                                    "name": "PAD_SETTING_167",
+                                    "value": 167,
+                                    "description": "uSDHC pad settings override value 0xA7"
+                                }
+                            ]
                         },
                         {
                             "width": 4,
@@ -2514,487 +3356,487 @@
                                 {
                                     "name": "DLY_TICKS_0",
                                     "value": 0,
-                                    "description": "Delay target for uSDHC DLL - 0 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_1",
                                     "value": 1,
-                                    "description": "Delay target for uSDHC DLL - 1 delay tick"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_2",
                                     "value": 2,
-                                    "description": "Delay target for uSDHC DLL - 2 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_3",
                                     "value": 3,
-                                    "description": "Delay target for uSDHC DLL - 3 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_4",
                                     "value": 4,
-                                    "description": "Delay target for uSDHC DLL - 4 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_5",
                                     "value": 5,
-                                    "description": "Delay target for uSDHC DLL - 5 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_6",
                                     "value": 6,
-                                    "description": "Delay target for uSDHC DLL - 6 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_7",
                                     "value": 7,
-                                    "description": "Delay target for uSDHC DLL - 7 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_8",
                                     "value": 8,
-                                    "description": "Delay target for uSDHC DLL - 8 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_9",
                                     "value": 9,
-                                    "description": "Delay target for uSDHC DLL - 9 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_10",
                                     "value": 10,
-                                    "description": "Delay target for uSDHC DLL - 10 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_11",
                                     "value": 11,
-                                    "description": "Delay target for uSDHC DLL - 11 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_12",
                                     "value": 12,
-                                    "description": "Delay target for uSDHC DLL - 12 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_13",
                                     "value": 13,
-                                    "description": "Delay target for uSDHC DLL - 13 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_14",
                                     "value": 14,
-                                    "description": "Delay target for uSDHC DLL - 14 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_15",
                                     "value": 15,
-                                    "description": "Delay target for uSDHC DLL - 15 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_16",
                                     "value": 16,
-                                    "description": "Delay target for uSDHC DLL - 16 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_17",
                                     "value": 17,
-                                    "description": "Delay target for uSDHC DLL - 17 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_18",
                                     "value": 18,
-                                    "description": "Delay target for uSDHC DLL - 18 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_19",
                                     "value": 19,
-                                    "description": "Delay target for uSDHC DLL - 19 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_20",
                                     "value": 20,
-                                    "description": "Delay target for uSDHC DLL - 20 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_21",
                                     "value": 21,
-                                    "description": "Delay target for uSDHC DLL - 21 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_22",
                                     "value": 22,
-                                    "description": "Delay target for uSDHC DLL - 22 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_23",
                                     "value": 23,
-                                    "description": "Delay target for uSDHC DLL - 23 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_24",
                                     "value": 24,
-                                    "description": "Delay target for uSDHC DLL - 24 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_25",
                                     "value": 25,
-                                    "description": "Delay target for uSDHC DLL - 25 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_26",
                                     "value": 26,
-                                    "description": "Delay target for uSDHC DLL - 26 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_27",
                                     "value": 27,
-                                    "description": "Delay target for uSDHC DLL - 27 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_28",
                                     "value": 28,
-                                    "description": "Delay target for uSDHC DLL - 28 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_29",
                                     "value": 29,
-                                    "description": "Delay target for uSDHC DLL - 29 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_30",
                                     "value": 30,
-                                    "description": "Delay target for uSDHC DLL - 30 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_31",
                                     "value": 31,
-                                    "description": "Delay target for uSDHC DLL - 31 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_32",
                                     "value": 32,
-                                    "description": "Delay target for uSDHC DLL - 32 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_33",
                                     "value": 33,
-                                    "description": "Delay target for uSDHC DLL - 33 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_34",
                                     "value": 34,
-                                    "description": "Delay target for uSDHC DLL - 34 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_35",
                                     "value": 35,
-                                    "description": "Delay target for uSDHC DLL - 35 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_36",
                                     "value": 36,
-                                    "description": "Delay target for uSDHC DLL - 36 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_37",
                                     "value": 37,
-                                    "description": "Delay target for uSDHC DLL - 37 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_38",
                                     "value": 38,
-                                    "description": "Delay target for uSDHC DLL - 38 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_39",
                                     "value": 39,
-                                    "description": "Delay target for uSDHC DLL - 39 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_40",
                                     "value": 40,
-                                    "description": "Delay target for uSDHC DLL - 40 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_41",
                                     "value": 41,
-                                    "description": "Delay target for uSDHC DLL - 41 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_42",
                                     "value": 42,
-                                    "description": "Delay target for uSDHC DLL - 42 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_43",
                                     "value": 43,
-                                    "description": "Delay target for uSDHC DLL - 43 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_44",
                                     "value": 44,
-                                    "description": "Delay target for uSDHC DLL - 44 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_45",
                                     "value": 45,
-                                    "description": "Delay target for uSDHC DLL - 45 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_46",
                                     "value": 46,
-                                    "description": "Delay target for uSDHC DLL - 46 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_47",
                                     "value": 47,
-                                    "description": "Delay target for uSDHC DLL - 47 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_48",
                                     "value": 48,
-                                    "description": "Delay target for uSDHC DLL - 48 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_49",
                                     "value": 49,
-                                    "description": "Delay target for uSDHC DLL - 49 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_50",
                                     "value": 50,
-                                    "description": "Delay target for uSDHC DLL - 50 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_51",
                                     "value": 51,
-                                    "description": "Delay target for uSDHC DLL - 51 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_52",
                                     "value": 52,
-                                    "description": "Delay target for uSDHC DLL - 52 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_53",
                                     "value": 53,
-                                    "description": "Delay target for uSDHC DLL - 53 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_54",
                                     "value": 54,
-                                    "description": "Delay target for uSDHC DLL - 54 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_55",
                                     "value": 55,
-                                    "description": "Delay target for uSDHC DLL - 55 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_56",
                                     "value": 56,
-                                    "description": "Delay target for uSDHC DLL - 56 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_57",
                                     "value": 57,
-                                    "description": "Delay target for uSDHC DLL - 57 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_58",
                                     "value": 58,
-                                    "description": "Delay target for uSDHC DLL - 58 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_59",
                                     "value": 59,
-                                    "description": "Delay target for uSDHC DLL - 59 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_60",
                                     "value": 60,
-                                    "description": "Delay target for uSDHC DLL - 60 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_61",
                                     "value": 61,
-                                    "description": "Delay target for uSDHC DLL - 61 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_62",
                                     "value": 62,
-                                    "description": "Delay target for uSDHC DLL - 62 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_63",
                                     "value": 63,
-                                    "description": "Delay target for uSDHC DLL - 63 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_64",
                                     "value": 64,
-                                    "description": "Delay target for uSDHC DLL - 64 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_65",
                                     "value": 65,
-                                    "description": "Delay target for uSDHC DLL - 65 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_66",
                                     "value": 66,
-                                    "description": "Delay target for uSDHC DLL - 66 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_67",
                                     "value": 67,
-                                    "description": "Delay target for uSDHC DLL - 67 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_68",
                                     "value": 68,
-                                    "description": "Delay target for uSDHC DLL - 68 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_69",
                                     "value": 69,
-                                    "description": "Delay target for uSDHC DLL - 69 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_70",
                                     "value": 70,
-                                    "description": "Delay target for uSDHC DLL - 70 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_71",
                                     "value": 71,
-                                    "description": "Delay target for uSDHC DLL - 71 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_72",
                                     "value": 72,
-                                    "description": "Delay target for uSDHC DLL - 72 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_73",
                                     "value": 73,
-                                    "description": "Delay target for uSDHC DLL - 73 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_74",
                                     "value": 74,
-                                    "description": "Delay target for uSDHC DLL - 74 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_75",
                                     "value": 75,
-                                    "description": "Delay target for uSDHC DLL - 75 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_76",
                                     "value": 76,
-                                    "description": "Delay target for uSDHC DLL - 76 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_77",
                                     "value": 77,
-                                    "description": "Delay target for uSDHC DLL - 77 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_78",
                                     "value": 78,
-                                    "description": "Delay target for uSDHC DLL - 78 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_79",
                                     "value": 79,
-                                    "description": "Delay target for uSDHC DLL - 79 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_80",
                                     "value": 80,
-                                    "description": "Delay target for uSDHC DLL - 80 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_81",
                                     "value": 81,
-                                    "description": "Delay target for uSDHC DLL - 81 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_82",
                                     "value": 82,
-                                    "description": "Delay target for uSDHC DLL - 82 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_83",
                                     "value": 83,
-                                    "description": "Delay target for uSDHC DLL - 83 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_84",
                                     "value": 84,
-                                    "description": "Delay target for uSDHC DLL - 84 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_85",
                                     "value": 85,
-                                    "description": "Delay target for uSDHC DLL - 85 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_86",
                                     "value": 86,
-                                    "description": "Delay target for uSDHC DLL - 86 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_87",
                                     "value": 87,
-                                    "description": "Delay target for uSDHC DLL - 87 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_88",
                                     "value": 88,
-                                    "description": "Delay target for uSDHC DLL - 88 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_89",
                                     "value": 89,
-                                    "description": "Delay target for uSDHC DLL - 89 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_90",
                                     "value": 90,
-                                    "description": "Delay target for uSDHC DLL - 90 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_91",
                                     "value": 91,
-                                    "description": "Delay target for uSDHC DLL - 91 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_92",
                                     "value": 92,
-                                    "description": "Delay target for uSDHC DLL - 92 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_93",
                                     "value": 93,
-                                    "description": "Delay target for uSDHC DLL - 93 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_94",
                                     "value": 94,
-                                    "description": "Delay target for uSDHC DLL - 94 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_95",
                                     "value": 95,
-                                    "description": "Delay target for uSDHC DLL - 95 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_96",
                                     "value": 96,
-                                    "description": "Delay target for uSDHC DLL - 96 delay ticks"
+                                    "description": "Delay target for uSDHC DLL, it is applied to slave mode target delay or override mode target delay depends on DLL Override fuse bit value"
                                 },
                                 {
                                     "name": "DLY_TICKS_97",
@@ -4132,6 +4974,11 @@
                                     "name": "DLL_DELAY_166",
                                     "value": 166,
                                     "description": "Delay line value 166"
+                                },
+                                {
+                                    "name": "DELAY_MAX",
+                                    "value": 255,
+                                    "description": "Maximum delay line value for HyperFlash"
                                 }
                             ]
                         },
@@ -4587,6 +5434,11 @@
                                     "description": "Offset = 512 MB"
                                 },
                                 {
+                                    "name": "OFFSET_1024MB",
+                                    "value": 10,
+                                    "description": "Offset = 1024 MB"
+                                },
+                                {
                                     "name": "EMMC_LAST_128MB",
                                     "value": 254,
                                     "description": "EMMC last 128 MB"
@@ -4594,7 +5446,7 @@
                                 {
                                     "name": "EMMC_LAST_24KB",
                                     "value": 255,
-                                    "description": "EMMC last 24KB"
+                                    "description": "EMMC: last 24 KB"
                                 }
                             ]
                         },
@@ -4644,6 +5496,11 @@
                                     "name": "DISABLED",
                                     "value": 0,
                                     "description": "Not disable"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Disable"
                                 }
                             ]
                         },
@@ -4693,6 +5550,11 @@
                                     "name": "DISABLED",
                                     "value": 0,
                                     "description": "Not disable"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Disable"
                                 }
                             ]
                         },
@@ -5341,7 +6203,7 @@
                                 {
                                     "name": "SNIDEN_DISABLED",
                                     "value": 4,
-                                    "description": "Secure non-invasive debug disabled"
+                                    "description": "Secure non-invasive debug disabled (sniden=1)"
                                 },
                                 {
                                     "name": "SNIDEN_NIDEN_DISABLED",
@@ -5356,12 +6218,12 @@
                                 {
                                     "name": "SNIDEN_NIDEN_DBGEN_DIS",
                                     "value": 7,
-                                    "description": "Secure non-invasive debug and all non-secure debug disabled"
+                                    "description": "Secure non-invasive, invasive, and non-secure non-invasive debug disabled"
                                 },
                                 {
                                     "name": "SPIDEN_DISABLED",
                                     "value": 8,
-                                    "description": "Secure invasive debug disabled"
+                                    "description": "Secure invasive debug disabled (spiden=1)"
                                 },
                                 {
                                     "name": "SPIDEN_NIDEN_DISABLED",
@@ -5376,12 +6238,12 @@
                                 {
                                     "name": "SPIDEN_NIDEN_DBGEN_DIS",
                                     "value": 11,
-                                    "description": "Secure invasive debug and all non-secure debug disabled"
+                                    "description": "Secure invasive, non-secure invasive and non-invasive debug disabled"
                                 },
                                 {
                                     "name": "SECURE_DEBUG_DISABLED",
                                     "value": 12,
-                                    "description": "All secure debug features disabled"
+                                    "description": "Secure invasive and non-invasive debug disabled"
                                 },
                                 {
                                     "name": "SEC_SPIDEN_NS_NIDEN_DIS",
@@ -5525,7 +6387,7 @@
                                 {
                                     "name": "SEC_NIDEN_DISABLED",
                                     "value": 5,
-                                    "description": "Secure and non-invasive debug disabled"
+                                    "description": "Secure and non-secure non-invasive debug disabled"
                                 },
                                 {
                                     "name": "SEC_DBG_DISABLED",
@@ -5535,7 +6397,7 @@
                                 {
                                     "name": "SEC_ALL_DISABLED",
                                     "value": 7,
-                                    "description": "All secure and non-secure invasive debug disabled"
+                                    "description": "Secure non-invasive, invasive, and non-secure non-invasive debug disabled"
                                 },
                                 {
                                     "name": "SPIDEN_DISABLED",
@@ -5545,32 +6407,32 @@
                                 {
                                     "name": "SEC_NINV_DISABLED",
                                     "value": 9,
-                                    "description": "Secure invasive and non-invasive debug disabled"
+                                    "description": "Secure invasive and non-secure non-invasive debug disabled"
                                 },
                                 {
                                     "name": "SEC_INV_DISABLED",
                                     "value": 10,
-                                    "description": "Secure and invasive debug disabled"
+                                    "description": "Secure and non-secure invasive debug disabled"
                                 },
                                 {
                                     "name": "INV_DEBUG_DISABLED",
                                     "value": 11,
-                                    "description": "All invasive debug disabled"
+                                    "description": "Secure invasive, non-secure invasive and non-invasive debug disabled"
                                 },
                                 {
                                     "name": "SECURE_DBG_DISABLED",
                                     "value": 12,
-                                    "description": "All secure debug disabled"
+                                    "description": "Secure invasive and non-invasive debug disabled"
                                 },
                                 {
                                     "name": "SECURE_NINV_DISABLED",
                                     "value": 13,
-                                    "description": "Secure debug and non-invasive debug disabled"
+                                    "description": "Secure invasive and non-invasive, non-secure non-invasive debug disabled"
                                 },
                                 {
                                     "name": "SECURE_INV_DISABLED",
                                     "value": 14,
-                                    "description": "Secure debug and invasive debug disabled"
+                                    "description": "Secure debug and non-secure invasive debug disabled"
                                 },
                                 {
                                     "name": "ALL_DISABLED",
@@ -5774,12 +6636,12 @@
                                 {
                                     "name": "DISABLED",
                                     "value": 0,
-                                    "description": "Global JTAG disable"
+                                    "description": "Global JTAG disable is not active"
                                 },
                                 {
                                     "name": "ENABLED",
                                     "value": 1,
-                                    "description": "Global JTAG enable"
+                                    "description": "Global JTAG disable is active"
                                 }
                             ]
                         },
@@ -5804,7 +6666,7 @@
                                 {
                                     "name": "DISABLED",
                                     "value": 0,
-                                    "description": "ELE-AP Frequency detectors are enabled"
+                                    "description": "Disable ELE-AP Frequency detectors is not active"
                                 },
                                 {
                                     "name": "ENABLED",

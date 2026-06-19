@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023,2025 NXP
+# Copyright 2019-2023,2025,2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,6 +18,7 @@ import logging
 from typing import Any, Optional, Union
 
 from spsdk.crypto.cmac import cmac
+from spsdk.crypto.symmetric import aes_cbc_decrypt, aes_cbc_encrypt
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.http_client import HTTPClientBase
 from spsdk.utils.misc import Endianness, find_file, load_hex_string
@@ -75,6 +76,24 @@ class SB31KeyDerivator(ServiceProvider):
         :param data: Input data for CMAC calculation.
         :return: Calculated CMAC value.
         """
+
+    def aes_cbc_encrypt(self, data: bytes, iv: bytes) -> bytes:
+        """Encrypt a data using the AES-CBC encryption method.
+
+        :param data: Raw data to be encrypted.
+        :param iv: Initialization vector for encryption.
+        :return: Encrypted data.
+        """
+        raise NotImplementedError("aes_cbc_encrypt must be implemented by subclass")
+
+    def aes_cbc_decrypt(self, data: bytes, iv: bytes) -> bytes:
+        """Decrypt a data using the AES-CBC encryption method.
+
+        :param data: Encrypted data to be decrypted.
+        :param iv: Initialization vector for decryption.
+        :return: Decrypted data.
+        """
+        raise NotImplementedError("aes_cbc_decrypt must be implemented by subclass")
 
     def _derive_kdk(self) -> bytes:
         """Derive the KeyDerivationKey from PCK and timestamp.
@@ -244,6 +263,24 @@ class LocalKeyDerivator(SB31KeyDerivator):
         :return: Calculated CMAC value as bytes.
         """
         return cmac(key=self.pck, data=data)
+
+    def aes_cbc_encrypt(self, data: bytes, iv: bytes) -> bytes:
+        """Encrypt with PCK.
+
+        :param data: plain data
+        :param iv: Initialization vector.
+        :return: encrypted data
+        """
+        return aes_cbc_encrypt(key=self.pck, plain_data=data, iv_data=iv)
+
+    def aes_cbc_decrypt(self, data: bytes, iv: bytes) -> bytes:
+        """Decrypt a data using the PCK.
+
+        :param data: Encrypted data to be decrypted.
+        :param iv: Initialization vector for decryption.
+        :return: Decrypted data.
+        """
+        return aes_cbc_decrypt(key=self.pck, encrypted_data=data, iv_data=iv)
 
 
 class RemoteKeyDerivator(HTTPClientBase, SB31KeyDerivator):

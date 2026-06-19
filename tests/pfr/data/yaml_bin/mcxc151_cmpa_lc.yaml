@@ -25,22 +25,22 @@ settings:
   LIFECYCLE_STATE:
     # -----------------------------------------===== lifecycle [Optional] =====-----------------------------------------
     # Description: Offset: 0b, Width: 32b, lifecycle[31:0]
+    # - BRICKED, (2520056063): Bricked state to prevent device use
     # - IN_FIELD_LOCKED, (2520068303): Alternative in-field state that prevents use of field return states
-    # - BRICKED, (2520098138): Bricked state to prevent device use
-    # - IN_FIELD2, (2520117263): Optional in-field application state for end customer use
+    # - IN_FIELD2, (2520113183): Optional in-field application state for end customer use
     # - IN_FIELD1, (2520119303): In-field application state for end customer use (debug authentication required)
     # - DEVELOP, (2520120323): Initial customer development state after leaving NXP manufacturing
-    # Possible options: <IN_FIELD_LOCKED, BRICKED, IN_FIELD2, IN_FIELD1, DEVELOP>
-    lifecycle: DEVELOP
+    # Possible options: <BRICKED, IN_FIELD_LOCKED, IN_FIELD2, IN_FIELD1, DEVELOP>
+    lifecycle: BRICKED
   # -------------------------------------===== LIFECYCLE_STATE_DP [Optional] =====--------------------------------------
   # Description: Offset: 0x00000004, Width: 32b; lifecycle dp[31:0]
   LIFECYCLE_STATE_DP:
     # ---------------------------------------===== lifecycle_dp [Optional] =====----------------------------------------
     # Description: Offset: 0b, Width: 32b, lifecycle dp[31:0]
+    # - BRICKED, (2520056063): Bricked state to prevent device use
     # - IN_FIELD_LOCKED, (2520068303): Alternative in-field state that prevents use of field return states
-    # - BRICKED, (2520098138): Bricked state to prevent device use
-    # - IN_FIELD2, (2520117263): Optional in-field application state for end customer use
+    # - IN_FIELD2, (2520113183): Optional in-field application state for end customer use
     # - IN_FIELD1, (2520119303): In-field application state for end customer use (debug authentication required)
     # - DEVELOP, (2520120323): Initial customer development state after leaving NXP manufacturing
-    # Possible options: <IN_FIELD_LOCKED, BRICKED, IN_FIELD2, IN_FIELD1, DEVELOP>
-    lifecycle_dp: DEVELOP
+    # Possible options: <BRICKED, IN_FIELD_LOCKED, IN_FIELD2, IN_FIELD1, DEVELOP>
+    lifecycle_dp: BRICKED

@@ -14,6 +14,7 @@ support, and data access controls including restricted data validation.
 """
 
 import os
+from pathlib import Path
 from typing import Any, Optional
 
 import pytest
@@ -22,12 +23,28 @@ from spsdk import SPSDK_RESTRICTED_DATA_FOLDER
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils import database, family
 from spsdk.utils.database import (
+    Bootloader,
     Database,
     DatabaseManager,
+    DeviceInfo,
+    DevicesQuickInfo,
+    Features,
+    FeaturesQuickData,
+    IspCfg,
     MemBlock,
+    MemMap,
     QuickDatabase,
+    Revisions,
     SPSDKErrorMissingDevice,
     UsbId,
+    UsbIdArray,
+    _collect_usb_ids_for_feature,
+    _format_udev_rule,
+    _generate_device_rules,
+    _generate_udev_header,
+    _get_device_usb_ids,
+    generate_udev_rules,
+    get_spsdk_cache_dirname,
 )
 from spsdk.utils.family import FamilyRevision, get_db, get_device, get_families
 from spsdk.utils.misc import Endianness, load_text
@@ -745,3 +762,876 @@ def test_processor_purpose() -> None:
         assert (
             quick_info.info.purpose in ALLOWED_PURPOSES
         ), f"Device '{dev}' purpose {quick_info.info.purpose} is not amongst allowed purposes: {ALLOWED_PURPOSES}"
+
+
+# get_spsdk_cache_dirname
+
+
+def test_get_spsdk_cache_dirname_default() -> None:
+    """Test get_spsdk_cache_dirname returns a non-empty path by default."""
+    path = get_spsdk_cache_dirname()
+    assert path
+    assert isinstance(path, str)
+
+
+def test_get_spsdk_cache_dirname_env_valid(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Test get_spsdk_cache_dirname with valid absolute SPSDK_CACHE_FOLDER."""
+    cache_dir = str(tmp_path / "spsdk_cache")
+    monkeypatch.setenv("SPSDK_CACHE_FOLDER", cache_dir)
+    monkeypatch.setattr(database, "SPSDK_CACHE_FOLDER", cache_dir)
+    result = get_spsdk_cache_dirname()
+    assert result is not None
+
+
+def test_get_spsdk_cache_dirname_env_invalid(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test get_spsdk_cache_dirname with relative SPSDK_CACHE_FOLDER raises."""
+    monkeypatch.setattr(database, "SPSDK_CACHE_FOLDER", "relative/path")
+    with pytest.raises(SPSDKValueError, match="Invalid SPSDK_CACHE_FOLDER"):
+        get_spsdk_cache_dirname()
+
+
+# SPSDKErrorMissingDevice
+
+
+def test_spsdk_error_missing_device() -> None:
+    """Test SPSDKErrorMissingDevice constructor and attributes."""
+    err = SPSDKErrorMissingDevice(desc="Device not found", missing_device_name="lpc55s69")
+    assert err.description == "Device not found"
+    assert err.dev_name == "lpc55s69"
+
+
+def test_spsdk_error_missing_device_defaults() -> None:
+    """Test SPSDKErrorMissingDevice with no arguments."""
+    err = SPSDKErrorMissingDevice()
+    assert err.description is None
+    assert err.dev_name is None
+
+
+# Features class
+# pylint: disable=redefined-outer-name
+
+
+@pytest.fixture
+def lpc55_db() -> Features:
+    """Get database Features for lpc55s69."""
+    return get_db(FamilyRevision("lpc55s69"))
+
+
+def test_features_str(lpc55_db: Features) -> None:
+    """Test Features.__str__."""
+    s = str(lpc55_db)
+    assert "Features" in s
+    assert "lpc55s69" in s
+
+
+def test_features_repr(lpc55_db: Features) -> None:
+    """Test Features.__repr__."""
+    r = repr(lpc55_db)
+    assert "lpc55s69" in r
+
+
+def test_features_check_key_exists(lpc55_db: Features) -> None:
+    """Test Features.check_key for existing key."""
+    assert lpc55_db.check_key("dat", "socc") is True
+
+
+def test_features_check_key_missing(lpc55_db: Features) -> None:
+    """Test Features.check_key for missing key."""
+    assert lpc55_db.check_key("dat", "nonexistent_key_xyz") is False
+
+
+def test_features_check_key_unsupported_feature(lpc55_db: Features) -> None:
+    """Test Features.check_key with unsupported feature raises SPSDKValueError."""
+    with pytest.raises(SPSDKValueError, match="Unsupported feature"):
+        lpc55_db.check_key("nonexistent_feature_xyz", "key")
+
+
+def test_features_check_key_nested_path(lpc55_db: Features) -> None:
+    """Test Features.check_key with nested key list."""
+    # Nested path that exists
+    result = lpc55_db.check_key("dat", ["socc"])
+    assert result is True
+
+
+def test_features_check_key_nested_missing(lpc55_db: Features) -> None:
+    """Test Features.check_key with deep nested missing path."""
+    result = lpc55_db.check_key("dat", ["nonexistent", "deep", "path"])
+    assert result is False
+
+
+def test_features_get_value_unsupported_feature(lpc55_db: Features) -> None:
+    """Test get_value with unsupported feature raises SPSDKValueError."""
+    with pytest.raises(SPSDKValueError, match="Unsupported feature"):
+        lpc55_db.get_value("nonexistent_feature", "key")
+
+
+def test_features_get_int(lpc55_db: Features) -> None:
+    """Test Features.get_int returns integer."""
+    socc = lpc55_db.get_int("dat", "socc")
+    assert isinstance(socc, int)
+
+
+def test_features_get_bool(lpc55_db: Features) -> None:
+    """Test Features.get_bool returns bool."""
+    # Some bool-convertible value
+    val = lpc55_db.get_bool("dat", "socc", default=False)
+    assert isinstance(val, bool)
+
+
+def test_features_get_str(lpc55_db: Features) -> None:
+    """Test Features.get_str returns string."""
+    # Use a key that's a string in the database
+    # First find a string key
+    families = lpc55_db.features.get("mbi", {})
+    for key, val in families.items():
+        if isinstance(val, str):
+            result = lpc55_db.get_str("mbi", key)
+            assert isinstance(result, str)
+            break
+
+
+def test_features_get_list(lpc55_db: Features) -> None:
+    """Test Features.get_list returns list."""
+    # Find a list key in the database
+    for feature, data in lpc55_db.features.items():
+        for key, val in data.items():
+            if isinstance(val, list):
+                result = lpc55_db.get_list(feature, key)
+                assert isinstance(result, list)
+                return
+    pytest.skip("No list value found in lpc55s69 database")
+
+
+def test_features_get_dict(lpc55_db: Features) -> None:
+    """Test Features.get_dict returns dict."""
+    for feature, data in lpc55_db.features.items():
+        for key, val in data.items():
+            if isinstance(val, dict):
+                result = lpc55_db.get_dict(feature, key)
+                assert isinstance(result, dict)
+                return
+    pytest.skip("No dict value found in lpc55s69 database")
+
+
+# UsbId
+
+
+def test_usb_id_str() -> None:
+    """Test UsbId.__str__."""
+    usb = UsbId(vid=0x1FC9, pid=0x0021)
+    s = str(usb)
+    assert "1FC9" in s or "0021" in s
+
+
+def test_usb_id_equality() -> None:
+    """Test UsbId.__eq__ same values."""
+    usb1 = UsbId(vid=0x1234, pid=0x5678)
+    usb2 = UsbId(vid=0x1234, pid=0x5678)
+    assert usb1 == usb2
+
+
+def test_usb_id_inequality() -> None:
+    """Test UsbId.__eq__ different values."""
+    usb1 = UsbId(vid=0x1234, pid=0x5678)
+    usb2 = UsbId(vid=0xAAAA, pid=0xBBBB)
+    assert usb1 != usb2
+
+
+def test_usb_id_inequality_non_usb() -> None:
+    """Test UsbId.__eq__ with non-UsbId object."""
+    usb = UsbId(vid=0x1234, pid=0x5678)
+    assert usb != "not a usb id"
+    assert usb != 12345
+    assert usb is not None
+
+
+def test_usb_id_update() -> None:
+    """Test UsbId.update method."""
+    usb = UsbId(vid=0x1234, pid=0x5678)
+    usb.update({"vid": 0xAAAA, "pid": 0xBBBB})
+    assert usb.vid == 0xAAAA
+    assert usb.pid == 0xBBBB
+
+
+def test_usb_id_update_partial() -> None:
+    """Test UsbId.update with partial config."""
+    usb = UsbId(vid=0x1234, pid=0x5678)
+    usb.update({"vid": 0xAAAA})
+    assert usb.vid == 0xAAAA
+    assert usb.pid == 0x5678  # unchanged
+
+
+def test_usb_id_load() -> None:
+    """Test UsbId.load classmethod."""
+    usb = UsbId.load({"vid": 0x1FC9, "pid": 0x0021})
+    assert usb.vid == 0x1FC9
+    assert usb.pid == 0x0021
+
+
+# UsbIdArray
+
+
+def test_usb_id_array_str() -> None:
+    """Test UsbIdArray.__str__."""
+    arr = UsbIdArray()
+    arr.append(UsbId(vid=0x1234, pid=0x5678))
+    s = str(arr)
+    assert s  # non-empty
+
+
+def test_usb_id_array_contains_usb_id() -> None:
+    """Test UsbIdArray.__contains__ with UsbId."""
+    arr = UsbIdArray()
+    usb = UsbId(vid=0x1234, pid=0x5678)
+    arr.append(usb)
+    assert UsbId(vid=0x1234, pid=0x5678) in arr
+
+
+def test_usb_id_array_contains_missing() -> None:
+    """Test UsbIdArray.__contains__ when item not present."""
+    arr = UsbIdArray()
+    arr.append(UsbId(vid=0x1234, pid=0x5678))
+    assert UsbId(vid=0xFFFF, pid=0xFFFF) not in arr
+
+
+def test_usb_id_array_contains_non_usb_id() -> None:
+    """Test UsbIdArray.__contains__ with non-UsbId returns False."""
+    arr = UsbIdArray()
+    arr.append(UsbId(vid=0x1234, pid=0x5678))
+    assert "not-a-usb-id" not in arr
+
+
+def test_usb_id_array_load() -> None:
+    """Test UsbIdArray.load classmethod."""
+    arr = UsbIdArray.load([{"vid": 0x1234, "pid": 0x5678}, {"vid": 0xAAAA, "pid": 0xBBBB}])
+    assert len(arr) == 2
+
+
+def test_usb_id_array_no_duplicates() -> None:
+    """Test UsbIdArray.update prevents duplicates."""
+    arr = UsbIdArray()
+    arr.update([{"vid": 0x1234, "pid": 0x5678}])
+    arr.update([{"vid": 0x1234, "pid": 0x5678}])  # duplicate
+    assert len(arr) == 1
+
+
+# Bootloader
+
+
+def test_bootloader_str_with_usb() -> None:
+    """Test Bootloader.__str__ with USB IDs"""
+    usb_ids = UsbIdArray()
+    usb_ids.append(UsbId(vid=0x1FC9, pid=0x0021))
+    bl = Bootloader(protocol="mboot", interfaces=["USB"], usb_ids=usb_ids, protocol_params={})
+    s = str(bl)
+    assert "mboot" in s
+    assert "USB" in s
+
+
+def test_bootloader_str_no_usb() -> None:
+    """Test Bootloader.__str__ without USB IDs."""
+    bl = Bootloader(protocol="sdp", interfaces=["UART"], usb_ids=UsbIdArray(), protocol_params={})
+    s = str(bl)
+    assert "sdp" in s
+    assert "USB ID" not in s
+
+
+def test_bootloader_str_no_protocol() -> None:
+    """Test Bootloader.__str__ with no protocol."""
+    bl = Bootloader(protocol=None, interfaces=[], usb_ids=UsbIdArray(), protocol_params={})
+    s = str(bl)
+    assert "Not specified" in s
+
+
+def test_bootloader_invalid_protocol() -> None:
+    """Test Bootloader raises SPSDKValueError for invalid protocol."""
+    with pytest.raises(SPSDKValueError, match="Invalid protocol"):
+        Bootloader(
+            protocol="invalid_proto", interfaces=[], usb_ids=UsbIdArray(), protocol_params={}
+        )
+
+
+def test_bootloader_load() -> None:
+    """Test Bootloader.load classmethod."""
+    config = {
+        "protocol": "mboot",
+        "interfaces": ["USB", "UART"],
+        "usb": [{"vid": 0x1FC9, "pid": 0x0021}],
+        "protocol_params": {},
+    }
+    bl = Bootloader.load(config)
+    assert bl.protocol == "mboot"
+    assert "USB" in bl.interfaces
+
+
+# MemBlock
+
+
+def test_mem_block_parse_name_simple() -> None:
+    """Test MemBlock.parse_name with simple name."""
+    core, name, instance, _security = MemBlock.parse_name("sram0")
+    assert name == "sram"
+    assert instance == 0
+    assert core is None
+
+
+def test_mem_block_str() -> None:
+    """Test MemBlock.__str__."""
+    block = MemBlock("sram0", {"start_int": 0, "size_int": 65536, "external": False})
+    s = str(block)
+    assert "sram0" in s or "0x" in s
+
+
+def test_mem_block_repr() -> None:
+    """Test MemBlock.__repr__."""
+    block = MemBlock("sram0", {"start_int": 0, "size_int": 65536, "external": False})
+    r = repr(block)
+    assert "MemBlock" in r
+
+
+def test_mem_block_properties() -> None:
+    """Test MemBlock.base_address, size, external properties."""
+    block = MemBlock("sram0", {"start_int": 0x20000000, "size_int": 65536, "external": True})
+    assert block.base_address == 0x20000000
+    assert block.size == 65536
+    assert block.external is True
+
+
+def test_mem_block_create_name() -> None:
+    """Test MemBlock.create_name."""
+    name = MemBlock.create_name("sram", instance=0)
+    assert name == "sram0"
+
+
+# Features.get_value – nested key missing
+
+
+def test_features_get_value_nested_missing_no_default(lpc55_db: Features) -> None:
+    """Line 177: Missing nested group without default raises SPSDKValueError."""
+    with pytest.raises(SPSDKValueError, match="Non-existing nested group"):
+        lpc55_db.get_value("dat", ["nonexistent_group_xyz", "key"])
+
+
+def test_features_get_value_nested_missing_with_default(lpc55_db: Features) -> None:
+    """Lines 175-176: Missing nested group with default returns default value."""
+    result = lpc55_db.get_value("dat", ["nonexistent_group_xyz", "key"], default="fallback")
+    assert result == "fallback"
+
+
+def test_features_check_key_non_dict_intermediate(lpc55_db: Features) -> None:
+    """Lines 147-148: check_key returns False when intermediate value is not a dict."""
+    # 'socc' is an integer, not a dict, so traversing into it returns False
+    result = lpc55_db.check_key("dat", ["socc", "subkey"])
+    assert result is False
+
+
+# MemBlock additional parse_name paths
+
+
+def test_mem_block_parse_name_too_many_underscores() -> None:
+    """Line 650: parse_name raises SPSDKError for 3+ underscores."""
+    with pytest.raises(SPSDKError, match="parse name failed"):
+        MemBlock.parse_name("a_b_c_d")
+
+
+def test_mem_block_parse_name_invalid_security_flag() -> None:
+    """Lines 647-648: parse_name raises for invalid security suffix in 3-part name."""
+    with pytest.raises(SPSDKError, match="Invalid security flag"):
+        MemBlock.parse_name("cm33_sram_xyz")
+
+
+def test_mem_block_parse_name_unknown_block_type() -> None:
+    """Line 657: parse_name raises for unknown block type."""
+    with pytest.raises(SPSDKError, match="parse name failed"):
+        MemBlock.parse_name("unknownblock123")
+
+
+def test_mem_block_parse_name_regex_no_match() -> None:
+    """Line 654: parse_name raises when regex fails to match raw_name."""
+    with pytest.raises(SPSDKError):
+        MemBlock.parse_name("123invalid")
+
+
+# MemBlock properties
+
+
+def test_mem_block_core_property() -> None:
+    """Lines 672-673: core property extracts core from name."""
+    block = MemBlock("cm33_sram0", {"start_int": 0, "size_int": 0x1000})
+    assert block.core == "cm33"
+
+
+def test_mem_block_block_name_property() -> None:
+    """Lines 684-685: block_name property extracts base block type."""
+    block = MemBlock("cm33_sram0", {"start_int": 0, "size_int": 0x1000})
+    assert block.block_name == "sram"
+
+
+def test_mem_block_instance_property() -> None:
+    """Lines 693-694: instance property extracts numeric instance."""
+    block = MemBlock("sram2", {"start_int": 0, "size_int": 0x1000})
+    assert block.instance == 2
+
+
+def test_mem_block_security_access_property() -> None:
+    """Lines 705-706: security_access property extracts security flag."""
+    block_s = MemBlock("sram_s", {"start_int": 0, "size_int": 0x1000})
+    assert block_s.security_access is True
+    block_ns = MemBlock("sram_ns", {"start_int": 0, "size_int": 0x1000})
+    assert block_ns.security_access is False
+
+
+def test_mem_block_create_name_unknown_core() -> None:
+    """Line 732: create_name raises SPSDKError for unknown core."""
+    with pytest.raises(SPSDKError, match="unknown core name"):
+        MemBlock.create_name("sram", core="invalid_core_xyz")
+
+
+def test_mem_block_create_name_with_security() -> None:
+    """Line 740: create_name appends security suffix."""
+    name_s = MemBlock.create_name("sram", secure_access=True)
+    assert name_s.endswith("_s")
+    name_ns = MemBlock.create_name("sram", secure_access=False)
+    assert name_ns.endswith("_ns")
+
+
+# MemMap
+
+
+def test_mem_map_str() -> None:
+    """Lines 767-770: MemMap.__str__ includes block names."""
+    mem_map = MemMap.load(
+        {
+            "sram": {"start_int": 0x20000000, "size_int": 0x8000},
+            "internal-flash": {"start_int": 0x0, "size_int": 0x40000},
+        }
+    )
+    s = str(mem_map)
+    assert "sram" in s
+
+
+def test_mem_map_get_table() -> None:
+    """Lines 780-792: MemMap.get_table returns a formatted table string."""
+    mem_map = MemMap.load(
+        {
+            "sram": {"start_int": 0x20000000, "size_int": 0x8000},
+        }
+    )
+    table = mem_map.get_table()
+    assert "sram" in table.lower() or "Block" in table
+
+
+# IspCfg
+
+
+def _make_isp(rom_proto: Optional[str] = "mboot", fl_proto: Optional[str] = "sdp") -> IspCfg:
+    """Build a simple IspCfg for testing."""
+    rom_cfg: dict = {"interfaces": ["uart"]}
+    if rom_proto:
+        rom_cfg["protocol"] = rom_proto
+    fl_cfg: dict = {"interfaces": ["usb"]}
+    if fl_proto:
+        fl_cfg["protocol"] = fl_proto
+    return IspCfg(rom=Bootloader.load(rom_cfg), flashloader=Bootloader.load(fl_cfg))
+
+
+def test_isp_cfg_str_basic() -> None:
+    """Lines 874-899: IspCfg.__str__ with ROM and FlashLoader."""
+    isp = _make_isp()
+    s = str(isp)
+    assert "ROM" in s
+
+
+def test_isp_cfg_str_with_fastboot() -> None:
+    """Lines 874-899: IspCfg.__str__ includes Fastboot section when present."""
+    isp = _make_isp()
+    isp.fastboot = Bootloader.load({"protocol": "lpc", "interfaces": []})
+    s = str(isp)
+    assert "Fastboot" in s
+
+
+def test_isp_cfg_str_empty() -> None:
+    """Lines 897-899: IspCfg.__str__ returns empty string when no protocols set."""
+    isp = IspCfg(rom=Bootloader.load({}), flashloader=Bootloader.load({}))
+    s = str(isp)
+    assert s == ""
+
+
+def test_isp_cfg_update_adds_fastboot() -> None:
+    """Lines 944-957: update() creates fastboot bootloader when absent."""
+    isp = _make_isp()
+    assert isp.fastboot is None
+    isp.update({"fastboot": {"protocol": "lpc", "interfaces": []}})
+    assert isp.fastboot is not None
+    assert isp.fastboot.protocol == "lpc"
+
+
+def test_isp_cfg_update_existing_fastboot() -> None:
+    """Lines 944-957: update() updates existing fastboot bootloader."""
+    isp = _make_isp()
+    isp.fastboot = Bootloader.load({"protocol": "lpc", "interfaces": []})
+    isp.update({"fastboot": {"interfaces": ["uart"]}})
+    assert "uart" in isp.fastboot.interfaces
+
+
+def test_isp_cfg_update_adds_sdpv() -> None:
+    """Lines 944-957: update() creates sdpv bootloader when absent."""
+    isp = _make_isp()
+    assert isp.sdpv is None
+    isp.update({"sdpv": {"protocol": "sdpv", "interfaces": []}})
+    assert isp.sdpv is not None
+
+
+def test_isp_cfg_get_usb_ids() -> None:
+    """Lines 993-997: get_usb_ids returns IDs for matching protocol."""
+    rom = Bootloader.load(
+        {
+            "protocol": "mboot",
+            "interfaces": ["usb"],
+            "usb": [{"vid": 0x1234, "pid": 0x5678}],
+        }
+    )
+    isp = IspCfg(rom=rom, flashloader=Bootloader.load({}))
+    ids = isp.get_usb_ids("mboot")
+    assert len(ids) == 1
+    assert ids[0].vid == 0x1234
+
+
+def test_isp_cfg_get_usb_ids_wrong_proto() -> None:
+    """Lines 993-997: get_usb_ids returns [] for non-matching protocol."""
+    assert _make_isp().get_usb_ids("sdps") == []
+
+
+def test_isp_cfg_get_all_bootloaders() -> None:
+    """Lines 1034-1039: get_all_bootloaders includes configured bootloaders."""
+    isp = _make_isp()
+    isp.fastboot = Bootloader.load({"protocol": "lpc", "interfaces": []})
+    bootloaders = isp.get_all_bootloaders()
+    assert "rom" in bootloaders
+    assert "fastboot" in bootloaders
+
+
+def test_isp_cfg_get_bootloader_invalid_type() -> None:
+    """Lines 1048-1053: get_bootloader raises SPSDKValueError for bad type."""
+    with pytest.raises(SPSDKValueError, match="Invalid bootloader type"):
+        _make_isp().get_bootloader("invalid_type")
+
+
+def test_isp_cfg_get_bootloader_valid() -> None:
+    """Lines 1048-1053: get_bootloader returns bootloader for valid type."""
+    bl = _make_isp().get_bootloader("rom")
+    assert bl is not None
+
+
+# DeviceInfo.__repr__
+
+
+def test_device_info_repr() -> None:
+    """Line 1095: DeviceInfo.__repr__ returns expected format."""
+    config = {
+        "purpose": "Test MCU",
+        "web": "https://test.com",
+        "memory_map": {},
+        "isp": {"rom": {}, "flashloader": {}},
+    }
+    defaults = {
+        "purpose": "Default",
+        "web": "https://default.com",
+        "memory_map": {},
+        "isp": {"rom": {}, "flashloader": {}},
+    }
+    info = DeviceInfo.load(config, defaults)
+    r = repr(info)
+    assert "DeviceInfo" in r
+    assert "Test MCU" in r
+
+
+# Device and Devices (real DB)
+
+
+def test_device_repr() -> None:
+    """Line 1214: Device.__repr__ returns 'Device(<name>)'."""
+    dev = DatabaseManager().db.devices.get("lpc55s69")
+    assert "Device" in repr(dev)
+    assert "lpc55s69" in repr(dev)
+
+
+def test_device_lt() -> None:
+    """Line 1222: Device.__lt__ compares names lexicographically."""
+    db = DatabaseManager().db
+    dev_a = db.devices.get("lpc55s69")
+    dev_b = db.devices.get("mcxn947")
+    assert (dev_a < dev_b) == ("lpc55s69" < "mcxn947")
+
+
+def test_device_get_features() -> None:
+    """Line 1230: Device.get_features returns feature list."""
+    dev = DatabaseManager().db.devices.get("lpc55s69")
+    features = dev.get_features()
+    assert isinstance(features, list)
+    assert len(features) > 0
+
+
+def test_devices_get_empty_name() -> None:
+    """Line 1415: Devices.get('') raises SPSDKErrorMissingDevice."""
+    with pytest.raises(SPSDKErrorMissingDevice):
+        DatabaseManager().db.devices.get("")
+
+
+def test_devices_get_nonexistent_device() -> None:
+    """Line 1423: Devices.get raises for totally unknown device."""
+    with pytest.raises(Exception):
+        DatabaseManager().db.devices.get("completely_nonexistent_device_xyz_123")
+
+
+def test_devices_load_already_loaded() -> None:
+    """Lines 1470-1471: _load_and_append_device skips already-loaded devices."""
+    db = DatabaseManager().db
+    db.devices.get("lpc55s69")  # ensure loaded
+    count_before = len(db.devices.devices)
+    db.devices._load_and_append_device("lpc55s69")
+    assert len(db.devices.devices) == count_before
+
+
+# DevicesQuickInfo
+
+
+def test_devices_quick_info_get_feature_list_empty() -> None:
+    """Lines 1626-1628: get_feature_list returns [] when devices dict is empty."""
+    dqi = DevicesQuickInfo()
+    assert dqi.get_feature_list("any_family") == []
+
+
+def test_devices_quick_info_predecessor_lookup_populated() -> None:
+    """Lines 1604-1605: real DB has predecessor lookup entries."""
+    pl = DatabaseManager().quick_info.devices.predecessor_lookup
+    assert len(pl) > 0
+    for pred_name, current_name in pl.items():
+        assert isinstance(pred_name, str) and isinstance(current_name, str)
+
+
+def test_devices_quick_info_is_predecessor_name() -> None:
+    """DevicesQuickInfo.is_predecessor_name correctly identifies predecessors."""
+    dqi = DevicesQuickInfo()
+    dqi.predecessor_lookup = {"oldname": "newname"}
+    assert dqi.is_predecessor_name("oldname") is True
+    assert dqi.is_predecessor_name("newname") is False
+
+
+def test_devices_quick_info_get_correct_name() -> None:
+    """DevicesQuickInfo.get_correct_name resolves predecessor names."""
+    qdb = DatabaseManager().quick_info
+    pl = qdb.devices.predecessor_lookup
+    if not pl:
+        pytest.skip("No predecessor entries in DB")
+    pred, current = next(iter(pl.items()))
+    assert qdb.devices.get_correct_name(pred) == current
+    assert qdb.devices.get_correct_name(current) == current
+
+
+# FeaturesQuickData
+
+
+def test_features_quick_data_get_all_features() -> None:
+    """Line 1758: get_all_features property returns feature names."""
+    fqd = FeaturesQuickData()
+    fqd.features = {"mbi": {"mem_types": ["flexspi"]}, "cert_block": {}}
+    assert "mbi" in fqd.get_all_features
+    assert "cert_block" in fqd.get_all_features
+
+
+def test_features_quick_data_get_mem_types_missing_feature() -> None:
+    """Line 1771: get_mem_types returns [] for non-existent feature."""
+    assert FeaturesQuickData().get_mem_types("nonexistent_feature") == []
+
+
+def test_features_quick_data_get_mem_types_no_key() -> None:
+    """Line 1773: get_mem_types returns [] when feature has no mem_types."""
+    fqd = FeaturesQuickData()
+    fqd.features = {"some_feature": {"other_key": "val"}}
+    assert fqd.get_mem_types("some_feature") == []
+
+
+def test_features_quick_data_mem_types_real_db() -> None:
+    """Lines 1742-1748: FeaturesQuickData from real DB has mem_types for bootable_image."""
+    mem_types = DatabaseManager().quick_info.features_data.get_mem_types("bootable_image")
+    assert isinstance(mem_types, list) and len(mem_types) > 0
+
+
+def test_features_quick_data_get_all_features_real_db() -> None:
+    """Line 1758: get_all_features on real DB returns non-empty list."""
+    all_feats = DatabaseManager().quick_info.features_data.get_all_features
+    assert isinstance(all_feats, list) and len(all_feats) > 0
+
+
+# QuickDatabase.split_devices_to_groups
+
+
+def test_quick_database_split_devices_to_groups() -> None:
+    """Lines 1816-1825: split_devices_to_groups groups devices by purpose."""
+    qdb = DatabaseManager().quick_info
+    sample = qdb.devices.get_family_names()[:5]
+    groups = qdb.split_devices_to_groups(sample)
+    assert isinstance(groups, dict)
+    all_in_groups = [d for devs in groups.values() for d in devs]
+    for s in sample:
+        assert s in all_in_groups
+
+
+# Database.get_defaults with invalid feature
+
+
+def test_database_get_defaults_invalid_feature() -> None:
+    """Line 2089: get_defaults raises SPSDKValueError for unknown feature."""
+    with pytest.raises(SPSDKValueError, match="Invalid feature"):
+        DatabaseManager().db.get_defaults("totally_nonexistent_feature_xyz_abc")
+
+
+def test_database_get_defaults_valid_feature() -> None:
+    """get_defaults returns dict for known feature."""
+    assert isinstance(DatabaseManager().db.get_defaults("mbi"), dict)
+
+
+# Database.__hash__
+
+
+def test_database_hash() -> None:
+    """Lines 2197-2199: Database.__hash__ returns an integer."""
+    assert isinstance(hash(DatabaseManager().db), int)
+
+
+# Database.load_db_cfg_file with invalid config
+
+
+def test_database_load_db_cfg_file_invalid(tmp_path: Path) -> None:
+    """Lines 2180-2185: load_db_cfg_file raises SPSDKError for malformed YAML."""
+    bad_file = str(tmp_path / "bad.yaml")
+    with open(bad_file, "w", encoding="utf-8") as f:
+        f.write("key: [unclosed bracket\n")
+    with pytest.raises(SPSDKError):
+        DatabaseManager().db.load_db_cfg_file(bad_file)
+
+
+# DatabaseManager.clear_cache
+
+
+def test_database_manager_clear_cache_nonexistent(monkeypatch: Any, caplog: Any) -> None:
+    """Lines 2287-2289: clear_cache logs error for non-existent directory."""
+    import logging
+
+    monkeypatch.setattr(
+        database, "get_spsdk_cache_dirname", lambda: "/nonexistent/path/xyz_no_dir_abc"
+    )
+    with caplog.at_level(logging.ERROR, logger="spsdk.utils.database"):
+        DatabaseManager.clear_cache()
+    assert any("does not exist" in r.message for r in caplog.records)
+
+
+# DatabaseManager.get_restricted_data
+
+
+def test_database_manager_get_restricted_data_none(monkeypatch: Any) -> None:
+    """Lines 2304-2305: get_restricted_data returns None when not configured."""
+    monkeypatch.setattr(database, "SPSDK_RESTRICTED_DATA_FOLDER", None)
+    assert DatabaseManager.get_restricted_data() is None
+
+
+def test_database_manager_get_restricted_data_invalid_folder(monkeypatch: Any) -> None:
+    """Lines 2307-2313: get_restricted_data returns None for bad/missing path."""
+    monkeypatch.setattr(database, "SPSDK_RESTRICTED_DATA_FOLDER", "/nonexistent/restricted/xyz")
+    assert DatabaseManager.get_restricted_data() is None
+
+
+# udev rules generation
+
+
+def test_generate_udev_header() -> None:
+    """Line 2611: _generate_udev_header returns list with rule name."""
+    lines = _generate_udev_header("TESTFEATURE")
+    assert isinstance(lines, list)
+    assert any("TESTFEATURE" in line for line in lines)
+
+
+def test_format_udev_rule_valid() -> None:
+    """Lines 2705-2711: _format_udev_rule formats rule for valid UsbId."""
+    rule = _format_udev_rule(UsbId(vid=0x1FC9, pid=0x0135))
+    assert rule is not None
+    assert "1fc9" in rule
+    assert "0135" in rule
+
+
+def test_format_udev_rule_none_vid() -> None:
+    """Lines 2708-2709: _format_udev_rule returns None when vid is None."""
+    assert _format_udev_rule(UsbId(vid=None, pid=0x0135)) is None
+
+
+def test_format_udev_rule_none_pid() -> None:
+    """Lines 2708-2709: _format_udev_rule returns None when pid is None."""
+    assert _format_udev_rule(UsbId(vid=0x1FC9, pid=None)) is None
+
+
+def test_generate_device_rules_empty() -> None:
+    """Lines 2685-2686: _generate_device_rules returns [] for empty USB IDs."""
+    assert _generate_device_rules("testdevice", []) == []
+
+
+def test_generate_device_rules_with_ids() -> None:
+    """Lines 2685-2696: _generate_device_rules produces rule lines for device."""
+    result = _generate_device_rules("mydevice", [UsbId(vid=0x1234, pid=0x5678)])
+    assert isinstance(result, list)
+    assert any("MYDEVICE" in line for line in result)
+
+
+def test_get_device_usb_ids_known() -> None:
+    """Lines 2657-2675: _get_device_usb_ids returns list for real device."""
+    assert isinstance(_get_device_usb_ids(DatabaseManager(), "mimx8qxp"), list)
+
+
+def test_get_device_usb_ids_nonexistent() -> None:
+    """Lines 2657-2675: _get_device_usb_ids returns [] for unknown device."""
+    assert _get_device_usb_ids(DatabaseManager(), "nonexistent_device_xyz_123") == []
+
+
+def test_collect_usb_ids_invalid_feature() -> None:
+    """Lines 2637-2638: _collect_usb_ids_for_feature raises for unknown feature."""
+    with pytest.raises(SPSDKError, match="No devices found"):
+        _collect_usb_ids_for_feature("completely_nonexistent_feature_xyz")
+
+
+def test_collect_usb_ids_nxpuuu() -> None:
+    """Lines 2632-2647: _collect_usb_ids_for_feature returns dict for nxpuuu."""
+    result = _collect_usb_ids_for_feature("nxpuuu")
+    assert isinstance(result, dict) and len(result) > 0
+
+
+def test_generate_udev_rules_nxpuuu() -> None:
+    """Lines 2586-2602: generate_udev_rules produces valid udev content."""
+    rules = generate_udev_rules("nxpuuu")
+    assert "NXP" in rules and "SUBSYSTEM" in rules
+
+
+def test_generate_udev_rules_invalid_feature() -> None:
+    """Lines 2595-2596: generate_udev_rules raises SPSDKError for unsupported feature."""
+    with pytest.raises(SPSDKError):
+        generate_udev_rules("completely_nonexistent_feature_xyz")
+
+
+def test_generate_udev_rules_custom_rule_name() -> None:
+    """Lines 2586-2590: generate_udev_rules uses provided rule_name in header."""
+    rules = generate_udev_rules("nxpuuu", rule_name="CUSTOM_NAME")
+    assert "CUSTOM_NAME" in rules
+
+
+# Revisions.get error path
+
+
+def test_revisions_get_nonexistent() -> None:
+    """Line 321: Revisions.get raises SPSDKValueError for unknown revision."""
+    from unittest.mock import MagicMock
+
+    revisions = Revisions()
+    device = MagicMock()
+    device.name = "testdev"
+    revisions.append(Features(name="rev1", is_latest=True, device=device, features={}))
+    with pytest.raises(SPSDKValueError, match="not supported"):
+        revisions.get("nonexistent_rev")

@@ -19,6 +19,7 @@ from inspect import isclass
 from struct import unpack
 from typing import Optional, Type, Union
 
+import colorama
 from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKError, SPSDKNotTextFileError, SPSDKParsingError, SPSDKValueError
@@ -222,6 +223,34 @@ class Segment(BaseClass):
         """
         return []
 
+    def info(self, ix: int, actual_offset: Optional[int] = None) -> str:
+        """Get information about the segment in human-readable format.
+
+        :param ix: Actual index in bootable image
+        :param actual_offset: Actual offset in the image (if known).
+        :return: Formatted string with segment information.
+        """
+        output_lines = []
+        output_lines.append(
+            f"{colorama.Fore.MAGENTA}Segment ({ix}): {self.NAME.label}{colorama.Fore.RESET}"
+        )
+
+        if not self.is_present:
+            output_lines.append("  Not present")
+            return "\n".join(output_lines)
+
+        output_lines.append(f"  Type: {self.NAME.description}")
+
+        if actual_offset is not None:
+            output_lines.append(f"  Offset: 0x{actual_offset:08X}")
+        elif self.full_image_offset >= 0:
+            output_lines.append(f"  Offset: 0x{self.full_image_offset:08X}")
+        else:
+            output_lines.append("  Offset: Auto")
+
+        output_lines.append(f"  Size: {len(self)} bytes")
+        return "\n".join(output_lines)
+
     def image_info(self) -> BinaryImage:
         """Get image information in binary format.
 
@@ -271,7 +300,9 @@ class Segment(BaseClass):
         """
         raise NotImplementedError
 
-    def parse_binary(self, binary: bytes) -> None:
+    def parse_binary(
+        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
+    ) -> None:
         """Parse binary block into Segment object.
 
         This method processes a binary block and populates the segment object with the parsed data.
@@ -279,6 +310,8 @@ class Segment(BaseClass):
         content.
 
         :param binary: Binary image data to be parsed into the segment.
+        :param dek_map: Optional dictionary mapping container index to DEK value for decryption.
+                        None key applies DEK to all containers (legacy format).
         :raises SPSDKParsingError: If given binary block size is smaller than expected segment size.
         :raises SPSDKSegmentNotPresent: If the input binary contains only padding bytes.
         """
@@ -400,6 +433,9 @@ class Segment(BaseClass):
         else:
             ret.add_record_bytes("Raw data", self.raw_block.export())
 
+        if self.INIT_SEGMENT and not self.is_present and not self._offset == 0:
+            ret.add_record("Presence", VerifierResult.ERROR, "Mandatory segment is missing")
+
         return ret
 
 
@@ -505,7 +541,9 @@ class SegmentFcb(Segment):
                 self._size = -1
         return self._size
 
-    def parse_binary(self, binary: bytes) -> None:
+    def parse_binary(
+        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
+    ) -> None:
         """Parse binary block into FCB Segment object.
 
         The method attempts to parse the binary data as an FCB (Flash Configuration Block).
@@ -514,6 +552,8 @@ class SegmentFcb(Segment):
         are raised.
 
         :param binary: Binary image data to parse into FCB segment.
+        :param dek_map: Optional dictionary mapping container index to DEK value for decryption.
+                        None key applies DEK to all containers (legacy format).
         :raises SPSDKParsingError: If binary block is smaller than FCB size or parsing fails.
         :raises SPSDKSegmentNotPresent: If the input binary contains only padding bytes.
         """
@@ -532,7 +572,7 @@ class SegmentFcb(Segment):
                 return
 
             logger.warning("Get the FCB binary from device where FCB is not yet supported.")
-            super().parse_binary(binary=binary)
+            super().parse_binary(binary=binary, dek_map=dek_map)
         if self._is_padding(binary):
             raise SPSDKSegmentNotPresent("The FCB segment is not present.")
         raise SPSDKParsingError("Parsing of FCB segment failed.")
@@ -619,13 +659,17 @@ class SegmentImageVersion(Segment):
         """
         return 4
 
-    def parse_binary(self, binary: bytes) -> None:
+    def parse_binary(
+        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
+    ) -> None:
         """Parse binary block into Segment object.
 
         The method extracts segment data from the provided binary based on the segment size
         and marks the segment as parsed.
 
         :param binary: Binary image data to parse.
+        :param dek_map: Optional dictionary mapping container index to DEK value for decryption.
+                        None key applies DEK to all containers (legacy format).
         :raises SPSDKParsingError: If given binary block size is not equal to block size in
             header.
         """
@@ -753,13 +797,17 @@ class SegmentImageVersionAntiPole(Segment):
             size=self.size,
         )
 
-    def parse_binary(self, binary: bytes) -> None:
+    def parse_binary(
+        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
+    ) -> None:
         """Parse binary block into Segment object.
 
         The method validates the binary size against the segment requirements and stores
         the raw block data for further processing.
 
         :param binary: Binary image data to be parsed into segment.
+        :param dek_map: Optional dictionary mapping container index to DEK value for decryption.
+                        None key applies DEK to all containers (legacy format).
         :raises SPSDKParsingError: If given binary block size is smaller than required
             segment size.
         """
@@ -918,7 +966,9 @@ class SegmentXmcd(Segment):
         super().clear()
         self.xmcd = None
 
-    def parse_binary(self, binary: bytes) -> None:
+    def parse_binary(
+        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
+    ) -> None:
         """Parse binary block into XMCD Segment object.
 
         The method parses the input binary data to create an XMCD (External Memory
@@ -926,6 +976,8 @@ class SegmentXmcd(Segment):
         bytes to ensure valid XMCD data is present.
 
         :param binary: Binary image data to parse into XMCD segment.
+        :param dek_map: Optional dictionary mapping container index to DEK value for decryption.
+                        None key applies DEK to all containers (legacy format).
         :raises SPSDKParsingError: If given binary block size is smaller than required
             XMCD size.
         :raises SPSDKSegmentNotPresent: If the input binary contains only padding bytes.
@@ -1083,13 +1135,17 @@ class SegmentMbi(Segment):
             return self.mbi.total_len
         return super().__len__()
 
-    def parse_binary(self, binary: bytes) -> None:
+    def parse_binary(
+        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
+    ) -> None:
         """Parse binary block into Segment object.
 
         The method parses a binary image into a Master Boot Image (MBI) object, validates it,
         and stores the parsed data in the segment. Sets the parsing state accordingly.
 
         :param binary: Binary image data to be parsed.
+        :param dek_map: Optional dictionary mapping container index to DEK value for decryption.
+                        None key applies DEK to all containers (legacy format).
         :raises SPSDKParsingError: When the input binary block has zero length.
         :raises SPSDKSegmentNotPresent: When MBI parsing or validation fails.
         """
@@ -1097,7 +1153,11 @@ class SegmentMbi(Segment):
         if len(binary) == 0:
             raise SPSDKParsingError("The input binary block has zero length.")
         try:
-            mbi = MasterBootImage.parse(data=binary, family=self.family)
+            mbi = MasterBootImage.parse(
+                data=binary,
+                family=self.family,
+                dek=dek_map[None] if dek_map and None in dek_map else None,
+            )
         except SPSDKError as exc:
             raise SPSDKSegmentNotPresent(str(exc)) from exc
         self.raw_block = BinaryImage(
@@ -1256,13 +1316,17 @@ class SegmentHab(Segment):
         image.name = self.NAME.label
         return image
 
-    def parse_binary(self, binary: bytes) -> None:
+    def parse_binary(
+        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
+    ) -> None:
         """Parse binary block into Segment object.
 
         The method parses the provided binary data into a HAB (High Assurance Boot) image format
         and updates the segment's internal state accordingly.
 
         :param binary: Binary image data to be parsed.
+        :param dek_map: Optional dictionary mapping container index to DEK value for decryption.
+                        None key applies DEK to all containers (legacy format).
         :raises SPSDKParsingError: When the input binary block has zero length.
         """
         self.not_parsed = True
@@ -1402,13 +1466,18 @@ class SegmentAhab(Segment):
         image.name = self.NAME.label
         return image
 
-    def parse_binary(self, binary: bytes) -> None:
+    def parse_binary(
+        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
+    ) -> None:
         """Parse binary block into AHAB Segment object.
 
         The method validates the binary data contains a valid AHAB container header,
         parses it into an AHABImage object, and updates the segment's internal state.
+        If dek_map is provided, it will be used to decrypt encrypted containers.
 
         :param binary: Binary image data containing AHAB container.
+        :param dek_map: Optional dictionary mapping container index to DEK value for decryption.
+                        None key applies DEK to all containers (legacy format).
         :raises SPSDKParsingError: When input binary block has zero length.
         :raises SPSDKSegmentNotPresent: When AHAB container header is not available or invalid.
         """
@@ -1422,6 +1491,30 @@ class SegmentAhab(Segment):
             raise SPSDKSegmentNotPresent("AHAB container header not available") from exc
 
         ahab = AHABImage.parse(binary, family=self.family)
+
+        # Apply DEK decryption if dek_map is provided
+        if dek_map:
+            from spsdk.image.ahab.ahab_data import FlagsSrkSet
+            from spsdk.utils.misc import load_hex_string
+
+            for container_idx, container in enumerate(ahab.ahab_containers):
+                if container.flag_srk_set != FlagsSrkSet.NXP:
+                    if container.signature_block and container.signature_block.blob:
+                        # Determine which DEK to use
+                        dek_value = None
+                        if None in dek_map:
+                            # Legacy format - use for all containers
+                            dek_value = dek_map[None]
+                        elif container_idx in dek_map:
+                            # New format - use specific container DEK
+                            dek_value = dek_map[container_idx]
+
+                        if dek_value:
+                            container.signature_block.blob.dek = load_hex_string(
+                                dek_value, container.signature_block.blob._size // 8
+                            )
+                            container.decrypt_data()
+
         self.raw_block = BinaryImage(
             name=self.NAME.label + "_parsed", binary=binary, size=len(ahab.export())
         )
@@ -1472,6 +1565,35 @@ class SegmentAhab(Segment):
             ret = os.path.join(f"{self.ALT_NAME}", f"{self.ALT_NAME}.yaml")
         return ret
 
+    def _cross_validate_family(
+        self, bimg_config: Config, sub_config: Config, segment_key: str
+    ) -> None:
+        """Cross-validate family and revision between bootable-image config and sub-config.
+
+        Compares the family/revision declared in the bootable-image configuration with the
+        family/revision in the AHAB sub-configuration (e.g. spl.yaml).  A mismatch raises
+        :exc:`~spsdk.exceptions.SPSDKValueError`.
+
+        :param bimg_config: Bootable image configuration (bootable-image.yaml).
+        :param sub_config: AHAB sub-configuration (e.g. spl.yaml / uboot.yaml).
+        :param segment_key: Configuration key identifying this segment (for error messages).
+        :raises SPSDKValueError: When family or revision in sub-config differs from bimg_config.
+        """
+        try:
+            sub_family = FamilyRevision.load_from_config(sub_config)
+        except SPSDKError:
+            # Sub-config has no family field — nothing to compare.
+            return
+
+        if self.family == sub_family:
+            return
+
+        sub_config_name = bimg_config.get(segment_key, segment_key)
+        raise SPSDKValueError(
+            f"Family/revision mismatch for segment '{segment_key}': "
+            f"bootable-image uses '{self.family}' but '{sub_config_name}' declares '{sub_family}'."
+        )
+
     def load_config(self, config: Config) -> None:
         """Load segment from configuration.
 
@@ -1503,6 +1625,9 @@ class SegmentAhab(Segment):
             # In case that the file is not configuration, load is as binary
             super().load_config(config)
             return
+
+        self._cross_validate_family(config, config_data, key)
+
         try:
 
             ahab = AHABImage.load_from_config(config_data)
@@ -1540,6 +1665,28 @@ class SegmentAhab(Segment):
         if not ret.has_errors and self.ahab:
             ret.add_child(self.ahab.verify())
         return ret
+
+    def info(self, ix: int, actual_offset: Optional[int] = None) -> str:
+        """Get information about the AHAB segment in human-readable format.
+
+        Returns a formatted string containing segment information from the parent class
+        and detailed AHAB container information if AHAB data is present.
+
+        :param ix: Actual index in bootable image
+        :param actual_offset: Actual offset in the image (if known).
+        :return: Formatted string with AHAB segment and container information.
+        """
+        output_lines = []
+        output_lines.append(super().info(ix=ix, actual_offset=actual_offset))
+
+        if self.ahab:
+            output_lines.append("")
+            # Add indentation to AHAB info lines
+            ahab_info = self.ahab.info()
+            for line in ahab_info.split("\n"):
+                output_lines.append(f"  {line}")
+
+        return "\n".join(output_lines)
 
 
 class SegmentPrimaryAhab(SegmentAhab):
@@ -1692,18 +1839,22 @@ class SegmentSB21(Segment):
                 f"Cannot export SB2.1 from the configuration:\n{str(exc)}"
             ) from exc
 
-    def parse_binary(self, binary: bytes) -> None:
+    def parse_binary(
+        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
+    ) -> None:
         """Parse binary block into Segment object.
 
         This method validates the binary header using BootImageV21 validation and then
         delegates the actual parsing to the parent class implementation.
 
         :param binary: Binary image data to be parsed into segment structure.
+        :param dek_map: Optional dictionary mapping container index to DEK value for decryption.
+                        None key applies DEK to all containers (legacy format).
         :raises SPSDKError: Invalid binary header format or parsing failure.
         """
         self.not_parsed = True
         BootImageV21.validate_header(binary)
-        super().parse_binary(binary=binary)
+        super().parse_binary(binary=binary, dek_map=dek_map)
 
 
 class SegmentSB31(Segment):
@@ -1785,18 +1936,22 @@ class SegmentSB31(Segment):
                 f"Cannot export SB3.1 from the configuration:\n{str(exc)}"
             ) from exc
 
-    def parse_binary(self, binary: bytes) -> None:
+    def parse_binary(
+        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
+    ) -> None:
         """Parse binary block into Segment object.
 
         This method validates the binary header and delegates parsing to the parent class
         implementation while marking the segment as not parsed initially.
 
         :param binary: Binary image data to be parsed into segment structure.
+        :param dek_map: Optional dictionary mapping container index to DEK value for decryption.
+                        None key applies DEK to all containers (legacy format).
         :raises SPSDKError: Invalid binary header format.
         """
         self.not_parsed = True
         SecureBinary31.validate_header(binary)
-        super().parse_binary(binary=binary)
+        super().parse_binary(binary=binary, dek_map=dek_map)
 
 
 def get_segments() -> dict[BootableImageSegment, Type[Segment]]:

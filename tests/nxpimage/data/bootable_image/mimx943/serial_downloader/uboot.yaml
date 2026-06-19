@@ -1,0 +1,25 @@
+# Copyright 2025-2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ===============================================  uboot Configuration  ================================================
+
+# -------------------------------------------------------- Note --------------------------------------------------------
+# uboot_container: atf, uboot
+
+family: mimx943
+revision: latest
+target_memory: standard
+output: uboot.bin
+
+containers:
+  -
+    container:
+      srk_set: none
+      fuse_version: 0
+      sw_version: 0
+      images:
+        -
+          atf: inputs/bl31-mx943.bin
+        -
+          uboot: inputs/u-boot-mx943.bin

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """ISP Communication protocol for LPC devices.
@@ -12,10 +12,10 @@ device interaction capabilities for secure provisioning operations.
 """
 
 import inspect
-import logging
 import time
 from typing import Callable, Optional
 
+from spsdk import get_logger
 from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.exceptions import SPSDKAlignmentError, SPSDKError, SPSDKValueError
 from spsdk.lpcprog.device import LPCDevice
@@ -26,7 +26,7 @@ from spsdk.utils.family import FamilyRevision, get_db, get_families
 from spsdk.utils.misc import align_block, value_to_int, write_file
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class LPCProgCRPLevels(SpsdkEnum):

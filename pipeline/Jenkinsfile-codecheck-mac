@@ -14,6 +14,7 @@ pipeline {
 
     environment {
         PATH = "/opt/homebrew/bin/:${env.PATH}"
+        PYTEST_ADDOPTS = "--no-cov"
     }
 
     stages {
@@ -32,7 +33,7 @@ pipeline {
         stage('Codecheck') {
             steps {
                 withVenv(
-                    'tox --recreate -e py310,py313 -- --info-check gitcov'
+                    'tox --recreate -e py310,py313'
                 )
             }
         }

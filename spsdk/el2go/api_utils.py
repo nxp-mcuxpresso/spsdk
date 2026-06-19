@@ -17,6 +17,7 @@ import base64
 import json
 import logging
 import math
+import os
 import struct
 import time
 from enum import Enum
@@ -209,10 +210,31 @@ class EL2GOTPClient(EL2GOClient):
         self.fatwrite_filename = kwargs.pop("fatwrite_filename", "secure_objects.bin")
         self.fatwrite_interface = kwargs.pop("fatwrite_interface", "mmc")
         self.fatwrite_device_partition = kwargs.pop("fatwrite_device_partition", "0:1")
-        self.oem_provisioning_config_filename = kwargs.pop("oem_provisioning_config_filename", None)
+
+        oem_prov_config_path = kwargs.pop("oem_provisioning_config_path", None)
+        oem_prov_config_filename = kwargs.pop("oem_provisioning_config_filename", None)
         self.oem_provisioning_config_bin = b""
-        if self.oem_provisioning_config_filename:
-            self.oem_provisioning_config_bin = load_binary(self.oem_provisioning_config_filename)
+        if oem_prov_config_path:
+            # New behaviour: host path and device filename are separate.
+            # Device filename defaults to the basename of the host path.
+            self.oem_provisioning_config_filename: Optional[str] = (
+                oem_prov_config_filename or os.path.basename(oem_prov_config_path)
+            )
+            self.oem_provisioning_config_bin = load_binary(oem_prov_config_path)
+        elif oem_prov_config_filename:
+            # Backward-compat: old configs only set oem_provisioning_config_filename and
+            # used it as both the host path and the device filename.  Keep this working
+            # but warn the user to switch to the new parameter.
+            logger.warning(
+                "oem_provisioning_config_filename used as a host file path is deprecated. "
+                "Use oem_provisioning_config_path for the host file path and "
+                "oem_provisioning_config_filename for the device-side filename. "
+                "The device filename has been set to the basename of the provided value."
+            )
+            self.oem_provisioning_config_filename = os.path.basename(oem_prov_config_filename)
+            self.oem_provisioning_config_bin = load_binary(oem_prov_config_filename)
+        else:
+            self.oem_provisioning_config_filename = None
 
         self.boot_linux = kwargs.pop("boot_linux", False)
         self.linux_boot_sequence: list = kwargs.pop("linux_boot_sequence", [])  # type: ignore

@@ -1,5 +1,5 @@
 {
-    "cpu": "mcxa457",
+    "cpu": "MCXA457",
     "groups": [
         {
             "group": {
@@ -60,7 +60,7 @@
                 {
                     "id": "field004",
                     "name": "UPD_PARAM0",
-                    "description": "upd param0",
+                    "description": "UPD param0",
                     "offset_int": "0x0004",
                     "default_value_int": "0"
                 },
@@ -74,7 +74,7 @@
                 {
                     "id": "field00C",
                     "name": "UPD_PARAM2",
-                    "description": "upd param2",
+                    "description": "UPD param2",
                     "offset_int": "0x000C",
                     "default_value_int": "0"
                 }

@@ -41,3 +41,4 @@ class MemoryType(SpsdkEnum):
     SERIAL_DOWNLOADER = (16, "serial_downloader", "Serial downloader")
     XSPI_RAM = (17, "xspi_ram", "XSPI RAM")
     EMMC_BOOT = (18, "emmc_boot", "eMMC Boot area")
+    XSPI_NAND = (19, "xspi_nand", "XSPI NAND")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -250,11 +250,11 @@ def test_invalid_bee_protected_block_parse(data_dir: str) -> None:
     invalid_version = valid_data
     invalid_version[8:12] = bytes(0) * 4
     with pytest.raises(SPSDKError):
-        BeeProtectRegionBlock.parse(invalid_version + bytes(4))
+        BeeProtectRegionBlock.parse(bytes(invalid_version) + bytes(4))
 
     """Test for reserved area"""
     invalid_reserved = valid_data
     invalid_version[8:12] = b"\x00\x00\x01\x56"
     invalid_reserved[78] = 0xFF
     with pytest.raises(SPSDKError):
-        BeeProtectRegionBlock.parse(invalid_reserved + bytes(4))
+        BeeProtectRegionBlock.parse(bytes(invalid_reserved) + bytes(4))

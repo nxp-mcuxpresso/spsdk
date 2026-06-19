@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """SPSDK TP Data Container implementation for secure provisioning.
@@ -82,9 +82,11 @@ class EntryType(SpsdkEnum):
     """
 
     # fmt: off
-    STANDARD        = (0xA0, "standard", "Standard Entry")
-    DESTINATION     = (0xB0, "destination", "Destination Entry")
-    AUTHENTICATION  = (0xC0, "authentication", "Authentication Entry")
+    STANDARD            = (0xA0, "standard", "Standard Entry")
+    STANDARD_ISO        = (0xA1, "standard-iso", "Standard Entry with ISO padding")
+    DESTINATION         = (0xB0, "destination", "Destination Entry")
+    AUTHENTICATION      = (0xC0, "authentication", "Authentication Entry")
+    AUTHENTICATION_ISO  = (0xC1, "authentication-iso", "Authentication Entry with ISO padding")
 
 
 class DestinationType(SpsdkEnum):
@@ -161,7 +163,11 @@ class EntryHeader(BaseElement):
 
         :return: Formatted string containing hex value and description of payload type.
         """
-        enum = AuthenticationType if self.tag == EntryType.AUTHENTICATION else PayloadType
+        enum = (
+            AuthenticationType
+            if self.tag in [EntryType.AUTHENTICATION, EntryType.AUTHENTICATION_ISO]
+            else PayloadType
+        )
         return f"{self.payload_type:#06x} - {enum.from_tag(self.payload_type).description}"
 
     def __str__(self) -> str:
@@ -198,16 +204,21 @@ class EntryHeader(BaseElement):
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> Self:
+    def parse(cls, data: bytes, version: int = 1) -> Self:
         """Reconstruct the entry header from binary data.
 
         Parse binary data using the class FORMAT string to extract header components
         and create a new instance with the parsed values.
 
         :param data: Binary data containing the entry header information.
+        :param version: Version of the data container.
         :return: New instance of the class with parsed header data.
         """
-        size, _, tag, extra, p_type = struct.unpack_from(cls.FORMAT, data)
+        if version >= 3:
+            # For version 3 and above, the format is big endian and the fields are swapped
+            tag, _, size, p_type, extra = struct.unpack_from(">2B3H", data)
+        else:
+            size, _, tag, extra, p_type = struct.unpack_from(cls.FORMAT, data)
         return cls(tag=tag, payload_size=size, payload_type=p_type, entry_extra=extra)
 
 
@@ -263,13 +274,14 @@ class DestinationHeader(BaseElement):
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> Self:
+    def parse(cls, data: bytes, version: int = 1) -> Self:
         """Reconstruct the destination record from binary data.
 
         Parse binary data using the class FORMAT string to extract destination type
         and destination value, then create a new instance with the parsed values.
 
         :param data: Binary data containing the destination record information.
+        :param version: Version of the data container.
         :raises SPSDKError: Invalid data format or parsing error.
         :return: New instance of the destination record class.
         """
@@ -366,16 +378,17 @@ class DataEntry(BaseElement):
         return align_block(data, alignment=ALIGNMENT)
 
     @classmethod
-    def parse(cls, data: bytes) -> Self:
+    def parse(cls, data: bytes, version: int = 1) -> Self:
         """Parse entry from binary data.
 
         Reconstructs an entry object from its binary representation by parsing the header
         and extracting the payload data.
 
         :param data: Binary data containing the entry header and payload.
+        :param version: Version of the data container.
         :return: Reconstructed entry object with parsed payload and metadata.
         """
-        header = EntryHeader.parse(data)
+        header = EntryHeader.parse(data, version=version)
         payload_offset = header.SIZE
         payload_length = header.payload_size
         payload = data[payload_offset : payload_offset + payload_length]
@@ -459,16 +472,17 @@ class DataDestinationEntry(DataEntry):
         return align_block(data, alignment=ALIGNMENT)
 
     @classmethod
-    def parse(cls, data: bytes) -> Self:
+    def parse(cls, data: bytes, version: int = 1) -> Self:
         """Parse binary data to reconstruct the data container entry.
 
         Parses the binary data to extract entry header, destination header, and payload
         information to create a complete data container entry object.
 
         :param data: Binary data containing the serialized entry information.
+        :param version: Version of the entry header format.
         :return: Reconstructed data container entry instance.
         """
-        header = EntryHeader.parse(data)
+        header = EntryHeader.parse(data, version=version)
         dest_header = DestinationHeader.parse(data[header.SIZE :])
         payload_start = header.SIZE + dest_header.SIZE
         payload_size = header.payload_size
@@ -535,6 +549,17 @@ class DataAuthenticationEntryV2(DataAuthenticationEntry):
         return auth_type.description or auth_type.label
 
 
+class DataAuthenticationEntryISO(DataAuthenticationEntry):
+    """Data Authentication Entry with ISO padding for DICE integrity verification.
+
+    This class represents a data authentication entry that includes ISO padding to
+    ensure proper alignment and compatibility with specific cryptographic operations
+    used in DICE (Device Identifier Composition Engine) provisioning workflows.
+    """
+
+    TAG = EntryType.AUTHENTICATION_ISO.tag
+
+
 class ContainerHeader(BaseElement):
     """DICE container header for binary data serialization.
 
@@ -585,7 +610,11 @@ class ContainerHeader(BaseElement):
 
         :return: Binary representation of the container header.
         """
-        data = struct.pack(self.FORMAT, self.patch, self.minor, self.major, self.TAG, self.size, 0)
+        if self.major >= 3:
+            # For version 3 and above, use big endian format and swap version fields
+            data = struct.pack(">4B2H", self.TAG, self.major, self.minor, self.patch, 0, self.size)
+        else:
+            data = struct.pack("<4B2H", self.patch, self.minor, self.major, self.TAG, self.size, 0)
         return data
 
     @classmethod
@@ -600,6 +629,10 @@ class ContainerHeader(BaseElement):
         :return: New container header instance with parsed values.
         """
         patch, minor, major, tag, size, _ = struct.unpack_from(cls.FORMAT, data)
+        if patch == cls.TAG:
+            # We're getting version 3+, which uses big endian format, so we need to swap the values
+            patch, minor, major, tag = tag, major, minor, patch
+            size = struct.unpack_from(">H", data, offset=cls.SIZE - 2)[0]
         if tag != cls.TAG:
             raise SPSDKError(f"Invalid TAG found: {hex(tag)}, expected {hex(cls.TAG)}")
         header = cls(major=major, minor=minor, patch=patch)
@@ -646,7 +679,12 @@ class TPDataContainer(BaseElement):
         for entry in self._entries:
             info += "-" * 76 + "\n"
             if entry.header.payload_type == PayloadType.NXP_DIE_ID_AUTH_CERT:
-                info += "\n    ".join(str(TPDataContainer.parse(entry.payload)).splitlines()) + "\n"
+                try:
+                    info += (
+                        "\n    ".join(str(TPDataContainer.parse(entry.payload)).splitlines()) + "\n"
+                    )
+                except SPSDKError:
+                    info += str(entry)
             else:
                 info += str(entry)
         return info
@@ -836,8 +874,16 @@ class TPDataContainer(BaseElement):
                 break
         else:
             raise SPSDKError("Supplied keys doesn't contain EC public key")
-        # ECDSA signature doesn't contain any padding, can be used as is
-        return public_key.verify_signature(auth_entry.payload, data_to_validate)
+
+        if auth_entry.header.tag == EntryType.AUTHENTICATION_ISO.tag:
+            # need to find the ISO padding and remove it before signature verification
+            padding_start = auth_entry.payload.find(b"\x80\x00\x00\x00")
+            signature = (
+                auth_entry.payload[:padding_start] if padding_start != -1 else auth_entry.payload
+            )
+        else:
+            signature = auth_entry.payload
+        return public_key.verify_signature(signature, data_to_validate)
 
     def validate(self, keys: list[Union[bytes, PublicKey]]) -> bool:
         """Validate signature/authentication code.
@@ -896,9 +942,11 @@ class TPDataContainer(BaseElement):
         """
         header = ContainerHeader.parse(data=data)
         offset = ContainerHeader.SIZE
+        declared_size = header.size + ContainerHeader.SIZE
         container = cls()
-        while offset < len(data) and offset < header.size:
-            entry = parse_entry(data=data[offset:])
+        container.header = header
+        while offset < len(data) and offset < declared_size:
+            entry = parse_entry(data=data[offset:], version=header.major)
             offset += entry.total_size
             container.add_entry(entry=entry)
         return container
@@ -923,10 +971,11 @@ _ENTRY_CLASSES: Mapping[EntryType, Type[DataEntry]] = {
     EntryType.STANDARD: DataEntry,
     EntryType.DESTINATION: DataDestinationEntry,
     EntryType.AUTHENTICATION: DataAuthenticationEntry,
+    EntryType.AUTHENTICATION_ISO: DataAuthenticationEntryISO,
 }
 
 
-def parse_entry(data: bytes) -> "DataEntry":
+def parse_entry(data: bytes, version: int = 1) -> "DataEntry":
     """Parse data entry from raw bytes data.
 
     Common parser for all known DataEntry classes that automatically detects
@@ -934,9 +983,10 @@ def parse_entry(data: bytes) -> "DataEntry":
     class.
 
     :param data: Raw bytes data containing the data entry to parse.
+    :param version: Version of the data container.
     :raises KeyError: Unknown entry type tag found in data.
     :raises IndexError: Data too short to contain valid entry tag.
     :return: Parsed DataEntry instance of the appropriate subclass.
     """
-    tag = data[3]
-    return _ENTRY_CLASSES[EntryType.from_tag(tag)].parse(data=data)
+    tag = data[3] if version < 3 else data[0]
+    return _ENTRY_CLASSES[EntryType.from_tag(tag)].parse(data=data, version=version)

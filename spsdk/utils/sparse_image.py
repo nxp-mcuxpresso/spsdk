@@ -370,7 +370,9 @@ class SparseImage:
 
         self.chunks.append(chunk)
 
-    def _add_binary_chunks(self, data: bytes, context: ChunkBuilderContext) -> None:
+    def _add_binary_chunks(
+        self, data: bytes, context: ChunkBuilderContext, dont_care_pattern: Optional[bytes] = None
+    ) -> None:
         """Process binary data and add chunks using provided context.
 
         This method can be called multiple times with different data blocks.
@@ -379,6 +381,12 @@ class SparseImage:
 
         :param data: Raw binary data to convert to chunks (must be block-aligned).
         :param context: Chunk builder context for maintaining state between calls.
+        :param dont_care_pattern: 4-byte fill value that should be encoded as DONT_CARE
+            ("skip writing" — flash stays in the erased state). When ``None``, all fill
+            blocks are written as FILL regardless of their value. Typical values:
+            ``b"\x00\x00\x00\x00"`` for zero gaps, ``b"\xff\xff\xff\xff"`` for
+            0xFF gaps (NOR flash erased state). Pass ``None`` for blocks inside structured
+            image regions where the fill value is meaningful and must be written.
         :raises SPSDKValueError: Data length is not aligned to block size.
         """
         if len(data) == 0:
@@ -401,8 +409,9 @@ class SparseImage:
                 )
 
             if is_fill:
-                # Determine chunk type (DONT_CARE for zeros, FILL for other patterns)
-                if fill_value == b"\x00" * 4:
+                # Use DONT_CARE only when the caller supplies a matching pattern and the
+                # block content equals it — meaning flash can safely stay in the erased state.
+                if dont_care_pattern is not None and fill_value == dont_care_pattern:
                     chunk_type = SparseChunkType.DONT_CARE
                 else:
                     chunk_type = SparseChunkType.FILL
@@ -459,7 +468,7 @@ class SparseImage:
 
         # Create context and process binary data
         context = ChunkBuilderContext()
-        self._add_binary_chunks(aligned_data, context)
+        self._add_binary_chunks(aligned_data, context, dont_care_pattern=b"\x00\x00\x00\x00")
 
         # Finalize any pending chunk
         self.finalize_sparse_image(context, image_checksum)
