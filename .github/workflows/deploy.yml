@@ -11,6 +11,7 @@ on:
 
 jobs:
   package:
+    if: ${{ github.ref_name == 'master' }}
     name: Build Package
     runs-on: ubuntu-latest
     permissions: # Required by attest-build-provenance-github.
