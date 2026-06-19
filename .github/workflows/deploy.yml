@@ -18,6 +18,7 @@ jobs:
       - uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
+          fetch-tags: true
 
       - name: Build and Check Package
         #uses: hynek/build-and-inspect-python-package@v2.12.0 Use forked package with Python 3.13 as some of our dependencies can not be built with Python 3.14
