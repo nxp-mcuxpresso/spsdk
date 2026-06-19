@@ -4,8 +4,6 @@ name: Publish To PyPi
 
 on:
   push:
-    branches:
-      - master
     tags:
       - 'v*' # Create release if a tag with version is pushed
 
