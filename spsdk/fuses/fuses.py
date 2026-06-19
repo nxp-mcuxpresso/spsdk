@@ -1240,6 +1240,7 @@ class Fuses(FeatureBaseClassComm):
         if reg.individual_write_lock in [
             IndividualWriteLock.ALWAYS,
             IndividualWriteLock.IMPLICIT,
+            IndividualWriteLock.ECC,
         ]:
             reset = reg.get_reset_value()
             value = self.fuse_operator.read_fuse(reg.otp_index, reg.width)
@@ -1248,9 +1249,12 @@ class Fuses(FeatureBaseClassComm):
                     f"Fuse {reg.name} has non reset value {reset} and is write-locked."
                 )
 
-        if lock and reg.individual_write_lock == IndividualWriteLock.IMPLICIT:
+        if lock and reg.individual_write_lock in (
+            IndividualWriteLock.IMPLICIT,
+            IndividualWriteLock.ECC,
+        ):
             logger.warning(
-                "The user's lock is ignored as the fuse will be implicitly locked after write"
+                "The user's lock is ignored as the fuse will be locked automatically after write"
             )
             lock = False
         if not lock and reg.individual_write_lock == IndividualWriteLock.ALWAYS:
@@ -1260,7 +1264,10 @@ class Fuses(FeatureBaseClassComm):
             lock = True
         self.fuse_operator.write_fuse(reg.otp_index, reg.get_value(), reg.width, lock, verify)
         # lock the local register so it matches the real state in chip
-        if lock or reg.individual_write_lock == IndividualWriteLock.IMPLICIT:
+        if lock or reg.individual_write_lock in (
+            IndividualWriteLock.IMPLICIT,
+            IndividualWriteLock.ECC,
+        ):
             reg.lock(FuseLock.WRITE_LOCK)
         # Remove from cache after write if it's a lock fuse
         if self.registers.is_lock_fuse(reg) and reg.uid in self._cache:

@@ -41,7 +41,7 @@ examples = ["flask", "requests", "ipython", "notebook", "ipywidgets"]
 dk6 = ["pyftdi", "pylibftdi", "ftd2xx"]
 oscca = ["gmssl<4,>=3.2"]
 can = ["python-can<5,>=4.5"]
-jlink = ["spsdk-jlink<1,>=0.3.1"]
+jlink = ["spsdk-jlink<1,>=0.3.4"]
 lauterbach = ["spsdk-lauterbach<1,>=0.4.0"]
 pemicro = ["spsdk-pemicro<1,>=0.3.1"]
 pkcs11 = ["spsdk-pkcs11<1,>=0.3.1"]
@@ -115,6 +115,7 @@ exclude = [
 
 [tool.pytest.ini_options]
 junit_family = "xunit1"
+addopts = "-p no:nb_regression"
 
 [tool.coverage.report]
 exclude_lines = [
@@ -284,9 +285,7 @@ spsdk_full_test_scope_win11 = { artifact_regex = ".*results.xml" }
 project_name = "spsdk"
 include_detector_types = ["pip"]
 sbom_location = "SBOM-spsdk.spdx.json"
-install_hook = [
-    'uv pip install ".[all]" -r requirements-develop.txt --force-reinstall',
-]
+install_hook = ['uv pip install ".[all]" --force-reinstall']
 license = 'BSD 3-clause "New" or "Revised" License'
 excluded_directories = ['build', 'dist']
 

@@ -26,7 +26,7 @@ info:
   isp:
     rom:
       protocol: mboot
-      interfaces: ["uart", "spi", "i2c"]
+      interfaces: ["uart", "spi", "i2c", "usb"]
 
 features:
   # # ======== Fuses description section ========
@@ -85,10 +85,27 @@ features:
     allow_empty_hash: False # Some chips allow empty image hash in OEM Open LC
     valid_offset_minimal_alignment: 4
     container_image_size_alignment: 1
+    pfr_hash_0:
+      _name: "AHAB ECC SRKH"
+      sub_feature: cmpa
+      grouped_register: cmpa_rotkh
+    pfr_hash_1:
+      _name: "AHAB PQC SRKH"
+      sub_feature: cmpa
+      grouped_register: cmpa_pqc_rotkh
     core_ids:
       CORTEX_M33: [1, "cortex-m33", "Cortex M33 - Boot core"]
     extra_containers: []
     image_hash_types: [sha256, sha384] # Supported image hash types
+    signature_algorithms:
+      __replace__: true
+      ECDSA: [0x27, "ECDSA", "ECDSA signature algorithm"]
+      ML_DSA: [0xD2, "ML-DSA", "ML-DSA PQC algorithm"]
+    hash_algorithms:
+      __replace__: true
+      SHA256: [0x00, "SHA256", "SHA-256 hash algorithm"]
+      SHA384: [0x01, "SHA384", "SHA-384 hash algorithm"]
+      SHA512: [0x02, "SHA512", "SHA-512 hash algorithm"]
 
   # ======== MBI section ========
   mbi:
@@ -206,6 +223,7 @@ features:
           image_version_ap: 0x0600
           mbi: 0x1000
 
+        image_pattern: ones
   # ======== FCB section ========
   fcb:
     mem_types:

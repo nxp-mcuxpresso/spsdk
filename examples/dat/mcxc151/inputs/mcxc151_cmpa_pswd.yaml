@@ -1,0 +1,25 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ========================  PFR CMPA_PSWD configuration template for mcxc151, Revision: latest  ========================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxc151
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ------------------------------------===== Configuration area type [Required] =====------------------------------------
+# Description: PFR / IFR type
+# Possible options: <CMPA_PSWD, cmpa_pswd>
+type: CMPA_PSWD
+# --------------------------------------------===== mcxc151 [Required] =====--------------------------------------------
+settings:
+  # --------------------------------------===== DBG_AUTH_PASSWORD [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000000, Width: 128b; DBG_AUTH_PASSWORD[127:0]
+  DBG_AUTH_PASSWORD: '00000010010000000000000110000000'

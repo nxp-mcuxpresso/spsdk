@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,16 +13,16 @@ the Serial Download Protocol, enabling device programming and debugging
 operations through various interfaces.
 """
 
-import logging
 import math
 from typing import Any, Optional
 
+from spsdk import get_logger
 from spsdk.sdp.commands import CmdPacket, CommandTag, ResponseValue
 from spsdk.sdp.error_codes import StatusCode
 from spsdk.sdp.exceptions import SdpCommandError, SdpConnectionError, SdpError
 from spsdk.sdp.interfaces import SDPDeviceTypes
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 ########################################################################################################################
@@ -134,7 +134,7 @@ class SDP:
             logger.info("RX-CMD: Device Disconnected")
             raise SdpConnectionError("Device Disconnected !")
 
-        logger.debug(f"TX-PACKET: {str(cmd_packet)}")
+        logger.trace(f"TX-PACKET: {str(cmd_packet)}")
         self._status_code = StatusCode.SUCCESS
 
         try:
@@ -198,7 +198,7 @@ class SDP:
             if not response.hab:
                 data += response.raw_data
             else:
-                logger.debug(f"RX-DATA: {str(response)}")
+                logger.trace(f"RX-DATA: {str(response)}")
                 self._hab_status = response.value
                 if response.value == ResponseValue.LOCKED:
                     self._status_code = StatusCode.HAB_IS_LOCKED
@@ -222,7 +222,7 @@ class SDP:
             logger.info("TX-DATA: Device Disconnected")
             raise SdpConnectionError("Device Disconnected !")
 
-        logger.debug(f"TX-PACKET: {str(cmd_packet)}")
+        logger.trace(f"TX-PACKET: {str(cmd_packet)}")
         self._status_code = StatusCode.SUCCESS
         ret_val = True
 
@@ -235,14 +235,14 @@ class SDP:
 
             # Read HAB state (locked / unlocked)
             hab_response = self._interface.read()
-            logger.debug(f"RX-DATA: {str(hab_response)}")
+            logger.trace(f"RX-DATA: {str(hab_response)}")
             self._hab_status = hab_response.value
             if hab_response.value != ResponseValue.UNLOCKED:
                 self._hab_status = StatusCode.HAB_IS_LOCKED.tag
 
             # Read Command Status
             cmd_response = self._interface.read()
-            logger.debug(f"RX-DATA: {str(cmd_response)}")
+            logger.trace(f"RX-DATA: {str(cmd_response)}")
             self._cmd_status = cmd_response.value
             if (
                 cmd_packet.tag == CommandTag.WRITE_DCD

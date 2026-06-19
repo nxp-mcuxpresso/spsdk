@@ -11,6 +11,10 @@ pipeline {
         timeout(time: 1, unit: 'HOURS', activity: true)   // timeout on whole pipeline job
     }
 
+    environment {
+        PYTEST_ADDOPTS = "--no-cov"
+    }
+
     stages {
         stage('Checkout') {
             steps {

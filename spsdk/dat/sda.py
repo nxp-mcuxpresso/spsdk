@@ -33,13 +33,14 @@ This module supports both authentication modes:
 2. Diversified ADKP: Derive device-specific key from master ADKP and UID (diversification enabled)
 """
 
+import functools
 import struct
-from typing import Callable
+from typing import Any, Callable, no_type_check
 
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.symmetric import aes_ecb_encrypt
 from spsdk.dat.debug_mailbox import logger
-from spsdk.debuggers.debug_probe import DebugProbe
+from spsdk.debuggers.debug_probe import DebugProbe, DebugProbeCoreSightOnly
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db, get_families
@@ -142,12 +143,67 @@ class SdaAuthentication:
         """
         self.family = family
         self._db = get_db(family)
-        self.debug_probe = debug_probe
-        self.sda_ap_index = self._db.get_int(self.FEATURE, "sda_ap_index", 7)
+        self.debug_probe: DebugProbe = debug_probe
+        # -1 means auto-discover via get_sda_ap decorator on first register access
+        self.sda_ap_index = self._db.get_int(self.FEATURE, "sda_ap_index", -1)
 
-        # Verify SDA AP is accessible
+        # Verify SDA AP is accessible (triggers auto-discovery if sda_ap_index == -1)
         if not self.verify_sda_ap():
             raise SPSDKError("SDA AP verification failed - cannot access SDA AP")
+
+    @no_type_check
+    # pylint: disable=no-self-argument
+    def get_sda_ap(func: Any):
+        """Decorator that ensures SDA AP index is resolved before first register access.
+
+        Follows the same pattern as ``get_dbgmlbx_ap`` in DebugMailbox. If ``sda_ap_index``
+        is already set (>= 0, e.g. from the device database), the wrapped function is called
+        directly. Otherwise, all possible AP indices are scanned for an AP whose IDR matches
+        the expected SDA AP value (``SDA_AP_IDR``).
+
+        :param func: The function to decorate (must be a bound method of SdaAuthentication).
+        :raises SPSDKError: When no SDA AP is found after scanning all candidates.
+        :return: Decorated function wrapper.
+        """
+        POSSIBLE_SDA_AP_IX = [7, 6, 5, 4, 3, 2, 1, 0]
+
+        @functools.wraps(func)
+        def wrapper(self: "SdaAuthentication", *args, **kwargs):
+            """Wrapper that auto-detects the SDA AP index on first use if not already set.
+
+            :param self: SdaAuthentication instance.
+            :param args: Positional arguments forwarded to the wrapped function.
+            :param kwargs: Keyword arguments forwarded to the wrapped function.
+            :raises SPSDKError: When no SDA AP with a matching IDR can be found.
+            :return: Result of the wrapped function call.
+            """
+            if self.sda_ap_index < 0:
+                logger.warning(
+                    "SDA AP index not set in device database, attempting auto-detection."
+                )
+                for i in POSSIBLE_SDA_AP_IX:
+                    try:
+                        idr = self.debug_probe.coresight_reg_read_safe(
+                            access_port=True,
+                            addr=self.debug_probe.get_coresight_ap_address(
+                                access_port=i, address=SdaAuthentication.IDR_ADDR
+                            ),
+                        )
+                        if idr == SdaAuthentication.SDA_AP_IDR:
+                            self.sda_ap_index = i
+                            logger.debug(f"Found SDA AP at AP{i} (IDR=0x{idr:08X})")
+                            break
+                    except SPSDKError:
+                        pass
+
+                if self.sda_ap_index < 0:
+                    raise SPSDKError(
+                        f"SDA AP not found — no AP with expected IDR 0x{SdaAuthentication.SDA_AP_IDR:08X}"
+                    )
+
+            return func(self, *args, **kwargs)  # pylint: disable=not-callable
+
+        return wrapper
 
     @classmethod
     def get_supported_families(cls, include_predecessors: bool = False) -> list[FamilyRevision]:
@@ -168,10 +224,13 @@ class SdaAuthentication:
     def verify_sda_ap(self) -> bool:
         """Verify SDA AP is accessible and has correct IDR.
 
-        Reads the SDA AP IDR register and verifies it matches the expected value.
-        This is used both before and after authentication to ensure SDA AP access.
+        First tries to read the SDA AP IDR register and verify it matches the expected value.
+        Before authentication, the IDR register is access-gated by the DAPMUX security
+        feature of certain devices (e.g. MCXE31B). In that case, falls back to reading the
+        AUTHSTTS register (0x00) which is always accessible. If AUTHSTTS returns a plausible
+        value (not all-zeros or all-ones), the SDA AP is considered accessible.
 
-        :return: True if SDA AP IDR is correct, False otherwise.
+        :return: True if SDA AP is accessible (IDR matches or AUTHSTTS is readable), False otherwise.
         """
         try:
             idr = self._read_reg(self.IDR_ADDR)
@@ -185,8 +244,25 @@ class SdaAuthentication:
                 )
             return is_valid
         except SPSDKError as e:
-            logger.error(f"Reading SDA AP ID Register failed: {e}")
-            return False
+            # IDR may be blocked by DAPMUX security gating before authentication.
+            # Fall back to reading AUTHSTTS (0x00) which is always accessible.
+            logger.debug(
+                f"SDA AP IDR read failed (may be access-gated before auth): {e}. "
+                "Falling back to AUTHSTTS accessibility check."
+            )
+            try:
+                authstts = self._read_reg(self.AUTHSTTS_ADDR)
+                if authstts not in (0x00000000, 0xFFFFFFFF):
+                    logger.info(
+                        f"SDA AP AUTHSTTS accessible (AUTHSTTS=0x{authstts:08X}). "
+                        "IDR will be verified after authentication."
+                    )
+                    return True
+                logger.error(f"SDA AP AUTHSTTS returned implausible value 0x{authstts:08X}.")
+                return False
+            except SPSDKError as e2:
+                logger.error(f"SDA AP AUTHSTTS read also failed: {e2}")
+                return False
 
     def get_challenge(self) -> bytes:
         """Read authentication challenge from device.
@@ -347,7 +423,9 @@ class SdaAuthentication:
         logger.info("Starting SDA Authentication (Password Mode)")
 
         # Write password to KEYRESPn registers (first 4 registers for 128-bit password)
-        self._write_keyresp_registers(adkp_key, num_registers=4)
+        # and zero-pad the remaining 4 registers (bits 128-255 must be zero per spec)
+        padded_key = adkp_key + bytes(16)
+        self._write_keyresp_registers(padded_key, num_registers=8)
 
         # Trigger authentication and verify
         self._trigger_authentication_and_verify()
@@ -366,25 +444,56 @@ class SdaAuthentication:
 
         :raises SPSDKError: If authentication fails.
         """
-        # Trigger authentication by setting AUTHCTL.HSEAUTHREQ
+        # Ensure system power domain is active before triggering HSE authentication.
+        # HSE firmware requires the system power domain (CSYSPWRUPREQ) to be asserted
+        # in order to process HSEAUTHREQ. connect_safe() calls power_up_target() on
+        # startup but some probe sequences may drop it; re-assert here best-effort.
+        if isinstance(self.debug_probe, DebugProbeCoreSightOnly):
+            try:
+                self.debug_probe.power_up_target()
+                logger.debug("System and debug power domains asserted for HSE authentication.")
+            except SPSDKError as e:
+                logger.debug(
+                    f"Failed to assert system power for HSE authentication: {e}. Continuing."
+                )
+
+        # Trigger authentication by setting AUTHCTL.HSEAUTHREQ.
+        # IMPORTANT: Do NOT call _write_reg() here because it internally calls connect()
+        # which would clear CSYSPWRUPREQ again. Write directly to the AP register.
         logger.info("Triggering authentication by setting AUTHCTL.HSEAUTHREQ")
-        self._write_reg(self.AUTHCTL_ADDR, self.AUTHCTL_HSEAUTHREQ)
+        full_authctl_addr = self.debug_probe.get_coresight_ap_address(
+            access_port=self.sda_ap_index, address=self.AUTHCTL_ADDR
+        )
+        self.debug_probe.coresight_reg_write_safe(
+            addr=full_authctl_addr, data=self.AUTHCTL_HSEAUTHREQ
+        )
         logger.info("Writing SDA AP AUTHCTL.HSEAUTHREQ succeeded.")
 
-        # Enable debug by setting DBGENCTRL.GDBGEN and DBGENCTRL.CDBGEN
+        # Enable debug by setting DBGENCTRL.GDBGEN and DBGENCTRL.CDBGEN.
+        # Also written directly without connect() to preserve system power domain.
         logger.info("Enabling debug by setting DBGENCTRL.GDBGEN and DBGENCTRL.CDBGEN")
         dbgenctrl_value = self.DBGENCTRL_GDBGEN | self.DBGENCTRL_CDBGEN
-        self._write_reg(self.DBGENCTRL_ADDR, dbgenctrl_value)
+        full_dbgenctrl_addr = self.debug_probe.get_coresight_ap_address(
+            access_port=self.sda_ap_index, address=self.DBGENCTRL_ADDR
+        )
+        self.debug_probe.coresight_reg_write_safe(addr=full_dbgenctrl_addr, data=dbgenctrl_value)
         logger.info("Writing SDA AP DBGENCTRL.GDBGEN and DBGENCTRL.CDBGEN succeeded.")
 
-        # Verify SDA AP is still accessible (if wrong password/response, this will fail)
+        # Verify SDA AP is still accessible after authentication attempt.
+        # On devices with DAPMUX security gating (e.g. MCXE31B), a wrong key causes
+        # immediate SDA-AP lockout after HSEAUTHREQ with system power active.
         if not self.verify_sda_ap():
             raise SPSDKError(
                 "SDA AP verification failed after authentication - "
-                "wrong password or response provided"
+                "wrong password or response provided. Power-cycle the device to clear lockout."
             )
 
-        # Check authentication status
+        # Check authentication status.
+        # NOTE: On MCXE31B in CUST_DEL lifecycle, AUTHSTTS.APPDBGEN (bit 30) and
+        # AUTHSTTS.SYSDBGEN (bit 29) are permanently set to 1 by the lifecycle controller,
+        # regardless of whether HSE authentication was accepted or rejected. This means the
+        # AUTHSTTS check alone cannot confirm auth success on these devices. The definitive
+        # test is whether AHB-AP (MEM-AP) access works after auth.
         logger.info("Checking authentication status")
         authstts = self._read_reg(self.AUTHSTTS_ADDR)
         logger.debug(f"AUTHSTTS: 0x{authstts:08X}")
@@ -470,6 +579,7 @@ class SdaAuthentication:
 
         return derived_adkp
 
+    @get_sda_ap
     def _read_reg(self, addr: int) -> int:
         """Read SDA AP register.
 
@@ -483,6 +593,7 @@ class SdaAuthentication:
         )
         return self.debug_probe.coresight_reg_read_safe(addr=full_addr)
 
+    @get_sda_ap
     def _write_reg(self, addr: int, data: int) -> None:
         """Write SDA AP register.
 

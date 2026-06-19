@@ -320,11 +320,13 @@ class DevHsmSB31(DevHsm):
         if cust_mk_sk_blob_found:
             self.info_print(" 5.4.1 CUST_MK_SK/SBKEK key blob found in configuration")
             expected_position = self.get_keyblob_position()
-            if not isinstance(sb3_data.commands[expected_position], CmdLoadKeyBlob):
+            if (
+                not isinstance(sb3_data.commands[expected_position], CmdLoadKeyBlob)
+                and not self._keyblob_pos_warning_logged
+            ):
                 expected_desc = "last" if expected_position == -1 else str(expected_position)
-                logger.warning(
-                    f"LoadKeyBlob command not found at expected {expected_desc} position."
-                )
+                logger.debug(f"LoadKeyBlob command not found at expected {expected_desc} position.")
+                self._keyblob_pos_warning_logged = True
         elif self.cust_mk_sk:
             self.info_print(" 5.4.1 Injecting wrapped key")
 

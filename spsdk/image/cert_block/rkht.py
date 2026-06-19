@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -236,7 +236,7 @@ class RKHT:
             return extract_public_key(key, password, search_paths=search_paths)
 
         if isinstance(key, (bytes, bytearray)):
-            return extract_public_key_from_data(key, password)
+            return extract_public_key_from_data(bytes(key), password)
 
         raise SPSDKError("RKHT: Unsupported key to load.")
 
@@ -392,8 +392,8 @@ class RKHTv21(RKHT):
         """
         hash_table = bytes()
         if len(self.rkh_list) > 1:
-            hash_table = bytearray().join(self.rkh_list)
-        return bytes(hash_table)
+            hash_table = bytes().join(self.rkh_list)
+        return hash_table
 
     @classmethod
     def parse(cls, rkht: bytes, hash_algorithm: EnumHashAlgorithm) -> Self:

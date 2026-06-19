@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +14,6 @@ implementations used across SPSDK for secure provisioning operations.
 import abc
 import inspect
 import json
-import logging
 import sys
 from http import HTTPStatus
 from typing import Any, Optional, Type, Union
@@ -22,13 +21,15 @@ from typing import Any, Optional, Type, Union
 import requests
 from typing_extensions import Self, TypeAlias
 
+from spsdk import SPSDK_LOG_LEVEL_TRACE
 from spsdk import __version__ as spsdk_version
+from spsdk import get_logger
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.schema_validator import CommentedConfig
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 if sys.version_info < (3, 11):
     from enum import Enum
@@ -177,8 +178,8 @@ class HTTPClientBase(abc.ABC):
         json_payload.update(self.kwargs)
         full_url = self.base_url + url
         logger.info(f"Requesting: {full_url}")
-        logger.debug(f"Request params: {json.dumps(params, indent=2)}")
-        logger.debug(f"Request body: {json.dumps(json_payload, indent=2)}")
+        logger.trace(f"Request params: {json.dumps(params, indent=2)}")
+        logger.trace(f"Request body: {json.dumps(json_payload, indent=2)}")
 
         response = self.session.request(
             method=method.value,
@@ -189,10 +190,10 @@ class HTTPClientBase(abc.ABC):
             timeout=self.timeout,
         )
         logger.info(f"Response: {response}")
-        if logger.isEnabledFor(logging.DEBUG):
+        if logger.isEnabledFor(SPSDK_LOG_LEVEL_TRACE):
             try:
                 body = response.json()
-                logger.debug(f"Body: {json.dumps(body, indent=2)}")
+                logger.trace(f"Body: {json.dumps(body, indent=2)}")
             except json.JSONDecodeError:
                 logger.debug("No JSON body found in the response")
 

@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -62,11 +62,16 @@ class MbootUARTInterface(MbootSerialProtocol):
         :param port: Name of preferred serial port, defaults to None.
         :param baudrate: Speed of the UART interface, defaults to 56700.
         :param timeout: Timeout in milliseconds, defaults to 5000.
+        :raises SpsdkNoDeviceFoundError: When a specific port was accessible but did not
+            respond to the PING command, indicating the device may not be in bootloader mode.
         :return: List of interfaces responding to the PING command.
         """
+        from spsdk.utils.interfaces.protocol.protocol_base import SpsdkNoDeviceFoundError
+
         baudrate = baudrate or cls.default_baudrate
         devices = SerialDevice.scan(port=port, baudrate=baudrate, timeout=timeout)
         interfaces = []
+        ping_failed_ports: list[str] = []
         for device in devices:
             try:
                 interface = cls(device)
@@ -74,6 +79,31 @@ class MbootUARTInterface(MbootSerialProtocol):
                 interface._ping()
                 interface.close()
                 interfaces.append(interface)
-            except Exception:
+            except Exception as e:
+                logger.debug(  # pylint: disable=logging-fstring-interpolation
+                    f"UART ping failed on port '{device}' at {baudrate} baud: {e}"
+                )
                 interface.close()
+                ping_failed_ports.append(str(device))
+
+        if ping_failed_ports and not interfaces:
+            # Port(s) were accessible but device did not respond to ping.
+            # Give a specific hint rather than the generic "no devices found" message.
+            ports_str = ", ".join(ping_failed_ports)
+            baudrate_hint = (
+                f" If the device uses a different baud rate, specify it explicitly "
+                f"(e.g., '{ping_failed_ports[0]},{baudrate * 2}' or "
+                f"'{ping_failed_ports[0]},115200')."
+                if baudrate != 115200
+                else ""
+            )
+            raise SpsdkNoDeviceFoundError(
+                cls.identifier,
+                f"port={ports_str}, baudrate={baudrate}, timeout={timeout}",
+                hint=(
+                    f"Device found on port(s) {ports_str} but did not respond to PING "
+                    f"at {baudrate} baud. Ensure the device is in bootloader mode."
+                    f"{baudrate_hint}"
+                ),
+            )
         return interfaces

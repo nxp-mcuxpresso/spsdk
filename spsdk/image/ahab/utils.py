@@ -471,8 +471,8 @@ def ahab_fix_signature_block_version(
 
     logger.info("Trying to find signature blocks version 0 on every 0x10 bytes")
     for offset in range(0, len(data), 0x10):
-        if not DummySignature.check_container_head(data[offset : offset + 0x10]).has_errors:
-            _, length, version = HeaderContainer.parse_head(data[offset : offset + 0x10])
+        if not DummySignature.check_container_head(bytes(data[offset : offset + 0x10])).has_errors:
+            _, length, version = HeaderContainer.parse_head(bytes(data[offset : offset + 0x10]))
             if length == 16 and version == 0:
                 data[offset] = 1
                 logger.info(f"Fixed signature block version at {hex(offset)}")
@@ -481,4 +481,4 @@ def ahab_fix_signature_block_version(
     if bimg.verify().has_errors:
         raise SPSDKError("Verification of fixed image failed")
 
-    return data
+    return bytes(data)

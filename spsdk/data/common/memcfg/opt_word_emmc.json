@@ -277,7 +277,18 @@
                             "width": 1
                         },
                         {
-                            "width": 4
+                            "id": "field000-bits28-31",
+                            "width": 4,
+                            "name": "Tag",
+                            "access": "RW",
+                            "description": "Tag, must be 0xC",
+                            "values": [
+                                {
+                                    "name": "eMMC",
+                                    "value": 12,
+                                    "description": "eMMC config block tag"
+                                }
+                            ]
                         }
                     ]
                 },
@@ -290,7 +301,21 @@
                     "default_value_int": "0x0",
                     "bitfields": [
                         {
-                            "width": 19
+                            "id": "field004-bits0-3",
+                            "width": 4,
+                            "name": "Instance",
+                            "access": "RW",
+                            "description": "eMMC peripheral instance"
+                        },
+                        {
+                            "width": 14
+                        },
+                        {
+                            "id": "field004-bit18",
+                            "width": 1,
+                            "name": "Enable1V8",
+                            "access": "RW",
+                            "description": "Enable 1.8V switching"
                         },
                         {
                             "id": "field004-bit19",

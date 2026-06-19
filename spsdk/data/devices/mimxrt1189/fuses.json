@@ -68,7 +68,7 @@
                             "width": 3,
                             "id": "fuse0-bits-12-14",
                             "name": "LOCK_CFG_LOCK",
-                            "description": "Lock for Fuse Lock bits;\n000 - Unlocked (fuses can be read, sensed, burned or overridden in the corresponding OTP shadow  register);\nxx1 - WP (Write Protect, the controlled field can not be burned); x1x - OP (Over-ride Protect, the \ncontrolled field shadow registers can not be over-written);\n1xx - RP (Read Protect, the controlled field can be sensed only, but can't be read from \nshadow registers)",
+                            "description": "Lock for Fuse Lock bits;\n000 - Unlocked (fuses can be read, sensed, burned or overridden in the corresponding OTP shadow register);\nxx1 - WP (Write Protect, the controlled field can not be burned); x1x - OP (Over-ride Protect, the \ncontrolled field shadow registers can not be over-written);\n1xx - RP (Read Protect, the controlled field can be sensed only, but can't be read from \nshadow registers)",
                             "values": [
                                 {
                                     "name": "Unlocked",
@@ -130,7 +130,7 @@
                             "width": 3,
                             "id": "fuse1-bits-3-5",
                             "name": "COM_DEVICE_ID0_LOCK",
-                            "description": "Communication Device ID0 Lock - Ethernet;\n000 - Unlocked (fuses can be read, sensed, burned or overridden in the corresponding OTP shadow  register);\nxx1 - WP (Write Protect, the controlled field can not be burned); x1x - OP (Over-ride Protect, the \ncontrolled field shadow registers can not be over-written);\n1xx - RP (Read Protect, the controlled field can be sensed only, but can't be read from \nshadow registers)",
+                            "description": "Communication Device ID0 Lock - Ethernet;\n000 - Unlocked (fuses can be read, sensed, burned or overridden in the corresponding OTP shadow register);\nxx1 - WP (Write Protect, the controlled field can not be burned); x1x - OP (Over-ride Protect, the \ncontrolled field shadow registers can not be over-written);\n1xx - RP (Read Protect, the controlled field can be sensed only, but can't be read from \nshadow registers)",
                             "values": [
                                 {
                                     "name": "Unlocked",
@@ -178,7 +178,7 @@
                             "width": 3,
                             "id": "fuse1-bits-6-8",
                             "name": "COM_DEVICE_ID1_LOCK",
-                            "description": "Communication Device ID1 Lock - USB, Ethernet;\n000 - Unlocked (fuses can be read, sensed, burned or overridden in the corresponding OTP shadow  register);\nxx1 - WP (Write Protect, the controlled field can not be burned); x1x - OP (Over-ride Protect, the \ncontrolled field shadow registers can not be over-written);\n1xx - RP (Read Protect, the controlled field can be sensed only, but can't be read from \nshadow registers)",
+                            "description": "Communication Device ID1 Lock - USB, Ethernet;\n000 - Unlocked (fuses can be read, sensed, burned or overridden in the corresponding OTP shadow register);\nxx1 - WP (Write Protect, the controlled field can not be burned); x1x - OP (Over-ride Protect, the \ncontrolled field shadow registers can not be over-written);\n1xx - RP (Read Protect, the controlled field can be sensed only, but can't be read from \nshadow registers)",
                             "values": [
                                 {
                                     "name": "Unlocked",
@@ -426,7 +426,7 @@
                     "name": "BOOT_CFG0",
                     "description": "Fuse 24 [799:792]",
                     "index_int": "0x0018",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -779,7 +779,7 @@
                     "name": "BOOT_CFG1",
                     "description": "Fuse 25 [823:816]",
                     "index_int": "0x0019",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -1049,7 +1049,7 @@
                     "name": "BOOT_CFG2",
                     "description": "Fuse 26 [847:840]",
                     "index_int": "0x001A",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -1189,7 +1189,7 @@
                     "name": "BOOT_CFG3",
                     "description": "Fuse 27 [887:880]",
                     "index_int": "0x001B",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -1430,7 +1430,7 @@
                     "name": "BOOT_CFG4",
                     "description": "Fuse 28 [911:904]",
                     "index_int": "0x001C",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -1720,7 +1720,7 @@
                     "name": "BOOT_CFG5",
                     "description": "Fuse 29 [959:952]",
                     "index_int": "0x001D",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -2155,7 +2155,7 @@
                     "name": "BOOT_CFG6",
                     "description": "Fuse 30 [991:984]",
                     "index_int": "0x001E",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -2407,7 +2407,7 @@
                     "name": "BOOT_CFG7",
                     "description": "Fuse 31 [1023:1016]",
                     "index_int": "0x001F",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -2627,7 +2627,7 @@
                     "name": "BOOT_CFG8",
                     "description": "XMCD CRC32 sum value",
                     "index_int": "0x0020",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse0",
                         "write_lock_int": "0x0001",
@@ -2648,7 +2648,7 @@
                     "name": "OEM_SRKH7",
                     "description": "OEM SRK HASH7",
                     "index_int": "0x0080",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse4",
                         "write_lock_int": "0x1000",
@@ -2661,7 +2661,7 @@
                     "name": "OEM_SRKH6",
                     "description": "OEM SRK HASH6",
                     "index_int": "0x0081",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse4",
                         "write_lock_int": "0x1000",
@@ -2674,7 +2674,7 @@
                     "name": "OEM_SRKH5",
                     "description": "OEM SRK HASH5",
                     "index_int": "0x0082",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse4",
                         "write_lock_int": "0x1000",
@@ -2687,7 +2687,7 @@
                     "name": "OEM_SRKH4",
                     "description": "OEM SRK HASH4",
                     "index_int": "0x0083",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse4",
                         "write_lock_int": "0x1000",
@@ -2700,7 +2700,7 @@
                     "name": "OEM_SRKH3",
                     "description": "OEM SRK HASH3",
                     "index_int": "0x0084",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse4",
                         "write_lock_int": "0x1000",
@@ -2713,7 +2713,7 @@
                     "name": "OEM_SRKH2",
                     "description": "OEM SRK HASH2",
                     "index_int": "0x0085",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse4",
                         "write_lock_int": "0x1000",
@@ -2726,7 +2726,7 @@
                     "name": "OEM_SRKH1",
                     "description": "OEM SRK HASH1",
                     "index_int": "0x0086",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse4",
                         "write_lock_int": "0x1000",
@@ -2739,7 +2739,7 @@
                     "name": "OEM_SRKH0",
                     "description": "OEM SRK HASH0",
                     "index_int": "0x0087",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse4",
                         "write_lock_int": "0x1000",
@@ -2761,7 +2761,7 @@
                     "description": "OTFAD2 key 3",
                     "index_int": "0x00B2",
                     "access": "WO",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse6",
                         "write_lock_int": "0x1000",
@@ -2775,7 +2775,7 @@
                     "description": "OTFAD2 key 2",
                     "index_int": "0x00B3",
                     "access": "WO",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse6",
                         "write_lock_int": "0x1000",
@@ -2789,7 +2789,7 @@
                     "description": "OTFAD2 key 1",
                     "index_int": "0x00B4",
                     "access": "WO",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse6",
                         "write_lock_int": "0x1000",
@@ -2803,7 +2803,7 @@
                     "description": "OTFAD2 key 0",
                     "index_int": "0x00B5",
                     "access": "WO",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse6",
                         "write_lock_int": "0x1000",
@@ -2816,7 +2816,7 @@
                     "name": "OTFAD2_CFG",
                     "description": "Fuse 182",
                     "index_int": "0x00B6",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse6",
                         "write_lock_int": "0x1000",
@@ -2884,10 +2884,10 @@
                         },
                         {
                             "width": 1,
+                            "access": "WO",
                             "id": "fuse182-bit-6",
                             "name": "OTFAD2_KEY_SCRAMBLE_CRC_EN",
                             "description": "OTFAD2 key scramble CRC enable, write-only",
-                            "access": "WO",
                             "values": [
                                 {
                                     "name": "0",
@@ -2903,10 +2903,10 @@
                         },
                         {
                             "width": 1,
+                            "access": "WO",
                             "id": "fuse182-bit-7",
                             "name": "OTFAD2_KEY_SCRAMBLE_EN",
                             "description": "OTFAD2 key scramble enable, write-only",
-                            "access": "WO",
                             "values": [
                                 {
                                     "name": "0",
@@ -2922,17 +2922,17 @@
                         },
                         {
                             "width": 8,
+                            "access": "WO",
                             "id": "fuse182-bits-8-15",
                             "name": "OTFAD2_KEY_SCRAMBLE_ALIGN",
-                            "description": "OTFAD2 key scramble align, write-only",
-                            "access": "WO"
+                            "description": "OTFAD2 key scramble align, write-only"
                         },
                         {
                             "width": 1,
+                            "access": "WO",
                             "id": "fuse182-bit-16",
                             "name": "OTFAD2_RESTRICT_OTFAD_IPS",
                             "description": "OTFAD2 restrictOTFAD IPS, write-only",
-                            "access": "WO",
                             "values": [
                                 {
                                     "name": "0",
@@ -2958,7 +2958,7 @@
                     "description": "OTFAD2 key scramble",
                     "index_int": "0x00B7",
                     "access": "WO",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse6",
                         "write_lock_int": "0x1000",
@@ -2972,7 +2972,7 @@
                     "description": "OTFAD1 key 3",
                     "index_int": "0x00B8",
                     "access": "WO",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0008",
@@ -2986,7 +2986,7 @@
                     "description": "OTFAD1 key 2",
                     "index_int": "0x00B9",
                     "access": "WO",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0008",
@@ -3000,7 +3000,7 @@
                     "description": "OTFAD1 key 1",
                     "index_int": "0x00BA",
                     "access": "WO",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0008",
@@ -3014,7 +3014,7 @@
                     "description": "OTFAD1 key 0",
                     "index_int": "0x00BB",
                     "access": "WO",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0008",
@@ -3027,7 +3027,7 @@
                     "name": "OTFAD1_CFG",
                     "description": "Fuse 188",
                     "index_int": "0x00BC",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0008",
@@ -3095,10 +3095,10 @@
                         },
                         {
                             "width": 1,
+                            "access": "WO",
                             "id": "fuse188-bit-6",
                             "name": "OTFAD1_KEY_SCRAMBLE_CRC_EN",
                             "description": "OTFAD1 key scramble CRC enable, write-only",
-                            "access": "WO",
                             "values": [
                                 {
                                     "name": "0",
@@ -3114,10 +3114,10 @@
                         },
                         {
                             "width": 1,
+                            "access": "WO",
                             "id": "fuse188-bit-7",
                             "name": "OTFAD1_KEY_SCRAMBLE_EN",
                             "description": "OTFAD1 key scramble enable, write-only",
-                            "access": "WO",
                             "values": [
                                 {
                                     "name": "0",
@@ -3133,17 +3133,17 @@
                         },
                         {
                             "width": 8,
+                            "access": "WO",
                             "id": "fuse188-bits-8-15",
                             "name": "OTFAD1_KEY_SCRAMBLE_ALIGN",
-                            "description": "OTFAD1 key scramble align, write-only",
-                            "access": "WO"
+                            "description": "OTFAD1 key scramble align, write-only"
                         },
                         {
                             "width": 1,
+                            "access": "WO",
                             "id": "fuse188-bit-16",
                             "name": "OTFAD1_RESTRICT_OTFAD_IPS",
                             "description": "OTFAD1RESTRICT OTFAD IPS, write-only",
-                            "access": "WO",
                             "values": [
                                 {
                                     "name": "0",
@@ -3169,7 +3169,7 @@
                     "description": "OTFAD1 key scramble",
                     "index_int": "0x00BD",
                     "access": "WO",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse2",
                         "write_lock_int": "0x0008",
@@ -3190,7 +3190,7 @@
                     "name": "USB1",
                     "description": "Fuse 312",
                     "index_int": "0x0138",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0008",
@@ -3217,7 +3217,7 @@
                     "name": "USB2",
                     "description": "Fuse 313",
                     "index_int": "0x0139",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0008",
@@ -3241,7 +3241,7 @@
                     "name": "MAC1_ADDR_31_0",
                     "description": "MAC_0 Address",
                     "index_int": "0x013B",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0008",
@@ -3254,7 +3254,7 @@
                     "name": "MAC1_MAC2",
                     "description": "Fuse 316",
                     "index_int": "0x013C",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0008",
@@ -3281,7 +3281,7 @@
                     "name": "MAC2_ADDR_31_0",
                     "description": "MAC_1 Address",
                     "index_int": "0x013D",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0008",
@@ -3294,7 +3294,7 @@
                     "name": "MAC3_ADDR_31_0",
                     "description": "MAC_2 Address",
                     "index_int": "0x013E",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0008",
@@ -3307,7 +3307,7 @@
                     "name": "MAC3_MAC4",
                     "description": "Fuse 319",
                     "index_int": "0x013F",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0008",
@@ -3334,7 +3334,7 @@
                     "name": "MAC4_ADDR_31_0",
                     "description": "MAC_3 Address",
                     "index_int": "0x0140",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0008",
@@ -3347,7 +3347,7 @@
                     "name": "MAC5_ADDR_31_0",
                     "description": "MAC_4 Address",
                     "index_int": "0x0141",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0008",
@@ -3360,7 +3360,7 @@
                     "name": "MAC5_MAC6",
                     "description": "Fuse 322",
                     "index_int": "0x0142",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0040",
@@ -3387,7 +3387,7 @@
                     "name": "MAC6_ADDR_31_0",
                     "description": "MAC_5 Address",
                     "index_int": "0x0143",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0040",
@@ -3400,7 +3400,7 @@
                     "name": "MAC7_ADDR_31_0",
                     "description": "MAC_6 Address",
                     "index_int": "0x0144",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0040",
@@ -3413,7 +3413,7 @@
                     "name": "MAC7_MAC8",
                     "description": "Fuse 325",
                     "index_int": "0x0145",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0040",
@@ -3440,7 +3440,7 @@
                     "name": "MAC8_ADDR_31_0",
                     "description": "MAC_7 Address",
                     "index_int": "0x0146",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0040",
@@ -3453,7 +3453,7 @@
                     "name": "MISC",
                     "description": "Fuse 327",
                     "index_int": "0x0147",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse1",
                         "write_lock_int": "0x0040",

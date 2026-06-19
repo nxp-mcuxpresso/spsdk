@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK CLI applications help functionality testing module.
 
 This module provides comprehensive testing for help messages and command-line
@@ -131,7 +132,7 @@ def test_apps_spec() -> None:
     :raises FileNotFoundError: When apps.spec file or version info files cannot be found.
     """
 
-    commands = spsdk_main.commands
+    commands = dict(spsdk_main.commands)  # copy to avoid mutating shared Click group state
     commands.pop("utils")  # remove utils group commands
     if "get-families" in commands:
         commands.pop("get-families")  # remove general get-families

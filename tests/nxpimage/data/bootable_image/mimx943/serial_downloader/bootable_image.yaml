@@ -1,0 +1,44 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# =================  Bootable Image Configuration for mimx943, Revision: latest / Serial downloader.  ==================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mimx943
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ------------------------------------------===== Memory type [Required] =====------------------------------------------
+# Description: Specify type of memory used by bootable image description.
+memory_type: serial_downloader
+# ---------------------------------------===== Output file name [Optional] =====----------------------------------------
+# Description: Bootable image output file name
+output: bootable_image.bin
+# --------------------------------------===== Output file format [Optional] =====---------------------------------------
+# Description: Output file format for Bootable image
+# Possible options: <bin, hex, srec, sparse>
+output_format: bin
+# ----------------------------------------===== Initial segment [Optional] =====----------------------------------------
+# Description: The segment name or the index of initial segment in exported image
+init_offset: 0
+# -------------------------------===== Path to directory for post export [Optional] =====-------------------------------
+# Description: Path to directory where post export artifacts like fuse scripts, keyblobs etc. will be exported
+post_export: output
+# ======================================================================================================================
+#                                      == Primary Executable Segment definition ==                                      
+# ======================================================================================================================
+# ----------------------------------===== Primary Image Container Set [Optional] =====----------------------------------
+# Description: This is primary Image Container Set that is validated by ROM and usually contains DDR initialization and
+# SPL code. It could be used as pre-prepared binary form of AHAB and also YAML configuration file for AHAB. In case that
+# YAML configuration file is used, the Bootable image tool build the AHAB itself.
+spl: spl.yaml
+# ======================================================================================================================
+#                                     == Secondary Executable Segment definition ==                                     
+# ======================================================================================================================
+uboot: uboot.yaml

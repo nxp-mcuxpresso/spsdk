@@ -225,10 +225,10 @@ def test_invalid_header_hmac(data_dir: str) -> None:
     nonce = random_bytes(16)
     valid_data = cs.export(dek, mac, Counter(nonce))
     invalid_data = valid_data
-    invalid_data = bytearray(invalid_data)
-    invalid_data[0:32] = bytearray(32)
+    invalid_data_mutable = bytearray(invalid_data)
+    invalid_data_mutable[0:32] = bytearray(32)
     with pytest.raises(SPSDKError, match="HMAC"):
-        CertSectionV2.parse(invalid_data, 0, dek, mac, Counter(nonce))  # type: ignore
+        CertSectionV2.parse(invalid_data_mutable, 0, dek, mac, Counter(nonce))  # type: ignore
 
 
 def test_invalid_header_tag(data_dir: str) -> None:

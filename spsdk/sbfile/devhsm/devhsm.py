@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -81,6 +81,38 @@ class DevHsm(FeatureBaseClass):
         self.workspace = workspace
         self.family = family
         self.devbuff_base = self.database.get_int(self.F_BUFFER, "address")
+        self._keyblob_pos_warning_logged = False
+
+        self.oem_share_output_size = self.database.get_int(
+            DatabaseManager.DEVHSM,
+            "oem_share_output_size",
+            self.DEVBUFF_GEN_MASTER_ENC_SHARE_OUTPUT_SIZE,
+        )
+        self.oem_master_share_output_size = self.database.get_int(
+            DatabaseManager.DEVHSM,
+            "oem_master_share_output_size",
+            self.DEVBUFF_GEN_MASTER_ENC_MASTER_SHARE_OUTPUT_SIZE,
+        )
+        self.cust_cert_puk_output_size = self.database.get_int(
+            DatabaseManager.DEVHSM,
+            "cust_cert_puk_output_size",
+            self.DEVBUFF_GEN_MASTER_CUST_CERT_PUK_OUTPUT_SIZE,
+        )
+        self.hsm_genkey_keyblob_size = self.database.get_int(
+            DatabaseManager.DEVHSM,
+            "hsm_genkey_keyblob_size",
+            self.DEVBUFF_HSM_GENKEY_KEYBLOB_SIZE,
+        )
+        self.hsm_genkey_keyblob_puk_size = self.database.get_int(
+            DatabaseManager.DEVHSM,
+            "hsm_genkey_keyblob_puk_size",
+            self.DEVBUFF_HSM_GENKEY_KEYBLOB_PUK_SIZE,
+        )
+        self.sb_signature_size = self.database.get_int(
+            DatabaseManager.DEVHSM,
+            "sb_signature_size",
+            self.DEVBUFF_SB_SIGNATURE_SIZE,
+        )
 
         if self.workspace and not os.path.isdir(self.workspace):
             os.makedirs(self.workspace)

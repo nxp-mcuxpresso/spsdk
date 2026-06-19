@@ -72,9 +72,11 @@ uboot_path:
     uboot_path:
       type: string
       format: optional_file
-      title: Path to U-Boot binary
-      description: Path to U-Boot binary that will be used for writing assets to EMMC/SD
-      template_value: u-boot.bin
+      title: Path to imx-bootloader binary (deprecated, use imx_bootloader_path)
+      description: >-
+        Deprecated. Path to the imx-bootloader binary that will be used for writing assets to
+        EMMC/SD. Please use imx_bootloader_path instead.
+      template_value: imx-boot.bin
       skip_in_template: True
 
 imx_bootloader_path:
@@ -151,10 +153,18 @@ fatwrite:
       description: Device and partition for writing the secure objects, separated by colon. Passed to U-Boot fatwrite command. Enclose in quotes.
       template_value: "0:1"
       default: "0:1"
+    oem_provisioning_config_path:
+      type: string
+      title: Path to the configuration file for OEM Provisioning App
+      description: Path to the configuration file for OEM Provisioning App on the host. The file
+        will be written to the device partition together with the secure objects.
+      template_value: /path/to/config.yaml
     oem_provisioning_config_filename:
       type: string
-      title: Filename of the configuration file for OEM Provisioning App
-      description: Filename of the configuration file for OEM Provisioning App that will be stored in partition together with the secure objects.
+      title: Device-side filename for the OEM Provisioning App configuration file
+      description: Filename used when writing the OEM Provisioning App configuration file to the
+        device partition (passed to U-Boot fatwrite). Defaults to the basename of
+        oem_provisioning_config_path if not set.
       template_value: config.yaml
       default: config.yaml
 

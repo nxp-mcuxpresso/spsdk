@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK NXP Image BEE (Bus Encryption Engine) command-line interface.
 
 This module provides CLI commands for managing BEE encryption functionality,
@@ -62,6 +63,8 @@ def bee_export(config: Config) -> None:
             )
             write_file(header, header_output, mode="wb")
             logger.info(f"Created BEE Header:\n{get_printable_path(header_output)}")
+
+    bee.save_engine_keys(output_folder)
 
     click.echo("Success. BEE files have been created")
 

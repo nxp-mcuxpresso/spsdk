@@ -31,7 +31,7 @@ from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
-from spsdk.utils.misc import align, align_block
+from spsdk.utils.misc import align, align_block, load_hex_string
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
@@ -60,6 +60,7 @@ class SecureBinary4Descr(BaseClass):
         4-byte timestamp[2]
         byte description[16]
         byte nextBlockHash[48]
+        byte oemShareBlock[64]
 
     :cvar MAGIC: Magic signature for SB4 files (b"sbv4")
     :cvar FORMAT_VERSION: Supported format version ("4.0")
@@ -374,12 +375,15 @@ class SecureBinary4(FeatureBaseClass):
 
     SB4_BLOCK_ALIGNMENT = 4
 
+    REFERENCE_VALUE_SIZE = 32
+
     def __init__(
         self,
         family: FamilyRevision,
         container: AHABContainerV2,
         sb_commands: SecureBinary4Commands,
         description: Optional[str] = None,
+        reference_value: Optional[bytes] = None,
     ) -> None:
         """Initialize Secure Binary v4.0 data container.
 
@@ -399,6 +403,7 @@ class SecureBinary4(FeatureBaseClass):
             description=self.description,
             timestamp=self.sb_commands.timestamp,
         )
+        self.reference_value = reference_value
 
     @classmethod
     def get_commands_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
@@ -457,6 +462,14 @@ class SecureBinary4(FeatureBaseClass):
         schemas.append(mbi_sch_cfg["ahab_sign_support"])
         schemas.append(mbi_sch_cfg["ahab_sign_support_add_image_hash_type"])
         schemas.append(mbi_sch_cfg["ahab_sign_support_add_core_id"])
+
+        db = get_db(family)
+        supports_reference_value = db.get_bool(
+            cls.FEATURE, "supports_reference_value", default=False
+        )
+
+        if supports_reference_value:
+            schemas.append(sb4_sch_cfg["sb4_reference_value"])
 
         schemas.extend(cls.get_commands_validation_schemas(family))
 
@@ -529,8 +542,73 @@ class SecureBinary4(FeatureBaseClass):
 
         ahab.image_array.append(data_image)
 
+        # Check if reference_value is supported and provided in config
+        db = get_db(family)
+        supports_reference_value = db.get_bool(
+            cls.FEATURE, "supports_reference_value", default=False
+        )
+
+        reference_value_data = None
+
+        if supports_reference_value and "referenceValue" in config:
+            reference_value_str = config.get_str("referenceValue")
+
+            # Load reference value from hex string or file
+            reference_value_data = load_hex_string(
+                reference_value_str, cls.REFERENCE_VALUE_SIZE, name="referenceValue"
+            )
+
+            # Encrypt reference value using PCK if encryption is enabled
+            if sb_commands.is_encrypted:
+                image_hash = get_hash(reference_value_data, algorithm=EnumHashAlgorithm.SHA256)
+                iv = image_hash[16:]
+
+                # Encrypt using the encryption provider
+                encrypted_reference_value = sb_commands.encryption_provider.aes_cbc_encrypt(
+                    reference_value_data, iv=iv
+                )
+                is_encrypted = True
+            else:
+                encrypted_reference_value = reference_value_data
+                image_hash = None
+                is_encrypted = False
+
+            # Create flags for reference value image
+            ref_value_iae_flags = ImageArrayEntryV2.create_flags(
+                image_type=ImageArrayEntryV2.get_image_types(ahab.chip_config, core_id.tag)
+                .from_label("reference_value")
+                .tag,
+                core_id=core_id.tag,
+                hash_type=cast(
+                    AHABSignHashAlgorithm, chip_config.hash_algorithms.from_label("SHA256")
+                ),
+                is_image_descriptor=False,
+                is_encrypted=is_encrypted,
+            )
+
+            # Create reference value image entry with encrypted data
+            ref_value_image = ImageArrayEntryV2(
+                chip_config=ahab.chip_config,
+                image=encrypted_reference_value,
+                image_offset=0,
+                load_address=0,
+                entry_point=0,
+                flags=ref_value_iae_flags,
+                image_name="Reference Value",
+                image_hash=None,
+                image_iv=image_hash,
+            )
+
+            ahab.image_array.append(ref_value_image)
+
         # Create SB4.0 object
-        return cls(family=family, container=ahab, sb_commands=sb_commands, description=description)
+        return cls(
+            family=family,
+            container=ahab,
+            sb_commands=sb_commands,
+            description=description,
+            reference_value=reference_value_data,
+        )
 
     def get_config(self, data_path: str = "./") -> Config:
         """Create configuration of the SecureBinary4 feature.
@@ -551,6 +629,8 @@ class SecureBinary4(FeatureBaseClass):
             ret.pop("fuse_version") & 0xFF
         )
         ret.update(self.sb_commands.get_config(data_path))
+        if self.reference_value:
+            ret["referenceValue"] = self.reference_value.hex()
         return ret
 
     def verify(self) -> Verifier:
@@ -669,16 +749,31 @@ class SecureBinary4(FeatureBaseClass):
 
         sb_descriptor_data = self.sb_descriptor.export()
         self.container.image_array[0].image = sb_descriptor_data
-        self.container.update_fields()
         self.container.image_array[0].image_offset = align(
             self.container.header_length(), alignment=self.SB4_BLOCK_ALIGNMENT
         )
+        self.container.update_fields()
+        # Align reference value image if present
+        if len(self.container.image_array) > 1:
+            self.container.image_array[1].image_offset = align(
+                self.container.header_length() + len(sb_descriptor_data),
+                alignment=self.SB4_BLOCK_ALIGNMENT,
+            )
         self.container.update_fields()
         self.container.sign_itself()
 
         final_data = align_block(self.container.export(), alignment=self.SB4_BLOCK_ALIGNMENT)
         final_data += align_block(sb_descriptor_data, alignment=self.SB4_BLOCK_ALIGNMENT)
+        # Add reference value image after descriptor if present
+        if len(self.container.image_array) > 1:
+            final_data += align_block(
+                self.container.image_array[1].image, alignment=self.SB4_BLOCK_ALIGNMENT
+            )
         final_data += sb3_commands_data
+
+        logger.debug(f"AHAB: {self.container}")
+        logger.debug(f"SB Descriptor: {self.sb_descriptor}")
+        logger.debug(f"SB4.0 file exported successfully, total size: {len(final_data)} bytes")
 
         return final_data
 
@@ -725,7 +820,7 @@ class SecureBinary4(FeatureBaseClass):
         :return: Constructed SecureBinary4 object
         :raises SPSDKError: When parsing fails or data is invalid
         """
-        assert family
+        assert family is not None, "Family must be specified for parsing"
 
         chip_config = create_chip_config(family, feature=cls.FEATURE, base_key=["ahab"])
         # Parse AHAB container first
@@ -736,6 +831,13 @@ class SecureBinary4(FeatureBaseClass):
         # Get the image array entry that contains SB descriptor data
         if not container.image_array or len(container.image_array) < 1:
             raise SPSDKError("Invalid AHAB container: missing image array entry for SB4 descriptor")
+
+        # Check if there's a second image (reference value) in the image array
+        db = get_db(family)
+        supports_reference_value = db.get_bool(
+            cls.FEATURE, "supports_reference_value", default=False
+        )
+        reference_value_present = supports_reference_value and len(container.image_array) > 1
 
         sb_image_entry = container.image_array[0]
         # Calculate the offset where SB descriptor is located
@@ -753,6 +855,9 @@ class SecureBinary4(FeatureBaseClass):
             len(sb_desc_data), alignment=cls.SB4_BLOCK_ALIGNMENT
         )
 
+        # If the reference value is present add its size to the offset
+        if reference_value_present:
+            commands_offset += container.image_array[1].image_size
         # Extract description from descriptor
         description = sb_descriptor.description.decode("ascii").rstrip("\x00")
 
@@ -779,5 +884,64 @@ class SecureBinary4(FeatureBaseClass):
         sb4_obj = cls(
             family=family, container=container, sb_commands=sb_commands, description=description
         )
+
+        if reference_value_present:
+            ref_value_image_entry = container.image_array[1]
+            # Get the encrypted reference value data from the image entry
+            encrypted_reference_value = ref_value_image_entry.image
+
+            # Decrypt reference value if encryption was used
+            if sb_commands.is_encrypted and pck:
+                try:
+                    if not ref_value_image_entry.image_hash:
+                        raise SPSDKError("Reference value image hash is missing")
+
+                    iv = ref_value_image_entry.image_iv[16:]
+
+                    logger.debug(
+                        f"Reference value encrypted data: {encrypted_reference_value.hex()}"
+                    )
+                    logger.debug(f"IV for decryption (last 16 bytes): {iv.hex()}")
+
+                    # Decrypt using PCK
+                    decrypted_reference_value = sb_commands.encryption_provider.aes_cbc_decrypt(
+                        data=encrypted_reference_value, iv=iv
+                    )
+
+                    # Verify the decrypted data by computing its hash
+                    computed_hash = get_hash(
+                        decrypted_reference_value, algorithm=EnumHashAlgorithm.SHA256
+                    )
+                    if computed_hash != ref_value_image_entry.image_iv:
+                        logger.warning(
+                            f"Reference value hash mismatch! "
+                            f"Expected: {ref_value_image_entry.image_iv.hex()}, "
+                            f"Got: {computed_hash.hex()}"
+                        )
+                    else:
+                        logger.info("Reference value hash verification PASSED")
+
+                    # Store the decrypted reference value
+                    sb4_obj.reference_value = decrypted_reference_value
+                    logger.info(
+                        f"Parsed and decrypted reference value: {decrypted_reference_value.hex()}"
+                    )
+                except Exception as exc:
+                    logger.warning(f"Failed to decrypt reference value: {str(exc)}")
+                    sb4_obj.reference_value = encrypted_reference_value
+            else:
+                sb4_obj.reference_value = encrypted_reference_value
+                logger.info(
+                    f"Parsed reference value (not encrypted): {encrypted_reference_value.hex()}"
+                )
+
+        logger.info(f"Successfully parsed SB4 file for family: {family}")
+        logger.info(f"AHAB container: {container}")
+        logger.info(f"AHAB IAE: {container.image_array}")
+        logger.info(f"AHAB IAE[0]: {container.image_array[0]}")
+        if reference_value_present:
+            logger.info(f"AHAB IAE[1]: {container.image_array[1]}")
+        logger.info(f"SB4 descriptor: {sb_descriptor}")
+        logger.info(f"SB4 commands: {sb_commands}")
 
         return sb4_obj

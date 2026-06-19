@@ -1,0 +1,46 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# =========================  PFR CMPA_LC configuration template for mcxc151, Revision: latest  =========================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxc151
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ------------------------------------===== Configuration area type [Required] =====------------------------------------
+# Description: PFR / IFR type
+# Possible options: <CMPA_LC, cmpa_lc>
+type: CMPA_LC
+# --------------------------------------------===== mcxc151 [Required] =====--------------------------------------------
+settings:
+  # ---------------------------------------===== LIFECYCLE_STATE [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000000, Width: 32b; lifecycle[31:0]
+  LIFECYCLE_STATE:
+    # -----------------------------------------===== lifecycle [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 32b, lifecycle[31:0]
+    # - IN_FIELD_LOCKED, (2520068303): Alternative in-field state that prevents use of field return states
+    # - BRICKED, (2520098138): Bricked state to prevent device use
+    # - IN_FIELD2, (2520117263): Optional in-field application state for end customer use
+    # - IN_FIELD1, (2520119303): In-field application state for end customer use (debug authentication required)
+    # - DEVELOP, (2520120323): Initial customer development state after leaving NXP manufacturing
+    # Possible options: <IN_FIELD_LOCKED, BRICKED, IN_FIELD2, IN_FIELD1, DEVELOP>
+    lifecycle: IN_FIELD1
+  # -------------------------------------===== LIFECYCLE_STATE_DP [Optional] =====--------------------------------------
+  # Description: Offset: 0x00000004, Width: 32b; lifecycle dp[31:0]
+  LIFECYCLE_STATE_DP:
+    # ---------------------------------------===== lifecycle_dp [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 32b, lifecycle dp[31:0]
+    # - IN_FIELD_LOCKED, (2520068303): Alternative in-field state that prevents use of field return states
+    # - BRICKED, (2520098138): Bricked state to prevent device use
+    # - IN_FIELD2, (2520117263): Optional in-field application state for end customer use
+    # - IN_FIELD1, (2520119303): In-field application state for end customer use (debug authentication required)
+    # - DEVELOP, (2520120323): Initial customer development state after leaving NXP manufacturing
+    # Possible options: <IN_FIELD_LOCKED, BRICKED, IN_FIELD2, IN_FIELD1, DEVELOP>
+    lifecycle_dp: IN_FIELD1

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,12 +12,12 @@ serial.Serial class, enabling enhanced serial communication handling with
 additional functionality for SPSDK applications.
 """
 
-import logging
-
 # pylint: disable=unused-import  # Type is necessary for Mypy
 from typing import Optional, Type
 
-logger = logging.getLogger(__name__)
+from spsdk import get_logger
+
+logger = get_logger(__name__)
 
 
 class SerialProxy:
@@ -94,7 +94,7 @@ class SerialProxy:
         :param data: Bytes to write, used as key to lookup response in responses dict
         :raises KeyError: If data key is not found in responses dictionary
         """
-        logger.debug(f"I got: {data!r}")
+        logger.trace(f"I got: {data!r}")
         if self.ignore_ack and data == b"\x5a\xa1":
             logger.debug("ACK received and ignored")
             return

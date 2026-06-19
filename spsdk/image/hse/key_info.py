@@ -8,12 +8,13 @@
 """Module for importing and handling HSE key information."""
 
 import struct
+from copy import deepcopy
 from enum import IntEnum
 from typing import Any, Dict, List, Optional
 
 from typing_extensions import Self
 
-from spsdk.exceptions import SPSDKParsingError
+from spsdk.exceptions import SPSDKParsingError, SPSDKValueError
 from spsdk.image.hse.common import HseKeyBits, KeyType
 from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.config import Config
@@ -421,6 +422,14 @@ class KeyInfo(FeatureBaseClass):
                 KeyType.RSA_PUB_EXT,
             ):
                 exp_size = specific_config.get_int("pubExponentSize")
+                rsa_pub_exp_max = get_db(family=FamilyRevision.load_from_config(config)).get_int(
+                    DatabaseManager.HSE, "rsa_pub_exponent_max_size"
+                )
+                if exp_size > rsa_pub_exp_max:
+                    raise SPSDKValueError(
+                        f"pubExponentSize {exp_size} exceeds maximum allowed {rsa_pub_exp_max} bytes"
+                        f" for this device (HSE-B supports max 8 bytes, HSE-H/M supports max 16 bytes)."
+                    )
                 specific_data["pubExponentSize"] = exp_size
 
             # Handle AES block mode mask
@@ -526,18 +535,41 @@ class KeyInfo(FeatureBaseClass):
         :param family: Family revision for which the validation schema should be generated.
         :return: List of validation schemas.
         """
-        schemas = get_schema_file(DatabaseManager.HSE)
+        schemas = deepcopy(get_schema_file(DatabaseManager.HSE))
         family_schema = get_schema_file("general")["family"]
         family_schema["main_title"] = cls.CONFIG_TITLE
         update_validation_schema_family(
             sch=family_schema["properties"], devices=cls.get_supported_families(), family=family
         )
+        available_types = KeyType.get_available_types(family)
+        available_type_labels = [kt.label for kt in available_types]
+        schemas["key_info"]["properties"]["keyType"]["enum"] = [
+            label
+            for label in schemas["key_info"]["properties"]["keyType"]["enum"]
+            if label in available_type_labels
+        ]
         smr_regions_count = get_db(family=family).get_int(DatabaseManager.HSE, "smr_regions_count")
         schemas["key_info"]["properties"]["smrFlags"]["maxItems"] = smr_regions_count
         schemas["key_info"]["properties"]["smrFlags"]["enum_template"] = list(
             range(smr_regions_count)
         )
         schemas["key_info"]["properties"]["smrFlags"]["items"]["maximum"] = smr_regions_count - 1
+        rsa_pub_exp_max = get_db(family=family).get_int(
+            DatabaseManager.HSE, "rsa_pub_exponent_max_size"
+        )
+        rsa_specific = next(
+            (
+                s
+                for s in schemas["key_info"]["properties"]["specificData"]["oneOf"]
+                if "pubExponentSize" in s.get("properties", {})
+            ),
+            None,
+        )
+        if rsa_specific is not None:
+            rsa_specific["properties"]["pubExponentSize"]["maximum"] = rsa_pub_exp_max
+            rsa_specific["properties"]["pubExponentSize"][
+                "description"
+            ] = f"Size of RSA public exponent in bytes (maximum {rsa_pub_exp_max} for this device)."
         return [family_schema, schemas["key_info"]]
 
     @classmethod

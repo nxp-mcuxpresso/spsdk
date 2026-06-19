@@ -13,6 +13,9 @@ The bootable image might consists of:
 - Device Configuration Data (DCD) -  The DCD contains configuration data to configure any peripherals.
 - Application Image - It might contain plain application image, HAB, AHAB image or MBI.
 
+For details on AHAB container layout used in i.MX 9x imx-boot images, see :doc:`ahab` section
+"AHAB Container Structure for imx-boot".
+
 Generating Templates
 ====================
 

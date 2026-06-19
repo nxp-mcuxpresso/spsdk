@@ -1141,3 +1141,65 @@ def test_key_catalog_cfg_supported_families() -> None:
     families = KeyCatalogCfg.get_supported_families()
     assert isinstance(families, list)
     assert len(families) > 0
+
+
+def test_key_catalog_schema_filters_unsupported_key_types_for_hse_b() -> None:
+    """Test that SIPHASH and DH key types are excluded from key catalog schema for HSE-B."""
+    from spsdk.exceptions import SPSDKError
+    from spsdk.utils.schema_validator import check_config
+
+    family = FamilyRevision("mcxe31b")
+    schemas = KeyCatalogCfg.get_validation_schemas(family)
+
+    base_config = {
+        "family": family.name,
+        "revision": "a0",
+        "nvmKeyGroups": [
+            {
+                "muMask": "ALL",
+                "groupOwner": "ANY",
+                "keyType": "SIPHASH",
+                "numOfKeySlots": 5,
+                "maxKeyBitLen": 256,
+            },
+        ],
+        "ramKeyGroups": [
+            {
+                "muMask": "ALL",
+                "groupOwner": "ANY",
+                "keyType": "AES",
+                "numOfKeySlots": 5,
+                "maxKeyBitLen": 256,
+            },
+        ],
+    }
+
+    # SIPHASH must be rejected in NVM groups for HSE-B
+    with pytest.raises(SPSDKError):
+        check_config(base_config, schemas)
+
+    # DH_PUB must be rejected in RAM groups for HSE-B
+    dh_config = {
+        "family": family.name,
+        "revision": "a0",
+        "nvmKeyGroups": [
+            {
+                "muMask": "ALL",
+                "groupOwner": "ANY",
+                "keyType": "AES",
+                "numOfKeySlots": 5,
+                "maxKeyBitLen": 256,
+            },
+        ],
+        "ramKeyGroups": [
+            {
+                "muMask": "ALL",
+                "groupOwner": "ANY",
+                "keyType": "DH_PUB",
+                "numOfKeySlots": 5,
+                "maxKeyBitLen": 256,
+            },
+        ],
+    }
+    with pytest.raises(SPSDKError):
+        check_config(dh_config, schemas)

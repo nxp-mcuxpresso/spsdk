@@ -1,0 +1,41 @@
+# Copyright 2025-2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ================================================  spl Configuration  =================================================
+
+# -------------------------------------------------------- Note --------------------------------------------------------
+# nxp_container: binary container from mx943a0-ahab-container.img
+# spl_container: oei_ddr_no_qb, system_manager, cortex_m7_app, cortex_m7_2_app, cortex_m33_2_app, spl
+
+family: mimx943
+revision: latest
+target_memory: standard
+output: spl.bin
+
+containers:
+  -
+    binary_container:
+      path: inputs/mx943a0-ahab-container.img
+  -
+    container:
+      srk_set: none
+      fuse_version: 0
+      sw_version: 0
+      images:
+        -
+          lpddr_imem: inputs/lpddr5_imem_v202409.bin
+          lpddr_imem_qb: inputs/lpddr5_imem_qb_v202409.bin
+          lpddr_dmem: inputs/lpddr5_dmem_v202409.bin
+          lpddr_dmem_qb: inputs/lpddr5_dmem_qb_v202409.bin
+          oei_ddr: inputs/oei-m33-ddr.bin
+        -
+          system_manager: inputs/m33_image-mx943evk.bin
+        -
+          cortex_m7_app: inputs/hello_world_cm7_core0.bin
+        -
+          cortex_m7_2_app: inputs/hello_world_cm7_core1.bin
+        -
+          cortex_m33_2_app: inputs/hello_world_cm33.bin
+        -
+          spl: inputs/u-boot-spl.bin-mx943

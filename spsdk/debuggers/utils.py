@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,11 +14,10 @@ various debug probe types supported by SPSDK.
 """
 
 import contextlib
-import logging
 from types import ModuleType
 from typing import Callable, Iterator, Optional, Type
 
-from spsdk import SPSDK_INTERACTIVE_DISABLED
+from spsdk import SPSDK_INTERACTIVE_DISABLED, get_logger
 from spsdk.debuggers.debug_probe import (
     DebugProbe,
     DebugProbes,
@@ -32,7 +31,7 @@ from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.plugins import PluginsManager, PluginType
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 PROBES: dict[str, Type[DebugProbe]] = {}
 
@@ -176,8 +175,14 @@ def test_ahb_access(
             if test_read != test_value ^ 0xAAAAAAAA:
                 raise SPSDKError("Test connection verification failed")
         ahb_enabled = True
-        # Exit debug state
-        probe.mem_reg_write(addr=probe.DHCSR_REG, data=dhcsr)
+        # Exit debug state - restore original C_HALT/C_DEBUGEN bits.
+        # The upper 16 bits read from DHCSR are status flags, not the write key;
+        # the ARM core silently ignores any DHCSR write whose [31:16] != 0xA05F,
+        # so we must supply DHCSR_DEBUGKEY explicitly.
+        probe.mem_reg_write(
+            addr=probe.DHCSR_REG,
+            data=probe.DHCSR_DEBUGKEY | (dhcsr & 0xFFFF),
+        )
 
     except SPSDKError as exc:
         logger.debug(f"Test Connection: Chip has NOT enabled AHB access. {str(exc)}")

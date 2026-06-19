@@ -109,6 +109,7 @@ features:
         segments:
           fcb: 0x0000
           hab_container: 0x1000
+        image_pattern: ones
       flexspi_nand:
         segments:
           hab_container: 0x400

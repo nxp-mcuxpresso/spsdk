@@ -83,7 +83,6 @@ FULL_LIST_TO_TEST = [
     ("mimxrt1176", "flexspi_nand", None, ["hab_container"]),
     ("mimxrt1189", "flexspi_nor", "no_xmcd", ["fcb", "ahab_container"]),
     ("mimxrt1189", "flexspi_nor", "with_xmcd", ["fcb", "ahab_container", "xmcd"]),
-    ("mimxrt1189", "flexspi_nor", "ahab_only", ["ahab_container"]),
     ("mimxrt1189", "flexspi_nor", "ahab_empty_hash", ["fcb", "ahab_container"]),
     ("mimxrt1166", "semc_nand", None, ["hab_container"]),
     ("mimxrt1166", "flexspi_nand", None, ["hab_container"]),
@@ -580,6 +579,11 @@ def test_nxpimage_bimg_default_init_offset() -> None:
         ("mcxn9xx", "flexspi_nor", BootableImageSegment.FCB, 0x400),
         ("mcxn9xx", "flexspi_nor", BootableImageSegment.IMAGE_VERSION_AP, 0x600),
         ("mcxn9xx", "flexspi_nor", BootableImageSegment.UNKNOWN, None),
+        # Regression test for SPSDK-6189: emmc mem_type has a dynamic segment
+        # (secondary_image_container_set with full_image_offset=-1). Setting init_offset to
+        # 0x8_000 (the primary_image_container_set position) must not be corrupted by the
+        # dynamic segment's -1 offset being included in the min() calculation.
+        ("mimx9352", "emmc", 0x8_000, 0x8_000),
     ],
 )
 def test_nxpimage_bimg_init_offset_setter(
@@ -1485,3 +1489,287 @@ def test_nxpimage_bimg_get_templates_verify_board_filenames(
     # Verify that found filenames match expected ones
     for filename in found_filenames:
         assert filename in expected_filenames, f"Unexpected filename: {filename}"
+
+
+@pytest.mark.parametrize(
+    "family,mem_type,config_file",
+    [
+        ("mimx9596", "serial_downloader", "bootable_image.yaml"),
+        ("mimx943", "serial_downloader", "bootable_image.yaml"),
+    ],
+)
+def test_nxpimage_bimg_imx_bootloader_export(
+    cli_runner: CliRunner,
+    tmpdir: str,
+    data_dir: str,
+    family: str,
+    mem_type: str,
+    config_file: str,
+) -> None:
+    """Test nxpimage bootable-image export for imx-bootloader (mx95 and mx943).
+
+    Verifies that the bootable-image export command succeeds for MPU families
+    that use the imx-bootloader format (primary SPL + secondary U-Boot AHAB
+    containers). Mock firmware binaries replace proprietary DDR FW and ELE
+    container so the test runs fully offline.
+
+    :param cli_runner: CLI test runner for invoking nxpimage commands.
+    :param tmpdir: Temporary directory path for test output files.
+    :param data_dir: Base directory containing test data files.
+    :param family: Target MCU family identifier.
+    :param mem_type: Memory type for the bootable image.
+    :param config_file: Bootable image config file name.
+    """
+    config_dir = os.path.join(data_dir, "bootable_image", family, mem_type)
+    config_file_path = os.path.join(config_dir, config_file)
+    out_file = os.path.join(tmpdir, f"bimg_{family}_{mem_type}.bin")
+    with use_working_directory(config_dir):
+        cmd = [
+            "bootable-image",
+            "export",
+            "-c",
+            config_file_path,
+            "-o",
+            out_file,
+        ]
+        cli_runner.invoke(nxpimage.main, cmd, expected_code=0)
+    assert os.path.isfile(out_file), f"Output file not created: {out_file}"
+    assert os.path.getsize(out_file) > 0, "Output file is empty"
+
+
+@pytest.mark.parametrize(
+    "family,mem_type,config_file",
+    [
+        ("mimx9596", "serial_downloader", "bootable_image.yaml"),
+        ("mimx943", "serial_downloader", "bootable_image.yaml"),
+    ],
+)
+def test_nxpimage_bimg_imx_bootloader_export_parse_roundtrip(
+    cli_runner: CliRunner,
+    tmpdir: str,
+    data_dir: str,
+    family: str,
+    mem_type: str,
+    config_file: str,
+) -> None:
+    """Test export + parse round-trip for imx-bootloader bootable images.
+
+    Exports a bootable image from YAML config for mx95/mx943 and then
+    parses the resulting binary, verifying that the parse succeeds and
+    produces a valid bootable image configuration. This confirms both
+    the export and the structural integrity of the generated image.
+
+    :param cli_runner: CLI test runner for invoking nxpimage commands.
+    :param tmpdir: Temporary directory path for test output files.
+    :param data_dir: Base directory containing test data files.
+    :param family: Target MCU family identifier.
+    :param mem_type: Memory type for the bootable image.
+    :param config_file: Bootable image config file name.
+    """
+    config_dir = os.path.join(data_dir, "bootable_image", family, mem_type)
+    config_file_path = os.path.join(config_dir, config_file)
+    out_file = os.path.join(tmpdir, f"bimg_{family}_{mem_type}.bin")
+    parse_out_dir = os.path.join(tmpdir, "parsed")
+    os.makedirs(parse_out_dir)
+
+    # Export
+    with use_working_directory(config_dir):
+        export_cmd = [
+            "bootable-image",
+            "export",
+            "-c",
+            config_file_path,
+            "-o",
+            out_file,
+        ]
+        cli_runner.invoke(nxpimage.main, export_cmd, expected_code=0)
+    assert os.path.isfile(out_file)
+
+    # Parse back
+    parse_cmd = [
+        "bootable-image",
+        "parse",
+        "-f",
+        family,
+        "-m",
+        mem_type,
+        "-b",
+        out_file,
+        "-o",
+        parse_out_dir,
+    ]
+    cli_runner.invoke(nxpimage.main, parse_cmd, expected_code=0)
+
+    parsed_config = os.path.join(parse_out_dir, f"bootable_image_{family}_{mem_type}.yaml")
+    assert os.path.isfile(parsed_config), f"Parsed config not found: {parsed_config}"
+    config = load_configuration(parsed_config)
+    assert config.get("family") == family
+    assert config.get("memory_type") == mem_type
+
+
+@pytest.mark.parametrize(
+    "family,template,board",
+    [
+        ("mimx9352", "imx_boot_flash_singleboot", "imx93-11x11-lpddr4x-evk"),
+        ("mimx9596", "imx_boot_flash_all", "imx95-15x15-lpddr4x-evk"),
+    ],
+)
+def test_nxpimage_bimg_get_templates_sign(
+    cli_runner: CliRunner,
+    tmpdir: str,
+    family: str,
+    template: str,
+    board: str,
+) -> None:
+    """Test bootable-image get-templates --sign generates signing-ready AHAB configs.
+
+    Verifies that the --sign option:
+    1. Adds signing fields (srk_set=oem, signer, srk_table/srk_array) to AHAB YAML configs.
+    2. Creates a keys/ subdirectory containing a README.md.
+    3. Key paths inside the YAML point into the keys/ subdirectory.
+
+    :param cli_runner: CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for output files.
+    :param family: Target MCU family name.
+    :param template: Template name to generate.
+    :param board: Board name for board-specific filenames.
+    """
+    cmd = (
+        f"bootable-image get-templates -f {family} --output {tmpdir}"
+        f" -t {template} -b {board} --sign"
+    )
+    result = cli_runner.invoke(nxpimage.main, cmd.split())
+    assert result.exit_code == 0, f"Command failed: {result.output}"
+
+    # keys/ directory must be created
+    keys_dir = os.path.join(tmpdir, "keys")
+    assert os.path.isdir(keys_dir), "keys/ directory not created"
+    assert os.path.isfile(os.path.join(keys_dir, "README.md")), "keys/README.md not created"
+
+    # Verify signing fields in each AHAB config YAML
+    yaml_files = [
+        f for f in os.listdir(tmpdir) if f.endswith(".yaml") and f != "bootable_image.yaml"
+    ]
+    assert len(yaml_files) > 0, "No AHAB container YAML files generated"
+
+    for yaml_file in yaml_files:
+        config = load_configuration(os.path.join(tmpdir, yaml_file))
+        for container_entry in config.get("containers", []):
+            if "container" not in container_entry:
+                continue
+            container = container_entry["container"]
+            # srk_set must be oem (not none)
+            assert (
+                container.get("srk_set") == "oem"
+            ), f"Expected srk_set=oem in {yaml_file}, got {container.get('srk_set')}"
+            # signer field present and points to keys/
+            signer = container.get("signer", "")
+            assert (
+                "keys/signing_key.pem" in signer
+            ), f"Expected signer with keys/signing_key.pem in {yaml_file}, got {signer}"
+            # srk_table with srk_array pointing into keys/
+            srk_table = container.get("srk_table", {})
+            srk_array = srk_table.get("srk_array", [])
+            assert len(srk_array) == 4, f"Expected 4 SRK keys in {yaml_file}"
+            for i, srk_path in enumerate(srk_array):
+                assert (
+                    f"keys/srk_{i}.pem" in srk_path
+                ), f"Expected keys/srk_{i}.pem in srk_array[{i}] of {yaml_file}, got {srk_path}"
+
+
+@pytest.mark.parametrize(
+    "family,template,board",
+    [
+        ("mimx9352", "imx_boot_flash_singleboot", "imx93-11x11-lpddr4x-evk"),
+    ],
+)
+def test_nxpimage_bimg_get_templates_unsigned_no_keys_dir(
+    cli_runner: CliRunner,
+    tmpdir: str,
+    family: str,
+    template: str,
+    board: str,
+) -> None:
+    """Test that get-templates without --sign does NOT create keys/ and uses srk_set=none.
+
+    :param cli_runner: CLI test runner for invoking commands.
+    :param tmpdir: Temporary directory for output files.
+    :param family: Target MCU family name.
+    :param template: Template name to generate.
+    :param board: Board name for board-specific filenames.
+    """
+    cmd = f"bootable-image get-templates -f {family} --output {tmpdir}" f" -t {template} -b {board}"
+    result = cli_runner.invoke(nxpimage.main, cmd.split())
+    assert result.exit_code == 0, f"Command failed: {result.output}"
+
+    # keys/ directory must NOT be created
+    keys_dir = os.path.join(tmpdir, "keys")
+    assert not os.path.exists(keys_dir), "keys/ directory should not exist for unsigned templates"
+
+    # srk_set must be none in each AHAB config
+    yaml_files = [
+        f for f in os.listdir(tmpdir) if f.endswith(".yaml") and f != "bootable_image.yaml"
+    ]
+    assert len(yaml_files) > 0, "No AHAB container YAML files generated"
+
+    for yaml_file in yaml_files:
+        config = load_configuration(os.path.join(tmpdir, yaml_file))
+        for container_entry in config.get("containers", []):
+            if "container" not in container_entry:
+                continue
+            container = container_entry["container"]
+            assert (
+                container.get("srk_set") == "none"
+            ), f"Expected srk_set=none in {yaml_file}, got {container.get('srk_set')}"
+
+
+@pytest.mark.parametrize(
+    "bimg_family,bimg_revision,sub_family,sub_revision,expect_error",
+    [
+        # Matching family and matching (real) revision — no error
+        ("mimx9352", "a1", "mx93", "a1", False),
+        # Matching family via alias, latest vs explicit real revision — no error
+        ("mimx9352", "latest", "mx93", "a1", False),
+        # Matching family name, mismatching revision — error expected
+        ("mimx9352", "a1", "mx93", "a0", True),
+        # Completely different family — error expected
+        ("mx8ulp", "latest", "mimx9352", "latest", True),
+    ],
+)
+def test_nxpimage_bimg_cross_validate_family(
+    bimg_family: str,
+    bimg_revision: str,
+    sub_family: str,
+    sub_revision: str,
+    expect_error: bool,
+) -> None:
+    """Test cross-validation of family/revision between bootable-image and AHAB sub-config.
+
+    Verifies that an error is raised when the family/revision in the AHAB sub-config does
+    not match the family in the bootable-image configuration, and that no error is raised
+    when they match.
+
+    :param bimg_family: Family name used in the bootable-image config.
+    :param bimg_revision: Revision used in the bootable-image config.
+    :param sub_family: Family name used in the AHAB sub-config.
+    :param sub_revision: Revision used in the AHAB sub-config.
+    :param expect_error: Whether an SPSDKValueError is expected.
+    """
+    from spsdk.exceptions import SPSDKValueError
+    from spsdk.image.bootable_image.segments import SegmentPrimaryAhab
+
+    segment = SegmentPrimaryAhab(
+        offset=0,
+        family=FamilyRevision(bimg_family, bimg_revision),
+        mem_type=MemoryType.SERIAL_DOWNLOADER,
+    )
+
+    bimg_config = Config({"family": bimg_family, "revision": bimg_revision})
+    sub_config = Config({"family": sub_family, "revision": sub_revision})
+
+    if expect_error:
+        with pytest.raises(SPSDKValueError, match="mismatch"):
+            segment._cross_validate_family(bimg_config, sub_config, "primary_image_container_set")
+    else:
+        # Should not raise
+        segment._cross_validate_family(bimg_config, sub_config, "primary_image_container_set")

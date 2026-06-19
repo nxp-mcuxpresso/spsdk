@@ -28,7 +28,7 @@ output_definition:
       title: Output file name
       description: Bootable image output file name
       format: file_name
-      template_value: bootable_image.bin
+      template_value: flash.bin
     output_format:
       type: string
       title: Output file format
@@ -275,3 +275,18 @@ post_export:
       title: Path to directory for post export
       description: Path to directory where post export artifacts like fuse scripts, keyblobs etc. will be exported
       template_value: output
+
+image_pattern:
+  title: General Options
+  properties:
+    image_pattern:
+      type: string
+      title: Image fill pattern
+      description: >
+        Fill pattern for empty gaps between segments. Overrides the device database default.
+        Use 'zeros' (fills gaps with 0x00), 'ones' (fills gaps with 0xFF, typical for NOR flash),
+        or a hex value such as '0xCA'. When exporting to sparse format, gaps matching the fill
+        pattern are emitted as DONT_CARE blocks (not written to flash).
+      template_value: ones
+      skip_in_template: True
+

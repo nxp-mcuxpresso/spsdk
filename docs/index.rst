@@ -110,6 +110,7 @@ All products, including those with advanced security features, may be subject to
     examples/_knowledge_base/installation_guide
     usage/applications
     usage/apis
+    usage/logger
 
     Application User Guides <apps/index>
     API Development Guide <api/index>

@@ -254,7 +254,9 @@ def parse_rot(family: FamilyRevision, binary: str, output: str, encoding: str) -
     "-h",
     "--hash-algorithm",
     required=False,
-    type=click.Choice(list(EnumHashAlgorithm.labels()), case_sensitive=False),
+    type=click.Choice(
+        [label for label in EnumHashAlgorithm.labels() if label != "none"], case_sensitive=False
+    ),
     help="Name of a hash algorithm to use.",
     callback=lambda ctx, param, value: (
         EnumHashAlgorithm.from_label(value.lower()) if value is not None else None
@@ -720,7 +722,9 @@ def cut_off_data_regions(data: bytes, regions: list[str]) -> bytes:
 @click.option(
     "-a",
     "--algorithm",
-    type=click.Choice(EnumHashAlgorithm.labels(), case_sensitive=False),
+    type=click.Choice(
+        [label for label in EnumHashAlgorithm.labels() if label != "none"], case_sensitive=False
+    ),
     help="Hash algorithm used when signing the message.",
 )
 @click.option(
@@ -809,7 +813,9 @@ def signature_create(
 @click.option(
     "-a",
     "--algorithm",
-    type=click.Choice(EnumHashAlgorithm.labels(), case_sensitive=False),
+    type=click.Choice(
+        [label for label in EnumHashAlgorithm.labels() if label != "none"], case_sensitive=False
+    ),
     help="Hash algorithm used when signing the message. If not set, default algorithm will be used.",
 )
 @click.option(

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -40,8 +40,26 @@ class EncryptionProvider:
         return False
 
     @abc.abstractmethod
+    def aes_cbc_encrypt(self, data: bytes, iv: bytes) -> bytes:
+        """Encrypt a data using the AES-CBC encryption method.
+
+        :param data: Raw data to be encrypted.
+        :param iv: Initialization vector for encryption.
+        :return: Encrypted data.
+        """
+
+    @abc.abstractmethod
+    def aes_cbc_decrypt(self, data: bytes, iv: bytes) -> bytes:
+        """Decrypt a data using the AES-CBC encryption method.
+
+        :param data: Encrypted data to be decrypted.
+        :param iv: Initialization vector for decryption.
+        :return: Decrypted data.
+        """
+
+    @abc.abstractmethod
     def encrypt_block(self, block_number: int, data: bytes) -> bytes:
-        """Encrypt a data block using the configured encryption method.
+        """Encrypt a data block using the AES-CBC encryption method.
 
         :param block_number: Sequential number of the block to encrypt.
         :param data: Raw data to be encrypted.
@@ -80,15 +98,30 @@ class NoEncryption(EncryptionProvider):
     boot file generation process.
     """
 
+    def aes_cbc_encrypt(self, data: bytes, iv: bytes) -> bytes:
+        """Encrypt a data using the AES-CBC encryption method.
+
+        :param data: Raw data to be encrypted.
+        :param iv: Initialization vector for encryption.
+        :return: Encrypted data.
+        """
+        return data
+
+    def aes_cbc_decrypt(self, data: bytes, iv: bytes) -> bytes:
+        """Decrypt a data using the AES-CBC encryption method.
+
+        :param data: Encrypted data to be decrypted.
+        :param iv: Initialization vector for decryption.
+        :return: Decrypted data.
+        """
+        return data
+
     def encrypt_block(self, block_number: int, data: bytes) -> bytes:
-        """Pass through the data without encryption.
+        """Encrypt a data block using the AES-CBC encryption method.
 
-        This method implements a no-op encryption for cases where data should remain unmodified
-        while maintaining compatibility with the encryption provider interface.
-
-        :param block_number: Sequential number of the block (ignored in this implementation).
-        :param data: Raw data bytes that will remain unmodified.
-        :return: Original unmodified data bytes.
+        :param block_number: Sequential number of the block to encrypt.
+        :param data: Raw data to be encrypted.
+        :return: Encrypted data.
         """
         return data
 
@@ -136,6 +169,24 @@ class SB31EncryptionProvider(EncryptionProvider):
         """
         block_key = self.key_derivator.get_block_key(block_number=block_number)
         return aes_cbc_encrypt(key=block_key, plain_data=data)
+
+    def aes_cbc_encrypt(self, data: bytes, iv: bytes) -> bytes:
+        """Encrypt with PCK.
+
+        :param data: plain data
+        :param iv: Initialization vector.
+        :return: encrypted data
+        """
+        return self.key_derivator.aes_cbc_encrypt(data, iv)
+
+    def aes_cbc_decrypt(self, data: bytes, iv: bytes) -> bytes:
+        """Decrypt a data using the PCK.
+
+        :param data: Encrypted data to be decrypted.
+        :param iv: Initialization vector for decryption.
+        :return: Decrypted data.
+        """
+        return self.key_derivator.aes_cbc_decrypt(data, iv)
 
     def configure(self, timestamp: int, kdk_access_rights: int, key_length: int = 256) -> None:
         """Configure the key derivator with required parameters.

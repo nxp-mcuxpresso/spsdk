@@ -82,13 +82,14 @@
             "$id": "#/properties/register/individual_write_lock",
             "type": "string",
             "default": "none",
-            "title": "Type of individual write lock. 'none'=no individual lock for the register; 'user'=user configurable lock (optional); 'always_lock'=always generate lock after write; 'implicit/implicit_16bytes'=register/16bytes block/ will be locked automatically without lock parameter;",
+            "title": "Type of individual write lock. 'none'=no individual lock for the register; 'user'=user configurable lock (optional); 'always_lock'=always generate lock after write; 'ecc'=register is locked by ECC after write; 'implicit'=deprecated alias for 'ecc';",
             "enum": [
                 "none",
                 "user",
                 "always_lock",
                 "implicit",
-                "implicit_16bytes"
+                "implicit_16bytes",
+                "ecc"
             ]
         },
         "calculated": {

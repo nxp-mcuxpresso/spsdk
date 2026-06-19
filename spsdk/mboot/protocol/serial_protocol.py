@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +13,6 @@ including protocol handling, response parsing, and serial interface management
 for NXP MCU bootloader communication.
 """
 
-import logging
 import struct
 import time
 from contextlib import contextmanager
@@ -21,6 +20,7 @@ from typing import Generator, NamedTuple, Optional, Union
 
 from typing_extensions import Self
 
+from spsdk import get_logger
 from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.exceptions import SPSDKAttributeError
 from spsdk.mboot.commands import CmdResponse, parse_cmd_response
@@ -30,7 +30,7 @@ from spsdk.utils.interfaces.commands import CmdPacketBase
 from spsdk.utils.misc import Endianness, Timeout
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class PingResponse(NamedTuple):

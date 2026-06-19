@@ -291,7 +291,9 @@ def smr_entry_parse(data: bytes, family: FamilyRevision, output: str) -> None:
     "-h",
     "--hash-algorithm",
     required=False,
-    type=click.Choice(list(EnumHashAlgorithm.labels()), case_sensitive=False),
+    type=click.Choice(
+        [label for label in EnumHashAlgorithm.labels() if label != "none"], case_sensitive=False
+    ),
     help="Name of a hash algorithm to use. Use the same hash algorithm in SMR entry definition.",
     callback=lambda ctx, param, value: (
         EnumHashAlgorithm.from_label(value.lower()) if value is not None else None

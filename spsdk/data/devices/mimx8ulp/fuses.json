@@ -1,0 +1,1395 @@
+{
+    "cpu": "mimx8ulp",
+    "groups": [
+        {
+            "group": {
+                "name": "Lock Configuration",
+                "description": "Lock configuration fuses"
+            },
+            "registers": [
+                {
+                    "id": "fuse8",
+                    "name": "LOCK_CFG",
+                    "description": "Bank 1 Word 0 configuration",
+                    "index_int": "0x0008",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "fuse8-bits-0-1",
+                            "name": "BOOT_CFG_LOCK",
+                            "description": "Perform lock on BOOT related fuses.",
+                            "values": [
+                                {
+                                    "name": "Unlock",
+                                    "value": 0,
+                                    "description": "Unlock (The controlled field can be read, sensed, burned or overridden in the corresponding register)"
+                                },
+                                {
+                                    "name": "Lock",
+                                    "value": 1,
+                                    "description": "Lock (The controlled field can be read or sensed only)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse8-bit-2",
+                            "name": "GPR5_LOCK",
+                            "description": "Lock for General Purpose fuse register #1 (GP5)",
+                            "values": [
+                                {
+                                    "name": "lock_read_and_shadow_ove",
+                                    "value": 1,
+                                    "description": "lock read and  shadow over-write protection"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse8-bit-3",
+                            "name": "GPR4_LOCK",
+                            "description": "Lock for General Purpose fuse register #1 (GP4)",
+                            "values": [
+                                {
+                                    "name": "lock_read_and_shadow_ove",
+                                    "value": 2,
+                                    "description": "lock read and  shadow over-write protection"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse8-bit-4",
+                            "name": "GPR3_LOCK",
+                            "description": "Lock for General Purpose fuse register #1 (GP3)",
+                            "values": [
+                                {
+                                    "name": "lock_read_and_shadow_ove",
+                                    "value": 3,
+                                    "description": "lock read and  shadow over-write protection"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse8-bit-5",
+                            "name": "GPR2_LOCK",
+                            "description": "Lock for General Purpose fuse register #1 (GP2)",
+                            "values": [
+                                {
+                                    "name": "lock_read_and_shadow_ove",
+                                    "value": 4,
+                                    "description": "lock read and  shadow over-write protection"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse8-bit-6",
+                            "name": "GPR1_LOCK",
+                            "description": "Lock for General Purpose fuse register #1 (GP1)",
+                            "values": [
+                                {
+                                    "name": "lock_read_and_shadow_ove",
+                                    "value": 5,
+                                    "description": "lock read and  shadow over-write protection"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 25
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "ECID",
+                "description": "Electronic Chip ID"
+            },
+            "registers": [
+                {
+                    "id": "fuse20",
+                    "name": "ECID3",
+                    "description": "Part ID. Programmed during testing.",
+                    "index_int": "0x0014",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse20-bits-0-31",
+                            "name": "ECID",
+                            "description": "Part ID. Programmed during testing."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse21",
+                    "name": "ECID2",
+                    "description": "Part ID. Programmed during testing.",
+                    "index_int": "0x0015",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse21-bits-0-31",
+                            "name": "ECID",
+                            "description": "Part ID. Programmed during testing."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse22",
+                    "name": "ECID1",
+                    "description": "Part ID. Programmed during testing.",
+                    "index_int": "0x0016",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse22-bits-0-31",
+                            "name": "ECID",
+                            "description": "Part ID. Programmed during testing."
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse23",
+                    "name": "ECID0",
+                    "description": "Part ID. Programmed during testing.",
+                    "index_int": "0x0017",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse23-bits-0-31",
+                            "name": "ECID",
+                            "description": "Part ID. Programmed during testing."
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Boot Configuration",
+                "description": "Boot configuration fuses"
+            },
+            "registers": [
+                {
+                    "id": "fuse31",
+                    "name": "BT_FUSE_SEL",
+                    "description": "Bank 3 Word 7 configuration",
+                    "index_int": "0x001F",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 15
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse31-bit-15",
+                            "name": "BT_FUSE_SEL",
+                            "description": "Determines, whether using fuses for boot configuration, or GPIO for boot configuration or Serial Downloader.",
+                            "values": [
+                                {
+                                    "name": "Boot_using_Serial_Downlo",
+                                    "value": 0,
+                                    "description": "Boot using Serial Downloader (USB)."
+                                },
+                                {
+                                    "name": "Boot_mode_configuration",
+                                    "value": 1,
+                                    "description": "Boot mode configuration is taken from fuses."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse32",
+                    "name": "M33_LOW_FREQ_BT",
+                    "description": "Bank 4 Word 0 configuration",
+                    "index_int": "0x0020",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-1",
+                            "name": "M33_LOW_FREQ_BT",
+                            "description": "Set the CM33 Core divider",
+                            "values": [
+                                {
+                                    "name": "RTD_SYS_CLK_DIVCORE_defi",
+                                    "value": 0,
+                                    "description": "RTD_SYS_CLK_DIVCORE defines the CM33 Core divider"
+                                },
+                                {
+                                    "name": "cm33clkdivcore7",
+                                    "value": 1,
+                                    "description": "cm33clk.divcore=7 (divide by 8)"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-2",
+                            "name": "A35_LOW_FREQ_BT",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 5,
+                            "id": "fuse32-bits-3-7",
+                            "name": "A35_BOOT_FAILURE_PIN_SELECT",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-8",
+                            "name": "A35_BOOT_FAILURE_PORT",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 5,
+                            "id": "fuse32-bits-9-13",
+                            "name": "M33_BOOT_FAILURE_PIN_SELECT",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-14",
+                            "name": "BOOT_FAILURE_PORT",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-15",
+                            "name": "BOOT_FAILURE_INDICATOR",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-16",
+                            "name": "A35_D_CACHE_DISABLE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-17",
+                            "name": "M33_D_CACHE_DISABLE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-18",
+                            "name": "TZM_ENABLE",
+                            "description": "Enables TrustZone in CM33"
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-21",
+                            "name": "L2_CACHE1_MODE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-24",
+                            "name": "A35_I_CACHE_DISABLE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-25",
+                            "name": "M33_I_CACHE_DISABLE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse32-bit-27",
+                            "name": "SOSC_SOURCE_SELECTION",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 4
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse33",
+                    "name": "LP_BOOT",
+                    "description": "Bank 4 Word 1 configuration",
+                    "index_int": "0x0021",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse33-bit-0",
+                            "name": "LP_BOOT",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse33-bit-1",
+                            "name": "DUAL_BOOT",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse33-bits-3-4",
+                            "name": "M33_BOOT_INTERFACE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse33-bits-6-7",
+                            "name": "EXTERNAL_OSC_FREQ_SELECTION",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 4
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse33-bits-12-14",
+                            "name": "FLEXSPI_DEVICE_TYPE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 4
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse33-bit-20",
+                            "name": "EMMC_FAST_BOOT",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse33-bit-21",
+                            "name": "SPEED",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse33-bits-22-23",
+                            "name": "BUS_WIDTH",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse33-bit-25",
+                            "name": "SDHC_DEVICE_TYPE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse33-bits-26-28",
+                            "name": "A35_BOOT_INTERFACE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse33-bits-29-30",
+                            "name": "A35_BOOT_TYPE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse33-bit-31",
+                            "name": "A35_RECOVERY_DEVICE_SELECT",
+                            "description": "See description in Boot_CFG tab"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse34",
+                    "name": "FAST_BOOT_ACK_DISABLE",
+                    "description": "Bank 4 Word 2 configuration",
+                    "index_int": "0x0022",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse34-bit-0",
+                            "name": "FAST_BOOT_ACK_DISABLE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse34-bit-2",
+                            "name": "SDHC_POWER_ON_POLARITY",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse34-bit-3",
+                            "name": "SDHC_POWER_CYCLE_DELAY",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse34-bits-4-5",
+                            "name": "SDHC_POWER_CYCLE_INTERVAL",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse34-bits-6-7",
+                            "name": "SD_CALIBRATION_STEP",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse34-bits-8-15",
+                            "name": "SDHC_PAD_SETTINGS_LOW",
+                            "description": "Sdhc Pad Settings Low"
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse34-bits-16-19",
+                            "name": "SDHC_PAD_SETTINGS_HIGH",
+                            "description": "Sdhc Pad Settings High"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse34-bit-20",
+                            "name": "POWER_CYCLE_ENABLE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse34-bit-21",
+                            "name": "SDHC_OVERRIDE_PAD_SETTINGS",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse34-bit-22",
+                            "name": "SDHC_DLL_ENABLE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse34-bit-23",
+                            "name": "DISABLE_SDMMC_MAN_MODE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 7,
+                            "id": "fuse34-bits-24-30",
+                            "name": "MMC_DLL_DLY",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse34-bit-31",
+                            "name": "SDHC_DLL_SELECT",
+                            "description": "See description in Boot_CFG tab"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse35",
+                    "name": "FLEXSPI_NAND_ADDR_WIDTH",
+                    "description": "Bank 4 Word 3 configuration",
+                    "index_int": "0x0023",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "fuse35-bits-0-1",
+                            "name": "FLEXSPI_NAND_ADDR_WIDTH",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse35-bits-2-3",
+                            "name": "FLEXSPI_NAND_CS_INTERVAL",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse35-bits-4-5",
+                            "name": "FLEXSPI_NAND_COUNT",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse35-bits-6-7",
+                            "name": "FLEXSPI_NAND_STRIDE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse35-bits-8-10",
+                            "name": "FLEXSPI_NAND_BUSY_OVERRIDE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse35-bits-11-13",
+                            "name": "FLEXSPI_FREQ_SEL",
+                            "description": "FlexSPI frequency settings",
+                            "values": [
+                                {
+                                    "name": "24MHz",
+                                    "value": 0,
+                                    "description": "24MHz"
+                                },
+                                {
+                                    "name": "133_MHz",
+                                    "value": 1,
+                                    "description": "133 MHz"
+                                },
+                                {
+                                    "name": "166_MHz",
+                                    "value": 10,
+                                    "description": "166 MHz"
+                                },
+                                {
+                                    "name": "200_MHz",
+                                    "value": 11,
+                                    "description": "200 MHz"
+                                },
+                                {
+                                    "name": "80MHz",
+                                    "value": 100,
+                                    "description": "80MHz"
+                                },
+                                {
+                                    "name": "100MHz",
+                                    "value": 101,
+                                    "description": "100MHz"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse35-bit-15",
+                            "name": "DISABLE_FCB_LOADING",
+                            "description": "Disable Fcb Loading"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse35-bit-16",
+                            "name": "SPI_CLOCK_DATA_PHASE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse35-bit-17",
+                            "name": "SPI_SCLK_ACTIVE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse35-bit-18",
+                            "name": "SPI_SS_ACTIVE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse35-bit-19",
+                            "name": "RECOVERY_SPI_ADDR",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 4
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse35-bit-24",
+                            "name": "M33_RECOVERY_CS_SELECT",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse35-bit-25",
+                            "name": "A35_RECOVERY_CS_SELECT",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse35-bit-26",
+                            "name": "M33_RECOVERY_PORT_SELECT",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse35-bit-27",
+                            "name": "A35_RECOVERY_PORT_SELECT",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse35-bit-28",
+                            "name": "DISABLE_A35_SPI_REC_BOOT",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse35-bit-29",
+                            "name": "DISABLE_M33_SPI_REC_BOOT",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse35-bit-30",
+                            "name": "USB0_SDP_DISABLE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse35-bit-31",
+                            "name": "USB1_SDP_DISABLE",
+                            "description": "See description in Boot_CFG tab"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse36",
+                    "name": "FLEXSPI_SFDP_TYPE",
+                    "description": "Bank 4 Word 4 configuration",
+                    "index_int": "0x0024",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "fuse36-bits-0-1",
+                            "name": "FLEXSPI_SFDP_TYPE",
+                            "description": "FlexSPI Auto Probe (SFDP) type",
+                            "values": [
+                                {
+                                    "name": "QuadSPI_NOR",
+                                    "value": 0,
+                                    "description": "QuadSPI NOR"
+                                },
+                                {
+                                    "name": "MxicOctal",
+                                    "value": 1,
+                                    "description": "MxicOctal"
+                                },
+                                {
+                                    "name": "MicronOctal",
+                                    "value": 10,
+                                    "description": "MicronOctal"
+                                },
+                                {
+                                    "name": "AdestoOctal",
+                                    "value": 11,
+                                    "description": "AdestoOctal"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse36-bit-2",
+                            "name": "FLEXSPI_SFDP_EN",
+                            "description": "FlexSPI Auto probe (SFDP) enable",
+                            "values": [
+                                {
+                                    "name": "Disable",
+                                    "value": 0,
+                                    "description": "Disable"
+                                },
+                                {
+                                    "name": "Enable",
+                                    "value": 1,
+                                    "description": "Enable"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse36-bit-6",
+                            "name": "SDHC1_IO_VOLT_SELECTION",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse36-bit-7",
+                            "name": "SDHC2_IO_VOLT_SELECTION",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse36-bit-8",
+                            "name": "OVERRIDE_FLEXSPI_BOOT_SELECTION",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 2,
+                            "id": "fuse36-bits-9-10",
+                            "name": "FLEXSPI_BOOT_SELECTION",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse36-bit-11",
+                            "name": "USB_HID_EP1_OUT_DISABLE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse36-bits-12-15",
+                            "name": "FLEXSPI_DUMMY_CYCLE_SEL",
+                            "description": "FlexSPI dummy cycle select\nThis is needed to configure the flexspi nor IP for different vendors if it's a octal SPI."
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse36-bits-16-23",
+                            "name": "FLEXSPI_DLL_VAL",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse36-bits-24-31",
+                            "name": "SECONDARY_BOOT_OFFSET",
+                            "description": "See description in Boot_CFG tab"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse37",
+                    "name": "WDOG_TIMEOUT_SELECT",
+                    "description": "Bank 4 Word 5 configuration",
+                    "index_int": "0x0025",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "id": "fuse37-bits-0-1",
+                            "name": "WDOG_TIMEOUT_SELECT",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-3",
+                            "name": "UPOWER_WDOG_ENABLE",
+                            "description": "Upower Wdog Enable"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-4",
+                            "name": "A35_SECURE_WDOG_ENABLE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-5",
+                            "name": "A35_WDOG_ENABLE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-6",
+                            "name": "M33_TZ_WDOG_ENABLE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-7",
+                            "name": "M33_WDOG_ENABLE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-8",
+                            "name": "CM33_RST_RELEASE_ACK",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-9",
+                            "name": "CA35_RST_RELEASE_ACK",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 2
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-12",
+                            "name": "UPOWER_CLK_SOURCE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-14",
+                            "name": "RTD_SYS_CLK_DIVCORE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-15",
+                            "name": "RTD_SYS_CLK_SOURCE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-16",
+                            "name": "UPOWER_FW_LOAD",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 3,
+                            "id": "fuse37-bits-17-19",
+                            "name": "BOOTCFG_SPARE1_A35",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-20",
+                            "name": "AD_NIC_SYS_CLK_SOURCE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-21",
+                            "name": "AD_PLL2_VCO_SELECT",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-22",
+                            "name": "AD_SYS_CLK_DIVCORE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse37-bit-23",
+                            "name": "AD_SYS_CLK_SOURCE",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse37-bits-25-28",
+                            "name": "BOOTCFG_SPARE0_A35",
+                            "description": "See description in Boot_CFG tab"
+                        },
+                        {
+                            "width": 3
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse39",
+                    "name": "LPAV_MASTER_CONTROL_FROM_FUSE",
+                    "description": "Bank 4 Word 7 configuration",
+                    "index_int": "0x0027",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse39-bit-0",
+                            "name": "LPAV_MASTER_CONTROL_FROM_FUSE",
+                            "description": "Sets the default master allocation for LPAV IPs",
+                            "values": [
+                                {
+                                    "name": "RTD_as_master",
+                                    "value": 0,
+                                    "description": "RTD as master"
+                                },
+                                {
+                                    "name": "AD_as_master",
+                                    "value": 1,
+                                    "description": "AD as master"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse39-bit-1",
+                            "name": "SHELF_MODE_DISABLE",
+                            "description": "SNVS Shelf Mode (Selected by default)"
+                        },
+                        {
+                            "width": 30
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse40",
+                    "name": "USB0_VID",
+                    "description": "Bank 5 Word 0 configuration",
+                    "index_int": "0x0028",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse40-bits-0-15",
+                            "name": "USB0_VID",
+                            "description": "USB VID"
+                        },
+                        {
+                            "width": 16,
+                            "id": "fuse40-bits-16-31",
+                            "name": "USB0_PID",
+                            "description": "USB0 PID"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse41",
+                    "name": "USB1_PID",
+                    "description": "USB1_PID",
+                    "index_int": "0x0029",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "fuse41-bits-0-15",
+                            "name": "USB1_PID",
+                            "description": "USB1_PID"
+                        },
+                        {
+                            "width": 16
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "OTP Unique ID",
+                "description": "OTP unique ID and security settings"
+            },
+            "registers": [
+                {
+                    "id": "fuse56",
+                    "name": "OTP_UNIQ_ID3",
+                    "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW",
+                    "index_int": "0x0038",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse56-bits-0-31",
+                            "name": "OTP_UNIQ_ID",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse57",
+                    "name": "OTP_UNIQ_ID2",
+                    "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW",
+                    "index_int": "0x0039",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse57-bits-0-31",
+                            "name": "OTP_UNIQ_ID",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse58",
+                    "name": "OTP_UNIQ_ID1",
+                    "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW",
+                    "index_int": "0x003A",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse58-bits-0-31",
+                            "name": "OTP_UNIQ_ID",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse59",
+                    "name": "OTP_UNIQ_ID0",
+                    "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW",
+                    "index_int": "0x003B",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse59-bits-0-31",
+                            "name": "OTP_UNIQ_ID",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "ELE Control",
+                "description": "EdgeLock Enclave MISC control (OEM)"
+            },
+            "registers": [
+                {
+                    "id": "fuse64",
+                    "name": "ELE_MISC_CTRL",
+                    "description": "Bank 8 Word 0 configuration",
+                    "index_int": "0x0040",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 4,
+                            "id": "fuse64-bits-0-3",
+                            "name": "SOC_SCOPE_PRIMARY_DBG_DISABLE",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse64-bits-4-7",
+                            "name": "SOC_SCOPE1_DBG_DISABLE",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse64-bits-8-11",
+                            "name": "SOC_SCOPE2_DBG_DISABLE",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse64-bits-12-15",
+                            "name": "SOC_SCOPE3_DBG_DISABLE",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse64-bit-16",
+                            "name": "SJC_DISABLE",
+                            "description": "Flag when Debug Subsystem should be disabled.",
+                            "values": [
+                                {
+                                    "name": "Debug_Subsystem_Enabled",
+                                    "value": 0,
+                                    "description": "Debug Subsystem Enabled"
+                                },
+                                {
+                                    "name": "Debug_Subsystem_Disabled",
+                                    "value": 1,
+                                    "description": "Debug Subsystem Disabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 4,
+                            "id": "fuse64-bits-17-20",
+                            "name": "OEM_SRK_RVK",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse64-bit-21",
+                            "name": "SOC_GLBL_DBG_DISABLE",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse64-bit-22",
+                            "name": "TZ_GLBL_DBG_DISABLE",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        },
+                        {
+                            "width": 9
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "OEM SRK Hash",
+                "description": "OEM Super Root Key Hash"
+            },
+            "registers": [
+                {
+                    "id": "fuse120",
+                    "name": "OEM_SRKH0",
+                    "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW",
+                    "index_int": "0x0078",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse120-bits-0-31",
+                            "name": "OEM_SRKH_HASH",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse121",
+                    "name": "OEM_SRKH1",
+                    "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW",
+                    "index_int": "0x0079",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse121-bits-0-31",
+                            "name": "OEM_SRKH_HASH",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse122",
+                    "name": "OEM_SRKH2",
+                    "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW",
+                    "index_int": "0x007A",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse122-bits-0-31",
+                            "name": "OEM_SRKH_HASH",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse123",
+                    "name": "OEM_SRKH3",
+                    "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW",
+                    "index_int": "0x007B",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse123-bits-0-31",
+                            "name": "OEM_SRKH_HASH",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse124",
+                    "name": "OEM_SRKH4",
+                    "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW",
+                    "index_int": "0x007C",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse124-bits-0-31",
+                            "name": "OEM_SRKH_HASH",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse125",
+                    "name": "OEM_SRKH5",
+                    "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW",
+                    "index_int": "0x007D",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse125-bits-0-31",
+                            "name": "OEM_SRKH_HASH",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse126",
+                    "name": "OEM_SRKH6",
+                    "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW",
+                    "index_int": "0x007E",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse126-bits-0-31",
+                            "name": "OEM_SRKH_HASH",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse127",
+                    "name": "OEM_SRKH7",
+                    "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW",
+                    "index_int": "0x007F",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse127-bits-0-31",
+                            "name": "OEM_SRKH_HASH",
+                            "description": "See description in ELE tab. 'Hardware Visible' column:Yes=HW, No=SW"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "OTFAD Configuration",
+                "description": "On-The-Fly AES Decryption configuration"
+            },
+            "registers": [
+                {
+                    "id": "fuse184",
+                    "name": "OTFAD_KEY3",
+                    "description": "One-Time programmable key for key blob unwrap",
+                    "index_int": "0x00B8",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse184-bits-0-31",
+                            "name": "OTFAD_KEY",
+                            "description": "One-Time programmable key for key blob unwrap"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse185",
+                    "name": "OTFAD_KEY2",
+                    "description": "One-Time programmable key for key blob unwrap",
+                    "index_int": "0x00B9",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse185-bits-0-31",
+                            "name": "OTFAD_KEY",
+                            "description": "One-Time programmable key for key blob unwrap"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse186",
+                    "name": "OTFAD_KEY1",
+                    "description": "One-Time programmable key for key blob unwrap",
+                    "index_int": "0x00BA",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse186-bits-0-31",
+                            "name": "OTFAD_KEY",
+                            "description": "One-Time programmable key for key blob unwrap"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse187",
+                    "name": "OTFAD_KEY0",
+                    "description": "One-Time programmable key for key blob unwrap",
+                    "index_int": "0x00BB",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse187-bits-0-31",
+                            "name": "OTFAD_KEY",
+                            "description": "One-Time programmable key for key blob unwrap"
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse188",
+                    "name": "OTFAD_ENABLE",
+                    "description": "Bank 23 Word 4 configuration",
+                    "index_int": "0x00BC",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "id": "fuse188-bit-0",
+                            "name": "OTFAD_ENABLE",
+                            "description": "Enable OTFAD decryption"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse188-bit-1",
+                            "name": "OTFAD_DISABLE_OVERRIDE",
+                            "description": "Disable OTFAD as if not present"
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse188-bit-2",
+                            "name": "KEY_SCRAMBLE_EN",
+                            "description": "Enable KEK scramble during key blob processing"
+                        },
+                        {
+                            "width": 8,
+                            "id": "fuse188-bits-3-10",
+                            "name": "KEY_SCRAMBLE_ALIGN",
+                            "description": "4x 2-bit key scramble align select for key blob unwrap"
+                        },
+                        {
+                            "width": 21
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse189",
+                    "name": "OTFAD_KEY_SCRAMBLE",
+                    "description": "Key scramble data value for key blob unwrap",
+                    "index_int": "0x00BD",
+                    "individual_write_lock": "ecc",
+                    "bitfields": [
+                        {
+                            "width": 32,
+                            "id": "fuse189-bits-0-31",
+                            "name": "OTFAD_KEY_SCRAMBLE",
+                            "description": "Key scramble data value for key blob unwrap"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

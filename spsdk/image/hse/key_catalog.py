@@ -525,6 +525,18 @@ class KeyCatalogCfg(FeatureBaseClass):
         update_validation_schema_family(
             sch=family_schema["properties"], devices=cls.get_supported_families(), family=family
         )
+        available_types = KeyType.get_available_types(family)
+        available_type_labels = [kt.label for kt in available_types]
+        for group_type in ("nvmKeyGroups", "ramKeyGroups"):
+            schemas["key_catalog"]["properties"][group_type]["items"]["properties"]["keyType"][
+                "enum"
+            ] = [
+                label
+                for label in schemas["key_catalog"]["properties"][group_type]["items"][
+                    "properties"
+                ]["keyType"]["enum"]
+                if label in available_type_labels
+            ]
         return [family_schema, schemas["key_catalog"]]
 
     @classmethod

@@ -1793,3 +1793,53 @@ def test_nxpcrypto_ahab_pqc_tree_no_support(
     cmd = f"pki-tree ahab-pqc -k mldsa65 -o {tree_path} -e pem -n 2"
     result = run_nxpcrypto(cli_runner, cmd, tmpdir, expected_code=1)
     assert result.exit_code != 0, "Command should fail when PQC support is not installed"
+
+
+def test_enum_hash_algorithm_labels() -> None:
+    """Test EnumHashAlgorithm labels method.
+
+    Verifies that the labels() method returns all hash algorithm labels including 'none',
+    and that 'none' is present in the list. This ensures backward compatibility while
+    allowing filtering of 'none' in CLI commands.
+
+    :raises AssertionError: If 'none' is not in labels or if expected algorithms are missing.
+    """
+    labels = EnumHashAlgorithm.labels()
+
+    # Verify 'none' is in the labels (backward compatibility)
+    assert "none" in labels, "EnumHashAlgorithm.labels() should include 'none'"
+
+    # Verify other expected algorithms are present
+    expected_algorithms = ["sha1", "sha256", "sha384", "sha512", "md5"]
+    for algo in expected_algorithms:
+        assert algo in labels, f"Expected algorithm '{algo}' not found in labels"
+
+    # Verify we can filter out 'none' (for CLI usage)
+    filtered_labels = [label for label in labels if label != "none"]
+    assert "none" not in filtered_labels, "Filtered labels should not contain 'none'"
+    assert len(filtered_labels) == len(labels) - 1, "Filtered list should have one less item"
+
+    # Verify all other algorithms are still present after filtering
+    for algo in expected_algorithms:
+        assert algo in filtered_labels, f"Algorithm '{algo}' should remain after filtering"
+
+
+def test_enum_hash_algorithm_none_exists() -> None:
+    """Test that EnumHashAlgorithm.NONE exists and has correct properties.
+
+    Verifies that the NONE enum member exists for backward compatibility and
+    has the expected tag value and label.
+
+    :raises AssertionError: If NONE member doesn't exist or has incorrect properties.
+    """
+    # Verify NONE exists
+    assert hasattr(EnumHashAlgorithm, "NONE"), "EnumHashAlgorithm should have NONE member"
+
+    # Verify NONE properties
+    none_algo = EnumHashAlgorithm.NONE
+    assert none_algo.label == "none", "NONE label should be 'none'"
+    assert none_algo.tag == 254, "NONE tag should be 254"
+
+    # Verify NONE can be retrieved by label
+    none_from_label = EnumHashAlgorithm.from_label("none")
+    assert none_from_label == EnumHashAlgorithm.NONE, "Should be able to get NONE from label"

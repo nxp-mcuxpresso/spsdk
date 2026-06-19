@@ -118,6 +118,7 @@ features:
           bee_header_0: 0x0400
           bee_header_1: 0x0800
           hab_container: 0x1000
+        image_pattern: ones
       flexspi_nand:
         segments:
           hab_container: 0x400

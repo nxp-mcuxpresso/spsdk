@@ -21,13 +21,14 @@ import libusbsio
 from libusbsio.libusbsio import LIBUSBSIO
 from typing_extensions import Self
 
+from spsdk import get_logger
 from spsdk.exceptions import SPSDKConnectionError, SPSDKError, SPSDKValueError
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.interfaces.device.base import DeviceBase
 from spsdk.utils.misc import Timeout, value_to_int
 from spsdk.utils.usbfilter import USBDeviceFilter
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -566,7 +567,7 @@ class UsbSioSPIDevice(UsbSioDevice):
             raise SPSDKConnectionError(str(e)) from e
         if result < 0 or not data:
             raise SPSDKTimeoutError()
-        logger.debug(f"<{' '.join(f'{b:02x}' for b in data)}>")
+        logger.trace(f"<{' '.join(f'{b:02x}' for b in data)}>")
         return data
 
     def write(self, data: bytes, timeout: Optional[int] = None) -> None:
@@ -581,7 +582,7 @@ class UsbSioSPIDevice(UsbSioDevice):
         :raises SPSDKConnectionError: When the data transfer fails due to communication issues.
         :raises SPSDKTimeoutError: When the transfer operation times out or returns error code.
         """
-        logger.debug(f"[{' '.join(f'{b:02x}' for b in data)}]")
+        logger.trace(f"[{' '.join(f'{b:02x}' for b in data)}]")
         try:
             dummy, result = self.port.Transfer(
                 devSelectPort=self.spi_sselport, devSelectPin=self.spi_sselpin, txData=data
@@ -666,7 +667,7 @@ class UsbSioI2CDevice(UsbSioDevice):
             raise SPSDKConnectionError(str(e)) from e
         if result < 0 or not data:
             raise SPSDKTimeoutError()
-        logger.debug(f"<{' '.join(f'{b:02x}' for b in data)}>")
+        logger.trace(f"<{' '.join(f'{b:02x}' for b in data)}>")
         return data
 
     def write(self, data: bytes, timeout: Optional[int] = None) -> None:
@@ -677,7 +678,7 @@ class UsbSioI2CDevice(UsbSioDevice):
         :raises SPSDKConnectionError: When sending the data fails.
         :raises SPSDKTimeoutError: When data NAKed or could not be written.
         """
-        logger.debug(f"[{' '.join(f'{b:02x}' for b in data)}]")
+        logger.trace(f"[{' '.join(f'{b:02x}' for b in data)}]")
         try:
             result = self.port.DeviceWrite(devAddr=self.i2c_address, txData=data)
         except Exception as e:

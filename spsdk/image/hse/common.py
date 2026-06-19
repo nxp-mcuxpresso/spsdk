@@ -23,7 +23,7 @@ from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKParsingError, SPSDK
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db
-from spsdk.utils.misc import LITTLE_ENDIAN, UINT8, UINT16, UINT32, Endianness
+from spsdk.utils.misc import LITTLE_ENDIAN, UINT8, UINT16, UINT32, Endianness, extend_block
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
@@ -71,6 +71,17 @@ class KeyType(SpsdkEnum):
     RSA_PUB_EXT = (0x99, "RSA_PUB_EXT", "RSA public key external")
     DH_PAIR = (0xA7, "DH_PAIR", "Diffie-Hellman key pair")
     DH_PUB = (0xA8, "DH_PUB", "Diffie-Hellman public key")
+
+    @classmethod
+    def get_available_types(cls, family: FamilyRevision) -> "list[KeyType]":
+        """Get available key types for the given family.
+
+        :param family: Target device family and revision.
+        :return: List of supported KeyType members for the family.
+        """
+        db = get_db(family)
+        labels = db.get_list(DatabaseManager.HSE, "supported_key_types")
+        return [cls.from_label(label) for label in labels]
 
 
 class KeyCatalogId(SpsdkEnum):
@@ -139,8 +150,10 @@ class KeyHandle:
     """HSE Key Handle.
 
     All keys used in cryptographic operations are referenced by a unique key handle.
-    The key handle is a 32-bit integer: the key catalog(byte2), group index in catalog (byte1)
-    and key slot index (byte0).
+    For catalog-based keys (ROM, NVM, RAM), the handle is a 32-bit integer encoding:
+    key catalog (byte2), group index (byte1), and key slot index (byte0).
+    For application memory keys (HSE_KEY_TYPE_*_PUB_EXT), the handle is the direct
+    32-bit memory address of the key in application memory.
     """
 
     ROM_KEY_AES256_KEY0 = 0x00000000
@@ -154,27 +167,32 @@ class KeyHandle:
     INVALID_GROUP_IDX = 0xFF
     INVALID_SLOT_IDX = 0xFF
 
-    def __init__(self, handle: int) -> None:
-        """Initialize a key handle from its components.
+    def __init__(self, handle: int, is_address: bool = False) -> None:
+        """Initialize a key handle from its raw value.
 
-        :param catalog_id: Key catalog ID
-        :param group_idx: Group index in catalog
-        :param slot_idx: Key slot index within the group
+        :param handle: Raw 32-bit key handle value
+        :param is_address: True if this handle represents a memory address
+            (for HSE_KEY_TYPE_*_PUB_EXT keys stored in application memory)
         """
         self._handle = handle
+        self._is_address = is_address
 
     def __str__(self) -> str:
         """Format the key handle for display.
 
         :return: Formatted string representation
         """
-        return f"Key Handle: 0x00010304(Key Catalog: {self.catalog_id.label}, Group: {self.group_idx}, Slot: {self.slot_idx})"
+        if self._is_address:
+            return f"Key Handle (address): 0x{self.handle:08X}"
+        return f"Key Handle: 0x{self.handle:08X}(Key Catalog: {self.catalog_id.label}, Group: {self.group_idx}, Slot: {self.slot_idx})"
 
     def __repr__(self) -> str:
         """Return representation of key handle for debugging.
 
         :return: String representation showing the raw handle value and its components
         """
+        if self._is_address:
+            return f"KeyHandle(address=0x{self.handle:08X})"
         return (
             f"KeyHandle(handle=0x{self.handle:08X}, "
             f"catalog={self.catalog_id.label}, "
@@ -204,6 +222,14 @@ class KeyHandle:
             )
         handle = int.from_bytes(data[: cls.get_size()], byteorder=Endianness.LITTLE.value)
         return cls(handle)
+
+    @property
+    def is_address_based(self) -> bool:
+        """Check if this handle represents a memory address for a PUB_EXT key.
+
+        :return: True if the handle is a direct application memory address
+        """
+        return self._is_address
 
     @property
     def group_idx(self) -> int:
@@ -244,6 +270,8 @@ class KeyHandle:
 
         :return: True if valid, False otherwise
         """
+        if self._is_address:
+            return self.handle != self.INVALID_KEY_HANDLE and self.handle != 0
         return (
             self.handle != self.INVALID_KEY_HANDLE
             and self.group_idx != self.INVALID_GROUP_IDX
@@ -256,16 +284,35 @@ class KeyHandle:
 
         :return: True if ROM key, False otherwise
         """
+        if self._is_address:
+            return False
         return self.catalog_id == KeyCatalogId.ROM
+
+    @classmethod
+    def from_address(cls, address: int) -> Self:
+        """Create a key handle from an application memory address.
+
+        Used for HSE_KEY_TYPE_*_PUB_EXT keys stored in application memory.
+
+        :param address: Memory address of the key in application memory
+        :return: KeyHandle instance with address-based handle
+        """
+        return cls(address, is_address=True)
 
     @classmethod
     def load_from_config(cls, config: Config) -> Self:
         """Load key handle from configuration.
 
-        :param config: Configuration object containing SMR entry settings
-        :return: SmrEntry instance
+        Supports two forms:
+        - Catalog-based: ``{catalogId, groupIdx, slotIdx}`` for keys in the HSE key catalog
+        - Address-based: ``{keyAddress}`` for PUB_EXT keys stored in application memory
+
+        :param config: Configuration object containing key handle settings
+        :return: KeyHandle instance
         :raises SPSDKValueError: If configuration is invalid
         """
+        if "keyAddress" in config:
+            return cls.from_address(config.get_int("keyAddress"))
         catalog_id = KeyCatalogId.from_label(config.get_str("catalogId"))
         group_idx = config.get_int("groupIdx")
         slot_idx = config.get_int("slotIdx")
@@ -281,6 +328,8 @@ class KeyHandle:
 
         :return: Configuration dictionary that can be used to recreate this key handle
         """
+        if self._is_address:
+            return {"keyAddress": self.handle}
         return {
             "catalogId": self.catalog_id.label,
             "groupIdx": self.group_idx,
@@ -306,6 +355,11 @@ class AuthScheme:
     HEADER_FORMAT: str = "<BBBB"
     SCH_FORMAT: str
 
+    # sizeof(hseAuthScheme_t) = union(hseMacScheme_t=12, hseSignScheme_t=12) = 12 bytes.
+    # Both MAC and signature scheme structs are: 4 bytes header + 8 bytes union member = 12 bytes.
+    # export() always pads to this size so the hseSmrEntry_t binary layout is correct.
+    AUTH_SCHEME_TOTAL_SIZE: int = 12
+
     _registry: dict[AuthSchemeEnum, Type["AuthScheme"]] = {}
 
     def __repr__(self) -> str:
@@ -325,11 +379,16 @@ class AuthScheme:
 
     @classmethod
     def get_size(cls) -> int:
-        """Get the size of the auth scheme structure including header and scheme data.
+        """Get the serialized size of hseAuthScheme_t (always AUTH_SCHEME_TOTAL_SIZE bytes).
 
-        :return: Size in bytes
+        hseAuthScheme_t is a C union; its binary footprint is always the same regardless
+        of which scheme is active. All scheme exports must be padded to this size so that
+        fields following authScheme in hseSmrEntry_t (e.g. pInstAuthTag) are at the
+        correct offsets when HSE parses the struct.
+
+        :return: Size in bytes (AUTH_SCHEME_TOTAL_SIZE)
         """
-        return struct.calcsize(cls.HEADER_FORMAT) + cls.get_scheme_data_size()
+        return cls.AUTH_SCHEME_TOTAL_SIZE
 
     @property
     def size(self) -> int:
@@ -387,15 +446,16 @@ class AuthScheme:
     def export(self) -> bytes:
         """Export the signature scheme to binary format.
 
+        Always returns AUTH_SCHEME_TOTAL_SIZE bytes, zero-padded if the scheme
+        data is shorter (hseAuthScheme_t is a C union with fixed binary size).
+
         :return: Binary representation of the signature scheme
         """
-        # First pack the scheme type and reserved bytes
         result = struct.pack(self.HEADER_FORMAT, self.AUTH_SCH.tag, 0, 0, 0)
-
-        # Then pack the scheme-specific data
         result += self._export_scheme()
-
-        return result
+        # Pad to AUTH_SCHEME_TOTAL_SIZE so fields following authScheme in
+        # hseSmrEntry_t (e.g. pInstAuthTag) are at the correct offsets.
+        return extend_block(result, self.AUTH_SCHEME_TOTAL_SIZE)
 
     @abstractmethod
     def _export_scheme(self) -> bytes:
@@ -443,8 +503,14 @@ class AuthScheme:
 
         if scheme_type not in cls._registry:
             raise SPSDKParsingError(f"Unsupported authentication scheme: {scheme_type}")
+        if len(data) < cls.AUTH_SCHEME_TOTAL_SIZE:
+            raise SPSDKParsingError(
+                "Insufficient data for authentication scheme. "
+                f"Expected {cls.AUTH_SCHEME_TOTAL_SIZE} bytes, got {len(data)}"
+            )
         scheme_class = cls._registry[scheme_type]
-        return scheme_class._parse_scheme(data[4:])  # Skip header (4 bytes)
+        # Parse only auth scheme union bytes; do not read into following structure fields.
+        return scheme_class._parse_scheme(data[4 : cls.AUTH_SCHEME_TOTAL_SIZE])
 
     @classmethod
     @abstractmethod
@@ -1056,7 +1122,11 @@ class KeyContainer:
             self.key_container_addr,
             self.auth_key_handle.handle,
         )
-        ret += self.auth_scheme.export() if self.auth_scheme else bytes(12)
+        ret += (
+            self.auth_scheme.export()
+            if self.auth_scheme
+            else bytes(AuthScheme.AUTH_SCHEME_TOTAL_SIZE)
+        )
         ret += pack(
             LITTLE_ENDIAN + UINT16 + UINT16 + UINT32 + UINT32,
             self.auth_len[0],
@@ -1069,7 +1139,9 @@ class KeyContainer:
 
     def get_size(self) -> int:
         """Get size of the key container."""
-        auth_scheme_size = self.auth_scheme.size if self.auth_scheme else 12
+        auth_scheme_size = (
+            self.auth_scheme.size if self.auth_scheme else AuthScheme.AUTH_SCHEME_TOTAL_SIZE
+        )
         return (
             calcsize(LITTLE_ENDIAN + UINT16 + UINT8 + UINT8 + UINT32 + UINT32)
             + auth_scheme_size

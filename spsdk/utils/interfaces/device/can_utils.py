@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -95,7 +95,7 @@ class BytesBufferedReader(Listener):  # pylint: disable=abstract-method
         """
         if self.is_stopped:
             raise SPSDKConnectionError("Reader has already been stopped")
-        self.buffer.put(msg.data)
+        self.buffer.put(bytes(msg.data))
 
     def get(self, length: int) -> Optional[bytes]:
         """Get message from the buffer.

@@ -813,7 +813,7 @@
                             "width": 1,
                             "id": "fuse13-bit-8",
                             "name": "SRK_REVOKE[0]",
-                            "description": "SRK key 1 revocation ",
+                            "description": "SRK key 1 revocation",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -831,7 +831,7 @@
                             "width": 1,
                             "id": "fuse13-bit-9",
                             "name": "SRK_REVOKE[1]",
-                            "description": "SRK key 2 revocation ",
+                            "description": "SRK key 2 revocation",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -849,7 +849,7 @@
                             "width": 1,
                             "id": "fuse13-bit-10",
                             "name": "SRK_REVOKE[2]",
-                            "description": "SRK key 3 revocation ",
+                            "description": "SRK key 3 revocation",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -867,7 +867,7 @@
                             "width": 1,
                             "id": "fuse13-bit-11",
                             "name": "SRK_REVOKE[3]",
-                            "description": "SRK key 4 revocation ",
+                            "description": "SRK key 4 revocation",
                             "values": [
                                 {
                                     "name": "Disabled",
@@ -1091,31 +1091,23 @@
                     "id": "fuse16",
                     "name": "LOT_NO_ENC1",
                     "description": "FSL-wide unique, encoded LOT ID STD II/JTAG CHALLENGE/Unique ID",
+                    "offset_int": "0x0900",
                     "deprecated_names": [
                         "LOT_NO_ENC[42:11]"
                     ],
-                    "offset_int": "0x0900",
                     "index_int": "0x0010",
-                    "individual_write_lock": "implicit",
-                    "bitfields": [
-                        {
-                            "width": 32,
-                            "id": "fuse16-bits-0-31",
-                            "name": "LOT_NO_ENC[42:11]",
-                            "description": "FSL-wide unique, encoded LOT ID STD II/JTAG CHALLENGE/Unique ID"
-                        }
-                    ]
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse17",
                     "name": "LOT_NO_ENC0_WAFER_COORD",
                     "description": "FSL-wide unique, encoded LOT ID STD II/JTAG CHALLENGE/Unique ID",
+                    "offset_int": "0x0910",
                     "deprecated_names": [
                         "LOT_NO_ENC[10:0]"
                     ],
-                    "offset_int": "0x0910",
                     "index_int": "0x0011",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "bitfields": [
                         {
                             "width": 11,
@@ -1149,7 +1141,7 @@
                     "description": "Fuse SI_REV",
                     "offset_int": "0x0920",
                     "index_int": "0x0012",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "bitfields": [
                         {
                             "width": 8
@@ -1177,7 +1169,7 @@
                     "description": "Fuse SPEED_GRADING",
                     "offset_int": "0x0930",
                     "index_int": "0x0013",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "bitfields": [
                         {
                             "width": 2,
@@ -1387,7 +1379,7 @@
                             "width": 1,
                             "id": "fuse22-bit-9",
                             "name": "JTAG_HEO",
-                            "description": "JTAG HAB Enable Override. Disallows HAB JTAG enabling. The HAB may normally enable JTAG debugging by means of the HAB_JDE-bit in the OCOTP  SCS register. The JTAG_HEO-bit can override this behavior",
+                            "description": "JTAG HAB Enable Override. Disallows HAB JTAG enabling. The HAB may normally enable JTAG debugging by means of the HAB_JDE-bit in the OCOTP SCS register. The JTAG_HEO-bit can override this behavior",
                             "values": [
                                 {
                                     "name": "0",
@@ -2426,31 +2418,23 @@
                     "id": "fuse40",
                     "name": "MAC1_ADDR1",
                     "description": "Ethernet MAC Address",
+                    "offset_int": "0x0A80",
                     "deprecated_names": [
                         "MAC1_ADDR[47:16]"
                     ],
-                    "offset_int": "0x0A80",
                     "index_int": "0x0028",
-                    "individual_write_lock": "implicit",
-                    "bitfields": [
-                        {
-                            "width": 32,
-                            "id": "fuse40-bits-0-31",
-                            "name": "MAC1_ADDR[47:16]",
-                            "description": "Ethernet MAC Address"
-                        }
-                    ]
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse41",
                     "name": "MAC1_ADDR0",
                     "description": "Ethernet MAC Address",
+                    "offset_int": "0x0A90",
                     "deprecated_names": [
                         "MAC1_ADDR[15:0]"
                     ],
-                    "offset_int": "0x0A90",
                     "index_int": "0x0029",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "bitfields": [
                         {
                             "width": 16,
@@ -2467,31 +2451,23 @@
                     "id": "fuse42",
                     "name": "MAC2_ADDR1",
                     "description": "Ethernet MAC Address",
+                    "offset_int": "0x0AA0",
                     "deprecated_names": [
                         "MAC2_ADDR[47:16]"
                     ],
-                    "offset_int": "0x0AA0",
                     "index_int": "0x002A",
-                    "individual_write_lock": "implicit",
-                    "bitfields": [
-                        {
-                            "width": 32,
-                            "id": "fuse42-bits-0-31",
-                            "name": "MAC2_ADDR[47:16]",
-                            "description": "Ethernet MAC Address"
-                        }
-                    ]
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse43",
                     "name": "MAC2_ADDR0",
                     "description": "Ethernet MAC Address",
+                    "offset_int": "0x0AB0",
                     "deprecated_names": [
                         "MAC2_ADDR[15:0]"
                     ],
-                    "offset_int": "0x0AB0",
                     "index_int": "0x002B",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "bitfields": [
                         {
                             "width": 16,
@@ -2508,31 +2484,23 @@
                     "id": "fuse44",
                     "name": "MAC3_ADDR1",
                     "description": "Ethernet MAC Address",
+                    "offset_int": "0x0AC0",
                     "deprecated_names": [
                         "MAC3_ADDR[47:16]"
                     ],
-                    "offset_int": "0x0AC0",
                     "index_int": "0x002C",
-                    "individual_write_lock": "implicit",
-                    "bitfields": [
-                        {
-                            "width": 32,
-                            "id": "fuse44-bits-0-31",
-                            "name": "MAC3_ADDR[47:16]",
-                            "description": "Ethernet MAC Address"
-                        }
-                    ]
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse45",
                     "name": "MAC3_ADDR0",
                     "description": "Ethernet MAC Address",
+                    "offset_int": "0x0AD0",
                     "deprecated_names": [
                         "MAC3_ADDR[15:0]"
                     ],
-                    "offset_int": "0x0AD0",
                     "index_int": "0x002D",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "bitfields": [
                         {
                             "width": 16,
@@ -2559,7 +2527,7 @@
                     "description": "Fuse USB",
                     "offset_int": "0x0AE0",
                     "index_int": "0x002E",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "bitfields": [
                         {
                             "width": 16,
@@ -2613,7 +2581,7 @@
                     "description": "SRK key for M7, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0B00",
                     "index_int": "0x0030",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse49",
@@ -2621,7 +2589,7 @@
                     "description": "SRK key for M7, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0B10",
                     "index_int": "0x0031",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse50",
@@ -2629,7 +2597,7 @@
                     "description": "SRK key for M7, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0B20",
                     "index_int": "0x0032",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse51",
@@ -2637,7 +2605,7 @@
                     "description": "SRK key for M7, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0B30",
                     "index_int": "0x0033",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse52",
@@ -2645,7 +2613,7 @@
                     "description": "SRK key for M7, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0B40",
                     "index_int": "0x0034",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse53",
@@ -2653,7 +2621,7 @@
                     "description": "SRK key for M7, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0B50",
                     "index_int": "0x0035",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse54",
@@ -2661,7 +2629,7 @@
                     "description": "SRK key for M7, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0B60",
                     "index_int": "0x0036",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse55",
@@ -2669,7 +2637,7 @@
                     "description": "SRK key for M7, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0B70",
                     "index_int": "0x0037",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 }
             ]
         },
@@ -2685,7 +2653,7 @@
                     "description": "SRK key for M4, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0B80",
                     "index_int": "0x0038",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse57",
@@ -2693,7 +2661,7 @@
                     "description": "SRK key for M4, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0B90",
                     "index_int": "0x0039",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse58",
@@ -2701,7 +2669,7 @@
                     "description": "SRK key for M4, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0BA0",
                     "index_int": "0x003A",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse59",
@@ -2709,7 +2677,7 @@
                     "description": "SRK key for M4, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0BB0",
                     "index_int": "0x003B",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse60",
@@ -2717,7 +2685,7 @@
                     "description": "SRK key for M4, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0BC0",
                     "index_int": "0x003C",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse61",
@@ -2725,7 +2693,7 @@
                     "description": "SRK key for M4, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0BD0",
                     "index_int": "0x003D",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse62",
@@ -2733,7 +2701,7 @@
                     "description": "SRK key for M4, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0BE0",
                     "index_int": "0x003E",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse63",
@@ -2741,7 +2709,7 @@
                     "description": "SRK key for M4, no HW visible lines. NO HW Visible signals available",
                     "offset_int": "0x0BF0",
                     "index_int": "0x003F",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 }
             ]
         },
@@ -2856,7 +2824,7 @@
                     "description": "Fuse BOOT_CONFIG_MISC1",
                     "offset_int": "0x0C70",
                     "index_int": "0x0047",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "bitfields": [
                         {
                             "width": 1,
@@ -2946,10 +2914,10 @@
                             "width": 8,
                             "id": "fuse71-bits-8-15",
                             "name": "BOOT_CONFIG_MISC1[7:0]",
-                            "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                             "deprecated_names": [
                                 "BOOT_CONFIG_MISC1[15:8]"
-                            ]
+                            ],
+                            "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details."
                         },
                         {
                             "width": 6,
@@ -2961,10 +2929,10 @@
                             "width": 10,
                             "id": "fuse71-bits-22-31",
                             "name": "BOOT_CONFIG_MISC1[17:8]",
-                            "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                             "deprecated_names": [
                                 "BOOT_CONFIG_MISC1[31:22]"
-                            ]
+                            ],
+                            "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details."
                         }
                     ]
                 },
@@ -2974,7 +2942,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x0C80",
                     "index_int": "0x0048",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse73",
@@ -2982,7 +2950,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x0C90",
                     "index_int": "0x0049",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse74",
@@ -2990,7 +2958,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x0CA0",
                     "index_int": "0x004A",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 }
             ]
         },
@@ -3006,7 +2974,7 @@
                     "description": "JTAG Response",
                     "offset_int": "0x0CB0",
                     "index_int": "0x004B",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse76",
@@ -3014,7 +2982,7 @@
                     "description": "JTAG Response",
                     "offset_int": "0x0CC0",
                     "index_int": "0x004C",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse77",
@@ -3022,7 +2990,7 @@
                     "description": "JTAG Response",
                     "offset_int": "0x0CD0",
                     "index_int": "0x004D",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse78",
@@ -3030,7 +2998,7 @@
                     "description": "JTAG Response",
                     "offset_int": "0x0CE0",
                     "index_int": "0x004E",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 }
             ]
         },
@@ -3281,7 +3249,7 @@
                     "description": "User Key #1",
                     "offset_int": "0x0E00",
                     "index_int": "0x0060",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0004"
@@ -3293,7 +3261,7 @@
                     "description": "User Key #1",
                     "offset_int": "0x0E10",
                     "index_int": "0x0061",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0004"
@@ -3305,7 +3273,7 @@
                     "description": "User Key #1",
                     "offset_int": "0x0E20",
                     "index_int": "0x0062",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0004"
@@ -3317,7 +3285,7 @@
                     "description": "User Key #1",
                     "offset_int": "0x0E30",
                     "index_int": "0x0063",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0004"
@@ -3329,7 +3297,7 @@
                     "description": "User Key #1",
                     "offset_int": "0x0E40",
                     "index_int": "0x0064",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0004"
@@ -3341,7 +3309,7 @@
                     "description": "User Key #1",
                     "offset_int": "0x0E50",
                     "index_int": "0x0065",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0004"
@@ -3353,7 +3321,7 @@
                     "description": "User Key #1",
                     "offset_int": "0x0E60",
                     "index_int": "0x0066",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0004"
@@ -3365,7 +3333,7 @@
                     "description": "User Key #1",
                     "offset_int": "0x0E70",
                     "index_int": "0x0067",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0004"
@@ -3377,7 +3345,7 @@
                     "description": "User Key #2",
                     "offset_int": "0x0E80",
                     "index_int": "0x0068",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0008"
@@ -3389,7 +3357,7 @@
                     "description": "User Key #2",
                     "offset_int": "0x0E90",
                     "index_int": "0x0069",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0008"
@@ -3401,7 +3369,7 @@
                     "description": "User Key #2",
                     "offset_int": "0x0EA0",
                     "index_int": "0x006A",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0008"
@@ -3413,7 +3381,7 @@
                     "description": "User Key #2",
                     "offset_int": "0x0EB0",
                     "index_int": "0x006B",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0008"
@@ -3425,7 +3393,7 @@
                     "description": "User Key #2",
                     "offset_int": "0x0EC0",
                     "index_int": "0x006C",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0008"
@@ -3437,7 +3405,7 @@
                     "description": "User Key #2",
                     "offset_int": "0x0ED0",
                     "index_int": "0x006D",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0008"
@@ -3449,7 +3417,7 @@
                     "description": "User Key #2",
                     "offset_int": "0x0EE0",
                     "index_int": "0x006E",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0008"
@@ -3461,7 +3429,7 @@
                     "description": "User Key #2",
                     "offset_int": "0x0EF0",
                     "index_int": "0x006F",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0008"
@@ -3473,7 +3441,7 @@
                     "description": "User Key #3",
                     "offset_int": "0x0F00",
                     "index_int": "0x0070",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0010"
@@ -3485,7 +3453,7 @@
                     "description": "User Key #3",
                     "offset_int": "0x0F10",
                     "index_int": "0x0071",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0010"
@@ -3497,7 +3465,7 @@
                     "description": "User Key #3",
                     "offset_int": "0x0F20",
                     "index_int": "0x0072",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0010"
@@ -3509,7 +3477,7 @@
                     "description": "User Key #3",
                     "offset_int": "0x0F30",
                     "index_int": "0x0073",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0010"
@@ -3521,7 +3489,7 @@
                     "description": "User Key #3",
                     "offset_int": "0x0F40",
                     "index_int": "0x0074",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0010"
@@ -3533,7 +3501,7 @@
                     "description": "User Key #3",
                     "offset_int": "0x0F50",
                     "index_int": "0x0075",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0010"
@@ -3545,7 +3513,7 @@
                     "description": "User Key #3",
                     "offset_int": "0x0F60",
                     "index_int": "0x0076",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0010"
@@ -3557,7 +3525,7 @@
                     "description": "User Key #3",
                     "offset_int": "0x0F70",
                     "index_int": "0x0077",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0010"
@@ -3569,7 +3537,7 @@
                     "description": "User Key #4",
                     "offset_int": "0x0F80",
                     "index_int": "0x0078",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0020"
@@ -3581,7 +3549,7 @@
                     "description": "User Key #4",
                     "offset_int": "0x0F90",
                     "index_int": "0x0079",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0020"
@@ -3593,7 +3561,7 @@
                     "description": "User Key #4",
                     "offset_int": "0x0FA0",
                     "index_int": "0x007A",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0020"
@@ -3605,7 +3573,7 @@
                     "description": "User Key #4",
                     "offset_int": "0x0FB0",
                     "index_int": "0x007B",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0020"
@@ -3617,7 +3585,7 @@
                     "description": "User Key #4",
                     "offset_int": "0x0FC0",
                     "index_int": "0x007C",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0020"
@@ -3629,7 +3597,7 @@
                     "description": "User Key #4",
                     "offset_int": "0x0FD0",
                     "index_int": "0x007D",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0020"
@@ -3641,7 +3609,7 @@
                     "description": "User Key #4",
                     "offset_int": "0x0FE0",
                     "index_int": "0x007E",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0020"
@@ -3653,7 +3621,7 @@
                     "description": "User Key #4",
                     "offset_int": "0x0FF0",
                     "index_int": "0x007F",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0020"
@@ -3665,7 +3633,7 @@
                     "description": "User Key #5",
                     "offset_int": "0x1000",
                     "index_int": "0x0080",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0040"
@@ -3677,7 +3645,7 @@
                     "description": "User Key #5",
                     "offset_int": "0x1010",
                     "index_int": "0x0081",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0040"
@@ -3689,7 +3657,7 @@
                     "description": "User Key #5",
                     "offset_int": "0x1020",
                     "index_int": "0x0082",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0040"
@@ -3701,7 +3669,7 @@
                     "description": "User Key #5",
                     "offset_int": "0x1030",
                     "index_int": "0x0083",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0040"
@@ -3713,7 +3681,7 @@
                     "description": "User Key #5",
                     "offset_int": "0x1040",
                     "index_int": "0x0084",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0040"
@@ -3725,7 +3693,7 @@
                     "description": "User Key #5",
                     "offset_int": "0x1050",
                     "index_int": "0x0085",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0040"
@@ -3737,7 +3705,7 @@
                     "description": "User Key #5",
                     "offset_int": "0x1060",
                     "index_int": "0x0086",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0040"
@@ -3749,7 +3717,7 @@
                     "description": "User Key #5",
                     "offset_int": "0x1070",
                     "index_int": "0x0087",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0040"
@@ -4297,7 +4265,7 @@
                     "description": "General Purpose fuse register #1",
                     "offset_int": "0x1300",
                     "index_int": "0x00B0",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0400"
@@ -4309,7 +4277,7 @@
                     "description": "General Purpose fuse register #1",
                     "offset_int": "0x1310",
                     "index_int": "0x00B1",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0400"
@@ -4321,7 +4289,7 @@
                     "description": "General Purpose fuse register #1",
                     "offset_int": "0x1320",
                     "index_int": "0x00B2",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0400"
@@ -4333,7 +4301,7 @@
                     "description": "General Purpose fuse register #1",
                     "offset_int": "0x1330",
                     "index_int": "0x00B3",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0400"
@@ -4345,7 +4313,7 @@
                     "description": "General Purpose fuse register #1",
                     "offset_int": "0x1340",
                     "index_int": "0x00B4",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0400"
@@ -4357,7 +4325,7 @@
                     "description": "General Purpose fuse register #1",
                     "offset_int": "0x1350",
                     "index_int": "0x00B5",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0400"
@@ -4369,7 +4337,7 @@
                     "description": "General Purpose fuse register #1",
                     "offset_int": "0x1360",
                     "index_int": "0x00B6",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0400"
@@ -4381,7 +4349,7 @@
                     "description": "General Purpose fuse register #1",
                     "offset_int": "0x1370",
                     "index_int": "0x00B7",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0400"
@@ -4393,7 +4361,7 @@
                     "description": "General Purpose fuse register #1",
                     "offset_int": "0x1380",
                     "index_int": "0x00B8",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0400"
@@ -4405,7 +4373,7 @@
                     "description": "General Purpose fuse register #1",
                     "offset_int": "0x1390",
                     "index_int": "0x00B9",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0400"
@@ -4417,7 +4385,7 @@
                     "description": "General Purpose fuse register #1",
                     "offset_int": "0x13A0",
                     "index_int": "0x00BA",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0400"
@@ -4429,7 +4397,7 @@
                     "description": "General Purpose fuse register #1",
                     "offset_int": "0x13B0",
                     "index_int": "0x00BB",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0400"
@@ -4441,7 +4409,7 @@
                     "description": "General Purpose fuse register #1",
                     "offset_int": "0x13C0",
                     "index_int": "0x00BC",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0400"
@@ -4453,7 +4421,7 @@
                     "description": "General Purpose fuse register #1",
                     "offset_int": "0x13D0",
                     "index_int": "0x00BD",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0400"
@@ -4465,7 +4433,7 @@
                     "description": "General Purpose fuse register #1",
                     "offset_int": "0x13E0",
                     "index_int": "0x00BE",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0400"
@@ -4477,7 +4445,7 @@
                     "description": "General Purpose fuse register #1",
                     "offset_int": "0x13F0",
                     "index_int": "0x00BF",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0400"
@@ -4489,7 +4457,7 @@
                     "description": "General Purpose fuse register #2",
                     "offset_int": "0x1400",
                     "index_int": "0x00C0",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0800"
@@ -4501,7 +4469,7 @@
                     "description": "General Purpose fuse register #2",
                     "offset_int": "0x1410",
                     "index_int": "0x00C1",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0800"
@@ -4513,7 +4481,7 @@
                     "description": "General Purpose fuse register #2",
                     "offset_int": "0x1420",
                     "index_int": "0x00C2",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0800"
@@ -4525,7 +4493,7 @@
                     "description": "General Purpose fuse register #2",
                     "offset_int": "0x1430",
                     "index_int": "0x00C3",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0800"
@@ -4537,7 +4505,7 @@
                     "description": "General Purpose fuse register #2",
                     "offset_int": "0x1440",
                     "index_int": "0x00C4",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0800"
@@ -4549,7 +4517,7 @@
                     "description": "General Purpose fuse register #2",
                     "offset_int": "0x1450",
                     "index_int": "0x00C5",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0800"
@@ -4561,7 +4529,7 @@
                     "description": "General Purpose fuse register #2",
                     "offset_int": "0x1460",
                     "index_int": "0x00C6",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0800"
@@ -4573,7 +4541,7 @@
                     "description": "General Purpose fuse register #2",
                     "offset_int": "0x1470",
                     "index_int": "0x00C7",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0800"
@@ -4585,7 +4553,7 @@
                     "description": "General Purpose fuse register #2",
                     "offset_int": "0x1480",
                     "index_int": "0x00C8",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0800"
@@ -4597,7 +4565,7 @@
                     "description": "General Purpose fuse register #2",
                     "offset_int": "0x1490",
                     "index_int": "0x00C9",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0800"
@@ -4609,7 +4577,7 @@
                     "description": "General Purpose fuse register #2",
                     "offset_int": "0x14A0",
                     "index_int": "0x00CA",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0800"
@@ -4621,7 +4589,7 @@
                     "description": "General Purpose fuse register #2",
                     "offset_int": "0x14B0",
                     "index_int": "0x00CB",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0800"
@@ -4633,7 +4601,7 @@
                     "description": "General Purpose fuse register #2",
                     "offset_int": "0x14C0",
                     "index_int": "0x00CC",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0800"
@@ -4645,7 +4613,7 @@
                     "description": "General Purpose fuse register #2",
                     "offset_int": "0x14D0",
                     "index_int": "0x00CD",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0800"
@@ -4657,7 +4625,7 @@
                     "description": "General Purpose fuse register #2",
                     "offset_int": "0x14E0",
                     "index_int": "0x00CE",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0800"
@@ -4669,7 +4637,7 @@
                     "description": "General Purpose fuse register #2",
                     "offset_int": "0x14F0",
                     "index_int": "0x00CF",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x0800"
@@ -4681,7 +4649,7 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x1500",
                     "index_int": "0x00D0",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x1000"
@@ -4693,7 +4661,7 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x1510",
                     "index_int": "0x00D1",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x1000"
@@ -4705,7 +4673,7 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x1520",
                     "index_int": "0x00D2",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x1000"
@@ -4717,7 +4685,7 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x1530",
                     "index_int": "0x00D3",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x1000"
@@ -4729,7 +4697,7 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x1540",
                     "index_int": "0x00D4",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x1000"
@@ -4741,7 +4709,7 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x1550",
                     "index_int": "0x00D5",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x1000"
@@ -4753,7 +4721,7 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x1560",
                     "index_int": "0x00D6",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x1000"
@@ -4765,7 +4733,7 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x1570",
                     "index_int": "0x00D7",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x1000"
@@ -4777,7 +4745,7 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x1580",
                     "index_int": "0x00D8",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x1000"
@@ -4789,7 +4757,7 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x1590",
                     "index_int": "0x00D9",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x1000"
@@ -4801,7 +4769,7 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x15A0",
                     "index_int": "0x00DA",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x1000"
@@ -4813,7 +4781,7 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x15B0",
                     "index_int": "0x00DB",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x1000"
@@ -4825,7 +4793,7 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x15C0",
                     "index_int": "0x00DC",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x1000"
@@ -4837,7 +4805,7 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x15D0",
                     "index_int": "0x00DD",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x1000"
@@ -4849,7 +4817,7 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x15E0",
                     "index_int": "0x00DE",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x1000"
@@ -4861,7 +4829,7 @@
                     "description": "General Purpose fuse register #3",
                     "offset_int": "0x15F0",
                     "index_int": "0x00DF",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x1000"
@@ -4873,7 +4841,7 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x1600",
                     "index_int": "0x00E0",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x2000"
@@ -4885,7 +4853,7 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x1610",
                     "index_int": "0x00E1",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x2000"
@@ -4897,7 +4865,7 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x1620",
                     "index_int": "0x00E2",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x2000"
@@ -4909,7 +4877,7 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x1630",
                     "index_int": "0x00E3",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x2000"
@@ -4921,7 +4889,7 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x1640",
                     "index_int": "0x00E4",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x2000"
@@ -4933,7 +4901,7 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x1650",
                     "index_int": "0x00E5",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x2000"
@@ -4945,7 +4913,7 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x1660",
                     "index_int": "0x00E6",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x2000"
@@ -4957,7 +4925,7 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x1670",
                     "index_int": "0x00E7",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x2000"
@@ -4969,7 +4937,7 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x1680",
                     "index_int": "0x00E8",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x2000"
@@ -4981,7 +4949,7 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x1690",
                     "index_int": "0x00E9",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x2000"
@@ -4993,7 +4961,7 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x16A0",
                     "index_int": "0x00EA",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x2000"
@@ -5005,7 +4973,7 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x16B0",
                     "index_int": "0x00EB",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x2000"
@@ -5017,7 +4985,7 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x16C0",
                     "index_int": "0x00EC",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x2000"
@@ -5029,7 +4997,7 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x16D0",
                     "index_int": "0x00ED",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x2000"
@@ -5041,7 +5009,7 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x16E0",
                     "index_int": "0x00EE",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x2000"
@@ -5053,7 +5021,7 @@
                     "description": "General Purpose fuse register #4",
                     "offset_int": "0x16F0",
                     "index_int": "0x00EF",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x2000"
@@ -5065,7 +5033,7 @@
                     "description": "General Purpose fuse register #5",
                     "offset_int": "0x1700",
                     "index_int": "0x00F0",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x4000"
@@ -5077,7 +5045,7 @@
                     "description": "General Purpose fuse register #5",
                     "offset_int": "0x1710",
                     "index_int": "0x00F1",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x4000"
@@ -5089,7 +5057,7 @@
                     "description": "General Purpose fuse register #5",
                     "offset_int": "0x1720",
                     "index_int": "0x00F2",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x4000"
@@ -5101,7 +5069,7 @@
                     "description": "General Purpose fuse register #5",
                     "offset_int": "0x1730",
                     "index_int": "0x00F3",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x4000"
@@ -5113,7 +5081,7 @@
                     "description": "General Purpose fuse register #5",
                     "offset_int": "0x1740",
                     "index_int": "0x00F4",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x4000"
@@ -5125,7 +5093,7 @@
                     "description": "General Purpose fuse register #5",
                     "offset_int": "0x1750",
                     "index_int": "0x00F5",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x4000"
@@ -5137,7 +5105,7 @@
                     "description": "General Purpose fuse register #5",
                     "offset_int": "0x1760",
                     "index_int": "0x00F6",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x4000"
@@ -5149,7 +5117,7 @@
                     "description": "General Purpose fuse register #5",
                     "offset_int": "0x1770",
                     "index_int": "0x00F7",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x4000"
@@ -5161,7 +5129,7 @@
                     "description": "General Purpose fuse register #5",
                     "offset_int": "0x1780",
                     "index_int": "0x00F8",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x4000"
@@ -5173,7 +5141,7 @@
                     "description": "General Purpose fuse register #5",
                     "offset_int": "0x1790",
                     "index_int": "0x00F9",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x4000"
@@ -5185,7 +5153,7 @@
                     "description": "General Purpose fuse register #5",
                     "offset_int": "0x17A0",
                     "index_int": "0x00FA",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x4000"
@@ -5197,7 +5165,7 @@
                     "description": "General Purpose fuse register #5",
                     "offset_int": "0x17B0",
                     "index_int": "0x00FB",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x4000"
@@ -5209,7 +5177,7 @@
                     "description": "General Purpose fuse register #5",
                     "offset_int": "0x17C0",
                     "index_int": "0x00FC",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x4000"
@@ -5221,7 +5189,7 @@
                     "description": "General Purpose fuse register #5",
                     "offset_int": "0x17D0",
                     "index_int": "0x00FD",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x4000"
@@ -5233,7 +5201,7 @@
                     "description": "General Purpose fuse register #5",
                     "offset_int": "0x17E0",
                     "index_int": "0x00FE",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x4000"
@@ -5245,7 +5213,7 @@
                     "description": "General Purpose fuse register #5",
                     "offset_int": "0x17F0",
                     "index_int": "0x00FF",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "lock": {
                         "register_id": "fuse9",
                         "read_lock_int": "0x4000"
@@ -5265,7 +5233,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x1800",
                     "index_int": "0x0100",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse257",
@@ -5273,7 +5241,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x1810",
                     "index_int": "0x0101",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse258",
@@ -5281,7 +5249,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x1820",
                     "index_int": "0x0102",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse259",
@@ -5289,7 +5257,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x1830",
                     "index_int": "0x0103",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse260",
@@ -5297,7 +5265,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x1840",
                     "index_int": "0x0104",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse261",
@@ -5305,7 +5273,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x1850",
                     "index_int": "0x0105",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse262",
@@ -5313,7 +5281,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x1860",
                     "index_int": "0x0106",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse263",
@@ -5321,7 +5289,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x1870",
                     "index_int": "0x0107",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse264",
@@ -5329,7 +5297,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x1880",
                     "index_int": "0x0108",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse265",
@@ -5337,7 +5305,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x1890",
                     "index_int": "0x0109",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse266",
@@ -5345,7 +5313,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x18A0",
                     "index_int": "0x010A",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse267",
@@ -5353,7 +5321,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x18B0",
                     "index_int": "0x010B",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse268",
@@ -5361,7 +5329,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x18C0",
                     "index_int": "0x010C",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse269",
@@ -5369,7 +5337,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x18D0",
                     "index_int": "0x010D",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse270",
@@ -5377,7 +5345,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x18E0",
                     "index_int": "0x010E",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse271",
@@ -5385,7 +5353,7 @@
                     "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details.",
                     "offset_int": "0x18F0",
                     "index_int": "0x010F",
-                    "individual_write_lock": "implicit"
+                    "individual_write_lock": "ecc"
                 }
             ]
         }

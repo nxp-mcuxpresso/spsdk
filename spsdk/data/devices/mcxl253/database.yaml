@@ -24,4 +24,6 @@ features:
   # ======== PFR section ========
   pfr:
     cmpa: # CMPA description
-      address: 0x1_E000
+      address: 0x3_E000
+    cfpa: # CFPA description
+      address: 0x3_FFF0

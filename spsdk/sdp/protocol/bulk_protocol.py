@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,9 +12,9 @@ protocol for Serial Download Protocol (SDP) operations, enabling efficient
 data transfer with NXP MCU devices during provisioning and programming tasks.
 """
 
-import logging
 from typing import Optional
 
+from spsdk import get_logger
 from spsdk.exceptions import SPSDKAttributeError, SPSDKConnectionError
 from spsdk.sdp.commands import CmdResponse
 from spsdk.sdp.protocol.base import SDPProtocolBase
@@ -27,7 +27,7 @@ HID_REPORT = {
     "HAB": (0x03, 4),
     "RET": (0x04, 64),
 }
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class SDPBulkProtocol(SDPProtocolBase):
@@ -142,7 +142,7 @@ class SDPBulkProtocol(SDPProtocolBase):
         raw_data = bytes([report_id])
         raw_data += data[offset : offset + data_len]
         raw_data += bytes([0x00] * (report_size - data_len))
-        logger.debug(f"OUT[{len(raw_data)}]: {', '.join(f'{b:02X}' for b in raw_data)}")
+        logger.trace(f"OUT[{len(raw_data)}]: {', '.join(f'{b:02X}' for b in raw_data)}")
         return raw_data, offset + data_len
 
     @staticmethod
@@ -158,7 +158,7 @@ class SDPBulkProtocol(SDPProtocolBase):
         """
         if not raw_data:
             raise SPSDKConnectionError("No data were received")
-        logger.debug(f"IN [{len(raw_data)}]: {', '.join(f'{b:02X}' for b in raw_data)}")
+        logger.trace(f"IN [{len(raw_data)}]: {', '.join(f'{b:02X}' for b in raw_data)}")
         return CmdResponse(raw_data[0] == HID_REPORT["HAB"][0], raw_data[1:])
 
     def configure(self, config: dict) -> None:

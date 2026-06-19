@@ -65,6 +65,12 @@ def test_command_line_interface(cli_runner: CliRunner) -> None:
         ("mcxc151", "cmpa_cfg"),
         ("mcxc151", "cmpa_pswd"),
         ("mcxc151", "cmpa_lc"),
+        ("mcxc162_cmpa_tc1", "legacy"),
+        ("mcxc162_cmpa_tc1", "grouped"),
+        ("mcxc162_cmpa_tc2", "legacy"),
+        ("mcxc162_cmpa_tc2", "grouped"),
+        ("mcxc162_cmpa_tc3", "legacy"),
+        ("mcxc162_cmpa_tc3", "grouped"),
     ],
 )
 def test_generate_all(
@@ -349,9 +355,6 @@ def test_parse(cli_runner: CliRunner, data_dir: str, tmpdir: str) -> None:
         ("nhs52s04", "cmpa"),
         ("mcxa457", "cfpa"),
         ("mcxa457", "update_cfpa_cmpa"),
-        ("mcxc151", "cmpa_cfg"),
-        ("mcxc151", "cmpa_pswd"),
-        ("mcxc151", "cmpa_lc"),
     ],
 )
 def test_user_config(cli_runner: CliRunner, tmpdir: str, family: str, type: str) -> None:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -35,6 +35,7 @@ from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.ahab.ahab_sign_block import SignatureBlock
 from spsdk.image.ahab.ahab_signature import ContainerSignature
 from spsdk.image.ahab.ahab_srk import SRKRecord, SRKTable
+from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision
 
 
@@ -425,3 +426,32 @@ def test_keyblob() -> None:
     assert blob.flags == 1
 
     assert blob.export() == keyblob
+
+
+@pytest.mark.parametrize(
+    "family,feature,base_key",
+    [
+        ("mcxa457", DatabaseManager.MBI, ["ahab"]),
+        ("mcxn556s", DatabaseManager.MBI, ["ahab"]),
+        ("mcxa457", "ahab", None),
+        ("mcxn556s", "ahab", None),
+    ],
+)
+def test_signature_algorithms_include_ecdsa(family: str, feature: str, base_key: list) -> None:
+    """Verify that ECDSA is present in signature_algorithms for ECC-capable devices.
+
+    Regression test for SPSDK-6667: adding PQC algorithms to the YAML anchor
+    must not drop the default ECC/RSA algorithms from MBI or AHAB paths.
+    MCX devices support only ECDSA and ML-DSA (no RSA or SM2).
+    """
+    config = create_chip_config(FamilyRevision(family), feature=feature, base_key=base_key)
+    algo_labels = {str(m).split(".")[-1] for m in config.signature_algorithms}
+    assert (
+        "ECDSA" in algo_labels
+    ), f"{family} {feature} signature_algorithms missing ECDSA: {algo_labels}"
+    assert (
+        "ML_DSA" in algo_labels
+    ), f"{family} {feature} signature_algorithms missing ML_DSA: {algo_labels}"
+    # MCX devices do NOT support RSA or SM2
+    assert "RSA" not in algo_labels, f"{family} {feature} should not have RSA: {algo_labels}"
+    assert "SM2" not in algo_labels, f"{family} {feature} should not have SM2: {algo_labels}"

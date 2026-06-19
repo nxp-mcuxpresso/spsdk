@@ -2960,8 +2960,8 @@ def load_key(key_path: str) -> Union[PrivateKey, PublicKey, bytes]:
     parsers: list[Callable[[str], Union[PrivateKey, PublicKey, bytes]]] = [
         PrivateKey.load,
         PublicKey.load,
-        load_binary,
         load_hex,
+        load_binary,
     ]
     for parser in parsers:
         try:

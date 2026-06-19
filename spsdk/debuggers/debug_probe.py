@@ -13,7 +13,6 @@ probe discovery, connection management, and CoreSight debug operations.
 """
 
 import functools
-import logging
 from abc import ABC, abstractmethod
 from time import sleep
 from typing import Optional, Type, no_type_check
@@ -21,12 +20,14 @@ from typing import Optional, Type, no_type_check
 import colorama
 import prettytable
 
+from spsdk import get_logger
 from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.utils.database import DatabaseManager
 from spsdk.utils.exceptions import SPSDKTimeoutError
-from spsdk.utils.family import FamilyRevision
+from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import Timeout, value_to_int
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Debugging options
 DISABLE_AP_SELECT_CACHING = False
@@ -132,10 +133,10 @@ class DebugProbe(ABC):
         :param options: Configuration dictionary containing family, revision and other probe settings
         """
         self.hardware_id = hardware_id
-        self.options = options or {}
+        self.options = dict(options or {})
         self.family = None
         family = self.options.pop("family", None)
-        revision = self.options.pop("revision", None)
+        revision = self.options.pop("revision", "latest")
         if family:
             self.family = FamilyRevision(family, revision)
         self.mem_ap_ix = -1
@@ -518,9 +519,33 @@ class DebugProbeCoreSightOnly(DebugProbe):
         """
         super().__init__(hardware_id, options)
         self.last_accessed_ap = -1
+        self.enable_power_domains_after_connect = False
+        self.enable_sda_debug_paths_after_connect = False
+        self.preserve_csw_ro_bits = False
+        self.mem_ap_scan_write_before_read = False
         self.disable_reinit = (
             False  # Keep it here to backward compatibility with debug probe plugins
         )
+        if self.family:
+            db = get_db(self.family)
+            self.enable_power_domains_after_connect = db.get_bool(
+                DatabaseManager.DAT, "enable_power_domains_after_connect", False
+            )
+            self.enable_sda_debug_paths_after_connect = db.get_bool(
+                DatabaseManager.DAT, "enable_sda_debug_paths_after_connect", False
+            )
+            self.preserve_csw_ro_bits = db.get_bool(
+                DatabaseManager.DAT, "mem_ap_preserve_csw_ro_bits", False
+            )
+            self.mem_ap_scan_write_before_read = db.get_bool(
+                DatabaseManager.DAT, "mem_ap_scan_write_before_read", False
+            )
+            self.mem_ap_ix = db.get_int(DatabaseManager.DAT, "mem_ap_index", -1)
+            if self.mem_ap_ix >= 0:
+                logger.debug(
+                    f"Using fixed mem_ap_index={self.mem_ap_ix} from device database "
+                    "(skipping AP scan)."
+                )
 
     def connect_safe(self) -> None:
         """Debug probe connect in safe manner.
@@ -538,6 +563,34 @@ class DebugProbeCoreSightOnly(DebugProbe):
                 self.connect()
                 return
             raise e
+
+        self._init_debug_access_after_connect()
+
+    def _init_debug_access_after_connect(self) -> None:
+        """Initialize optional device-specific debug access after connect."""
+        if self.enable_power_domains_after_connect:
+            try:
+                self.power_up_target()
+            except Exception as e:
+                logger.debug(f"Post-connect power domain init skipped: {e}")
+
+        if self.enable_sda_debug_paths_after_connect:
+            try:
+                if not self.family:
+                    return
+                sda_ap_ix = get_db(self.family).get_int(DatabaseManager.DAT, "sda_ap_index", -1)
+                if sda_ap_ix >= 0:
+                    self.coresight_reg_write(
+                        access_port=True,
+                        addr=self.get_coresight_ap_address(sda_ap_ix, 0x80),
+                        data=0x10000010,  # DBGENCTRL: GDBGEN (bit28) | CDBGEN (bit4)
+                    )
+                    logger.debug(
+                        f"Written DBGENCTRL (GDBGEN|CDBGEN) to SDA-AP {sda_ap_ix} "
+                        "to enable debug paths."
+                    )
+            except Exception as e:
+                logger.debug(f"SDA-AP DBGENCTRL init skipped: {e}")
 
     def coresight_reg_write_safe(
         self, access_port: bool = True, addr: int = 0, data: int = 0, max_retries: int = 3
@@ -684,48 +737,127 @@ class DebugProbeCoreSightOnly(DebugProbe):
             test_address = value_to_int(
                 self.options.get("test_address", DEFAULT_TEST_MEM_AP_ADDRESS)
             )
+
             if self.mem_ap_ix < 0:
                 logger.debug(f"Trying MEM AP on address {hex(test_address)}")
                 # Try to find MEM AP
                 for i in POSSIBLE_MEM_AP_IX:
                     try:
+                        logger.debug(f"Testing AP{i} for memory access")
                         idr = self.coresight_reg_read(
                             access_port=True,
                             addr=self.get_coresight_ap_address(
                                 access_port=i, address=self.AP_IDR_REG
                             ),
                         )
+                        logger.debug(f"AP{i} IDR: 0x{idr:08X}")
                         # Extract IDR fields used for lookup. TODO solve that
                         ap_class = (idr & 0x1E000) >> 13
-                        if ap_class == 8:
+                        ap_type = idr & 0xF
+                        # class=8 is MEM-AP; type=1/5=AHB-AP, type=4=AXI-AP.
+                        # Skip APB-AP (type=2,6) which cannot access general SRAM.
+                        if ap_class == 8 and ap_type in (1, 4, 5):
                             try:
-                                # Enter debug state and halt
-                                dhcsr_reg = self._mem_reg_read(mem_ap_ix=i, addr=self.DHCSR_REG)
-                                logger.debug(f"Value of DHCSR register = {hex(dhcsr_reg)}")
-                                self._mem_reg_write(
-                                    mem_ap_ix=i,
-                                    addr=self.DHCSR_REG,
-                                    data=(
-                                        self.DHCSR_DEBUGKEY
-                                        | self.DHCSR_C_HALT
-                                        | self.DHCSR_C_DEBUGEN
-                                    ),
-                                )
+                                dhcsr_reg = None
+                                # Read CSW first to check DbgSwEnable (bit31).
+                                # DbgSwEnable is a RO hardware signal that reflects whether
+                                # the CPU's DBGEN is asserted. DHCSR at 0xE000EDF0 is only
+                                # accessible via the CPU's local AHB-AP when DBGEN is set.
+                                # Attempting DHCSR on APs where DbgSwEnable=0 causes a bus
+                                # fault → STICKYERR → CMSIS-DAP probes get stuck. Skip
+                                # DHCSR entirely when DbgSwEnable=0.
+                                dbgswenable = True
+                                if self.preserve_csw_ro_bits:
+                                    ap_csw = self._safe_csw_value(i, single_increment=True)
+                                    dbgswenable = bool(ap_csw & 0x80000000)
                                 try:
-                                    self._mem_reg_read(mem_ap_ix=i, addr=test_address)
+                                    if dbgswenable:
+                                        # Enter debug state and halt (requires DHCSR on APB/PPB)
+                                        dhcsr_reg = self._mem_reg_read(
+                                            mem_ap_ix=i, addr=self.DHCSR_REG
+                                        )
+                                        logger.debug(f"Value of DHCSR register = {hex(dhcsr_reg)}")
+                                        self._mem_reg_write(
+                                            mem_ap_ix=i,
+                                            addr=self.DHCSR_REG,
+                                            data=(
+                                                self.DHCSR_DEBUGKEY
+                                                | self.DHCSR_C_HALT
+                                                | self.DHCSR_C_DEBUGEN
+                                            ),
+                                        )
+                                    else:
+                                        logger.debug(
+                                            f"AP{i} CSW.DbgSwEnable=0, skipping DHCSR halt"
+                                        )
+                                except SPSDKError:
+                                    # DHCSR not accessible via this AP (e.g., AHB-AP on
+                                    # devices where debug registers are on a separate APB bus).
+                                    # Proceed with memory test without CPU halt.
+                                    logger.debug(
+                                        f"DHCSR not accessible via AP{i} "
+                                        "(trying memory test without CPU halt)"
+                                    )
+                                    # The 3×3 DHCSR read retries above leave STICKYERR set.
+                                    # Clear it now so the next CSW read in _safe_csw_value
+                                    # doesn't immediately get ACK FAULT.
+                                    try:
+                                        self.coresight_reg_write(
+                                            access_port=False,
+                                            addr=self.DP_ABORT_REG,
+                                            data=0x1F,
+                                        )
+                                    except Exception:
+                                        pass
+                                try:
+                                    if self.mem_ap_scan_write_before_read:
+                                        # Write before read to initialize ECC-protected SRAM.
+                                        # On devices with ECC (e.g. MCXE31B), reading
+                                        # uninitialized SRAM causes an ECC fault → SLVERR →
+                                        # DRW FAULT. A prior write initializes the ECC bits
+                                        # and also verifies write access.
+                                        test_pattern = 0xA5A5A5A5
+                                        self._mem_reg_write(
+                                            mem_ap_ix=i, addr=test_address, data=test_pattern
+                                        )
+                                        read_back = self._mem_reg_read(
+                                            mem_ap_ix=i, addr=test_address
+                                        )
+                                        if read_back != test_pattern:
+                                            raise SPSDKError(
+                                                f"Memory verify failed at {hex(test_address)}: "
+                                                f"wrote {test_pattern:#010x}, "
+                                                f"read {read_back:#010x}"
+                                            )
+                                    else:
+                                        self._mem_reg_read(mem_ap_ix=i, addr=test_address)
                                     status = True
                                 except SPSDKError:
                                     logger.debug(
                                         f"Read operation on AP{i} fails at {hex(test_address)} address"
                                     )
                                 finally:
-                                    # Exit debug state
-                                    self._mem_reg_write(
-                                        mem_ap_ix=i,
-                                        addr=self.DHCSR_REG,
-                                        data=dhcsr_reg,
-                                    )
+                                    if dhcsr_reg is not None:
+                                        # Exit debug state.
+                                        # DHCSR writes require KEY in bits [31:16]; preserve
+                                        # original control bits from the low halfword only.
+                                        self._mem_reg_write(
+                                            mem_ap_ix=i,
+                                            addr=self.DHCSR_REG,
+                                            data=self.DHCSR_DEBUGKEY | (dhcsr_reg & 0xFFFF),
+                                        )
                                 if not status:
+                                    # Clear any sticky errors from failed CSW/DRW before
+                                    # moving to the next AP — otherwise the next AP's IDR
+                                    # read will immediately get ACK FAULT.
+                                    try:
+                                        self.coresight_reg_write(
+                                            access_port=False,
+                                            addr=self.DP_ABORT_REG,
+                                            data=0x1F,
+                                        )
+                                    except Exception:
+                                        pass
                                     continue
                             except SPSDKError:
                                 continue
@@ -733,14 +865,68 @@ class DebugProbeCoreSightOnly(DebugProbe):
                             self.mem_ap_ix = i
                             logger.debug(f"Found memory access port at AP{i}, IDR: 0x{idr:08X}")
                             break
-                    except SPSDKError:
-                        pass
+                    except SPSDKError as e:
+                        logger.debug(f"AP{i} IDR read failed: {e}")
+                        try:
+                            # Clear sticky error flags so next AP scan starts clean.
+                            # A failed AP read sets STICKYERR in DP CTRL/STAT, which
+                            # would cause all subsequent AP reads to fault as well.
+                            self.coresight_reg_write(
+                                access_port=False, addr=self.DP_ABORT_REG, data=0x1F
+                            )
+                        except Exception:
+                            pass
 
                 if self.mem_ap_ix < 0:
                     raise SPSDKDebugProbeError("The memory access port is not found!")
             return func(self, *args, **kwargs)  # pylint: disable=not-callable
 
         return wrapper
+
+    def _safe_csw_value(self, mem_ap_ix: int, single_increment: bool = True) -> int:
+        """Compute a safe CSW value by read-modify-write to preserve RO hardware bits.
+
+        Different APs have different read-only (RO) bits in their CSW register that reflect
+        hardware signals (e.g. DbgSwEnable=DBGEN, SPIDEN, HNONSEC). Writing 0 to an RO=1
+        bit or writing 1 to an RO=0 bit causes SLVERR → WIRE ACK FAULT on the next SWD
+        transaction, breaking the entire AP scan.
+
+        This method reads the current CSW and only modifies the truly writable lower bits:
+        - Bits [2:0] SIZE → 32-bit word (0b010)
+        - Bits [5:4] ADDRINC → single (0b01) or packed (0b10)
+        - Bit [6] DEVICEEN → 1
+
+        All upper bits (hardware security/protection signals) are preserved unchanged.
+
+        :param mem_ap_ix: AP index to read/write CSW for.
+        :param single_increment: If True use single address increment, else packed.
+        :return: Safe CSW value with only RW bits modified, RO bits preserved.
+        """
+        csw_addr = self.get_coresight_ap_address(mem_ap_ix, self.CSW_REG)
+        addrinc = self.CSW_ADDRINC_SINGLE if single_increment else self.CSW_ADDRINC_PACKED
+        rw_bits = self.CSW_SIZE_32BIT | addrinc | self.CSW_DEVICEEN  # 0x52 or 0x62
+        try:
+            current_csw = self.coresight_reg_read_safe(access_port=True, addr=csw_addr)
+            # Mask out only bits [6:0] (RW), preserve bits [31:7] (may be RO)
+            return (current_csw & 0xFFFFFF80) | rw_bits
+        except SPSDKDebugProbeTransferError:
+            # Fallback: use CSW_FULL_DEBUG. May fail on strict RO implementations but
+            # is the correct value for standard Cortex-M APs.
+            return self.CSW_FULL_DEBUG
+
+    def _get_csw_value(self, mem_ap_ix: int, single_increment: bool = True) -> int:
+        """Get CSW value for memory transfer.
+
+        :param mem_ap_ix: AP index to configure CSW for.
+        :param single_increment: If True use single address increment, else packed.
+        :return: CSW value for memory transfer.
+        """
+        if self.preserve_csw_ro_bits:
+            return self._safe_csw_value(mem_ap_ix, single_increment=single_increment)
+        addrinc = self.CSW_ADDRINC_SINGLE if single_increment else self.CSW_ADDRINC_PACKED
+        return (
+            self.CSW_FULL_DEBUG & ~(self.CSW_ADDRINC_SINGLE | self.CSW_ADDRINC_PACKED)
+        ) | addrinc
 
     def _mem_reg_read(self, mem_ap_ix: int, addr: int = 0) -> int:
         """Read 32-bit register in memory space of MCU.
@@ -754,10 +940,11 @@ class DebugProbeCoreSightOnly(DebugProbe):
         :raises SPSDKDebugProbeTransferError: Error occurs during memory transfer.
         """
         try:
+            csw_addr = self.get_coresight_ap_address(mem_ap_ix, self.CSW_REG)
             self.coresight_reg_write_safe(
                 access_port=True,
-                addr=self.get_coresight_ap_address(mem_ap_ix, self.CSW_REG),
-                data=self.CSW_FULL_DEBUG,
+                addr=csw_addr,
+                data=self._get_csw_value(mem_ap_ix, single_increment=True),
             )
             self.coresight_reg_write_safe(
                 access_port=True,
@@ -798,7 +985,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
             self.coresight_reg_write_safe(
                 access_port=True,
                 addr=self.get_coresight_ap_address(mem_ap_ix, self.CSW_REG),
-                data=self.CSW_FULL_DEBUG,
+                data=self._get_csw_value(mem_ap_ix, single_increment=True),
             )
             self.coresight_reg_write_safe(
                 access_port=True,
@@ -850,7 +1037,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
             self.coresight_reg_write_safe(
                 access_port=True,
                 addr=self.get_coresight_ap_address(self.mem_ap_ix, self.CSW_REG),
-                data=self.CSW_FULL_DEBUG,  # Auto-increment enabled
+                data=self._get_csw_value(self.mem_ap_ix, single_increment=True),
             )
             self.coresight_reg_write_safe(
                 access_port=True,
@@ -912,7 +1099,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
             self.coresight_reg_write_safe(
                 access_port=True,
                 addr=self.get_coresight_ap_address(self.mem_ap_ix, self.CSW_REG),
-                data=self.CSW_FULL_DEBUG,
+                data=self._get_csw_value(self.mem_ap_ix, single_increment=True),
             )
             self.coresight_reg_write_safe(
                 access_port=True,
@@ -1041,6 +1228,22 @@ class DebugProbeCoreSightOnly(DebugProbe):
         logger.debug("Power up the debug connection")
         # Enable the whole power of target :-)
         self._target_power_control(sys_power=True, debug_power=True)
+
+    def initialize_debug_port(self) -> None:
+        """Initialize Debug Port after low-level SWD/JTAG connection.
+
+        The method clears possible stale sticky DP errors and powers up system and debug
+        domains together using the common CoreSight power-up sequence.
+
+        :raises SPSDKError: If debug port power-up fails.
+        """
+        logger.debug("Initialize debug port")
+        try:
+            self.coresight_reg_write(access_port=False, addr=self.DP_ABORT_REG, data=0x1F)
+        except SPSDKError as exc:
+            logger.debug(f"DP sticky error clear before power-up failed: {exc}")
+        self.power_up_target()
+        self.last_accessed_ap = -1
 
     def power_down_target(self) -> None:
         """Power down the target for the Probe connection.
@@ -1179,7 +1382,6 @@ class DebugProbeCoreSightOnly(DebugProbe):
 
             if power_ok:
                 self.last_accessed_ap = -1
-                self.mem_ap_ix = -1  # Force AP re-detection
                 # Step 5: Test basic DP access and read possible errors
                 ctrl_stat = self.coresight_reg_read(access_port=False, addr=self.DP_CTRL_STAT_REG)
                 return (ctrl_stat & self.DP_CTRL_STAT_ERROR_MASK) == 0
@@ -1260,7 +1462,6 @@ class DebugProbeCoreSightOnly(DebugProbe):
             dp_idr = self.read_dp_idr()
             if dp_idr != 0 and dp_idr != 0xFFFFFFFF:
                 self.last_accessed_ap = -1
-                self.mem_ap_ix = -1
                 return True
 
             return False

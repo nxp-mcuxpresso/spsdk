@@ -14,7 +14,7 @@ Configuration Data), and related components for NXP microcontrollers.
 
 import logging
 import os
-from typing import Optional
+from typing import Optional, Union
 
 import click
 
@@ -32,6 +32,7 @@ from spsdk.image.fcb.fcb import FCB
 from spsdk.image.mem_type import MemoryType
 from spsdk.image.wic import replace_uboot
 from spsdk.image.xmcd.xmcd import XMCD
+from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import get_printable_path, load_binary, write_file
@@ -101,22 +102,134 @@ def bootable_image_export(config: Config) -> None:
     required=True,
     help="Path to binary Bootable image to parse.",
 )
+@click.option(
+    "-k",
+    "--dek",
+    type=str,
+    required=False,
+    multiple=True,
+    help=(
+        "Data encryption key for decrypting encrypted segments. Supports multiple formats:\n"
+        "1. Simple: DEK as binary/HEX text file path or HEX string (applies to all segments/containers)\n"
+        "2. Segment-specific: 'seg<name|index>=<dek>' where dek is file path or HEX string "
+        "(e.g. seg0=dek.bin or seg_ahab_container=0x1234567890abcdef)\n"
+        "3. Container-specific: 'seg<name|index>:cnt<index>=<dek>' "
+        "(e.g. seg0:cnt0=dek0.bin or seg_ahab_container:cnt1=0x1234...)\n"
+        "Can be specified multiple times for different segments/containers.\n"
+        "Use 'nxpimage bootable-image info' to get segment names/indices."
+    ),
+)
 @spsdk_output_option(directory=True)
 def bootable_image_parse_command(
-    family: FamilyRevision, mem_type: Optional[str], binary: str, output: str
+    family: FamilyRevision, mem_type: Optional[str], binary: str, dek: tuple[str, ...], output: str
 ) -> None:
     """Parse Bootable Image into YAML configuration and binary images."""
     memory = None
     if mem_type:
         memory = MemoryType.from_label(mem_type)
-    bootable_image_parse(family, memory, binary, output)
+    bootable_image_parse(family, memory, binary, dek, output)
+
+
+def parse_bootable_image_dek_parameter(
+    dek_values: tuple[str, ...],
+) -> dict[Optional[Union[str, int]], dict[Optional[int], str]]:
+    """Parse bootable image DEK parameter values into a nested dictionary.
+
+    Supports multiple formats:
+    1. Simple: Single DEK for all segments/containers
+    2. Segment-specific: seg<name|index>=<dek>
+    3. Container-specific: seg<name|index>:cnt<index>=<dek>
+
+    :param dek_values: Tuple of DEK parameter values from CLI
+    :return: Dictionary mapping segment identifier to container DEK map
+            {None: {None: dek}} for simple format
+            {seg_id: {None: dek}} for segment-specific
+            {seg_id: {cnt_id: dek}} for container-specific
+    :raises SPSDKAppError: If the format is invalid
+    """
+    result: dict[Optional[Union[str, int]], dict[Optional[int], str]] = {}
+
+    for dek_value in dek_values:
+        # Check for segment-specific format: seg<name|index>=<dek> or seg<name|index>:cnt<index>=<dek>
+        if dek_value.startswith("seg") and ("=" in dek_value or ":" in dek_value):
+            try:
+                # Split by '=' to get segment part and DEK value
+                if ":cnt" in dek_value:
+                    # Format: seg<name|index>:cnt<index>=<dek>
+                    seg_part, rest = dek_value.split(":cnt", 1)
+                    cnt_part, dek_val = rest.split("=", 1)
+
+                    # Extract segment identifier
+                    seg_id_str = seg_part[3:]  # Remove 'seg' prefix
+                    try:
+                        seg_id: Union[str, int] = int(seg_id_str)
+                    except ValueError:
+                        seg_id = seg_id_str  # It's a segment name
+
+                    # Extract container index
+                    cnt_id = int(cnt_part)
+
+                    # Initialize segment dict if needed
+                    if seg_id not in result:
+                        result[seg_id] = {}
+
+                    if cnt_id in result[seg_id]:
+                        raise SPSDKAppError(
+                            f"Duplicate DEK specification for segment '{seg_id}' container {cnt_id}"
+                        )
+
+                    result[seg_id][cnt_id] = dek_val
+                else:
+                    # Format: seg<name|index>=<dek>
+                    seg_part, dek_val = dek_value.split("=", 1)
+
+                    # Extract segment identifier
+                    seg_id_str = seg_part[3:]  # Remove 'seg' prefix
+                    try:
+                        seg_id = int(seg_id_str)
+                    except ValueError:
+                        seg_id = seg_id_str  # It's a segment name
+
+                    if seg_id in result:
+                        raise SPSDKAppError(f"Duplicate DEK specification for segment '{seg_id}'")
+
+                    # Segment-level DEK applies to all containers in that segment
+                    result[seg_id] = {None: dek_val}
+
+            except (ValueError, IndexError) as exc:
+                raise SPSDKAppError(
+                    f"Invalid DEK format: '{dek_value}'. "
+                    "Expected format: seg<name|index>=<dek> or seg<name|index>:cnt<index>=<dek>"
+                ) from exc
+        else:
+            # Simple format - applies to all segments and containers
+            if None in result:
+                raise SPSDKAppError(
+                    "Multiple simple DEK values specified. Use segment-specific format "
+                    "(seg<name|index>=<dek>) for multiple segments."
+                )
+            if result:
+                raise SPSDKAppError("Cannot mix simple DEK format with segment-specific format")
+            result[None] = {None: dek_value}
+
+    return result
 
 
 def bootable_image_parse(
-    family: FamilyRevision, mem_type: Optional[MemoryType], binary: str, output: str
+    family: FamilyRevision,
+    mem_type: Optional[MemoryType],
+    binary: str,
+    dek: tuple[str, ...],
+    output: str,
 ) -> None:
     """Parse Bootable Image into YAML configuration and binary images."""
     data = load_binary(binary)
+
+    # Parse DEK parameters if provided
+    dek_map: Optional[dict[Optional[Union[str, int]], dict[Optional[int], str]]] = None
+    if dek:
+        dek_map = parse_bootable_image_dek_parameter(dek)
+
     if mem_type:
         preparsed = BootableImage.pre_parse_verify(data, family, mem_type)
         if preparsed.has_errors:
@@ -124,7 +237,8 @@ def bootable_image_parse(
             print_verifier_to_console(preparsed, problems=True)
             raise SPSDKAppError("Pre-parsed check failed")
 
-    bimg_image = BootableImage.parse(data, family=family, mem_type=mem_type)
+    bimg_image = BootableImage.parse(data, family=family, mem_type=mem_type, dek_map=dek_map)
+
     verifier = bimg_image.verify()
     if verifier.has_errors:
         click.echo("The image has errors:")
@@ -169,12 +283,21 @@ def bootable_image_parse(
     help="Input directory path to prepend to image filenames in generated configs. "
     "Directory will be created if it doesn't exist.",
 )
+@click.option(
+    "-s",
+    "--sign",
+    is_flag=True,
+    default=False,
+    help="Generate signing-ready AHAB configs. Adds signing fields (srk_set, signer, srk_table) "
+    "to each AHAB container config and creates a 'keys/' folder for user key material.",
+)
 def bootable_image_get_templates_command(
     family: FamilyRevision,
     output: str,
     template: Optional[str],
     board: Optional[str],
     input_dir: Optional[str],
+    sign: bool,
 ) -> None:
     """Create template of configurations in YAML format.
 
@@ -194,6 +317,7 @@ def bootable_image_get_templates_command(
             template=template,
             board=board,
             input_dir=input_dir,
+            sign=sign,
         )
     else:
         # Generate all templates
@@ -202,6 +326,7 @@ def bootable_image_get_templates_command(
             output=output,
             board=board,
             input_dir=input_dir,
+            sign=sign,
         )
 
 
@@ -211,6 +336,7 @@ def bootable_image_get_template_specific(
     template: str,
     board: Optional[str],
     input_dir: Optional[str],
+    sign: bool = False,
 ) -> None:
     """Generate a specific template with optional board configuration.
 
@@ -219,6 +345,7 @@ def bootable_image_get_template_specific(
     :param template: Template name to generate.
     :param board: Optional board name for board-specific filenames.
     :param input_dir: Optional input directory path.
+    :param sign: When True, add signing fields to AHAB configs and create keys/ folder.
     :raises SPSDKAppError: If template or board validation fails.
     """
     # Validate template exists
@@ -259,6 +386,7 @@ def bootable_image_get_template_specific(
         output=output,
         board=board,
         input_dir=input_dir,
+        sign=sign,
     )
 
 
@@ -267,6 +395,7 @@ def bootable_image_get_all_templates(
     output: str,
     board: Optional[str],
     input_dir: Optional[str],
+    sign: bool = False,
 ) -> None:
     """Generate all templates including standard and extra templates.
 
@@ -278,6 +407,7 @@ def bootable_image_get_all_templates(
     :param output: Output directory for generated templates.
     :param board: Optional specific board to generate templates for.
     :param input_dir: Optional input directory path.
+    :param sign: When True, add signing fields to AHAB configs and create keys/ folder.
     """
     click.echo(f"Generating all templates for {family}...\n")
 
@@ -345,6 +475,7 @@ def bootable_image_get_all_templates(
                         output_dir=template_output,
                         board=board_name,
                         input_dir=template_input_dir,
+                        sign=sign,
                     )
 
                     click.echo(
@@ -396,6 +527,7 @@ def bootable_image_get_template(
     output: str,
     board: Optional[str] = None,
     input_dir: Optional[str] = None,
+    sign: bool = False,
 ) -> None:
     """Generate bootable image template with AHAB containers."""
     try:
@@ -423,6 +555,7 @@ def bootable_image_get_template(
             output_dir=output,
             board=board,
             input_dir=input_dir,
+            sign=sign,
         )
 
         # Print success message
@@ -433,6 +566,8 @@ def bootable_image_get_template(
             click.echo(f"Board: {board}")
         if input_dir:
             click.echo(f"Input directory: {input_dir}")
+        if sign:
+            click.echo("Signing mode: enabled (signing fields added, keys/ folder created)")
         click.echo(f"\nGenerated files in {get_printable_path(output)}:")
         for file_path in generated_files:
             click.echo(f"  - {os.path.basename(file_path)}")
@@ -556,20 +691,46 @@ def bootable_image_list_templates(family: FamilyRevision) -> None:
     default=False,
     help="Show just problems in image.",
 )
+@click.option(
+    "-k",
+    "--dek",
+    type=str,
+    required=False,
+    multiple=True,
+    help=(
+        "Data encryption key for decrypting encrypted segments. Supports multiple formats:\n"
+        "1. Simple: DEK as binary/HEX text file path or HEX string (applies to all segments/containers)\n"
+        "2. Segment-specific: 'seg<name|index>=<dek>' where dek is file path or HEX string "
+        "(e.g. seg0=dek.bin or seg_ahab_container=0x1234567890abcdef)\n"
+        "3. Container-specific: 'seg<name|index>:cnt<index>=<dek>' "
+        "(e.g. seg0:cnt0=dek0.bin or seg_ahab_container:cnt1=0x1234...)\n"
+        "Can be specified multiple times for different segments/containers.\n"
+        "Use 'nxpimage bootable-image info' to get segment names/indices."
+    ),
+)
 def bootable_image_verify_command(
-    family: FamilyRevision, binary: str, problems: bool, mem_type: str
+    family: FamilyRevision, binary: str, problems: bool, mem_type: str, dek: tuple[str, ...]
 ) -> None:
     """Verify Bootable Image."""
     bootable_image_verify(
-        family=family, binary=binary, problems=problems, mem_type=MemoryType.from_label(mem_type)
+        family=family,
+        binary=binary,
+        problems=problems,
+        mem_type=MemoryType.from_label(mem_type),
+        dek=dek,
     )
 
 
 def bootable_image_verify(
-    family: FamilyRevision, binary: str, problems: bool, mem_type: MemoryType
+    family: FamilyRevision, binary: str, problems: bool, mem_type: MemoryType, dek: tuple[str, ...]
 ) -> None:
     """Verify Bootable Image."""
     data = load_binary(binary)
+
+    # Parse DEK parameters if provided
+    dek_map: Optional[dict[Optional[Union[str, int]], dict[Optional[int], str]]] = None
+    if dek:
+        dek_map = parse_bootable_image_dek_parameter(dek)
 
     preparsed = BootableImage.pre_parse_verify(data, family, mem_type)
     if preparsed.has_errors:
@@ -577,8 +738,10 @@ def bootable_image_verify(
         print_verifier_to_console(preparsed, problems=problems)
         raise SPSDKAppError("Pre-parsed check failed")
 
-    bimg_images = []
-    bimg_images = BootableImage._parse_all(data, family=family, mem_type=mem_type, no_errors=False)
+    bimg_images = BootableImage._parse_all(
+        data, family=family, mem_type=mem_type, no_errors=False, dek_map=dek_map
+    )
+
     verifiers: list[Verifier] = []
     found_good_image = False
     for img in bimg_images:
@@ -603,6 +766,50 @@ def bootable_image_verify(
 
     if not found_good_image:
         raise SPSDKAppError("Verify failed")
+
+
+@bootable_image_group.command(name="info", no_args_is_help=True)
+@spsdk_family_option(families=BootableImage.get_supported_families())
+@click.option(
+    "-m",
+    "--mem-type",
+    type=click.Choice(
+        [mem_type.label for mem_type in BootableImage.get_supported_memory_types()],
+        case_sensitive=False,
+    ),
+    required=False,
+    help="Select the chip used memory type.",
+)
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, readable=True, resolve_path=True),
+    required=True,
+    help="Path to binary bootable image to analyze.",
+)
+def bootable_image_info_command(
+    family: FamilyRevision, mem_type: Optional[str], binary: str
+) -> None:
+    """Display information about bootable image and its segments."""
+    memory = None
+    if mem_type:
+        memory = MemoryType.from_label(mem_type)
+    bootable_image_info(family, memory, binary)
+
+
+def bootable_image_info(
+    family: FamilyRevision, mem_type: Optional[MemoryType], binary: str
+) -> None:
+    """Display information about bootable image and its segments."""
+    data = BinaryImage.load_binary_image(binary).export()
+
+    try:
+        bimg_image = BootableImage.parse(data, family=family, mem_type=mem_type)
+    except SPSDKError as exc:
+        raise SPSDKAppError(f"Failed to parse bootable image: {str(exc)}") from exc
+
+    info_output = bimg_image.info()
+    click.echo(info_output)
 
 
 @bootable_image_group.group(name="fcb", cls=CommandsTreeGroup)

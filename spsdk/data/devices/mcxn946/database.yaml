@@ -100,6 +100,7 @@ features:
   dat:
     socc: 7 # SOCC identification
     dmbox_ap_ix: 2 # Typical Index of debug mailbox access port is 2
+    mem_ap_index: 0 # AHB-AP (CM33 core 0) is always AP0 on MCXN946/MCXN947
 
   # ======== MBI section ========
   mbi:

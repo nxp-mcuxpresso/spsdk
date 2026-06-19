@@ -89,7 +89,7 @@ whole_ahab_image:
                     type: string
                     title: Super Root Key (SRK) set
                     description: Defines which set is used to authenticate the container.
-                    enum: [none, oem, nxp]
+                    enum: [none, oem, nxp, oem_dev]
                     template_value: none
                   used_srk_id:
                     type: [number, string]
@@ -111,6 +111,7 @@ whole_ahab_image:
                     title: GDET runtime behavior
                     description:
                       "This option defines runtime behavior of Glitch detector. Not supported by all devices and their ELE firmware.\n
+                      If omitted, the existing flag value in the parsed container is preserved (no override applied).\n
                       - disabled:       GDET is disabled after the first OEM container has been authenticated (default behavior)\n
                       - enabled_eleapi: Automatically enable GDET during all ELE API calls\n
                       - enabled:        Leave GDET enabled"
@@ -130,6 +131,7 @@ whole_ahab_image:
                     type: string
                     title: Fast boot
                     description: "This option enables fast boot mode.\n
+                      If omitted, the existing flag value in the parsed container is preserved (no override applied).\n
                       - disabled: Fast boot disabled.\n
                       - hash_and_copy: ELE will do the hash and copy (when disabled, BootROM will do the copy).\n
                       - external_accelerator: Use external accelerator for authentication (e.g. V2X on i.MX95B0, i.MX943 and i.MX952).\n
@@ -141,7 +143,6 @@ whole_ahab_image:
                         external_accelerator,
                         hash_and_copy_with_external_accelerator,
                       ]
-                    skip_in_template: True
                     template_value: disabled
                   fuse_version:
                     type: [number, string]
@@ -541,6 +542,7 @@ whole_ahab_image:
                             - entry_point
                             - image_type
                             - core_id
+                            - image_path
                           properties:
                             image_path:
                               type: string

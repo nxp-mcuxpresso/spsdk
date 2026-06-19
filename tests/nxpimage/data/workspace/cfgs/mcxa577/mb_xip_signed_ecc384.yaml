@@ -1,0 +1,29 @@
+# Copyright 2025-2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ============================  mbi Configuration template for mcxa577, Revision: latest.  =============================
+
+family: mcxa577
+revision: latest
+
+outputImageExecutionTarget: xip
+outputImageAuthenticationType: signed
+
+masterBootOutputFile: ./workspace/output_images/mcxa577/signed_mbi_ecc384.bin
+inputImageFile: ./workspace/input_images/mcxn556s_led_blinky_unaligned.bin
+outputImageExecutionAddress: 0
+
+add_crc_check: true
+image_hash_type: sha384
+
+srk_set: oem
+used_srk_id: 0
+signer: ../../_data/keys/ecc384/srk0_ecc384.pem
+
+srk_table:
+  srk_array:
+    - ../../_data/keys/ecc384/srk0_ecc384.pub
+    - ../../_data/keys/ecc384/srk1_ecc384.pub
+    - ../../_data/keys/ecc384/srk2_ecc384.pub
+    - ../../_data/keys/ecc384/srk3_ecc384.pub

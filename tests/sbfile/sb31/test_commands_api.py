@@ -14,6 +14,7 @@ configuration management.
 """
 
 import os
+from struct import pack
 from typing import Optional
 
 import pytest
@@ -43,6 +44,7 @@ from spsdk.sbfile.sb31.commands import (
 from spsdk.sbfile.sb31.constants import EnumCmdTag
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
+from spsdk.utils.misc import align
 
 
 def test_cmd_erase() -> None:
@@ -1012,3 +1014,350 @@ def test_cmd_check_lc_get_config_context(tmpdir: str) -> None:
     config = cmd.get_config_context(data_path="")
     # Verify configuration
     assert config.get_str("lifecycle") == CmdCheckLifecycle.Lifecycle.IN_FIELD_RETURN.label
+
+
+def test_cmd_load_compression() -> None:
+    """Test CmdLoad command with compression enabled.
+
+    Validates that CmdLoad command properly compresses data when compression is enabled
+    and beneficial. Tests that the header length field contains the compressed size,
+    check_size contains the original size, and the command can be parsed back correctly.
+    """
+    # Create data that compresses well (repetitive pattern)
+    original_data = bytes([0xFF] * 1000)
+    cmd = CmdLoad(address=0x1000, data=original_data, memory_id=1, compress=True)
+
+    # Verify compression was applied
+    assert cmd.compressed is True
+    assert cmd.length < len(original_data)  # Compressed size in header
+    assert cmd.check_size == len(original_data)  # Original size preserved
+    assert cmd.crc != 0  # CRC was calculated
+    assert len(cmd.data) < len(original_data)  # Data is compressed
+    assert cmd.original_data == original_data  # Original data preserved
+
+    # Verify string representation shows both sizes
+    cmd_str = str(cmd)
+    assert "compressed from" in cmd_str
+    assert str(cmd.check_size) in cmd_str
+
+    # Export and verify
+    exported_data = cmd.export()
+    assert len(exported_data) > 0
+
+    # Parse back and verify
+    cmd_parsed = CmdLoad.parse(data=exported_data)
+    assert cmd_parsed.compressed is True
+    assert cmd_parsed.address == 0x1000
+    assert cmd_parsed.memory_id == 1
+    assert cmd_parsed.check_size == len(original_data)
+    assert cmd_parsed.data == original_data  # Decompressed data matches original
+
+
+def test_cmd_load_compression_not_beneficial() -> None:
+    """Test CmdLoad command when compression is not beneficial.
+
+    Validates that when compression doesn't save enough space (less than 16 bytes),
+    the command stores uncompressed data and the compressed flag remains False.
+    """
+    # Create data that doesn't compress well (random-like)
+    original_data = bytes(range(256))
+    cmd = CmdLoad(address=0x2000, data=original_data, memory_id=2, compress=True)
+
+    # Verify compression was NOT applied (not beneficial)
+    assert cmd.compressed is False
+    assert cmd.length == len(original_data)  # Original size in header
+    assert cmd.check_size == 0  # No check_size when not compressed
+    assert cmd.crc == 0  # No CRC when not compressed
+    assert cmd.data == original_data  # Data is uncompressed
+
+    # Verify string representation doesn't show compression info
+    cmd_str = str(cmd)
+    assert "compressed from" not in cmd_str
+
+    # Export and parse back
+    exported_data = cmd.export()
+    cmd_parsed = CmdLoad.parse(data=exported_data)
+    assert cmd_parsed.compressed is False
+    assert cmd_parsed.data == original_data
+
+
+def test_cmd_load_no_compression() -> None:
+    """Test CmdLoad command with compression disabled.
+
+    Validates that when compress=False, the command stores data uncompressed
+    regardless of whether compression would be beneficial.
+    """
+    original_data = bytes([0xAA] * 1000)  # Would compress well
+    cmd = CmdLoad(address=0x3000, data=original_data, memory_id=3, compress=False)
+
+    # Verify no compression
+    assert cmd.compressed is False
+    assert cmd.length == len(original_data)
+    assert cmd.check_size == 0
+    assert cmd.crc == 0
+    assert cmd.data == original_data
+    assert cmd.original_data == original_data
+
+    # Export and parse back
+    exported_data = cmd.export()
+    cmd_parsed = CmdLoad.parse(data=exported_data)
+    assert cmd_parsed.compressed is False
+    assert cmd_parsed.data == original_data
+
+
+def test_cmd_load_compression_crc_verification() -> None:
+    """Test CRC verification during parsing of compressed CmdLoad.
+
+    Validates that parsing correctly verifies the CRC checksum of decompressed
+    data and raises an error if the CRC doesn't match.
+    """
+    original_data = bytes([0x55] * 500)
+    cmd = CmdLoad(address=0x4000, data=original_data, memory_id=4, compress=True)
+
+    assert cmd.compressed is True
+
+    # Export the command
+    exported_data = cmd.export()
+
+    # Corrupt the CRC in the exported data
+    # CRC is at offset: BaseCmd.SIZE (16) + memory_id (4) + "LZMA" (4) = 24
+    corrupted_data = bytearray(exported_data)
+    corrupted_data[24] ^= 0xFF  # Flip bits in CRC
+
+    # Parsing should fail due to CRC mismatch
+    with pytest.raises(SPSDKError, match="CRC mismatch"):
+        CmdLoad.parse(data=bytes(corrupted_data))
+
+
+def test_cmd_load_compression_size_verification() -> None:
+    """Test size verification during parsing of compressed CmdLoad.
+
+    Validates that parsing correctly verifies the decompressed data size
+    matches the expected check_size and raises an error on mismatch.
+    """
+    original_data = bytes([0x33] * 600)
+    cmd = CmdLoad(address=0x5000, data=original_data, memory_id=5, compress=True)
+
+    assert cmd.compressed is True
+
+    # Export the command
+    exported_data = cmd.export()
+
+    # Corrupt the check_size in the exported data
+    # check_size is at offset: BaseCmd.SIZE (16) + memory_id (4) + "LZMA" (4) + CRC (4) = 28
+    corrupted_data = bytearray(exported_data)
+    # Change check_size to wrong value
+    corrupted_data[28:32] = pack("<L", 999)
+
+    # Parsing should fail due to size mismatch
+    with pytest.raises(SPSDKError, match="Size mismatch"):
+        CmdLoad.parse(data=bytes(corrupted_data))
+
+
+def test_cmd_load_compression_export_length() -> None:
+    """Test export_length property with compressed data.
+
+    Validates that export_length correctly calculates the total size including
+    header, memory ID block, and aligned compressed data payload.
+    """
+    original_data = bytes([0x77] * 800)
+    cmd = CmdLoad(address=0x6000, data=original_data, memory_id=6, compress=True)
+
+    assert cmd.compressed is True
+
+    # Calculate expected length
+    expected_length = (
+        BaseCmd.SIZE  # 16 bytes header
+        + 16  # 16 bytes memory ID block
+        + align(len(cmd.data), alignment=16)  # Aligned compressed data
+    )
+
+    assert cmd.export_length == expected_length
+
+    # Verify exported data matches calculated length
+    exported_data = cmd.export()
+    assert len(exported_data) == expected_length
+
+
+def test_cmd_load_compression_backward_compatibility() -> None:
+    """Test backward compatibility with existing uncompressed CmdLoad data.
+
+    Validates that parsing old-format uncompressed CmdLoad commands still works
+    correctly and produces the expected command object.
+    """
+    # Create an old-style uncompressed command
+    original_data = bytes(range(100))
+    cmd_old = CmdLoad(address=0x7000, data=original_data, memory_id=7, compress=False)
+
+    # Export it
+    exported_data = cmd_old.export()
+
+    # Parse it back
+    cmd_parsed = CmdLoad.parse(data=exported_data)
+
+    # Verify it's correctly identified as uncompressed
+    assert cmd_parsed.compressed is False
+    assert cmd_parsed.data == original_data
+    assert cmd_parsed.address == 0x7000
+    assert cmd_parsed.memory_id == 7
+    assert cmd_parsed.length == len(original_data)
+
+
+def test_cmd_loadcmac_compression() -> None:
+    """Test CmdLoadCmac command with compression enabled.
+
+    Validates that CmdLoadCmac (which inherits from CmdLoadBase) properly
+    handles compression including header length, check_size, and parsing.
+    """
+    original_data = bytes([0xBB] * 700)
+    cmd = CmdLoadCmac(address=0x8000, data=original_data, memory_id=8)
+
+    # CmdLoadCmac doesn't expose compress parameter in __init__, but we can test
+    # that it inherits the compression infrastructure correctly
+    assert hasattr(cmd, "compressed")
+    assert hasattr(cmd, "check_size")
+    assert hasattr(cmd, "crc")
+    assert hasattr(cmd, "original_data")
+
+    # Export and parse back
+    exported_data = cmd.export()
+    cmd_parsed = CmdLoadCmac.parse(data=exported_data)
+    assert cmd_parsed.data == original_data
+
+
+def test_cmd_loadhashlocking_compression() -> None:
+    """Test CmdLoadHashLocking command with compression infrastructure.
+
+    Validates that CmdLoadHashLocking (which inherits from CmdLoadBase) has
+    the compression infrastructure available even if not actively used.
+    """
+    original_data = bytes([0xCC] * 400)
+    cmd = CmdLoadHashLocking(address=0x9000, data=original_data, memory_id=9)
+
+    # Verify compression infrastructure is present
+    assert hasattr(cmd, "compressed")
+    assert hasattr(cmd, "check_size")
+    assert hasattr(cmd, "crc")
+    assert hasattr(cmd, "original_data")
+
+    # Export and parse back
+    exported_data = cmd.export()
+    cmd_parsed = CmdLoadHashLocking.parse(data=exported_data)
+    assert cmd_parsed.data == original_data
+
+
+def test_cmd_load_compression_lzma_error() -> None:
+    """Test handling of corrupted LZMA compressed data.
+
+    Validates that parsing raises appropriate error when LZMA decompression
+    fails due to corrupted compressed data.
+    """
+    original_data = bytes([0xDD] * 500)
+    cmd = CmdLoad(address=0xA000, data=original_data, memory_id=10, compress=True)
+
+    assert cmd.compressed is True
+
+    # Export the command
+    exported_data = bytearray(cmd.export())
+
+    # Corrupt the LZMA header in the compressed data payload
+    # LZMA data starts right after: BaseCmd.SIZE (16) + memory_id block (16) = 32
+    payload_offset = BaseCmd.SIZE + 16
+
+    # Corrupt the LZMA properties header (first 5 bytes of LZMA stream are critical)
+    # This will definitely cause LZMA decompression to fail
+    if payload_offset + 5 <= len(exported_data):
+        exported_data[payload_offset : payload_offset + 5] = b"\xff\xff\xff\xff\xff"
+
+    # Parsing should fail due to LZMA decompression error
+    with pytest.raises(SPSDKError, match="Failed to decompress LZMA data"):
+        CmdLoad.parse(data=bytes(exported_data))
+
+
+def test_cmd_load_compression_original_data_preserved() -> None:
+    """Test that original_data attribute preserves uncompressed data.
+
+    Validates that the original_data attribute always contains the original
+    uncompressed data regardless of compression state.
+    """
+    original_data = bytes([0xEE] * 300)
+
+    # Test with compression enabled
+    cmd_compressed = CmdLoad(address=0xB000, data=original_data, memory_id=11, compress=True)
+    assert cmd_compressed.original_data == original_data
+    assert cmd_compressed.data != original_data  # data is compressed
+
+    # Test with compression disabled
+    cmd_uncompressed = CmdLoad(address=0xC000, data=original_data, memory_id=12, compress=False)
+    assert cmd_uncompressed.original_data == original_data
+    assert cmd_uncompressed.data == original_data  # data is same as original
+
+
+def test_cmd_load_compression_empty_data() -> None:
+    """Test CmdLoad with empty data and compression enabled.
+
+    Validates that the command handles empty data correctly without attempting
+    compression.
+    """
+    original_data = bytes()
+    cmd = CmdLoad(address=0xD000, data=original_data, memory_id=13, compress=True)
+
+    # Empty data shouldn't be compressed
+    assert cmd.compressed is False
+    assert cmd.length == 0
+    assert cmd.data == original_data
+
+    # Export and parse back
+    exported_data = cmd.export()
+    cmd_parsed = CmdLoad.parse(data=exported_data)
+    assert cmd_parsed.data == original_data
+
+
+def test_cmd_load_compression_small_data() -> None:
+    """Test CmdLoad with small data that won't benefit from compression.
+
+    Validates that very small data (less than 16 bytes) is not compressed
+    even when compression is enabled, since the overhead wouldn't be worth it.
+    """
+    original_data = bytes([0xFF] * 10)
+    cmd = CmdLoad(address=0xE000, data=original_data, memory_id=14, compress=True)
+
+    # Small data shouldn't be compressed (overhead not worth it)
+    assert cmd.compressed is False
+    assert cmd.length == len(original_data)
+    assert cmd.data == original_data
+
+    # Export and parse back
+    exported_data = cmd.export()
+    cmd_parsed = CmdLoad.parse(data=exported_data)
+    assert cmd_parsed.data == original_data
+
+
+def test_cmd_load_compression_roundtrip_multiple() -> None:
+    """Test multiple compression/decompression roundtrips.
+
+    Validates that data integrity is maintained through multiple export/parse
+    cycles with compressed data.
+    """
+    original_data = bytes([i % 256 for i in range(1000)])
+
+    cmd1 = CmdLoad(address=0xF000, data=original_data, memory_id=15, compress=True)
+
+    # First roundtrip - export compressed, parse to get decompressed
+    exported1 = cmd1.export()
+    cmd2 = CmdLoad.parse(data=exported1)
+    assert cmd2.data == original_data
+
+    # After parsing, cmd2 contains decompressed data
+    # To do a second roundtrip, we need to create a fresh compressed command
+    # This simulates the real-world use case: parse -> modify -> create new compressed command
+    cmd3 = CmdLoad(address=cmd2.address, data=cmd2.data, memory_id=cmd2.memory_id, compress=True)
+
+    # Third roundtrip - verify the re-compressed data can be parsed correctly
+    exported3 = cmd3.export()
+    cmd4 = CmdLoad.parse(data=exported3)
+    assert cmd4.data == original_data
+
+    # Verify all commands have same properties
+    assert cmd2.address == cmd3.address == cmd4.address == 0xF000
+    assert cmd2.memory_id == cmd3.memory_id == cmd4.memory_id == 15

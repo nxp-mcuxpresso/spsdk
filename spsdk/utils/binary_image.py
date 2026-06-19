@@ -123,6 +123,7 @@ class BinaryImage:
         alignment: int = 1,
         parent: Optional["BinaryImage"] = None,
         execution_start_address: Optional[int] = None,
+        gap_pattern: Optional[BinaryPattern] = None,
     ) -> None:
         """Initialize a new BinaryImage instance.
 
@@ -134,10 +135,15 @@ class BinaryImage:
         :param offset: Byte offset position within the parent image.
         :param description: Human-readable description of the image purpose.
         :param binary: Raw binary data content for the image.
-        :param pattern: Binary pattern to fill the image with.
+        :param pattern: Binary pattern to fill the image with during binary export.
         :param alignment: Byte alignment requirement for the image size.
         :param parent: Parent BinaryImage object in the hierarchy.
         :param execution_start_address: Memory address where execution should start.
+        :param gap_pattern: Optional pattern representing the physical erased/gap state of the
+            target flash.  When set, this pattern is used as the DONT_CARE sentinel during sparse
+            export instead of ``pattern``.  Useful when the binary fill pattern (e.g. zeros for
+            backward-compat AHAB) differs from the physical erased state (e.g. 0xFF for NOR flash).
+            If ``None``, ``pattern`` is used for both binary fill and sparse DONT_CARE decisions.
         """
         self.name = name
         self.description = description
@@ -145,6 +151,7 @@ class BinaryImage:
         self._size = align(size, alignment)
         self.binary = binary
         self.pattern = pattern
+        self.gap_pattern = gap_pattern
         self.alignment = alignment
         self.parent = parent
         self.execution_start_address = execution_start_address
@@ -1022,44 +1029,105 @@ class BinaryImage:
 
         return binary_image
 
+    def _gap_dont_care_pattern(self) -> Optional[bytes]:
+        """Return the 4-byte repeating fill value that represents a structural gap.
+
+        Gap blocks whose content equals this pattern may be encoded as DONT_CARE in the
+        sparse image — the flash writer can safely skip them and leave flash in the erased
+        state.
+
+        If ``gap_pattern`` is set it is used as the DONT_CARE sentinel (allows separating
+        the binary fill pattern from the physical flash erased state — e.g. binary export
+        uses zeros for backward-compat AHAB while sparse DONT_CARE uses 0xFF for NOR flash).
+        Otherwise falls back to ``self.pattern``.
+
+        Returns ``None`` for non-constant patterns (``rand``, ``inc``) because
+        such gaps cannot be reliably represented as a single DONT_CARE fill value.
+
+        :return: 4-byte pattern bytes, or ``None`` if the pattern is non-constant.
+        """
+        effective = self.gap_pattern if self.gap_pattern is not None else self.pattern
+        if effective is None:
+            return None
+        # Non-constant patterns cannot be expressed as a single DONT_CARE fill value.
+        if effective.pattern in ("rand", "inc"):
+            return None
+        return effective.get_block(4)
+
+    def _block_has_subimage_coverage(self, start: int, end: int) -> bool:
+        """Check whether any direct sub-image overlaps the byte range [start, end).
+
+        Used by export_sparse to distinguish structural gaps from explicitly placed content.
+        Only direct (first-level) sub-images are checked; nested sub-images are implicitly
+        covered by their parent.
+
+        :param start: Inclusive start offset.
+        :param end: Exclusive end offset.
+        :return: True when at least one direct sub-image overlaps the range.
+        """
+        for sub in self.sub_images:
+            sub_start = sub.offset
+            sub_end = sub.offset + len(sub)
+            if sub_end > start and sub_start < end:
+                return True
+        return False
+
     def export_sparse(self, calculate_crc: bool = False) -> SparseImage:
         """Create sparse image from BinaryImage object.
 
-        This method efficiently converts a BinaryImage by analyzing its structure. If the image
-        has sub-images, it processes them individually to create optimized chunks. RAW sub-images
-        with binary data become RAW chunks, sub-images with non-zero patterns become FILL chunks,
-        and gaps between sub-images or zero-pattern sub-images become DONT_CARE chunks.
+        Converts the BinaryImage into a sparse representation, distinguishing between
+        structural gaps and explicitly placed content:
+
+        - Blocks covered by a direct sub-image are written explicitly: binary data → RAW,
+          non-gap fill → FILL(value).  The sub-image content is always preserved.
+        - Root-level gap blocks (not covered by any direct sub-image) whose content matches
+          the root image's background pattern are encoded as DONT_CARE.  The flash writer
+          may skip these, leaving the device in the erased state.  The DONT_CARE pattern
+          is derived from the root image's ``pattern`` attribute (e.g. zeros → 0x00000000,
+          ones/0xFF → 0xFFFFFFFF, or any custom repeating value).  Non-constant patterns
+          (``rand``, ``inc``) disable DONT_CARE for gaps.
+        - Images with no sub-images have no gaps; every block belongs to the content so
+          all fill blocks become FILL to preserve the original data faithfully.
 
         :param calculate_crc: If True, calculate and add CRC32 checksum to the sparse image.
         :return: SparseImage object representing the binary image in sparse format.
         """
         ret = SparseImage(block_size=self.sparse_block_size, calculate_crc=calculate_crc)
-        # Create context for building chunks
         context = ChunkBuilderContext()
 
-        # Calculate CRC if requested - use iterator to avoid loading entire image
         image_checksum = None
         if calculate_crc:
             crc_obj = from_crc_algorithm(CrcAlg.CRC32)
 
-        # Process image data block by block using iterator
+        # Pre-compute the gap DONT_CARE pattern from the root image's background fill.
+        # Gap blocks matching this pattern can be skipped by the flash writer (DONT_CARE).
+        # None disables DONT_CARE (non-constant patterns or fully-covered images).
+        gap_dont_care = self._gap_dont_care_pattern() if self.sub_images else None
+
+        current_offset = 0
         for block in self.iter_blocks(block_size=ret.block_size):
-            # Align block to block size if needed
             if len(block) < ret.block_size:
                 block = align_block(block, ret.block_size)
             if calculate_crc:
                 crc_obj.update(block)
 
-            # Add block to sparse image using context
-            ret._add_binary_chunks(block, context)
+            if self.sub_images and not self._block_has_subimage_coverage(
+                current_offset, current_offset + ret.block_size
+            ):
+                # Gap block: may use DONT_CARE if content matches the background pattern.
+                dont_care_pattern = gap_dont_care
+            else:
+                # Covered block (or no sub-images): content is explicit, never skip.
+                dont_care_pattern = None
 
-        # Calculate final CRC if requested
+            ret._add_binary_chunks(block, context, dont_care_pattern=dont_care_pattern)
+            current_offset += ret.block_size
+
         if calculate_crc:
             image_checksum = crc_obj.finalize()
             logger.debug(f"Calculated image CRC32: 0x{image_checksum:08X}")
-        # Finalize the sparse image with context and checksum
-        ret.finalize_sparse_image(context, image_checksum)
 
+        ret.finalize_sparse_image(context, image_checksum)
         return ret
 
     @staticmethod

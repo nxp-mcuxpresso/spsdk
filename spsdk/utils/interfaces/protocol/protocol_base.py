@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -32,21 +32,25 @@ class SpsdkNoDeviceFoundError(SPSDKError):
     operations, providing detailed information about the failed search parameters.
     """
 
-    def __init__(self, interface: str, scan_params: str) -> None:
+    def __init__(self, interface: str, scan_params: str, hint: str = "") -> None:
         """Initialize the SpsdkNoDeviceFoundError exception.
 
         :param interface: Interface identifier string.
         :param scan_params: Interface parameters used for scanning devices.
+        :param hint: Optional hint message explaining why the device was not found.
         """
         super().__init__()
         self.interface = interface
         self.scan_params = scan_params
+        self.hint = hint
 
     def __str__(self) -> str:
         """Return string representation of the exception.
 
         :return: Formatted error message indicating no devices were found for the given interface and parameters.
         """
+        if self.hint:
+            return f"Interface '{self.interface}' with parameters '{self.scan_params}': {self.hint}"
         return (
             f"No devices for given interface '{self.interface}' "
             f"and parameters '{self.scan_params}' was found."

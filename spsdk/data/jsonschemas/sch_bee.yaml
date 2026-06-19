@@ -51,7 +51,7 @@ bee_output:
 bee:
   type: object
   title: BEE Settings
-  required: [engine_selection, engine_key_selection, bee_engine]
+  required: [engine_selection, bee_engine]
   properties:
     engine_selection:
       type: string
@@ -62,10 +62,12 @@ bee:
 
     engine_key_selection:
       type: string
-      title: Engine Key selection
-      description: Random Key or Zero key
+      title: Engine Key selection (deprecated)
+      description: Deprecated. Use engine_key, engine_iv and engine_counter fields
+        in bee_cfg to specify keys explicitly. If not specified, random keys are
+        generated and saved to output folder.
       enum: ["random", "zero"]
-      template_value: "random"
+      skip_in_template: True
 
     bee_engine:
       title: Bee engines
@@ -85,18 +87,41 @@ bee:
                 required: [user_key]
                 properties:
                   user_key:
-                    type: [string, number]
+                    type: string
                     title: User AES-128 key
-                    description: AES key for encryption
-                    format: number
+                    description: AES key for encryption (sw_key burned into fuses).
+                      Could be defined as hex value or path to a binary file.
+                    format: file-or-hex-value
                     template_value: "0x0123456789abcdeffedcba9876543210"
 
-                  # aes_mode:
-                  #   type: string
-                  #   title: AES mode
-                  #   description: AES mode - counter or ECB
-                  #   enum: ["CTR", "ECB"]
-                  #   template_value: "CTR"
+                  engine_key:
+                    type: string
+                    title: Engine AES-128 KIB key
+                    description: Optional AES-128 key used to encrypt PRDB in BEE header (CBC mode).
+                      If not provided, a random key is generated and saved to output folder.
+                      To reuse a previously generated key, provide the value from the saved key file.
+                      Could be defined as hex value or path to a binary file.
+                    format: file-or-hex-value
+                    template_value: "0x00000000000000000000000000000000"
+
+                  engine_iv:
+                    type: string
+                    title: Engine AES-128 KIB initialization vector
+                    description: Optional AES-128 initialization vector for PRDB encryption (CBC mode).
+                      If not provided, a random IV is generated and saved to output folder.
+                      Could be defined as hex value or path to a binary file.
+                    format: file-or-hex-value
+                    template_value: "0x00000000000000000000000000000000"
+
+                  engine_counter:
+                    type: string
+                    title: Engine AES-CTR counter (12 bytes)
+                    description: Optional 12-byte nonce for AES-CTR data encryption. The last 4 bytes
+                      (block counter) are always set to zero automatically.
+                      If not provided, a random counter is generated and saved to output folder.
+                      Could be defined as hex value or path to a binary file.
+                    format: file-or-hex-value
+                    template_value: "0x000000000000000000000000"
 
                   protected_region:
                     title: Protected region
@@ -142,8 +167,9 @@ bee:
                     template_value: bee_ehdr0.bin
 
                   user_key:
-                    type: [string, number]
+                    type: string
                     title: User AES-128 key
-                    description: AES key that was used for header encryption
-                    format: number
+                    description: AES key that was used for header encryption.
+                      Could be defined as hex value or path to a binary file.
+                    format: file-or-hex-value
                     template_value: "0x0123456789abcdeffedcba9876543210"

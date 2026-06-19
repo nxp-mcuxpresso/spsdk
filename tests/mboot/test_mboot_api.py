@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -294,6 +294,33 @@ def test_cmd_receive_sb_file(mcuboot: McuBoot, target: Any) -> None:
     mcuboot._interface.device.fail_step = StatusCode.ROMLDR_SIGNATURE.tag
     assert not mcuboot.receive_sb_file(bytes(1000))
     assert mcuboot.status_code == StatusCode.ROMLDR_SIGNATURE
+
+
+@pytest.mark.parametrize(
+    "pending_code",
+    [StatusCode.ROMLDR_PENDING_JUMP_COMMAND, StatusCode.ROMLDR_PENDING_RESET_COMMAND],
+)
+def test_cmd_receive_sb_file_pending_codes(
+    mcuboot: McuBoot, target: Any, pending_code: StatusCode
+) -> None:
+    """Test that receive_sb_file treats ROMLDR_PENDING_* status codes as success.
+
+    When the last command in an SB file is execute or reset, the device returns
+    ROMLDR_PENDING_JUMP_COMMAND (10119) or ROMLDR_PENDING_RESET_COMMAND (10120).
+    The entire file has already been transmitted at that point, so these codes
+    must be treated as successful completion rather than errors.
+
+    :param mcuboot: McuBoot instance configured with VirtualDevice interface.
+    :param target: Test target configuration (unused in this test).
+    :param pending_code: The ROMLDR pending status code to inject as the device response.
+    :raises AssertionError: If receive_sb_file does not return True or status is not SUCCESS.
+    """
+    assert isinstance(mcuboot._interface.device, VirtualDevice)
+    mcuboot._interface.device.fail_step = pending_code.tag
+    assert mcuboot.receive_sb_file(
+        bytes(1000)
+    ), f"receive_sb_file should succeed when device returns {pending_code.label}"
+    assert mcuboot.status_code == StatusCode.SUCCESS
 
 
 def test_cmd_execute(mcuboot: McuBoot, target: Any) -> None:

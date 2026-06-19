@@ -44,7 +44,8 @@ class IndividualWriteLock(SpsdkEnum):
     NONE = (0, "none", "No individual lock for the register")
     USER = (1, "user", "User configurable lock")
     ALWAYS = (2, "always_lock", "Always generate lock after write")
-    IMPLICIT = (3, "implicit", "Implicit lock")
+    IMPLICIT = (3, "implicit", "Implicit lock (deprecated, use 'ecc' instead)")
+    ECC = (4, "ecc", "ECC lock - register is locked by ECC after write")
 
 
 class FuseLock(SpsdkEnum):
@@ -502,7 +503,7 @@ class FuseRegister(Register):
         for i in range(3):
             in_val[i] = (val >> (8 + i * 8)) & 0xFF
         val &= ~0xFF
-        val |= FuseRegister.crc_update(in_val)
+        val |= FuseRegister.crc_update(bytes(in_val))
         return val
 
     def comalg_dcfg_cc_socu_test_en(self, val: int) -> int:

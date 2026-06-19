@@ -26,7 +26,7 @@ from spsdk.mboot.commands import TrustProvOemKeyType, TrustProvOperation
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.sbfile.devhsm.devhsm import DevHsm
 from spsdk.sbfile.sb31.commands import CmdLoadKeyBlob
-from spsdk.sbfile.sbc.images import SecureBinaryC, SecureBinaryCHeader
+from spsdk.sbfile.sbc.images import SecureBinaryC
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
@@ -96,21 +96,16 @@ class DevHsmSBc(DevHsm):
         if buffer_address is not None:
             self.devbuff_base = buffer_address
 
-        self.db = get_db(family=family)
-        self.oem_share_output_size = self.db.get_int(
-            DatabaseManager.DEVHSM,
-            "oem_share_output_size",
-            self.DEVBUFF_GEN_MASTER_ENC_SHARE_OUTPUT_SIZE,
-        )
-        self.oem_master_share_output_size = self.db.get_int(
-            DatabaseManager.DEVHSM,
-            "oem_master_share_output_size",
-            self.DEVBUFF_GEN_MASTER_ENC_MASTER_SHARE_OUTPUT_SIZE,
-        )
         # store input of OEM_SHARE_INPUT to workspace in case that is generated randomly
         self.store_temp_res("OEM_SHARE_INPUT.bin", self.oem_share_input)
 
         self.final_sb = bytes()
+
+        self.key_size = self.database.get_int(
+            DatabaseManager.DEVHSM,
+            "key_size",
+            self.KEY_SIZE,
+        )
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
@@ -172,9 +167,8 @@ class DevHsmSBc(DevHsm):
         # 5: Create SBc header
         self.info_print(" 5: Creating template SBc header.")
 
-        sbc_header = SecureBinaryCHeader()
-        sbc_header_exported = sbc_header.export()
-        logger.debug(f" 5.1: The template SBc header: \n{str(sbc_header)} \n")
+        sbc_header_exported = self.sbc.export()
+        logger.debug(f" 5.1: The template SBc header: \n{str(self.sbc)} \n")
         self.store_temp_res("sbc_header.bin", sbc_header_exported)
 
         # 6: Create dummy certificate block header part of SBc
@@ -349,7 +343,9 @@ class DevHsmSBc(DevHsm):
         """
         self.mboot.write_memory(self.get_devbuff_base_address(7), key)
 
-        pre_hash_name = self.db.get_str(DatabaseManager.DEVHSM, "prehash_data_for_sign", "none")
+        pre_hash_name = self.database.get_str(
+            DatabaseManager.DEVHSM, "prehash_data_for_sign", "none"
+        )
         if pre_hash_name != "none":
             hash_alg = EnumHashAlgorithm.from_label(pre_hash_name)
             data_to_sign = get_hash(data_to_sign, hash_alg)
@@ -488,7 +484,7 @@ class DevHsmSBc(DevHsm):
             key_type=key_type.tag,
             reserved=0,
             key_blob_output_addr=address,
-            key_blob_output_size=self.KEY_SIZE,
+            key_blob_output_size=self.key_size,
             ecdsa_puk_output_addr=0x0,
             ecdsa_puk_output_size=0x0,
         )
@@ -498,7 +494,7 @@ class DevHsmSBc(DevHsm):
 
         key = self.mboot.read_memory(
             address,
-            self.KEY_SIZE,
+            self.key_size,
         )
         if not key:
             raise SPSDKError(

@@ -602,3 +602,37 @@ def test_file_or_hex_value_format(data_dir: str, test_input: str, should_pass: b
         # Should fail validation
         with pytest.raises(SPSDKError):
             check_config(config, [schema], search_paths=search_paths)
+
+
+@pytest.mark.parametrize(
+    "test_input,should_pass",
+    [
+        ("0", True),  # wildcard/zero UUID - single char hex
+        ("00000000000000000000000000000000", True),  # 32-char all-zero UUID
+        ("0x0", True),  # 0x-prefixed single char
+        ("0xc3df2316fd40b15586cb5ae49483aee2", True),
+        ("E004090E6BDD2155BBCE9E0665805BE3", True),
+        ("zzzz", False),
+    ],
+)
+def test_hex_value_format(test_input: str, should_pass: bool) -> None:
+    """Test the 'hex_value' format validation including odd-length and wildcard (0) values.
+
+    Validates that the schema validator correctly handles the 'hex_value' format,
+    specifically that a single '0' (wildcard UUID) and other short/odd-length hex
+    strings are accepted.
+
+    :param test_input: Input string to validate against hex_value format.
+    :param should_pass: Flag indicating whether validation should succeed or fail.
+    :raises SPSDKError: When validation fails and should_pass is False.
+    """
+    schema = {
+        "type": "object",
+        "properties": {"test_value": {"type": "string", "format": "hex_value"}},
+    }
+    config = {"test_value": test_input}
+    if should_pass:
+        check_config(config, [schema])
+    else:
+        with pytest.raises(SPSDKError):
+            check_config(config, [schema])

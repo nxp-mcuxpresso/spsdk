@@ -499,7 +499,7 @@ class WPCTarget(BaseWPCClass):
             tbs_data = bytearray(req.tbs_certrequest_bytes)
             puk_offset = tbs_data.index(req_puk.export())
             tbs_data[puk_offset : puk_offset + 64] = csr.get_puk().export()
-            raw_signature = self.sign(data=tbs_data)
+            raw_signature = self.sign(data=bytes(tbs_data))
 
             csr2_data = bytes(tbs_data)
 

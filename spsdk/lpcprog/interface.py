@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """SPSDK LPCxxx ISP UART communication interface.
@@ -10,15 +10,15 @@ This module provides the communication interface for LPCxxx microcontrollers
 using In-System Programming (ISP) protocol over UART connection.
 """
 
-import logging
 import time
 from typing import Optional
 
+from spsdk import get_logger
 from spsdk.exceptions import SPSDKConnectionError, SPSDKError
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.interfaces.device.serial_device import SerialDevice
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class LPCProgInterface:
@@ -86,7 +86,7 @@ class LPCProgInterface:
         """
         try:
             data = self.device._device.readline()
-            logger.debug(f"<-READ DATA({len(data)}):  <{' '.join(f'{b:02x}' for b in data)}>")
+            logger.trace(f"<-READ DATA({len(data)}):  <{' '.join(f'{b:02x}' for b in data)}>")
             if decode:
                 data = data.decode("utf-8")
             else:
@@ -98,7 +98,7 @@ class LPCProgInterface:
             raise SPSDKError(str(e)) from e
         if not data:
             raise SPSDKTimeoutError()
-        logger.debug(f"<-READ LINE: {data}")
+        logger.trace(f"<-READ LINE: {data}")
         return data
 
     def read_all(self) -> bytes:
@@ -117,7 +117,7 @@ class LPCProgInterface:
             raise SPSDKError(str(e)) from e
         if not data:
             raise SPSDKTimeoutError()
-        logger.debug(f"<-READ ALL:  <{' '.join(f'{b:02x}' for b in data)}>")
+        logger.trace(f"<-READ ALL:  <{' '.join(f'{b:02x}' for b in data)}>")
         return data
 
     def _read(self, length: int) -> bytes:
@@ -137,7 +137,7 @@ class LPCProgInterface:
             raise SPSDKError(str(e)) from e
         if not data:
             raise SPSDKTimeoutError()
-        logger.debug(f"<-READ DATA({len(data)}):  <{' '.join(f'{b:02x}' for b in data)}>")
+        logger.trace(f"<-READ DATA({len(data)}):  <{' '.join(f'{b:02x}' for b in data)}>")
         return data
 
     def write(self, data: bytes) -> None:
@@ -146,7 +146,7 @@ class LPCProgInterface:
         :param data: Data to send to the device
         :raises SPSDKError: When sending the data fails
         """
-        logger.debug(f"->WRITE DATA({len(data)}): [{' '.join(f'{b:02x}' for b in data)}]")
+        logger.trace(f"->WRITE DATA({len(data)}): [{' '.join(f'{b:02x}' for b in data)}]")
         try:
             self.device._device.write(data)
         except Exception as e:
@@ -158,7 +158,7 @@ class LPCProgInterface:
         :param data: String data to be written to the serial device.
         :raises SPSDKError: If writing to the serial device fails.
         """
-        logger.debug(f"->WRITE STRING: {data}")
+        logger.trace(f"->WRITE STRING: {data}")
         self.write(bytes(data, "utf-8"))
 
     def _get_return_code(self) -> int:

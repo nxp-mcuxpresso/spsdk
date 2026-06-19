@@ -17,6 +17,7 @@ from typing import Optional
 import libusbsio
 from typing_extensions import Self
 
+from spsdk import get_logger
 from spsdk.exceptions import SPSDKConnectionError, SPSDKError
 from spsdk.utils.database import UsbId
 from spsdk.utils.exceptions import SPSDKTimeoutError
@@ -24,7 +25,7 @@ from spsdk.utils.interfaces.device.base import DeviceBase
 from spsdk.utils.misc import get_hash
 from spsdk.utils.usbfilter import NXPUSBDeviceFilter, USBDeviceFilter
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class UsbDevice(DeviceBase):

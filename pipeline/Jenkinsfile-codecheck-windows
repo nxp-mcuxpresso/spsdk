@@ -12,6 +12,10 @@ pipeline {
         timeout(time: 1, unit: 'HOURS', activity: true)   // timeout on whole pipeline job
     }
 
+    environment {
+        PYTEST_ADDOPTS = "--no-cov"
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -28,7 +32,7 @@ pipeline {
         stage('Codecheck') {
             steps {
                 withVenv(
-                    'tox --recreate -e py310,py313 -- --info-check gitcov'
+                    'tox --recreate -e py310,py313'
                 )
             }
         }

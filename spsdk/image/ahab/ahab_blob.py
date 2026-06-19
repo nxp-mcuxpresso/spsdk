@@ -416,6 +416,16 @@ class AhabBlob(HeaderContainer):
             raise SPSDKError(f"Unsupported encryption algorithm: {self.algorithm}")
         return decryption_methods[self.algorithm](self.dek, encrypted_data, iv)
 
+    def get_encryption_algorithm_info(self) -> str:
+        """Get encryption algorithm information.
+
+        Returns a formatted string containing the encryption algorithm and key size
+        used by this AHAB blob for data encryption operations.
+
+        :return: String with encryption algorithm name and key size in format "ALGORITHM-KEY_SIZE".
+        """
+        return f"{self.algorithm.label}-{self._size}"
+
 
 class AhabBlobOffline(FeatureBaseClass, AhabBlob):
     """AHAB Blob generator for offline key wrapping and blob creation.

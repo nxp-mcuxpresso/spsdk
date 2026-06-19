@@ -46,6 +46,7 @@ from spsdk.utils.devicedescription import (
     get_usb_device_name,
 )
 from spsdk.utils.interfaces.device.serial_device import SerialDevice
+from spsdk.utils.interfaces.protocol.protocol_base import SpsdkNoDeviceFoundError
 
 NXP_USB_DEVICE_VIDS = [
     0x1FC9,
@@ -242,6 +243,7 @@ def search_nxp_uart_devices(
     scan_uboot: bool = True,
     timeout: int = 50,
     real_devices: bool = False,
+    baudrate: Optional[int] = None,
 ) -> list[UartDeviceDescription]:
     """Search for NXP UART devices connected to the system.
 
@@ -254,6 +256,9 @@ def search_nxp_uart_devices(
     :param scan_uboot: Whether to scan for U-Boot console devices, defaults to True.
     :param timeout: Timeout for UART scan in milliseconds, defaults to 50.
     :param real_devices: Check if the device is real using ioctl TIOCGSERIAL, defaults to False.
+    :param baudrate: UART baud rate to use when scanning for mboot devices. The mboot protocol
+        supports automatic baud rate detection, so this is only needed for non-standard rates
+        (e.g., 115200 for devices like MCXE31).
     :return: List of UartDeviceDescription objects representing discovered devices.
     """
     retval = []
@@ -278,10 +283,15 @@ def search_nxp_uart_devices(
 
     # Iterate over every com port we have and check, whether mboot or sdp responds
     for port in ports:
-        if MbootUARTInterface.scan(port=port.device, timeout=timeout):
-            uart_dev = UartDeviceDescription(name=port.device, dev_type="mboot device")
-            retval.append(uart_dev)
-            continue
+        try:
+            if MbootUARTInterface.scan(port=port.device, timeout=timeout, baudrate=baudrate):
+                uart_dev = UartDeviceDescription(name=port.device, dev_type="mboot device")
+                retval.append(uart_dev)
+                continue
+        except SpsdkNoDeviceFoundError as e:
+            # Port is accessible but device did not respond to mboot PING.
+            # Fall through and check for SDP / U-Boot on the same port.
+            logger.debug(f"Port {port.device} did not respond to mboot ping: {e}")
 
         # Seems the port is not mboot, let's try SDP protocol
         # The SDP protocol is on uart interface, so opening just the port is not

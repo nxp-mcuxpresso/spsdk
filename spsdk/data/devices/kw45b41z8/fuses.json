@@ -1,5 +1,5 @@
 {
-    "cpu": "KW45B41Z8",
+    "cpu": "kw45b41z8",
     "groups": [
         {
             "group": {
@@ -316,7 +316,7 @@
                     "name": "CUST_PROD_OEMFW_AUTH_PUK",
                     "description": "RoTKTH (customer trusted root key) typically used for CM33 main flash image authentication.",
                     "index_int": "0x001F",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "reg_width": 256
                 },
                 {
@@ -325,7 +325,7 @@
                     "description": "256-bit encryption key used to protect confidentiality of OEM firmware. Typically required for firmware updates using sb3 (SB3KDK).",
                     "index_int": "0x0020",
                     "access": "WO",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "reg_width": 256
                 },
                 {
@@ -333,7 +333,7 @@
                     "name": "OEM_Enablement_Token",
                     "description": "RoTKTH (root key hash) typically used for radio firmware authentication. (if valid token is intended to be used by programming SECURE_PHANTOM_CONFIG fuse)",
                     "index_int": "0x0021",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "reg_width": 256
                 }
             ]
@@ -349,7 +349,7 @@
                     "name": "DCFG_CC_SOCU_L1",
                     "description": "Debug authentication configuration for level 1 customer.\nCombinations of PIN and DFLT bits and resulting restriction level:\n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product.\n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate.\n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.\n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
                     "index_int": "0x0022",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "bitfields": [
                         {
                             "width": 1,
@@ -667,7 +667,7 @@
                     "name": "DCFG_CC_SOCU_L2",
                     "description": "Debug authentication configuration for level 2 customer.\nCombinations of PIN and DFLT bits and resulting restriction level:\n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product.\n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at start up. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate.\n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected.\n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.",
                     "index_int": "0x0023",
-                    "individual_write_lock": "implicit",
+                    "individual_write_lock": "ecc",
                     "bitfields": [
                         {
                             "width": 1,

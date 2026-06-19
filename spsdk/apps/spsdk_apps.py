@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,6 +18,21 @@ from typing import Any, Optional
 
 import click
 import colorama
+
+# Early cache clear: handle corrupted cache before heavy imports that load database
+if "clear-cache" in sys.argv:
+    import os
+    import shutil
+
+    from spsdk.utils.database import get_spsdk_cache_dirname
+
+    path = get_spsdk_cache_dirname()
+    if os.path.exists(path):
+        shutil.rmtree(path)
+        click.echo(f"SPSDK cache has been cleared: {path}")
+    else:
+        click.echo(f"Cache directory '{path}' does not exist, nothing to clear.")
+    sys.exit(0)
 
 from spsdk import __version__ as spsdk_version
 from spsdk.apps.blhost import main as blhost_main

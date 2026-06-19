@@ -37,6 +37,7 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_output_option,
 )
 from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error, format_raw_data
+from spsdk.crypto.keys import PrivateKey, PublicKey, load_key
 from spsdk.dat import dm_commands
 from spsdk.dat.dac_packet import DebugAuthenticationChallenge
 from spsdk.dat.dar_packet import DebugAuthenticateResponse
@@ -1887,8 +1888,15 @@ def sda_auth_command(
 ) -> None:
     """Perform complete SDA authentication."""
     debug_probe_params: DebugProbeParams = pass_obj["debug_probe_params"]
+    adkp: bytes | PrivateKey | PublicKey
     try:
-        sda_auth(family, debug_probe_params, bytes.fromhex(adkp_key), auth_type)
+        adkp = bytes.fromhex(adkp_key)
+    except ValueError:
+        adkp = load_key(adkp_key)
+    if not isinstance(adkp, bytes):
+        raise SPSDKAppError("ADKP key must be raw bytes, not a PEM/DER key file.")
+    try:
+        sda_auth(family, debug_probe_params, adkp, auth_type)
         click.echo(f"The SDA {auth_type} authentication succeeded.")
     except SPSDKError:
         click.secho(

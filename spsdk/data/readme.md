@@ -189,7 +189,39 @@ new_rev:
       key2: new_rev_value
 ```
 
-### Revision data access in code
+### Overriding vs. merging nested dictionaries
+
+When a device's `database.yaml` defines a key whose default value is also a dictionary, `deep_update`
+merges the two dicts recursively. This is the normal behaviour — a device only needs to list the keys
+it wants to change and all other default keys are preserved.
+
+Sometimes a device needs to **completely replace** a default dictionary rather than extend it.
+A typical example is the `hash_algorithms` enum table in the `ahab` feature: the defaults list every
+known algorithm, but a particular device may only support one. Simply adding that one algorithm to the
+device database would still result in all default algorithms being present after the merge.
+
+To opt out of merging for a specific dictionary, add the special key `__replace__: true` to that
+dictionary in the device's `database.yaml`. `deep_update` will then substitute the entire default
+dictionary with the device's dictionary (minus the `__replace__` sentinel itself).
+
+**Example** — restrict AHAB hash algorithms to SHA-384 only:
+
+```yaml
+# devices/my_device/database.yaml
+features:
+  ahab:
+    hash_algorithms:
+      __replace__: true
+      SHA384: [0x01, "SHA384", "SHA-384 hash algorithm"]
+```
+
+Without `__replace__: true` the final `hash_algorithms` dict would contain every algorithm from the
+defaults plus SHA-384. With it, only SHA-384 is present.
+
+The `__replace__` key is stripped before the data is stored, so it never appears in the resolved
+feature data accessed at runtime.
+
+
 The revision class contains few basic methods to get data from database including type hints and type validation.
 Each "get_" has two mandatory parameters:
 - feature: Name of the feature to be data gets from

@@ -1,0 +1,15 @@
+# Copyright 2025-2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ============================  mbi Configuration template for mcxa577, Revision: latest.  =============================
+
+family: mcxa577
+revision: latest
+
+outputImageExecutionTarget: xip
+outputImageAuthenticationType: plain
+
+masterBootOutputFile: ./workspace/output_images/mcxa577/plain_mbi.bin
+inputImageFile: ./workspace/input_images/mcxn556s_led_blinky_unaligned.bin
+outputImageExecutionAddress: 0

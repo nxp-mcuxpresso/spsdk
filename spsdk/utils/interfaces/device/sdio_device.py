@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,7 +12,6 @@ communication interface for SPSDK operations. It implements the SdioDevice
 class for handling SDIO protocol communications with NXP MCU devices.
 """
 
-import logging
 import os
 import time
 from io import FileIO
@@ -20,12 +19,13 @@ from typing import Optional
 
 from typing_extensions import Self
 
+from spsdk import get_logger
 from spsdk.exceptions import SPSDKConnectionError, SPSDKError
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.interfaces.device.base import DeviceBase
 from spsdk.utils.misc import Timeout
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class SdioDevice(DeviceBase):
@@ -154,7 +154,7 @@ class SdioDevice(DeviceBase):
         data = _read(length=length, timeout=timeout)
         if not data:
             raise SPSDKTimeoutError()
-        logger.debug(f"<{' '.join(f'{b:02x}' for b in data)}>")
+        logger.trace(f"<{' '.join(f'{b:02x}' for b in data)}>")
         return data
 
     def _read_blocking(self, length: int, timeout: Optional[int] = None) -> bytes:
@@ -232,7 +232,7 @@ class SdioDevice(DeviceBase):
         """
         if not self.device or not self.is_opened:
             raise SPSDKConnectionError("Device is not opened for writing.")
-        logger.debug(f"[{' '.join(f'{b:02x}' for b in data)}]")
+        logger.trace(f"[{' '.join(f'{b:02x}' for b in data)}]")
         _write = self._write_blocking if self.is_blocking else self._write_non_blocking
         _write(data=data, timeout=timeout)
 

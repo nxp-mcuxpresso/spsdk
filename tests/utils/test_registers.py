@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """SPSDK registers utility test suite.
@@ -1653,3 +1653,496 @@ def test_registers_pre_validation_hook(reg_name: str, passed: bool) -> None:
     else:
         with pytest.raises(SPSDKError):
             config.check(schemas, check_unknown_props=True)
+
+
+# -------------------------------------------------------------------------- #
+# Grouped registers: binary export / parse round-trip tests
+# -------------------------------------------------------------------------- #
+
+
+def _build_grouped_regs(
+    data_dir: str,
+    *,
+    reversed_flag: bool,
+    reverse_subregs_order: bool,
+    base_endianness: Endianness = Endianness.LITTLE,
+) -> Registers:
+    """Create a Registers instance with a 4x32-bit grouped register.
+
+    Builds the same 128-bit grouped register used by other tests in this module
+    (sub-regs ``field400..field40C``) and toggles the two database-driven
+    flags relevant to grouped-register binary serialization.
+
+    :param data_dir: Directory containing ``grp_regs.json`` spec file.
+    :param reversed_flag: Value for the group's ``reversed`` flag.
+    :param reverse_subregs_order: Value for the group's ``reverse_subregs_order``.
+    :param base_endianness: Base endianness used by the Registers instance.
+    :return: Configured Registers instance.
+    """
+    group = [
+        {
+            "name": "TestRegA",
+            "uid": "TestGroup",
+            "reversed": "True" if reversed_flag else "False",
+            "reverse_subregs_order": "True" if reverse_subregs_order else "False",
+            "sub_regs": ["field400", "field404", "field408", "field40C"],
+        }
+    ]
+    regs = Registers(
+        family=FamilyRevision(TEST_DEVICE_NAME),
+        feature="test",
+        base_endianness=base_endianness,
+        do_not_raise_exception=True,
+    )
+    regs._load_spec(os.path.join(data_dir, "grp_regs.json"), grouped_regs=group)
+    return regs
+
+
+# Per-subreg values used by all grouped round-trip tests below.
+_SUB_REG_VALUES = {
+    "TestRegA0": 0xAABBCC00,
+    "TestRegA1": 0xAABBCC11,
+    "TestRegA2": 0xAABBCC22,
+    "TestRegA3": 0xAABBCC33,
+}
+
+
+@pytest.mark.parametrize(
+    "reversed_flag,reverse_subregs_order",
+    [
+        (False, False),
+        (False, True),
+        (True, False),
+        (True, True),
+    ],
+)
+def test_grouped_register_export_places_subregs_at_their_offsets(
+    data_dir: str, reversed_flag: bool, reverse_subregs_order: bool
+) -> None:
+    """Export of a grouped register writes each sub-register at its own offset.
+
+    Regression for SPSDK-6746: ``Registers.image_info`` must serialize grouped
+    registers by concatenating per-sub-register bytes (each emitted at its own
+    physical offset with its own endianness), not via the group's combined
+    128-bit value. The placement must be independent of the group's
+    ``reversed`` and ``reverse_subregs_order`` flags.
+
+    :param data_dir: Directory containing the register specification file.
+    :param reversed_flag: Value for the group's ``reversed`` flag.
+    :param reverse_subregs_order: Value for the group's ``reverse_subregs_order``.
+    """
+    regs = _build_grouped_regs(
+        data_dir,
+        reversed_flag=reversed_flag,
+        reverse_subregs_order=reverse_subregs_order,
+    )
+    for name, value in _SUB_REG_VALUES.items():
+        regs.find_reg(name, include_group_regs=True).set_value(value, raw=True)
+
+    binary = regs.export()
+    group = regs.find_reg("TestRegA")
+    for sub in group.sub_regs:
+        expected = sub.get_bytes_value(raw=True)
+        actual = binary[sub.offset : sub.offset + sub.width // 8]
+        assert actual == expected, (
+            f"sub-reg {sub.name} at offset {hex(sub.offset)}: "
+            f"expected {expected.hex()}, got {actual.hex()}"
+        )
+
+
+@pytest.mark.parametrize(
+    "reversed_flag,reverse_subregs_order",
+    [
+        (False, False),
+        (False, True),
+        (True, False),
+        (True, True),
+    ],
+)
+def test_grouped_register_export_parse_round_trip(
+    data_dir: str, reversed_flag: bool, reverse_subregs_order: bool
+) -> None:
+    """Round-trip: ``parse(export(regs))`` restores identical sub-register values.
+
+    Sets each sub-register, exports the registers to binary, parses the binary
+    back into a freshly-built Registers instance with identical configuration,
+    and asserts every sub-register value (and the resulting binary) matches.
+
+    :param data_dir: Directory containing the register specification file.
+    :param reversed_flag: Value for the group's ``reversed`` flag.
+    :param reverse_subregs_order: Value for the group's ``reverse_subregs_order``.
+    """
+    src = _build_grouped_regs(
+        data_dir,
+        reversed_flag=reversed_flag,
+        reverse_subregs_order=reverse_subregs_order,
+    )
+    for name, value in _SUB_REG_VALUES.items():
+        src.find_reg(name, include_group_regs=True).set_value(value, raw=True)
+    binary = src.export()
+
+    dst = _build_grouped_regs(
+        data_dir,
+        reversed_flag=reversed_flag,
+        reverse_subregs_order=reverse_subregs_order,
+    )
+    dst.parse(binary)
+
+    for name, value in _SUB_REG_VALUES.items():
+        parsed = dst.find_reg(name, include_group_regs=True).get_value(raw=True)
+        assert parsed == value, (
+            f"{name}: expected 0x{value:08X}, got 0x{parsed:08X} "
+            f"(reversed={reversed_flag}, reverse_subregs_order={reverse_subregs_order})"
+        )
+    assert dst.export() == binary
+
+
+@pytest.mark.parametrize(
+    "reversed_flag,reverse_subregs_order",
+    [
+        (False, False),
+        (False, True),
+        (True, False),
+        (True, True),
+    ],
+)
+def test_grouped_register_export_equals_individual_subreg_export(
+    data_dir: str, reversed_flag: bool, reverse_subregs_order: bool
+) -> None:
+    """Setting the group value or the individual sub-regs yields the same binary.
+
+    With the SPSDK-6746 fix, export of a grouped register is driven by the
+    sub-register byte representations. Writing the equivalent 128-bit value to
+    the group register must therefore produce a binary identical to writing
+    each sub-register individually, for every combination of ``reversed`` and
+    ``reverse_subregs_order``.
+
+    :param data_dir: Directory containing the register specification file.
+    :param reversed_flag: Value for the group's ``reversed`` flag.
+    :param reverse_subregs_order: Value for the group's ``reverse_subregs_order``.
+    """
+    by_subregs = _build_grouped_regs(
+        data_dir,
+        reversed_flag=reversed_flag,
+        reverse_subregs_order=reverse_subregs_order,
+    )
+    for name, value in _SUB_REG_VALUES.items():
+        by_subregs.find_reg(name, include_group_regs=True).set_value(value, raw=True)
+    bin_subregs = by_subregs.export()
+
+    # Read the equivalent 128-bit value out of the group register itself so
+    # that the comparison is independent of how ``reverse_subregs_order``
+    # packs sub-regs into the combined value.
+    combined_value = by_subregs.find_reg("TestRegA").get_value(raw=True)
+
+    by_group = _build_grouped_regs(
+        data_dir,
+        reversed_flag=reversed_flag,
+        reverse_subregs_order=reverse_subregs_order,
+    )
+    by_group.find_reg("TestRegA").set_value(combined_value, raw=True)
+    bin_group = by_group.export()
+
+    assert bin_group == bin_subregs, (
+        f"grouped vs per-subreg export differ "
+        f"(reversed={reversed_flag}, reverse_subregs_order={reverse_subregs_order}):\n"
+        f"  group     = {bin_group.hex()}\n"
+        f"  subregs   = {bin_subregs.hex()}"
+    )
+
+
+def test_grouped_register_parse_distributes_into_subregs(data_dir: str) -> None:
+    """``parse`` updates each sub-register from bytes at its own physical offset.
+
+    Regression for SPSDK-6746: previously ``parse`` read ``width`` bytes from
+    the group's offset and stuffed the whole integer into the group, never
+    updating the individual sub-registers. After the fix, each sub-register
+    must be populated from bytes at its own offset.
+
+    :param data_dir: Directory containing the register specification file.
+    """
+    regs = _build_grouped_regs(data_dir, reversed_flag=False, reverse_subregs_order=False)
+
+    group = regs.find_reg("TestRegA")
+    binary = bytearray(group.offset + group.width // 8)
+    for name, value in _SUB_REG_VALUES.items():
+        sub = regs.find_reg(name, include_group_regs=True)
+        binary[sub.offset : sub.offset + sub.width // 8] = value_to_bytes(
+            value, byte_cnt=sub.width // 8, endianness=regs.base_endianness
+        )
+
+    regs.parse(bytes(binary))
+
+    for name, value in _SUB_REG_VALUES.items():
+        actual = regs.find_reg(name, include_group_regs=True).get_value(raw=True)
+        assert actual == value, f"{name}: expected 0x{value:08X}, got 0x{actual:08X}"
+
+
+@pytest.mark.parametrize(
+    "reversed_flag,reverse_subregs_order",
+    [
+        (False, False),
+        (False, True),
+        (True, False),
+        (True, True),
+    ],
+)
+def test_grouped_register_parse_distributes_into_subregs_all_flags(
+    data_dir: str, reversed_flag: bool, reverse_subregs_order: bool
+) -> None:
+    """``parse`` populates each sub-register at its own offset regardless of group flags.
+
+    Same as :func:`test_grouped_register_parse_distributes_into_subregs` but
+    parametrized over all 4 ``(reversed, reverse_subregs_order)`` flag
+    combinations. Verifies that group-level reverse flags do not affect the
+    physical placement read by ``parse``.
+
+    :param data_dir: Directory containing the register specification file.
+    :param reversed_flag: Value for the group's ``reversed`` flag.
+    :param reverse_subregs_order: Value for the group's ``reverse_subregs_order``.
+    """
+    regs = _build_grouped_regs(
+        data_dir,
+        reversed_flag=reversed_flag,
+        reverse_subregs_order=reverse_subregs_order,
+    )
+
+    group = regs.find_reg("TestRegA")
+    binary = bytearray(group.offset + group.width // 8)
+    for name, value in _SUB_REG_VALUES.items():
+        sub = regs.find_reg(name, include_group_regs=True)
+        binary[sub.offset : sub.offset + sub.width // 8] = value_to_bytes(
+            value, byte_cnt=sub.width // 8, endianness=regs.base_endianness
+        )
+
+    regs.parse(bytes(binary))
+
+    for name, value in _SUB_REG_VALUES.items():
+        actual = regs.find_reg(name, include_group_regs=True).get_value(raw=True)
+        assert actual == value, (
+            f"{name}: expected 0x{value:08X}, got 0x{actual:08X} "
+            f"(reversed={reversed_flag}, reverse_subregs_order={reverse_subregs_order})"
+        )
+
+
+@pytest.mark.parametrize(
+    "reversed_flag,reverse_subregs_order",
+    [
+        (False, False),
+        (False, True),
+        (True, False),
+        (True, True),
+    ],
+)
+@pytest.mark.parametrize("base_endianness", [Endianness.LITTLE, Endianness.BIG])
+def test_grouped_register_round_trip_with_base_endianness(
+    data_dir: str,
+    reversed_flag: bool,
+    reverse_subregs_order: bool,
+    base_endianness: Endianness,
+) -> None:
+    """Round-trip ``parse(export(regs))`` is byte-stable for both endianness values.
+
+    Exercises the export/parse path with ``base_endianness`` set to both
+    ``LITTLE`` and ``BIG`` across all group flag combinations. The
+    sub-register byte representation depends on ``base_endianness``; the
+    round-trip must remain consistent in all cases.
+
+    :param data_dir: Directory containing the register specification file.
+    :param reversed_flag: Value for the group's ``reversed`` flag.
+    :param reverse_subregs_order: Value for the group's ``reverse_subregs_order``.
+    :param base_endianness: Endianness for register serialization.
+    """
+    src = _build_grouped_regs(
+        data_dir,
+        reversed_flag=reversed_flag,
+        reverse_subregs_order=reverse_subregs_order,
+        base_endianness=base_endianness,
+    )
+    for name, value in _SUB_REG_VALUES.items():
+        src.find_reg(name, include_group_regs=True).set_value(value, raw=True)
+    binary = src.export()
+
+    # Each sub-reg must be serialized with the configured endianness.
+    for name, value in _SUB_REG_VALUES.items():
+        sub = src.find_reg(name, include_group_regs=True)
+        expected_bytes = value_to_bytes(value, byte_cnt=sub.width // 8, endianness=base_endianness)
+        assert binary[sub.offset : sub.offset + sub.width // 8] == expected_bytes
+
+    dst = _build_grouped_regs(
+        data_dir,
+        reversed_flag=reversed_flag,
+        reverse_subregs_order=reverse_subregs_order,
+        base_endianness=base_endianness,
+    )
+    dst.parse(binary)
+    for name, value in _SUB_REG_VALUES.items():
+        assert (
+            dst.find_reg(name, include_group_regs=True).get_value(raw=True) == value
+        ), f"{name} mismatch for endianness={base_endianness.value}"
+    assert dst.export() == binary
+
+
+@pytest.mark.parametrize(
+    "reversed_flag,reverse_subregs_order",
+    [
+        (False, False),
+        (False, True),
+        (True, False),
+        (True, True),
+    ],
+)
+def test_grouped_register_load_from_config_hexstring_round_trip(
+    data_dir: str, reversed_flag: bool, reverse_subregs_order: bool
+) -> None:
+    """``config_as_hexstring`` + grouped register: config → export → parse round-trip.
+
+    Mirrors the real PFR ``ERASE_PASSWORD`` use case where the group is
+    configured with ``config_as_hexstring: true``. Loads a 128-bit hex string
+    via ``load_from_config``, exports to binary, parses back into a fresh
+    instance, and asserts both the resulting binary and the combined group
+    value match.
+
+    :param data_dir: Directory containing the register specification file.
+    :param reversed_flag: Value for the group's ``reversed`` flag.
+    :param reverse_subregs_order: Value for the group's ``reverse_subregs_order``.
+    """
+    group = [
+        {
+            "name": "TestRegA",
+            "uid": "TestGroup",
+            "config_as_hexstring": True,
+            "reversed": "True" if reversed_flag else "False",
+            "reverse_subregs_order": "True" if reverse_subregs_order else "False",
+            "sub_regs": ["field400", "field404", "field408", "field40C"],
+        }
+    ]
+
+    def make_regs() -> Registers:
+        regs = Registers(
+            family=FamilyRevision(TEST_DEVICE_NAME),
+            feature="test",
+            base_endianness=Endianness.LITTLE,
+            do_not_raise_exception=True,
+        )
+        regs._load_spec(os.path.join(data_dir, "grp_regs.json"), grouped_regs=group)
+        return regs
+
+    hex_value = "AABBCC00AABBCC11AABBCC22AABBCC33"
+    src = make_regs()
+    src.load_from_config(Config({"TestRegA": hex_value}))
+    binary = src.export()
+
+    dst = make_regs()
+    dst.parse(binary)
+
+    assert dst.export() == binary
+    assert dst.find_reg("TestRegA").get_value(raw=True) == src.find_reg("TestRegA").get_value(
+        raw=True
+    )
+
+
+def test_grouped_register_per_subreg_reverse_round_trip(data_dir: str) -> None:
+    """Per-sub-register ``reverse`` flag is bypassed inside a group and round-trips.
+
+    Grouped export uses ``get_bytes_value(raw=True)`` per sub-register (commit
+    SPSDK-6746), which intentionally skips any per-sub-register ``reverse``
+    transformation. This test pins that behaviour: even with
+    ``reg_spec_modifications={"field404": {"reverse": True}}`` the sub-register
+    bytes appear in plain endianness order inside the grouped image, and the
+    export/parse round-trip remains stable.
+
+    :param data_dir: Directory containing the register specification file.
+    """
+    group = [
+        {
+            "name": "TestRegA",
+            "uid": "TestGroup",
+            "sub_regs": ["field400", "field404", "field408", "field40C"],
+        }
+    ]
+    reg_spec_modifications = {"field404": {"reverse": True}}
+
+    def make_regs() -> Registers:
+        regs = Registers(
+            family=FamilyRevision(TEST_DEVICE_NAME),
+            feature="test",
+            base_endianness=Endianness.LITTLE,
+            do_not_raise_exception=True,
+        )
+        regs._load_spec(
+            os.path.join(data_dir, "grp_regs.json"),
+            grouped_regs=group,
+            reg_spec_modifications=reg_spec_modifications,
+        )
+        return regs
+
+    src = make_regs()
+    # Confirm the modification was applied at the sub-register level.
+    assert src.find_reg("TestRegA1", include_group_regs=True).reverse is True
+    for name, value in _SUB_REG_VALUES.items():
+        src.find_reg(name, include_group_regs=True).set_value(value, raw=True)
+    binary = src.export()
+
+    # All sub-regs land in plain LE order inside the group (reverse bypassed).
+    for name, offset in [
+        ("TestRegA0", 0x400),
+        ("TestRegA1", 0x404),
+        ("TestRegA2", 0x408),
+        ("TestRegA3", 0x40C),
+    ]:
+        assert binary[offset : offset + 4] == value_to_bytes(
+            _SUB_REG_VALUES[name], byte_cnt=4, endianness=Endianness.LITTLE
+        )
+
+    dst = make_regs()
+    dst.parse(binary)
+    for name, value in _SUB_REG_VALUES.items():
+        assert (
+            dst.find_reg(name, include_group_regs=True).get_value(raw=True) == value
+        ), f"{name} did not round-trip"
+    assert dst.export() == binary
+
+
+def test_grouped_register_get_config_round_trip_after_parse(data_dir: str) -> None:
+    """``get_config()`` after ``parse()`` reproduces the original configuration.
+
+    Loads a config via ``load_from_config``, exports it to binary, parses
+    that binary into a fresh instance, and asserts that
+    ``get_config(diff=True)`` returns an equivalent dictionary. Both
+    instances must produce the same binary.
+
+    :param data_dir: Directory containing the register specification file.
+    """
+    group = [
+        {
+            "name": "TestRegA",
+            "uid": "TestGroup",
+            "config_as_hexstring": True,
+            "reverse_subregs_order": "True",
+            "sub_regs": ["field400", "field404", "field408", "field40C"],
+        }
+    ]
+
+    def make_regs() -> Registers:
+        regs = Registers(
+            family=FamilyRevision(TEST_DEVICE_NAME),
+            feature="test",
+            base_endianness=Endianness.LITTLE,
+            do_not_raise_exception=True,
+        )
+        regs._load_spec(os.path.join(data_dir, "grp_regs.json"), grouped_regs=group)
+        return regs
+
+    hex_value = "AABBCC00AABBCC11AABBCC22AABBCC33"
+    src = make_regs()
+    src.load_from_config(Config({"TestRegA": hex_value}))
+    original_cfg = dict(src.get_config())
+    binary = src.export()
+
+    dst = make_regs()
+    dst.parse(binary)
+    parsed_cfg = dict(dst.get_config())
+
+    assert parsed_cfg == original_cfg
+    assert dst.export() == binary

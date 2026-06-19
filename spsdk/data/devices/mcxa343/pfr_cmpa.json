@@ -1,5 +1,5 @@
 {
-    "cpu": "MCXA343",
+    "cpu": "mcxa343",
     "groups": [
         {
             "group": {
@@ -325,9 +325,12 @@
                             "description": "UART baud rate. Baud rate configured during UART ISP mode",
                             "values": [
                                 {
-                                    "name": "AUTO_BAUD_DETECTION",
+                                    "name": "AUTO_BAUDRATE",
                                     "value": 0,
-                                    "description": "Auto baud detection"
+                                    "description": "Auto baud detection",
+                                    "deprecated_names": [
+                                        "AUTO_BAUD_DETECTION"
+                                    ]
                                 }
                             ]
                         }
@@ -1131,9 +1134,6 @@
                     "name": "FLASH_ACL_8_15",
                     "description": "Access control for flash sector",
                     "offset_int": "0x0044",
-                    "deprecated_names": [
-                        "FLASH_ACL_8_15"
-                    ],
                     "default_value_int": "0x44444444",
                     "bitfields": [
                         {
@@ -1551,9 +1551,6 @@
                     "name": "FLASH_ACL_16_23",
                     "description": "Access control for flash sector",
                     "offset_int": "0x0048",
-                    "deprecated_names": [
-                        "FLASH_ACL_16_23"
-                    ],
                     "default_value_int": "0x44444444",
                     "bitfields": [
                         {
@@ -1971,9 +1968,6 @@
                     "name": "FLASH_ACL_24_31",
                     "description": "Access control for flash sector",
                     "offset_int": "0x004C",
-                    "deprecated_names": [
-                        "FLASH_ACL_24_31"
-                    ],
                     "default_value_int": "0x44444444",
                     "bitfields": [
                         {

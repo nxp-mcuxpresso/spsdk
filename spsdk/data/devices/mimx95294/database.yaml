@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-alias: mimx9596
-
 revisions:
   a0: {}
 
@@ -257,6 +255,9 @@ features:
     fuses_1:
       _name: "AHAB SRKH PQC"
       pqc_srkh: "__srk_hash1" # SRK PQC hash fuse
+    signature_algorithms:
+      DILITHIUM: [0xD1, "DILITHIUM", "Dilithium PQC algorithm"]
+      ML_DSA: [0xD2, "ML-DSA", "ML-DSA PQC algorithm"]
 
     core_ids:
       DUMMY_CORE: [0, "dummy", "Virtual dummy core (used for data)"]
@@ -395,6 +396,7 @@ features:
           #not_used: 0xC00
           primary_image_container_set: 0x1_000
           secondary_image_container_set: -1 # Just behind previous segment
+        image_pattern: ones
       emmc:
         segments:
           primary_image_container_set: 0x8_000

@@ -330,7 +330,7 @@ def test_auth_scheme_registry() -> None:
 def test_auth_scheme_parse_invalid_type() -> None:
     """Test parsing with invalid authentication scheme type."""
     # Create data with invalid scheme type (0xFF)
-    invalid_data = b"\xff\x00\x00\x00\x00\x00\x00\x00"
+    invalid_data = b"\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 
     with pytest.raises(SPSDKParsingError, match="Invalid authentication scheme type"):
         AuthScheme.parse(invalid_data)
@@ -344,6 +344,12 @@ def test_auth_scheme_parse_insufficient_data() -> None:
         AuthScheme.parse(b"\x80\x00")
 
 
+def test_auth_scheme_parse_insufficient_union_data() -> None:
+    """Test parsing with insufficient data for fixed-size auth scheme union."""
+    with pytest.raises(SPSDKParsingError, match="Insufficient data for authentication scheme"):
+        AuthScheme.parse(b"\x80\x00\x00\x00\x04\x00\x00\x00")
+
+
 def test_auth_scheme_is_mac_scheme() -> None:
     """Test is_mac_scheme property."""
     mac_scheme = CmacScheme(cipher_algo=CipherAlgo.AES)
@@ -354,3 +360,116 @@ def test_auth_scheme_is_mac_scheme() -> None:
 
     assert sig_scheme.is_mac_scheme is False
     assert sig_scheme.is_signature_scheme is True
+
+
+# ============================================================================
+# KeyHandle tests
+# ============================================================================
+
+
+def test_key_handle_catalog_from_config() -> None:
+    """Test loading a catalog-based KeyHandle from config."""
+    from spsdk.image.hse.common import KeyHandle
+
+    config = Config({"catalogId": "NVM", "groupIdx": 1, "slotIdx": 2})
+    handle = KeyHandle.load_from_config(config)
+
+    assert handle.is_address_based is False
+    assert handle.catalog_id.label == "NVM"
+    assert handle.group_idx == 1
+    assert handle.slot_idx == 2
+
+
+def test_key_handle_catalog_get_config() -> None:
+    """Test get_config for a catalog-based KeyHandle."""
+    from spsdk.image.hse.common import KeyCatalogId, KeyHandle
+
+    handle = KeyHandle.from_attributes(KeyCatalogId.NVM, 3, 4)
+    cfg = handle.get_config()
+
+    assert cfg == {"catalogId": "NVM", "groupIdx": 3, "slotIdx": 4}
+
+
+def test_key_handle_address_from_config() -> None:
+    """Test loading an address-based KeyHandle from config (PUB_EXT keys)."""
+    from spsdk.image.hse.common import KeyHandle
+
+    config = Config({"keyAddress": 0x20010000})
+    handle = KeyHandle.load_from_config(config)
+
+    assert handle.is_address_based is True
+    assert handle.handle == 0x20010000
+
+
+def test_key_handle_address_get_config() -> None:
+    """Test get_config for an address-based KeyHandle."""
+    from spsdk.image.hse.common import KeyHandle
+
+    handle = KeyHandle.from_address(0x20010000)
+    cfg = handle.get_config()
+
+    assert cfg == {"keyAddress": 0x20010000}
+
+
+def test_key_handle_address_export_parse() -> None:
+    """Test that export/parse of an address-based handle preserves the raw value."""
+    from spsdk.image.hse.common import KeyHandle
+
+    handle = KeyHandle.from_address(0x20010000)
+    data = handle.export()
+    parsed = KeyHandle.parse(data)
+
+    assert parsed.handle == 0x20010000
+
+
+def test_key_handle_address_is_valid() -> None:
+    """Test is_valid for address-based KeyHandle."""
+    from spsdk.image.hse.common import KeyHandle
+
+    valid = KeyHandle.from_address(0x20010000)
+    assert valid.is_valid() is True
+
+    zero = KeyHandle.from_address(0)
+    assert zero.is_valid() is False
+
+
+def test_key_handle_address_is_not_rom_key() -> None:
+    """Test that an address-based handle is never a ROM key."""
+    from spsdk.image.hse.common import KeyHandle
+
+    handle = KeyHandle.from_address(0x00000000)
+    assert handle.is_rom_key is False
+
+
+def test_key_handle_address_str_repr() -> None:
+    """Test string and repr for address-based KeyHandle."""
+    from spsdk.image.hse.common import KeyHandle
+
+    handle = KeyHandle.from_address(0x20010000)
+    assert "address" in str(handle).lower()
+    assert "0x20010000" in str(handle).lower() or "20010000" in str(handle).lower()
+    assert "address" in repr(handle).lower()
+
+
+def test_key_handle_config_roundtrip_catalog() -> None:
+    """Test full config round-trip for catalog-based KeyHandle."""
+    from spsdk.image.hse.common import KeyCatalogId, KeyHandle
+
+    original = KeyHandle.from_attributes(KeyCatalogId.RAM, 5, 10)
+    cfg = original.get_config()
+    restored = KeyHandle.load_from_config(Config(cfg))
+
+    assert restored.handle == original.handle
+    assert restored.is_address_based == original.is_address_based
+
+
+def test_key_handle_config_roundtrip_address() -> None:
+    """Test full config round-trip for address-based KeyHandle."""
+    from spsdk.image.hse.common import KeyHandle
+
+    original = KeyHandle.from_address(0x40010000)
+    cfg = original.get_config()
+    restored = KeyHandle.load_from_config(Config(cfg))
+
+    assert restored.handle == original.handle
+    assert restored.is_address_based is True

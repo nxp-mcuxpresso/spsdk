@@ -4,7 +4,7 @@
 #!/usr/bin/env python(tmpdir
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -20,6 +20,7 @@ import shutil
 from typing import Any, Optional
 
 import pytest
+import yaml
 
 from spsdk.apps import nxpimage
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
@@ -167,3 +168,219 @@ def test_nxpimage_bee_multiple(
     with use_working_directory(work_dir):
         cmd = f"bee export -c {config}"
         cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=-1)
+
+
+@pytest.mark.parametrize(
+    "case, engines",
+    [
+        ("one_engine_explicit_keys", [0]),
+        ("both_engines_explicit_keys", [0, 1]),
+    ],
+)
+def test_nxpimage_bee_explicit_keys(
+    cli_runner: CliRunner, tmpdir: Any, data_dir: str, case: str, engines: list[int]
+) -> None:
+    """Test BEE export with explicitly specified engine keys.
+
+    Verifies that when engine_key, engine_iv and engine_counter are provided
+    in the configuration, the output is deterministic (same keys produce
+    same encrypted output) and no auto-generated key files are saved.
+
+    :param cli_runner: Click CLI test runner for command execution.
+    :param tmpdir: Temporary directory for test files.
+    :param data_dir: Path to test data directory.
+    :param case: Test case name identifying the BEE scenario.
+    :param engines: List of engine indices expected in output.
+    """
+    work_dir = os.path.join(tmpdir, "bee", case)
+    shutil.copytree(os.path.join(data_dir, "bee", case), work_dir)
+    shutil.copy(os.path.join(data_dir, "bee", INPUT_BINARY), work_dir)
+    with use_working_directory(work_dir):
+        config_dict = load_configuration("bee_config.yaml")
+        out_dir = os.path.join(work_dir, config_dict["output_folder"])
+
+        # First export
+        cmd = "bee export -c bee_config.yaml"
+        cli_runner.invoke(nxpimage.main, cmd.split())
+        encrypted_1 = load_binary(os.path.join(out_dir, "encrypted.bin"))
+        headers_1 = {}
+        for engine in engines:
+            headers_1[engine] = load_binary(os.path.join(out_dir, f"bee_ehdr{engine}.bin"))
+
+        # No auto-generated key files should exist
+        for engine in engines:
+            assert not os.path.isfile(os.path.join(out_dir, f"bee_engine{engine}_kib_key.bin"))
+            assert not os.path.isfile(os.path.join(out_dir, f"bee_engine{engine}_kib_iv.bin"))
+            assert not os.path.isfile(os.path.join(out_dir, f"bee_engine{engine}_counter.bin"))
+
+        # Second export: headers must be identical (fully deterministic with explicit keys)
+        # Note: encrypted.bin may differ in random padding of last sub-16B block
+        cli_runner.invoke(nxpimage.main, cmd.split())
+        assert len(encrypted_1) == len(load_binary(os.path.join(out_dir, "encrypted.bin")))
+        for engine in engines:
+            assert headers_1[engine] == load_binary(os.path.join(out_dir, f"bee_ehdr{engine}.bin"))
+
+
+def test_nxpimage_bee_auto_generated_keys_saved(
+    cli_runner: CliRunner, tmpdir: Any, data_dir: str
+) -> None:
+    """Test that auto-generated engine keys are saved to output folder.
+
+    When engine_key, engine_iv, engine_counter are NOT specified in config,
+    the tool generates random keys and saves them as .bin files.
+
+    :param cli_runner: Click CLI test runner for command execution.
+    :param tmpdir: Temporary directory for test files.
+    :param data_dir: Path to test data directory.
+    """
+    case = "one_engine_generated_header"
+    work_dir = os.path.join(tmpdir, "bee", case)
+    shutil.copytree(os.path.join(data_dir, "bee", case), work_dir)
+    shutil.copy(os.path.join(data_dir, "bee", INPUT_BINARY), work_dir)
+    with use_working_directory(work_dir):
+        config_dict = load_configuration("bee_config.yaml")
+        out_dir = os.path.join(work_dir, config_dict["output_folder"])
+        cmd = "bee export -c bee_config.yaml"
+        cli_runner.invoke(nxpimage.main, cmd.split())
+
+        # Auto-generated key files should exist with correct sizes
+        kib_key_path = os.path.join(out_dir, "bee_engine0_kib_key.bin")
+        kib_iv_path = os.path.join(out_dir, "bee_engine0_kib_iv.bin")
+        counter_path = os.path.join(out_dir, "bee_engine0_counter.bin")
+        assert os.path.isfile(kib_key_path)
+        assert os.path.isfile(kib_iv_path)
+        assert os.path.isfile(counter_path)
+        assert len(load_binary(kib_key_path)) == 16
+        assert len(load_binary(kib_iv_path)) == 16
+        assert len(load_binary(counter_path)) == 12
+
+
+def test_nxpimage_bee_key_reuse(cli_runner: CliRunner, tmpdir: Any, data_dir: str) -> None:
+    """Test key reuse: export with random keys, then re-export using saved keys.
+
+    This test verifies the full key reuse workflow:
+    1. Export with random keys (no engine_key/iv/counter in config)
+    2. Collect saved key files from output folder
+    3. Create a new config referencing the saved key files
+    4. Re-export and verify the encrypted output and headers are identical
+
+    :param cli_runner: Click CLI test runner for command execution.
+    :param tmpdir: Temporary directory for test files.
+    :param data_dir: Path to test data directory.
+    """
+    case = "one_engine_generated_header"
+    work_dir = os.path.join(tmpdir, "bee", case)
+    shutil.copytree(os.path.join(data_dir, "bee", case), work_dir)
+    shutil.copy(os.path.join(data_dir, "bee", INPUT_BINARY), work_dir)
+    with use_working_directory(work_dir):
+        config_dict = load_configuration("bee_config.yaml")
+        out_dir = os.path.join(work_dir, config_dict["output_folder"])
+
+        # Step 1: Export with random keys
+        cmd = "bee export -c bee_config.yaml"
+        cli_runner.invoke(nxpimage.main, cmd.split())
+        header_1 = load_binary(os.path.join(out_dir, "bee_ehdr0.bin"))
+
+        # Collect saved key files
+        kib_key_path = os.path.join(out_dir, "bee_engine0_kib_key.bin")
+        kib_iv_path = os.path.join(out_dir, "bee_engine0_kib_iv.bin")
+        counter_path = os.path.join(out_dir, "bee_engine0_counter.bin")
+        assert os.path.isfile(kib_key_path)
+
+        # Step 2: Create config with explicit key file references
+        config_dict["bee_engine"][0]["bee_cfg"]["engine_key"] = kib_key_path
+        config_dict["bee_engine"][0]["bee_cfg"]["engine_iv"] = kib_iv_path
+        config_dict["bee_engine"][0]["bee_cfg"]["engine_counter"] = counter_path
+
+        reuse_config = os.path.join(work_dir, "bee_config_reuse.yaml")
+        with open(reuse_config, "w") as f:
+            yaml.dump(config_dict, f)
+
+        # Step 3: Re-export with saved keys
+        cmd = f"bee export -c {reuse_config}"
+        cli_runner.invoke(nxpimage.main, cmd.split())
+        header_2 = load_binary(os.path.join(out_dir, "bee_ehdr0.bin"))
+
+        # Step 4: Verify identical headers (encrypted.bin may differ in random padding)
+        assert header_1 == header_2
+
+
+def test_nxpimage_bee_engine_keys_from_file(
+    cli_runner: CliRunner, tmpdir: Any, data_dir: str
+) -> None:
+    """Test that engine keys can be loaded from binary files.
+
+    Creates binary key files and references them in the config to verify
+    file-or-hex-value format works for engine_key, engine_iv, engine_counter.
+
+    :param cli_runner: Click CLI test runner for command execution.
+    :param tmpdir: Temporary directory for test files.
+    :param data_dir: Path to test data directory.
+    """
+    case = "one_engine_explicit_keys"
+    work_dir = os.path.join(tmpdir, "bee", case)
+    shutil.copytree(os.path.join(data_dir, "bee", case), work_dir)
+    shutil.copy(os.path.join(data_dir, "bee", INPUT_BINARY), work_dir)
+    with use_working_directory(work_dir):
+        # Create binary key files with known values
+        key_data = bytes.fromhex("aabbccddeeff00112233445566778899")
+        iv_data = bytes.fromhex("112233445566778899aabbccddeeff00")
+        counter_data = bytes.fromhex("00112233445566778899aabb")
+
+        key_file = os.path.join(work_dir, "engine_key.bin")
+        iv_file = os.path.join(work_dir, "engine_iv.bin")
+        counter_file = os.path.join(work_dir, "engine_counter.bin")
+
+        for path, data in [(key_file, key_data), (iv_file, iv_data), (counter_file, counter_data)]:
+            with open(path, "wb") as f:
+                f.write(data)
+
+        # Load original config and replace hex values with file paths
+        config_dict = load_configuration("bee_config.yaml")
+        out_dir = os.path.join(work_dir, config_dict["output_folder"])
+
+        # First export with hex values (reference)
+        cmd = "bee export -c bee_config.yaml"
+        cli_runner.invoke(nxpimage.main, cmd.split())
+        header_hex = load_binary(os.path.join(out_dir, "bee_ehdr0.bin"))
+
+        # Create config with file references
+        config_dict["bee_engine"][0]["bee_cfg"]["engine_key"] = key_file
+        config_dict["bee_engine"][0]["bee_cfg"]["engine_iv"] = iv_file
+        config_dict["bee_engine"][0]["bee_cfg"]["engine_counter"] = counter_file
+
+        file_config = os.path.join(work_dir, "bee_config_files.yaml")
+        with open(file_config, "w") as f:
+            yaml.dump(config_dict, f)
+
+        # Export with file references
+        cmd = f"bee export -c {file_config}"
+        cli_runner.invoke(nxpimage.main, cmd.split())
+        header_file = load_binary(os.path.join(out_dir, "bee_ehdr0.bin"))
+
+        # Both should produce identical headers (encrypted.bin may differ in random padding)
+        assert header_hex == header_file
+
+
+def test_nxpimage_bee_template_contains_engine_keys(cli_runner: CliRunner, tmpdir: Any) -> None:
+    """Test that generated BEE template contains engine key fields.
+
+    Verifies that the get-template command produces a YAML template
+    with engine_key, engine_iv, and engine_counter fields visible.
+
+    :param cli_runner: Click CLI test runner for command execution.
+    :param tmpdir: Temporary directory for test files.
+    """
+    template = os.path.join(tmpdir, "bee_template.yaml")
+    cmd = f"bee get-template -f rt105x -o {template}"
+    cli_runner.invoke(nxpimage.main, cmd.split())
+    assert os.path.isfile(template)
+
+    with open(template) as f:
+        content = f.read()
+
+    assert "engine_key:" in content
+    assert "engine_iv:" in content
+    assert "engine_counter:" in content
+    # Deprecated field should NOT appear in template
+    assert "engine_key_selection:" not in content

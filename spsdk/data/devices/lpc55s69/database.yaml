@@ -63,6 +63,7 @@ features:
   dat:
     socc: 1 # SOCC identification
     dmbox_ap_ix: 2 # Typical Index of debug mailbox access port is 2
+    mem_ap_index: 0 # AHB-AP is AP0
 
   # ======== MBI section ========
   mbi:

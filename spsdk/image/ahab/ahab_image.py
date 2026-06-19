@@ -20,6 +20,7 @@ import os
 from copy import deepcopy
 from typing import Any, Optional, Type, Union
 
+import colorama
 from prettytable import PrettyTable
 from typing_extensions import Self
 
@@ -239,89 +240,91 @@ class AHABImage(FeatureBaseClass):
         :param update_offsets: If True, updates image offsets to eliminate gaps and logs
             the changes in a detailed table format.
         """
+        # Phase 1: update volatile fields in all containers (resets image sizes from source binaries)
         for ahab_container in self.ahab_containers:
             ahab_container.update_fields()
-            if update_offsets:
-                # Update the Image offsets to be without gaps
-                offset = self.start_recommended_image_address
 
-                # Collect offset update information for logging
-                offset_updates = []
-                for container_idx, ahab_container in enumerate(self.ahab_containers):
-                    for image_idx, image in enumerate(ahab_container.image_array):
-                        old_offset = image.image_offset
-                        offset_changed = False
-                        if ahab_container.chip_config.locked or image.image_offset > 0:
-                            offset = image.image_offset
-                            action = "PRESERVED" if image.image_offset > 0 else "LOCKED"
-                        else:
-                            image.image_offset = offset
-                            offset_changed = True
-                            action = "UPDATED"
+        if update_offsets:
+            # Phase 2: assign offsets for unassigned images (run once)
+            offset = self.start_recommended_image_address
 
-                        # Store information for logging
-                        offset_updates.append(
-                            {
-                                "container": container_idx,
-                                "image": image_idx,
-                                "old_offset": old_offset,
-                                "new_offset": image.image_offset,
-                                "size": image.image_size,
-                                "gap": image.gap_after_image,
-                                "action": action,
-                                "changed": offset_changed,
-                            }
-                        )
+            # Collect offset update information for logging
+            offset_updates = []
+            for container_idx, ahab_container in enumerate(self.ahab_containers):
+                for image_idx, image in enumerate(ahab_container.image_array):
+                    old_offset = image.image_offset
+                    offset_changed = False
+                    if ahab_container.chip_config.locked or image.image_offset > 0:
+                        offset = image.image_offset
+                        action = "PRESERVED" if image.image_offset > 0 else "LOCKED"
+                    else:
+                        image.image_offset = offset
+                        offset_changed = True
+                        action = "UPDATED"
 
-                        offset = image.get_valid_offset(
-                            offset + image.image_size + image.gap_after_image
-                        )
-
-                    ahab_container.chip_config.locked = True
-                # Log the offset updates table if any changes were made
-                if any(update["changed"] for update in offset_updates):
-                    logger.info("AHAB Image Offset has been updated in serial downloader mode.")
-
-                    table = PrettyTable()
-                    table.field_names = [
-                        "Container",
-                        "Image",
-                        "Old Offset",
-                        "New Offset",
-                        "Image Size",
-                        "Gap After",
-                        "Action",
-                    ]
-
-                    for update in offset_updates:
-                        table.add_row(
-                            [
-                                update["container"],
-                                update["image"],
-                                f"0x{update['old_offset']:X}",
-                                f"0x{update['new_offset']:X}",
-                                f"0x{update['size']:X}",
-                                f"0x{update['gap']:X}",
-                                update["action"],
-                            ]
-                        )
-
-                    logger.info("AHAB Image Offset Updates:")
-                    for line in str(table).split("\n"):
-                        logger.info(line)
-
-                    # Summary information
-                    updated_count = sum(1 for update in offset_updates if update["changed"])
-                    preserved_count = sum(
-                        1 for update in offset_updates if update["action"] == "PRESERVED"
-                    )
-                    locked_count = sum(
-                        1 for update in offset_updates if update["action"] == "LOCKED"
+                    # Store information for logging
+                    offset_updates.append(
+                        {
+                            "container": container_idx,
+                            "image": image_idx,
+                            "old_offset": old_offset,
+                            "new_offset": image.image_offset,
+                            "size": image.image_size,
+                            "gap": image.gap_after_image,
+                            "action": action,
+                            "changed": offset_changed,
+                        }
                     )
 
-                    logger.info(
-                        f"Summary: {updated_count} updated, {preserved_count} preserved, {locked_count} locked"
+                    end_of_image = offset + image.image_size + image.gap_after_image
+                    raw_next = end_of_image
+                    if image.align_next_to:
+                        raw_next = align(raw_next, image.align_next_to)
+                    offset = image.get_valid_offset(raw_next)
+
+                ahab_container.chip_config.locked = True
+            # Log the offset updates table if any changes were made
+            if any(update["changed"] for update in offset_updates):
+                logger.info("AHAB Image Offset has been updated in serial downloader mode.")
+
+                table = PrettyTable()
+                table.field_names = [
+                    "Container",
+                    "Image",
+                    "Old Offset",
+                    "New Offset",
+                    "Image Size",
+                    "Gap After",
+                    "Action",
+                ]
+
+                for update in offset_updates:
+                    table.add_row(
+                        [
+                            update["container"],
+                            update["image"],
+                            f"0x{update['old_offset']:X}",
+                            f"0x{update['new_offset']:X}",
+                            f"0x{update['size']:X}",
+                            f"0x{update['gap']:X}",
+                            update["action"],
+                        ]
                     )
+
+                logger.info("AHAB Image Offset Updates:")
+                for line in str(table).split("\n"):
+                    logger.info(line)
+
+                # Summary information
+                updated_count = sum(1 for update in offset_updates if update["changed"])
+                preserved_count = sum(
+                    1 for update in offset_updates if update["action"] == "PRESERVED"
+                )
+                locked_count = sum(1 for update in offset_updates if update["action"] == "LOCKED")
+
+                logger.info(
+                    f"Summary: {updated_count} updated, {preserved_count} preserved, {locked_count} locked"
+                )
         # Sign the image header
         for ahab_container in self.ahab_containers:
             ahab_container.sign_itself()
@@ -357,12 +360,14 @@ class AHABImage(FeatureBaseClass):
 
         :return: Binary image object with complete AHAB image structure and layout information.
         """
+        erased_pattern = self.chip_config.target_memory.erased_pattern
         ret = BinaryImage(
             name="AHAB Image",
             size=len(self),
             offset=0,
             description=f"AHAB Image for {self.chip_config.family}",
             pattern=BinaryPattern("zeros"),
+            gap_pattern=BinaryPattern(erased_pattern),
         )
         ret.sparse_block_size = min(
             max(self.chip_config.target_memory.image_offset_alignment, 4), SPARSE_DEFAULT_BLOCK_SIZE
@@ -1121,6 +1126,7 @@ class AHABImage(FeatureBaseClass):
         container_config: dict[str, Any],
         board_filenames: Optional[dict[str, str]] = None,
         input_dir: Optional[str] = None,
+        sign: bool = False,
     ) -> dict[str, Any]:
         """Generate AHAB container configuration template with specified structure.
 
@@ -1135,6 +1141,7 @@ class AHABImage(FeatureBaseClass):
             - {"binary_container": {"path": "path/to/container.bin"}} for binary container
         :param board_filenames: Optional dictionary mapping image types to board-specific filenames.
         :param input_dir: Optional input directory path to prepend to filenames.
+        :param sign: When True, include signing fields in the container config.
         :return: Dictionary with container configuration (for regular) or binary container reference.
         """
         # Check if this is a binary container
@@ -1142,7 +1149,9 @@ class AHABImage(FeatureBaseClass):
             return cls._process_binary_container(container_config, board_filenames, input_dir)
 
         # Process regular container with images
-        return cls._process_regular_container(family, container_config, board_filenames, input_dir)
+        return cls._process_regular_container(
+            family, container_config, board_filenames, input_dir, sign=sign
+        )
 
     @classmethod
     def _process_binary_container(
@@ -1195,6 +1204,7 @@ class AHABImage(FeatureBaseClass):
         container_config: dict[str, Any],
         board_filenames: Optional[dict[str, str]],
         input_dir: Optional[str],
+        sign: bool = False,
     ) -> dict[str, Any]:
         """Process regular container configuration with images.
 
@@ -1202,6 +1212,7 @@ class AHABImage(FeatureBaseClass):
         :param container_config: Container configuration with images list.
         :param board_filenames: Optional board-specific filename mappings.
         :param input_dir: Optional input directory path.
+        :param sign: When True, include signing fields in the container config.
         :return: Dictionary with complete container configuration.
         :raises SPSDKError: If container config is invalid or schema not found.
         """
@@ -1218,7 +1229,9 @@ class AHABImage(FeatureBaseClass):
         custom_images = cls._build_custom_images(ordered_schemas, board_filenames, input_dir)
 
         # Build final container configuration
-        container_cfg = cls._build_container_config(custom_images, container_config)
+        container_cfg = cls._build_container_config(
+            custom_images, container_config, family=family, sign=sign
+        )
 
         return {
             "container": container_cfg,
@@ -1350,22 +1363,77 @@ class AHABImage(FeatureBaseClass):
 
         return image_obj
 
-    @staticmethod
+    @classmethod
     def _build_container_config(
-        custom_images: list[dict[str, Any]], container_config: dict[str, Any]
+        cls,
+        custom_images: list[dict[str, Any]],
+        container_config: dict[str, Any],
+        family: FamilyRevision,
+        sign: bool = False,
     ) -> dict[str, Any]:
         """Build final container configuration.
 
+        Container-level fields (fuse_version, sw_version, srk_set enum values, etc.)
+        are derived from the family's validation schema template values so that
+        device-specific defaults are respected.
+
         :param custom_images: List of custom image configurations.
         :param container_config: Original container configuration.
+        :param family: Target chip family used to look up schema template values.
+        :param sign: When True, add signing fields (srk_set=oem, signer, srk_table).
         :return: Complete container configuration dictionary.
         """
-        container_cfg = {
-            "srk_set": "none",
-            "fuse_version": 0,
-            "sw_version": 0,
-            "images": custom_images,
-        }
+        # Extract container-level defaults from the family schema.
+        schemas = cls.get_validation_schemas(family)
+        whole_ahab_schema = schemas[1]
+        container_items = whole_ahab_schema["properties"]["containers"]["items"]["oneOf"]
+        container_schema = cls._find_container_schema(container_items)
+        sch_props: dict[str, Any] = container_schema["properties"]
+
+        def _tv(key: str, default: Any) -> Any:
+            return sch_props.get(key, {}).get("template_value", default)
+
+        fuse_version = _tv("fuse_version", 0)
+        sw_version = _tv("sw_version", 0)
+
+        if sign:
+            # Prefer "oem" srk_set for signing; fall back to first non-"none" entry.
+            srk_set_enum: list[str] = sch_props.get("srk_set", {}).get("enum", ["oem"])
+            srk_set = (
+                "oem"
+                if "oem" in srk_set_enum
+                else next((v for v in srk_set_enum if v != "none"), "oem")
+            )
+
+            used_srk_id = _tv("used_srk_id", 0)
+            srk_revoke_mask = _tv("srk_revoke_mask", "0x00")
+
+            srk_table_props = sch_props.get("srk_table", {}).get("properties", {})
+            hash_algorithm = srk_table_props.get("hash_algorithm", {}).get(
+                "template_value", "default"
+            )
+            srk_count: int = srk_table_props.get("srk_array", {}).get("minItems", 4)
+
+            container_cfg = {
+                "srk_set": srk_set,
+                "used_srk_id": used_srk_id,
+                "srk_revoke_mask": srk_revoke_mask,
+                "fuse_version": fuse_version,
+                "sw_version": sw_version,
+                "signer": "type=file;file_path=keys/signing_key.pem",
+                "srk_table": {
+                    "hash_algorithm": hash_algorithm,
+                    "srk_array": [f"keys/srk_{i}.pem" for i in range(srk_count)],
+                },
+                "images": custom_images,
+            }
+        else:
+            container_cfg = {
+                "srk_set": "none",
+                "fuse_version": fuse_version,
+                "sw_version": sw_version,
+                "images": custom_images,
+            }
 
         # Add any additional container-level config from input
         if "container" in container_config:
@@ -1374,3 +1442,53 @@ class AHABImage(FeatureBaseClass):
                     container_cfg[key] = value
 
         return container_cfg
+
+    def info(self) -> str:
+        """Get information about AHAB containers in human-readable format.
+
+        Returns a formatted string containing detailed information about all AHAB containers
+        including target memory, signature types, encryption status, and image details.
+
+        :return: Formatted string with AHAB container information.
+        """
+        output_lines = []
+        output_lines.append(f"Target Memory: {self.chip_config.target_memory.memory_type.label}")
+        output_lines.append(f"\nTotal containers: {len(self.ahab_containers)}\n")
+
+        for idx, container in enumerate(self.ahab_containers):
+            # Determine signature type
+            srk_set = container.flag_srk_set
+            signature_type = f"{srk_set.label}. {srk_set.description}"
+
+            # Get signature algorithm details
+            signature_details = ""
+            if container.signature_block:
+                sig_info = container.signature_block.get_signature_algorithm_info()
+                if sig_info:
+                    signature_details = f" ({sig_info})"
+
+            # Determine if encrypted
+            is_encrypted = container.signature_block and container.signature_block.blob
+            encrypted = "No"
+            if is_encrypted:
+                assert container.signature_block and container.signature_block.blob
+                encrypted = container.signature_block.blob.get_encryption_algorithm_info()
+
+            output_lines.append(f"{colorama.Fore.YELLOW}Container {idx}:{colorama.Fore.RESET}")
+            output_lines.append(f"  Signature: {signature_type}{signature_details}")
+            output_lines.append(f"  Encrypted: {encrypted}")
+            output_lines.append(f"  Number of Images: {len(container.image_array)}")
+
+            # List images with their details
+            if container.image_array:
+                output_lines.append("  Images:")
+                for img_idx, image_entry in enumerate(container.image_array):
+                    load_addr = f"0x{image_entry.load_address:08X}"
+                    core_id = image_entry.flags_core_id_name
+                    image_type = image_entry.flags_image_type_name
+                    output_lines.append(
+                        f"    [{img_idx}] Load Address: {load_addr}, Core: {core_id}, Type: {image_type}"
+                    )
+            output_lines.append("")
+
+        return "\n".join(output_lines)

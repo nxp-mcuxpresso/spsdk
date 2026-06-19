@@ -19,21 +19,21 @@ key_info:
       title: Key Type
       description: Type of the cryptographic key
       enum:
-        [
-          SHE,
-          AES,
-          HMAC,
-          SHARED_SECRET,
-          SIPHASH,
-          ECC_PAIR,
-          ECC_PUB,
-          ECC_PUB_EXT,
-          RSA_PAIR,
-          RSA_PUB,
-          RSA_PUB_EXT,
-          DH_PAIR,
-          DH_PUB,
-        ]
+        - SHE
+        - AES
+        - HMAC
+        - SHARED_SECRET
+        - SIPHASH
+        - ECC_PAIR
+        - ECC_PUB
+        - ECC_PUB_EXT
+        - RSA_PAIR
+        - RSA_PUB
+        - RSA_PUB_EXT
+        - DH_PUB
+        # DH_PAIR is not yet supported: SPSDK has no DH key implementation to derive
+        # the public key from a private key. Will be enabled once DH support is added.
+        # - DH_PAIR
       template_value: AES
 
     keyBitLen:
@@ -216,8 +216,9 @@ key_info:
             pubExponentSize:
               type: [number, string]
               title: RSA Public Exponent Size
-              description: Size of RSA public exponent in bytes (must be less than 16)
+              description: Size of RSA public exponent in bytes. Maximum is device-dependent (8 for HSE-B, 16 for HSE-H/M).
               format: number
+              maximum: 16
               template_value: 3
 
         - type: object
@@ -509,38 +510,63 @@ smr:
       template_value: "0x0"
 
     authKeyHandle:
-      type: object
       title: Authentication Key Handle
       description: |
         The key handle used to check the authenticity of the plaintext SMR.
         If INSTALL_AUTH flag is cleared, the authKeyHandle is used only in the Installation Phase.
         The key flags must be configured with USAGE_VERIFY set and USAGE_SIGN NOT set.
-      required: [catalogId, groupIdx, slotIdx]
-      properties:
-        catalogId:
-          type: string
-          title: Key Catalog ID
-          description: Key catalog type (ROM, NVM, or RAM)
-          enum: [ROM, NVM, RAM]
-          template_value: NVM
+        Use the catalog form (catalogId/groupIdx/slotIdx) for keys stored in the HSE key catalog.
+        Use the address form (keyAddress) for external public keys (HSE_KEY_TYPE_*_PUB_EXT)
+        stored in application memory.
+      oneOf:
+        - type: object
+          title: Catalog Key Handle
+          description: Key handle referencing a key in the HSE key catalog (ROM, NVM, or RAM)
+          required: [catalogId, groupIdx, slotIdx]
+          properties:
+            catalogId:
+              type: string
+              title: Key Catalog ID
+              description: Key catalog type (ROM, NVM, or RAM)
+              enum: [ROM, NVM, RAM]
+              template_value: NVM
 
-        groupIdx:
-          type: [number, string]
-          title: Group Index
-          description: Group index in catalog
-          format: number
-          minimum: 0
-          maximum: 254
-          template_value: 0
+            groupIdx:
+              type: [number, string]
+              title: Group Index
+              description: Group index in catalog
+              format: number
+              minimum: 0
+              maximum: 254
+              template_value: 0
 
-        slotIdx:
-          type: [number, string]
-          title: Slot Index
-          description: Key slot index within the group
-          format: number
-          minimum: 0
-          maximum: 254
-          template_value: 0
+            slotIdx:
+              type: [number, string]
+              title: Slot Index
+              description: Key slot index within the group
+              format: number
+              minimum: 0
+              maximum: 254
+              template_value: 0
+
+        - type: object
+          title: Address Key Handle
+          description: |
+            Key handle as a direct memory address for HSE_KEY_TYPE_*_PUB_EXT keys
+            stored in application memory (e.g., in flash).
+          skip_in_template: true
+          required: [keyAddress]
+          properties:
+            keyAddress:
+              type: [number, string]
+              title: Key Address
+              description: |
+                Address of the public key in application memory.
+                Used for HSE_KEY_TYPE_ECC_PUB_EXT and HSE_KEY_TYPE_RSA_PUB_EXT key types.
+              format: number
+              minimum: 0
+              maximum: 0xFFFFFFFF
+              template_value: "0x0"
 
     authScheme:
       title: Authentication Scheme

@@ -15,6 +15,7 @@ across the NXP microcontroller portfolio.
 """
 
 import os
+from pathlib import Path
 
 import pytest
 from ruamel.yaml import YAML
@@ -660,42 +661,46 @@ def test_mcxc151_cmpa_pswd_export(tmpdir: str) -> None:
     assert isinstance(binary, bytes)
 
 
-def test_mcxc151_cmpa_pswd_config_uses_individual_registers() -> None:
-    """Test CMPA_PSWD template layout for mcxc151."""
+def test_mcxc151_cmpa_pswd_config_uses_grouped_password() -> None:
+    """Test CMPA_PSWD exposes the current grouped-password layout for mcxc151."""
     cmpa_pswd = CMPA_PSWD(FamilyRevision("mcxc151"))
 
     settings = cmpa_pswd.get_config()["settings"]
-    reg_names = [
-        reg.name
-        for reg in cmpa_pswd.registers.get_registers(include_group_regs=True, include_reserved=True)
-    ]
+    expected_grouped_regs = {
+        "DBG_AUTH_PASSWORD": [
+            "DBG_AUTH_PASSWORD0",
+            "DBG_AUTH_PASSWORD1",
+            "DBG_AUTH_PASSWORD2",
+            "DBG_AUTH_PASSWORD3",
+        ],
+        "IMG_MISR_SEED": [
+            "IMG_MISR_SEED0",
+            "IMG_MISR_SEED1",
+            "IMG_MISR_SEED2",
+            "IMG_MISR_SEED3",
+        ],
+        "ERASE_PASSWORD": [
+            "ERASE_PASSWORD0",
+            "ERASE_PASSWORD1",
+            "ERASE_PASSWORD2",
+            "ERASE_PASSWORD3",
+        ],
+    }
 
-    assert "DBG_AUTH_PASSWORD0" in reg_names
-    assert "DBG_AUTH_PASSWORD1" in reg_names
-    assert "DBG_AUTH_PASSWORD2" in reg_names
-    assert "DBG_AUTH_PASSWORD3" in reg_names
-    assert "Reserved 0x00010" in reg_names
-    assert "Reserved 0x0001C" in reg_names
-    assert "IMG_MISR_SEED0" in reg_names
-    assert "IMG_MISR_SEED3" in reg_names
-    assert "ERASE_PASSWORD0" in reg_names
-    assert "ERASE_PASSWORD3" in reg_names
+    for grouped_reg_name, sub_reg_names in expected_grouped_regs.items():
+        grouped_reg = cmpa_pswd.registers.find_reg(grouped_reg_name)
+        assert grouped_reg.has_group_registers()
+        assert grouped_reg.reverse_subregs_order
+        assert [sub_reg.name for sub_reg in grouped_reg.sub_regs] == sub_reg_names
+        assert grouped_reg_name in settings
+        assert all(sub_reg_name not in settings for sub_reg_name in sub_reg_names)
 
-    assert "DBG_AUTH_PASSWORD0" in settings
-    assert "DBG_AUTH_PASSWORD3" in settings
-    assert "IMG_MISR_SEED0" in settings
-    assert "IMG_MISR_SEED3" in settings
-    assert "ERASE_PASSWORD0" in settings
-    assert "ERASE_PASSWORD3" in settings
-    assert "PASSWORD_AREA_CRC32" in settings
-    assert "DBG_AUTH_PASSWORD" not in settings
-    assert "IMG_MISR_SEED" not in settings
-    assert "ERASE_PASSWORD" not in settings
+    assert "CMPA_MISR_SEED" not in settings
 
 
-def test_mcxc151_cmpa_pswd_load_individual_registers() -> None:
-    """Test CMPA_PSWD loads individual mcxc151 register names."""
-    current_cfg = Config(
+def test_mcxc151_cmpa_pswd_load_legacy_password_registers() -> None:
+    """Test CMPA_PSWD still accepts the current per-word mcxc151 configuration."""
+    legacy_cfg = Config(
         {
             "family": "mcxc151",
             "revision": "latest",
@@ -709,46 +714,22 @@ def test_mcxc151_cmpa_pswd_load_individual_registers() -> None:
                 "IMG_MISR_SEED1": "0x4B5A6978",
                 "IMG_MISR_SEED2": "0x8796A5B4",
                 "IMG_MISR_SEED3": "0xC3D2E1F0",
-                "ERASE_PASSWORD0": "0x33221100",
-                "ERASE_PASSWORD1": "0x88776655",
-                "ERASE_PASSWORD2": "0xDDCCBBAA",
-                "ERASE_PASSWORD3": "0x04030201",
             },
         }
     )
 
-    cmpa_pswd = CMPA_PSWD.load_from_config(current_cfg)
+    cmpa_pswd = CMPA_PSWD.load_from_config(legacy_cfg)
     settings = cmpa_pswd.get_config()["settings"]
 
-    assert settings["DBG_AUTH_PASSWORD0"] == "0x11223344"
-    assert settings["DBG_AUTH_PASSWORD1"] == "0x55667788"
-    assert settings["DBG_AUTH_PASSWORD2"] == "0x99AABBCC"
-    assert settings["DBG_AUTH_PASSWORD3"] == "0xDDEEFF00"
-    assert settings["IMG_MISR_SEED0"] == "0x0F1E2D3C"
-    assert settings["IMG_MISR_SEED1"] == "0x4B5A6978"
-    assert settings["IMG_MISR_SEED2"] == "0x8796A5B4"
-    assert settings["IMG_MISR_SEED3"] == "0xC3D2E1F0"
-    assert settings["ERASE_PASSWORD0"] == "0x33221100"
-    assert settings["ERASE_PASSWORD1"] == "0x88776655"
-    assert settings["ERASE_PASSWORD2"] == "0xDDCCBBAA"
-    assert settings["ERASE_PASSWORD3"] == "0x04030201"
+    assert settings["DBG_AUTH_PASSWORD"] == "112233445566778899AABBCCDDEEFF00"
+    assert settings["IMG_MISR_SEED"] == "0F1E2D3C4B5A69788796A5B4C3D2E1F0"
+    assert "DBG_AUTH_PASSWORD2" not in settings
+    assert "IMG_MISR_SEED0" not in settings
     assert (
         cmpa_pswd.registers.find_reg("DBG_AUTH_PASSWORD0", include_group_regs=True).get_value(
             raw=True
         )
         == 0x11223344
-    )
-    assert (
-        cmpa_pswd.registers.find_reg("DBG_AUTH_PASSWORD1", include_group_regs=True).get_value(
-            raw=True
-        )
-        == 0x55667788
-    )
-    assert (
-        cmpa_pswd.registers.find_reg("DBG_AUTH_PASSWORD2", include_group_regs=True).get_value(
-            raw=True
-        )
-        == 0x99AABBCC
     )
     assert (
         cmpa_pswd.registers.find_reg("DBG_AUTH_PASSWORD3", include_group_regs=True).get_value(
@@ -761,33 +742,101 @@ def test_mcxc151_cmpa_pswd_load_individual_registers() -> None:
         == 0x0F1E2D3C
     )
     assert (
-        cmpa_pswd.registers.find_reg("IMG_MISR_SEED1", include_group_regs=True).get_value(raw=True)
-        == 0x4B5A6978
-    )
-    assert (
-        cmpa_pswd.registers.find_reg("IMG_MISR_SEED2", include_group_regs=True).get_value(raw=True)
-        == 0x8796A5B4
-    )
-    assert (
         cmpa_pswd.registers.find_reg("IMG_MISR_SEED3", include_group_regs=True).get_value(raw=True)
         == 0xC3D2E1F0
     )
-    assert (
-        cmpa_pswd.registers.find_reg("ERASE_PASSWORD0", include_group_regs=True).get_value(raw=True)
-        == 0x33221100
+
+
+@pytest.mark.parametrize("family", ["mcxc151", "mcxc161", "mcxc162"])
+@pytest.mark.parametrize(
+    "case_name,expected_erase_password",
+    [
+        ("tc1", "00CCBBAA11CCBBAA22CCBBAA33CCBBAA"),
+        ("tc2", "0A0000000B0000000C0000000D000000"),
+        ("tc3", "0A000000000000000000000000000000"),
+    ],
+)
+def test_mcxc151_alias_cmpa_pswd_grouped_cases_export_match(
+    data_dir: str, family: str, case_name: str, expected_erase_password: str
+) -> None:
+    """Test grouped and per-word ERASE_PASSWORD forms export identical data for aliases."""
+    legacy_cfg = Config.create_from_file(
+        os.path.join(data_dir, "yaml_bin", f"mcxc162_cmpa_{case_name}_legacy.yaml")
     )
-    assert (
-        cmpa_pswd.registers.find_reg("ERASE_PASSWORD1", include_group_regs=True).get_value(raw=True)
-        == 0x88776655
+    grouped_cfg = Config.create_from_file(
+        os.path.join(data_dir, "yaml_bin", f"mcxc162_cmpa_{case_name}_grouped.yaml")
     )
-    assert (
-        cmpa_pswd.registers.find_reg("ERASE_PASSWORD2", include_group_regs=True).get_value(raw=True)
-        == 0xDDCCBBAA
+    legacy_cfg["family"] = family
+    grouped_cfg["family"] = family
+
+    legacy_binary = CMPA_PSWD.load_from_config(legacy_cfg).export(add_seal=False)
+    grouped_binary = CMPA_PSWD.load_from_config(grouped_cfg).export(add_seal=False)
+    expected_legacy_binary = load_file(
+        os.path.join(data_dir, "yaml_bin", f"mcxc162_cmpa_{case_name}_legacy.bin"), mode="rb"
     )
-    assert (
-        cmpa_pswd.registers.find_reg("ERASE_PASSWORD3", include_group_regs=True).get_value(raw=True)
-        == 0x04030201
+    expected_grouped_binary = load_file(
+        os.path.join(data_dir, "yaml_bin", f"mcxc162_cmpa_{case_name}_grouped.bin"), mode="rb"
     )
+
+    assert grouped_binary == legacy_binary
+    assert legacy_binary == expected_legacy_binary
+    assert grouped_binary == expected_grouped_binary
+    assert legacy_binary[0x30:0x40] == bytes.fromhex(expected_erase_password)
+
+
+@pytest.mark.parametrize("case_name", ["tc1", "tc2", "tc3"])
+def test_mcxc162_cmpa_pswd_grouped_yaml_has_single_128_bit_erase_password(
+    data_dir: str, case_name: str
+) -> None:
+    """Test grouped ERASE_PASSWORD YAML contains one 128-bit grouped register value."""
+    cfg_path = os.path.join(data_dir, "yaml_bin", f"mcxc162_cmpa_{case_name}_grouped.yaml")
+    config = Config.create_from_file(cfg_path)
+    settings = config["settings"]
+    erase_password_value = settings["ERASE_PASSWORD"]
+    erase_password_keys = [name for name in settings if name.startswith("ERASE_PASSWORD")]
+    erase_password_reg = CMPA_PSWD(FamilyRevision("mcxc162")).registers.find_reg("ERASE_PASSWORD")
+
+    assert erase_password_keys == ["ERASE_PASSWORD"]
+    assert Path(cfg_path).read_text(encoding="utf-8").count("ERASE_PASSWORD") == 1
+    assert erase_password_reg.width == 128
+    assert len(erase_password_value.removeprefix("0x")) == erase_password_reg.width // 4
+
+
+@pytest.mark.parametrize("case_name", ["tc1", "tc2"])
+def test_mcxc162_cmpa_pswd_legacy_yaml_has_four_32_bit_erase_password_words(
+    data_dir: str, case_name: str
+) -> None:
+    """Test full legacy ERASE_PASSWORD YAML contains four 32-bit sub-register values."""
+    cfg_path = os.path.join(data_dir, "yaml_bin", f"mcxc162_cmpa_{case_name}_legacy.yaml")
+    config = Config.create_from_file(cfg_path)
+    settings = config["settings"]
+    erase_password_keys = [name for name in settings if name.startswith("ERASE_PASSWORD")]
+    cmpa_pswd = CMPA_PSWD(FamilyRevision("mcxc162"))
+
+    assert erase_password_keys == [
+        "ERASE_PASSWORD0",
+        "ERASE_PASSWORD1",
+        "ERASE_PASSWORD2",
+        "ERASE_PASSWORD3",
+    ]
+    assert Path(cfg_path).read_text(encoding="utf-8").count("ERASE_PASSWORD") == 4
+    for reg_name in erase_password_keys:
+        assert cmpa_pswd.registers.find_reg(reg_name, include_group_regs=True).width == 32
+
+
+def test_mcxc162_cmpa_pswd_legacy_yaml_allows_intentional_single_erase_password_word(
+    data_dir: str,
+) -> None:
+    """Test partial legacy ERASE_PASSWORD YAML may intentionally contain only word 0."""
+    cfg_path = os.path.join(data_dir, "yaml_bin", "mcxc162_cmpa_tc3_legacy.yaml")
+    config = Config.create_from_file(cfg_path)
+    settings = config["settings"]
+    erase_password_keys = [name for name in settings if name.startswith("ERASE_PASSWORD")]
+    cmpa_pswd = CMPA_PSWD(FamilyRevision("mcxc162"))
+
+    assert erase_password_keys == ["ERASE_PASSWORD0"]
+    assert Path(cfg_path).read_text(encoding="utf-8").count("ERASE_PASSWORD0") == 1
+    assert cmpa_pswd.registers.find_reg("ERASE_PASSWORD0", include_group_regs=True).width == 32
 
 
 def test_mcxc151_cmpa_lc_export(tmpdir: str) -> None:
@@ -933,3 +982,30 @@ def test_mcxc151_cmpa_cfg_config_roundtrip(tmpdir: str) -> None:
     binary1 = cmpa_cfg.export(add_seal=False)
     binary2 = cmpa_cfg2.export(add_seal=False)
     assert binary1 == binary2
+
+
+@pytest.mark.parametrize("case_name", ["tc1", "tc2", "tc3"])
+@pytest.mark.parametrize("variant", ["grouped", "legacy"])
+def test_mcxc162_cmpa_pswd_parse_round_trip(data_dir: str, case_name: str, variant: str) -> None:
+    """``CMPA_PSWD.parse(export(cfg))`` reproduces the original binary.
+
+    End-to-end PFR round-trip: load a YAML config (grouped or legacy form),
+    export it to binary, parse that binary back through ``CMPA_PSWD.parse``,
+    and assert the re-exported binary equals the original. This covers the
+    user-facing PFR ``parse`` path for grouped registers fixed in
+    SPSDK-6746.
+
+    :param data_dir: PFR test data directory.
+    :param case_name: Test case fixture (tc1/tc2/tc3).
+    :param variant: ``grouped`` or ``legacy`` YAML form.
+    """
+    if variant == "legacy" and case_name == "tc3":
+        pytest.skip("Only grouped/legacy tc1/tc2 fixtures are equivalent for legacy form.")
+    cfg_path = os.path.join(data_dir, "yaml_bin", f"mcxc162_cmpa_{case_name}_{variant}.yaml")
+    cfg = Config.create_from_file(cfg_path)
+
+    src = CMPA_PSWD.load_from_config(cfg)
+    binary = src.export(add_seal=False)
+
+    parsed = CMPA_PSWD.parse(binary, family=FamilyRevision("mcxc162"))
+    assert parsed.export(add_seal=False) == binary

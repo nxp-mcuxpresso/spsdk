@@ -17,7 +17,7 @@ import logging
 import math
 import os
 from struct import pack, unpack
-from typing import Any, Optional, Sequence, TypedDict, cast
+from typing import Optional, Sequence, TypedDict, TypeVar, cast
 
 from typing_extensions import Self, TypeAlias
 
@@ -75,7 +75,11 @@ from spsdk.utils.verifier import Verifier, VerifierResult
 logger = logging.getLogger(__name__)
 
 
-def get_key_by_val(dictionary: dict, val: Any) -> Any:
+K = TypeVar("K")
+V = TypeVar("V")
+
+
+def get_key_by_val(dictionary: dict[K, V], val: V) -> K:
     """Get dictionary key by its value.
 
     Searches through the provided dictionary to find the key that corresponds to the given value.
@@ -588,11 +592,8 @@ class SRKRecordBase(HeaderContainerInverted):
             if hash_algorithm:
                 hash_type = hash_algorithm
             else:
-                hash_type = {
-                    256: hash_enum.from_label("SHA256"),
-                    384: hash_enum.from_label("SHA384"),
-                    521: hash_enum.from_label("SHA512"),
-                }[public_key.key_size]
+                _ecc_hash_label = {256: "SHA256", 384: "SHA384", 521: "SHA512"}
+                hash_type = hash_enum.from_label(_ecc_hash_label[public_key.key_size])
 
             return cls(
                 signing_algorithm=sig_enum.from_label("ECDSA"),
@@ -723,7 +724,8 @@ class SRKRecordBase(HeaderContainerInverted):
         if self.signing_algorithm == AHABSignAlgorithm.RSA_PSS:
             return f"rsa_pss{get_key_by_val(self.RSA_KEY_TYPE, self.key_size)}"
         if self.signing_algorithm == AHABSignAlgorithm.ECDSA:
-            return get_key_by_val(self.ECC_KEY_TYPE, self.key_size)
+            curve = get_key_by_val(self.ECC_KEY_TYPE, self.key_size)
+            return curve.name
         if self.signing_algorithm == AHABSignAlgorithm.SM2:
             return "sm2"
         if self.signing_algorithm == AHABSignAlgorithm.DILITHIUM:
@@ -1329,14 +1331,8 @@ class SRKRecordV2(SRKRecordBase):
         if public_key.key_size not in [256, 384, 521]:
             raise SPSDKValueError(f"Unsupported ECC key for AHAB container: {public_key.key_size}")
 
-        hash_type = (
-            hash_algorithm
-            or {
-                256: hash_enum.from_label("SHA256"),
-                384: hash_enum.from_label("SHA384"),
-                521: hash_enum.from_label("SHA512"),
-            }[public_key.key_size]
-        )
+        _ecc_hash_label = {256: "SHA256", 384: "SHA384", 521: "SHA512"}
+        hash_type = hash_algorithm or hash_enum.from_label(_ecc_hash_label[public_key.key_size])
 
         return KeyParameters(
             signing_algorithm=AHABSignAlgorithm.ECDSA,
@@ -1381,13 +1377,8 @@ class SRKRecordV2(SRKRecordBase):
         """
         hash_enum = get_hash_algorithm_enum(chip_config)
 
-        hash_type = (
-            hash_algorithm
-            or {
-                3: hash_enum.from_label("SHA384"),
-                5: hash_enum.from_label("SHA512"),
-            }[public_key.level]
-        )
+        _dilithium_hash_label = {3: "SHA384", 5: "SHA512"}
+        hash_type = hash_algorithm or hash_enum.from_label(_dilithium_hash_label[public_key.level])
 
         return KeyParameters(
             signing_algorithm=AHABSignAlgorithm.DILITHIUM,
@@ -1419,13 +1410,8 @@ class SRKRecordV2(SRKRecordBase):
                 f"Unsupported ML-DSA key level: {public_key.level}"
             ) from exc
 
-        hash_type = (
-            hash_algorithm
-            or {
-                3: hash_enum.from_label("SHA384"),
-                5: hash_enum.from_label("SHA512"),
-            }[public_key.level]
-        )
+        _dilithium_hash_label = {3: "SHA384", 5: "SHA512"}
+        hash_type = hash_algorithm or hash_enum.from_label(_dilithium_hash_label[public_key.level])
 
         return KeyParameters(
             signing_algorithm=AHABSignAlgorithm.ML_DSA,
@@ -1526,7 +1512,14 @@ class SRKRecordV2(SRKRecordBase):
         :param sig_enum: Signature algorithm enumeration.
         :return: Formatted error message with supported algorithms.
         """
-        error_parts = [f"Unsupported public key algorithm: {self.signing_algorithm}"]
+        algo_str = str(self.signing_algorithm)
+        error_parts = [f"Unsupported public key algorithm: {algo_str}"]
+        if "UNKNOWN" in algo_str and self.version in (0xD1, 0xD2, 0xD3):
+            error_parts.append(
+                f"  Algorithm tag 0x{self.version:02X} looks like a PQC algorithm. "
+                "The device database may be missing PQC signature_algorithms. "
+                "Also ensure 'spsdk-pqc' is installed."
+            )
         error_parts.append("Supported algorithms:")
 
         # Show what's actually available based on sig_enum

@@ -174,7 +174,7 @@
                             "width": 3,
                             "id": "field004-bits5-7",
                             "name": "OEM_BANK1_IFR0_PROT",
-                            "description": "Defines flash protection of Bank1_IFR0 area based on usage. The MBC module is used to configure the access protections as readable (R), writeable (W), and/or executable (X). The access protections can also be configured as locked (L) which prevents later application code from changing the access protection configuration. The final MBC protection bits used for Bank1_IFR0 depend on the boot mode configuration, the boot path that is selected and the device life cycle state. The access This field will only modify the MBC protection bits for the Bank1_IFR0 area after the life cycle is advanced out of Develop. In the Develop life cycle state this field has no effect. For example, if using the In-Field life cycle and Bank1_IFR0 is being used as a recovery boot image (REC_BOOT_SRC = 1) and OEM_BANK1_IFR0_PROT value = 5 is selected), then for a regular boot using the primary image Bank1_IFR0 is mapped to GLBAC2. If the primary boot fails, and the recovery path is taken, then Bank1_IFR0 is mapped to GLBAC4 instead. Note: Settings 5-7 should not be used if Bank1_IFR0 is used as OEM_SBL (BOOT_SRC = 2). In Develop life cycle - All settings: MBC protection bits set as RWXL = 1110 (GLBAC0) In other life cycles –",
+                            "description": "Defines flash protection of Bank1_IFR0 area based on usage. The MBC module is used to configure the access protections as readable (R), writeable (W), and/or executable (X). The access protections can also be configured as locked (L) which prevents later application code from changing the access protection configuration. The final MBC protection bits used for Bank1_IFR0 depend on the boot mode configuration, the boot path that is selected and the device life cycle state. The access This field will only modify the MBC protection bits for the Bank1_IFR0 area after the life cycle is advanced out of Develop. In the Develop life cycle state this field has no effect. For example, if using the In-Field life cycle and Bank1_IFR0 is being used as a recovery boot image (REC_BOOT_SRC = 1) and OEM_BANK1_IFR0_PROT value = 5 is selected), then for a regular boot using the primary image Bank1_IFR0 is mapped to GLBAC2. If the primary boot fails, and the recovery path is taken, then Bank1_IFR0 is mapped to GLBAC4 instead. Note: Settings 5-7 should not be used if Bank1_IFR0 is used as OEM_SBL (BOOT_SRC = 2). In Develop life cycle - All settings: MBC protection bits set as RWXL = 1110 (GLBAC0) In other life cycles - 000: MBC protection bits set as RWXL = 1010 (GLBAC4) 001: MBC protection bits set as RWXL = 1010 (GLBAC4) 010: Used as OEM_SBL (BOOT_SRC = 2) - MBC protection bits set as RWXL = 1011 (GLBAC2). Other boot modes - MBC protection bits set as RWXL = 1010 (GLBAC4)",
                             "values": [
                                 {
                                     "name": "OEM_ROM_RWXL_CODE",
@@ -621,7 +621,19 @@
                             "width": 4,
                             "id": "field028-bits12-15",
                             "name": "CAN_ISP_INST",
-                            "description": "Identifies the instance used for CAN ISP mode"
+                            "description": "Identifies the instance used for CAN ISP mode",
+                            "values": [
+                                {
+                                    "name": "FOR_CAN0",
+                                    "value": 0,
+                                    "description": "For CAN0"
+                                },
+                                {
+                                    "name": "FOR_CAN1",
+                                    "value": 1,
+                                    "description": "For CAN1"
+                                }
+                            ]
                         },
                         {
                             "width": 8,
@@ -642,9 +654,12 @@
                             "description": "CAN baud rate. Baud rate configured during CAN ISP mode",
                             "values": [
                                 {
-                                    "name": "AUTO_DETECT",
+                                    "name": "AUTO_BAUDRATE",
                                     "value": 0,
-                                    "description": "Auto baud detection (125K, 250K, 500K, 750K, 1M)"
+                                    "description": "Auto baud detection (125K, 250K, 500K, 750K, 1M)",
+                                    "deprecated_names": [
+                                        "AUTO_DETECT"
+                                    ]
                                 },
                                 {
                                     "name": "KBPS_AUTO_0B0101",
@@ -839,7 +854,7 @@
                             "width": 3,
                             "id": "field038-bits16-18",
                             "name": "EXT_XTAL_CLK",
-                            "description": "USB PHY input clock frequency. For USB high speed PHY external XTAL input is needed. This field specifies the frequency of XTAL used on board. • 000 - 24MHz input clock (Divide by 20) • 001 - 30MHz input clock (Divide by 16) • 010 - 32MHz input clock (Divide by 15) • 011 - Reserved • 100 - 20MHz input clock (Divide by 24) • 101 - 19.2MHz input clock (Divide by 25) • 110 - 16MHz input clock (Divide by 30) - Default option when CMPA is blank. • 111 - 12MHz input clock (Divide by 40)",
+                            "description": "USB PHY input clock frequency. For USB high speed PHY external XTAL input is needed. This field specifies the frequency of XTAL used on board. - 000 - 24MHz input clock (Divide by 20) - 001 - 30MHz input clock (Divide by 16) - 010 - 32MHz input clock (Divide by 15) - 011 - Reserved - 100 - 20MHz input clock (Divide by 24) - 101 - 19.2MHz input clock (Divide by 25) - 110 - 16MHz input clock (Divide by 30) - Default option when CMPA is blank. - 111 - 12MHz input clock (Divide by 40)",
                             "values": [
                                 {
                                     "name": "XTAL_24MHZ",
