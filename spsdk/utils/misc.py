@@ -1099,6 +1099,13 @@ def load_configuration(path: str, search_paths: list[str] | None = None) -> dict
 
     if not config_data:
         error_to_show = _determine_primary_parsing_error(config, json_error, yaml_error)
+        if json_error and yaml_error and "\x00" in config:
+            # Both parsers failed and content contains null bytes — the path points to a
+            # binary file, not a text config. Raise SPSDKNotTextFileError so callers such
+            # as SegmentFcb/SegmentXmcd load_config() can trigger their binary fallback.
+            raise SPSDKNotTextFileError(
+                f"Configuration file is not a text file (binary content detected): {path}"
+            ) from error_to_show
         raise SPSDKParsingError(
             f"Can't parse configuration file: {path}: {error_to_show if error_to_show else 'Unknown error'}"
         ) from error_to_show
