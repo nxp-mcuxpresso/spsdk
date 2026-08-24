@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023,2025 NXP
+# Copyright 2020-2023,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -27,12 +26,12 @@ def test_empty_key_store() -> None:
     """
     key_store = KeyStore(KeySourceType.KEYSTORE)
     assert key_store.key_source == KeySourceType.KEYSTORE
-    assert key_store.export() == bytes()
+    assert key_store.export() == b""
     str(key_store)
     # OTP
     key_store = KeyStore(KeySourceType.OTP)
     assert key_store.key_source == KeySourceType.OTP
-    assert key_store.export() == bytes()
+    assert key_store.export() == b""
     str(key_store)
 
 

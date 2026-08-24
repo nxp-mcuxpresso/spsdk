@@ -78,7 +78,7 @@ signer: ../../_data/keys/ecc256/imgkey_ecc256.pem
 # Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
 # private key used for second sign (PQC only) of the container header. Header can be signed by SRK. The referenced SRK
 # must not have been revoked.
-signer_#2: ../../_data/keys/mldsa65/imgkey_mldsa65.pem
+signer_#2: ../../_data/keys/mldsa65/imgkey_mldsa65_native.pem
 
 # ======================================================================================================================
 #                                         == Configuration of AHAB SRK table ==

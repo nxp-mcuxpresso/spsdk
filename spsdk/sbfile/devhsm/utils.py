@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK DevHSM utility functions for secure boot file processing.
 
 This module provides utility functions for working with DevHSM (Development Hardware
@@ -11,7 +11,6 @@ Security Module) implementations across different secure boot file formats in SP
 """
 
 import logging
-from typing import Type, Union
 
 from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb4.devhsm import DevHsmSB4
@@ -26,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 def get_devhsm_class(
     family: FamilyRevision,
-) -> Type[Union["DevHsmSB4", "DevHsmSB31", "DevHsmSBx", "DevHsmSBc"]]:
+) -> type[DevHsmSB4 | DevHsmSB31 | DevHsmSBx | DevHsmSBc]:
     """Get DevHSM class based on chip family.
 
     The method retrieves the appropriate DevHSM class implementation by checking the database

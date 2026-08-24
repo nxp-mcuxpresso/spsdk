@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -14,7 +13,6 @@ for secure image signing operations.
 
 import logging
 from struct import pack, unpack
-from typing import Optional
 
 from typing_extensions import Self
 
@@ -61,8 +59,8 @@ class ContainerSignature(HeaderContainer):
 
     def __init__(
         self,
-        signature_data: Optional[bytes] = None,
-        signature_provider: Optional[SignatureProvider] = None,
+        signature_data: bytes | None = None,
+        signature_provider: SignatureProvider | None = None,
         signature_type: SignatureType = SignatureType.SRK_TABLE,
     ) -> None:
         """Initialize ContainerSignature object.
@@ -305,7 +303,7 @@ class ContainerSignature(HeaderContainer):
     def load_from_config(
         cls,
         config: Config,
-        srk_table: Optional[SRKTable] = None,
+        srk_table: SRKTable | None = None,
     ) -> Self:
         """Create ContainerSignature object from configuration options.
 

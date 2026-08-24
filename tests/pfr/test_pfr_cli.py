@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -152,6 +151,57 @@ def test_generate_cmpa_validate_export(cli_runner: CliRunner, data_dir: str, tmp
             reference_binary = load_binary(out_file)
             continue
         assert reference_binary == load_binary(out_file)
+
+
+def test_generate_cmpa_lpc55s1x_binary_cert_block_rsa4096(
+    cli_runner: CliRunner, data_dir: str, tmpdir: str
+) -> None:
+    """Test CMPA export for lpc55s1x using a binary cert block with RSA4096 chain certs.
+
+    Regression test for a certificate block built from 4 RSA4096 root certificates, each
+    with one RSA4096 chain certificate. Passing the binary certificate block as
+    ``--rot-config`` previously failed because parsing the cert block (with an unknown
+    family) raised an error while evaluating the RSA4096 chain-certificate constraint,
+    which was masked as a misleading "Unsupported MBI type detected" MBI parsing error.
+
+    The test verifies that the binary cert block (``--rot-config``) and the equivalent
+    set of root public keys (``--secret-file``) both export successfully and produce the
+    same CMPA binary as the reference output.
+
+    :param cli_runner: CLI test runner for invoking commands.
+    :param data_dir: Directory containing test data files and configurations.
+    :param tmpdir: Temporary directory for output files.
+    """
+    cert_dir = os.path.join(data_dir, "lpc55s1x_rsa4096_chain")
+    cmpa_cfg = os.path.join(cert_dir, "lpc55s1x_cmpa_rsa4096.yaml")
+    reference = load_binary(os.path.join(cert_dir, "lpc55s1x_cmpa_rsa4096.bin"))
+
+    # The originally broken path: binary cert block as ROT configuration
+    out_rot = os.path.join(tmpdir, "cmpa_rot.bin")
+    cli_runner.invoke(
+        cli.main,
+        [
+            "export",
+            "--output",
+            out_rot,
+            "--config",
+            cmpa_cfg,
+            "--rot-config",
+            os.path.join(cert_dir, "cert_block_rsa4096.bin"),
+        ],
+    )
+    assert load_binary(out_rot) == reference
+
+    # Equivalent path using the four root public keys
+    out_sf = os.path.join(tmpdir, "cmpa_sf.bin")
+    secret_file_args = []
+    for index in range(4):
+        secret_file_args += ["--secret-file", os.path.join(cert_dir, f"RoT_key{index}_rsa4096.pub")]
+    cli_runner.invoke(
+        cli.main,
+        ["export", "--output", out_sf, "--config", cmpa_cfg] + secret_file_args,
+    )
+    assert load_binary(out_sf) == reference
 
 
 def test_generate_cmpa(cli_runner: CliRunner, data_dir: str, tmpdir: str) -> None:
@@ -443,6 +493,7 @@ def test_pfrc_integration_1(
         ("mbi_config_lpc55s3x_bin_certblock.yaml"),
         ("cert_block_v21.yaml"),
         ("cert_block_v21.bin"),
+        ("mbi_lpc55s3x_signed.bin"),
     ],
 )
 def test_generate_cmpa_certblock_lpc55s3x(

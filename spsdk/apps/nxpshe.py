@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK NXP SHE (Secure Hardware Extension) protocol command-line tool.
 
 This module provides a command-line interface for working with NXP's SHE protocol,
@@ -20,6 +20,7 @@ from spsdk.apps.blhost_helper import display_output
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
+    hex_value_option,
     spsdk_apps_common_options,
     spsdk_config_option,
     spsdk_family_option,
@@ -231,19 +232,17 @@ def setup(interface: MbootProtocolBase, max_key_count: str, family: FamilyRevisi
 
 @main.command(name="reset", no_args_is_help=True)
 @spsdk_mboot_interface()
-@click.option(
+@hex_value_option(
     "-k",
     "--master-key",
-    type=str,
-    metavar="KEY|FILE",
+    bit_length=128,
+    help_description="Master key for SHE key storage reset",
     required=True,
-    help="Master key for SHE key storage reset (hex string or file path)",
 )
-def reset(interface: MbootProtocolBase, master_key: str) -> None:
+def reset(interface: MbootProtocolBase, master_key: bytes) -> None:
     """Reset SHE key storage configuration."""
     click.echo("Resetting SHE key storage configuration")
-    master_key_data = bytes.fromhex(load_secret(master_key))
-    debug_key = SHEDeriveKey.derive_debug_key(master_key_data)
+    debug_key = SHEDeriveKey.derive_debug_key(master_key)
 
     with McuBoot(interface) as mboot:
         result = mboot.kp_set_user_key(key_type=0xFF, key_data=debug_key)

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
@@ -16,7 +15,8 @@ fuse scripting and configuration management.
 import functools
 import logging
 from abc import abstractmethod
-from typing import Any, Callable, Iterator, Optional, Type, Union
+from collections.abc import Callable, Iterator
+from typing import Any
 
 from typing_extensions import Self
 
@@ -80,7 +80,7 @@ class FuseOperator:
     :cvar NAME: Operator name identifier for registration and lookup.
     """
 
-    NAME: Optional[str] = None
+    NAME: str | None = None
 
     def __str__(self) -> str:
         """Return string representation of the object.
@@ -152,7 +152,7 @@ class FuseOperator:
         """
 
     @classmethod
-    def get_operator_type(cls, name: str) -> Type["FuseOperator"]:
+    def get_operator_type(cls, name: str) -> type["FuseOperator"]:
         """Get operator type by its name.
 
         Searches through all FuseOperator subclasses to find the one matching the specified name.
@@ -554,7 +554,7 @@ class ShadowregsOperator(FuseOperator):
 
     NAME = "shadowregs"
 
-    def __init__(self, family: FamilyRevision, probe: Optional[DebugProbe] = None):
+    def __init__(self, family: FamilyRevision, probe: DebugProbe | None = None):
         """Initialize shadow registers operator.
 
         Creates a new instance of the shadow registers operator for the specified family.
@@ -814,7 +814,7 @@ class Fuses(FeatureBaseClassComm):
     def __init__(
         self,
         family: FamilyRevision,
-        fuse_operator: Optional[FuseOperator] = None,
+        fuse_operator: FuseOperator | None = None,
         cache: bool = True,
     ):
         """Initialize Fuses class to control fuse operations.
@@ -895,7 +895,7 @@ class Fuses(FeatureBaseClassComm):
         self._operator = value
 
     @property
-    def fuse_operator_type(self) -> Type[FuseOperator]:
+    def fuse_operator_type(self) -> type[FuseOperator]:
         """Get fuse operator type for the current family.
 
         Returns the appropriate FuseOperator class type that corresponds to the
@@ -906,7 +906,7 @@ class Fuses(FeatureBaseClassComm):
         return self.get_fuse_operator_type(self.family)
 
     @classmethod
-    def get_fuse_operator_type(cls, family: FamilyRevision) -> Type[FuseOperator]:
+    def get_fuse_operator_type(cls, family: FamilyRevision) -> type[FuseOperator]:
         """Get operator type based on family.
 
         Retrieves the appropriate FuseOperator type for the specified MCU family
@@ -960,7 +960,7 @@ class Fuses(FeatureBaseClassComm):
             logger.debug(f"Added lock fuse {reg.name} to cache")
 
     @classmethod
-    def load_from_config(cls, config: Config, fuse_operator: Optional[FuseOperator] = None) -> Self:
+    def load_from_config(cls, config: Config, fuse_operator: FuseOperator | None = None) -> Self:
         """Create fuses object from given configuration.
 
         This class method instantiates a new fuses object using the provided configuration
@@ -982,7 +982,7 @@ class Fuses(FeatureBaseClassComm):
         self,
         check_locks: bool = True,
         force: bool = False,
-        progress_callback: Optional[Callable[[int, int], None]] = None,
+        progress_callback: Callable[[int, int], None] | None = None,
     ) -> None:
         """Read all fuses from connected device.
 
@@ -1172,9 +1172,7 @@ class Fuses(FeatureBaseClassComm):
         if errors:
             raise SPSDKFuseOperationFailure(f"Writing the fuses failed with {errors} error(s)")
 
-    def set_value(
-        self, name: str, value: Union[bytes, bytearray, int, str], raw: bool = False
-    ) -> None:
+    def set_value(self, name: str, value: bytes | bytearray | int | str, raw: bool = False) -> None:
         """Set the value of a fuse register without writing to device.
 
         This method updates the local value of a fuse register identified by name,
@@ -1298,7 +1296,7 @@ class Fuses(FeatureBaseClassComm):
 
     def create_fuse_script(
         self,
-        reg_list: Optional[list[str]] = None,
+        reg_list: list[str] | None = None,
         loaded_only: bool = False,
         non_default_only: bool = False,
     ) -> str:
@@ -1367,7 +1365,7 @@ class FuseScript:
         self,
         family: FamilyRevision,
         feature: str,
-        index: Optional[int] = None,
+        index: int | None = None,
         fuses_key: str = "fuses",
     ):
         """Initialize FuseScript object.

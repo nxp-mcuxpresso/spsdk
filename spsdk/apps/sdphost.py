@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,7 +14,6 @@ register access, file transfers, and device configuration through SDP commands.
 import inspect
 import json
 import sys
-from typing import Optional
 
 import click
 
@@ -142,7 +140,7 @@ def read_register(
         )
     if output:
         misc.write_file(response, output, mode="wb")
-        click.echo(f"{len(response)} bytes written to {output}")
+        click.echo(f"{len(response)} bytes written to {misc.get_printable_path(output)}")
     else:
         click.echo(format_raw_data(response, use_hexdump=use_hexdump))
     display_output([], sdp.hab_status, ctx.obj["use_json"])
@@ -172,7 +170,7 @@ def set_baudrate(ctx: click.Context, baudrate: int) -> None:
 
 
 def display_output(
-    response: list, status_code: int, use_json: bool = False, extra_output: Optional[str] = None
+    response: list, status_code: int, use_json: bool = False, extra_output: str | None = None
 ) -> None:
     """Printout the response.
 
@@ -199,7 +197,7 @@ def display_output(
             print(extra_output)
 
 
-def decode_status_code(status_code: Optional[int] = None) -> str:
+def decode_status_code(status_code: int | None = None) -> str:
     """Returns a stringified representation of status code.
 
     :param status_code: SDP status code

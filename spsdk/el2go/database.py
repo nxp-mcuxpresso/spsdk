@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
@@ -19,7 +18,6 @@ import logging
 import sqlite3
 from dataclasses import dataclass
 from types import TracebackType
-from typing import Optional, Type, Union
 
 from filelock import FileLock, Timeout
 from typing_extensions import Self
@@ -71,7 +69,7 @@ class SecureObjectsDB(abc.ABC):
         """
 
     @abc.abstractmethod
-    def remove_secure_object(self, uuid: Union[str, list[str]]) -> bool:
+    def remove_secure_object(self, uuid: str | list[str]) -> bool:
         """Remove Secure Objects for given UUID(s).
 
         :param uuid: Single UUID string or list of UUID strings identifying the secure objects to remove.
@@ -134,9 +132,9 @@ class SecureObjectsDB(abc.ABC):
 
     def __exit__(
         self,
-        exc_type: Optional[Type[Exception]] = None,
-        exc_val: Optional[Exception] = None,
-        exc_tb: Optional[TracebackType] = None,
+        exc_type: type[Exception] | None = None,
+        exc_val: Exception | None = None,
+        exc_tb: TracebackType | None = None,
     ) -> None:
         """Exit the context manager and handle exceptions.
 
@@ -154,7 +152,7 @@ class SecureObjectsDB(abc.ABC):
 
     @classmethod
     def create(
-        cls, file_path: Optional[str] = None, host: Optional[str] = None, port: int = 8000
+        cls, file_path: str | None = None, host: str | None = None, port: int = 8000
     ) -> Self:
         """Create Secure Objects database.
 
@@ -186,7 +184,7 @@ class LocalDB(abc.ABC):
     used in SPSDK workflows.
     """
 
-    def __init__(self, file_path: str, lock_timeout: Optional[int] = 10) -> None:
+    def __init__(self, file_path: str, lock_timeout: int | None = 10) -> None:
         """Initialize local batch processing database.
 
         Sets up a SQLite database connection with optional file locking for concurrent access
@@ -197,8 +195,8 @@ class LocalDB(abc.ABC):
         """
         self.file_path = file_path
         self.lock = FileLock(f"{file_path}.lock", timeout=lock_timeout) if lock_timeout else None
-        self.connection: Optional[sqlite3.Connection] = None
-        self.cursor: Optional[sqlite3.Cursor] = None
+        self.connection: sqlite3.Connection | None = None
+        self.cursor: sqlite3.Cursor | None = None
         self._setup_db()
 
     def open(self) -> None:
@@ -259,9 +257,9 @@ class LocalDB(abc.ABC):
 
     def __exit__(
         self,
-        exc_type: Optional[Type[Exception]] = None,
-        exc_val: Optional[Exception] = None,
-        exc_tb: Optional[TracebackType] = None,
+        exc_type: type[Exception] | None = None,
+        exc_val: Exception | None = None,
+        exc_tb: TracebackType | None = None,
     ) -> None:
         """Exit the database context manager and handle exceptions.
 
@@ -326,7 +324,7 @@ class LocalSecureObjectsDB(LocalDB, SecureObjectsDB):
         logger.debug("Setting up a database")
         with self:
             cursor = self._sanitize_cursor()
-            cursor.executescript("""
+            create_tables_script = """
                 CREATE TABLE IF NOT EXISTS settings (
                     "name" varchar NOT NULL,
                     "value" text NOT NULL
@@ -335,7 +333,8 @@ class LocalSecureObjectsDB(LocalDB, SecureObjectsDB):
                     "uuid" varchar(32) NOT NULL PRIMARY KEY,
                     "so" blob NULL
                 );
-                """)
+                """
+            cursor.executescript(create_tables_script)
 
     def add_uuid(self, uuid: str) -> bool:
         """Add UUID into the database.
@@ -372,7 +371,7 @@ class LocalSecureObjectsDB(LocalDB, SecureObjectsDB):
         cursor.execute("UPDATE objects SET so = ? WHERE uuid = ?", (so, uuid))
         cursor.connection.commit()
 
-    def remove_secure_object(self, uuid: Union[str, list[str]]) -> bool:
+    def remove_secure_object(self, uuid: str | list[str]) -> bool:
         """Remove Secure Objects for given UUID(s).
 
         This method removes secure objects from the database by setting the 'so' column to null
@@ -506,7 +505,7 @@ class RemoteSecureObjectsDB(HTTPClientBase, SecureObjectsDB):
         if not response.ok:
             raise SPSDKError(f"Failed to add Secure Object for UUID {uuid}")
 
-    def remove_secure_object(self, uuid: Union[str, list[str]]) -> bool:
+    def remove_secure_object(self, uuid: str | list[str]) -> bool:
         """Remove Secure Objects for given UUID(s).
 
         :param uuid: Single UUID string or list of UUID strings identifying the secure objects to remove.
@@ -627,7 +626,7 @@ class LocalProductBasedBatchDB(LocalDB):
         with self:
             # Create table if not exists with appropriate schema
             cursor = self._sanitize_cursor()
-            cursor.executescript("""
+            create_tables_script = """
                 CREATE TABLE IF NOT EXISTS static (
                     version INTEGER DEFAULT 1,
                     job_id TEXT,
@@ -648,16 +647,17 @@ class LocalProductBasedBatchDB(LocalDB):
                     report BLOB,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
-                """)
+                """
+            cursor.executescript(create_tables_script)
 
-    def __init__(self, file_path: str, lock_timeout: Optional[int] = 10):
+    def __init__(self, file_path: str, lock_timeout: int | None = 10):
         """Initialize local product-based database.
 
         :param file_path: Path to the database file.
         :param lock_timeout: Timeout in seconds for database lock acquisition, defaults to 10.
         """
         super().__init__(file_path, lock_timeout=lock_timeout)
-        self._attestation_key: Optional[PublicKey] = None
+        self._attestation_key: PublicKey | None = None
 
     @property
     def attestation_key(self) -> PublicKey:
@@ -831,7 +831,7 @@ class LocalProductBasedBatchDB(LocalDB):
         puk_data = data["metadata"]["provisioningReportAttestationKey"]["publicKey"]
         puk = base64.b64decode(puk_data)
         has_dynamic = "dynamicProvisionings" in data
-        secure_object = bytes()
+        secure_object = b""
         for static_record in data["staticProvisionings"]:
             object_data = base64.b64decode(static_record["data"])
             secure_object += object_data
@@ -841,7 +841,7 @@ class LocalProductBasedBatchDB(LocalDB):
             return
 
         for virtual_uuid, dynamic_records in data["dynamicProvisionings"].items():
-            secure_object = bytes()
+            secure_object = b""
             for dynamic_record in dynamic_records:
                 dynamic_object_data = base64.b64decode(dynamic_record["data"])
                 secure_object += dynamic_object_data

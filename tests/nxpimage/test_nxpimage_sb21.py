@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -211,7 +210,7 @@ def test_sb_21_invalid_parse() -> None:
     :raises SPSDKError: When KEK parameter is empty bytes.
     """
     with pytest.raises(SPSDKError, match="kek cannot be empty"):
-        BootImageV21.parse(data=bytes(232), kek=bytes())
+        BootImageV21.parse(data=bytes(232), kek=b"")
 
 
 def test_nxpimage_sbkek_cli(cli_runner: CliRunner, tmpdir: Any) -> None:

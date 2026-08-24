@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK SB3.1 command validators test suite.
 
 This module contains comprehensive tests for the SB3.1 command validation system,

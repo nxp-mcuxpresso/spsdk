@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -15,7 +14,8 @@ with validation capabilities.
 
 import json
 import logging
-from typing import Any, Generic, Iterator, Mapping, Optional, Type, TypeVar, Union, cast
+from collections.abc import Iterator, Mapping
+from typing import Any, Generic, TypeVar, cast
 
 from typing_extensions import Self
 
@@ -43,7 +43,7 @@ from spsdk.utils.misc import (
 )
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
-HTMLDataElement = Mapping[str, Union[str, dict, list]]
+HTMLDataElement = Mapping[str, str | dict | list]
 HTMLData = list[HTMLDataElement]
 
 logger = logging.getLogger(__name__)
@@ -107,7 +107,7 @@ class RegsEnum:
         value: Any,
         description: str,
         max_width: int = 0,
-        deprecated_names: Optional[list[str]] = None,
+        deprecated_names: list[str] | None = None,
     ) -> None:
         """Initialize RegsEnum with enumeration information for bitfield.
 
@@ -157,7 +157,7 @@ class RegsEnum:
 
         return cls(name, value, description, maxwidth, deprecated_names=deprecated_names)
 
-    def create_spec(self) -> dict[str, Union[str, int]]:
+    def create_spec(self) -> dict[str, str | int]:
         """Creates the enumeration specification.
 
         The method builds a dictionary containing the enumeration's name, value, description,
@@ -165,13 +165,13 @@ class RegsEnum:
 
         :return: The specification dictionary containing enum properties.
         """
-        spec: dict[str, Union[str, int, list[str]]] = {}
+        spec: dict[str, str | int | list[str]] = {}
         spec["name"] = self.name
         spec["value"] = self.value
         spec["description"] = self.description
         if self.deprecated_names:
             spec["deprecated_names"] = self.deprecated_names
-        return cast(dict[str, Union[str, int]], spec)
+        return cast(dict[str, str | int], spec)
 
     def get_value_int(self) -> int:
         """Get integer value of the enum.
@@ -322,7 +322,7 @@ class ConfigProcessor:
         return cls(config_string)
 
     @classmethod
-    def from_spec(cls, spec: Optional[str]) -> Optional["ConfigProcessor"]:
+    def from_spec(cls, spec: str | None) -> "ConfigProcessor | None":
         """Create config processor from JSON data entry.
 
         Factory method that creates appropriate ConfigProcessor subclass instance based on
@@ -431,12 +431,12 @@ class RegsBitField:
         offset: int,
         width: int,
         uid: str,
-        description: Optional[str] = None,
+        description: str | None = None,
         access: Access = Access.RW,
         reserved: bool = False,
-        config_processor: Optional[ConfigProcessor] = None,
+        config_processor: ConfigProcessor | None = None,
         no_yaml_comments: bool = False,
-        deprecated_names: Optional[list[str]] = None,
+        deprecated_names: list[str] | None = None,
     ) -> None:
         """Initialize RegsBitField instance.
 
@@ -475,7 +475,7 @@ class RegsBitField:
         spec: dict[str, Any],
         offset: int,
         parent: "Register",
-        bitfield_mods: Optional[dict[str, Any]] = None,
+        bitfield_mods: dict[str, Any] | None = None,
     ) -> "RegsBitField":
         """Create register bitfield from specification dictionary.
 
@@ -662,7 +662,7 @@ class RegsBitField:
         reg_val = reg_val | value
         self.parent.set_value(reg_val, raw)
 
-    def set_enum_value(self, new_val: Union[str, int], raw: bool = False) -> None:
+    def set_enum_value(self, new_val: str | int, raw: bool = False) -> None:
         """Update bitfield value using enum value or integer.
 
         The input value can be either string enum or integer. If string is used, the method tries to decode it.
@@ -692,7 +692,7 @@ class RegsBitField:
                 ) from exc
         self.set_value(val_int, raw, no_preprocess)
 
-    def get_enum_value(self) -> Union[str, int]:
+    def get_enum_value(self) -> str | int:
         """Get enum value of the bitfield.
 
         Retrieves the enumerated value corresponding to the current bitfield value.
@@ -720,7 +720,7 @@ class RegsBitField:
         val = f"0x{format(self.get_value(), fmt)}"
         return val
 
-    def get_enum_constant(self, enum_name: Union[str, int]) -> int:
+    def get_enum_constant(self, enum_name: str | int) -> int:
         """Get constant representation of enum by its name or value.
 
         The method searches through available enums to find a match by name (case-insensitive)
@@ -800,7 +800,7 @@ class RegsBitField:
         """
         return f"<BitField {self.name} = {self.get_hex_value()}>"
 
-    def find_config_key(self, cfg: Config) -> Optional[str]:
+    def find_config_key(self, cfg: Config) -> str | None:
         """Find which bitfield name (current or deprecated) is in the config and return its key.
 
         The method searches for the bitfield name in the configuration dictionary using multiple
@@ -843,17 +843,17 @@ class Register:
         offset: int,
         width: int,
         uid: str,
-        description: Optional[str] = None,
-        default_value: Optional[int] = None,
+        description: str | None = None,
+        default_value: int | None = None,
         reverse: bool = False,
         access: Access = Access.RW,
         config_as_hexstring: bool = False,
         reverse_subregs_order: bool = False,
         base_endianness: Endianness = Endianness.BIG,
-        alt_widths: Optional[list[int]] = None,
+        alt_widths: list[int] | None = None,
         reserved: bool = False,
         no_yaml_comments: bool = False,
-        deprecated_names: Optional[list[str]] = None,
+        deprecated_names: list[str] | None = None,
     ) -> None:
         """Initialize RegsRegister instance with register configuration.
 
@@ -937,9 +937,7 @@ class Register:
         return True
 
     @classmethod
-    def create_from_spec(
-        cls, spec: dict[str, Any], reg_mods: Optional[dict[str, Any]] = None
-    ) -> Self:
+    def create_from_spec(cls, spec: dict[str, Any], reg_mods: dict[str, Any] | None = None) -> Self:
         """Create register instance from specification dictionary.
 
         This class method creates a new register instance by parsing the provided
@@ -1037,7 +1035,7 @@ class Register:
         :return: Dictionary containing the complete register specification with all metadata
             and bitfield definitions.
         """
-        spec: dict[str, Union[str, list]] = {}
+        spec: dict[str, str | list] = {}
         spec["id"] = self._get_uid()
         spec["offset_int"] = hex(self.offset)
         spec["reg_width"] = str(self.width)
@@ -1279,7 +1277,7 @@ class Register:
         """
         self._bitfields.append(bitfield)
 
-    def get_bitfields(self, exclude: Optional[list[str]] = None) -> list[RegsBitField]:
+    def get_bitfields(self, exclude: list[str] | None = None) -> list[RegsBitField]:
         """Get register bitfields with optional exclusion filtering.
 
         Method allows excluding specific bitfields by their names using prefix matching.
@@ -1297,7 +1295,7 @@ class Register:
             ret.append(bitf)
         return ret
 
-    def get_bitfield_names(self, exclude: Optional[list[str]] = None) -> list[str]:
+    def get_bitfield_names(self, exclude: list[str] | None = None) -> list[str]:
         """Get list of bitfield names.
 
         :param exclude: List of bitfield names to exclude from the result, defaults to None.
@@ -1390,7 +1388,7 @@ class Register:
         """
         return self.get_reset_value() == self.get_value(raw=True)
 
-    def find_config_key(self, cfg: Config) -> Optional[str]:
+    def find_config_key(self, cfg: Config) -> str | None:
         """Find which register name (current or deprecated) is in the config and return its key.
 
         The method searches for the register name in the configuration dictionary using multiple
@@ -1433,7 +1431,7 @@ class _RegistersBase(Generic[RegisterClassT]):
     :cvar TEMPLATE_NOTE: Documentation note about register value definitions.
     """
 
-    register_class: Type[RegisterClassT]
+    register_class: type[RegisterClassT]
     TEMPLATE_NOTE = (
         "All registers is possible to define also as one value although the bitfields are used. "
         "Instead of bitfields: ... field, the value: ... definition works as well."
@@ -1443,7 +1441,7 @@ class _RegistersBase(Generic[RegisterClassT]):
         self,
         family: FamilyRevision,
         feature: str,
-        base_key: Optional[Union[list[str], str]] = None,
+        base_key: list[str] | str | None = None,
         base_endianness: Endianness = Endianness.BIG,
         just_standard_library_data: bool = False,
         do_not_raise_exception: bool = False,
@@ -1522,7 +1520,7 @@ class _RegistersBase(Generic[RegisterClassT]):
         """
         return len(self._registers)
 
-    def _create_key(self, key: str) -> Union[str, list[str]]:
+    def _create_key(self, key: str) -> str | list[str]:
         """Create the final key path for database access.
 
         The method combines the base key path with the requested key to form
@@ -1690,7 +1688,7 @@ class _RegistersBase(Generic[RegisterClassT]):
 
     def get_registers(
         self,
-        exclude: Optional[list[str]] = None,
+        exclude: list[str] | None = None,
         include_group_regs: bool = False,
         include_reserved: bool = False,
     ) -> list[RegisterClassT]:
@@ -1721,7 +1719,7 @@ class _RegistersBase(Generic[RegisterClassT]):
         return [x for x in regs if not x.reserved]
 
     def get_reg_names(
-        self, exclude: Optional[list[str]] = None, include_group_regs: bool = False
+        self, exclude: list[str] | None = None, include_group_regs: bool = False
     ) -> list[str]:
         """Get list of register names.
 
@@ -1734,7 +1732,7 @@ class _RegistersBase(Generic[RegisterClassT]):
         """
         return [x.name for x in self.get_registers(exclude, include_group_regs)]
 
-    def reset_values(self, exclude: Optional[list[str]] = None) -> None:
+    def reset_values(self, exclude: list[str] | None = None) -> None:
         """Reset all register values to their default state.
 
         This method iterates through all registers and resets each one to its
@@ -1782,7 +1780,7 @@ class _RegistersBase(Generic[RegisterClassT]):
         image = BinaryImage(self.family.name, size=size, pattern=pattern)
         for reg in self._registers:
             if reg.has_group_registers():
-                data = bytes()
+                data = b""
                 for sub_reg in reg.sub_regs:
                     data += sub_reg.get_bytes_value(raw=True)
             else:
@@ -1863,7 +1861,7 @@ class _RegistersBase(Generic[RegisterClassT]):
 
     def get_diff(
         self, other: Self
-    ) -> list[Union[tuple[RegsBitField, RegsBitField], tuple[Register, Register]]]:
+    ) -> list[tuple[RegsBitField, RegsBitField] | tuple[Register, Register]]:
         """Compare registers and bitfields between two register collections.
 
         The tuples contain "expected" and "actual" value respectively.
@@ -1873,7 +1871,7 @@ class _RegistersBase(Generic[RegisterClassT]):
         :param other: Another register collection to compare against.
         :return: List of tuples containing differing registers or bitfields.
         """
-        diffs: list[Union[tuple[RegsBitField, RegsBitField], tuple[Register, Register]]] = []
+        diffs: list[tuple[RegsBitField, RegsBitField] | tuple[Register, Register]] = []
         for r1, r2 in zip(self.get_registers(), other.get_registers()):
             if len(r1.get_bitfields()) == 0:
                 if r1.get_value() != r2.get_value():
@@ -2068,8 +2066,8 @@ class _RegistersBase(Generic[RegisterClassT]):
 
     @classmethod
     def _get_register_group(
-        cls, reg: RegisterClassT, grouped_regs: Optional[list[dict]] = None
-    ) -> Optional[dict]:
+        cls, reg: RegisterClassT, grouped_regs: list[dict] | None = None
+    ) -> dict | None:
         """Help function to recognize if the register should be part of group.
 
         :param reg: Register object to check for group membership.
@@ -2085,9 +2083,9 @@ class _RegistersBase(Generic[RegisterClassT]):
     def _load_from_spec(
         self,
         config: dict[str, Any],
-        grouped_regs: Optional[list[dict]] = None,
-        reg_spec_modifications: Optional[dict[str, dict]] = None,
-        deprecated_reg_names: Optional[dict[str, dict[str, Any]]] = None,
+        grouped_regs: list[dict] | None = None,
+        reg_spec_modifications: dict[str, dict] | None = None,
+        deprecated_reg_names: dict[str, dict[str, Any]] | None = None,
     ) -> None:
         """Load registers from specification configuration.
 
@@ -2145,9 +2143,9 @@ class _RegistersBase(Generic[RegisterClassT]):
     def _load_spec(
         self,
         spec_file: str,
-        grouped_regs: Optional[list[dict]] = None,
-        reg_spec_modifications: Optional[dict[str, dict]] = None,
-        deprecated_regs: Optional[dict[str, dict[str, Any]]] = None,
+        grouped_regs: list[dict] | None = None,
+        reg_spec_modifications: dict[str, dict] | None = None,
+        deprecated_regs: dict[str, dict[str, Any]] | None = None,
     ) -> None:
         """Load registers from JSON specification file.
 
@@ -2161,7 +2159,7 @@ class _RegistersBase(Generic[RegisterClassT]):
         :raises SPSDKError: JSON parsing error occurs or file cannot be read.
         """
         try:
-            with open(spec_file, "r", encoding="utf-8") as f:
+            with open(spec_file, encoding="utf-8") as f:
                 spec = json.load(f)
         except json.JSONDecodeError as exc:
             raise SPSDKError(

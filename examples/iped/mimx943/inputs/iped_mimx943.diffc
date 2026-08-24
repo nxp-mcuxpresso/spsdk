@@ -1,0 +1,12 @@
+# Configuration file for YAML diff widget showing the difference
+# between the generated template and the user configuration.
+template_yaml: workspace/iped_mimx943.yaml
+user_cfg: inputs/iped_config.yaml
+custom_command: "%! nxpimage iped get-template -f mimx943 -o workspace/iped_mimx943.yaml --force"
+
+comments:
+  user_key: "128-bit key programmed into IPED0_KEY fuses (OTP words 180-183)"
+  fw_version: "Firmware version for IV derivation (anti-rollback counter)"
+  xspi_instance: "Only xspi1 is supported on i.MX943 for IPED"
+  regions: "Define memory regions for PRINCE encryption (up to 4 regions)"
+  data_blobs: "Firmware binary files to encrypt with their target addresses"

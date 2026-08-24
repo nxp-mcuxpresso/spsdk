@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -15,8 +14,9 @@ boot and runtime protection of code and data.
 
 import logging
 import os
+from collections.abc import Sequence
 from struct import calcsize, pack, unpack_from
-from typing import Any, Optional, Sequence
+from typing import Any
 
 from typing_extensions import Self
 
@@ -326,7 +326,7 @@ class BeeProtectRegionBlock(BeeBaseClass):
         self,
         encr_mode: BeeProtectRegionBlockAesMode = BeeProtectRegionBlockAesMode.CTR,
         lock_options: int = 0,
-        counter: Optional[bytes] = None,
+        counter: bytes | None = None,
     ):
         """Initialize BEE protect region block.
 
@@ -578,7 +578,7 @@ class BeeKIB(BeeBaseClass):
     # format of the binary representation of the class, used as parameter for struct.pack/unpack methods
     _FORMAT = "16s16s"
 
-    def __init__(self, kib_key: Optional[bytes] = None, kib_iv: Optional[bytes] = None):
+    def __init__(self, kib_key: bytes | None = None, kib_iv: bytes | None = None):
         """Initialize BEE (Bus Encryption Engine) configuration.
 
         Creates a new BEE instance with AES encryption parameters. If key or IV are not
@@ -691,9 +691,9 @@ class BeeRegionHeader(BeeBaseClass):
 
     def __init__(
         self,
-        prdb: Optional[BeeProtectRegionBlock] = None,
-        sw_key: Optional[bytes] = None,
-        kib: Optional[BeeKIB] = None,
+        prdb: BeeProtectRegionBlock | None = None,
+        sw_key: bytes | None = None,
+        kib: BeeKIB | None = None,
     ):
         """Initialize BEE (Bus Encryption Engine) configuration.
 
@@ -865,9 +865,9 @@ class Bee(FeatureBaseClass):
     def __init__(
         self,
         family: FamilyRevision,
-        headers: list[Optional[BeeRegionHeader]],
+        headers: list[BeeRegionHeader | None],
         input_images: list[tuple[bytes, int]],
-        generated_keys: Optional[dict[int, dict[str, bytes]]] = None,
+        generated_keys: dict[int, dict[str, bytes]] | None = None,
     ):
         """Initialize BEE (Bus Encryption Engine) configuration.
 
@@ -925,7 +925,7 @@ class Bee(FeatureBaseClass):
         :return: Encrypted binary image data, or empty bytes if no input images are available.
         """
         if not self.input_images:
-            return bytes()
+            return b""
 
         # For backward compatibility, if there's only one image, just return it encrypted
         if len(self.input_images) == 1 and self.input_images[0][0]:
@@ -972,7 +972,7 @@ class Bee(FeatureBaseClass):
 
         return bytes(encrypted_data)
 
-    def export_headers(self) -> list[Optional[bytes]]:
+    def export_headers(self) -> list[bytes | None]:
         """Export BEE headers for all configured regions.
 
         The method iterates through all BEE headers and exports them as bytes. If a header
@@ -980,7 +980,7 @@ class Bee(FeatureBaseClass):
 
         :return: List of exported BEE region headers as bytes, or None for unconfigured regions.
         """
-        headers: list[Optional[bytes]] = [None, None]
+        headers: list[bytes | None] = [None, None]
         for idx, header in enumerate(self.headers):
             headers[idx] = header.export() if header else None
 
@@ -1032,7 +1032,7 @@ class Bee(FeatureBaseClass):
                 )
 
     @staticmethod
-    def check_overlaps(bee_headers: list[Optional[BeeRegionHeader]], start_addr: int) -> None:
+    def check_overlaps(bee_headers: list[BeeRegionHeader | None], start_addr: int) -> None:
         """Check for overlaps in regions.
 
         Validates that a given start address does not overlap with any existing
@@ -1086,7 +1086,7 @@ class Bee(FeatureBaseClass):
         engine_selection = config.get_str("engine_selection")
         bee_engines = config.get_list_of_configs("bee_engine")
 
-        bee_headers: list[Optional[BeeRegionHeader]] = [None, None]
+        bee_headers: list[BeeRegionHeader | None] = [None, None]
         generated_keys: dict[int, dict[str, bytes]] = {}
 
         engine_selections = {"engine0": [0], "engine1": [1], "both": [0, 1]}

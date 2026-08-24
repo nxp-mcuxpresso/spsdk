@@ -2,6 +2,30 @@ Crypto Module API
 =================
 .. automodule:: spsdk.crypto
 
+PQC key support
+----------------
+
+SPSDK uses different backends for the two supported post-quantum signature
+families:
+
+* ``ML-DSA`` is implemented in the core ``spsdk.crypto.keys`` module on top of
+  ``cryptography``.
+* ``Dilithium`` is still provided by the optional ``spsdk_pqc`` plugin.
+
+ML-DSA loading in SPSDK follows this compatibility order:
+
+#. native ``cryptography`` ML-DSA key material, including normalized
+   ``BEGIN ML-DSA-*`` PEM labels,
+#. built-in conversion of legacy ML-DSA public keys,
+#. built-in conversion of legacy seed-based ML-DSA private keys,
+#. compatibility fallback to ``spsdk_pqc`` for legacy expanded-secret ML-DSA
+   private keys.
+
+The last case is kept only for backward compatibility with older key material.
+Those expanded-secret private keys are not convertible to native
+``cryptography`` private keys inside SPSDK, so SPSDK warns when it has to use
+that fallback path.
+
 Crypto module key generation
 ------------------------------
 
@@ -108,4 +132,3 @@ Crypto exceptions
    :members:
    :undoc-members:
    :show-inheritance:
-

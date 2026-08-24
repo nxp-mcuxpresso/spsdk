@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -15,10 +14,11 @@ in the SPSDK debuggers package.
 import pytest
 
 import spsdk.debuggers.debug_probe as DP
+import spsdk.debuggers.debug_probe_arm as DP_ARM
 from spsdk.exceptions import SPSDKError
 
 
-class DummyCoreSightProbe(DP.DebugProbeCoreSightOnly):
+class DummyCoreSightProbe(DP_ARM.DebugProbeCoreSightOnly):
     """Dummy CoreSight-only probe for non-hardware tests."""
 
     def __init__(self, hardware_id: str, options: dict | None = None) -> None:
@@ -60,32 +60,6 @@ class DummyCoreSightProbe(DP.DebugProbeCoreSightOnly):
         return 0
 
 
-class DummyMemApScanProbe(DummyCoreSightProbe):
-    """Dummy probe for testing MEM-AP scan DHCSR restore behavior."""
-
-    def __init__(self, hardware_id: str, options: dict | None = None) -> None:
-        """Initialize dummy MEM-AP scan probe."""
-        super().__init__(hardware_id, options)
-        self.mem_writes: list[tuple[int, int, int]] = []
-
-    def coresight_reg_read(self, access_port: bool = True, addr: int = 0) -> int:
-        """Return MEM-AP IDR on AP0 so get_mem_ap() scan can select it."""
-        ap0_idr_addr = self.get_coresight_ap_address(access_port=0, address=self.AP_IDR_REG)
-        if access_port and addr == ap0_idr_addr:
-            return 0x00010001
-        return super().coresight_reg_read(access_port=access_port, addr=addr)
-
-    def _mem_reg_read(self, mem_ap_ix: int, addr: int = 0) -> int:
-        """Provide deterministic values for DHCSR and memory-read test points."""
-        if addr == self.DHCSR_REG:
-            return 0x12345678
-        return 0
-
-    def _mem_reg_write(self, mem_ap_ix: int, addr: int = 0, data: int = 0) -> None:
-        """Capture raw memory writes performed by MEM-AP scan."""
-        self.mem_writes.append((mem_ap_ix, addr, data))
-
-
 def test_probe_ap_address() -> None:
     """Test Debug Probe AP address calculation functionality.
 
@@ -96,9 +70,9 @@ def test_probe_ap_address() -> None:
     :raises SPSDKError: When invalid AP index or address parameters are provided.
     :raises ValueError: When parameter values are out of valid range.
     """
-    assert DP.DebugProbe.get_coresight_ap_address(8, 8) == 0x08000008
+    assert DP_ARM.DebugProbeCoreSightOnly.get_coresight_ap_address(8, 8) == 0x08000008
     with pytest.raises((SPSDKError, ValueError)):
-        assert DP.DebugProbe.get_coresight_ap_address(256, 8) == 0xFF000008
+        assert DP_ARM.DebugProbeCoreSightOnly.get_coresight_ap_address(256, 8) == 0xFF000008
 
 
 def test_initialize_debug_port_clears_sticky_errors_and_powers_up() -> None:
@@ -121,20 +95,6 @@ def test_probe_options_are_not_mutated() -> None:
     DummyCoreSightProbe("dummy", options)
 
     assert options == {"family": "lpc55s69", "revision": "latest", "test_address": 0x20000000}
-
-
-def test_get_mem_ap_restores_dhcsr_with_debug_key() -> None:
-    """Test MEM-AP scan restores DHCSR using DEBUGKEY and original low control bits."""
-    probe = DummyMemApScanProbe("dummy")
-
-    probe.mem_reg_read(0x20000000)
-
-    assert (
-        0,
-        probe.DHCSR_REG,
-        probe.DHCSR_DEBUGKEY | probe.DHCSR_C_HALT | probe.DHCSR_C_DEBUGEN,
-    ) in probe.mem_writes
-    assert (0, probe.DHCSR_REG, probe.DHCSR_DEBUGKEY | 0x5678) in probe.mem_writes
 
 
 def test_mcxe31b_mem_ap_settings_are_database_driven() -> None:
@@ -187,3 +147,43 @@ def test_lpc55sxx_mem_ap_settings_keep_standard_behavior(family: str) -> None:
     assert probe.enable_sda_debug_paths_after_connect is False
     assert probe.preserve_csw_ro_bits is False
     assert probe.mem_ap_scan_write_before_read is False
+
+
+class DummyMemApScanProbe(DummyCoreSightProbe):
+    """Dummy probe for testing MEM-AP scan DHCSR restore behavior."""
+
+    def __init__(self, hardware_id: str, options: dict | None = None) -> None:
+        """Initialize dummy MEM-AP scan probe."""
+        super().__init__(hardware_id, options)
+        self.mem_writes: list[tuple[int, int, int]] = []
+
+    def coresight_reg_read(self, access_port: bool = True, addr: int = 0) -> int:
+        """Return MEM-AP IDR on AP0 so get_mem_ap() scan can select it."""
+        ap0_idr_addr = self.get_coresight_ap_address(access_port=0, address=self.AP_IDR_REG)
+        if access_port and addr == ap0_idr_addr:
+            return 0x00010001
+        return super().coresight_reg_read(access_port=access_port, addr=addr)
+
+    def _mem_reg_read(self, mem_ap_ix: int, addr: int = 0) -> int:
+        """Provide deterministic values for DHCSR and memory-read test points."""
+        if addr == self.DHCSR_REG:
+            return 0x12345678
+        return 0
+
+    def _mem_reg_write(self, mem_ap_ix: int, addr: int = 0, data: int = 0) -> None:
+        """Capture raw memory writes performed by MEM-AP scan."""
+        self.mem_writes.append((mem_ap_ix, addr, data))
+
+
+def test_get_mem_ap_restores_dhcsr_with_debug_key() -> None:
+    """Test MEM-AP scan restores DHCSR using DEBUGKEY and original low control bits."""
+    probe = DummyMemApScanProbe("dummy")
+
+    probe.mem_reg_read(0x20000000)
+
+    assert (
+        0,
+        probe.DHCSR_REG,
+        probe.DHCSR_DEBUGKEY | probe.DHCSR_C_HALT | probe.DHCSR_C_DEBUGEN,
+    ) in probe.mem_writes
+    assert (0, probe.DHCSR_REG, probe.DHCSR_DEBUGKEY | 0x5678) in probe.mem_writes

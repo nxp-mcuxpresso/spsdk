@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
@@ -16,10 +15,10 @@ import inspect
 import json
 import sys
 from http import HTTPStatus
-from typing import Any, Optional, Type, Union
+from typing import Any, TypeAlias
 
 import requests
-from typing_extensions import Self, TypeAlias
+from typing_extensions import Self
 
 from spsdk import SPSDK_LOG_LEVEL_TRACE
 from spsdk import __version__ as spsdk_version
@@ -67,7 +66,7 @@ class SPSDKHTTPClientError(SPSDKError):
     status codes and response data for debugging and error handling.
     """
 
-    def __init__(self, status_code: int, response: dict, desc: Optional[str] = None) -> None:
+    def __init__(self, status_code: int, response: dict, desc: str | None = None) -> None:
         """Initialize HTTP Client Error object.
 
         :param status_code: HTTP status code from the failed request.
@@ -100,11 +99,11 @@ class HTTPClientBase(abc.ABC):
         self,
         host: str = "localhost",
         port: int = 8000,
-        url_prefix: Optional[str] = "api",
+        url_prefix: str | None = "api",
         timeout: int = 60,
         use_ssl: bool = False,
         raise_exceptions: bool = True,
-        **kwargs: Union[str, int, bool],
+        **kwargs: str | int | bool,
     ) -> None:
         """Initialize HTTP Client.
 
@@ -156,8 +155,8 @@ class HTTPClientBase(abc.ABC):
         self,
         method: Method,
         url: str,
-        param_data: Optional[dict] = None,
-        json_data: Optional[dict] = None,
+        param_data: dict | None = None,
+        json_data: dict | None = None,
     ) -> requests.Response:
         """Handle REST API request.
 
@@ -201,7 +200,7 @@ class HTTPClientBase(abc.ABC):
 
     # pylint: disable=no-self-use  # derived classes may use self object
     def _check_response(
-        self, response: requests.Response, names_types: list[tuple[str, Type]]
+        self, response: requests.Response, names_types: list[tuple[str, type]]
     ) -> dict:
         """Check if the response contains required data.
 
@@ -266,8 +265,8 @@ class HTTPClientBase(abc.ABC):
     def get_config_template(
         cls,
         family: FamilyRevision,
-        schemas: Optional[list[dict]] = None,
-        title: Optional[str] = None,
+        schemas: list[dict] | None = None,
+        title: str | None = None,
     ) -> str:
         """Generate configuration YAML template.
 

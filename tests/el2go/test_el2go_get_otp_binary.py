@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK EL2GO OTP binary generation tests.
 
 This module contains unit tests for the EL2GO application's OTP (One-Time Programmable)

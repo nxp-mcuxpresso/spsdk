@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -17,7 +16,6 @@ operations, and system control functions.
 
 import logging
 from struct import pack, unpack
-from typing import Optional
 
 from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.ele.ele_constants import (
@@ -74,6 +72,7 @@ class EleMessage:
     ELE_MSG_ALIGN = 8
     MAX_RESPONSE_DATA_SIZE = 0
     MAX_COMMAND_DATA_SIZE = 0
+    COULD_RESET_CHIP = False
 
     def __init__(self) -> None:
         """Initialize ELE message object.
@@ -590,6 +589,7 @@ class EleMessageReset(EleMessage):
 
     CMD = MessageIDs.RESET_REQ.tag
     RESPONSE_HEADER_WORDS_COUNT = 0
+    COULD_RESET_CHIP = True
 
 
 class EleMessageEleFwAuthenticate(EleMessage):
@@ -1323,14 +1323,14 @@ class EleMessageGetInfo(EleMessage):
         self.info_life_cycle = 0
         self.info_sssm_state = 0
         self.info_attest_api_version = 0
-        self.info_uuid = bytes()
-        self.info_sha256_rom_patch = bytes()
-        self.info_sha256_fw = bytes()
-        self.info_oem_srkh = bytes()
+        self.info_uuid = b""
+        self.info_sha256_rom_patch = b""
+        self.info_sha256_fw = b""
+        self.info_oem_srkh = b""
         self.info_imem_state = 0
         self.info_csal_state = 0
         self.info_trng_state = 0
-        self.info_oem_pqc_srkh = bytes()
+        self.info_oem_pqc_srkh = b""
 
     def export(self) -> bytes:
         """Export message to bytes array.
@@ -1391,9 +1391,9 @@ class EleMessageGetInfo(EleMessage):
         if len(response_data) > 160:
             self.info_oem_pqc_srkh = response_data[160:224]
         else:
-            self.info_oem_pqc_srkh = bytes()
+            self.info_oem_pqc_srkh = b""
 
-    def get_attribute(self, attribute_name: str) -> Optional[str]:
+    def get_attribute(self, attribute_name: str) -> str | None:
         """Get specific attribute value by name.
 
         Retrieves and formats a specific attribute from the ELE info response.
@@ -1548,7 +1548,7 @@ class EleMessageDeriveKey(EleMessage):
     _MAX_COMMAND_DATA_SIZE = 65536
     SUPPORTED_KEY_SIZES = [16, 32]
 
-    def __init__(self, key_size: int, context: Optional[bytes]) -> None:
+    def __init__(self, key_size: int, context: bytes | None) -> None:
         """Initialize ELE message for key derivation.
 
         Sets up the message with specified key size and optional context for key diversification.
@@ -1735,7 +1735,7 @@ class EleMessageGenerateKeyBlob(EleMessage):
         self.algorithm = algorithm
 
         self.key = key
-        self.key_blob = bytes()
+        self.key_blob = b""
         self.validate()
 
     def export(self) -> bytes:

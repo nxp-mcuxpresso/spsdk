@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -14,7 +13,7 @@ secure boot applications across NXP MCU portfolio.
 
 import logging
 from struct import calcsize, pack, unpack_from
-from typing import Any, Optional
+from typing import Any
 
 from typing_extensions import Self
 
@@ -58,8 +57,8 @@ class SecureBinaryCHeader(BaseClass):
     def __init__(
         self,
         firmware_version: int = 1,
-        description: Optional[str] = None,
-        timestamp: Optional[int] = None,
+        description: str | None = None,
+        timestamp: int | None = None,
         image_type: int = 6,
         flags: int = 1,
     ) -> None:
@@ -81,7 +80,7 @@ class SecureBinaryCHeader(BaseClass):
         self.block_size = self.BLOCK_SIZE
         self.cert_offset = self.CERT_OFFSET
 
-    def _adjust_description(self, description: Optional[str] = None) -> bytes:
+    def _adjust_description(self, description: str | None = None) -> bytes:
         """Format the description."""
         if not description:
             return bytes(self.DESCRIPTION_LENGTH)
@@ -95,7 +94,7 @@ class SecureBinaryCHeader(BaseClass):
 
     def __str__(self) -> str:
         """Get info of SB v31 as a string."""
-        info = str()
+        info = ""
         info += f" Magic:                       {self.MAGIC.decode('ascii')}\n"
         info += f" Version:                     {self.FORMAT_VERSION}\n"
         info += f" Flags:                       0x{self.flags:04X}\n"
@@ -120,9 +119,9 @@ class SecureBinaryCHeader(BaseClass):
 
         :return: Exported header bytes
         """
-        major_format_version, minor_format_version = [
+        major_format_version, minor_format_version = (
             int(v) for v in self.FORMAT_VERSION.split(".")
-        ]
+        )
         return pack(
             self.HEADER_FORMAT,
             self.MAGIC,
@@ -252,7 +251,7 @@ class SecureBinaryC(FeatureBaseClass):
         family: FamilyRevision,
         firmware_version: int,
         commands: SecureBinaryCCommands,
-        description: Optional[str] = None,
+        description: str | None = None,
         image_type: int = 6,
         flags: int = 1,
     ) -> None:
@@ -386,7 +385,7 @@ class SecureBinaryC(FeatureBaseClass):
         :param final_hash: Hash of the next block to append to header data.
         :return: Plain header without signature in bytes.
         """
-        final_data = bytes()
+        final_data = b""
         final_data += self.sb_header.export()
         # add hash of next block
         final_data += final_hash
@@ -406,7 +405,7 @@ class SecureBinaryC(FeatureBaseClass):
 
         sbc_commands_data = self.sb_commands.export()
 
-        final_data = bytes()
+        final_data = b""
         # HEADER OF SB C FILE
         self.sb_header.update(self.sb_commands)
         final_data += self.sb_header.export()

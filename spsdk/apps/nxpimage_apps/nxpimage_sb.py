@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -16,7 +15,6 @@ boot and firmware update scenarios.
 import logging
 import os
 from binascii import unhexlify
-from typing import Optional
 
 import click
 
@@ -26,7 +24,7 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_family_option,
     spsdk_output_option,
 )
-from spsdk.apps.utils.utils import SPSDKAppError, store_key
+from spsdk.apps.utils.utils import SPSDKAppError, print_verifier_to_console, store_key
 from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.signature_provider import get_signature_provider_from_config_str
 from spsdk.exceptions import SPSDKError
@@ -94,13 +92,13 @@ with -S/--cert arg.",
 @click.argument("external", type=click.Path(), nargs=-1)
 def sb21_export_command(
     command: str,
-    output: Optional[str] = None,
-    key: Optional[str] = None,
-    pkey: Optional[str] = None,
-    cert: Optional[list[str]] = None,
-    root_key_cert: Optional[list[str]] = None,
-    hash_of_hashes: Optional[str] = None,
-    external: Optional[list[str]] = None,
+    output: str | None = None,
+    key: str | None = None,
+    pkey: str | None = None,
+    cert: list[str] | None = None,
+    root_key_cert: list[str] | None = None,
+    hash_of_hashes: str | None = None,
+    external: list[str] | None = None,
 ) -> None:
     """Generate Secure Binary v2.1 Image from configuration.
 
@@ -111,13 +109,13 @@ def sb21_export_command(
 
 def sb21_export(
     command: str,
-    output: Optional[str] = None,
-    key: Optional[str] = None,
-    pkey: Optional[str] = None,
-    cert: Optional[list[str]] = None,
-    root_key_cert: Optional[list[str]] = None,
-    hash_of_hashes: Optional[str] = None,
-    external: Optional[list[str]] = None,
+    output: str | None = None,
+    key: str | None = None,
+    pkey: str | None = None,
+    cert: list[str] | None = None,
+    root_key_cert: list[str] | None = None,
+    hash_of_hashes: str | None = None,
+    external: list[str] | None = None,
 ) -> None:
     """Generate Secure Binary v2.1 Image from configuration (BD or YAML)."""
     signature_provider = None
@@ -196,7 +194,9 @@ def sb21_parse(binary: str, key: str, output: str) -> None:
         str(parsed_sb),
         os.path.join(output, "parsed_info.txt"),
     )
-    click.echo(f"Success. (SB21: {binary} has been parsed and stored into {output}.)")
+    click.echo(
+        f"Success. (SB21: {get_printable_path(binary)} has been parsed and stored into {get_printable_path(output)}.)"
+    )
     click.echo(
         "Please note that the exported binary images from load command might contain padding"
     )
@@ -357,7 +357,7 @@ def convert_bd_conf(
         cert_config
     )
     write_file(ret, os.path.join(os.path.dirname(output_conf), cert_block_file))
-    click.echo(f"Converted YAML configuration written to {output_conf}")
+    click.echo(f"Converted YAML configuration written to {get_printable_path(output_conf)}")
 
 
 @sb21_group.command(name="get-template", no_args_is_help=True)
@@ -511,6 +511,7 @@ def sb40_export(config: Config) -> None:
     sb4_output_file_path = config.get_output_file_name("containerOutputFile")
     write_file(sb4_data, sb4_output_file_path, mode="wb")
 
+    logger.info(f"Created SB4.0 Image memory map:\n{sb4.image_info().draw()}")
     click.echo(f"SRKH: {sb4.container.srk_hash0.hex()}")
     if sb4.container.srk_count > 1:
         click.echo(f"SRKH PQC: {sb4.container.srk_hash1.hex()}")
@@ -597,6 +598,61 @@ def sb40_parse(
         click.echo(
             f"Success. (SB4.0: {binary} has been parsed and stored into {output_file_name}.)"
         )
+        logger.info(f"Parsed SB4.0 image memory map:\n{parsed_sb.image_info().draw()}")
 
     except SPSDKError as exc:
         raise SPSDKAppError(f"SB4.0 parse: Attempt to parse image failed: {str(exc)}") from exc
+
+
+@sb40_group.command(name="verify", no_args_is_help=True)
+@spsdk_family_option(families=SecureBinary4.get_supported_families(), required=True)
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, readable=True, resolve_path=True),
+    required=True,
+    help="Path to the SB4.0 container to verify.",
+)
+@click.option(
+    "-k",
+    "--pck",
+    type=str,
+    help=(
+        "Part Common Key file for SB4.0 decryption (hex text, text file or binary PCK). "
+        "Alternatively you may provide a configuration string for a Key Derivation plugin"
+    ),
+)
+@click.option(
+    "-a",
+    "--kdk-access-rights",
+    type=click.INT,
+    default=0,
+    help="Key Derivation Key access rights, defaults to 0",
+)
+def sb40_verify_command(
+    family: FamilyRevision, binary: str, pck: str, kdk_access_rights: int
+) -> None:
+    """Verify Secure Binary v4.0 Image and display its memory map.
+
+    Parses an SB4.0 container, displays its structure and runs verification checks.
+    """
+    sb40_verify(family, binary, pck, kdk_access_rights)
+
+
+def sb40_verify(family: FamilyRevision, binary: str, pck: str, kdk_access_rights: int) -> None:
+    """Verify Secure Binary v4.0 Image.
+
+    :param family: Device family and revision
+    :param binary: Path to SB4.0 container to verify
+    :param pck: Path to Part Common Key file
+    :param kdk_access_rights: Key Derivation Key access rights
+    """
+    parsed_sb = SecureBinary4.parse(
+        data=load_binary(binary),
+        family=family,
+        pck=pck,
+        kdk_access_rights=kdk_access_rights,
+    )
+
+    click.echo(parsed_sb.image_info().draw())
+    print_verifier_to_console(parsed_sb.verify())

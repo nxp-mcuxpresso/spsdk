@@ -216,7 +216,7 @@ pipeline {
                             rm -rf venv
 
                             # create clean venv
-                            uv venv -p 3.13 venv
+                            uv venv -p 3.14 venv
                             . venv/bin/activate
 
                             # install SPSDK and dev dependencies
@@ -249,20 +249,22 @@ pipeline {
             }
             steps {
                 script {
-                    try {
-                        echo "🚀 Pushing updated ${env.CURRENT_INTEGRATION_BRANCH} to remote..."
-                        sh "git push origin ${env.CURRENT_INTEGRATION_BRANCH}"
-                        echo "✅ Successfully pushed ${env.CURRENT_INTEGRATION_BRANCH} to remote"
-                        env.PUSH_SUCCESSFUL = 'true'
+                    withCredentials([string(credentialsId: 'bitbucket-token', variable: 'BITBUCKET_TOKEN')]) {
+                        try {
+                            echo "🚀 Pushing updated ${env.CURRENT_INTEGRATION_BRANCH} to remote..."
+                            sh "git push origin ${env.CURRENT_INTEGRATION_BRANCH}"
+                            echo "✅ Successfully pushed ${env.CURRENT_INTEGRATION_BRANCH} to remote"
+                            env.PUSH_SUCCESSFUL = 'true'
 
-                        // Clean up backup branch from remote if it exists
-                        if (env.BACKUP_BRANCH) {
-                            sh "git push origin --delete ${env.BACKUP_BRANCH} || echo 'Backup branch not on remote'"
+                            // Clean up backup branch from remote if it exists
+                            if (env.BACKUP_BRANCH) {
+                                sh "git push origin --delete ${env.BACKUP_BRANCH} || echo 'Backup branch not on remote'"
+                            }
+
+                        } catch (Exception e) {
+                            env.PUSH_SUCCESSFUL = 'false'
+                            error "Failed to push ${env.CURRENT_INTEGRATION_BRANCH}: ${e.getMessage()}"
                         }
-
-                    } catch (Exception e) {
-                        env.PUSH_SUCCESSFUL = 'false'
-                        error "Failed to push ${env.CURRENT_INTEGRATION_BRANCH}: ${e.getMessage()}"
                     }
                 }
             }

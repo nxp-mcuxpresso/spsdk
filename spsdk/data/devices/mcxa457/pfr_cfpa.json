@@ -160,7 +160,10 @@
                         {
                             "width": 16,
                             "id": "field010-bits0-15",
-                            "name": "Rollback_counter_for_Execution_Environment_0_firmware",
+                            "name": "Rollback_cntr_for_exec_env_0_firmware",
+                            "deprecated_names": [
+                                "Rollback_counter_for_Execution_Environment_0_firmware"
+                            ],
                             "description": "Secure Firmware version. This monotonic counter field tracks the firmware version of secure partition. ROM uses this field to enforce anti-rollback checking during secure boot and secure update (SB3 header). For image authentication pass during secure boot the FW version in image manifest must be equal or greater than this value. During secure update & recovery boot the version number in SB3 header Must be equal or greater than the value in this field. Apart from SB3 header check, user can enforce anti-rollback check during SB3 processing by using \"kSB3_COMMAND_fwVersionCheck\" SB command with 'kNBOOT_CNT_secure' counter ID parameter, in SB3 file"
                         },
                         {

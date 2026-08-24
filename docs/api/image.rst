@@ -156,6 +156,14 @@ Inline Encryption Engine (IEE)
    :undoc-members:
    :show-inheritance:
 
+IPED Table Creator
+----------------------------------------------
+
+.. automodule:: spsdk.image.iped
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 On-the-Fly AES Decryption (OTFAD)
 -------------------------------------------------
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -13,7 +12,8 @@ initialization files using development HSM (Hardware Security Module) functional
 
 import copy
 import logging
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from typing_extensions import Self
 
@@ -69,15 +69,15 @@ class DevHsmSB4(DevHsm):
         mboot: McuBoot,
         family: FamilyRevision,
         commands: list[BaseCmd],
-        oem_share_input: Optional[bytes] = None,
-        oem_enc_master_share_input: Optional[bytes] = None,
-        oem_enc_share_input: Optional[bytes] = None,
-        cust_mk_sk: Optional[bytes] = None,
-        workspace: Optional[str] = None,
-        initial_reset: Optional[bool] = False,
-        final_reset: Optional[bool] = True,
-        buffer_address: Optional[int] = None,
-        info_print: Optional[Callable] = None,
+        oem_share_input: bytes | None = None,
+        oem_enc_master_share_input: bytes | None = None,
+        oem_enc_share_input: bytes | None = None,
+        cust_mk_sk: bytes | None = None,
+        workspace: str | None = None,
+        initial_reset: bool | None = False,
+        final_reset: bool | None = True,
+        buffer_address: int | None = None,
+        info_print: Callable | None = None,
     ) -> None:
         """Initialize device HSM class for creating provisioned SB4 files.
 
@@ -113,7 +113,7 @@ class DevHsmSB4(DevHsm):
         self.sb4_fw_ver = 0
         self.sb4_descr = "SB 4 - DevHSM"
         self.sb4_commands = commands
-        self.timestamp: Optional[int] = None
+        self.timestamp: int | None = None
 
         # Override the default buffer address
         if buffer_address is not None:
@@ -123,8 +123,8 @@ class DevHsmSB4(DevHsm):
         if self.oem_share_input:
             self.store_temp_res("OEM_SHARE_INPUT.BIN", self.oem_share_input)
 
-        self.wrapped_cust_mk_sk = bytes()
-        self.final_sb = bytes()
+        self.wrapped_cust_mk_sk = b""
+        self.final_sb = b""
 
         if self.oem_enc_share_input and (
             bool(self.oem_enc_master_share_input) ^ bool(self.oem_enc_share_input)
@@ -247,9 +247,9 @@ class DevHsmSB4(DevHsm):
         # we need a copy or else the .popitem will corrupt the database
         for step in copy.deepcopy(flow):
             name, params = step.popitem()
-            temp: Optional[str] = templates.get(name)
+            temp: str | None = templates.get(name)
             if not temp:
-                raise SPSDKError(f"Template for step {step} not found in database")
+                raise SPSDKError(f"Template for step {name} not found in database")
             result += temp.format(**params)
         return result
 
@@ -354,7 +354,7 @@ class DevHsmSB4(DevHsm):
             )
         else:
             self.info_print(" 3.3: CUST_MK_SK/SBKEK not provided. Key provisioning is skipped.")
-            logger.warning((" 3.3 CUST_MK_SK/SBKEK not provided. Key provisioning is skipped."))
+            logger.warning(" 3.3 CUST_MK_SK/SBKEK not provided. Key provisioning is skipped.")
         sb4_data.validate()
 
         # 3.4: Get SB4 file data part individual chunks
@@ -496,7 +496,7 @@ class DevHsmSB4(DevHsm):
         return self.final_sb
 
     def oem_generate_master_share(
-        self, oem_share_input: Optional[bytes] = None
+        self, oem_share_input: bytes | None = None
     ) -> tuple[bytes, bytes, bytes]:
         """Generate on device encrypted OEM master share outputs.
 
@@ -566,7 +566,7 @@ class DevHsmSB4(DevHsm):
         return oem_enc_share, oem_enc_master_share, bytes(0)
 
     def oem_set_master_share(
-        self, oem_seed: Optional[bytes] = None, enc_oem_share: Optional[bytes] = None
+        self, oem_seed: bytes | None = None, enc_oem_share: bytes | None = None
     ) -> bytes:
         """Set OEM Master share on the device.
 
@@ -755,7 +755,7 @@ class DevHsmSB4(DevHsm):
 
     @classmethod
     def load_from_config(
-        cls, config: Config, mboot: Optional[McuBoot] = None, info_print: Optional[Callable] = None
+        cls, config: Config, mboot: McuBoot | None = None, info_print: Callable | None = None
     ) -> Self:
         """Load the class from configuration.
 

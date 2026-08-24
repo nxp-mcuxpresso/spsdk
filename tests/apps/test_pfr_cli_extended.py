@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2026 NXP
 #
@@ -48,6 +47,7 @@ def test_pfr_help(cli_runner: CliRunner) -> None:
         "get-template",
         "get-templates",
         "parse",
+        "info",
         "export",
         "write",
         "read",
@@ -71,6 +71,7 @@ def test_command_help(cli_runner: CliRunner, command: str) -> None:
         "get-template",
         "get-templates",
         "parse",
+        "info",
         "write",
         "read",
         "erase-cmpa",
@@ -141,11 +142,12 @@ def test_parse_no_args_is_help(cli_runner: CliRunner) -> None:
     assert result.exit_code != 0
 
 
-def test_parse_missing_binary(cli_runner: CliRunner) -> None:
+def test_parse_missing_binary(cli_runner: CliRunner, tmp_path: str) -> None:
     """Test parse fails when binary file does not exist."""
+    out_path = os.path.join(str(tmp_path), "parsed.yaml")
     result = cli_runner.invoke(
         main,
-        ["parse", "-f", PFR_FAMILY, "-t", "cmpa", "-b", "nonexistent.bin"],
+        ["parse", "-f", PFR_FAMILY, "-t", "cmpa", "-b", "nonexistent.bin", "-o", out_path],
         expected_code=-1,
     )
     assert result.exit_code != 0
@@ -189,6 +191,38 @@ def test_parse_binary_show_diff(cli_runner: CliRunner, tmp_path: str) -> None:
         ["parse", "-f", PFR_FAMILY, "-t", "cmpa", "-b", bin_path, "-o", out_path, "--show-diff"],
     )
     assert result.exit_code == 0
+
+
+# ---------------------------------------------------------------------------
+# info (hardware-free, requires binary file)
+# ---------------------------------------------------------------------------
+
+
+def test_info_no_args_is_help(cli_runner: CliRunner) -> None:
+    """Test info with no args exits non-zero (no_args_is_help behaviour)."""
+    result = cli_runner.invoke(main, ["info"], expected_code=-1)
+    assert result.exit_code != 0
+
+
+def test_info_binary(cli_runner: CliRunner, tmp_path: str) -> None:
+    """Test info prints binary image information to stdout."""
+    from spsdk.pfr.pfr import CMPA
+    from spsdk.utils.family import FamilyRevision
+
+    family = FamilyRevision("lpc55s69")
+    cmpa = CMPA(family=family)
+    binary = cmpa.export()
+    bin_path = os.path.join(str(tmp_path), "cmpa.bin")
+    with open(bin_path, "wb") as f:
+        f.write(binary)
+
+    result = cli_runner.invoke(
+        main,
+        ["info", "-f", PFR_FAMILY, "-t", "cmpa", "-b", bin_path],
+    )
+    assert result.exit_code == 0
+    assert "BINARY IMAGE INFORMATION" in result.output
+    assert "lpc55s69 CMPA" in result.output
 
 
 # ---------------------------------------------------------------------------

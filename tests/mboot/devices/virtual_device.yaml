@@ -36,4 +36,4 @@ Properties:
   RamSize: 32000
 
 Other:
-  FlashBackdorKey: b'12345678'
+  FlashBackdoorKey: b'12345678'

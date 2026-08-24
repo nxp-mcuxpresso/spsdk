@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2026 NXP
 #
@@ -1386,3 +1385,97 @@ def test_signed_message_pre_parse_verify_valid(family: FamilyRevision, chip_conf
     data = container.export()
     ver = SignedMessage.pre_parse_verify(data)
     assert not ver.has_errors
+
+
+# ── SignedMessageContainerV2 – cert_version support ──────────────────────────
+
+
+FAMILY_V2 = FamilyRevision("mimx943")
+
+
+@pytest.fixture
+def chip_config_v2() -> None:
+    """Return a chip config for mimx943 (V2 signed message format)."""
+    return create_chip_config(FAMILY_V2)  # type: ignore[return-value]
+
+
+def test_signed_message_container_v2_cert_version_default(chip_config_v2) -> None:  # type: ignore[no-untyped-def]
+    """SignedMessageContainerV2 defaults cert_version to 0."""
+    from spsdk.image.ahab.signed_msg import SignedMessageContainerV2
+
+    msg = MessageReturnLifeCycle(family=FAMILY_V2, life_cycle=0)
+    ctr = SignedMessageContainerV2(chip_config=chip_config_v2, message=msg)
+    assert ctr.cert_version == 0
+
+
+def test_signed_message_container_v2_cert_version_binary_roundtrip(chip_config_v2) -> None:  # type: ignore[no-untyped-def]
+    """cert_version is serialised to container header byte 14; byte 15 stays reserved."""
+    from spsdk.image.ahab.signed_msg import SignedMessageContainerV2
+
+    msg = MessageReturnLifeCycle(family=FAMILY_V2, life_cycle=0)
+    ctr = SignedMessageContainerV2(chip_config=chip_config_v2, message=msg)
+    ctr.cert_version = 0x05
+
+    raw = ctr.export()
+
+    # Byte 14 (0-based) of the container header holds cert_version.
+    assert raw[14] == 0x05
+    # Byte 15 must be reserved (0).
+    assert raw[15] == 0x00
+
+
+def test_signed_message_container_v1_cert_version_zero_in_binary(chip_config) -> None:  # type: ignore[no-untyped-def]
+    """V1 container always writes 0x00 to container header bytes 14–15."""
+    msg = MessageReturnLifeCycle(family=FAMILY, life_cycle=0)
+    ctr = SignedMessageContainer(chip_config=chip_config, message=msg)
+
+    raw = ctr.export()
+
+    assert raw[14] == 0x00
+    assert raw[15] == 0x00
+
+
+def test_signed_message_container_v2_config_roundtrip(chip_config_v2) -> None:  # type: ignore[no-untyped-def]
+    """get_config / load_from_config round-trip preserves cert_version at container level."""
+    from spsdk.image.ahab.signed_msg import SignedMessageContainerV2
+
+    msg = MessageReturnLifeCycle(family=FAMILY_V2, life_cycle=3)
+    ctr = SignedMessageContainerV2(chip_config=chip_config_v2, message=msg)
+    ctr.cert_version = 0x07
+
+    cfg = ctr.get_config()
+
+    # cert_version must appear at container level, not inside message section.
+    assert cfg.get("cert_version") == 0x07
+    msg_cfg = cfg.get_config("message")
+    assert "cert_version" not in msg_cfg
+
+    # Recreate from config.
+    ctr2 = SignedMessageContainerV2.load_from_config(chip_config_v2, cfg)
+    assert ctr2.cert_version == 0x07
+
+
+def test_signed_message_container_v2_schema_has_cert_version_at_container_level() -> None:
+    """get_validation_schemas for V2 exposes cert_version at container level."""
+    from spsdk.image.ahab.signed_msg import SignedMessageContainerV2
+
+    schemas = SignedMessageContainerV2.get_validation_schemas(FAMILY_V2)
+    # Collect all property names across all schemas (each list element is a schema dict).
+    container_props: dict = {}
+    for s in schemas:
+        if isinstance(s, dict) and "properties" in s:
+            container_props.update(s["properties"])
+
+    assert "cert_version" in container_props
+    assert container_props["cert_version"].get("skip_in_template") is False
+
+
+def test_signed_message_container_v2_version_byte(chip_config_v2) -> None:  # type: ignore[no-untyped-def]
+    """V2 container exports VERSION byte 0x02 at offset 0 of the header."""
+    from spsdk.image.ahab.signed_msg import SignedMessageContainerV2
+
+    msg = MessageReturnLifeCycle(family=FAMILY_V2, life_cycle=0)
+    ctr = SignedMessageContainerV2(chip_config=chip_config_v2, message=msg)
+    raw = ctr.export()
+    # Byte 0 of AHAB container header is the VERSION field.
+    assert raw[0] == 0x02

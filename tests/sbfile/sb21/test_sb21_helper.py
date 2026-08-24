@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,7 @@ file commands in SPSDK. Tests verify proper command generation, error handling,
 and parameter validation for SB2.1 file creation workflows.
 """
 
-from typing import Any, Dict, Optional, Union
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -45,7 +44,7 @@ from spsdk.utils.misc import value_to_int
     ],
 )
 def test_jump_with_various_inputs(
-    address: Union[int, str], argument: Union[int, str], spreg: Optional[Union[int, str]]
+    address: int | str, argument: int | str, spreg: int | str | None
 ) -> None:
     """Test that _jump method correctly handles various input formats.
 
@@ -59,7 +58,7 @@ def test_jump_with_various_inputs(
     :raises AssertionError: If the _jump method doesn't produce expected CmdJump object or values
     """
     helper = SB21Helper()
-    cmd_args: Dict[str, Any] = {"address": address, "argument": argument}
+    cmd_args: dict[str, Any] = {"address": address, "argument": argument}
     if spreg:
         cmd_args["spreg"] = spreg
     result = helper._jump(cmd_args)
@@ -83,7 +82,7 @@ def test_jump_with_various_inputs(
     ],
 )
 def test_load_with_file_parametrized(
-    address: Union[int, str], load_opt: Optional[Union[int, str]], expected_mem_id: int
+    address: int | str, load_opt: int | str | None, expected_mem_id: int
 ) -> None:
     """Test _load method with file parameter and various input formats.
 
@@ -98,7 +97,7 @@ def test_load_with_file_parametrized(
     helper = SB21Helper()
 
     # Create cmd_args with file
-    cmd_args: Dict[str, Any] = {"address": address, "file": "myBinFile"}
+    cmd_args: dict[str, Any] = {"address": address, "file": "myBinFile"}
 
     # Add load_opt if provided
     if load_opt is not None:
@@ -127,7 +126,7 @@ def test_load_with_file_parametrized(
         ({"address": 0x1000, "values": "1,-1"}, "Invalid values for load command"),
     ],
 )
-def test_load_error_cases_parametrized(cmd_args: Dict[str, Any], expected_error_msg: str) -> None:
+def test_load_error_cases_parametrized(cmd_args: dict[str, Any], expected_error_msg: str) -> None:
     """Test _load method error cases with various input formats.
 
     This test function validates that the SB21Helper._load method properly raises
@@ -161,7 +160,7 @@ def test_load_error_cases_parametrized(cmd_args: Dict[str, Any], expected_error_
     ],
 )
 def test_fill_memory_with_various_inputs(
-    address: Union[int, str], pattern: Union[int, str], expected_address: int, expected_pattern: str
+    address: int | str, pattern: int | str, expected_address: int, expected_pattern: str
 ) -> None:
     """Test _fill_memory method with various input formats for address and pattern.
 
@@ -175,7 +174,7 @@ def test_fill_memory_with_various_inputs(
     :param expected_pattern: Expected hexadecimal pattern string after processing
     """
     helper = SB21Helper()
-    cmd_args: Dict[str, Any] = {"address": address, "pattern": pattern}
+    cmd_args: dict[str, Any] = {"address": address, "pattern": pattern}
     result = helper._fill_memory(cmd_args)
     assert isinstance(result, CmdFill)
     assert result.address == expected_address
@@ -200,10 +199,10 @@ def test_fill_memory_with_various_inputs(
     ],
 )
 def test_erase_cmd_handler_with_various_inputs(
-    address: Union[int, str],
-    length: Union[int, str],
-    flags: Union[int, str],
-    mem_opt: Optional[Union[int, str]],
+    address: int | str,
+    length: int | str,
+    flags: int | str,
+    mem_opt: int | str | None,
     expected_address: int,
     expected_length: int,
     expected_flags: int,
@@ -225,7 +224,7 @@ def test_erase_cmd_handler_with_various_inputs(
     :param expected_mem_id: Expected memory ID value in the resulting CmdErase object.
     """
     helper = SB21Helper()
-    cmd_args: Dict[str, Any] = {
+    cmd_args: dict[str, Any] = {
         "address": address,
     }
     if length is not None:
@@ -259,9 +258,9 @@ def test_erase_cmd_handler_with_various_inputs(
     ],
 )
 def test_enable_with_various_inputs(
-    address: Union[int, str],
-    size: Union[int, str],
-    mem_opt: Optional[Union[int, str]],
+    address: int | str,
+    size: int | str,
+    mem_opt: int | str | None,
     expected_address: int,
     expected_size: int,
     expected_mem_id: int,
@@ -280,7 +279,7 @@ def test_enable_with_various_inputs(
     :param expected_mem_id: Expected resulting memory ID value
     """
     helper = SB21Helper()
-    cmd_args: Dict[str, Any] = {
+    cmd_args: dict[str, Any] = {
         "address": address,
     }
     if size is not None:
@@ -305,7 +304,7 @@ def test_enable_with_various_inputs(
     ],
 )
 def test_keystore_to_nv_with_various_inputs(
-    mem_opt: Union[int, str], address: Union[int, str], expected_mem_id: int, expected_address: int
+    mem_opt: int | str, address: int | str, expected_mem_id: int, expected_address: int
 ) -> None:
     """Test _keystore_to_nv method with various input formats.
 
@@ -319,7 +318,7 @@ def test_keystore_to_nv_with_various_inputs(
     :param expected_address: Expected address value after processing.
     """
     helper = SB21Helper()
-    cmd_args: Dict[str, Any] = {"mem_opt": mem_opt, "address": address}
+    cmd_args: dict[str, Any] = {"mem_opt": mem_opt, "address": address}
     result = helper._keystore_to_nv(cmd_args)
     assert isinstance(result, CmdKeyStoreRestore)
     assert result.address == expected_address
@@ -335,7 +334,7 @@ def test_keystore_to_nv_with_various_inputs(
     ],
 )
 def test_keystore_from_nv_with_various_inputs(
-    address: Union[int, str], mem_opt: Union[int, str], expected_address: int
+    address: int | str, mem_opt: int | str, expected_address: int
 ) -> None:
     """Test _keystore_from_nv method with various input formats.
 
@@ -348,7 +347,7 @@ def test_keystore_from_nv_with_various_inputs(
     :param expected_address: Expected final address value after processing.
     """
     helper = SB21Helper()
-    cmd_args: Dict[str, Any] = {"address": address, "mem_opt": mem_opt}
+    cmd_args: dict[str, Any] = {"address": address, "mem_opt": mem_opt}
     result = helper._keystore_from_nv(cmd_args)
     assert isinstance(result, CmdKeyStoreBackup)
     assert result.address == expected_address
@@ -367,8 +366,8 @@ def test_keystore_from_nv_with_various_inputs(
     ],
 )
 def test_version_check_with_various_inputs(
-    ver_type: Union[int, str],
-    fw_version: Union[int, str],
+    ver_type: int | str,
+    fw_version: int | str,
     expected_ver_type: VersionCheckType,
     expected_fw_version: int,
 ) -> None:
@@ -386,7 +385,7 @@ def test_version_check_with_various_inputs(
     helper = SB21Helper()
 
     # Create cmd_args with the test inputs
-    cmd_args: Dict[str, Any] = {"ver_type": ver_type, "fw_version": fw_version}
+    cmd_args: dict[str, Any] = {"ver_type": ver_type, "fw_version": fw_version}
 
     # Call the method
     result = helper._version_check(cmd_args)

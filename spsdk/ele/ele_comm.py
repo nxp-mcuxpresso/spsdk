@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -20,7 +19,6 @@ import logging
 import re
 from abc import abstractmethod
 from types import TracebackType
-from typing import Optional, Type, Union
 
 from spsdk.apps.utils.interface_helper import load_interface_config
 from spsdk.ele.ele_constants import ResponseStatus
@@ -35,6 +33,10 @@ from spsdk.utils.misc import value_to_bytes
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
+
+
+class _ChipResetDetected(Exception):
+    """Internal sentinel raised when a chip reset is detected for COULD_RESET_CHIP commands."""
 
 
 class EleDevice(SpsdkEnum):
@@ -63,10 +65,10 @@ class EleMessageHandler:
 
     def __init__(
         self,
-        device: Union[McuBoot, UbootSerial, UbootFastboot],
+        device: McuBoot | UbootSerial | UbootFastboot,
         family: FamilyRevision,
-        buffer_address: Optional[int] = None,
-        buffer_size: Optional[int] = None,
+        buffer_address: int | None = None,
+        buffer_size: int | None = None,
     ) -> None:
         """Initialize ELE communication interface.
 
@@ -142,9 +144,9 @@ class EleMessageHandler:
 
     def __exit__(
         self,
-        exception_type: Optional[Type[BaseException]] = None,
-        exception_value: Optional[BaseException] = None,
-        traceback: Optional[TracebackType] = None,
+        exception_type: type[BaseException] | None = None,
+        exception_value: BaseException | None = None,
+        traceback: TracebackType | None = None,
     ) -> None:
         """Close function of ELE handler.
 
@@ -162,17 +164,17 @@ class EleMessageHandler:
     def get_message_handler(
         cls,
         family: FamilyRevision,
-        device: Optional[str] = None,
-        fb_addr: Optional[int] = None,
-        fb_size: Optional[int] = None,
-        buffer_addr: Optional[int] = None,
-        buffer_size: Optional[int] = None,
-        port: Optional[str] = None,
-        usb: Optional[str] = None,
-        buspal: Optional[str] = None,
-        lpcusbsio: Optional[str] = None,
+        device: str | None = None,
+        fb_addr: int | None = None,
+        fb_size: int | None = None,
+        buffer_addr: int | None = None,
+        buffer_size: int | None = None,
+        port: str | None = None,
+        usb: str | None = None,
+        buspal: str | None = None,
+        lpcusbsio: str | None = None,
         timeout: int = 5000,
-        uboot_prompt: Optional[str] = None,
+        uboot_prompt: str | None = None,
     ) -> "EleMessageHandler":
         """Get ELE message handler for specified device and family.
 
@@ -247,8 +249,8 @@ class EleMessageHandlerMBoot(EleMessageHandler):
         self,
         device: McuBoot,
         family: FamilyRevision,
-        comm_buffer_address_override: Optional[int] = None,
-        comm_buffer_size_override: Optional[int] = None,
+        comm_buffer_address_override: int | None = None,
+        comm_buffer_size_override: int | None = None,
     ) -> None:
         """Initialize ELE communication interface.
 
@@ -342,10 +344,10 @@ class EleMessageHandlerUBoot(EleMessageHandler):
 
     def __init__(
         self,
-        device: Union[UbootSerial, UbootFastboot],
+        device: UbootSerial | UbootFastboot,
         family: FamilyRevision,
-        comm_buffer_address_override: Optional[int] = None,
-        comm_buffer_size_override: Optional[int] = None,
+        comm_buffer_address_override: int | None = None,
+        comm_buffer_size_override: int | None = None,
     ) -> None:
         """Initialize ELE message handler for U-Boot communication.
 
@@ -398,6 +400,86 @@ class EleMessageHandlerUBoot(EleMessageHandler):
             status = status_all & 0xFF
         return abort_code, status, indication
 
+    def _execute_ele_command(self, msg: EleMessage) -> tuple[str, bool]:
+        """Execute ELE command over U-Boot and return raw output and error flag.
+
+        :param msg: ELE message to execute.
+        :return: Tuple of (output string, ele_error flag).
+        :raises SPSDKError: If communication fails and the command cannot tolerate a chip reset.
+        """
+        assert isinstance(self.device, (UbootSerial, UbootFastboot))
+        ele_error = False
+        output = ""
+        try:
+            if msg.has_command_data:
+                self.device.write_memory(msg.command_data_address, msg.command_data)
+
+            self.device.write(
+                f"ele_message {hex(msg.buff_addr)} {hex(msg.buff_size)} {msg.export().hex()}",
+                no_exit=False,
+            )
+            output = self.device.read_output()
+            logger.debug(f"Raw ELE message output:\n{output}")
+
+            if "Error" in output:
+                msg.abort_code, msg.status, msg.indication = self.extract_error_values(output)
+                ele_error = True
+        except (SPSDKError, IndexError) as exc:
+            exc_str = str(exc)
+            if "Error" in exc_str and not ele_error:
+                try:
+                    msg.abort_code, msg.status, msg.indication = self.extract_error_values(exc_str)
+                    ele_error = True
+                except Exception:  # noqa: BLE001
+                    pass
+            if msg.COULD_RESET_CHIP and not ele_error:
+                logger.info(
+                    f"Chip reset detected during ELE command - expected behavior"
+                    f" for {type(msg).__name__}."
+                )
+                raise _ChipResetDetected() from exc
+            raise SPSDKError(f"ELE Communication failed with UBoot: {str(exc)}") from exc
+
+        return output, ele_error
+
+    def _parse_response_from_output(self, msg: EleMessage, output: str) -> bytes:
+        """Parse response hex words from U-Boot command output.
+
+        :param msg: ELE message with expected response word count.
+        :param output: Raw U-Boot output string.
+        :return: Response bytes.
+        :raises SPSDKError: If no valid response line found.
+        """
+        lines = output.splitlines()
+        response_lines = [line for line in lines if line.startswith("06") or line.startswith("07")]
+        if not response_lines:
+            raise SPSDKError("No valid response line found in output")
+        stripped_line = re.sub(r"(u-boot)?=> ", "", response_lines[0])
+        hex_str = stripped_line[: msg.response_words_count * 8]
+        hex_str = re.sub(r"Detect.*", "", hex_str)
+        logger.debug(f"Stripped output: {hex_str}")
+        return value_to_bytes("0x" + hex_str)
+
+    def _read_response_data(self, msg: EleMessage) -> None:
+        """Read and decode optional response data from target memory.
+
+        :param msg: ELE message with response data address and size.
+        :raises SPSDKError: If reading response data fails.
+        :raises SPSDKLengthError: If response data length is invalid.
+        """
+        if not msg.has_response_data:
+            return
+        try:
+            response_data = self.device.read_memory(
+                msg.response_data_address, msg.response_data_size
+            )
+        except SPSDKError as exc:
+            raise SPSDKError(f"ELE Communication failed with mBoot: {str(exc)}") from exc
+
+        if not response_data or len(response_data) != msg.response_data_size:
+            raise SPSDKLengthError("ELE Message - Invalid response data read-back operation.")
+        msg.decode_response_data(response_data)
+
     def send_message(self, msg: EleMessage) -> None:
         """Send message to EdgeLock Enclave and receive response.
 
@@ -416,66 +498,28 @@ class EleMessageHandlerUBoot(EleMessageHandler):
         if not isinstance(self.device, UbootSerial) and not isinstance(self.device, UbootFastboot):
             raise SPSDKError("Wrong instance of device, must be UBoot")
         msg.set_buffer_params(self.comm_buff_addr, self.comm_buff_size)
-        response = b""
+
+        logger.debug(f"ELE msg {hex(msg.buff_addr)} {hex(msg.buff_size)} {msg.export().hex()}")
+
         try:
-            logger.debug(f"ELE msg {hex(msg.buff_addr)} {hex(msg.buff_size)} {msg.export().hex()}")
+            output, ele_error = self._execute_ele_command(msg)
+        except _ChipResetDetected:
+            return
 
-            # 0. Prepare command data in target memory if required
-            if msg.has_command_data:
-                self.device.write_memory(msg.command_data_address, msg.command_data)
+        if ele_error:
+            raise SPSDKError(f"ELE Message failed. \n{msg.info()}")
 
-            # 1. Execute ELE message on target
-            self.device.write(
-                f"ele_message {hex(msg.buff_addr)} {hex(msg.buff_size)} {msg.export().hex()}",
-                no_exit=(msg.response_words_count == 0),
-            )
+        if msg.response_words_count == 0:
+            return
 
-            if msg.response_words_count == 0:
-                return
+        response = self._parse_response_from_output(msg, output)
+        if not response or len(response) < 4 * msg.response_header_words_count:
+            raise SPSDKLengthError("ELE Message - Invalid response read-back operation.")
 
-            output = self.device.read_output()
-            logger.debug(f"Raw ELE message output:\n{output}")
+        msg.decode_response(response)
 
-            if "Error" in output:
-                msg.abort_code, msg.status, msg.indication = self.extract_error_values(output)
-            else:
-                # 2. Read back the response
-                lines = output.splitlines()
-                response_lines = [
-                    line for line in lines if line.startswith("06") or line.startswith("07")
-                ]
-                if not response_lines:
-                    raise SPSDKError("No valid response line found in output")
-                stripped_line = re.sub(r"(u-boot)?=> ", "", response_lines[0])
-                output = stripped_line[: msg.response_words_count * 8]
-                output = re.sub(r"Detect.*", "", output)  # cleanup
-                logger.debug(f"Stripped output: {output}")
-                response = value_to_bytes("0x" + output)
-        except (SPSDKError, IndexError) as exc:
-            raise SPSDKError(f"ELE Communication failed with UBoot: {str(exc)}") from exc
-
-        if "Error" not in output:
-            if not response or len(response) < 4 * msg.response_header_words_count:
-                raise SPSDKLengthError("ELE Message - Invalid response read-back operation.")
-            # 3. Decode the response
-            msg.decode_response(response)
-
-        # 3.1 Check the response status
         if msg.status != ResponseStatus.ELE_SUCCESS_IND:
             raise SPSDKError(f"ELE Message failed. \n{msg.info()}")
 
-        # 3.2 Read back the response data from target memory if required
-        if msg.has_response_data:
-            try:
-                response_data = self.device.read_memory(
-                    msg.response_data_address, msg.response_data_size
-                )
-            except SPSDKError as exc:
-                raise SPSDKError(f"ELE Communication failed with mBoot: {str(exc)}") from exc
-
-            if not response_data or len(response_data) != msg.response_data_size:
-                raise SPSDKLengthError("ELE Message - Invalid response data read-back operation.")
-
-            msg.decode_response_data(response_data)
-
+        self._read_response_data(msg)
         logger.info(f"Sent message information:\n{msg.info()}")

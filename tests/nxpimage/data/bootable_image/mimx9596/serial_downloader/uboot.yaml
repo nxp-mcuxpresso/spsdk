@@ -58,7 +58,7 @@ containers:
         -
           # ------------------------------------===== U-Boot binary [Required] =====------------------------------------
           # Description: U-Boot binary file.
-          uboot: inputs/u-boot-imx95-15x15-lpddr4x-evk.bin-sd
+          uboot: inputs/u-boot.bin
         -
           # -----------------------------------------===== TEE [Required] =====-----------------------------------------
           # Description: TEE - Trusted Execution Environment binary

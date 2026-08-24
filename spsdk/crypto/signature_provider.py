@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -16,7 +15,7 @@ to production environments.
 import abc
 import logging
 import os
-from typing import Any, Optional, Union, cast
+from typing import Any, cast
 
 from cryptography.hazmat.primitives.hashes import HashAlgorithm
 
@@ -86,7 +85,7 @@ class SignatureProvider(ServiceProvider):
         """
         raise SPSDKUnsupportedOperation("Verify method is not supported.")
 
-    def try_to_verify_public_key(self, public_key: Union[PublicKey, bytes]) -> None:
+    def try_to_verify_public_key(self, public_key: PublicKey | bytes) -> None:
         """Verify public key by signature provider if verify method is implemented.
 
         The method attempts to verify that the provided public key corresponds to the private key
@@ -110,7 +109,7 @@ class SignatureProvider(ServiceProvider):
         except SPSDKUnsupportedOperation:
             logger.warning("Signature provider could not verify the integrity of private key pair.")
 
-    def get_signature(self, data: bytes, encoding: Optional[SPSDKEncoding] = None) -> bytes:
+    def get_signature(self, data: bytes, encoding: SPSDKEncoding | None = None) -> bytes:
         """Get signature with optional encoding format.
 
         In case of ECC signature, the NXP format (r+s) is used by default. The method
@@ -150,10 +149,10 @@ class PlainFileSP(SignatureProvider):
     def __init__(
         self,
         file_path: str,
-        password: Optional[str] = None,
-        hash_alg: Optional[EnumHashAlgorithm] = None,
-        search_paths: Optional[list[str]] = None,
-        **kwargs: Union[str, int, bool, EnumHashAlgorithm],
+        password: str | None = None,
+        hash_alg: EnumHashAlgorithm | None = None,
+        search_paths: list[str] | None = None,
+        **kwargs: str | int | bool | EnumHashAlgorithm,
     ) -> None:
         """Initialize the plain file signature provider.
 
@@ -171,7 +170,7 @@ class PlainFileSP(SignatureProvider):
         self.hash_alg = hash_alg
 
     @property
-    def hash_alg(self) -> Optional[EnumHashAlgorithm]:
+    def hash_alg(self) -> EnumHashAlgorithm | None:
         """Get hash algorithm used by the signature provider.
 
         :return: Hash algorithm enumeration value, None if not set.
@@ -179,7 +178,7 @@ class PlainFileSP(SignatureProvider):
         return self._hash_alg
 
     @hash_alg.setter
-    def hash_alg(self, hash_alg: Optional[EnumHashAlgorithm]) -> None:
+    def hash_alg(self, hash_alg: EnumHashAlgorithm | None) -> None:
         """Set hash algorithm for signature operations.
 
         Updates the internal hash algorithm and configures the signing parameters
@@ -192,7 +191,7 @@ class PlainFileSP(SignatureProvider):
         if hash_alg:
             self.sign_kwargs["algorithm"] = hash_alg
 
-    def _get_hash_algorithm(self, hash_alg: Optional[EnumHashAlgorithm] = None) -> HashAlgorithm:
+    def _get_hash_algorithm(self, hash_alg: EnumHashAlgorithm | None = None) -> HashAlgorithm:
         """Get appropriate hash algorithm for the private key type.
 
         Determines the hash algorithm based on the provided parameter or automatically
@@ -283,9 +282,9 @@ class InteractivePlainFileSP(PlainFileSP):
     def __init__(
         self,
         file_path: str,
-        hash_alg: Optional[EnumHashAlgorithm] = None,
-        search_paths: Optional[list[str]] = None,
-        **kwargs: Union[str, int, bool],
+        hash_alg: EnumHashAlgorithm | None = None,
+        search_paths: list[str] | None = None,
+        **kwargs: str | int | bool,
     ) -> None:
         """Initialize the interactive plain file signature provider.
 
@@ -301,7 +300,7 @@ class InteractivePlainFileSP(PlainFileSP):
         try:
             super().__init__(
                 file_path=file_path,
-                password=cast(Optional[str], kwargs.pop("password", None)),
+                password=cast(str | None, kwargs.pop("password", None)),
                 hash_alg=hash_alg,
                 search_paths=search_paths,
                 **kwargs,
@@ -340,9 +339,9 @@ class HttpProxySP(HTTPClientBase, SignatureProvider):
         port: str = "8000",
         url_prefix: str = "api",
         timeout: int = 60,
-        prehash: Optional[str] = None,
-        hash_alg: Optional[EnumHashAlgorithm] = None,
-        **kwargs: Union[str, int, bool],
+        prehash: str | None = None,
+        hash_alg: EnumHashAlgorithm | None = None,
+        **kwargs: str | int | bool,
     ) -> None:
         """Initialize Http Proxy Signature Provider.
 
@@ -443,7 +442,7 @@ def get_signature_provider(config: Config, key: str = "signer", **kwargs: Any) -
     if key not in config:
         raise SPSDKValueError(f"Signature provider configuration '{key}' is missing")
     try:
-        params: dict[str, Union[str, list[str]]] = {"search_paths": config.search_paths}
+        params: dict[str, str | list[str]] = {"search_paths": config.search_paths}
         params.update(SignatureProvider.convert_params(config.get_str(key)))
 
         for k, v in kwargs.items():

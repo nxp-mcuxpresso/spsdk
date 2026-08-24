@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,7 @@ enabling parsing and processing of secure boot configuration commands.
 
 import logging
 from numbers import Number
-from typing import Any, Optional
+from typing import Any
 
 from sly import Parser
 from sly.lex import Token
@@ -88,8 +87,8 @@ class BDParser(Parser):
         self._lexer.cleanup()
 
     def parse(
-        self, text: str, extern: Optional[list] = None
-    ) -> Optional[dict]:  # pylint: disable=arguments-differ
+        self, text: str, extern: list | None = None
+    ) -> dict | None:  # pylint: disable=arguments-differ
         """Parse the BD command file and return its structured content.
 
         The method processes a Boot Descriptor (BD) command file text, tokenizes it using the lexer,

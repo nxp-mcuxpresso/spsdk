@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -18,7 +17,7 @@ configurations, and exporting complete AHAB images to binary format.
 import logging
 import os
 from copy import deepcopy
-from typing import Any, Optional, Type, Union
+from typing import Any
 
 import colorama
 from prettytable import PrettyTable
@@ -32,6 +31,7 @@ from spsdk.image.ahab.ahab_data import (
     AHABSignHashAlgorithm,
     AHABTags,
     AhabTargetMemory,
+    FlagsSrkSet,
     create_chip_config,
 )
 from spsdk.image.ahab.ahab_iae import ImageArrayEntryTemplates
@@ -40,7 +40,7 @@ from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
-from spsdk.utils.misc import BinaryPattern, align, load_binary
+from spsdk.utils.misc import BinaryPattern, align, load_binary, write_file
 from spsdk.utils.sparse_image import SPARSE_DEFAULT_BLOCK_SIZE
 from spsdk.utils.spsdk_enum import SpsdkSoftEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
@@ -67,7 +67,7 @@ class AHABImage(FeatureBaseClass):
         self,
         family: FamilyRevision,
         target_memory: str = AhabTargetMemory.TARGET_MEMORY_STANDARD.label,
-        ahab_containers: Optional[list[Union[AHABContainer, AHABContainerV2]]] = None,
+        ahab_containers: list[AHABContainer | AHABContainerV2] | None = None,
     ) -> None:
         """Initialize AHAB Image object.
 
@@ -82,10 +82,10 @@ class AHABImage(FeatureBaseClass):
         :raises SPSDKValueError: Invalid input configuration.
         """
         self.chip_config = create_chip_config(family=family, target_memory=target_memory)
-        self.ahab_containers: list[Union[AHABContainer, AHABContainerV2]] = ahab_containers or []
-        self._container_type: Optional[
-            Union[Type[AHABContainer], Type[AHABContainerV1forV2], Type[AHABContainerV2]]
-        ] = None
+        self.ahab_containers: list[AHABContainer | AHABContainerV2] = ahab_containers or []
+        self._container_type: (
+            type[AHABContainer] | type[AHABContainerV1forV2] | type[AHABContainerV2] | None
+        ) = None
         self.db = get_db(family)
 
     @property
@@ -109,7 +109,7 @@ class AHABImage(FeatureBaseClass):
     @property
     def container_type(
         self,
-    ) -> Union[Type[AHABContainer], Type[AHABContainerV1forV2], Type[AHABContainerV2]]:
+    ) -> type[AHABContainer] | type[AHABContainerV1forV2] | type[AHABContainerV2]:
         """Get container class type.
 
         Determines the container type based on the first container in the list.
@@ -189,7 +189,7 @@ class AHABImage(FeatureBaseClass):
             f"  Containers count:   {len(self.ahab_containers)}"
         )
 
-    def add_container(self, container: Union[AHABContainer, AHABContainerV2]) -> None:
+    def add_container(self, container: AHABContainer | AHABContainerV2) -> None:
         """Add new container into AHAB Image.
 
         The method validates container count limits, type compatibility, and family support.
@@ -546,7 +546,7 @@ class AHABImage(FeatureBaseClass):
     @staticmethod
     def _parse_container_type(
         data: bytes, ignore_length: bool = False
-    ) -> Union[Type[AHABContainer], Type[AHABContainerV1forV2], Type[AHABContainerV2]]:
+    ) -> type[AHABContainer] | type[AHABContainerV1forV2] | type[AHABContainerV2]:
         """Recognize container type from binary data.
 
         Analyzes the provided binary data to determine which AHAB container type
@@ -574,7 +574,7 @@ class AHABImage(FeatureBaseClass):
 
     def _container_type_from_config(
         self, config: Config
-    ) -> Union[Type[AHABContainer], Type[AHABContainerV1forV2], Type[AHABContainerV2]]:
+    ) -> type[AHABContainer] | type[AHABContainerV1forV2] | type[AHABContainerV2]:
         """Recognize container type from configuration data.
 
         The method determines the appropriate AHAB container type based on chip configuration,
@@ -585,7 +585,10 @@ class AHABImage(FeatureBaseClass):
         :raises SPSDKParsingError: In case of invalid data detected.
         :return: Container class type (AHABContainer, AHABContainerV1forV2, or AHABContainerV2).
         """
-        cnt_types_dict = {1: AHABContainer, 2: AHABContainerV2}
+        # When the chip supports V2, V1 containers in a V2 image context must use the
+        # AHABContainerV1forV2 tag/size (not the plain V1 AHABContainer).
+        v1_type = AHABContainerV1forV2 if 2 in self.chip_config.container_types else AHABContainer
+        cnt_types_dict: dict[int, type] = {1: v1_type, 2: AHABContainerV2}  # type: ignore[assignment]
         if len(self.chip_config.container_types) == 1:
             return cnt_types_dict[self.chip_config.container_types[0]]
 
@@ -662,7 +665,7 @@ class AHABImage(FeatureBaseClass):
     def parse(
         cls,
         data: bytes,
-        family: Optional[FamilyRevision] = None,
+        family: FamilyRevision | None = None,
         target_memory: str = AhabTargetMemory.TARGET_MEMORY_STANDARD.label,
     ) -> Self:
         """Parse input binary chunk to the container object.
@@ -695,7 +698,7 @@ class AHABImage(FeatureBaseClass):
                     f"Family '{family}' does not support container type V{detected_version}. "
                     f"Supported types: {supported_str}"
                 )
-                logger.error(error_msg)
+                logger.debug(error_msg)
                 raise SPSDKValueError(error_msg)
 
         for i in range(ret.chip_config.containers_max_cnt):
@@ -987,13 +990,58 @@ class AHABImage(FeatureBaseClass):
         schemas = AHABImage.get_signing_validation_schemas(family)
         return cls._get_config_template(family, schemas)
 
-    def get_config(self, data_path: str = "./") -> Config:
+    def _build_nxp_containers_binary(
+        self, nxp_container_list: list[tuple[int, AHABContainer | AHABContainerV2]]
+    ) -> bytes:
+        """Build a binary blob containing NXP containers and their image data.
+
+        Constructs a raw binary with each NXP container header placed at its original offset
+        and all referenced image payloads at their original image_offset positions.
+        This binary can be referenced via ``binary_container`` in a parsed config so that
+        the image can be re-assembled without requiring the NXP signing keys.
+
+        :param nxp_container_list: List of ``(container_index, container)`` tuples for the
+            NXP containers that should be packed into the binary.
+        :return: Bytes object with the NXP container binary data.
+        """
+        max_end = 0
+        for cnt_ix, container in nxp_container_list:
+            container_offset = container.get_container_offset(cnt_ix)
+            max_end = max(
+                max_end, container_offset + align(container.header_length(), CONTAINER_ALIGNMENT)
+            )
+            for image_entry in container.image_array:
+                if image_entry.image:
+                    max_end = max(max_end, image_entry.image_offset + image_entry.image_size)
+
+        binary = bytearray(max_end)
+        for cnt_ix, container in nxp_container_list:
+            container_offset = container.get_container_offset(cnt_ix)
+            container_binary = container.export()
+            binary[container_offset : container_offset + len(container_binary)] = container_binary
+            for image_entry in container.image_array:
+                if image_entry.image:
+                    binary[
+                        image_entry.image_offset : image_entry.image_offset + image_entry.image_size
+                    ] = image_entry.image[: image_entry.image_size]
+
+        return bytes(binary)
+
+    def get_config(self, data_path: str = "./", parse_nxp: bool = False, **_kwargs: Any) -> Config:
         """Create configuration of the AHAB Image.
 
         The method generates a configuration dictionary containing family information, target memory
         settings, and container configurations for the AHAB image.
 
+        By default, NXP-signed containers (SECO/ELE/V2X) are not fully parsed.  Instead they are
+        exported to a ``binary_container`` binary file and referenced by path.  This preserves the
+        original binary so the image can be re-assembled without requiring the NXP private keys.
+        Pass ``parse_nxp=True`` (or the ``--parse-nxp`` CLI flag) to parse all containers fully.
+
         :param data_path: Path to store the data files of configuration.
+        :param parse_nxp: When True, also fully parse NXP-signed containers instead of
+            extracting them to a binary file.  Defaults to False.
+        :param _kwargs: Additional keyword arguments (ignored, accepted for API compatibility).
         :return: Configuration dictionary with AHAB image settings.
         """
         cfg = Config()
@@ -1002,8 +1050,31 @@ class AHABImage(FeatureBaseClass):
         cfg["target_memory"] = self.chip_config.target_memory.memory_type.label
         cfg["output"] = "N/A"
         cfg_containers = []
+
+        nxp_batch: list[tuple[int, AHABContainer | AHABContainerV2]] = []
+        nxp_batch_start_ix = 0
+
+        def flush_nxp_batch() -> None:
+            """Flush the current NXP container batch to a binary_container config entry."""
+            if not nxp_batch:
+                return
+            bin_data = self._build_nxp_containers_binary(nxp_batch)
+            file_name = f"ahab_nxp_containers_{nxp_batch_start_ix}.bin"
+            write_file(bin_data, os.path.join(data_path, file_name), mode="wb")
+            logger.info(f"Exported NXP container(s) to binary file: {file_name}")
+            cfg_containers.append(Config({"binary_container": {"path": file_name}}))
+            nxp_batch.clear()
+
         for cnt_ix, container in enumerate(self.ahab_containers):
-            cfg_containers.append(container.get_config(data_path, cnt_ix))
+            if container.flag_srk_set == FlagsSrkSet.NXP and not parse_nxp:
+                if not nxp_batch:
+                    nxp_batch_start_ix = cnt_ix
+                nxp_batch.append((cnt_ix, container))
+            else:
+                flush_nxp_batch()
+                cfg_containers.append(container.get_config(data_path, cnt_ix))
+
+        flush_nxp_batch()
         cfg["containers"] = cfg_containers
 
         return cfg
@@ -1055,9 +1126,7 @@ class AHABImage(FeatureBaseClass):
 
     def _validate_container_type_support(
         self,
-        container_type: Union[
-            Type[AHABContainer], Type[AHABContainerV1forV2], Type[AHABContainerV2]
-        ],
+        container_type: type[AHABContainer] | type[AHABContainerV1forV2] | type[AHABContainerV2],
     ) -> None:
         """Validate that the family supports the given container type.
 
@@ -1087,8 +1156,8 @@ class AHABImage(FeatureBaseClass):
     def _apply_filename_overrides(
         field_name: str,
         default_value: str,
-        board_filenames: Optional[dict[str, str]] = None,
-        input_dir: Optional[str] = None,
+        board_filenames: dict[str, str] | None = None,
+        input_dir: str | None = None,
     ) -> str:
         """Apply board-specific filename overrides and input directory path.
 
@@ -1124,8 +1193,8 @@ class AHABImage(FeatureBaseClass):
         cls,
         family: FamilyRevision,
         container_config: dict[str, Any],
-        board_filenames: Optional[dict[str, str]] = None,
-        input_dir: Optional[str] = None,
+        board_filenames: dict[str, str] | None = None,
+        input_dir: str | None = None,
         sign: bool = False,
     ) -> dict[str, Any]:
         """Generate AHAB container configuration template with specified structure.
@@ -1157,8 +1226,8 @@ class AHABImage(FeatureBaseClass):
     def _process_binary_container(
         cls,
         container_config: dict[str, Any],
-        board_filenames: Optional[dict[str, str]],
-        input_dir: Optional[str],
+        board_filenames: dict[str, str] | None,
+        input_dir: str | None,
     ) -> dict[str, Any]:
         """Process binary container configuration with filename overrides.
 
@@ -1202,8 +1271,8 @@ class AHABImage(FeatureBaseClass):
         cls,
         family: FamilyRevision,
         container_config: dict[str, Any],
-        board_filenames: Optional[dict[str, str]],
-        input_dir: Optional[str],
+        board_filenames: dict[str, str] | None,
+        input_dir: str | None,
         sign: bool = False,
     ) -> dict[str, Any]:
         """Process regular container configuration with images.
@@ -1304,8 +1373,8 @@ class AHABImage(FeatureBaseClass):
     def _build_custom_images(
         cls,
         ordered_schemas: list[dict[str, Any]],
-        board_filenames: Optional[dict[str, str]],
-        input_dir: Optional[str],
+        board_filenames: dict[str, str] | None,
+        input_dir: str | None,
     ) -> list[dict[str, Any]]:
         """Build custom images configuration from schemas.
 
@@ -1324,8 +1393,8 @@ class AHABImage(FeatureBaseClass):
     def _process_image_schema(
         cls,
         schema: dict[str, Any],
-        board_filenames: Optional[dict[str, str]],
-        input_dir: Optional[str],
+        board_filenames: dict[str, str] | None,
+        input_dir: str | None,
     ) -> dict[str, Any]:
         """Process a single image schema to build image configuration.
 

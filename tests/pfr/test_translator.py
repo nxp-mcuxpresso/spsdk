@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK PFR Translator API test suite.
 
 This module contains comprehensive tests for the PFR (Protected Flash Region)

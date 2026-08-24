@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
@@ -13,7 +12,6 @@ management, and computation capabilities for data integrity verification.
 """
 
 from dataclasses import dataclass
-from typing import Union
 
 import crcmod
 
@@ -155,7 +153,7 @@ CRC_ALGORITHMS = {
 }
 
 
-def from_crc_algorithm(crc_alg: Union[CrcAlg, str]) -> Crc:
+def from_crc_algorithm(crc_alg: CrcAlg | str) -> Crc:
     """Get CRC object from algorithm enum.
 
     Creates a CRC calculator instance based on the specified algorithm identifier.

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -15,7 +14,7 @@ across NXP MCU portfolio.
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 from typing_extensions import Self
 
@@ -125,7 +124,7 @@ class MemoryConfig(FeatureBaseClass):
         self,
         family: FamilyRevision,
         peripheral: str,
-        interface: Optional[str] = None,
+        interface: str | None = None,
     ) -> None:
         """Initialize memory configuration class.
 
@@ -240,7 +239,7 @@ class MemoryConfig(FeatureBaseClass):
         cls,
         family: FamilyRevision,
         peripheral: str = "Unknown",
-        interface: Optional[str] = None,
+        interface: str | None = None,
     ) -> list[dict[str, Any]]:
         """Create the validation schema for one peripheral.
 
@@ -283,7 +282,7 @@ class MemoryConfig(FeatureBaseClass):
         cls,
         family: FamilyRevision,
         peripheral: str = "Unknown",
-        interface: Optional[str] = None,
+        interface: str | None = None,
     ) -> str:
         """Get feature configuration template.
 
@@ -304,7 +303,7 @@ class MemoryConfig(FeatureBaseClass):
         data: bytes,
         family: FamilyRevision,
         peripheral: str,
-        interface: Optional[str] = None,
+        interface: str | None = None,
     ) -> Self:
         """Parse the option words to configuration.
 
@@ -331,7 +330,7 @@ class MemoryConfig(FeatureBaseClass):
         :param option_words: List of integer option words to convert.
         :return: Byte sequence containing the converted option words.
         """
-        ow_bytes = bytes()
+        ow_bytes = b""
         for ow in option_words:
             ow_bytes += ow.to_bytes(4, Endianness.LITTLE.value)
         return ow_bytes
@@ -497,8 +496,8 @@ class MemoryConfig(FeatureBaseClass):
 
     def create_blhost_batch_config(
         self,
-        instance: Optional[int] = None,
-        fcb_output_name: Optional[str] = None,
+        instance: int | None = None,
+        fcb_output_name: str | None = None,
         secure_addresses: bool = False,
     ) -> str:
         """Create BLHOST script that configures memory.
@@ -612,7 +611,7 @@ class MemoryConfig(FeatureBaseClass):
         )
 
     @staticmethod
-    def _find_family_for_peripheral(peripheral: str) -> Optional[FamilyRevision]:
+    def _find_family_for_peripheral(peripheral: str) -> FamilyRevision | None:
         """Find a family that supports the given peripheral.
 
         This method searches through all supported families to find one that includes
@@ -652,7 +651,7 @@ class MemoryConfig(FeatureBaseClass):
         return MemoryConfig.get_known_memories()
 
     @staticmethod
-    def _get_peripherals_for_family(family: FamilyRevision, peripheral: Optional[str]) -> list[str]:
+    def _get_peripherals_for_family(family: FamilyRevision, peripheral: str | None) -> list[str]:
         """Get list of peripherals for a family.
 
         The method returns either a filtered list containing only the specified peripheral
@@ -731,8 +730,8 @@ class MemoryConfig(FeatureBaseClass):
 
     @staticmethod
     def get_known_peripheral_memories(
-        family: Optional[FamilyRevision],
-        peripheral: Optional[str] = None,
+        family: FamilyRevision | None,
+        peripheral: str | None = None,
         validate_option_words: bool = True,
     ) -> list[Memory]:
         """Get all known supported memory configurations.
@@ -814,7 +813,7 @@ class MemoryConfig(FeatureBaseClass):
 
     @staticmethod
     def get_known_memories(
-        mem_type: Optional[str] = None, interfaces: Optional[list[str]] = None
+        mem_type: str | None = None, interfaces: list[str] | None = None
     ) -> list[Memory]:
         """Get all known supported memory configurations.
 

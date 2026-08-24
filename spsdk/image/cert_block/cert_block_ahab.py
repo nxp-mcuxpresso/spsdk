@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2026 NXP
 #
@@ -14,7 +13,7 @@ Vx, and AHAB certificate blocks with their respective headers and structures.
 """
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from typing_extensions import Self
 
@@ -42,7 +41,7 @@ class CertBlockAhab(CertBlock):
     SUB_FEATURE = "based_on_srk"
 
     def __init__(  # type: ignore[no-untyped-def]
-        self, family: FamilyRevision, ahab_certificate: Optional[AhabCertificate] = None, **kwargs
+        self, family: FamilyRevision, ahab_certificate: AhabCertificate | None = None, **kwargs
     ) -> None:
         """Initialize AHAB-based certificate block.
 

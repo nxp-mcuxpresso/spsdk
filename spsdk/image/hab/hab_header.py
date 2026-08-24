@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -13,7 +12,6 @@ in NXP's HAB security framework.
 """
 
 from struct import calcsize, pack, unpack_from
-from typing import Optional, Union
 
 from typing_extensions import Self
 
@@ -70,7 +68,7 @@ class Header(BaseClass):
         """
         return self.SIZE
 
-    def __init__(self, tag: int = 0, param: int = 0, length: Optional[int] = None) -> None:
+    def __init__(self, tag: int = 0, param: int = 0, length: int | None = None) -> None:
         """Initialize HAB header with tag, parameters and length.
 
         :param tag: Section tag identifier for the HAB header.
@@ -134,7 +132,7 @@ class Header(BaseClass):
         return pack(self.FORMAT, self.tag, self.length, self.param)
 
     @classmethod
-    def parse(cls, data: bytes, required_tag: Optional[int] = None) -> Self:
+    def parse(cls, data: bytes, required_tag: int | None = None) -> Self:
         """Parse header from binary data.
 
         The method parses binary data to extract header information including tag, length, and parameter values.
@@ -183,9 +181,7 @@ class CmdHeader(Header):
     including tag validation, parsing, and verification for HAB command structures.
     """
 
-    def __init__(
-        self, tag: Union[CmdTag, int], param: int = 0, length: Optional[int] = None
-    ) -> None:
+    def __init__(self, tag: CmdTag | int, param: int = 0, length: int | None = None) -> None:
         """Initialize command header with tag, parameters and length.
 
         Validates the command tag and creates a new command header instance with the
@@ -224,7 +220,7 @@ class CmdHeader(Header):
         return ret
 
     @classmethod
-    def parse(cls, data: bytes, required_tag: Optional[int] = None) -> Self:
+    def parse(cls, data: bytes, required_tag: int | None = None) -> Self:
         """Parse header from raw binary data.
 
         The method validates the header tag if specified and delegates to parent class parsing.

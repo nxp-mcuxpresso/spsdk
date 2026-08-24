@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK EL2GO utility commands for device provisioning and management.
 
 This module provides command-line utilities for interacting with EL2GO (EdgeLock 2GO)
@@ -23,7 +23,7 @@ from spsdk.el2go.api_utils import EL2GOTPClient, get_el2go_otp_binary
 from spsdk.el2go.interface import EL2GOInterfaceHandler
 from spsdk.fuses.fuses import Fuses
 from spsdk.utils.config import Config
-from spsdk.utils.misc import write_file
+from spsdk.utils.misc import get_printable_path, write_file
 
 
 @click.group(name="utils", cls=CommandsTreeGroup)
@@ -63,4 +63,4 @@ def get_otp_binary(config: Config, output: str) -> None:
     """Generate EL2GO OTP Binary from data in configuration file."""
     data = get_el2go_otp_binary(config)
     write_file(data=data, path=output, mode="wb")
-    click.echo(f"EL2GO OTP Binary stored into {output}")
+    click.echo(f"EL2GO OTP Binary stored into {get_printable_path(output)}")

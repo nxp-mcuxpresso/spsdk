@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2026 NXP
 #
@@ -598,7 +597,7 @@ def test_hmac_key_setter_hex_string() -> None:
     """Test HMAC key setter with hex string value."""
     obj = ConcreteHmac()
     hex_key = "00" * 32
-    obj.hmac_key = hex_key
+    obj.hmac_key = hex_key  # type: ignore[assignment]
     assert obj.hmac_key == bytes(32)
 
 

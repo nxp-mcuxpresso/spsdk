@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2026 NXP
 #
@@ -10,8 +9,6 @@
 This module defines a comprehensive hierarchy of custom exception classes
 used throughout the SPSDK library for consistent error handling and reporting.
 """
-
-from typing import Optional
 
 #######################################################################
 # # Secure Provisioning SDK Exceptions
@@ -31,7 +28,7 @@ class SPSDKError(Exception):
 
     fmt = "SPSDK: {description}"
 
-    def __init__(self, desc: Optional[str] = None) -> None:
+    def __init__(self, desc: str | None = None) -> None:
         """Initialize the base SPSDK Exception.
 
         :param desc: Optional description of the exception.

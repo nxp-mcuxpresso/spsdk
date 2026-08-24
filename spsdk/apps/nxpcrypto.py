@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -19,7 +18,7 @@ import hashlib
 import logging
 import os
 import sys
-from typing import Any, Optional, Union
+from typing import Any
 
 import click
 from click_option_group import optgroup
@@ -161,7 +160,7 @@ def export(family: FamilyRevision, key: list[str], password: str, output: str) -
     click.echo(str(_rot))
     if output:
         write_file(rot_hash, path=output, mode="wb")
-        click.echo(f"Result has been stored in: {output}")
+        click.echo(f"Result has been stored in: {get_printable_path(output)}")
     click.echo(f"RoT table: {rot_hash.hex()}")
 
 
@@ -196,7 +195,7 @@ def parse_rot(family: FamilyRevision, binary: str, output: str, encoding: str) -
     # Parse the RoT table
     try:
         rot = Rot.parse(family, rot_data)
-        click.echo(f"Successfully parsed RoT table from: {binary}")
+        click.echo(f"Successfully parsed RoT table from: {get_printable_path(binary)}")
         click.echo(str(rot))
     except SPSDKError as exc:
         raise SPSDKAppError(f"Failed to parse RoT table: {exc}") from exc
@@ -220,9 +219,11 @@ def parse_rot(family: FamilyRevision, binary: str, output: str, encoding: str) -
             key_path = os.path.join(output, key_filename)
             if isinstance(public_key, PublicKey):
                 public_key.save(key_path, encoding=encoding_type)
-                click.echo(f"Public key {key_index} saved to: {key_path}")
+                click.echo(f"Public key {key_index} saved to: {get_printable_path(key_path)}")
 
-        click.echo(f"Successfully extracted {len(public_keys)} public key(s) to: {output}")
+        click.echo(
+            f"Successfully extracted {len(public_keys)} public key(s) to: {get_printable_path(output)}"
+        )
 
     except Exception as exc:
         raise SPSDKAppError(f"Failed to extract public keys: {exc}") from exc
@@ -269,7 +270,7 @@ def calculate_hash(
     password: str,
     output: str,
     _base64: bool,
-    hash_algorithm: Optional[EnumHashAlgorithm] = None,
+    hash_algorithm: EnumHashAlgorithm | None = None,
 ) -> None:
     """Calculate RoT hash."""
     _rot = Rot(family, keys_or_certs=key, password=password, hash_algorithm=hash_algorithm)
@@ -281,7 +282,7 @@ def calculate_hash(
         click.echo(f"RoT hash: '{rot_hash.hex()}'")
     if output:
         write_file(rot_hash, path=output, mode="wb")
-        click.echo(f"Result has been stored in: {output}")
+        click.echo(f"Result has been stored in: {get_printable_path(output)}")
 
 
 @main.group(name="cert", cls=CommandsTreeGroup)
@@ -639,7 +640,7 @@ def key_verify(key1: str, key2: str) -> None:
 
 def reconstruct_key(
     key_data: bytes,
-) -> Union[PrivateKey, PublicKey]:
+) -> PrivateKey | PublicKey:
     """Reconstruct Crypto key from PEM,DER or RAW data."""
     try:
         return PrivateKey.parse(key_data)
@@ -679,7 +680,7 @@ def cut_off_data_regions(data: bytes, regions: list[str]) -> bytes:
     """
     if not regions:
         return data
-    data_chunks = bytes()
+    data_chunks = b""
     for region in regions:
         try:
             region = region.replace("[", "").replace("]", "")
@@ -794,7 +795,7 @@ def signature_create(
     signature = signature_provider_obj.get_signature(data, encoding_obj)
 
     write_file(signature, output, mode="wb")
-    click.echo(f"The data have been signed. Signature saved to: {output}")
+    click.echo(f"The data have been signed. Signature saved to: {get_printable_path(output)}")
 
 
 @signature_group.command(name="verify", no_args_is_help=True)
@@ -862,7 +863,7 @@ def signature_create(
 )
 def signature_verify(
     public_key: str,
-    algorithm: Optional[str],
+    algorithm: str | None,
     input_file: str,
     signature: str,
     pss_padding: bool,
@@ -877,7 +878,7 @@ def signature_verify(
 
 def signature_verify_command(
     public_key: str,
-    algorithm: Optional[str],
+    algorithm: str | None,
     input_file: str,
     signature: str,
     pss_padding: bool,
@@ -973,7 +974,7 @@ def ahab_tree_generate(
     encoding: str,
     keys_number: int,
     duration: int,
-    serial: Optional[list[int]],
+    serial: list[int] | None,
     srk_is_ca: bool,
 ) -> None:
     """Generates a basic AHAB PKI tree.
@@ -1062,7 +1063,7 @@ def ahab_tree_extend(
     encoding: str,
     keys_number: int,
     duration: int,
-    serial: Optional[list[int]],
+    serial: list[int] | None,
 ) -> None:
     """Extend a basic AHAB PKI tree.
 
@@ -1157,14 +1158,13 @@ def ahab_pqc_tree_generate_command(
     :param password: Password for key protection
     :param encoding: Encoding format (PEM or DER)
     :param keys_number: Number of key pairs to generate (1-4)
-    :raises SPSDKAppError: If Dilithium support is not available
+    :raises SPSDKAppError: If requested post-quantum support is not available.
     """
-    if not IS_DILITHIUM_SUPPORTED:
+    if key_type.startswith("dil") and not IS_DILITHIUM_SUPPORTED:
         raise SPSDKAppError(
-            "Post-quantum cryptography (Dilithium/ML-DSA) is not supported. "
+            "Dilithium support is not available. "
             "Please install the required dependencies: pip install spsdk[pqc]"
         )
-
     encoding_param = encoding.upper().strip()
     encoding_enum = SPSDKEncoding.all()[encoding_param]
 
@@ -1197,13 +1197,15 @@ def ahab_pqc_tree_generate_command(
 
         # Save private key
         private_key.save(private_key_path, password=password, encoding=encoding_enum)
-        click.echo(f"Private key saved: {private_key_path}")
+        click.echo(f"Private key saved: {get_printable_path(private_key_path)}")
 
         # Save public key
         public_key.save(public_key_path, encoding=encoding_enum)
-        click.echo(f"Public key saved: {public_key_path}")
+        click.echo(f"Public key saved: {get_printable_path(public_key_path)}")
 
-    click.echo(f"\nSuccessfully generated {keys_number} post-quantum key pair(s) in: {output}")
+    click.echo(
+        f"\nSuccessfully generated {keys_number} post-quantum key pair(s) in: {get_printable_path(output)}"
+    )
 
 
 @pki_group.command(name="hab", no_args_is_help=True)
@@ -1270,7 +1272,7 @@ def hab_tree_generate(
     encoding: str,
     keys_number: int,
     duration: int,
-    serial: Optional[list[int]],
+    serial: list[int] | None,
     srk_is_ca: bool,
 ) -> None:
     """Generates a basic HABv4 PKI tree.
@@ -1357,7 +1359,7 @@ def hab_tree_extend(
     encoding: str,
     keys_number: int,
     duration: int,
-    serial: Optional[list[int]],
+    serial: list[int] | None,
 ) -> None:
     """Extends a basic HABv4 PKI tree.
 
@@ -1404,7 +1406,7 @@ def ahab_tree_generate_command(
     encoding: str,
     keys_number: int,
     duration: int,
-    serial: Optional[list[int]],
+    serial: list[int] | None,
     srk_is_ca: bool,
 ) -> None:
     """Generate AHAB tree.
@@ -1461,7 +1463,7 @@ def ahab_tree_generate_command(
         ),
     )
     ca_cert.save(ca_cert_path, encoding_enum)
-    click.echo(f"The CA0 certificate has been created: {ca_cert_path}")
+    click.echo(f"The CA0 certificate has been created: {get_printable_path(ca_cert_path)}")
     logger.info(ca_cert)
 
     generate_srk_keys(
@@ -1486,7 +1488,7 @@ def ahab_extend_tree_command(
     encoding: str,
     keys_number: int,
     duration: int,
-    serial: Optional[list[int]],
+    serial: list[int] | None,
 ) -> None:
     """Extend existing AHAB PKI tree.
 
@@ -1605,7 +1607,7 @@ def hab_tree_generate_command(
     encoding: str,
     keys_number: int,
     duration: int,
-    serial: Optional[list[int]],
+    serial: list[int] | None,
     srk_is_ca: bool,
 ) -> None:
     """Generate HAB tree.
@@ -1664,7 +1666,7 @@ def hab_tree_generate_command(
         ),
     )
     ca_cert.save(ca_cert_path, encoding_enum)
-    click.echo(f"The CA0 certificate has been created: {ca_cert_path}")
+    click.echo(f"The CA0 certificate has been created: {get_printable_path(ca_cert_path)}")
     logger.info(ca_cert)
 
     generate_srk_keys(
@@ -1690,7 +1692,7 @@ def hab_extend_tree_command(
     encoding: str,
     keys_number: int,
     duration: int,
-    serial: Optional[list[int]],
+    serial: list[int] | None,
 ) -> None:
     """Extend existing HABv4 PKI tree.
 
@@ -1810,7 +1812,7 @@ def hab_extend_srk(
     encoding: str,
     keys_number: int,
     duration: int,
-    serial: Optional[list[int]],
+    serial: list[int] | None,
 ) -> None:
     """Extend existing HABv4 SRK PKI tree."""
     logger.info(

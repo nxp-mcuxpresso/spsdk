@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2026 NXP
 #
@@ -13,29 +12,26 @@ It supports multiple certificate block versions and formats including V1, V2.1,
 Vx, and AHAB certificate blocks with their respective headers and structures.
 """
 
-import logging
 import os
 import re
 from struct import calcsize, pack, unpack_from
-from typing import Any, Optional, Union
+from typing import Any
 
 from typing_extensions import Self
 
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.hash import get_hash
-from spsdk.crypto.keys import PrivateKeyRsa, PublicKey
+from spsdk.crypto.keys import PrivateKeyRsa, PublicKey, PublicKeyRsa
 from spsdk.exceptions import SPSDKError
 from spsdk.image.cert_block.cert_blocks import CertBlock
 from spsdk.image.cert_block.rkht import RKHTv1
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
-from spsdk.utils.family import FamilyRevision, update_validation_schema_family
+from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
 from spsdk.utils.misc import Endianness, align, align_block, find_file, load_binary
 from spsdk.utils.verifier import Verifier, VerifierResult
-
-logger = logging.getLogger(__name__)
 
 
 ########################################################################################################################
@@ -96,7 +92,7 @@ class CertBlockHeader(BaseClass):
 
         :return: Formatted string with certificate header information.
         """
-        nfo = str()
+        nfo = ""
         nfo += f" CB Version:           {self.version}\n"
         nfo += f" CB Flags:             {self.flags}\n"
         nfo += f" CB Build Number:      {self.build_number}\n"
@@ -113,7 +109,7 @@ class CertBlockHeader(BaseClass):
 
         :return: Certificate block data in binary format.
         """
-        major_version, minor_version = [int(v) for v in self.version.split(".")]
+        major_version, minor_version = (int(v) for v in self.version.split("."))
         return pack(
             self.FORMAT,
             self.SIGNATURE,
@@ -256,7 +252,7 @@ class CertBlockV1(CertBlock):
         )  # The certificate is self signed, return size of its signature
 
     @property
-    def rkh_index(self) -> Optional[int]:
+    def rkh_index(self) -> int | None:
         """Get the index of Root Key Hash that matches the certificate.
 
         The method searches through the available Root Key Hashes to find a match with the
@@ -364,7 +360,7 @@ class CertBlockV1(CertBlock):
         """
         return len(self._cert)
 
-    def set_root_key_hash(self, index: int, key_hash: Union[bytes, bytearray, Certificate]) -> None:
+    def set_root_key_hash(self, index: int, key_hash: bytes | bytearray | Certificate) -> None:
         """Set root key hash into RKHT at specified index.
 
         Multiple root public keys are supported to allow for key revocation.
@@ -382,7 +378,40 @@ class CertBlockV1(CertBlock):
             raise SPSDKError("Invalid length of key hash")
         self._rkht.set_rkh(index, bytes(key_hash))
 
-    def add_certificate(self, cert: Union[bytes, Certificate]) -> None:
+    def _verify_chain_cert_key_sizes(self) -> Verifier:
+        """Verify chain certificate RSA key sizes against the device advisory.
+
+        Some devices (declaring ``chain_cert_rsa2048_only`` in the device database) only
+        support RSA2048 keys for chain certificates. This advisory is evaluated only when
+        the device family is known (during :meth:`verify`), never while parsing an existing
+        binary cert block where the family may be unknown.
+
+        :return: Verifier holding a WARNING record for every chain certificate whose RSA key
+            exceeds 2048 bits on an affected device family. The verifier has no records when
+            there is no chain or the family is not affected.
+        """
+        ver = Verifier(name="Chain certificate key sizes")
+        if len(self._cert) <= 1:
+            return ver
+        if not get_db(self.family).get_bool(
+            DatabaseManager.CERT_BLOCK, "chain_cert_rsa2048_only", False
+        ):
+            return ver
+        for index, cert in enumerate(self._cert[1:], start=1):
+            pub_key = cert.get_public_key()
+            if isinstance(pub_key, PublicKeyRsa) and pub_key.key_size > 2048:
+                ver.add_record(
+                    name=f"Chain certificate {index} key size",
+                    result=VerifierResult.WARNING,
+                    value=(
+                        f"RSA{pub_key.key_size} key used; {self.family.name} only supports "
+                        "RSA2048 for chain certificates. Larger key sizes may not be "
+                        "supported by the device."
+                    ),
+                )
+        return ver
+
+    def add_certificate(self, cert: bytes | Certificate) -> None:
         """Add certificate to the certificate block.
 
         First call adds root certificate. Additional calls add chain certificates.
@@ -645,7 +674,7 @@ class CertBlockV1(CertBlock):
         :return: Configuration dictionary with certificate file paths and metadata.
         """
 
-        def create_certificate_cfg(root_id: int, chain_id: int) -> Optional[str]:
+        def create_certificate_cfg(root_id: int, chain_id: int) -> str | None:
             """Create certificate configuration file and return its filename.
 
             Saves the certificate at the specified chain depth to a DER file in the data path
@@ -807,6 +836,11 @@ class CertBlockV1(CertBlock):
                         result=VerifierResult.SUCCEEDED,
                         value="All certificates in chain are properly signed",
                     )
+
+            # Verify chain certificate key sizes against device advisory (WARNING records).
+            chain_key_ver = self._verify_chain_cert_key_sizes()
+            if chain_key_ver.get_count():
+                ver.add_child(chain_key_ver)
 
         # Verify RKHT
         rkh_count = len([rkh for rkh in self.rkh if rkh != bytes(32)])

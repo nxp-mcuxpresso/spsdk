@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,7 +17,6 @@ import sys
 from importlib.machinery import ModuleSpec
 from importlib.util import find_spec, module_from_spec, spec_from_file_location
 from types import ModuleType
-from typing import Optional
 
 import importlib_metadata
 
@@ -62,7 +60,7 @@ class PluginsManager(metaclass=SingletonMeta):
         """
         self.plugins: dict[str, ModuleType] = {}
 
-    def load_from_entrypoints(self, group_name: Optional[str] = None) -> int:
+    def load_from_entrypoints(self, group_name: str | None = None) -> int:
         """Load modules from given setuptools group.
 
         The method loads plugins from setuptools entry points for the specified group name.
@@ -98,7 +96,7 @@ class PluginsManager(metaclass=SingletonMeta):
                 count += 1
         return count
 
-    def load_from_source_file(self, source_file: str, module_name: Optional[str] = None) -> None:
+    def load_from_source_file(self, source_file: str, module_name: str | None = None) -> None:
         """Import Python source file directly.
 
         The method loads a Python source file as a module and registers it with the plugin system.
@@ -168,7 +166,7 @@ class PluginsManager(metaclass=SingletonMeta):
         logger.debug(f"A plugin {plugin_name} has been registered.")
         return True
 
-    def get_plugin(self, name: str) -> Optional[ModuleType]:
+    def get_plugin(self, name: str) -> ModuleType | None:
         """Get plugin by name from registered plugins.
 
         :param name: Name of the plugin to retrieve.

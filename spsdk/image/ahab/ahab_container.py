@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -18,7 +17,7 @@ AHABContainerV2 for different container versions and configurations.
 import logging
 from struct import pack, unpack
 from types import SimpleNamespace
-from typing import Optional, Union, cast
+from typing import cast
 
 from typing_extensions import Self
 
@@ -31,6 +30,7 @@ from spsdk.image.ahab.ahab_data import (
     RESERVED,
     AhabChipConfig,
     AhabChipContainerConfig,
+    AHABSignAlgorithm,
     AHABTags,
     FlagsSrkSet,
 )
@@ -113,7 +113,7 @@ class AHABContainerBase(HeaderContainer):
         flags: int = 0,
         fuse_version: int = 0,
         sw_version: int = 0,
-        signature_block: Optional[Union[SignatureBlock, SignatureBlockV2]] = None,
+        signature_block: SignatureBlock | SignatureBlockV2 | None = None,
     ):
         """Initialize AHAB container with configuration and security parameters.
 
@@ -385,7 +385,7 @@ class AHABContainerBase(HeaderContainer):
         :return: Binary data to be signed, empty bytes if signature block is not available.
         """
         if not self.signature_block or not self.signature_block.signature:
-            return bytes()  # Its OK to return just empty data - the verifier catch this issue
+            return b""  # Its OK to return just empty data - the verifier catch this issue
 
         signature_offset = self._signature_block_offset + self.signature_block._signature_offset
         return self._export()[:signature_offset]
@@ -425,7 +425,7 @@ class AHABContainerBase(HeaderContainer):
             RESERVED,  # Reserved field
         )
 
-    def _verify(self, name: Optional[str] = None, description: Optional[str] = None) -> Verifier:
+    def _verify(self, name: str | None = None, description: str | None = None) -> Verifier:
         """Validate object data.
 
         Performs comprehensive validation of the AHAB container object including header verification,
@@ -590,7 +590,7 @@ class AHABContainerBase(HeaderContainer):
 
         self.signature_block = self.SIGNATURE_BLOCK.load_from_config(config, self.chip_config)
 
-    def post_export(self, data_path: str, cnt_ix: Optional[int] = None) -> list[str]:
+    def post_export(self, data_path: str, cnt_ix: int | None = None) -> list[str]:
         """Post export actions for AHAB container.
 
         :param data_path: Path to store exported data files.
@@ -687,8 +687,8 @@ class AHABContainer(AHABContainerBase):
         flags: int = 0,
         fuse_version: int = 0,
         sw_version: int = 0,
-        image_array: Optional[Union[list[ImageArrayEntry], list[ImageArrayEntryV2]]] = None,
-        signature_block: Optional[Union[SignatureBlock, SignatureBlockV2]] = None,
+        image_array: list[ImageArrayEntry] | list[ImageArrayEntryV2] | None = None,
+        signature_block: SignatureBlock | SignatureBlockV2 | None = None,
         container_offset: int = 0,
     ):
         """Initialize AHAB container with configuration and optional components.
@@ -898,7 +898,7 @@ class AHABContainer(AHABContainerBase):
         # Emit IAE table entries sorted by iae_header_position when any entry has it set.
         # This allows the data-offset order (list order) to differ from the header-table order.
         # Entries without iae_header_position (None) fall back to their natural list index.
-        header_order: list[Union[ImageArrayEntry, ImageArrayEntryV2]]
+        header_order: list[ImageArrayEntry | ImageArrayEntryV2]
         if any(e.iae_header_position is not None for e in self.image_array):
             header_order = sorted(
                 self.image_array,
@@ -924,7 +924,7 @@ class AHABContainer(AHABContainerBase):
 
         return bytes(container_header)
 
-    def post_export(self, output_path: str, cnt_ix: Optional[int] = None) -> list[str]:
+    def post_export(self, output_path: str, cnt_ix: int | None = None) -> list[str]:
         """Post-export processing and optional file writing.
 
         Performs post-export operations including SRK hash generation and fuse script creation.
@@ -1518,6 +1518,32 @@ class AHABContainerV2(AHABContainer):
             )
             self.flags = (self.flags & ~fb_mask) | fb_value
 
+    def _get_srk_table_fuse_db_index(self, table_ix: int) -> int:
+        """Get the device-database fuse index for a given SRK table.
+
+        The device database always maps ECC/RSA SRK tables to index 0 (``fuses_0``,
+        ``pfr_hash_0``) and PQC (DILITHIUM/ML-DSA) SRK tables to index 1
+        (``fuses_1``, ``pfr_hash_1``).  This mapping is fixed by the database
+        schema and is independent of the physical position of the table in the
+        SRK table array.
+
+        For a PQC-only container the single SRK table sits at position 0 in the
+        array, but it must still use DB index 1 so that the correct PQC fuse
+        registers are targeted.
+
+        :param table_ix: Position of the SRK table in the array (0 or 1).
+        :return: 0 for ECC/RSA tables, 1 for PQC (DILITHIUM/ML-DSA) tables.
+        """
+        assert self.signature_block is not None
+        assert isinstance(self.signature_block.srk_assets, SRKTableArray)
+        srk_table = self.signature_block.srk_assets._srk_tables[table_ix]
+        if srk_table.srk_records and srk_table.srk_records[0].signing_algorithm in (
+            AHABSignAlgorithm.DILITHIUM,
+            AHABSignAlgorithm.ML_DSA,
+        ):
+            return 1
+        return 0
+
     def _get_srk_hash_for_fuses(self, fuse_script: FuseScript, srk_id: int) -> bytes:
         """Get SRK hash truncated to the width of the target fuse register.
 
@@ -1552,16 +1578,21 @@ class AHABContainerV2(AHABContainer):
         if self.signature_block and self.signature_block.srk_assets:
             assert isinstance(self.signature_block.srk_assets, SRKTableArray)
             for ix in range(len(self.signature_block.srk_assets._srk_tables)):
+                # Determine the DB fuse index from the key type, not the table position.
+                # PQC (DILITHIUM/ML-DSA) tables always use fuses_1 in the database;
+                # ECC/RSA tables always use fuses_0 — even in PQC-only containers
+                # where the PQC table sits at position 0.
+                fuse_db_idx = self._get_srk_table_fuse_db_index(ix)
                 try:
                     fuse_script = FuseScript(
                         self.chip_config.base.family,
                         DatabaseManager.AHAB,
-                        index=ix,
+                        index=fuse_db_idx,
                     )
                 except SPSDKError:
                     continue
                 srk_hash = self._get_srk_hash_for_fuses(fuse_script, ix)
-                fuse_attrs = SimpleNamespace(**{f"srk_hash{ix}": srk_hash})
+                fuse_attrs = SimpleNamespace(**{f"srk_hash{fuse_db_idx}": srk_hash})
                 ret += fuse_script.generate_script(fuse_attrs, True) + "\n"
         return ret
 
@@ -1582,8 +1613,11 @@ class AHABContainerV2(AHABContainer):
         db = get_db(self.chip_config.base.family)
         ret = ""
         for ix in range(len(self.signature_block.srk_assets._srk_tables)):
+            # Use the DB index based on key type (PQC=1, ECC=0), not the table position,
+            # so that PQC-only containers look up pfr_hash_1 instead of pfr_hash_0.
+            fuse_db_idx = self._get_srk_table_fuse_db_index(ix)
             try:
-                pfr_hash_cfg = db.get_dict(DatabaseManager.AHAB, f"pfr_hash_{ix}")
+                pfr_hash_cfg = db.get_dict(DatabaseManager.AHAB, f"pfr_hash_{fuse_db_idx}")
             except SPSDKError:
                 continue
 
@@ -1620,7 +1654,7 @@ class AHABContainerV2(AHABContainer):
 
         return ret
 
-    def post_export(self, output_path: str, cnt_ix: Optional[int] = None) -> list[str]:
+    def post_export(self, output_path: str, cnt_ix: int | None = None) -> list[str]:
         """Post-export processing and optional file writing.
 
         Generates SRK hash files and fuse scripts for AHAB containers. Skips processing for NXP
@@ -1651,11 +1685,13 @@ class AHABContainerV2(AHABContainer):
                     logger.info(f"Generated file containing SRK hash: {srk_hash_file}")
                     generated_files.append(srk_hash_file)
                     try:
+                        # Use DB index based on key type: PQC tables use fuses_1, ECC uses fuses_0.
+                        fuse_db_idx = self._get_srk_table_fuse_db_index(srk_id)
                         fuse_script = FuseScript(
-                            self.chip_config.base.family, DatabaseManager.AHAB, srk_id
+                            self.chip_config.base.family, DatabaseManager.AHAB, fuse_db_idx
                         )
                         srk_hash_fuses = self._get_srk_hash_for_fuses(fuse_script, srk_id)
-                        fuse_attrs = SimpleNamespace(**{f"srk_hash{srk_id}": srk_hash_fuses})
+                        fuse_attrs = SimpleNamespace(**{f"srk_hash{fuse_db_idx}": srk_hash_fuses})
                         logger.info(
                             f"\nFuses info:\n{fuse_script.generate_script(fuse_attrs, info_only=True)}"
                         )

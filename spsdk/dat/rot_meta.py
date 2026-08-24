@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -16,7 +15,6 @@ import abc
 import logging
 import math
 from struct import pack
-from typing import Type
 
 from typing_extensions import Self
 
@@ -547,7 +545,7 @@ class RotMetaEcc(RotMeta):
         return hash_size
 
     @classmethod
-    def _get_subclass(cls, hash_size: int) -> Type["RotMetaEcc"]:
+    def _get_subclass(cls, hash_size: int) -> type["RotMetaEcc"]:
         """Get the subclass with given hash algorithm.
 
         Searches through available RotMetaEcc subclasses to find one that matches
@@ -557,14 +555,14 @@ class RotMetaEcc(RotMeta):
         :raises SPSDKValueError: When no subclass with the specified hash size exists.
         :return: The RotMetaEcc subclass that supports the given hash size.
         """
-        subclasses: list[Type[RotMetaEcc]] = cls._build_subclasses()
+        subclasses: list[type[RotMetaEcc]] = cls._build_subclasses()
         for subclass in subclasses:
             if subclass.HASH_SIZE == hash_size:
                 return subclass
         raise SPSDKValueError(f"The subclass with hash length {hash_size} does not exist.")
 
     @classmethod
-    def _build_subclasses(cls) -> list[Type["RotMetaEcc"]]:
+    def _build_subclasses(cls) -> list[type["RotMetaEcc"]]:
         """Dynamically build list of classes based on hash algorithm.
 
         Creates subclasses of RotMetaEcc for each hash algorithm defined in HASH_SIZES,

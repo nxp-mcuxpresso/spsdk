@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -13,6 +12,7 @@ Tests cover command generation, template handling, device factory operations,
 and SBX device integration.
 """
 
+import logging
 import os
 from typing import Any
 
@@ -21,14 +21,15 @@ import pytest
 from spsdk.apps import nxpdevhsm
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.sbfile.devhsm.utils import get_devhsm_class
-from spsdk.sbfile.sb31.commands import CmdLoadKeyBlob
+from spsdk.sbfile.sb4.images import SecureBinary4Commands
+from spsdk.sbfile.sb31.commands import CmdLoadKeyBlob, CmdReset, CmdWriteIfr
 from spsdk.sbfile.sb31.devhsm import DevHsmSB31
 from spsdk.sbfile.sb31.images import SecureBinary31Commands
 from spsdk.sbfile.sbc.devhsm import DevHsmSBc
 from spsdk.sbfile.sbx.devhsm import DevHsmSBx
 from spsdk.sbfile.sbx.images import SecureBinaryXType
 from spsdk.utils.config import Config
-from spsdk.utils.family import FamilyRevision
+from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import load_binary, use_working_directory
 from tests.cli_runner import CliRunner
 
@@ -57,6 +58,31 @@ def test_nxpdevhsm_run_generate(cli_runner: CliRunner, data_dir: str, tmpdir: An
         assert (
             "No devices for given interface 'uart' and parameters 'port=COMx, timeout=5000' was found."
             == str(result.exception)
+        )
+
+
+def test_nxpdevhsm_parent_debug_log_level_reaches_subcommand(
+    cli_runner: CliRunner, data_dir: str, tmpdir: Any, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Test that parent -vv log level is applied before subcommand interface scan.
+
+    This is a regression test for CLI commands where verbosity is defined on the parent
+    command group but the mboot interface is resolved in a subcommand decorator.
+    """
+    with use_working_directory(data_dir):
+        cmd = (
+            "-vv generate -p COMx "
+            "-oc family=lpc55s3x "
+            "-oc containerKeyBlobEncryptionKey=test_bin.bin "
+            "-oc oemRandomShare=test_bin.bin "
+            f"-oc containerOutputFile={tmpdir}/bootable_images/cust_mk_sk.sb"
+        )
+        with caplog.at_level(logging.DEBUG, logger="spsdk"):
+            cli_runner.invoke(nxpdevhsm.main, cmd.split(), expected_code=1)
+        assert any(
+            record.levelno == logging.DEBUG
+            and "Checking port: COMx, baudrate: 57600, timeout: 5000" in record.message
+            for record in caplog.records
         )
 
 
@@ -130,6 +156,38 @@ def test_devhsm_factory(family: str, expected_cls: Any) -> None:
     assert devhsm_cls == expected_cls
 
 
+def test_kw43_devhsm_sb4_keyblob_injected_before_write_ifr() -> None:
+    """Test that DevHSM-injected KW43 SB4 keyblob is placed before WriteIFR."""
+    family_revision = FamilyRevision("kw43b43z97")
+    sb4_commands = SecureBinary4Commands(family=family_revision, hash_type=EnumHashAlgorithm.SHA384)
+    sb4_commands.add_command(
+        CmdWriteIfr(
+            address=0,
+            data=bytes(16),
+            ifr_type=CmdWriteIfr.WriteIfrType.CFPA_AND_CMPA,
+        )
+    )
+    sb4_commands.add_command(CmdReset())
+
+    sb4_commands.insert_command(
+        index=get_db(family_revision).get_int("devhsm", "key_blob_command_position"),
+        command=CmdLoadKeyBlob(
+            offset=0,
+            data=bytes(40),
+            key_wrap_id=CmdLoadKeyBlob.get_key_id(
+                family=family_revision,
+                key_name=CmdLoadKeyBlob.KeyTypes.NXP_CUST_KEK_EXT_SK,
+            ),
+        ),
+    )
+
+    assert [command.CMD_TAG.label for command in sb4_commands.commands] == [
+        "loadKeyBlob",
+        "writeIFR",
+        "reset",
+    ]
+
+
 def test_sbx_devhsm(data_dir: str) -> None:
     """Test SBx DevHSM functionality with configuration file.
 
@@ -160,6 +218,8 @@ def test_sbx_devhsm(data_dir: str) -> None:
         ("mcxa256"),
         ("mcxa366"),
         ("mcxa365"),
+        ("mcxa457"),
+        ("kw43b43z97"),
     ],
 )
 def test_nxpdevhsm_get_template(cli_runner: CliRunner, tmpdir: Any, family: str) -> None:

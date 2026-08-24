@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2026 NXP
 #
@@ -15,7 +14,8 @@ Vx, and AHAB certificate blocks with their respective headers and structures.
 
 import logging
 import os
-from typing import Any, Iterable, Optional, Type, Union
+from collections.abc import Iterable
+from typing import Any
 
 from typing_extensions import Self
 
@@ -58,7 +58,7 @@ class CertBlock(FeatureBaseClass):
         self.family = family
 
     @classmethod
-    def get_cert_block_class(cls, family: FamilyRevision) -> Type["CertBlock"]:
+    def get_cert_block_class(cls, family: FamilyRevision) -> type["CertBlock"]:
         """Get certification block class by family name.
 
         Retrieves the appropriate certification block class that supports the specified
@@ -110,7 +110,7 @@ class CertBlock(FeatureBaseClass):
         )
 
     @classmethod
-    def get_cert_block_classes(cls) -> list[Type["CertBlock"]]:
+    def get_cert_block_classes(cls) -> list[type["CertBlock"]]:
         """Get list of all certificate block classes.
 
         This method returns all subclasses of CertBlock that are currently loaded
@@ -133,10 +133,10 @@ class CertBlock(FeatureBaseClass):
 
         :return: Root Key Table Hash as bytes.
         """
-        return bytes()
+        return b""
 
     @classmethod
-    def find_main_cert_index(cls, config: Config) -> Optional[int]:
+    def find_main_cert_index(cls, config: Config) -> int | None:
         """Find the index of the main certificate that matches the private key.
 
         Searches through all root certificates in the configuration to find the one
@@ -210,7 +210,7 @@ class CertBlock(FeatureBaseClass):
         raise SPSDKNotImplementedError()
 
 
-def convert_to_ecc_key(key: Union[PublicKeyEcc, bytes]) -> PublicKeyEcc:
+def convert_to_ecc_key(key: PublicKeyEcc | bytes) -> PublicKeyEcc:
     """Convert key into ECC key instance.
 
     Converts various key formats (bytes or existing ECC key) into a standardized
@@ -244,7 +244,7 @@ def find_root_certificates(config: dict[str, Any]) -> list[str]:
     :raises SPSDKError: If there are gaps in rootCertificateXFile definition sequence.
     :return: List of root certificate file paths found in configuration.
     """
-    root_certificates_loaded: list[Optional[str]] = [
+    root_certificates_loaded: list[str | None] = [
         config.get(f"rootCertificate{idx}File") for idx in range(4)
     ]
     # filter out None and empty values
@@ -256,22 +256,23 @@ def find_root_certificates(config: dict[str, Any]) -> list[str]:
 
 
 def get_keys_or_rotkh_from_certblock_config(
-    rot: Optional[str], family: Optional[FamilyRevision]
-) -> tuple[Optional[Iterable[str]], Optional[bytes]]:
+    rot: str | None, family: FamilyRevision | None
+) -> tuple[Iterable[str] | None, bytes | None]:
     """Get keys or ROTKH value from ROT config.
 
     ROT config might be cert block config or MBI config.
-    There are four cases how cert block might be configured:
+    There are five cases how cert block might be configured:
     1. MBI with certBlock property pointing to YAML file
     2. MBI with certBlock property pointing to BIN file
     3. YAML configuration of cert block
     4. Binary cert block
+    5. Binary MBI (the RKTH is extracted from the embedded cert block)
 
-    :param rot: Path to ROT configuration (MBI or cert block) or path to binary cert block.
+    :param rot: Path to ROT configuration (MBI or cert block) or path to binary cert block/MBI.
     :param family: MCU family.
     :raises SPSDKError: In case the ROTKH or keys cannot be parsed.
     :return: Tuple containing root of trust (list of paths to keys) or ROTKH in case of binary
-        cert block.
+        cert block or MBI.
     """
     root_of_trust = None
     rotkh = None
@@ -287,17 +288,38 @@ def get_keys_or_rotkh_from_certblock_config(
                     )
                 except SPSDKError:
                     cert_block = load_binary(config_data["certBlock"], search_paths=[config_dir])
-                    parsed_cert_block = CertBlock.get_cert_block_class(family).parse(cert_block)
+                    parsed_cert_block = CertBlock.get_cert_block_class(family).parse(
+                        cert_block, family=family
+                    )
                     rotkh = parsed_cert_block.rkth
             public_keys = find_root_certificates(config_data)
-            root_of_trust = tuple((find_file(x, search_paths=[config_dir]) for x in public_keys))
+            root_of_trust = tuple(find_file(x, search_paths=[config_dir]) for x in public_keys)
         except SPSDKError:
             logger.debug("Parsing ROT from config did not succeed, trying it as binary")
             try:
-                cert_block = load_binary(rot, search_paths=[config_dir])
-                parsed_cert_block = CertBlock.get_cert_block_class(family).parse(cert_block)
+                cert_block_data = load_binary(rot, search_paths=[config_dir])
+                parsed_cert_block = CertBlock.get_cert_block_class(family).parse(
+                    cert_block_data, family=family
+                )
                 rotkh = parsed_cert_block.rkth
-            except SPSDKError as e:
-                raise SPSDKError(f"Parsing of binary cert block failed with {e}") from e
+            except SPSDKError:
+                logger.debug("Parsing ROT as binary cert block failed, trying it as MBI binary")
+                # Lazy import to avoid circular import chain:
+                # cert_blocks -> mbi -> cert_block_v1 -> cert_blocks
+                from spsdk.image.mbi.mbi import MasterBootImage
+
+                try:
+                    mbi_data = load_binary(rot, search_paths=[config_dir])
+                    parsed_mbi = MasterBootImage.parse(mbi_data, family)
+                    rotkh = parsed_mbi.rkth
+                except SPSDKError as e:
+                    raise SPSDKError(
+                        f"Parsing ROT from binary as cert block and MBI both failed: {e}"
+                    ) from e
+                if rotkh is None:
+                    raise SPSDKError(  # pylint: disable=raise-missing-from
+                        "Parsing ROT from binary as cert block and MBI both failed: "
+                        "MBI binary does not contain a cert block with RKTH"
+                    )
 
     return root_of_trust, rotkh

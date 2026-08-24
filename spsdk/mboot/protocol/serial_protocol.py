@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
 # Copyright 2019-2026 NXP
@@ -15,8 +14,9 @@ for NXP MCU bootloader communication.
 
 import struct
 import time
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator, NamedTuple, Optional, Union
+from typing import NamedTuple
 
 from typing_extensions import Self
 
@@ -182,7 +182,7 @@ class MbootSerialProtocol(MbootProtocolBase):
         frame = self._create_frame(data, FPType.CMD)
         self._send_frame(frame)
 
-    def read(self, length: Optional[int] = None) -> Union[CmdResponse, bytes]:
+    def read(self, length: int | None = None) -> CmdResponse | bytes:
         """Read data from device using the serial protocol.
 
         The method reads a complete frame including header, length, CRC, and data payload.
@@ -208,7 +208,7 @@ class MbootSerialProtocol(MbootProtocolBase):
             return parse_cmd_response(data)
         return data
 
-    def _read(self, length: int, timeout: Optional[int] = None) -> bytes:
+    def _read(self, length: int, timeout: int | None = None) -> bytes:
         """Internal read method for serial protocol communication.
 
         This method serves as a wrapper around the device's read functionality and is primarily
@@ -306,7 +306,7 @@ class MbootSerialProtocol(MbootProtocolBase):
                 return header
         raise McuBootConnectionError(f"No data received in {self.device.timeout} ms")
 
-    def _read_frame_header(self, expected_frame_type: Optional[FPType] = None) -> tuple[int, int]:
+    def _read_frame_header(self, expected_frame_type: FPType | None = None) -> tuple[int, int]:
         """Read frame header and frame type from the communication interface.
 
         This method handles the protocol-specific frame reading with workaround for SPI ISP

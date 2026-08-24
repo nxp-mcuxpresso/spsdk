@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK TrustZone configuration management for nxpimage application.
 
 This module provides CLI commands for managing TrustZone configurations,
@@ -66,7 +66,7 @@ def tz_get_template(family: FamilyRevision, output: str) -> None:
     """Create template of configuration in YAML format."""
     tz_class = get_tz_class(family)
     write_file(tz_class.get_config_template(family), output)
-    click.echo(f"Trust zone template file has been created: {output}.")
+    click.echo(f"Trust zone template file has been created: {get_printable_path(output)}.")
 
 
 @tz_group.command(name="parse", no_args_is_help=True)
@@ -90,4 +90,7 @@ def tz_parse(binary: str, family: FamilyRevision, output: str) -> None:
     tz_image = tz_class.parse(load_binary(binary), family=family)
     config = tz_image.get_config_yaml()
     write_file(config, output)
-    click.echo(f"Success. (TrustZone: {binary} has been parsed and stored into {output}.)")
+    click.echo(
+        f"Success. (TrustZone: {get_printable_path(binary)} has been parsed "
+        f"and stored into {get_printable_path(output)}.)"
+    )

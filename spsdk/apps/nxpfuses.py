@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
@@ -14,7 +13,6 @@ safety features and configuration templates.
 
 import logging
 import sys
-from typing import Optional
 
 import click
 import colorama
@@ -69,17 +67,17 @@ def prompt_for_write_permission(skip: bool = False) -> bool:
 
 def get_fuse_operator(
     family: FamilyRevision,
-    port: Optional[str],
-    usb: Optional[str],
-    lpcusbsio: Optional[str],
-    buspal: Optional[str],
+    port: str | None,
+    usb: str | None,
+    lpcusbsio: str | None,
+    buspal: str | None,
     timeout: int,
-    device: Optional[str],
-    buffer_addr: Optional[int],
-    buffer_size: Optional[int],
-    fb_addr: Optional[int],
-    fb_size: Optional[int],
-    uboot_prompt: Optional[str],
+    device: str | None,
+    buffer_addr: int | None,
+    buffer_size: int | None,
+    fb_addr: int | None,
+    fb_size: int | None,
+    uboot_prompt: str | None,
 ) -> FuseOperator:
     """Get fuse operator."""
     operator_class = Fuses.get_fuse_operator_type(family)
@@ -147,19 +145,19 @@ def get_template(family: FamilyRevision, output: str) -> None:
     help="I accept the risk of writing the fuses.",
 )
 def write(
-    port: Optional[str],
-    usb: Optional[str],
-    lpcusbsio: Optional[str],
-    buspal: Optional[str],
+    port: str | None,
+    usb: str | None,
+    lpcusbsio: str | None,
+    buspal: str | None,
     timeout: int,
-    device: Optional[str],
-    buffer_addr: Optional[int],
-    buffer_size: Optional[int],
-    fb_addr: Optional[int],
-    fb_size: Optional[int],
+    device: str | None,
+    buffer_addr: int | None,
+    buffer_size: int | None,
+    fb_addr: int | None,
+    fb_size: int | None,
     config: Config,
     yes: bool,
-    uboot_prompt: Optional[str],
+    uboot_prompt: str | None,
 ) -> None:
     """Write fuses from configuration into device."""
     permitted = prompt_for_write_permission(yes)
@@ -204,22 +202,22 @@ def write(
     help="Accept the risk of writing the fuses.",
 )
 def write_single(
-    port: Optional[str],
-    usb: Optional[str],
-    lpcusbsio: Optional[str],
-    buspal: Optional[str],
+    port: str | None,
+    usb: str | None,
+    lpcusbsio: str | None,
+    buspal: str | None,
     timeout: int,
-    device: Optional[str],
-    buffer_addr: Optional[int],
-    buffer_size: Optional[int],
-    fb_addr: Optional[int],
-    fb_size: Optional[int],
+    device: str | None,
+    buffer_addr: int | None,
+    buffer_size: int | None,
+    fb_addr: int | None,
+    fb_size: int | None,
     family: FamilyRevision,
     name: str,
     value: str,
     lock: bool,
     yes: bool,
-    uboot_prompt: Optional[str],
+    uboot_prompt: str | None,
 ) -> None:
     """Write single fuse into device."""
     permitted = prompt_for_write_permission(yes)
@@ -275,21 +273,21 @@ def write_single(
     help="Force reading fuses even when access rights are set to WO (Write-Only).",
 )
 def print_fuses(
-    port: Optional[str],
-    usb: Optional[str],
-    lpcusbsio: Optional[str],
-    buspal: Optional[str],
+    port: str | None,
+    usb: str | None,
+    lpcusbsio: str | None,
+    buspal: str | None,
     timeout: int,
-    device: Optional[str],
-    buffer_addr: Optional[int],
-    buffer_size: Optional[int],
-    fb_addr: Optional[int],
-    fb_size: Optional[int],
+    device: str | None,
+    buffer_addr: int | None,
+    buffer_size: int | None,
+    fb_addr: int | None,
+    fb_size: int | None,
     family: FamilyRevision,
-    name: Optional[str],
+    name: str | None,
     rich: bool,
     ignore_access_rights: bool,
-    uboot_prompt: Optional[str],
+    uboot_prompt: str | None,
 ) -> None:
     """Print the current state of fuses from device."""
     fuse_operator = get_fuse_operator(
@@ -365,7 +363,9 @@ def fuses_script(config: Config, output: str, non_default_only: bool) -> None:
     fuses = Fuses.load_from_config(config)
     fuse_script = fuses.create_fuse_script(loaded_only=True, non_default_only=non_default_only)
     write_file(fuse_script, output)
-    click.echo(f"Fuse script for '{fuses.fuse_operator_type.NAME}' has been generated: {output}")
+    click.echo(
+        f"Fuse script for '{fuses.fuse_operator_type.NAME}' has been generated: {get_printable_path(output)}"
+    )
 
 
 @main.command(name="get-config", no_args_is_help=True)
@@ -387,21 +387,21 @@ def fuses_script(config: Config, output: str, non_default_only: bool) -> None:
     help="Force reading fuses even when access rights are set to WO (Write-Only) or Reserved.",
 )
 def get_config(
-    port: Optional[str],
-    usb: Optional[str],
-    lpcusbsio: Optional[str],
-    buspal: Optional[str],
+    port: str | None,
+    usb: str | None,
+    lpcusbsio: str | None,
+    buspal: str | None,
     timeout: int,
-    device: Optional[str],
-    buffer_addr: Optional[int],
-    buffer_size: Optional[int],
-    fb_addr: Optional[int],
-    fb_size: Optional[int],
+    device: str | None,
+    buffer_addr: int | None,
+    buffer_size: int | None,
+    fb_addr: int | None,
+    fb_size: int | None,
     family: FamilyRevision,
     output: str,
     diff_only: bool,
     ignore_access_rights: bool,
-    uboot_prompt: Optional[str],
+    uboot_prompt: str | None,
 ) -> None:
     """Save the current state of fuses to config file."""
     fuse_operator = get_fuse_operator(
@@ -431,7 +431,7 @@ def get_config(
             raise SPSDKAppError(f"Reading the fuses failed: ({str(exc)})") from exc
         finally:
             write_file(fuses.get_config_yaml(diff=diff_only), output)
-            click.echo(f"The fuses configuration has been saved into {output}")
+            click.echo(f"The fuses configuration has been saved into {get_printable_path(output)}")
 
 
 @catch_spsdk_error

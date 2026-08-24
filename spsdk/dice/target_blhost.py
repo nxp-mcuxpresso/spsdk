@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK DICE operations adapter for BLHost/Mboot communication.
 
 This module provides the BlhostDICETarget class that implements DICE (Device Identifier

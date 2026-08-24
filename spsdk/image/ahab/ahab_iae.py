@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -14,11 +13,11 @@ supporting various image types, encryption, and hash verification for NXP secure
 import logging
 import os
 from struct import pack, unpack
-from typing import Any, Optional, Type, TypeVar, Union, cast
+from typing import Any, TypeVar, cast
 
 from typing_extensions import Self
 
-from spsdk.__version__ import version
+from spsdk import __version__ as version
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image.ahab.ahab_abstract_interfaces import Container, HeaderContainerData
@@ -142,26 +141,26 @@ class ImageArrayEntry(Container):
     METADATA_SM_FLAGS_OFFSET = 24
     METADATA_SM_FLAGS_SIZE = 8
 
-    FLAGS_HASH_ALGORITHM_TYPE: Type[Union[AHABSignHashAlgorithm, AHABSignHashAlgorithm]] = (
+    FLAGS_HASH_ALGORITHM_TYPE: type[AHABSignHashAlgorithm | AHABSignHashAlgorithm] = (
         AHABSignHashAlgorithm
     )
 
     def __init__(
         self,
         chip_config: AhabChipContainerConfig,
-        image: Optional[bytes] = None,
+        image: bytes | None = None,
         image_offset: int = 0,
         load_address: int = 0,
         entry_point: int = 0,
         flags: int = 0,
         image_meta_data: int = 0,
-        image_hash: Optional[bytes] = None,
-        image_iv: Optional[bytes] = None,
+        image_hash: bytes | None = None,
+        image_iv: bytes | None = None,
         already_encrypted_image: bool = False,
-        image_name: Optional[str] = None,
+        image_name: str | None = None,
         gap_after_image: int = 0,
         image_size_alignment: int = 1,
-        iae_header_position: Optional[int] = None,
+        iae_header_position: int | None = None,
         align_next_to: int = 0,
     ) -> None:
         """Initialize an Image Array Entry object.
@@ -224,7 +223,7 @@ class ImageArrayEntry(Container):
             else bytes(self.IV_LEN)
         )
         self.gap_after_image = gap_after_image
-        self.iae_header_position: Optional[int] = iae_header_position
+        self.iae_header_position: int | None = iae_header_position
         self.align_next_to: int = align_next_to
 
     @property
@@ -526,7 +525,7 @@ class ImageArrayEntry(Container):
         )
 
     @staticmethod
-    def get_image_types(chip_config: AhabChipContainerConfig, core_id: int) -> Type[SpsdkSoftEnum]:
+    def get_image_types(chip_config: AhabChipContainerConfig, core_id: int) -> type[SpsdkSoftEnum]:
         """Get the appropriate image type enumeration based on core ID.
 
         Different core IDs may support different image types. This method
@@ -969,11 +968,9 @@ class ImageArrayEntry(Container):
         iae._image_offset = image_offset
 
         logger.debug(
-            (
-                "Parsing Image array Entry:\n"
-                f"Image offset: {hex(iae.image_offset)}\n"
-                f"Image offset raw: {hex(iae._image_offset)}"
-            )
+            "Parsing Image array Entry:\n"
+            f"Image offset: {hex(iae.image_offset)}\n"
+            f"Image offset raw: {hex(iae._image_offset)}"
         )
 
         return iae
@@ -1139,7 +1136,7 @@ class ImageArrayEntry(Container):
 
         return alignment
 
-    def _get_valid_size(self, image: Optional[bytes]) -> int:
+    def _get_valid_size(self, image: bytes | None) -> int:
         """Calculate the valid image size that should be stored in the container.
 
         Applies appropriate alignment rules based on image type and configured alignment. If a custom
@@ -1185,7 +1182,7 @@ class ImageArrayEntryV2(ImageArrayEntry):
     FLAGS_HASH_ALGORITHM_TYPE = AHABSignHashAlgorithm
 
 
-IAE_TYPE = TypeVar("IAE_TYPE", Type[ImageArrayEntry], Type[ImageArrayEntryV2])
+IAE_TYPE = TypeVar("IAE_TYPE", type[ImageArrayEntry], type[ImageArrayEntryV2])
 
 
 class ImageArrayEntryTemplates:
@@ -1210,8 +1207,8 @@ class ImageArrayEntryTemplates:
         cls,
         database: Features,
         key_name: str,
-        config: Optional[dict[str, Any]] = None,
-        default: Optional[Any] = None,
+        config: dict[str, Any] | None = None,
+        default: Any | None = None,
     ) -> Any:
         """Load a value from configuration or database.
 
@@ -1236,8 +1233,8 @@ class ImageArrayEntryTemplates:
         cls,
         database: Features,
         key_name: str,
-        config: Optional[dict[str, Any]] = None,
-        default: Optional[int] = None,
+        config: dict[str, Any] | None = None,
+        default: int | None = None,
     ) -> int:
         """Load an integer value from configuration or database.
 
@@ -1258,8 +1255,8 @@ class ImageArrayEntryTemplates:
         cls,
         database: Features,
         key_name: str,
-        config: Optional[dict[str, Any]] = None,
-        default: Optional[bool] = None,
+        config: dict[str, Any] | None = None,
+        default: bool | None = None,
     ) -> bool:
         """Load a boolean value from configuration or database.
 
@@ -1281,8 +1278,8 @@ class ImageArrayEntryTemplates:
         cls,
         database: Features,
         key_name: str,
-        config: Optional[dict[str, Any]] = None,
-        default: Optional[str] = None,
+        config: dict[str, Any] | None = None,
+        default: str | None = None,
     ) -> str:
         """Load a string value from configuration or database.
 
@@ -1304,9 +1301,9 @@ class ImageArrayEntryTemplates:
         cls,
         database: Features,
         key_name: str,
-        config: Optional[dict[str, Any]] = None,
-        default: Optional[Union[str, int]] = None,
-    ) -> Union[str, int]:
+        config: dict[str, Any] | None = None,
+        default: str | int | None = None,
+    ) -> str | int:
         """Load a value that can be either string or integer.
 
         Uses _load_value to retrieve the raw value and ensures it's either a string or integer.
@@ -1329,7 +1326,7 @@ class ImageArrayEntryTemplates:
         binary: bytes,
         chip_config: AhabChipContainerConfig,
         config: Config,
-    ) -> Union[ImageArrayEntry, ImageArrayEntryV2]:
+    ) -> ImageArrayEntry | ImageArrayEntryV2:
         """Create an image array entry from binary data and configuration.
 
         Builds an ImageArrayEntry (or V2) instance using values from the configuration
@@ -1429,7 +1426,7 @@ class ImageArrayEntryTemplates:
         :return: Formatted string containing default settings description.
         """
 
-        def get_image_types() -> Type[SpsdkSoftEnum]:
+        def get_image_types() -> type[SpsdkSoftEnum]:
             """Determine the appropriate image type enumeration for the core ID.
 
             Looks up the image type group based on the core ID in the database
@@ -1499,7 +1496,7 @@ class ImageArrayEntryTemplates:
         iae_cls: IAE_TYPE,
         chip_config: AhabChipContainerConfig,
         config: Config,
-    ) -> list[Union[ImageArrayEntry, ImageArrayEntryV2]]:
+    ) -> list[ImageArrayEntry | ImageArrayEntryV2]:
         """Create an image array entry using this template.
 
         This is the base implementation that loads binary data from the
@@ -1528,7 +1525,7 @@ class ImageArrayEntryTemplates:
         iae_cls: IAE_TYPE,
         chip_config: AhabChipContainerConfig,
         config: list[Config],
-    ) -> list[Union[ImageArrayEntry, ImageArrayEntryV2]]:
+    ) -> list[ImageArrayEntry | ImageArrayEntryV2]:
         """Create multiple image array entries from a list of configurations.
 
         This method processes a list of configuration dictionaries and creates
@@ -1590,10 +1587,10 @@ class IaeDoubleAuthentication(ImageArrayEntryTemplates):
     @classmethod
     def create_image_array_entry(
         cls,
-        iae_cls: Type[ImageArrayEntry],
+        iae_cls: type[ImageArrayEntry],
         chip_config: AhabChipContainerConfig,
         config: Config,
-    ) -> list[Union[ImageArrayEntry, ImageArrayEntryV2]]:
+    ) -> list[ImageArrayEntry | ImageArrayEntryV2]:
         """Create image array entries for double-authenticated NXP firmware.
 
         This specialized implementation:
@@ -1679,10 +1676,10 @@ class IaeSPLDDR(ImageArrayEntryTemplates):
     @classmethod
     def create_image_array_entry(
         cls,
-        iae_cls: Type[ImageArrayEntry],
+        iae_cls: type[ImageArrayEntry],
         chip_config: AhabChipContainerConfig,
         config: Config,
-    ) -> list[Union[ImageArrayEntry, ImageArrayEntryV2]]:
+    ) -> list[ImageArrayEntry | ImageArrayEntryV2]:
         """Create image array entry for SPL with DDR tuning parameters.
 
         This specialized implementation:
@@ -1790,10 +1787,10 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
     @classmethod
     def create_image_array_entry(
         cls,
-        iae_cls: Type[ImageArrayEntry],
+        iae_cls: type[ImageArrayEntry],
         chip_config: AhabChipContainerConfig,
         config: Config,
-    ) -> list[Union[ImageArrayEntry, ImageArrayEntryV2]]:
+    ) -> list[ImageArrayEntry | ImageArrayEntryV2]:
         """Create image array entries for OEI DDR initialization.
 
         This specialized implementation:
@@ -1872,7 +1869,7 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
                 # In case QB data are not provided add 64k blank data
                 qb_data_binary = bytes(cls.QB_DATA_SIZE)
             elif qb_data_dummy and qb_data is None:
-                qb_data_binary = bytes()
+                qb_data_binary = b""
 
             elif qb_data:
                 qb_data = config.get_input_file_name("qb_data")
@@ -2033,7 +2030,7 @@ class IaeKernel(ImageArrayEntryTemplates):
     @classmethod
     def create_image_array_entry(
         cls, iae_cls: IAE_TYPE, chip_config: AhabChipContainerConfig, config: Config
-    ) -> list[Union[ImageArrayEntry, ImageArrayEntryV2]]:
+    ) -> list[ImageArrayEntry | ImageArrayEntryV2]:
         """Create image array entries for Linux Kernel Image.
 
         This specialized implementation checks if the chip revision requires kernel splitting.
@@ -2113,10 +2110,10 @@ class IaeUBoot(ImageArrayEntryTemplates):
     @classmethod
     def create_image_array_entry(
         cls,
-        iae_cls: Type[ImageArrayEntry],
+        iae_cls: type[ImageArrayEntry],
         chip_config: AhabChipContainerConfig,
         config: Config,
-    ) -> list[Union[ImageArrayEntry, ImageArrayEntryV2]]:
+    ) -> list[ImageArrayEntry | ImageArrayEntryV2]:
         """Create image array entry for U-Boot firmware.
 
         This specialized implementation:
@@ -2177,10 +2174,10 @@ class IaeV2XDummy(ImageArrayEntryTemplates):
     @classmethod
     def create_image_array_entry(
         cls,
-        iae_cls: Type[ImageArrayEntry],
+        iae_cls: type[ImageArrayEntry],
         chip_config: AhabChipContainerConfig,
         config: Config,
-    ) -> list[Union[ImageArrayEntry, ImageArrayEntryV2]]:
+    ) -> list[ImageArrayEntry | ImageArrayEntryV2]:
         """Create a dummy image array entry for V2X core.
 
         This specialized implementation:
@@ -2224,3 +2221,22 @@ class IaeMCU(ImageArrayEntryTemplates):
 
     IMAGE_NAME: str = "MCU Firmware"
     KEY: str = "mcu"
+
+
+class IaeFcbCopy(ImageArrayEntryTemplates):
+    """AHAB Image Array Entry template for FCB copy image.
+
+    This template handles the inclusion of a Flash Configuration Block (FCB) copy
+    inside the AHAB container for FlexSPI/XSPI boot targets. The FCB copy image
+    (type 0x08) allows ROM to verify FCB integrity during boot, separate from the
+    FCB placed at the flash segment offset (0x400) which configures the FlexSPI
+    controller.
+
+    Equivalent to imx-mkimage's ``-fcb fcb.bin <load_address>`` option.
+
+    :cvar IMAGE_NAME: Human-readable name for FCB copy image type.
+    :cvar KEY: Configuration key identifier for FCB copy entries.
+    """
+
+    IMAGE_NAME: str = "FCB Copy Image"
+    KEY: str = "fcb_copy"

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK DICE custom X.509 v3 extensions and certificate management.
 
 This module provides custom X.509 certificate extensions for DICE (Device Identifier

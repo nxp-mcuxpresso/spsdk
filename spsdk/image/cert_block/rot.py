@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -15,7 +14,7 @@ versions and SRK table formats.
 
 import logging
 from abc import abstractmethod
-from typing import Optional, Sequence, Type, Union
+from collections.abc import Sequence
 
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.hash import EnumHashAlgorithm
@@ -47,10 +46,10 @@ class Rot:
     def __init__(
         self,
         family: FamilyRevision,
-        keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
-        password: Optional[str] = None,
-        search_paths: Optional[list[str]] = None,
-        hash_algorithm: Optional[EnumHashAlgorithm] = None,
+        keys_or_certs: Sequence[str | bytes | bytearray | PublicKey | PrivateKey | Certificate],
+        password: str | None = None,
+        search_paths: list[str] | None = None,
+        hash_algorithm: EnumHashAlgorithm | None = None,
     ) -> None:
         """Initialize Root of Trust object.
 
@@ -109,7 +108,7 @@ class Rot:
         return get_families(DatabaseManager.CERT_BLOCK)
 
     @classmethod
-    def get_rot_class(cls, family: FamilyRevision) -> Type["RotBase"]:
+    def get_rot_class(cls, family: FamilyRevision) -> type["RotBase"]:
         """Get RoT class for the specified family.
 
         Retrieves the appropriate Root of Trust (RoT) class based on the family revision
@@ -137,16 +136,16 @@ class RotBase:
     :cvar _registry: Registry mapping RoT type strings to their implementation classes.
     """
 
-    rot_type: Optional[str] = None
+    rot_type: str | None = None
     supports_custom_hash_algorithm = False
-    _registry: dict[str, Type["RotBase"]] = {}
+    _registry: dict[str, type["RotBase"]] = {}
 
     def __init__(
         self,
-        keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
-        password: Optional[str] = None,
-        search_paths: Optional[list[str]] = None,
-        hash_algorithm: Optional[EnumHashAlgorithm] = None,
+        keys_or_certs: Sequence[str | bytes | bytearray | PublicKey | PrivateKey | Certificate],
+        password: str | None = None,
+        search_paths: list[str] | None = None,
+        hash_algorithm: EnumHashAlgorithm | None = None,
     ) -> None:
         """Initialize Root of Trust (RoT) with cryptographic keys or certificates.
 
@@ -168,7 +167,7 @@ class RotBase:
             )
 
     @classmethod
-    def register(cls, rot_class: Type["RotBase"]) -> Type["RotBase"]:
+    def register(cls, rot_class: type["RotBase"]) -> type["RotBase"]:
         """Register a RoT implementation class.
 
         Registers a Root of Trust (RoT) implementation class in the internal registry
@@ -182,7 +181,7 @@ class RotBase:
         return rot_class
 
     @classmethod
-    def get_rot_class(cls, rot_type: str) -> Type["RotBase"]:
+    def get_rot_class(cls, rot_type: str) -> type["RotBase"]:
         """Get RoT implementation by type.
 
         Retrieves the RoT (Root of Trust) class implementation based on the specified type
@@ -247,10 +246,10 @@ class RotCertBlockv1(RotBase):
 
     def __init__(
         self,
-        keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
-        password: Optional[str] = None,
-        search_paths: Optional[list[str]] = None,
-        hash_algorithm: Optional[EnumHashAlgorithm] = None,
+        keys_or_certs: Sequence[str | bytes | bytearray | PublicKey | PrivateKey | Certificate],
+        password: str | None = None,
+        search_paths: list[str] | None = None,
+        hash_algorithm: EnumHashAlgorithm | None = None,
     ) -> None:
         """Initialize RoT certificate block version 1.
 
@@ -312,10 +311,10 @@ class RotCertBlockv21(RotBase):
 
     def __init__(
         self,
-        keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
-        password: Optional[str] = None,
-        search_paths: Optional[list[str]] = None,
-        hash_algorithm: Optional[EnumHashAlgorithm] = None,
+        keys_or_certs: Sequence[str | bytes | bytearray | PublicKey | PrivateKey | Certificate],
+        password: str | None = None,
+        search_paths: list[str] | None = None,
+        hash_algorithm: EnumHashAlgorithm | None = None,
     ) -> None:
         """Initialize RoT certificate block v21.
 
@@ -374,10 +373,10 @@ class RotSrkTableAhab(RotBase):
 
     def __init__(
         self,
-        keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
-        password: Optional[str] = None,
-        search_paths: Optional[list[str]] = None,
-        hash_algorithm: Optional[EnumHashAlgorithm] = None,
+        keys_or_certs: Sequence[str | bytes | bytearray | PublicKey | PrivateKey | Certificate],
+        password: str | None = None,
+        search_paths: list[str] | None = None,
+        hash_algorithm: EnumHashAlgorithm | None = None,
     ) -> None:
         """Initialize AHAB SRK table with provided keys or certificates.
 
@@ -470,10 +469,10 @@ class RotSrkTableAhabV2(RotBase):
 
     def __init__(
         self,
-        keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
-        password: Optional[str] = None,
-        search_paths: Optional[list[str]] = None,
-        hash_algorithm: Optional[EnumHashAlgorithm] = None,
+        keys_or_certs: Sequence[str | bytes | bytearray | PublicKey | PrivateKey | Certificate],
+        password: str | None = None,
+        search_paths: list[str] | None = None,
+        hash_algorithm: EnumHashAlgorithm | None = None,
     ) -> None:
         """Initialize AHAB SRK table with provided keys or certificates.
 
@@ -582,10 +581,10 @@ class RotSrkTableHab(RotBase):
 
     def __init__(
         self,
-        keys_or_certs: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
-        password: Optional[str] = None,
-        search_paths: Optional[list[str]] = None,
-        hash_algorithm: Optional[EnumHashAlgorithm] = None,
+        keys_or_certs: Sequence[str | bytes | bytearray | PublicKey | PrivateKey | Certificate],
+        password: str | None = None,
+        search_paths: list[str] | None = None,
+        hash_algorithm: EnumHashAlgorithm | None = None,
     ) -> None:
         """Initialize HAB SRK table with certificates or keys.
 
@@ -638,8 +637,8 @@ class RotSrkTableHab(RotBase):
     @classmethod
     def _load_certificate(
         cls,
-        certificate: Union[str, bytes, bytearray],
-        search_paths: Optional[list[str]] = None,
+        certificate: str | bytes | bytearray,
+        search_paths: list[str] | None = None,
     ) -> Certificate:
         """Load certificate from various input formats.
 

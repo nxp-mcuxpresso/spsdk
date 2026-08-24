@@ -1,17 +1,17 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """HAB Initialize command implementation for secure boot.
 
 This module provides the CmdInitialize class that implements the HAB (High Assurance Boot)
 Initialize command used in NXP's secure boot process for MCU devices.
 """
 
+from collections.abc import Iterator
 from struct import pack, unpack_from
-from typing import Iterator, Optional
 
 from typing_extensions import Self
 
@@ -43,9 +43,7 @@ class CmdInitialize(CmdBase):
 
     CMD_TAG = CmdTag.INIT
 
-    def __init__(
-        self, engine: EngineEnum = EngineEnum.ANY, data: Optional[list[int]] = None
-    ) -> None:
+    def __init__(self, engine: EngineEnum = EngineEnum.ANY, data: list[int] | None = None) -> None:
         """Initialize the HAB Initialize command.
 
         Creates a new Initialize command instance with the specified engine type

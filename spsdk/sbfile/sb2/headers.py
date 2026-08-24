@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,6 @@ including header creation, validation, and serialization for NXP MCU secure prov
 
 from datetime import datetime
 from struct import calcsize, pack, unpack_from
-from typing import Optional
 
 from typing_extensions import Self
 
@@ -53,9 +51,9 @@ class ImageHeaderV2(BaseClass):
         component_version: str = "1.0.0",
         build_number: int = 0,
         flags: int = 0x08,
-        nonce: Optional[bytes] = None,
-        timestamp: Optional[datetime] = None,
-        padding: Optional[bytes] = None,
+        nonce: bytes | None = None,
+        timestamp: datetime | None = None,
+        padding: bytes | None = None,
     ) -> None:
         """Initialize Image Header Version 2.x.
 
@@ -120,7 +118,7 @@ class ImageHeaderV2(BaseClass):
 
         :return: Formatted string with header information.
         """
-        nfo = str()
+        nfo = ""
         nfo += f" Version:              {self.version}\n"
         if self.nonce is not None:
             nfo += f" Digest:               {self.nonce.hex().upper()}\n"
@@ -139,7 +137,7 @@ class ImageHeaderV2(BaseClass):
         nfo += f" Build Number:         {self.build_number}\n"
         return nfo
 
-    def export(self, padding: Optional[bytes] = None) -> bytes:
+    def export(self, padding: bytes | None = None) -> bytes:
         """Export SB2 header object into binary format.
 
         The method serializes all header fields including nonce, version information,
@@ -154,7 +152,7 @@ class ImageHeaderV2(BaseClass):
         """
         if not isinstance(self.nonce, bytes) or len(self.nonce) != 16:
             raise SPSDKError("Format is incorrect")
-        major_version, minor_version = [int(v) for v in self.version.split(".")]
+        major_version, minor_version = (int(v) for v in self.version.split("."))
         product_version_words = [swap16(v) for v in self.product_version.nums]
         component_version_words = [swap16(v) for v in self.product_version.nums]
         padding = padding or self.padding

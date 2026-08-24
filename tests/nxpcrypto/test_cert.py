@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -315,11 +314,12 @@ def test_certificate_generation(tmpdir: Any) -> None:
     assert path.isfile(path.join(tmpdir, "ca_private_key.pem"))
     assert path.isfile(path.join(tmpdir, "ca_pub_key.pem"))
 
-    data = yaml.safe_load("""
+    subject_data = """
         COMMON_NAME: xyz
         DOMAIN_COMPONENT: [com, nxp, wbi]
         ORGANIZATIONAL_UNIT_NAME: [NXP, CZ, Managed Users, Developers]
-        """)
+        """
+    data = yaml.safe_load(subject_data)
     subject = issuer = generate_name(data)
     ca_cert = Certificate.generate_certificate(
         subject,
@@ -333,14 +333,15 @@ def test_certificate_generation(tmpdir: Any) -> None:
     ca_cert.save(path.join(tmpdir, "ca_cert.pem"))
     assert path.isfile(path.join(tmpdir, "ca_cert.pem"))
 
-    data = yaml.safe_load("""
+    subject_data = """
         - COMMON_NAME: ccccc
         - DOMAIN_COMPONENT: [com, nxp, wbi]
         - ORGANIZATIONAL_UNIT_NAME: NXP
         - ORGANIZATIONAL_UNIT_NAME: CZ
         - ORGANIZATIONAL_UNIT_NAME: Managed Users
         - ORGANIZATIONAL_UNIT_NAME: Developers
-        """)
+        """
+    data = yaml.safe_load(subject_data)
     subject = issuer = generate_name(data)
     ca_cert1 = Certificate.generate_certificate(
         subject,

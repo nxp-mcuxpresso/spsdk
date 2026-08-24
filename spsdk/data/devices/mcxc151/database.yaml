@@ -85,7 +85,7 @@ features:
           name: IMG_MISR_SEED
           width: 128
           config_as_hexstring: true
-          reverse_subregs_order: True
+          reversed: True
           description: IMG_MISR_SEED[127:0]
           sub_regs:
             - field020
@@ -116,6 +116,10 @@ features:
     dmbox_ap_ix: 1
     sub_features:
       - password_auth
+      - program_lifecycle
+    program_lifecycle:
+      pfr_area: cmpa_lc # PFR area class holding the lifecycle register
+      register: LIFECYCLE_STATE # Register whose first bitfield enumerates the lifecycle names
 
   # ======== Blhost section ========
   blhost:

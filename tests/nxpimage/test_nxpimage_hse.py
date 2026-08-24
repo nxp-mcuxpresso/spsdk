@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -66,7 +65,7 @@ def test_hse_key_info_get_template_command(cli_runner: CliRunner, tmpdir: str) -
 
     # Check template file exists and is valid YAML
     assert os.path.isfile(output_file)
-    with open(output_file, "r") as f:
+    with open(output_file) as f:
         template_data = yaml.safe_load(f)
 
     # Check basic template structure
@@ -99,7 +98,7 @@ def test_hse_key_info_export_command(cli_runner: CliRunner, key_info_config_file
     assert "Success. (Key Info:" in result.output
 
     # Load the config to get the output file path
-    with open(key_info_config_file, "r") as f:
+    with open(key_info_config_file) as f:
         config_data = yaml.safe_load(f)
     output_file = os.path.join(os.path.dirname(key_info_config_file), config_data["output"])
 
@@ -227,7 +226,7 @@ def test_hse_key_info_export_idempotent(cli_runner: CliRunner, key_info_config_f
     cli_runner.invoke(nxpimage.main, cmd.split())
 
     # Get the output file path
-    with open(key_info_config_file, "r") as f:
+    with open(key_info_config_file) as f:
         config_data = yaml.safe_load(f)
     output_file = os.path.join(os.path.dirname(key_info_config_file), config_data["output"])
 
@@ -359,7 +358,7 @@ def test_hse_key_info_roundtrip(
     cli_runner.invoke(nxpimage.main, export_cmd.split())
 
     # Get the output file path
-    with open(key_info_config_file, "r") as f:
+    with open(key_info_config_file) as f:
         config_data = yaml.safe_load(f)
     output_file = os.path.join(os.path.dirname(key_info_config_file), config_data["output"])
 

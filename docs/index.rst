@@ -148,6 +148,7 @@ All products, including those with advanced security features, may be subject to
     examples/ele/index
     examples/hab/index
     examples/hse/index
+    examples/iped/index
     examples/lpcprog/lpcprog
     examples/mbi/index
     examples/memcfg/index

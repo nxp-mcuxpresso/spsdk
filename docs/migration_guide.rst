@@ -2,6 +2,22 @@
 Migration guide
 ===============
 
+Changes in SPSDK 3.11.0
+=======================
+
+API changes
+-----------
+
+general
+^^^^^^^
+* ``ML-DSA`` support is now available in the default SPSDK installation through the required
+  ``cryptography`` backend (upgraded to version 48+), so standard ML-DSA keys no longer
+  require the ``spsdk_pqc`` plugin.
+* ``Dilithium`` support remains available only through the optional ``spsdk_pqc`` plugin.
+* Legacy ML-DSA private keys in the expanded-secret format still need ``spsdk_pqc`` for
+  compatibility; these keys cannot be migrated to native ``cryptography`` ML-DSA format, but
+  they can continue to be used as long as ``spsdk_pqc`` is available for key loading.
+
 Changes in SPSDK 3.0
 ====================
 

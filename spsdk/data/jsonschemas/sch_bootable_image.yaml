@@ -43,7 +43,7 @@ keyblob:
       type: string
       format: optional_file
       title: Key Blob block path
-      description: Key blob block path
+      description: Key blob block path. It could be used as pre-prepared binary form of a key blob and also YAML configuration file for IPED tables.
       template_value: keyblob.bin
 
 fcb:

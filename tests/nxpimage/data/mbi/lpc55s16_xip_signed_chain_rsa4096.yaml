@@ -1,0 +1,19 @@
+# Copyright 2024-2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ===========  Master Boot Image config — lpc55s16 signed XIP with RSA4096 chain cert  ===========
+# Used by test_lpc55s16_mbi_export_warns_on_chain_cert_rsa4096 to verify that the chain cert
+# RSA key size warning fires for lpc55s16.
+# Keys and certificates are generated dynamically by the test; file names here match what the
+# test saves to its tmpdir.
+
+family: lpc55s16
+outputImageExecutionTarget: Internal flash (XIP)
+outputImageAuthenticationType: Signed
+masterBootOutputFile: lpc55s16_xip_signed_chain_rsa4096.bin
+inputImageFile: test_application.bin
+enableHwUserModeKeys: false
+mainRootCertId: 0
+signer: type=file;file_path=keys_and_certs/lpc55s16_chain_rsa4096.pem
+certBlock: lpc55s16_cert_block_chain_rsa4096.yaml

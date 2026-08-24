@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,6 @@ implementations, mock interfaces, and exception handling tests to ensure
 reliable SDP communication across NXP MCU portfolio.
 """
 
-from typing import Optional, Union
 from unittest.mock import patch
 
 from typing_extensions import Self
@@ -73,7 +71,7 @@ class VirtualDevice(DeviceBase):
         """
         self._is_opened = False
 
-    def read(self, length: int, timeout: Optional[int] = None) -> bytes:
+    def read(self, length: int, timeout: int | None = None) -> bytes:
         """Read data from the SDP interface.
 
         This method provides a mock implementation for testing purposes and always returns empty bytes.
@@ -84,7 +82,7 @@ class VirtualDevice(DeviceBase):
         """
         return b""
 
-    def write(self, data: bytes, timeout: Optional[int] = None) -> None:
+    def write(self, data: bytes, timeout: int | None = None) -> None:
         """Write data to the mock interface for testing purposes.
 
         This method simulates writing data to an SDP interface by validating that the
@@ -177,7 +175,7 @@ class VirtualSDPInterface:
         cls,
         params: str,
         timeout: int,
-        extra_params: Optional[str] = None,
+        extra_params: str | None = None,
     ) -> list[Self]:
         """Scan for available SDP devices.
 
@@ -191,7 +189,7 @@ class VirtualSDPInterface:
         """
         return []
 
-    def read(self, length: Optional[int] = None) -> Union[CmdResponseBase, bytes]:
+    def read(self, length: int | None = None) -> CmdResponseBase | bytes:
         """Read data from the SDP device.
 
         This method reads data from the underlying SDP device interface with an optional
@@ -281,7 +279,7 @@ class VirtualDeviceException(VirtualDevice):
     in SDP communication scenarios.
     """
 
-    def write(self, data: bytes, timeout: Optional[int] = None) -> None:
+    def write(self, data: bytes, timeout: int | None = None) -> None:
         """Write data to the connection.
 
         This method is designed to raise an SPSDKConnectionError as part of test functionality

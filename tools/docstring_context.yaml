@@ -1,0 +1,84 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Project-specific context and instructions for the Cody DocString generator.
+# This file is loaded by all docstring updater scripts (methods, classes, modules)
+# and can be adapted for other NXP projects by replacing the content below.
+
+project_context: |
+  SPSDK (Secure Provisioning SDK) Project Context:
+
+  SPSDK is a unified, reliable, and easy-to-use SW library working across
+  NXP MCU portfolio providing strong foundation from quick customer
+  prototyping up to production deployment.
+
+method_guidelines: |
+  Docstring Style Guidelines:
+  - Use triple quotes with proper indentation
+  - Start with a brief one-line description
+  - Add detailed description if needed (separated by blank line)
+  - Document all parameters with :param name: description
+  - Document return values with :return: description
+  - Document exceptions with :raises ExceptionType: description
+  - Use proper type hints in function signatures
+
+  Example of good SPSDK docstring:
+  \"\"\"Get common data file path.
+
+  The method counts also with restricted data source and any other addons.
+
+  :param path: Relative path in common data folder.
+  :raises SPSDKValueError: Non existing file path.
+  :return: Final absolute path to data file.
+  \"\"\"
+
+class_guidelines: |
+  Class Docstring Style Guidelines:
+  - Use triple quotes with proper indentation
+  - Start with a brief one-line description of the class purpose
+  - Add detailed description if needed (separated by blank line)
+  - Document class variables with :cvar name: description (only if relevant)
+  - DO NOT document __init__ parameters (:param) - those belong in __init__ method
+  - DO NOT document instance variables (:ivar) - those belong in __init__ method
+  - DO NOT document exceptions (:raises) - those belong in individual methods
+  - Use proper type hints in class definitions
+
+  Example of good SPSDK class docstring:
+  \"\"\"SPSDK Configuration Manager.
+
+  This class manages configuration data for SPSDK operations including
+  validation, loading, and processing of configuration files.
+
+  :cvar DEFAULT_CONFIG: Default configuration template.
+  \"\"\"
+
+  Class docstrings should:
+  - Explain the class purpose and responsibility
+  - Describe what the class represents or manages
+  - Document only class variables (:cvar) if they are important
+  - Mention key functionality or usage patterns
+  - Include usage examples for complex classes
+  - Focus on the class as a whole, not individual method details
+  - DO NOT document __init__ parameters (:param) - those belong in __init__ method
+  - DO NOT document instance variables (:ivar) - those belong in __init__ method
+  - DO NOT document exceptions (:raises) - those belong in individual methods
+
+module_guidelines: |
+  Module Docstring Style Guidelines:
+  - Module docstrings should be at the very top of the file (after shebang and encoding)
+  - Use triple quotes with proper formatting
+  - Start with a brief one-line description of the module's purpose
+  - Add detailed description if needed (separated by blank line)
+  - Describe the main functionality and components
+  - Mention key classes, functions, or constants if relevant
+  - Keep it concise but informative
+
+  Example of good SPSDK module docstring:
+  \"\"\"SPSDK Certificate management utilities.
+
+  This module provides functionality for handling X.509 certificates,
+  certificate chains, and certificate validation in SPSDK context.
+  \"\"\"
+
+  Module docstring should reflect the actual content and purpose of the module.

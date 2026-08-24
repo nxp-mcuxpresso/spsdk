@@ -1,13 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module provides support for KeyStore used in MasterBootImage."""
-
-from typing import Optional
 
 from spsdk.crypto.symmetric import aes_ecb_encrypt
 from spsdk.exceptions import SPSDKError
@@ -54,7 +51,7 @@ class KeyStore:
         """
         return self._key_source
 
-    def __init__(self, key_source: KeySourceType, key_store: Optional[bytes] = None) -> None:
+    def __init__(self, key_source: KeySourceType, key_store: bytes | None = None) -> None:
         """Initialize Keystore.
 
         :param key_source: Device key source type.
@@ -81,7 +78,7 @@ class KeyStore:
 
         :return: Binary key store content as bytes, empty bytes for empty key-store.
         """
-        return self._key_store if self._key_store else bytes()
+        return self._key_store if self._key_store else b""
 
     def __repr__(self) -> str:
         """Return string representation of KeyStore object.

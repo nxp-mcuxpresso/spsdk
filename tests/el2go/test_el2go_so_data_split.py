@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -48,7 +47,7 @@ def test_no_add_data_split(data_dir: str) -> None:
     required, additional = split_user_data(req_data)
 
     assert required == req_data
-    assert additional == bytes()
+    assert additional == b""
 
 
 def test_no_req_data_split(data_dir: str) -> None:
@@ -66,5 +65,5 @@ def test_no_req_data_split(data_dir: str) -> None:
 
     required, additional = split_user_data(add_data)
 
-    assert required == bytes()
+    assert required == b""
     assert additional == add_data

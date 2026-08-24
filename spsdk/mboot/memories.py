@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,7 @@ including memory region definitions, memory identifiers, and property management
 different types of memory devices such as RAM, Flash, and external memory.
 """
 
-from typing import Optional, cast
+from typing import cast
 
 from spsdk.utils.misc import size_fmt
 from spsdk.utils.spsdk_enum import SpsdkEnum
@@ -47,7 +46,7 @@ class MemIdEnum(SpsdkEnum):
     """
 
     @classmethod
-    def get_legacy_str(cls, key: str) -> Optional[int]:
+    def get_legacy_str(cls, key: str) -> int | None:
         """Convert legacy string identifier to corresponding memory tag value.
 
         This method looks up a legacy memory identifier string in the conversion table
@@ -60,7 +59,7 @@ class MemIdEnum(SpsdkEnum):
         return cast(int, cls.get_tag(new_key)) if new_key else None
 
     @classmethod
-    def get_legacy_int(cls, key: int) -> Optional[str]:
+    def get_legacy_int(cls, key: int) -> str | None:
         """Convert legacy integer memory ID to corresponding enum key string.
 
         This method takes a legacy integer memory identifier and converts it to the
@@ -267,7 +266,7 @@ class ExtMemRegion(MemoryRegion):
     configuration data.
     """
 
-    def __init__(self, mem_id: int, raw_values: Optional[list[int]] = None) -> None:
+    def __init__(self, mem_id: int, raw_values: list[int] | None = None) -> None:
         """Initialize the external memory region object.
 
         Parses raw property values to extract memory characteristics like start address,

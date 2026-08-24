@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK TP Data Container implementation for secure provisioning.
 
 This module provides functionality for creating, parsing, and managing TP (Trust Provisioning)
@@ -12,7 +12,7 @@ payload types, authentication methods, and data entry management.
 """
 
 import struct
-from typing import Mapping, Type, Union
+from collections.abc import Mapping
 
 import hexdump
 from typing_extensions import Self
@@ -790,7 +790,7 @@ class TPDataContainer(BaseElement):
         data_to_sign += b"".join(entry.export() for entry in data_entries)
         return data_to_sign
 
-    def add_auth_entry(self, auth_type: AuthenticationType, key: Union[bytes, PrivateKey]) -> None:
+    def add_auth_entry(self, auth_type: AuthenticationType, key: bytes | PrivateKey) -> None:
         """Add the final data authentication entry.
 
         This method creates and adds an authentication entry by signing the to-be-signed data
@@ -885,7 +885,7 @@ class TPDataContainer(BaseElement):
             signature = auth_entry.payload
         return public_key.verify_signature(signature, data_to_validate)
 
-    def validate(self, keys: list[Union[bytes, PublicKey]]) -> bool:
+    def validate(self, keys: list[bytes | PublicKey]) -> bool:
         """Validate signature/authentication code.
 
         The method validates all authentication entries in the data container using the provided keys.
@@ -967,7 +967,7 @@ class TPDataContainer(BaseElement):
 
 
 #: Mapping between entry type and its corresponding DataEntry class
-_ENTRY_CLASSES: Mapping[EntryType, Type[DataEntry]] = {
+_ENTRY_CLASSES: Mapping[EntryType, type[DataEntry]] = {
     EntryType.STANDARD: DataEntry,
     EntryType.DESTINATION: DataDestinationEntry,
     EntryType.AUTHENTICATION: DataAuthenticationEntry,

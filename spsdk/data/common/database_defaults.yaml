@@ -9,6 +9,7 @@ latest: latest
 info:
   use_in_doc: True # Include this MCU in generated documentation
   purpose: General Purpose Processor
+  architecture: arm-cortex # CPU architecture: arm-cortex, dsc56800ex, ...
   # Web page of MCU representative
   web: https://www.nxp.com
   memory_map: {} # Memory map basic info
@@ -80,6 +81,7 @@ features:
   dat:
     socc: 0 # SOCC identification
     based_on_ele: False # Flag if the implementation of DAT is based on EdgeLock Enclave
+    reset_after_auth: False # Flag to perform HW reset after DAT authentication before AHB access test
     # famode_cert: [] # List of Fault analysis Mode certificates (names of MBI classes)
     # famode_cfg_defaults: {} # Dictionary of default values of standard MBI members for FAmode image
     used_beacons_on_ele: False # The DAT ELE implementation is using certificate and authentication beacons
@@ -229,6 +231,15 @@ features:
     additional_template_text: ""
     supports_key_scrambling: False
     reversed_scramble_key: False
+
+  # ======== IPED section ========
+  iped:
+    iped_version: 2
+    table_size: 0x400
+    raw_table_size: 0x210
+    max_contexts: 16
+    min_contexts: 1
+    address_alignment: 0x100
 
   # ======== Secure binary v2.1 section ========
   sb21:

@@ -7,7 +7,7 @@ node ("linux-spsdk") {
         }
         stage ("Test") {
             withVenv(
-                "tox -e py310,py313 -- -ic gitcov -o reports_{envname}",
+                "tox -e py310,py314 -- -o reports_{envname}",
             )
         }
         stage ("Build") {

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK SecureBinary X image generation and management utilities.
 
 This module provides functionality for creating and handling SecureBinary X (SBX) images,
@@ -14,7 +14,7 @@ construction for NXP MCU secure provisioning.
 import logging
 from enum import Enum
 from struct import calcsize, pack, unpack_from
-from typing import Any, Optional, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -137,9 +137,9 @@ class TpHsmBlob(BaseClass):
 
     def __init__(
         self,
-        tphsm_header: Union[TpHsmBlobHeader, bytes],
-        signature: Optional[bytes] = None,
-        hmac_key: Optional[str] = None,
+        tphsm_header: TpHsmBlobHeader | bytes,
+        signature: bytes | None = None,
+        hmac_key: str | None = None,
     ) -> None:
         """Initialize TPHSM blob with header and authentication.
 
@@ -256,8 +256,8 @@ class SecureBinaryXHeader(BaseClass):
     def __init__(
         self,
         firmware_version: int,
-        description: Optional[str] = None,
-        timestamp: Optional[int] = None,
+        description: str | None = None,
+        timestamp: int | None = None,
         image_type: SecureBinaryXType = SecureBinaryXType.OEM_PROVISIONING,
         flags: int = 0,
     ) -> None:
@@ -280,7 +280,7 @@ class SecureBinaryXHeader(BaseClass):
         self.description = self._adjust_description(description)
         self.block_size = self.BLOCK_SIZE
 
-    def _adjust_description(self, description: Optional[str] = None) -> bytes:
+    def _adjust_description(self, description: str | None = None) -> bytes:
         """Format the description to fixed-length byte array.
 
         Converts string description to ASCII bytes and pads or truncates to match
@@ -313,7 +313,7 @@ class SecureBinaryXHeader(BaseClass):
 
         :return: Formatted string with SB v3.1 image details.
         """
-        info = str()
+        info = ""
         info += f" Magic:                       {self.MAGIC.decode('ascii')}\n"
         info += f" Version:                     {self.FORMAT_VERSION}\n"
         info += f" Flags:                       0x{self.flags:04X}\n"
@@ -341,9 +341,9 @@ class SecureBinaryXHeader(BaseClass):
 
         :return: Exported header bytes containing the complete SBX image header structure.
         """
-        major_format_version, minor_format_version = [
+        major_format_version, minor_format_version = (
             int(v) for v in self.FORMAT_VERSION.split(".")
-        ]
+        )
         return pack(
             self.HEADER_FORMAT,
             self.MAGIC,
@@ -460,11 +460,11 @@ class SecureBinaryX(FeatureBaseClass):
         self,
         family: FamilyRevision,
         firmware_version: int,
-        tphsm_blob: Optional[TpHsmBlob],
+        tphsm_blob: TpHsmBlob | None,
         commands: SecureBinaryXCommands,
-        description: Optional[str] = None,
+        description: str | None = None,
         image_type: SecureBinaryXType = SecureBinaryXType.OEM_PROVISIONING,
-        signature_provider: Optional[SignatureProvider] = None,
+        signature_provider: SignatureProvider | None = None,
         flags: int = 0,
     ) -> None:
         """Constructor for Secure Binary vX data container.
@@ -644,7 +644,7 @@ class SecureBinaryX(FeatureBaseClass):
         if not isinstance(self.tphsm_blob, TpHsmBlob):
             raise SPSDKError("TPHSM blob must be loaded first")
 
-        final_data = bytes()
+        final_data = b""
         final_data += self.sb_header.export()
         final_data += self.tphsm_blob.export()
         # add hash of next block
@@ -668,7 +668,7 @@ class SecureBinaryX(FeatureBaseClass):
         sbx_commands_data = self.sb_commands.export()
         tphsm_blob = self.tphsm_blob.export()
 
-        final_data = bytes()
+        final_data = b""
         # HEADER OF SB X FILE
         self.sb_header.update(self.sb_commands)
         final_data += self.sb_header.export()

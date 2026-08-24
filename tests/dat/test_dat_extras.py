@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2026 NXP
 #
@@ -34,6 +33,7 @@ from spsdk.dat.dm_commands import (
     ExitDebugMailbox,
     GetCRPLevel,
     NxpDebugAuthenticationStart,
+    ProgramLifecycle,
     SetFaultAnalysisMode,
     StartDebugMailbox,
     StartDebugSession,
@@ -328,7 +328,7 @@ class TestDebugMailboxReadIdr:
     def test_read_idr_matching(self) -> None:
         """When IDR matches expected, no warning is raised."""
         dm = _make_mailbox_no_init()
-        dm.debug_probe.coresight_reg_read_safe.return_value = 0x002A0000  # type: ignore[attr-defined]
+        dm.debug_probe.dbgmlbx_reg_read.return_value = 0x002A0000  # type: ignore[attr-defined]
         result = dm.read_idr()
         assert result == 0x002A0000
 
@@ -336,7 +336,7 @@ class TestDebugMailboxReadIdr:
         """When IDR doesn't match, a warning is logged but value is returned."""
         dm = _make_mailbox_no_init()
         unexpected = 0xDEADBEEF
-        dm.debug_probe.coresight_reg_read_safe.return_value = unexpected  # type: ignore[attr-defined]
+        dm.debug_probe.dbgmlbx_reg_read.return_value = unexpected  # type: ignore[attr-defined]
         result = dm.read_idr()
         assert result == unexpected
 
@@ -355,7 +355,7 @@ class TestDebugMailboxSpinRead:
 
     def test_spin_read_success(self) -> None:
         dm = _make_mailbox_no_init()
-        dm.debug_probe.coresight_reg_read_safe.return_value = 0xCAFEBABE  # type: ignore[attr-defined]
+        dm.debug_probe.dbgmlbx_reg_read.return_value = 0xCAFEBABE  # type: ignore[attr-defined]
         result = dm.spin_read(dm.registers["RETURN"]["address"])
         assert result == 0xCAFEBABE
 
@@ -365,7 +365,7 @@ class TestDebugMailboxSpinRead:
 
         dm = _make_mailbox_no_init()
         dm.op_timeout = 1  # very short timeout
-        dm.debug_probe.coresight_reg_read_safe.side_effect = SPSDKError("read fail")  # type: ignore[attr-defined]
+        dm.debug_probe.dbgmlbx_reg_read.side_effect = SPSDKError("read fail")  # type: ignore[attr-defined]
         with pytest.raises(SPSDKTimeoutError):
             dm.spin_read(dm.registers["RETURN"]["address"])
 
@@ -377,18 +377,16 @@ class TestDebugMailboxSpinWrite:
         """spin_write completes when CSW REQ_PENDING clears."""
         dm = _make_mailbox_no_init()
         # First call writes, then CSW reads return 0 (REQ_PENDING cleared)
-        dm.debug_probe.coresight_reg_read_safe.return_value = 0x00  # type: ignore[attr-defined]
+        dm.debug_probe.dbgmlbx_reg_read.return_value = 0x00  # type: ignore[attr-defined]
         dm.spin_write(dm.registers["REQUEST"]["address"], 0x1234)
-        dm.debug_probe.coresight_reg_write_safe.assert_called()  # type: ignore[attr-defined]
+        dm.debug_probe.dbgmlbx_reg_write.assert_called()  # type: ignore[attr-defined]
 
     def test_spin_write_timeout(self) -> None:
         """spin_write raises SPSDKTimeoutError on persistent REQ_PENDING."""
         dm = _make_mailbox_no_init()
         dm.op_timeout = 1
         # REQ_PENDING never clears
-        cast(MagicMock, dm.debug_probe.coresight_reg_read_safe).return_value = (
-            0x02  # REQ_PENDING set
-        )
+        cast(MagicMock, dm.debug_probe).dbgmlbx_reg_read.return_value = 0x02  # REQ_PENDING set
         with pytest.raises(SPSDKTimeoutError):
             dm.spin_write(dm.registers["REQUEST"]["address"], 0x01)
 
@@ -441,6 +439,15 @@ class TestSubcommandClasses:
     def test_start_debug_session_cmd(self) -> None:
         assert StartDebugSession.CMD == DebugMailboxCommandID.START_DBG_SESSION
 
+    def test_program_lifecycle_cmd(self) -> None:
+        assert ProgramLifecycle.CMD == DebugMailboxCommandID.PROGRAM_LIFECYCLE
+        assert DebugMailboxCommandID.PROGRAM_LIFECYCLE.tag == 0x17
+
+    def test_program_lifecycle_paramlen(self) -> None:
+        dm = _make_mock_dm()
+        cmd = ProgramLifecycle(dm)
+        assert cmd.paramlen == 1
+
 
 # ---------------------------------------------------------------------------
 # dm_commands  – DebugMailboxCommand.run() and run_safe()
@@ -459,7 +466,7 @@ class TestDebugMailboxCommandRun:
     def test_run_no_params_no_resp_success(self) -> None:
         """run() with no params and no response succeeds."""
         cmd, dm = self._make_dm_cmd()  # type: ignore[misc]
-        dm.spin_read.return_value = 0x00000000  # status=0, resplen=0  # type: ignore
+        dm.read_return.return_value = 0x00000000  # status=0, resplen=0  # type: ignore
         dm.spin_write.return_value = None  # type: ignore[has-type]
         result = cmd.run()  # type: ignore[has-type]
         assert isinstance(result, list)
@@ -474,7 +481,7 @@ class TestDebugMailboxCommandRun:
         """run() raises SPSDKError when device returns non-zero status."""
         cmd, dm = self._make_dm_cmd(resplen=2)  # type: ignore[misc, func-returns-value]
         # status=0x0001, resplen=0 -> error
-        dm.spin_read.return_value = 0x00000001  # type: ignore[has-type]
+        dm.read_return.return_value = 0x00000001  # type: ignore[has-type]
         dm.spin_write.return_value = None  # type: ignore[has-type]
         with pytest.raises(SPSDKError):
             cmd.run()  # type: ignore[has-type]
@@ -496,7 +503,7 @@ class TestDebugMailboxCommandRun:
     def test_run_safe_success(self) -> None:
         """run_safe() returns result on success."""
         cmd, dm = self._make_dm_cmd()  # type: ignore[misc]
-        dm.spin_read.return_value = 0x00000000  # type: ignore[has-type]
+        dm.read_return.return_value = 0x00000000  # type: ignore[has-type]
         dm.spin_write.return_value = None  # type: ignore[has-type]
         result = cmd.run_safe()  # type: ignore[has-type]
         assert result is not None
@@ -505,7 +512,7 @@ class TestDebugMailboxCommandRun:
         """run() raises when device ACK is not 0xA5A5."""
         cmd, dm = self._make_dm_cmd(paramlen=1)  # type: ignore[misc, func-returns-value]
         # Return a value that is NOT 0xA5A5 in the lower 16 bits
-        dm.spin_read.return_value = 0x00000000  # type: ignore[has-type]
+        dm.read_return.return_value = 0x00000000  # type: ignore[has-type]
         dm.spin_write.return_value = None  # type: ignore[has-type]
         with pytest.raises(SPSDKError):
             cmd.run(params=[0x1234])  # type: ignore[has-type]
@@ -514,7 +521,7 @@ class TestDebugMailboxCommandRun:
         """run() raises SPSDKError when device resplen doesn't match expected."""
         cmd, dm = self._make_dm_cmd(resplen=3)  # type: ignore[misc, func-returns-value]
         # status=0, resplen=1 (different from expected 3)
-        dm.spin_read.return_value = (1 << 16) | 0x0000  # type: ignore[has-type]
+        dm.read_return.return_value = (1 << 16) | 0x0000  # type: ignore[has-type]
         dm.spin_write.return_value = None  # type: ignore[has-type]
         with pytest.raises(SPSDKError):
             cmd.run()  # type: ignore[has-type]

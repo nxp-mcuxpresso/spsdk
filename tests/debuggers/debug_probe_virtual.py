@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK Virtual Debug Probe implementation for testing.
 
 This module provides a virtual debug probe implementation used for product testing
@@ -15,21 +15,23 @@ import json
 import logging
 import struct
 from json.decoder import JSONDecodeError
-from typing import Any, Optional
+from typing import Any
 
 from spsdk.debuggers.debug_probe import (
-    DebugProbe,
     DebugProbes,
+    MemorySpace,
     ProbeDescription,
     SPSDKDebugProbeError,
     SPSDKDebugProbeNotOpenError,
     SPSDKDebugProbeTransferError,
 )
+from spsdk.debuggers.debug_probe_arm import DebugProbeCoreSightOnly
+from spsdk.exceptions import SPSDKError
 
 logger = logging.getLogger(__name__)
 
 
-class DebugProbeVirtual(DebugProbe):
+class DebugProbeVirtual(DebugProbeCoreSightOnly):
     """Virtual debug probe implementation for SPSDK testing and simulation.
 
     This class provides a software-based debug probe that simulates hardware debug probe
@@ -42,7 +44,7 @@ class DebugProbeVirtual(DebugProbe):
 
     UNIQUE_SERIAL = "Virtual_DebugProbe_SPSDK"
 
-    def __init__(self, hardware_id: str, options: Optional[dict[Any, Any]] = None) -> None:
+    def __init__(self, hardware_id: str, options: dict[Any, Any] | None = None) -> None:
         """Initialize Virtual debug probe for testing and simulation.
 
         Creates a virtual debug probe instance that simulates hardware debug probe functionality
@@ -59,6 +61,7 @@ class DebugProbeVirtual(DebugProbe):
 
         self.opened = False
         self.connected = False
+        self.halted = False
         self.virtual_memory: dict[Any, Any] = {}
         self.virtual_memory_substituted: dict[Any, Any] = {}
         self.coresight_ap: dict[Any, Any] = {}
@@ -88,11 +91,13 @@ class DebugProbeVirtual(DebugProbe):
                 self.mem_read_cause_exception(int(options["mem_read_exp"]))
 
         # setup IDR register of standard AP:
-        self.coresight_ap[DebugProbe.get_coresight_ap_address(2, 0xFC)] = 0x002A0000
+        self.coresight_ap[DebugProbeCoreSightOnly.get_coresight_ap_address(2, 0xFC)] = 0x002A0000
 
         logger.debug("The SPSDK Virtual Interface has been initialized")
 
-    def mem_block_write(self, addr: int, data: bytes) -> None:
+    def mem_block_write(
+        self, addr: int, data: bytes, space: MemorySpace = MemorySpace.DATA
+    ) -> None:
         """Write a block of data to memory using 32-bit values.
 
         The method writes data to virtual memory by padding it to 4-byte alignment
@@ -100,9 +105,15 @@ class DebugProbeVirtual(DebugProbe):
 
         :param addr: Memory address to write to (must be within 32-bit range).
         :param data: Binary data to write to memory.
+        :param space: Memory space selector. Must be DATA; PROGRAM is not supported on ARM probes.
+        :raises SPSDKError: If space is not DATA.
         :raises SPSDKDebugProbeNotOpenError: Debug probe is not opened.
         :raises SPSDKDebugProbeError: Invalid address provided.
         """
+        if space != MemorySpace.DATA:
+            raise SPSDKError(
+                f"Memory space '{space.label}' is not supported on ARM virtual probe. Only 'data' is valid."
+            )
         if not self.opened:
             raise SPSDKDebugProbeNotOpenError("Debug probe is not opened.")
 
@@ -116,7 +127,7 @@ class DebugProbeVirtual(DebugProbe):
             word = struct.unpack("<I", padded_data[i : i + 4])[0]
             self.virtual_memory[(addr + i) // 4] = word
 
-    def mem_block_read(self, addr: int, size: int) -> bytes:
+    def mem_block_read(self, addr: int, size: int, space: MemorySpace = MemorySpace.DATA) -> bytes:
         """Read a block of data from memory using 32-bit values.
 
         Reads data from the virtual memory in 4-byte chunks and returns the requested
@@ -125,10 +136,16 @@ class DebugProbeVirtual(DebugProbe):
 
         :param addr: Memory address to read from (must be valid 32-bit address).
         :param size: Number of bytes to read from memory.
+        :param space: Memory space selector. Must be DATA; PROGRAM is not supported on ARM probes.
+        :raises SPSDKError: If space is not DATA.
         :raises SPSDKDebugProbeNotOpenError: Debug probe is not opened.
         :raises SPSDKDebugProbeError: Invalid address provided.
         :return: Block of data read from memory.
         """
+        if space != MemorySpace.DATA:
+            raise SPSDKError(
+                f"Memory space '{space.label}' is not supported on ARM virtual probe. Only 'data' is valid."
+            )
         if not self.opened:
             raise SPSDKDebugProbeNotOpenError("Debug probe is not opened.")
 
@@ -144,7 +161,7 @@ class DebugProbeVirtual(DebugProbe):
 
     @classmethod
     def get_connected_probes(
-        cls, hardware_id: Optional[str] = None, options: Optional[dict[Any, Any]] = None
+        cls, hardware_id: str | None = None, options: dict[Any, Any] | None = None
     ) -> DebugProbes:
         """Get all connected probes over Virtual.
 
@@ -233,17 +250,23 @@ class DebugProbeVirtual(DebugProbe):
 
         return int(values[addr]) if addr in values.keys() else 0
 
-    def mem_reg_read(self, addr: int = 0) -> int:
+    def mem_reg_read(self, addr: int = 0, space: MemorySpace = MemorySpace.DATA) -> int:
         """Read 32-bit register in memory space of MCU.
 
         This method reads a 32-bit register from the memory space of the MCU using
         the virtual debug probe interface.
 
         :param addr: The register address to read from.
+        :param space: Memory space selector. Must be DATA; PROGRAM is not supported on ARM probes.
+        :raises SPSDKError: If space is not DATA.
         :raises SPSDKDebugProbeNotOpenError: The virtual probe is not opened.
         :raises SPSDKDebugProbeTransferError: The coresight memory read operation failed.
         :return: The read value of addressed register (4 bytes).
         """
+        if space != MemorySpace.DATA:
+            raise SPSDKError(
+                f"Memory space '{space.label}' is not supported on ARM virtual probe. Only 'data' is valid."
+            )
         if not (self.opened and self.connected):
             raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
 
@@ -253,7 +276,9 @@ class DebugProbeVirtual(DebugProbe):
 
         return self._get_requested_value(self.virtual_memory, self.virtual_memory_substituted, addr)
 
-    def mem_reg_write(self, addr: int = 0, data: int = 0) -> None:
+    def mem_reg_write(
+        self, addr: int = 0, data: int = 0, space: MemorySpace = MemorySpace.DATA
+    ) -> None:
         """Write 32-bit register in memory space of MCU.
 
         This method writes a 32-bit data value to a specified memory address
@@ -261,8 +286,14 @@ class DebugProbeVirtual(DebugProbe):
 
         :param addr: The register address to write to.
         :param data: The 32-bit data value to be written into the register.
+        :param space: Memory space selector. Must be DATA; PROGRAM is not supported on ARM probes.
+        :raises SPSDKError: If space is not DATA.
         :raises SPSDKDebugProbeNotOpenError: The virtual debug probe is not opened or connected.
         """
+        if space != MemorySpace.DATA:
+            raise SPSDKError(
+                f"Memory space '{space.label}' is not supported on ARM virtual probe. Only 'data' is valid."
+            )
         if not (self.opened and self.connected):
             raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
 
@@ -460,6 +491,7 @@ class DebugProbeVirtual(DebugProbe):
 
         :raises SPSDKError: If the debug probe fails to halt the CPU.
         """
+        self.halted = True
 
     def debug_resume(self) -> None:
         """Resume the CPU execution.
@@ -467,6 +499,11 @@ class DebugProbeVirtual(DebugProbe):
         This method resumes the execution of the CPU that was previously halted
         or paused during debugging operations.
         """
+        self.halted = False
+
+    def is_cpu_halted(self) -> bool:
+        """Check if ARM Cortex CPU is halted by reading DHCSR."""
+        return self.halted
 
     def debug_step(self) -> None:
         """Step the CPU execution by one instruction.
@@ -512,3 +549,88 @@ class DebugProbeVirtual(DebugProbe):
         :param max_retries: Maximum number of retry attempts (currently unused).
         """
         self.coresight_reg_write(access_port=access_port, addr=addr, data=data)
+
+
+class DebugProbeDscVirtual:
+    """Virtual DSC debug probe for unit testing of DebugProbeDsc PMEM/DATA memory logic.
+
+    Simulates OnCE-level memory operations without requiring JTAG hardware.
+    Two independent 16-bit-word-addressed memory spaces are exposed:
+      - ``data_memory`` — simulates DSC X: (DATA) space
+      - ``program_memory`` — simulates DSC P: (PROGRAM) space
+
+    Both dictionaries map word addresses (int) to 16-bit values (int).
+    """
+
+    def __init__(self) -> None:
+        """Initialize virtual DSC probe with empty data and program memory."""
+        self.data_memory: dict[int, int] = {}
+        self.program_memory: dict[int, int] = {}
+        self._halted: bool = True  # start halted so mem access works directly
+
+    # ------------------------------------------------------------------
+    # Helpers that mirror the public DebugProbeDsc API at logic level
+    # ------------------------------------------------------------------
+
+    def mem_block_read(self, addr: int, size: int, space: MemorySpace = MemorySpace.DATA) -> bytes:
+        """Read a block from the selected virtual memory space.
+
+        :param addr: Starting 16-bit word address (24-bit).
+        :param size: Number of bytes to read.
+        :param space: DATA or PROGRAM memory space.
+        :return: Bytes read from the simulated memory.
+        """
+        mem = self.data_memory if space == MemorySpace.DATA else self.program_memory
+        num_words = (size + 1) // 2
+        result = bytearray()
+        for i in range(num_words):
+            word = mem.get((addr + i) & 0xFFFFFF, 0)
+            result.extend(word.to_bytes(2, "little"))
+        return bytes(result[:size])
+
+    def mem_block_write(
+        self, addr: int, data: bytes, space: MemorySpace = MemorySpace.DATA
+    ) -> None:
+        """Write a block to the selected virtual memory space.
+
+        :param addr: Starting 16-bit word address (24-bit).
+        :param data: Data to write (will be padded to word boundary).
+        :param space: DATA or PROGRAM memory space.
+        """
+        mem = self.data_memory if space == MemorySpace.DATA else self.program_memory
+        padded = bytearray(data)
+        if len(padded) % 2:
+            padded.append(0)
+        for i in range(0, len(padded), 2):
+            word = int.from_bytes(padded[i : i + 2], "little")
+            mem[(addr + i // 2) & 0xFFFFFF] = word
+
+    def mem_reg_read(self, addr: int = 0, space: MemorySpace = MemorySpace.DATA) -> int:
+        """Read a value from the selected virtual memory space.
+
+        :param addr: 16-bit word address (24-bit).
+        :param space: DATA (returns 32-bit) or PROGRAM (returns 16-bit).
+        :return: Value read from memory.
+        """
+        mem = self.data_memory if space == MemorySpace.DATA else self.program_memory
+        if space == MemorySpace.DATA:
+            lo = mem.get(addr & 0xFFFFFF, 0)
+            hi = mem.get((addr + 1) & 0xFFFFFF, 0)
+            return (hi << 16) | lo
+        return mem.get(addr & 0xFFFFFF, 0)
+
+    def mem_reg_write(
+        self, addr: int = 0, data: int = 0, space: MemorySpace = MemorySpace.DATA
+    ) -> None:
+        """Write a value to the selected virtual memory space.
+
+        :param addr: 16-bit word address (24-bit).
+        :param data: Value to write (32-bit for DATA, 16-bit for PROGRAM).
+        :param space: DATA or PROGRAM memory space.
+        """
+        mem = self.data_memory if space == MemorySpace.DATA else self.program_memory
+        if space == MemorySpace.DATA:
+            mem[addr & 0xFFFFFF] = data & 0xFFFF
+            mem[(addr + 1) & 0xFFFFFF] = (data >> 16) & 0xFFFF
+        else:
+            mem[addr & 0xFFFFFF] = data & 0xFFFF

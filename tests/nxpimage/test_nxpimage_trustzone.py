@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2023,2025-2026 NXP
 #
@@ -148,7 +147,7 @@ def test_generate_template(cli_runner: CliRunner, tmpdir: Any) -> None:
     :param tmpdir: Temporary directory fixture for test file operations
     """
     with use_working_directory(tmpdir):
-        families = list(set([x.name for x in TrustZone.get_supported_families()]))
+        families = sorted({x.name for x in TrustZone.get_supported_families()})
         for family in families:
             cmd = f"tz get-template -f {family} -o {family}.yaml"
             result = cli_runner.invoke(nxpimage.main, cmd.split())

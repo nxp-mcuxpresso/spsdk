@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +13,7 @@ different configuration block types and CRC validation.
 
 import logging
 from copy import deepcopy
-from typing import Any, Optional
+from typing import Any
 
 from typing_extensions import Self
 
@@ -201,9 +200,9 @@ class XMCDHeader:
 
     def verify(
         self,
-        mem_type: Optional[MemoryType] = None,
-        config_type: Optional[ConfigurationBlockType] = None,
-        xmcd_size: Optional[int] = None,
+        mem_type: MemoryType | None = None,
+        config_type: ConfigurationBlockType | None = None,
+        xmcd_size: int | None = None,
     ) -> Verifier:
         """Verify XMCD header data against expected values and constraints.
 

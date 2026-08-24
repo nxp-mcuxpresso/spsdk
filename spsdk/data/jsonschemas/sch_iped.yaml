@@ -1,0 +1,532 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+iped_output:
+  type: object
+  title: Basic Settings
+  properties:
+    output_folder:
+      type: string
+      title: IPED output directory
+      description: >-
+        Directory where nxpimage writes generated IPED files. A table/keyblob file
+        is always generated; encrypted data and combined image files are generated
+        only when data_blobs are configured.
+      template_value: iped_output
+
+    output_format:
+      type: string
+      title: Output data file format
+      description: >-
+        Output file format used for all generated IPED artifacts: the table/keyblob,
+        optional encrypted data blob file, and optional combined image.
+      enum: [bin, hex, srec, sparse]
+      template_value: bin
+      default: bin
+
+    output_name:
+      type: string
+      title: Output table filename
+      description: >-
+        Filename, without extension, of the standalone IPED register-image table.
+        This binary is the keyblob payload used by bootable-image when the keyblob
+        segment points to an IPED YAML configuration.
+      template_value: iped_table
+      default: iped_table
+
+    encrypted_name:
+      type: string
+      title: Encrypted data filename
+      description: >-
+        Filename of the encrypted data blobs without file extension. This file
+        is generated only when data_blobs are configured.
+      template_value: encrypted_blob
+      default: encrypted_blob
+  required: [output_folder]
+
+iped:
+  type: object
+  title: IPED Table Settings
+  required: [contexts]
+  properties:
+    table_size:
+      type: [number, string]
+      title: Exported IPED table size
+      description: >-
+        Size of the exported IPED table/keyblob including zero padding. The raw
+        register-image payload is 0x210 bytes (16 context slots followed by
+        IPEDCTRL, a reserved word, and two IPEDCTXCTRL words). The default
+        0x400-byte output fills the bootable-image keyblob area before the FCB at
+        offset 0x400.
+      format: number
+      template_value: "0x400"
+
+    keyblob_address:
+      type: [number, string]
+      title: Absolute IPED table/keyblob address
+      description: >-
+        Absolute memory-mapped address where the IPED table/keyblob is placed.
+        For bootable images this should match the external flash base address of
+        the keyblob segment. It is used only to calculate relative offsets for
+        data_blobs and the optional combined image; the value is not serialized
+        into the IPED table.
+      format: number
+      template_value: "0x28000000"
+
+    data_alignment:
+      type: [number, string]
+      title: Encrypted data alignment
+      description: >-
+        Alignment, in bytes, used when placing encrypted data blobs in the
+        generated encrypted-data and combined-image outputs. Individual encrypted
+        blobs are always padded to the IPED 8-byte encryption block size.
+      format: number
+      template_value: 8
+      default: 8
+
+    control_word:
+      type: [number, string]
+      title: Raw IPEDCTRL word
+      description: >-
+        Optional raw IPEDCTRL register value placed after the 16 context records.
+        Use it only when the exact register word is known from the reference
+        manual or ROM integration guide; if present, all boolean control flags
+        below are ignored.
+      format: number
+      skip_in_template: true
+
+    double_encryption:
+      type: boolean
+      title: Double encryption/decryption execution
+      description: >-
+        Sets IPEDCTRL CONFIG. Enables the hardware double encryption/decryption
+        path used by selected provisioning flows. Keep disabled for the usual
+        decrypted-XIP table unless the encrypted image was prepared for double
+        encryption.
+      template_value: false
+      default: false
+
+    enable:
+      type: boolean
+      title: Enable IPED CTR/GCM logic
+      description: >-
+        Sets IPEDCTRL IPED_EN. Enables the IPED CTR/GCM engine. For a typical
+        decrypted-XIP image this should be enabled together with the AHB read
+        flag matching the selected context mode.
+      template_value: true
+      default: true
+
+    ip_write_enable:
+      type: boolean
+      title: Enable IP-command write CTR encryption
+      description: >-
+        Sets IPEDCTRL IPWR_EN. Enables CTR encryption for writes issued through
+        the memory controller IP-command path. This does not affect normal
+        memory-mapped XIP reads; keep disabled unless the application writes
+        encrypted data through IP commands.
+      template_value: false
+      default: false
+
+    ahb_write_enable:
+      type: boolean
+      title: Enable AHB write CTR encryption
+      description: >-
+        Sets IPEDCTRL AHBWR_EN. Enables CTR encryption for writes on the
+        memory-mapped AHB/XIP path. This is normally disabled for read-only boot
+        images.
+      template_value: false
+      default: false
+
+    ahb_read_enable:
+      type: boolean
+      title: Enable AHB read CTR decryption
+      description: >-
+        Sets IPEDCTRL AHBRD_EN. Enables CTR decryption for memory-mapped
+        AHB/XIP reads. This is the usual read-side flag for decrypted-XIP boot
+        from external flash when contexts use CTR mode.
+      template_value: true
+      default: true
+
+    ip_gcm_write_enable:
+      type: boolean
+      title: Enable IP-command write GCM encryption
+      description: >-
+        Sets IPEDCTRL IPGCMWR. Enables GCM encryption for writes issued through
+        the memory controller IP-command path. Use only with GCM contexts.
+      template_value: false
+      default: false
+
+    ahb_gcm_write_enable:
+      type: boolean
+      title: Enable AHB write GCM encryption
+      description: >-
+        Sets IPEDCTRL AHGCMWR. Enables GCM encryption for writes on the
+        memory-mapped AHB/XIP path. Use only with GCM contexts.
+      template_value: false
+      default: false
+
+    ahb_gcm_read_enable:
+      type: boolean
+      title: Enable AHB read GCM decryption
+      description: >-
+        Sets IPEDCTRL AHBGCMRD. Enables GCM decryption/authenticated reads on
+        the memory-mapped AHB/XIP path. Use this instead of ahb_read_enable when
+        contexts use GCM mode.
+      template_value: false
+      default: false
+
+    protection:
+      type: boolean
+      title: Enable IPED protection
+      description: >-
+        Sets IPEDCTRL IPED_PROTECT. Requests hardware protection of the IPED
+        configuration registers after the table is loaded, preventing later
+        changes through normal register writes.
+      template_value: false
+      default: false
+
+    xex_enable:
+      type: boolean
+      title: Enable IPED XEX logic
+      description: >-
+        Sets IPEDCTRL IPED_XEX_EN. Enables the IPED XEX engine. Use together
+        with the XEX read/write flags and contexts whose mode is xex.
+      template_value: false
+      default: false
+
+    ip_xex_write_enable:
+      type: boolean
+      title: Enable IP-command write XEX encryption
+      description: >-
+        Sets IPEDCTRL IPSXEXWE. Enables XEX encryption for writes issued through
+        the memory controller IP-command path. Use only with XEX contexts.
+      template_value: false
+      default: false
+
+    ahb_xex_write_enable:
+      type: boolean
+      title: Enable AHB write XEX encryption
+      description: >-
+        Sets IPEDCTRL AHBXEXWE. Enables XEX encryption for writes on the
+        memory-mapped AHB/XIP path. Use only with XEX contexts.
+      template_value: false
+      default: false
+
+    ahb_xex_read_enable:
+      type: boolean
+      title: Enable AHB read XEX decryption
+      description: >-
+        Sets IPEDCTRL AHBXEXRE. Enables XEX decryption for memory-mapped
+        AHB/XIP reads. Use this instead of ahb_read_enable when contexts use
+        XEX mode.
+      template_value: false
+      default: false
+
+    context_control:
+      type: array
+      title: Raw IPEDCTXCTRL words
+      description: >-
+        Optional two raw IPEDCTXCTRL words. Use only when the exact register
+        values are known. Per-context freeze values from contexts are ORed into
+        the first word.
+      minItems: 2
+      maxItems: 2
+      items:
+        type: [number, string]
+        format: number
+      template_value: ["0x0", "0x0"]
+      skip_in_template: true
+
+    data_blobs:
+      type: array
+      title: Data blobs
+      description: >-
+        Optional list of plain binary blobs to encrypt with the matching IPED
+        context. Each blob must fit completely into one configured context.
+        Encryption uses the optional iped-offline-tool backend installed in the
+        active Python environment.
+      items:
+        type: object
+        required: [data, address]
+        properties:
+          data:
+            type: string
+            title: Plain data blob
+            description: Path to binary file with plain data to encrypt.
+            format: file
+            template_value: my_plain_image.bin
+
+          address:
+            type: [number, string]
+            title: Data blob address
+            description: Absolute memory-mapped address where the data blob will be stored.
+            format: number
+            template_value: "0x28001000"
+
+    contexts:
+      type: array
+      title: IPED contexts
+      description: >-
+        List of IPED context register records. At most 16 contexts are
+        supported. Each context describes one encrypted/decrypted external
+        memory range and the mode-specific IV/AAD values already prepared by the
+        offline encryption flow.
+      minItems: 1
+      maxItems: 16
+      items:
+        type: object
+        required: [start_address, end_address]
+        properties:
+          start_address:
+            type: [number, string]
+            title: Context start address
+            description: >-
+              Start address of the IPED-protected external memory region. The
+              address must be aligned to the family-specific alignment,
+              typically 0x100 bytes.
+            format: number
+            template_value: "0x28001000"
+
+          end_address:
+            type: [number, string]
+            title: Context end address
+            description: >-
+              End address of the IPED-protected external memory region. The
+              address must be aligned to the family-specific alignment,
+              typically 0x100 bytes.
+            format: number
+            template_value: "0x28002000"
+
+          mode:
+            type: string
+            title: IPED context mode
+            description: >-
+              Encryption mode for this context. The global IPEDCTRL read/write
+              enable flags must match the selected mode: CTR flags for ctr,
+              GCM flags for gcm, XEX flags for xex. Bypass leaves the region
+              unencrypted.
+            enum: [ctr, gcm, xex, bypass]
+            template_value: ctr
+            default: ctr
+
+          iv:
+            oneOf:
+              - type: array
+                minItems: 2
+                maxItems: 2
+                items:
+                  type: [number, string]
+                  format: number
+              - type: [number, string]
+                format: number
+            title: IPED context IV
+            description: >-
+              Two 32-bit IV words, or an 8-byte hexadecimal value. Use the IV
+              value that was used by the offline encryption tool for this
+              context.
+            template_value: ["0x00010203", "0x04050607"]
+
+          key:
+            type: [number, string]
+            title: IPED encryption key
+            description: >-
+              Optional effective 128-bit IPED encryption key used to encrypt
+              data_blobs that fit into this context. The key is not serialized
+              into the IPED table; it is used only by the offline encryption
+              step.
+            format: number
+            template_value: "0x00000000000000000000000000000001"
+
+          aad:
+            oneOf:
+              - type: array
+                minItems: 2
+                maxItems: 2
+                items:
+                  type: [number, string]
+                  format: number
+              - type: [number, string]
+                format: number
+            title: IPED context AAD
+            description: >-
+              Two 32-bit AAD words, or an 8-byte hexadecimal value. Used by GCM
+              contexts as additional authenticated data; keep zero for modes
+              that do not use AAD.
+            template_value: ["0x00000000", "0x00000000"]
+
+          freeze:
+            type: [number, string]
+            title: Context freeze value
+            description: >-
+              Hardware-defined two-bit freeze value for this context in
+              IPEDCTXCTRL. Non-zero values request context locking according to
+              the device reference manual.
+            format: number
+            template_value: 0
+            default: 0
+
+# ==============================================================================
+# IPED V1 — Tagged ELE Configuration Structure (i.MX943 and similar)
+# ==============================================================================
+
+iped_v1_output:
+  type: object
+  title: Basic Settings
+  properties:
+    output_folder:
+      type: string
+      title: IPED V1 output directory
+      description: >-
+        Directory where nxpimage writes the generated IPED V1 configuration
+        structure file.
+      template_value: iped_output
+
+    output_format:
+      type: string
+      title: Output data file format
+      description: >-
+        Output file format used for the generated IPED V1 config structure.
+      enum: [bin, hex, srec, sparse]
+      template_value: bin
+      default: bin
+
+    output_name:
+      type: string
+      title: Output config filename
+      description: >-
+        Filename, without extension, of the IPED V1 configuration structure.
+      template_value: iped_config
+      default: iped_config
+
+  required: [output_folder]
+
+iped_v1:
+  type: object
+  title: IPED V1 Configuration Structure Settings
+  required: [regions]
+  properties:
+    xspi_instance:
+      type: string
+      title: XSPI instance
+      description: >-
+        XSPI peripheral instance used for this IPED configuration. Determines
+        which set of fuse context keys is used for IV derivation. Each XSPI
+        instance has its own set of 16 per-region keys in fuses.
+      enum: [xspi1, xspi2]
+      template_value: "xspi1"
+      default: "xspi1"
+
+    keyblob_address:
+      type: [number, string]
+      title: Absolute IPED config address
+      description: >-
+        Absolute memory-mapped address where the IPED V1 configuration
+        structure is placed. Must be at offset 0 of the SPI device.
+      format: number
+      template_value: "0x28000000"
+
+    fw_version:
+      type: [number, string]
+      title: Firmware version
+      description: >-
+        32-bit firmware version value used by ELE in IV derivation:
+        IV = AES_ECB(fuse_key, nonce || fw_version || zeros)[0:8].
+        Chosen by OEM, should be incremented on firmware updates to
+        ensure unique IVs across versions.
+      format: number
+      template_value: "0x00000001"
+      default: 0
+
+    user_key:
+      type: [number, string]
+      title: User encryption key
+      description: >-
+        128-bit user key from fuses (IPED_USER_KEY). This key is XORed
+        with the per-region context key from the device database to derive
+        the effective PRINCE encryption key. Required when data_blobs are
+        configured for offline encryption.
+      format: number
+      template_value: "0x00000000000000000000000000000000"
+
+    data_blobs:
+      type: array
+      title: Data blobs to encrypt
+      description: >-
+        Optional list of plaintext binary blobs to encrypt with the PRINCE
+        cipher. Each blob must fall within a configured IPED region. The
+        effective encryption key = user_key XOR context_key (from database).
+        The IV is the nonce from the matching region. This produces the same
+        output as the iped-offline-tool.
+      items:
+        type: object
+        required: [data, address]
+        properties:
+          data:
+            type: string
+            title: Plaintext data blob path
+            description: Path to binary file with plaintext data to encrypt.
+            format: file
+            template_value: my_firmware.bin
+
+          address:
+            type: [number, string]
+            title: Data blob address
+            description: >-
+              Absolute memory-mapped address where the data blob will be
+              stored. Must fall within a configured IPED region.
+            format: number
+            template_value: "0x28001000"
+
+    regions:
+      type: array
+      title: IPED V1 region descriptors
+      description: >-
+        List of IPED region descriptors. Each region describes one encrypted
+        external memory range. At most 15 regions are supported. Each region
+        must have a unique region_id (0-14).
+      minItems: 1
+      maxItems: 15
+      items:
+        type: object
+        required: [region_id, start_address, end_address]
+        properties:
+          region_id:
+            type: [number, string]
+            title: Region ID
+            description: >-
+              Unique region identifier from 0 to 14. Each region in the
+              configuration must have a distinct ID.
+            format: number
+            template_value: 0
+
+          start_address:
+            type: [number, string]
+            title: Region start address
+            description: >-
+              Start address of the IPED-protected region. Corresponds to the
+              first address in the XSPI to be decrypted. The lower 8 bits are
+              ignored by hardware.
+            format: number
+            template_value: "0x28001000"
+
+          end_address:
+            type: [number, string]
+            title: Region end address
+            description: >-
+              End address of the IPED-protected region. Corresponds to the
+              first address outside the region to be decrypted. The lower 8
+              bits are ignored by hardware.
+            format: number
+            template_value: "0x28002000"
+
+          nonce:
+            type: [number, string]
+            title: Region nonce
+            description: >-
+              64-bit nonce used by ELE for IV derivation. The IV is calculated
+              as IV = AES_ECB(fuse_key, nonce || fw_version || zeros),
+              truncated to 64 bits. Each region should use a unique nonce.
+            format: number
+            template_value: "0x0011223344556677"
+            default: 0

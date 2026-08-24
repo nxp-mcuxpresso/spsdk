@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -13,9 +12,10 @@ CSF data, decrypting data, and managing authentication signatures and MACs.
 """
 
 import os
+from collections.abc import Iterator
 from datetime import datetime
 from struct import pack, unpack_from
-from typing import Any, Iterator, Optional, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -63,7 +63,7 @@ class SPSDKExpectedSignatureOrMACError(SPSDKError):
     """
 
 
-SignatureOrMAC = Union[MAC, Signature]
+SignatureOrMAC = MAC | Signature
 
 
 class CmdAuthData(CmdBase):
@@ -107,9 +107,9 @@ class CmdAuthData(CmdBase):
         engine: EngineEnum = EngineEnum.ANY,
         engine_cfg: int = 0,
         location: int = 0,
-        certificate: Optional[HabCertificate] = None,
-        private_key: Optional[PrivateKey] = None,
-        signature_provider: Optional[SignatureProvider] = None,
+        certificate: HabCertificate | None = None,
+        private_key: PrivateKey | None = None,
+        signature_provider: SignatureProvider | None = None,
     ):
         """Initialize the Authenticate data command.
 
@@ -139,7 +139,7 @@ class CmdAuthData(CmdBase):
         self.signature_provider = signature_provider
         self._header.length = CmdHeader.SIZE + 8
         self._blocks: list[tuple[int, int]] = []  # list of (start-address, size)
-        self._signature: Optional[SignatureOrMAC] = None
+        self._signature: SignatureOrMAC | None = None
         if private_key and signature_provider:
             raise SPSDKValueError(
                 "Only one of private key and signature provider must be specified"
@@ -244,7 +244,7 @@ class CmdAuthData(CmdBase):
         self.location = value
 
     @property  # type: ignore
-    def cmd_data_reference(self) -> Optional[SignatureOrMAC]:
+    def cmd_data_reference(self) -> SignatureOrMAC | None:
         """Get reference to additional data such as certificate or signature.
 
         Returns the signature or MAC reference if one was assigned to this command,
@@ -256,7 +256,7 @@ class CmdAuthData(CmdBase):
         return self._signature
 
     @cmd_data_reference.setter
-    def cmd_data_reference(self, value: Union[HabCertificate, Signature, MAC, SrkTable]) -> None:
+    def cmd_data_reference(self, value: HabCertificate | Signature | MAC | SrkTable) -> None:
         """Set command data reference for authentication.
 
         Sets the signature or MAC object based on the certificate format. For AEAD format,
@@ -295,7 +295,7 @@ class CmdAuthData(CmdBase):
         raise SPSDKExpectedSignatureOrMACError(f"TAG = {header.tag}")
 
     @property
-    def signature(self) -> Optional[SignatureOrMAC]:
+    def signature(self) -> SignatureOrMAC | None:
         """Get signature referenced by location attribute.
 
         :return: Signature or MAC object if available, None otherwise.
@@ -355,7 +355,7 @@ class CmdAuthData(CmdBase):
             raise SPSDKError("Incorrect length")
         self._blocks[key] = value
 
-    def __iter__(self) -> Iterator[Union[tuple[Any, ...], list[Any]]]:
+    def __iter__(self) -> Iterator[tuple[Any, ...] | list[Any]]:
         """Iterate over authentication data blocks.
 
         Provides an iterator interface to access the internal blocks collection,
@@ -611,7 +611,7 @@ class CmdAuthenticateCsf(CmdAuthData):
     CMD_IDENTIFIER = CmdName.AUTHENTICATE_CSF
 
     @classmethod
-    def load_from_config(cls, config: Config, cmd_index: Optional[int] = None) -> Self:
+    def load_from_config(cls, config: Config, cmd_index: int | None = None) -> Self:
         """Load configuration into the command.
 
         This method creates a command instance from HAB image configuration by determining the
@@ -626,7 +626,7 @@ class CmdAuthenticateCsf(CmdAuthData):
         """
         cmd_cfg = cls._get_cmd_config(config, cmd_index)
         # determine the key path, depending on if HAB is configured in normal or fast authentication mode
-        install_key: Union[CmdInstallCsfk, CmdInstallNOCAK]
+        install_key: CmdInstallCsfk | CmdInstallNOCAK
         try:
             install_key = CmdInstallCsfk.load_from_config(config)
         except SPSDKCommandNotDefined:
@@ -703,10 +703,10 @@ class CmdDecryptData(CmdAuthData):
         engine: EngineEnum = EngineEnum.ANY,
         engine_cfg: int = 0,
         location: int = 0,
-        certificate: Optional[HabCertificate] = None,
-        private_key: Optional[PrivateKey] = None,
-        signature_provider: Optional[SignatureProvider] = None,
-        nonce: Optional[bytes] = None,
+        certificate: HabCertificate | None = None,
+        private_key: PrivateKey | None = None,
+        signature_provider: SignatureProvider | None = None,
+        nonce: bytes | None = None,
         mac_len: int = 16,
     ):
         """Initialize HAB Authenticate Data command.
@@ -741,7 +741,7 @@ class CmdDecryptData(CmdAuthData):
         self.mac_len = mac_len
 
     @classmethod
-    def load_from_config(cls, config: Config, cmd_index: Optional[int] = None) -> Self:
+    def load_from_config(cls, config: Config, cmd_index: int | None = None) -> Self:
         """Load configuration into the authenticate data command.
 
         Creates an authenticate data command instance from HAB image configuration with proper
@@ -846,7 +846,7 @@ class SecCsfAuthenticateData(CmdAuthData):
     CMD_IDENTIFIER = CmdName.AUTHENTICATE_DATA
 
     @classmethod
-    def load_from_config(cls, config: Config, cmd_index: Optional[int] = None) -> Self:
+    def load_from_config(cls, config: Config, cmd_index: int | None = None) -> Self:
         """Load configuration into the authenticate data command.
 
         Creates an authenticate data command instance from HAB configuration, determining the
@@ -862,7 +862,7 @@ class SecCsfAuthenticateData(CmdAuthData):
         """
         cmd_cfg = cls._get_cmd_config(config, cmd_index)
         # determine the key path, depending on if HAB is configured in normal or fast authentication mode
-        install_key: Union[CmdInstallKey, CmdInstallNOCAK]
+        install_key: CmdInstallKey | CmdInstallNOCAK
         try:
             install_key = CmdInstallKey.load_from_config(config)
         except SPSDKCommandNotDefined:

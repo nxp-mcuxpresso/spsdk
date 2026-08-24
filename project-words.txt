@@ -1,8 +1,8 @@
-# cert block naming
-# ipynb
 # JSON words list
 # RST Word List
 # SPSDK Words
+# cert block naming
+# ipynb
 # typo in CMPA data
 aaaau
 aaau
@@ -11,6 +11,7 @@ aabbccdd
 AABBCCDDEE
 aabbccddeeffaabbccddeeffaabbccdd
 abcxyz
+abstractmethods
 abstractregister
 acmd
 ACMD
@@ -22,10 +23,12 @@ ADDRINC
 addrs
 Adesto
 ADESTO
+ADESTOOCTAL
 adipiscing
 Adipiscing
 adkp
 Adleman
+ADMA
 Aera
 aesccm
 AESCCM
@@ -36,7 +39,14 @@ AGDET
 AHBAP
 AHBCMDERR
 AHBERR
+AHBGCMRD
+AHBGCMWR
+AHBRD
 AHBSC
+AHBWR
+AHBXEXRE
+AHBXEXWE
+AHGCMWR
 ahoj
 aips
 AIPS
@@ -47,6 +57,7 @@ aliqua
 aliquam
 aliquet
 Aliquet
+allflags
 ALLNS
 allunsecure
 ALREADYINITIALIZED
@@ -75,6 +86,8 @@ AQIR
 argparse
 armgcc
 asctime
+aspec
+aspecs
 ASRT
 astunparse
 ATTES
@@ -85,6 +98,7 @@ autoclass
 autodetection
 autodoc
 autofunction
+autoload
 automodule
 AUTOPROBE
 autoprobing
@@ -94,14 +108,13 @@ AWDT
 Azurewave
 b'DN
 baaad
-Backdor
 BACKUPAPPLICATIONINVALID
 BACKUPBOOTLOADERNOTREADY
 badc
 BASEPRI
 Baudrate
 BAUDRATE
-baudrate
+BBBBAAAA
 BBBBIIII
 BBBBL
 BBHH
@@ -111,8 +124,7 @@ BBNSM
 BBSM
 BCNT
 bdcompiler
-Bedgelock
-Behaviour
+behaviour
 BFFF
 BHBI
 BIIIBB
@@ -256,6 +268,7 @@ cmactable
 CMACTABLE
 cmap
 cmddata
+cmdpath
 CMDV
 cmpa
 CMPA
@@ -276,6 +289,11 @@ comalg
 COMMANDFAILURE
 COMMANDSET
 commentjson
+compadd
+compdef
+compgen
+compinit
+COMPREPLY
 condimentum
 configurememory
 consectetur
@@ -289,6 +307,7 @@ copytree
 CORDINATE
 coresight
 Coresight
+coretap
 coverity
 Coverity
 cpacr
@@ -336,6 +355,7 @@ dataauth
 datablob
 Datablob
 datablobs
+dataclass
 datapath
 datasheet
 datatable
@@ -364,6 +384,7 @@ DEBUGKEY
 debugmailbox
 debugmbox
 debugprobes
+DEBUGREQ
 Decap
 decodability
 decryptor
@@ -419,6 +440,11 @@ DLLCRA
 DLPR
 dmbox
 dmem
+DMIHARDRESET
+DMIRESET
+DMOVP
+DMOVX
+DMTAP
 dnames
 docstrings
 docutils
@@ -433,6 +459,8 @@ DSASS
 DSPEN
 dtcm
 DTCP
+dtmcs
+DTMCS
 dualboot
 DUCKB
 DUKB
@@ -472,6 +500,9 @@ EHDR
 eiusmod
 EKIB
 eleapi
+Elems
+elffile
+elftools
 elftosb
 ELFTOSB
 elif
@@ -489,12 +520,14 @@ endianness
 ENDIANNESS
 endswith
 entrypointaddress
+EONCE
 ephem
 EPROT
 EPSCD
 EPSR
 ernad
 Errno
+esac
 ESBC
 evision
 EVKB
@@ -507,6 +540,7 @@ executescript
 extfile
 EZHV
 FACMDEN
+FALLI
 FALLTHRU
 famode
 FAMODE
@@ -530,6 +564,7 @@ ffaa
 filecmp
 filelock
 filesize
+filesz
 fileutil
 filevers
 fillmemory
@@ -559,6 +594,7 @@ FLEXSPINORDTR
 flshldr
 FOPT
 fornon
+fpath
 FPROT
 FPSCR
 FPVIOL
@@ -611,6 +647,8 @@ getlogin
 getpid
 getreg
 getsize
+ghash
+GHASH
 Giga
 gitcov
 GLBA
@@ -631,6 +669,8 @@ gravida
 haddiff
 Halfword
 hashlocking
+hashtable
+HAWKV
 hdcp
 HDCP
 hexbin
@@ -673,6 +713,7 @@ icnp
 icns
 idau
 IDAU
+IDCODE
 IDEVID
 idlecommand
 idna
@@ -717,11 +758,18 @@ IOUSB
 ipcmd
 IPCMDERR
 IPED
+IPEDCTRL
+IPEDCTXCTRL
+IPEDCTXSTART
+IPGCMWR
 IPSR
+IPSXEXWE
+IPWR
 ipykernel
 ipynb
 ipython
 ipywidgets
+isabstractmethod
 ISBC
 isfile
 isinstance
@@ -762,7 +810,6 @@ KEYBLOB
 keyblob
 Keyblob
 keyblobs
-Keyblobs
 KEYCHAL
 KEYEN
 KEYFLUSH
@@ -904,8 +951,10 @@ MFWENCK
 MFWISK
 MGTP
 Micali
+MICR
 microcontroller
 Microcontrollers
+MICRONOCTAL
 micropower
 MICR
 MICROSECS
@@ -942,6 +991,7 @@ msrk
 msuccessfully
 msvc
 MTFC
+mult
 multicore
 Multicore
 multilined
@@ -950,6 +1000,7 @@ multiplicated
 muxed
 mwct
 MXIC
+MXICOCTAL
 MXICOPI
 mxrt
 MXRT
@@ -1006,8 +1057,11 @@ NONSECURE
 nontty
 Noord
 nopadding
+Normalise
 NOSTKY
+notcontains
 notime
+notlike
 npxcrypto
 nsacr
 nsec
@@ -1049,7 +1103,9 @@ NXPUUU
 nxpwpc
 nzcvq
 OAEP
+OBASE
 objcopy
+OCMDR
 ocotp
 ocram
 OCRAM
@@ -1063,19 +1119,25 @@ OEMFW
 ofile
 oftad
 OID's
+okey
 Olejar
+Ollama
 onchip
 onclick
 oneof
 Onfi
 ONFI
 ontat
+OPDBR
 openpyxl
 optee
 OPTMK
 OSCAA
 oscca
 OSCCA
+OSCNTR
+oscr
+OSCR
 oscrypto
 OSPI
 otbr
@@ -1089,6 +1151,8 @@ OTPC
 otpmk
 OTPMK
 OTPS
+OTXRX
+OTXRXSR
 OUTDIV
 outform
 OUTOFRANGEVAL
@@ -1120,7 +1184,7 @@ PFRC
 phbc
 PHBC
 Picoprobe
-picoprobe
+pidx
 PINGR
 Pinmux
 PINMUX
@@ -1135,6 +1199,7 @@ platformdirs
 pluggy
 PMCMDEN
 PMCTRL
+PMEM
 pmic
 PMRO
 Pmsn
@@ -1166,6 +1231,7 @@ preparsed
 presection
 Presso
 prettytable
+prevword
 PRIMASK
 printregs
 prodvers
@@ -1192,6 +1258,7 @@ Puya
 PVTS
 PWRDN
 PWRMODE
+pwsh
 Pxxx
 pyasn
 pycache
@@ -1232,6 +1299,7 @@ QSPI
 qspihdr
 quadspi
 QUADSPI
+qualname
 QUESTIONMARK
 quis
 Qxxx
@@ -1271,6 +1339,7 @@ regs
 REGS
 Regs
 reinit
+RELEA
 reloc
 Reloc
 RELOC
@@ -1289,6 +1358,7 @@ rgba
 rgpio
 RHKT
 rhoncus
+RISI
 Rivest
 Rivesta
 Rkeystream
@@ -1356,6 +1426,8 @@ sbkek
 SBKEK
 SBLOADER
 SBMR
+sbox
+SBOX
 sbvx
 scandir
 scanlimited
@@ -1366,7 +1438,9 @@ SCFW
 scfw
 sclk
 SCLK
+scriptblock
 sdcard
+SDEMMC
 SDFP
 sdhc
 sdid
@@ -1409,6 +1483,11 @@ SEQNUM
 Seqs
 serdes
 serialext
+serialisable
+serialisation
+Serialise
+serialised
+serialises
 setenv
 setexpr
 setitem
@@ -1426,6 +1505,7 @@ shadowregs
 Shamir
 Shamira
 SHDC
+shellcheck
 shutil
 SIGB
 signaturetimestamp
@@ -1452,6 +1532,8 @@ SOCU
 Sonoma
 sortedcontainers
 SOSC
+sourceable
+Sourcegraph
 spdhost
 SPDK
 spds
@@ -1528,6 +1610,7 @@ subelement
 subimage
 subkey
 submatrix
+subpartial
 subreg
 subregs
 SUPEROLD
@@ -1536,6 +1619,8 @@ SWAPINDICATORADDRESSINVALID
 SWAPSYSTEMNOTAVAILABLE
 SWAPSYSTEMNOTREADY
 SWAPTEST
+SWDCLK
+SWDIO
 swmodel
 SWMODEL
 SWRST
@@ -1569,12 +1654,17 @@ tianma
 tibs
 TIOCGSERIAL
 TKTH
+TLMSEL
 tlvelement
 tmpdir
+TMPL
 TMPSNS
 tobytes
+TOCTOU
 toctree
 tokgen
+toks
+toolname
 toplevel
 tpconfig
 TPCONFIG
@@ -1653,9 +1743,11 @@ unidecode
 unknownblock
 UNLK
 unmatch
+unpickler
 unrecognised
 Unretrievable
 upower
+Upwr
 urandom
 urllib
 urna
@@ -1683,8 +1775,12 @@ UTEST
 uuu
 UUULsUsbDevices
 Uxxx
+vaddr
 validationboard
 varnames
+VBAS
+vbase
+VBASE
 VBAT
 VBUS
 VDDIO
@@ -1726,6 +1822,7 @@ Winbond
 winternitz
 wlan
 WLAN
+wordfilter
 WPCCA
 writability
 WRITEALIGNMENTERROR
@@ -1738,6 +1835,7 @@ WWDT
 wxga
 wxyz
 xacy
+xaddr
 xamples
 xbce
 xbfffffffu

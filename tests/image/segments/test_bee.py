@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -11,8 +10,6 @@ This module contains comprehensive test cases for the BEE functionality in SPSDK
 including tests for BEE regions, protection blocks, key information blocks (KIB),
 and various BEE-related data structures used in secure boot and encryption.
 """
-
-from typing import Optional
 
 import pytest
 
@@ -29,7 +26,7 @@ from spsdk.utils.misc import load_binary
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
-def verify_base_class_features(inst: BeeBaseClass, decrypt_key: Optional[bytes] = None) -> None:
+def verify_base_class_features(inst: BeeBaseClass, decrypt_key: bytes | None = None) -> None:
     """Verify base features of BeeBaseClass instances.
 
     This method performs comprehensive testing of BeeBaseClass instances including

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -14,10 +13,9 @@ Key components:
 - DebugMailboxError: Exception handling for mailbox operations
 """
 
-import functools
 import logging
 from time import sleep
-from typing import Any, no_type_check
+from typing import Any
 
 from spsdk.debuggers.debug_probe import DebugProbe
 from spsdk.exceptions import SPSDKError, SPSDKIOError
@@ -72,17 +70,25 @@ class DebugMailbox:
         """
         # setup debug port / access point
         self.family = family
-        self.dbgmlbx_ap_ix = -1
         self.non_standard_statuses = {}
         self.command_delays: dict[str, float] = {}
+        self.debug_probe = debug_probe
         if family:
             db = get_db(family)
-            self.dbgmlbx_ap_ix = db.get_int(DatabaseManager.DAT, "dmbox_ap_ix", -1)
+            if hasattr(self.debug_probe, "dbgmlbx_ap_ix"):
+                assert isinstance(self.debug_probe.dbgmlbx_ap_ix, int)
+                self.dbgmlbx_ap_ix = db.get_int(DatabaseManager.DAT, "dmbox_ap_ix", -1)
+                if self.dbgmlbx_ap_ix >= 0:
+                    self.debug_probe.dbgmlbx_ap_ix = self.dbgmlbx_ap_ix
             self.non_standard_statuses = db.get_dict(
                 DatabaseManager.DAT, "non_standard_statuses", {}
             )
             self.command_delays = db.get_dict(DatabaseManager.DAT, "command_delays", {})
-        self.debug_probe = debug_probe
+            self.csw_supports_return_pending_flag = db.get_bool(
+                DatabaseManager.DAT, "csw_supports_return_pending_flag", False
+            )
+        else:
+            self.csw_supports_return_pending_flag = False
 
         self.reset = reset
         self.moredelay = moredelay
@@ -103,7 +109,7 @@ class DebugMailbox:
 
         logger.debug(f"Reset mode: {self.reset!r}")
         if self.reset:
-            self.dbgmlbx_reg_write(
+            self.debug_probe.dbgmlbx_reg_write(
                 addr=self.registers["CSW"]["address"],
                 data=self.registers["CSW"]["bits"]["RESYNCH_REQ"]
                 | self.registers["CSW"]["bits"]["CHIP_RESET_REQ"],
@@ -126,13 +132,16 @@ class DebugMailbox:
 
         while ret is None or (ret & self.registers["CSW"]["bits"]["REQ_PENDING"]):
             try:
-                ret = self.dbgmlbx_reg_read(addr=self.registers["CSW"]["address"])
+                ret = self.debug_probe.dbgmlbx_reg_read(addr=self.registers["CSW"]["address"])
+                logger.debug(f"Wait for DM ready by reading CSW register: {hex(ret)}")
             except SPSDKError:
                 pass
             retries -= 1
             if retries == 0:
                 raise SPSDKIOError("TransferTimeoutError limit exceeded!")
             sleep(0.05)
+
+        logger.debug(f"Read DM ID: {hex(self.read_idr())}")
 
     def read_idr(self) -> int:
         """Read IDR of debug mailbox.
@@ -142,7 +151,7 @@ class DebugMailbox:
 
         :return: IDR value of debug mailbox AP.
         """
-        idr = self.dbgmlbx_reg_read(addr=self.registers["IDR"]["address"])
+        idr = self.debug_probe.dbgmlbx_reg_read(addr=self.registers["IDR"]["address"])
         if idr != self.registers["IDR"]["expected"]:
             logger.warning(
                 f"The read IDR value({hex(idr)}) doesn't match the expected "
@@ -172,7 +181,7 @@ class DebugMailbox:
         timeout = Timeout(self.op_timeout, units="ms")
         while ret is None:
             try:
-                ret = self.dbgmlbx_reg_read(addr=reg)
+                ret = self.debug_probe.dbgmlbx_reg_read(addr=reg)
             except SPSDKError as e:
                 logger.debug(str(e))
                 logger.debug(f"read exception  {reg:#08X}")
@@ -197,10 +206,11 @@ class DebugMailbox:
         timeout = Timeout(self.op_timeout, units="ms")
         while True:
             try:
-                self.dbgmlbx_reg_write(addr=reg, data=value)
+                self.debug_probe.dbgmlbx_reg_write(addr=reg, data=value)
                 # wait for rom code to read the data
                 while True:
-                    ret = self.dbgmlbx_reg_read(addr=self.registers["CSW"]["address"])
+                    ret = self.debug_probe.dbgmlbx_reg_read(addr=self.registers["CSW"]["address"])
+                    logger.debug(f"Wait for Request pending clear: {hex(ret)}")
                     if (ret & self.registers["CSW"]["bits"]["REQ_PENDING"]) == 0:
                         break
                     if timeout.overflow():
@@ -216,96 +226,34 @@ class DebugMailbox:
                     ) from e
                 sleep(0.1)
 
-    @no_type_check
-    # pylint: disable=no-self-argument
-    def get_dbgmlbx_ap(func: Any):
-        """Decorator function that secures getting the correct DEBUG MAILBOX AP index for first use.
+    def read_return(self) -> int:
+        """Read return value from debug mailbox.
 
-        The decorator automatically detects the debug mailbox access port index by trying
-        predefined possible indices and validating against the expected IDR register value.
-        If no valid access port is found, it raises an exception.
+        If the chip supports the RETURN_PENDING flag in CSW (bit 6), this method
+        polls CSW until the flag is set before reading the RETURN register.
+        Otherwise, it falls back to a simple spin_read on the RETURN register.
 
-        :param func: The function to be decorated that requires debug mailbox access.
-        :raises SPSDKError: When debug mailbox access port cannot be found.
-        :return: Decorated function wrapper.
+        :return: Return value from the device.
+        :raises SPSDKTimeoutError: When read operation exceeds defined operation timeout.
         """
-        POSSIBLE_DBGMLBX_AP_IX = [2, 0, 1, 3, 8]
+        if self.csw_supports_return_pending_flag:
+            ret = None
+            timeout = Timeout(self.op_timeout, units="ms")
+            while ret is None or ret & self.registers["CSW"]["bits"]["RETURN_PENDING"] == 0:
+                try:
+                    ret = self.debug_probe.dbgmlbx_reg_read(addr=self.registers["CSW"]["address"])
+                except SPSDKError as e:
+                    logger.debug(str(e))
+                    logger.debug("Read exception on CSW register")
+                    if timeout.overflow():
+                        raise SPSDKTimeoutError(
+                            f"The Debug Mailbox read operation ends on timeout. ({str(e)})"
+                        ) from e
+                    sleep(0.1)
 
-        @functools.wraps(func)
-        def wrapper(self: "DebugMailbox", *args, **kwargs):
-            """Wrapper function to auto-detect debug mailbox access port if not specified.
+            return self.debug_probe.dbgmlbx_reg_read(addr=self.registers["RETURN"]["address"])
 
-            This decorator automatically detects the debug mailbox access port index by iterating
-            through possible access port indices and checking the IDR register value. If the
-            access port index is already set (>= 0), the wrapped function is called directly.
-
-            :param self: DebugMailbox instance.
-            :param args: Variable length argument list to pass to wrapped function.
-            :param kwargs: Arbitrary keyword arguments to pass to wrapped function.
-            :raises SPSDKError: When debug mailbox access port cannot be found.
-            :return: Result of the wrapped function call.
-            """
-            if self.dbgmlbx_ap_ix < 0:
-                # Try to find DEBUG MAILBOX AP
-                logger.warning(
-                    "The debug mailbox access port index is not specified, trying autodetection."
-                )
-                for i in POSSIBLE_DBGMLBX_AP_IX:
-                    try:
-                        idr = self.debug_probe.coresight_reg_read_safe(
-                            access_port=True,
-                            addr=self.debug_probe.get_coresight_ap_address(
-                                access_port=i, address=self.registers["IDR"]["address"]
-                            ),
-                        )
-                        if idr == self.registers["IDR"]["expected"]:
-                            self.dbgmlbx_ap_ix = i
-                            logger.debug(
-                                f"Found debug mailbox access port at AP{i}, IDR: 0x{idr:08X}"
-                            )
-                            break
-                    except SPSDKError:
-                        pass
-
-                if self.dbgmlbx_ap_ix < 0:
-                    raise SPSDKError("The debug mailbox access port is not found!")
-
-            return func(self, *args, **kwargs)  # pylint: disable=not-callable
-
-        return wrapper
-
-    @get_dbgmlbx_ap
-    def dbgmlbx_reg_read(self, addr: int = 0) -> int:
-        """Read debug mailbox access port register.
-
-        This function reads a debug mailbox register through the debug probe interface to support
-        various debug probes in the SPSDK library.
-
-        :param addr: The register address to read from.
-        :return: The read value of addressed register (4 bytes).
-        """
-        return self.debug_probe.coresight_reg_read_safe(
-            addr=self.debug_probe.get_coresight_ap_address(
-                access_port=self.dbgmlbx_ap_ix, address=addr
-            )
-        )
-
-    @get_dbgmlbx_ap
-    def dbgmlbx_reg_write(self, addr: int = 0, data: int = 0) -> None:
-        """Write debug mailbox access port register.
-
-        Writes data to a specified register address in the debug mailbox access port
-        using the configured debug probe's CoreSight interface.
-
-        :param addr: Register address to write to.
-        :param data: Data value to write into the register.
-        """
-        self.debug_probe.coresight_reg_write_safe(
-            addr=self.debug_probe.get_coresight_ap_address(
-                access_port=self.dbgmlbx_ap_ix, address=addr
-            ),
-            data=data,
-        )
+        return self.spin_read(self.registers["RETURN"]["address"])
 
     def write_debug_password(self, password: bytes) -> None:
         """Write debug password to the debug mailbox.
@@ -322,7 +270,9 @@ class DebugMailbox:
         # Write password in 4-byte chunks
         for i in range(0, len(password), 4):
             data = int.from_bytes(password[i : i + 4], byteorder="big")
-            self.dbgmlbx_reg_write(addr=self.registers["AUTH0"]["address"] + i, data=data)
+            self.debug_probe.dbgmlbx_reg_write(
+                addr=self.registers["AUTH0"]["address"] + i, data=data
+            )
 
 
 REGISTERS: dict[str, Any] = {
@@ -348,6 +298,9 @@ REGISTERS: dict[str, Any] = {
             # (note that the DM is not reset by this reset as it is
             #   only resettable by a SOFT reset or a POR/BOD event)
             "CHIP_RESET_REQ": (1 << 5),
+            # Indicates that a value is waiting to be read by the debugger from Return Value (RETURN). If the
+            # debugger reads Return Value (RETURN), then this bit will be automatically cleared by hardware.
+            "RETURN_PENDING": (1 << 6),
         },
     },
     # Request register is used to send data from debugger to device

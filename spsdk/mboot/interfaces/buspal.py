@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,7 +17,7 @@ import logging
 import struct
 import time
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from serial import SerialException
 from serial.tools.list_ports import comports
@@ -207,9 +206,9 @@ class MbootBuspalProtocol(MbootSerialProtocol):
     @classmethod
     def scan(
         cls,
-        port: Optional[str] = None,
-        props: Optional[list[str]] = None,
-        timeout: Optional[int] = None,
+        port: str | None = None,
+        props: list[str] | None = None,
+        timeout: int | None = None,
     ) -> list[Self]:
         """Scan connected serial ports and set BUSPAL properties.
 
@@ -236,8 +235,8 @@ class MbootBuspalProtocol(MbootSerialProtocol):
 
     @classmethod
     def _check_port_buspal(
-        cls, port: str, timeout: int, props: Optional[list[str]] = None
-    ) -> Optional[SerialDevice]:
+        cls, port: str, timeout: int, props: list[str] | None = None
+    ) -> SerialDevice | None:
         """Check if device on COM port can connect using BUSPAL communication protocol.
 
         The method attempts to establish a connection with the device, configure it with provided
@@ -272,7 +271,7 @@ class MbootBuspalProtocol(MbootSerialProtocol):
         """
         raise NotImplementedError()
 
-    def _read(self, size: int, timeout: Optional[int] = None) -> bytes:
+    def _read(self, size: int, timeout: int | None = None) -> bytes:
         """Read data from the interface.
 
         This is an abstract method that must be implemented by child classes
@@ -323,7 +322,7 @@ class MbootBuspalProtocol(MbootSerialProtocol):
                 f"Received data '{format_received}' but expected '{format_expected}'"
             )
 
-    def _read_frame_header(self, expected_frame_type: Optional[FPType] = None) -> tuple[int, int]:
+    def _read_frame_header(self, expected_frame_type: FPType | None = None) -> tuple[int, int]:
         """Read frame header and frame type from the communication interface.
 
         The method continuously reads from the device until a valid frame start byte is received
@@ -457,7 +456,7 @@ class MbootBuspalSPIInterface(MbootBuspalProtocol):
                 else:
                     raise SPSDKError("Failed retrying reading the SPI header frame") from error
 
-    def _read(self, size: int, timeout: Optional[int] = None) -> bytes:
+    def _read(self, size: int, timeout: int | None = None) -> bytes:
         """Read data from BUSPAL SPI device.
 
         The method reads a specified amount of bytes from the device, with the size
@@ -594,7 +593,7 @@ class MbootBuspalI2CInterface(MbootBuspalProtocol):
                 else:
                     raise SPSDKError("Failed retrying reading the I2C header frame") from error
 
-    def _read(self, size: int, timeout: Optional[int] = None) -> bytes:
+    def _read(self, size: int, timeout: int | None = None) -> bytes:
         """Read data from BUSPAL I2C device.
 
         The method limits the read size to the maximum bulk transfer size and sends

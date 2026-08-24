@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,8 +10,8 @@ This module provides functionality for creating and managing Secure Binary v1 im
 in SPSDK context, including image generation, validation, and manipulation.
 """
 
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Optional, Sequence
 
 from typing_extensions import Self
 
@@ -45,10 +44,10 @@ class SecureBootV1(BaseClass):
         drive_tag: int = 0,
         product_version: BcdVersion3Format = BcdVersion3.DEFAULT,
         component_version: BcdVersion3Format = BcdVersion3.DEFAULT,
-        dek: Optional[bytes] = None,
-        mac: Optional[bytes] = None,
+        dek: bytes | None = None,
+        mac: bytes | None = None,
         digest: bytes = b"\0" * 20,
-        timestamp: Optional[datetime] = None,
+        timestamp: datetime | None = None,
     ):
         """Initialize Secure Binary Image V1.x.
 
@@ -218,8 +217,8 @@ class SecureBootV1(BaseClass):
 
     def export(
         self,
-        header_padding8: Optional[bytes] = None,
-        auth_padding: Optional[bytes] = None,
+        header_padding8: bytes | None = None,
+        auth_padding: bytes | None = None,
     ) -> bytes:
         """Export the SB1 image to binary format.
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK HAB Boot Data Table (BDT) segment tests.
 
 This module contains unit tests for the HAB Boot Data Table segment functionality,

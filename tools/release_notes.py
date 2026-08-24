@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -19,7 +18,7 @@ import re
 import subprocess
 import sys
 from getpass import getpass
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 from cachier import cachier
 from cryptography.hazmat.primitives import hashes
@@ -43,10 +42,10 @@ class RNParams(NamedTuple):
     till: str
     include_id: bool
     log_level: int
-    cache_file: Optional[str]
+    cache_file: str | None
     offline: bool
     netrc: bool
-    user: Optional[str]
+    user: str | None
 
 
 class TicketRecord(NamedTuple):
@@ -178,7 +177,7 @@ class RecordsList(list[TicketRecord]):
         return cls(data)
 
 
-def parse_inputs(input_args: Optional[list[str]] = None) -> RNParams:
+def parse_inputs(input_args: list[str] | None = None) -> RNParams:
     """Parse command line arguments for release notes generation.
 
     This function sets up and processes command line arguments for the release notes
@@ -317,7 +316,7 @@ def ticket_info_hasher(args: tuple, kwargs: dict) -> str:
 
 
 @cachier(hash_func=ticket_info_hasher)
-def get_ticket_info(ticket: str, jira: Optional[JIRA]) -> TicketRecord:
+def get_ticket_info(ticket: str, jira: JIRA | None) -> TicketRecord:
     """Extract ticket information from JIRA.
 
     The @cachier decorator produces persistent cache to alleviate load on JIRA server.

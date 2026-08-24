@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -15,9 +14,10 @@ and encryption options for secure boot and runtime verification.
 
 import logging
 import struct
+from collections.abc import Callable
 from dataclasses import dataclass
 from struct import pack
-from typing import Any, Callable, Optional, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -208,7 +208,7 @@ class SmrEntry(FeatureBaseClass):
         check_period: int = 0,
         inst_auth_tag: tuple[int, int] = (0, 0),
         version_offset: int = 0,
-        smr_decrypt: Optional[SmrDecrypt] = None,
+        smr_decrypt: SmrDecrypt | None = None,
     ) -> None:
         """Initialize the key information structure.
 
@@ -714,9 +714,7 @@ class SmrEntry(FeatureBaseClass):
             + version_offset_size
         )
 
-    def update_auth_tag_addrs(
-        self, auth_tag: Optional[bytes], auth_tag_base_addr: Optional[int]
-    ) -> None:
+    def update_auth_tag_addrs(self, auth_tag: bytes | None, auth_tag_base_addr: int | None) -> None:
         """Update authentication tag addresses in the SMR entry.
 
         This method updates the installation authentication tag addresses based on the provided
@@ -781,7 +779,7 @@ class SmrEntry(FeatureBaseClass):
         return (len(auth_tag), 0)
 
 
-SmrKeyType = Union[bytes, PrivateKeyEcc, PrivateKeyRsa]
+SmrKeyType = bytes | PrivateKeyEcc | PrivateKeyRsa
 
 
 class SmrAuthenticationTag:
@@ -795,8 +793,8 @@ class SmrAuthenticationTag:
     def create_auth_tag(
         data: bytes,
         key: Any,
-        auth_scheme: Optional[AuthSchemeEnum] = None,
-        hash_algorithm: Optional[EnumHashAlgorithm] = None,
+        auth_scheme: AuthSchemeEnum | None = None,
+        hash_algorithm: EnumHashAlgorithm | None = None,
     ) -> bytes:
         """Create authentication tag for SMR entry data.
 
@@ -812,7 +810,7 @@ class SmrAuthenticationTag:
         return auth_tag_creator(data, key, hash_algorithm)
 
     @staticmethod
-    def get_auth_scheme(auth_scheme: Optional[AuthSchemeEnum], key: SmrKeyType) -> AuthSchemeEnum:
+    def get_auth_scheme(auth_scheme: AuthSchemeEnum | None, key: SmrKeyType) -> AuthSchemeEnum:
         """Determine the authentication scheme from key type if not explicitly provided.
 
         This method automatically detects the appropriate authentication scheme based on the
@@ -874,7 +872,7 @@ class SmrAuthenticationTag:
 
     @staticmethod
     def _create_cmac_tag(
-        data: bytes, key: SmrKeyType, hash_algorithm: Optional[EnumHashAlgorithm] = None
+        data: bytes, key: SmrKeyType, hash_algorithm: EnumHashAlgorithm | None = None
     ) -> bytes:
         """Create CMAC authentication tag."""
         if not isinstance(key, bytes):
@@ -885,7 +883,7 @@ class SmrAuthenticationTag:
 
     @staticmethod
     def _create_hmac_tag(
-        data: bytes, key: SmrKeyType, hash_algorithm: Optional[EnumHashAlgorithm] = None
+        data: bytes, key: SmrKeyType, hash_algorithm: EnumHashAlgorithm | None = None
     ) -> bytes:
         """Create HMAC authentication tag."""
         if not isinstance(key, bytes):
@@ -896,7 +894,7 @@ class SmrAuthenticationTag:
 
     @staticmethod
     def _create_gmac_tag(
-        data: bytes, key: SmrKeyType, hash_algorithm: Optional[EnumHashAlgorithm] = None
+        data: bytes, key: SmrKeyType, hash_algorithm: EnumHashAlgorithm | None = None
     ) -> bytes:
         """Create GMAC authentication tag."""
         if not isinstance(key, bytes):
@@ -907,7 +905,7 @@ class SmrAuthenticationTag:
 
     @staticmethod
     def _create_rsa_pss_signature(
-        data: bytes, key: SmrKeyType, hash_algorithm: Optional[EnumHashAlgorithm] = None
+        data: bytes, key: SmrKeyType, hash_algorithm: EnumHashAlgorithm | None = None
     ) -> bytes:
         """Create RSA-PSS signature."""
         if isinstance(key, bytes):
@@ -920,7 +918,7 @@ class SmrAuthenticationTag:
 
     @staticmethod
     def _create_rsa_pkcs1_signature(
-        data: bytes, key: SmrKeyType, hash_algorithm: Optional[EnumHashAlgorithm] = None
+        data: bytes, key: SmrKeyType, hash_algorithm: EnumHashAlgorithm | None = None
     ) -> bytes:
         """Create RSA PKCS1v15 signature."""
         if isinstance(key, bytes):
@@ -933,7 +931,7 @@ class SmrAuthenticationTag:
 
     @staticmethod
     def _create_ecdsa_signature(
-        data: bytes, key: SmrKeyType, hash_algorithm: Optional[EnumHashAlgorithm] = None
+        data: bytes, key: SmrKeyType, hash_algorithm: EnumHashAlgorithm | None = None
     ) -> bytes:
         """Create ECDSA signature."""
         if isinstance(key, bytes):

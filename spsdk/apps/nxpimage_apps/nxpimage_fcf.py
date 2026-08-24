@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK NXP Image FCF (Flash Configuration Field) command-line interface.
 
 This module provides CLI commands for managing Flash Configuration Fields,
@@ -65,7 +65,7 @@ def fcf_export(config: Config, output: str) -> None:
     write_file(fcf_data, output, mode="wb")
 
     logger.info(f"Created FCF Image:\n{str(fcf_image.registers.image_info())}")
-    click.echo(f"Success. (FCF: {output} created.)")
+    click.echo(f"Success. (FCF: {get_printable_path(output)} created.)")
 
 
 @fcf_group.command(name="parse", no_args_is_help=True)
@@ -90,4 +90,6 @@ def fcf_parse(binary: str, family: FamilyRevision, output: str) -> None:
     logger.info(f"Parsed FCF image memory map: {fcf_image.registers.image_info().draw()}")
     config = fcf_image.get_config_yaml()
     write_file(config, output)
-    click.echo(f"Success. (FCF: {binary} has been parsed and stored into {output}.)")
+    click.echo(
+        f"Success. (FCF: {get_printable_path(binary)} has been parsed and stored into {get_printable_path(output)}.)"
+    )

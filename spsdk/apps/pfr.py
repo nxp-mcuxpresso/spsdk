@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -15,7 +14,7 @@ reading, and erasing CMPA (Customer Manufacturing Programming Area) data.
 import logging
 import os
 import sys
-from typing import Callable, Optional, Type, Union
+from collections.abc import Callable
 
 import click
 from click_option_group import MutuallyExclusiveOptionGroup, optgroup
@@ -44,21 +43,23 @@ from spsdk.pfr.pfr import (
     CONFIG_AREA_CLASSES,
     AbstractBaseConfigArea,
     BaseConfigArea,
+    MultiRegionBaseConfigArea,
     get_ifr_pfr_class,
     get_ifr_pfr_class_from_config,
 )
 from spsdk.pfr.pfrc import Pfrc
+from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db
-from spsdk.utils.misc import get_printable_path, load_binary, write_file
+from spsdk.utils.misc import BinaryPattern, get_printable_path, load_binary, write_file
 
-PFRArea = Type[BaseConfigArea]
+PFRArea = type[BaseConfigArea]
 logger = logging.getLogger(__name__)
 
 
 def _store_output(
-    data: Union[str, bytes], path: Optional[str], mode: str = "w", msg: Optional[str] = None
+    data: str | bytes, path: str | None, mode: str = "w", msg: str | None = None
 ) -> None:
     """Store the output data; either on stdout or into file if it's provided."""
     if msg:
@@ -155,7 +156,7 @@ def get_templates(family: FamilyRevision, output: str) -> None:
 @main.command(name="parse", no_args_is_help=True)
 @spsdk_family_option(BaseConfigArea.get_supported_families())
 @pfr_device_type_options()
-@spsdk_output_option(required=False)
+@spsdk_output_option()
 @click.option(
     "-b",
     "--binary",
@@ -190,6 +191,79 @@ def pfr_parse(
     )
 
 
+@main.command(name="info", no_args_is_help=True)
+@spsdk_family_option(BaseConfigArea.get_supported_families())
+@pfr_device_type_options()
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, dir_okay=False, readable=True, resolve_path=True),
+    required=True,
+    help="Binary to analyze",
+)
+def pfr_info_command(family: FamilyRevision, area: str, binary: str) -> None:
+    """Display information about PFR/IFR binary."""
+    pfr_info(family=family, area=area, binary=binary)
+
+
+def pfr_info(family: FamilyRevision, area: str, binary: str) -> None:
+    """Display information about PFR/IFR binary.
+
+    :param family: Device to use.
+    :param area: PFR/IFR area (CMPA, CFPA, ROMCFG, CMAC, IFR table).
+    :param binary: Path to binary to analyze.
+    """
+    data = load_binary(binary)
+    click.echo(_get_binary_info(data=data, family=family, area=area))
+
+
+def _get_binary_info(data: bytes, family: FamilyRevision, area: str) -> str:
+    """Parse binary data and get PFR/IFR information.
+
+    :param data: Data to parse.
+    :param family: Device to use.
+    :param area: PFR/IFR area (CMPA, CFPA, ROMCFG, CMAC, IFR table).
+    :raises SPSDKAppError: Unsupported parsed PFR/IFR object type.
+    :return: PFR/IFR information as a string.
+    """
+    pfr_obj = get_ifr_pfr_class(area, family).parse(data, family)
+    if isinstance(pfr_obj, BaseConfigArea):
+        return _get_pfr_area_image(pfr_obj).info(no_color=True)
+    if isinstance(pfr_obj, MultiRegionBaseConfigArea):
+        image = BinaryImage(
+            name=f"{pfr_obj.family.name} {pfr_obj.SUB_FEATURE.upper()}",
+            size=pfr_obj.binary_size,
+            pattern=BinaryPattern("zeros"),
+        )
+        offset = 0
+        for region in pfr_obj.regions:
+            image.add_image(_get_pfr_area_image(region, offset=offset))
+            offset += region.binary_size
+        additional_data = pfr_obj.export_additional_data()
+        if len(additional_data):
+            additional_data.offset = offset
+            image.add_image(additional_data)
+        return image.info(no_color=True)
+    raise SPSDKAppError(f"Unsupported PFR/IFR object type: {pfr_obj.__class__.__name__}")
+
+
+def _get_pfr_area_image(pfr_obj: BaseConfigArea, offset: int = 0) -> BinaryImage:
+    """Get binary image information for PFR/IFR area.
+
+    :param pfr_obj: Parsed PFR/IFR configuration area.
+    :param offset: Image offset in parent image.
+    :return: Binary image with parsed register information.
+    """
+    image = pfr_obj.registers.image_info(
+        size=pfr_obj.registers_size,
+        pattern=BinaryPattern(pfr_obj.IMAGE_PREFILL_PATTERN),
+    )
+    image.name = f"{pfr_obj.family.name} {pfr_obj.SUB_FEATURE.upper()}"
+    image.description = pfr_obj.DESCRIPTION
+    image.offset = offset
+    return image
+
+
 def _parse_binary_data(
     data: bytes,
     family: FamilyRevision,
@@ -207,7 +281,8 @@ def _parse_binary_data(
     :return: PFR YAML configuration as a string
     """
     pfr_obj = get_ifr_pfr_class(area, family).parse(data, family)
-    return pfr_obj.get_config_yaml(data_path=os.path.dirname(output), diff=show_diff)
+    data_path = os.path.dirname(output)
+    return pfr_obj.get_config_yaml(data_path=data_path, diff=show_diff)
 
 
 @main.command(name="export", no_args_is_help=True)
@@ -295,7 +370,10 @@ def pfr_export(
         data,
         output,
         "wb",
-        msg=f"Success. ({pfr_obj.SUB_FEATURE.upper()} binary has been generated)",
+        msg=(
+            f"Success. ({pfr_obj.SUB_FEATURE.upper()} binary has been generated "
+            f"and stored into {get_printable_path(output)})"
+        ),
     )
 
 

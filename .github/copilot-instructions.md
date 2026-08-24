@@ -127,7 +127,6 @@ To get the current branch name: `git rev-parse --abbrev-ref HEAD`
 Every Python file must have this header (year range should include current year):
 ```python
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright <year>-<year> NXP
 #

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -14,7 +13,7 @@ debug enablement, and probe communication features.
 
 import os
 from copy import copy
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 import yaml
@@ -76,8 +75,8 @@ class TestDatabaseManager:
     """
 
     _instance = None
-    _db: Optional[Database] = None
-    _quick_info: Optional[DevicesQuickInfo] = None
+    _db: Database | None = None
+    _quick_info: DevicesQuickInfo | None = None
 
     @property
     def db(self) -> Database:

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -13,14 +12,15 @@ It handles database loading, caching, validation, and provides unified access
 to device data across the NXP MCU portfolio.
 """
 
+import io
 import logging
 import os
 import pickle
 import re
-import shutil
 import textwrap
+from collections.abc import Iterator
 from copy import deepcopy
-from typing import Any, Iterator, Optional, Union
+from typing import Any
 
 import prettytable
 from filelock import FileLock
@@ -52,6 +52,56 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
 
+# Module name used for allowlisting pickle classes in this module
+_THIS_MODULE = __name__
+
+# Set of (module, qualname) pairs allowed during restricted unpickling.
+# Only classes from this module that are part of the database cache are permitted.
+_PICKLE_ALLOWED_CLASSES: set[tuple[str, str]] = {
+    (_THIS_MODULE, "Database.DatabaseData"),
+    (_THIS_MODULE, "QuickDatabase"),
+    (_THIS_MODULE, "DevicesQuickInfo"),
+    (_THIS_MODULE, "DeviceQuickInfo"),
+    (_THIS_MODULE, "FeaturesQuickData"),
+    (_THIS_MODULE, "DeviceInfo"),
+    (_THIS_MODULE, "MemMap"),
+    (_THIS_MODULE, "MemBlock"),
+    (_THIS_MODULE, "IspCfg"),
+    (_THIS_MODULE, "Bootloader"),
+    (_THIS_MODULE, "UsbIdArray"),
+    (_THIS_MODULE, "UsbId"),
+}
+
+
+class _RestrictedUnpickler(pickle.Unpickler):
+    """Restricted unpickler that only allows known SPSDK database classes.
+
+    This prevents arbitrary code execution from tampered cache files by
+    restricting which classes may be instantiated during deserialization.
+    """
+
+    def find_class(self, module: str, name: str) -> type:
+        """Override find_class to enforce an allowlist of safe classes.
+
+        :param module: The module name of the class to load.
+        :param name: The qualified name of the class to load.
+        :returns: The class object if it is in the allowlist.
+        :raises pickle.UnpicklingError: If the class is not in the allowlist.
+        """
+        if (module, name) in _PICKLE_ALLOWED_CLASSES:
+            return super().find_class(module, name)
+        raise pickle.UnpicklingError(f"Refusing to unpickle disallowed class: {module}.{name}")
+
+
+def _restricted_pickle_load(f: io.BufferedIOBase) -> Any:
+    """Load a pickle file using the restricted unpickler.
+
+    :param f: Binary file-like object to read pickle data from.
+    :returns: The deserialized Python object.
+    :raises pickle.UnpicklingError: If the pickle contains disallowed classes.
+    """
+    return _RestrictedUnpickler(f, encoding="utf-8").load()
+
 
 def get_spsdk_cache_dirname() -> str:
     """Get database cache folder name.
@@ -70,6 +120,40 @@ def get_spsdk_cache_dirname() -> str:
     return SPSDK_PLATFORM_DIRS.user_cache_dir
 
 
+def _cleanup_stale_version_caches() -> None:
+    """Remove cache files belonging to other SPSDK versions.
+
+    SPSDK cache files are stored inside the cache directory with the SPSDK
+    version embedded in their name (``db_data_<hash>_<version>.cache`` and
+    ``db_quick_info_<version>.cache``).  Over time, files for old versions
+    accumulate.  This helper removes only those cache files (and their lock
+    files) whose version differs from the current one, leaving the active
+    version's files and any unrelated content untouched.
+
+    Called once during ``DatabaseManager`` singleton initialization.  Errors
+    are silently logged so a non-writable filesystem never breaks startup.
+    """
+    current_cache_dir = get_spsdk_cache_dirname()
+    if not os.path.isdir(current_cache_dir):
+        return
+    current_version = str(spsdk.version)
+    # Match SPSDK cache files and their lock files, capturing the version segment.
+    cache_pattern = re.compile(
+        r"^db_(?:data_[0-9a-f]+|quick_info)_(?P<version>.+?)\.cache(?:\.lock)?$"
+    )
+    for entry in os.listdir(current_cache_dir):
+        match = cache_pattern.match(entry)
+        if not match or match.group("version") == current_version:
+            continue
+        candidate = os.path.join(current_cache_dir, entry)
+        if os.path.isfile(candidate):
+            try:
+                os.remove(candidate)
+                logger.debug(f"Removed stale cache file: {candidate}")
+            except OSError as exc:
+                logger.debug(f"Cannot remove stale cache file '{candidate}': {exc}")
+
+
 class SPSDKErrorMissingDevice(SPSDKError):
     """SPSDK exception for missing device in database operations.
 
@@ -78,9 +162,7 @@ class SPSDKErrorMissingDevice(SPSDKError):
     context about the missing device.
     """
 
-    def __init__(
-        self, desc: Optional[str] = None, missing_device_name: Optional[str] = None
-    ) -> None:
+    def __init__(self, desc: str | None = None, missing_device_name: str | None = None) -> None:
         """Initialize the SPSDKErrorMissingDevice exception.
 
         :param desc: Description of the error.
@@ -129,7 +211,7 @@ class Features:
         """
         return f"Features({self.device.name}[{self.name}])"
 
-    def check_key(self, feature: str, key: Union[list[str], str]) -> bool:
+    def check_key(self, feature: str, key: list[str] | str) -> bool:
         """Check if the key exists in the database.
 
         :param feature: Feature name.
@@ -152,7 +234,7 @@ class Features:
         assert isinstance(key, str)
         return key in db_dict
 
-    def get_value(self, feature: str, key: Union[list[str], str], default: Any = None) -> Any:
+    def get_value(self, feature: str, key: list[str] | str, default: Any = None) -> Any:
         """Get a value from the feature dictionary.
 
         The method supports both simple keys and nested key paths for accessing hierarchical data
@@ -185,9 +267,7 @@ class Features:
             raise SPSDKValueError(f"Unavailable item '{key}' in feature '{feature}'")
         return val
 
-    def get_bool(
-        self, feature: str, key: Union[list[str], str], default: Optional[bool] = None
-    ) -> bool:
+    def get_bool(self, feature: str, key: list[str] | str, default: bool | None = None) -> bool:
         """Get a boolean value from the feature dictionary.
 
         :param feature: Feature name.
@@ -198,9 +278,7 @@ class Features:
         val = self.get_value(feature, key, default)
         return value_to_bool(val)
 
-    def get_int(
-        self, feature: str, key: Union[list[str], str], default: Optional[int] = None
-    ) -> int:
+    def get_int(self, feature: str, key: list[str] | str, default: int | None = None) -> int:
         """Get an integer value from the feature dictionary.
 
         :param feature: Feature name.
@@ -211,9 +289,7 @@ class Features:
         val = self.get_value(feature, key, default)
         return value_to_int(val)
 
-    def get_str(
-        self, feature: str, key: Union[list[str], str], default: Optional[str] = None
-    ) -> str:
+    def get_str(self, feature: str, key: list[str] | str, default: str | None = None) -> str:
         """Get a string value from the feature dictionary.
 
         Retrieves a string value from the specified feature using the provided key or key path.
@@ -229,7 +305,7 @@ class Features:
         return val
 
     def get_list(
-        self, feature: str, key: Union[list[str], str], default: Optional[list] = None
+        self, feature: str, key: list[str] | str, default: list | None = None
     ) -> list[Any]:
         """Get a list value from the feature dictionary.
 
@@ -245,9 +321,7 @@ class Features:
         assert isinstance(val, list)
         return val
 
-    def get_dict(
-        self, feature: str, key: Union[list[str], str], default: Optional[dict] = None
-    ) -> dict:
+    def get_dict(self, feature: str, key: list[str] | str, default: dict | None = None) -> dict:
         """Get a dictionary value from the feature dictionary.
 
         Retrieves a dictionary value from the specified feature using the provided key or key path.
@@ -266,8 +340,8 @@ class Features:
     def get_file_path(
         self,
         feature: str,
-        key: Union[list[str], str],
-        default: Optional[str] = None,
+        key: list[str] | str,
+        default: str | None = None,
         just_standard_lib: bool = False,
     ) -> str:
         """Get a file path value from the feature dictionary.
@@ -304,7 +378,7 @@ class Revisions(list[Features]):
             ret.append("latest")
         return ret
 
-    def get(self, name: Optional[str] = None) -> Features:
+    def get(self, name: str | None = None) -> Features:
         """Get the revision by its name.
 
         If name is not specified, or equal to 'latest', then the latest revision is returned.
@@ -331,7 +405,7 @@ class UsbId:
     configuration management.
     """
 
-    def __init__(self, vid: Optional[int] = None, pid: Optional[int] = None) -> None:
+    def __init__(self, vid: int | None = None, pid: int | None = None) -> None:
         """Initialize a USB ID instance.
 
         :param vid: USB Vendor ID (optional).
@@ -449,7 +523,7 @@ class Bootloader:
 
     def __init__(
         self,
-        protocol: Optional[str],
+        protocol: str | None,
         interfaces: list,
         usb_ids: UsbIdArray,
         protocol_params: dict,
@@ -610,7 +684,7 @@ class MemBlock:
         return value_to_bool(self.description.get("external", False))
 
     @classmethod
-    def parse_name(cls, name: str) -> tuple[Optional[str], str, Optional[int], Optional[bool]]:
+    def parse_name(cls, name: str) -> tuple[str | None, str, int | None, bool | None]:
         """Parse name to base elements.
 
         Parses a memory block name string into its constituent components including
@@ -662,7 +736,7 @@ class MemBlock:
         return (core, name, instance, security)
 
     @property
-    def core(self) -> Optional[str]:
+    def core(self) -> str | None:
         """Get core name if specified.
 
         Extracts the core name from the parsed device name using the parse_name method.
@@ -685,7 +759,7 @@ class MemBlock:
         return block_name
 
     @property
-    def instance(self) -> Optional[int]:
+    def instance(self) -> int | None:
         """Get instance if specified.
 
         :return: Instance number if present in the name, None otherwise.
@@ -694,7 +768,7 @@ class MemBlock:
         return instance
 
     @property
-    def security_access(self) -> Optional[bool]:
+    def security_access(self) -> bool | None:
         """Get security access if specified.
 
         The method parses the name attribute to extract security access information
@@ -709,9 +783,9 @@ class MemBlock:
     def create_name(
         cls,
         block_name: str,
-        core: Optional[str] = None,
-        instance: Optional[int] = None,
-        secure_access: Optional[bool] = None,
+        core: str | None = None,
+        instance: int | None = None,
+        secure_access: bool | None = None,
     ) -> str:
         """Create full name of memory block.
 
@@ -808,9 +882,9 @@ class MemMap:
     def get_memory(
         self,
         block_name: str,
-        core: Optional[str] = None,
-        instance: Optional[int] = None,
-        secure: Optional[bool] = None,
+        core: str | None = None,
+        instance: int | None = None,
+        secure: bool | None = None,
     ) -> MemBlock:
         """Get the memory block by specified parameters.
 
@@ -843,13 +917,13 @@ class MemMap:
 
     def find_memory_blocks(
         self,
-        block_name: Optional[str] = None,
-        core: Optional[str] = None,
-        instance: Optional[int] = None,
-        secure_access: Optional[bool] = None,
-        external: Optional[bool] = None,
-        name_regex: Optional[str] = None,
-        base_address_range: Optional[tuple[int, int]] = None,
+        block_name: str | None = None,
+        core: str | None = None,
+        instance: int | None = None,
+        secure_access: bool | None = None,
+        external: bool | None = None,
+        name_regex: str | None = None,
+        base_address_range: tuple[int, int] | None = None,
     ) -> list[MemBlock]:
         """Find memory blocks matching the specified criteria.
 
@@ -918,8 +992,8 @@ class IspCfg:
         self,
         rom: Bootloader,
         flashloader: Bootloader,
-        fastboot: Optional[Bootloader] = None,
-        sdpv: Optional[Bootloader] = None,
+        fastboot: Bootloader | None = None,
+        sdpv: Bootloader | None = None,
     ) -> None:
         """Initialize ISP configuration with ROM, flashloader, fastboot, and SDPV.
 
@@ -1038,7 +1112,7 @@ class IspCfg:
                 bootloaders[bootloader_type] = bootloader
         return bootloaders
 
-    def get_bootloader(self, bootloader_type: str) -> Optional[Bootloader]:
+    def get_bootloader(self, bootloader_type: str) -> Bootloader | None:
         """Get a specific bootloader by type.
 
         :param bootloader_type: Type of bootloader ('rom', 'flashloader', 'fastboot', 'sdpv').
@@ -1066,7 +1140,8 @@ class DeviceInfo:
         self,
         use_in_doc: bool,
         purpose: str,
-        spsdk_predecessor_name: Optional[str],
+        architecture: str,
+        spsdk_predecessor_name: str | None,
         web: str,
         memory_map: dict[str, dict[str, Any]],
         isp: IspCfg,
@@ -1075,6 +1150,7 @@ class DeviceInfo:
 
         :param use_in_doc: Flag indicating if device should be used in documentation.
         :param purpose: String description of purpose of MCU (device group).
+        :param architecture: CPU architecture identifier (e.g. ``cortex-m``, ``dsc56800ex``).
         :param spsdk_predecessor_name: Device sub series name (predecessor name in SPSDK).
         :param web: Web page with device information.
         :param memory_map: Basic memory map of device.
@@ -1082,6 +1158,7 @@ class DeviceInfo:
         """
         self.use_in_doc = use_in_doc
         self.purpose = purpose
+        self.architecture = architecture
         self.spsdk_predecessor_name = spsdk_predecessor_name
         self.web = web
         self.memory_map = MemMap.load(memory_map)
@@ -1110,6 +1187,7 @@ class DeviceInfo:
         return cls(
             use_in_doc=bool(data.get("use_in_doc", True)),
             purpose=data["purpose"],
+            architecture=data.get("architecture", "arm-cortex"),
             spsdk_predecessor_name=data.get("spsdk_predecessor_name"),
             web=data["web"],
             memory_map=data["memory_map"],
@@ -1128,6 +1206,7 @@ class DeviceInfo:
         """
         self.use_in_doc = bool(config.get("use_in_doc", self.use_in_doc))
         self.purpose = config.get("purpose", self.purpose)
+        self.architecture = config.get("architecture", self.architecture)
         self.spsdk_predecessor_name = config.get(
             "spsdk_predecessor_name", self.spsdk_predecessor_name
         )
@@ -1152,7 +1231,7 @@ class Device:
         db: "Database",
         latest_rev: str,
         info: DeviceInfo,
-        device_alias: Optional["Device"] = None,
+        device_alias: "Device | None" = None,
         revisions: Revisions = Revisions(),
     ) -> None:
         """Initialize SPSDK Device instance.
@@ -1174,7 +1253,7 @@ class Device:
         self.revisions = revisions
         self.info = info
 
-    def get_copy(self, new_name: Optional[str] = None) -> "Device":
+    def get_copy(self, new_name: str | None = None) -> "Device":
         """Create a deep copy of the Device instance.
 
         This method creates a complete copy of the device including all its revisions,
@@ -1221,7 +1300,7 @@ class Device:
         """
         return self.name < other.name
 
-    def get_features(self, revision: Optional[str] = None) -> list[str]:
+    def get_features(self, revision: str | None = None) -> list[str]:
         """Get the list of device features.
 
         :param revision: Device revision to get features for. If None, uses default revision.
@@ -1329,6 +1408,8 @@ class Device:
 
         # Get defaults and update them by device specific data set
         for feature_name in dev_features:
+            if feature_name not in features_defaults:
+                features_defaults[feature_name] = {}
             deep_update(features_defaults[feature_name], dev_features[feature_name])
             dev_features[feature_name] = features_defaults[feature_name]
 
@@ -1515,7 +1596,7 @@ class DeviceQuickInfo:
         :param info: Device information object with basic device details.
         :param latest_rev: Latest chip revision identifier string.
         """
-        self.revision_features: dict[str, dict[str, Optional[list]]] = {}
+        self.revision_features: dict[str, dict[str, list | None]] = {}
         self.info = info
         self.latest_rev = latest_rev.lower()
         for rev in features:
@@ -1531,7 +1612,7 @@ class DeviceQuickInfo:
         """
         return list(self.revision_features.keys())
 
-    def get_features(self, revision: Optional[str] = None) -> list[str]:
+    def get_features(self, revision: str | None = None) -> list[str]:
         """Get list of all supported features of device.
 
         Retrieves all available features for the specified device revision or the latest
@@ -1544,7 +1625,7 @@ class DeviceQuickInfo:
         return list(self.revision_features[revision].keys())
 
     def is_feature_supported(
-        self, feature: str, sub_feature: Optional[str] = None, revision: Optional[str] = None
+        self, feature: str, sub_feature: str | None = None, revision: str | None = None
     ) -> bool:
         """Check if a feature is supported by the device.
 
@@ -1613,7 +1694,7 @@ class DevicesQuickInfo:
 
         return ret
 
-    def get_feature_list(self, family: str, revision: Optional[str] = None) -> list[str]:
+    def get_feature_list(self, family: str, revision: str | None = None) -> list[str]:
         """Get features list for specified device family.
 
         If device database is empty, returns an empty list. Otherwise returns
@@ -1628,7 +1709,7 @@ class DevicesQuickInfo:
         return self.devices[family.lower()].get_features(revision)
 
     def get_devices_with_feature(
-        self, feature: str, sub_feature: Optional[str] = None
+        self, feature: str, sub_feature: str | None = None
     ) -> dict[str, list]:
         """Get devices that support the requested feature.
 
@@ -1737,7 +1818,7 @@ class FeaturesQuickData:
                 if name not in ret.features:
                     ret.features[name] = {}
                 # Solve 'mem_types'
-                mem_types: Optional[dict[str, Any]] = content.get("mem_types")
+                mem_types: dict[str, Any] | None = content.get("mem_types")
                 if mem_types:
                     if "mem_types" in ret.features[name]:
                         # remove redundancies
@@ -1846,8 +1927,8 @@ class Database:
         def __init__(
             self,
             path: str,
-            restricted_data_path: Optional[str] = None,
-            addons_data_path: Optional[str] = None,
+            restricted_data_path: str | None = None,
+            addons_data_path: str | None = None,
             complete_load: bool = False,
         ) -> None:
             """Initialize Database data object with configuration paths and caching options.
@@ -1874,7 +1955,7 @@ class Database:
                     try:
                         with FileLock(db_cache_file_name + ".lock", timeout=10):
                             with open(db_cache_file_name, mode="rb") as f:
-                                loaded_db_data = pickle.load(f, encoding="utf-8")
+                                loaded_db_data = _restricted_pickle_load(f)
                         if not isinstance(loaded_db_data, type(self)):
                             raise SPSDKError("Invalid cache file type.")
                         db_hash = self.hash_db_data(
@@ -1939,7 +2020,7 @@ class Database:
                         # 1. try to load the already existing cache file
                         if os.path.exists(db_cache_file_name):
                             with open(db_cache_file_name, mode="rb") as f:
-                                cached_data = pickle.load(f, encoding="utf-8")
+                                cached_data = _restricted_pickle_load(f)
                             assert isinstance(cached_data, Database.DatabaseData)
                             # In case that the current database data has been updated by other parallel process
                             # Load it and merge together
@@ -1988,8 +2069,8 @@ class Database:
         def hash_db_data(
             cached_configs: list[str],
             path: str,
-            restricted_data_path: Optional[str] = None,
-            addons_data_path: Optional[str] = None,
+            restricted_data_path: str | None = None,
+            addons_data_path: str | None = None,
         ) -> bytes:
             """Generate SHA1 hash of database configuration files and paths.
 
@@ -2035,8 +2116,8 @@ class Database:
     def __init__(
         self,
         path: str,
-        restricted_data_path: Optional[str] = None,
-        addons_data_path: Optional[str] = None,
+        restricted_data_path: str | None = None,
+        addons_data_path: str | None = None,
         complete_load: bool = False,
     ) -> None:
         """Initialize database configuration.
@@ -2063,7 +2144,7 @@ class Database:
                 self._devices.load_devices_from_path(os.path.join(restricted_data_path, "devices"))
 
         # optional Database hash that could be used for identification of consistency
-        self.db_hash = bytes()
+        self.db_hash = b""
 
     @property
     def devices(self) -> Devices:
@@ -2249,6 +2330,7 @@ class FeaturesEnum(SpsdkEnum):
     SHE_SCEC = (37, "she_scec", "Secure Hardware Extension")
     TLV_BLOB = (38, "tlv_blob", "Type-Length-Value blobs")
     HSE = (39, "hse", "Hardware Security Engine")
+    IPED = (40, "iped", "Inline PRINCE Encryption/Decryption")
 
 
 class DatabaseManager:
@@ -2269,31 +2351,40 @@ class DatabaseManager:
     """
 
     _instance = None
-    _db: Optional[Database] = None
-    _quick_info: Optional[QuickDatabase] = None
+    _db: Database | None = None
+    _quick_info: QuickDatabase | None = None
 
     @staticmethod
     def clear_cache() -> None:
-        """Clear SPSDK cache directory.
+        """Clear SPSDK cache files for all versions.
 
-        Removes the entire SPSDK cache directory and all its contents. If the cache
-        directory does not exist, logs an error message. If removal fails due to
-        permission or other OS-related issues, logs an error with details.
+        Removes every SPSDK cache file (and its lock file) in the cache
+        directory, regardless of version.  Unrelated content in the cache
+        directory is left untouched.  If no cache files exist, logs an
+        informational message.
 
-        :raises PermissionError: When insufficient permissions to remove cache directory.
-        :raises OSError: When OS-level error occurs during directory removal.
+        :raises PermissionError: When insufficient permissions to remove cache files.
+        :raises OSError: When OS-level error occurs during file removal.
         """
-        path = get_spsdk_cache_dirname()
-        if not os.path.exists(path):
-            logger.error(f"Cache directory '{path}' does not exist, nothing to clear.")
-            return
-        try:
-            shutil.rmtree(path)
-        except (PermissionError, OSError) as exc:
-            logger.error(f"Cannot clear cache directory '{path}': {str(exc)}")
+        current_path = get_spsdk_cache_dirname()
+        cache_pattern = re.compile(r"^db_(?:data_[0-9a-f]+|quick_info)_.+?\.cache(?:\.lock)?$")
+        removed_any = False
+        if os.path.isdir(current_path):
+            for entry in os.listdir(current_path):
+                if not cache_pattern.match(entry):
+                    continue
+                candidate = os.path.join(current_path, entry)
+                if os.path.isfile(candidate):
+                    try:
+                        os.remove(candidate)
+                        removed_any = True
+                    except (PermissionError, OSError) as exc:
+                        logger.error(f"Cannot clear cache file '{candidate}': {str(exc)}")
+        if not removed_any:
+            logger.error(f"No SPSDK cache files found in '{current_path}', nothing to clear.")
 
     @staticmethod
-    def get_restricted_data() -> Optional[str]:
+    def get_restricted_data() -> str | None:
         """Get restricted data folder path, if applicable.
 
         Validates the restricted data folder by checking metadata version compatibility
@@ -2364,7 +2455,7 @@ class DatabaseManager:
             try:
                 with FileLock(db_cache_file_name + ".lock", timeout=10):
                     with open(db_cache_file_name, mode="rb") as f:
-                        loaded_db = pickle.load(f, encoding="utf-8")
+                        loaded_db = _restricted_pickle_load(f)
                 assert isinstance(loaded_db, QuickDatabase)
                 if db_hash == loaded_db.db_hash:
                     logger.debug(f"Loaded database from cache: {db_cache_file_name}")
@@ -2404,12 +2495,13 @@ class DatabaseManager:
             logger=logger,
             create_debug_logger=False,
         )
-        cls._instance = super(DatabaseManager, cls).__new__(cls)
+        cls._instance = super().__new__(cls)
         cls._quick_info = cls._get_quick_info_db()
+        _cleanup_stale_version_caches()
         return cls._instance
 
     @staticmethod
-    def get_quick_info_hash(paths: list[Optional[str]]) -> bytes:
+    def get_quick_info_hash(paths: list[str | None]) -> bytes:
         """Calculate hash for quick database validation.
 
         This method generates a SHA1 hash based on modification times and sizes of database files
@@ -2517,6 +2609,7 @@ class DatabaseManager:
     BEE = FeaturesEnum.BEE.label
     IEE = FeaturesEnum.IEE.label
     OTFAD = FeaturesEnum.OTFAD.label
+    IPED = FeaturesEnum.IPED.label
     SB21 = FeaturesEnum.SB21.label
     SB31 = FeaturesEnum.SB31.label
     SB40 = FeaturesEnum.SB40.label
@@ -2571,7 +2664,7 @@ def get_whole_db() -> Database:
     return DatabaseManager().db
 
 
-def generate_udev_rules(feature: str, rule_name: Optional[str] = None) -> str:
+def generate_udev_rules(feature: str, rule_name: str | None = None) -> str:
     """Generate udev rules content for USB devices supporting a specific SPSDK feature.
 
     This function generates udev rules for USB devices based on VID:PID pairs fetched
@@ -2696,7 +2789,7 @@ def _generate_device_rules(device_name: str, usb_ids: list[UsbId]) -> list[str]:
     return rules_lines
 
 
-def _format_udev_rule(usb_id: UsbId) -> Optional[str]:
+def _format_udev_rule(usb_id: UsbId) -> str | None:
     """Format a single udev rule for a USB ID.
 
     :param usb_id: USB ID object with vid and pid attributes

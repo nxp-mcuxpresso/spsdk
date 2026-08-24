@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
@@ -13,8 +12,9 @@ the SPSDK framework for NXP MCU provisioning.
 """
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -71,9 +71,9 @@ class FuseLockRegister:
     """
 
     register_id: str
-    write_lock_mask: Optional[int]
-    read_lock_mask: Optional[int]
-    operation_lock_mask: Optional[int]
+    write_lock_mask: int | None
+    read_lock_mask: int | None
+    operation_lock_mask: int | None
 
     def __eq__(self, obj: Any) -> bool:
         """Check equality of two fuse register objects.
@@ -164,13 +164,13 @@ class FuseRegister(Register):
     def __init__(
         self,
         *args: Any,
-        otp_index: Optional[Union[str, int]] = None,
-        shadow_register_offset: Optional[int] = None,
-        shadow_register_base_addr: Optional[int] = None,
+        otp_index: str | int | None = None,
+        shadow_register_offset: int | None = None,
+        shadow_register_base_addr: int | None = None,
         individual_write_lock: IndividualWriteLock = IndividualWriteLock.NONE,
-        fuse_lock_register: Optional[FuseLockRegister] = None,
-        antipole_register: Optional["FuseRegister"] = None,
-        computed_hooks: Optional[list[str]] = None,
+        fuse_lock_register: FuseLockRegister | None = None,
+        antipole_register: "FuseRegister | None" = None,
+        computed_hooks: list[str] | None = None,
         shadow_mode: bool = False,
         **kwargs: Any,
     ):
@@ -258,9 +258,7 @@ class FuseRegister(Register):
         self._locks[lock_type] = False
 
     @classmethod
-    def create_from_spec(
-        cls, spec: dict[str, Any], reg_mods: Optional[dict[str, Any]] = None
-    ) -> Self:
+    def create_from_spec(cls, spec: dict[str, Any], reg_mods: dict[str, Any] | None = None) -> Self:
         """Create fuse register instance from specification dictionary.
 
         The method extends the parent class creation by adding fuse-specific attributes
@@ -391,7 +389,7 @@ class FuseRegister(Register):
         return output
 
     @property
-    def shadow_register_addr(self) -> Optional[int]:
+    def shadow_register_addr(self) -> int | None:
         """Calculate the absolute address of shadow registers.
 
         Computes the real memory address by adding the shadow register base address
@@ -536,7 +534,7 @@ class FuseRegisters(_RegistersBase[FuseRegister]):
     def __init__(
         self,
         family: FamilyRevision,
-        base_key: Optional[Union[list[str], str]] = None,
+        base_key: list[str] | str | None = None,
         base_endianness: Endianness = Endianness.BIG,
         just_standard_library_data: bool = False,
     ) -> None:
@@ -550,7 +548,7 @@ class FuseRegisters(_RegistersBase[FuseRegister]):
         :param base_endianness: Byte order for register data interpretation, defaults to BIG.
         :param just_standard_library_data: Use only standard library data if True, defaults to False.
         """
-        self.shadow_reg_base_addr: Optional[int] = None
+        self.shadow_reg_base_addr: int | None = None
         self.db = get_db(family)
         self.computed_fields: dict[str, dict[str, str]] = self.db.get_dict(
             self.FEATURE, "computed_fields", {}
@@ -567,9 +565,9 @@ class FuseRegisters(_RegistersBase[FuseRegister]):
     def _load_from_spec(
         self,
         config: dict[str, Any],
-        grouped_regs: Optional[list[dict]] = None,
-        reg_spec_modifications: Optional[dict[str, dict]] = None,
-        deprecated_regs: Optional[dict[str, dict[str, Any]]] = None,
+        grouped_regs: list[dict] | None = None,
+        reg_spec_modifications: dict[str, dict] | None = None,
+        deprecated_regs: dict[str, dict[str, Any]] | None = None,
     ) -> None:
         """Load registers from specification.
 
@@ -712,7 +710,7 @@ class FuseRegisters(_RegistersBase[FuseRegister]):
             f"The fuse with {otp_index} is not found in loaded registers for {self.family} device."
         )
 
-    def get_lock_fuse(self, fuse: Union[str, FuseRegister]) -> Optional[FuseRegister]:
+    def get_lock_fuse(self, fuse: str | FuseRegister) -> FuseRegister | None:
         """Get the lock fuse of a fuse with given name.
 
         :param fuse: Fuse name or the fuse register itself.

@@ -213,6 +213,9 @@ features:
           field024-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
         field028: # DCFG_CC_SOCU_NS_DFLT
           field028-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+      monotonic_counters:
+        - field008  # Secure_FW_Version
+        - field00C  # NS_FW_Version
     cmpa: # CMPA description
       reg_spec: pfr_cmpa.json
       address: 0x0100_4000

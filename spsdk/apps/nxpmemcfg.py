@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -16,7 +15,6 @@ import logging
 import os
 import sys
 from collections import defaultdict
-from typing import Optional
 
 import click
 import colorama
@@ -57,7 +55,7 @@ def main(log_level: int) -> None:
     required=False,
     help="Restrict results just for this one peripheral, if used.",
 )
-def family_info(family: Optional[FamilyRevision], peripheral: Optional[str] = None) -> None:
+def family_info(family: FamilyRevision | None, peripheral: str | None = None) -> None:
     """List known memory configurations for the family."""
 
     def _get_instance_val(val: list[int]) -> str:
@@ -107,7 +105,7 @@ def family_info(family: Optional[FamilyRevision], peripheral: Optional[str] = No
             ["#", "Type", "Name", "Manufacturer", "Interface", "Option words", "Tested"]
         )
         table_ow.set_style(prettytable.TableStyle.DOUBLE_BORDER)
-        table_ow.align["Option words"] = "l"
+        table_ow.align = {"Option words": "l"}
         i = 0
 
         grouped_by_type = defaultdict(list[Memory])  # type: ignore
@@ -176,10 +174,10 @@ def family_info(family: Optional[FamilyRevision], peripheral: Optional[str] = No
 @spsdk_output_option(force=True)
 def parse_command(
     family: FamilyRevision,
-    memory_chip: Optional[str],
-    interface: Optional[str],
+    memory_chip: str | None,
+    interface: str | None,
     peripheral: str,
-    option_word: Optional[list[int]],
+    option_word: list[int] | None,
     output: str,
 ) -> None:
     """Parse the existing memory configuration option words."""
@@ -193,15 +191,17 @@ def parse_command(
         ).get_config_yaml(),
         output,
     )
-    click.echo(f"Parsed option words has been stored: {os.path.abspath(output)}")
+    click.echo(
+        f"Parsed option words has been stored: {get_printable_path(os.path.abspath(output))}"
+    )
 
 
 def parse(
     family: FamilyRevision,
     peripheral: str,
-    memory_chip: Optional[str],
-    interface: Optional[str],
-    option_word: Optional[list[int]],
+    memory_chip: str | None,
+    interface: str | None,
+    option_word: list[int] | None,
 ) -> MemoryConfig:
     """Parse the existing memory configuration option words.
 
@@ -323,15 +323,15 @@ def export(config: Config) -> MemoryConfig:
     help="Name of BLHOST script. If not specified, the script will be printed to command line",
 )
 def blhost_script_command(
-    config: Optional[Config],
-    family: Optional[str],
-    peripheral: Optional[str],
-    memory_chip: Optional[str],
-    interface: Optional[str],
-    instance: Optional[int],
-    fcb: Optional[str],
+    config: Config | None,
+    family: str | None,
+    peripheral: str | None,
+    memory_chip: str | None,
+    interface: str | None,
+    instance: int | None,
+    fcb: str | None,
     secure_addresses: bool,
-    output: Optional[str],
+    output: str | None,
 ) -> None:
     """Export the configuration option words to blhost script."""
     if config and (family or peripheral or memory_chip or interface):

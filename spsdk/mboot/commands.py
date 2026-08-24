@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +13,6 @@ operations for secure provisioning and device management.
 """
 
 from struct import pack, unpack, unpack_from
-from typing import Optional, Type
 
 from typing_extensions import Self
 
@@ -371,9 +369,7 @@ class CmdPacket(CmdPacketBase):
     SIZE = 32
     EMPTY_VALUE = 0x00
 
-    def __init__(
-        self, tag: CommandTag, flags: int, *args: int, data: Optional[bytes] = None
-    ) -> None:
+    def __init__(self, tag: CommandTag, flags: int, *args: int, data: bytes | None = None) -> None:
         """Initialize the Command Packet object.
 
         Creates a new command packet with the specified tag, flags, arguments, and optional data.
@@ -760,7 +756,7 @@ class TrustProvisioningResponse(CmdResponse):
         status = self._get_status_label()
         return f"Tag={tag}, Status={status}"
 
-    def get_payload_data(self, offset: int = 0) -> Optional[bytes]:
+    def get_payload_data(self, offset: int = 0) -> bytes | None:
         """Get the payload from the response.
 
         Converts response values to bytes starting from specified offset. Each value is converted
@@ -804,7 +800,7 @@ def parse_cmd_response(data: bytes, offset: int = 0) -> CmdResponse:
     :param offset: The offset position in input data to start parsing from
     :return: Parsed command response object of appropriate type
     """
-    known_response: dict[int, Type[CmdResponse]] = {
+    known_response: dict[int, type[CmdResponse]] = {
         ResponseTag.GENERIC.tag: GenericResponse,
         ResponseTag.GET_PROPERTY.tag: GetPropertyResponse,
         ResponseTag.READ_MEMORY.tag: ReadMemoryResponse,

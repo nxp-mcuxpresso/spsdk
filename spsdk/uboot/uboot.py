@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -14,7 +13,6 @@ through different protocols including serial and fastboot connections.
 import os
 from tempfile import NamedTemporaryFile
 from types import TracebackType
-from typing import Optional, Type
 
 from hexdump import restore
 from serial import Serial, SerialException
@@ -173,9 +171,9 @@ class UbootSerial:
 
     def __exit__(
         self,
-        exception_type: Optional[Type[Exception]] = None,
-        exception_value: Optional[Exception] = None,
-        traceback: Optional[TracebackType] = None,
+        exception_type: type[Exception] | None = None,
+        exception_value: Exception | None = None,
+        traceback: TracebackType | None = None,
     ) -> None:
         """Exit the context manager and close the U-Boot connection.
 
@@ -350,11 +348,11 @@ class UbootFastboot:
         self,
         buffer_address: int,
         buffer_size: int,
-        serial_port: Optional[str] = None,
+        serial_port: str | None = None,
         timeout: int = 5000,
         crc: bool = True,
-        usb_path_filter: Optional[str] = None,
-        usb_serial_no_filter: Optional[str] = None,
+        usb_path_filter: str | None = None,
+        usb_serial_no_filter: str | None = None,
     ):
         """Initialize U-Boot fastboot interface.
 
@@ -426,9 +424,9 @@ class UbootFastboot:
 
     def __exit__(
         self,
-        exception_type: Optional[Type[Exception]] = None,
-        exception_value: Optional[Exception] = None,
-        traceback: Optional[TracebackType] = None,
+        exception_type: type[Exception] | None = None,
+        exception_value: Exception | None = None,
+        traceback: TracebackType | None = None,
     ) -> None:
         """Clean up resources and close the U-Boot interface.
 

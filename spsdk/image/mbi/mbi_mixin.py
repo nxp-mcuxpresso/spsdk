@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -21,7 +20,8 @@ import logging
 import os
 import pkgutil
 import struct
-from typing import Any, Callable, Optional, Type, Union
+from collections.abc import Callable
+from typing import Any
 
 from typing_extensions import Self
 
@@ -57,7 +57,7 @@ from spsdk.image.trustzone import TrustZone, TrustZoneType, TrustZoneV2
 from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
-from spsdk.utils.family import FamilyRevision
+from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import (
     Endianness,
     align,
@@ -74,7 +74,7 @@ from spsdk.utils.verifier import Verifier, VerifierResult
 logger = logging.getLogger(__name__)
 
 
-def get_all_mbi_mixins() -> dict[str, Type]:
+def get_all_mbi_mixins() -> dict[str, type[Any]]:
     """Get all classes inheriting from MBI mixin base classes.
 
     This function finds all classes that inherit from any of the specified
@@ -217,7 +217,7 @@ class Mbi_MixinApp(Mbi_Mixin):
 
     NAME = "Application"
     VALIDATION_SCHEMAS: list[str] = ["app"]
-    NEEDED_MEMBERS: dict[str, Any] = {"_app": bytes(), "app_ext_memory_align": 0x1000}
+    NEEDED_MEMBERS: dict[str, Any] = {"_app": b"", "app_ext_memory_align": 0x1000}
 
     _app: bytes
     app_ext_memory_align: int
@@ -325,7 +325,7 @@ class Mbi_MixinApp(Mbi_Mixin):
             dsc_iop = int.from_bytes(self.app[8:12], "little")
 
             # Check that first 3 vectors are not all the same
-            vectors_unique = len(set([sp, pc, dsc_iop])) > 1
+            vectors_unique = len({sp, pc, dsc_iop}) > 1
             ver.add_record(
                 name="IVT vectors uniqueness",
                 result=vectors_unique,
@@ -360,8 +360,8 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
     }
     PRE_PARSED: list[str] = ["cert_block"]
 
-    trust_zone: Optional[TrustZone]
-    cert_block: Optional[Union[CertBlockV1, CertBlockV21]]
+    trust_zone: TrustZone | None
+    cert_block: CertBlockV1 | CertBlockV21 | None
     ivt_table: "Mbi_MixinIvt"
 
     @property
@@ -540,7 +540,7 @@ class Mbi_MixinTrustZoneMandatory(Mbi_MixinTrustZone):
 
     NAME = "Mandatory TrustZone"
     VALIDATION_SCHEMAS: list[str] = ["trust_zone_mandatory"]
-    trust_zone: Optional[TrustZone]
+    trust_zone: TrustZone | None
     family: FamilyRevision
 
     def mix_init(self) -> None:
@@ -627,7 +627,7 @@ class Mbi_MixinTrustZoneV2(Mbi_Mixin):
         "revision": "latest",
     }
 
-    trust_zone: Optional[TrustZoneV2]
+    trust_zone: TrustZoneV2 | None
     ivt_table: "Mbi_MixinIvt"
 
     @property
@@ -781,7 +781,7 @@ class Mbi_MixinLoadAddress(Mbi_Mixin):
     NAME = "Load Address"
     VALIDATION_SCHEMAS: list[str] = ["load_addr"]
 
-    load_address: Optional[int] = 0
+    load_address: int | None = 0
     ivt_table: "Mbi_MixinIvt"
 
     def mix_load_from_config(self, config: Config) -> None:
@@ -875,7 +875,7 @@ class Mbi_MixinFwVersion(Mbi_Mixin):
     VALIDATION_SCHEMAS: list[str] = ["firmware_version"]
     NEEDED_MEMBERS: dict[str, Any] = {"manifest": None}
 
-    firmware_version: Optional[int] = 0
+    firmware_version: int | None = 0
 
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
@@ -988,7 +988,7 @@ class Mbi_MixinImageVersion(Mbi_Mixin):
     NEEDED_MEMBERS: dict[str, Any] = {"image_version": 0}
     image_version_to_image_type: bool = True
 
-    image_version: Optional[int]
+    image_version: int | None
     ivt_table: "Mbi_MixinIvt"
 
     def mix_load_from_config(self, config: Config) -> None:
@@ -1097,7 +1097,7 @@ class Mbi_MixinImageSubType(Mbi_Mixin):
     VALIDATION_SCHEMAS: list[str] = ["image_subtype"]
     NEEDED_MEMBERS: dict[str, Any] = {"image_subtype": 0}
 
-    image_subtype: Optional[int]
+    image_subtype: int | None
     ivt_table: "Mbi_MixinIvt"
 
     def mix_load_from_config(self, config: Config) -> None:
@@ -1125,7 +1125,7 @@ class Mbi_MixinImageSubType(Mbi_Mixin):
         ).label
         return config
 
-    def set_image_subtype(self, image_subtype: Optional[Union[str, int]]) -> None:
+    def set_image_subtype(self, image_subtype: str | int | None) -> None:
         """Set image subtype for MBI mixin.
 
         Converts string representation of image subtype to integer value using appropriate
@@ -1260,17 +1260,37 @@ class Mbi_MixinIvt(Mbi_Mixin):
     # flag for image type, if the image contains key-store
     _KEY_STORE_FLAG = 0x8000
 
-    trust_zone: Optional[TrustZone]
+    trust_zone: TrustZone | None
     IMAGE_TYPE: MbiImageTypeEnum
-    load_address: Optional[int]
-    user_hw_key_enabled: Optional[bool]
-    app_table: Optional["MultipleImageTable"]
-    key_store: Optional[KeyStore]
-    image_version: Optional[int]
+    load_address: int | None
+    user_hw_key_enabled: bool | None
+    app_table: "MultipleImageTable | None"
+    key_store: KeyStore | None
+    image_version: int | None
     image_version_to_image_type: bool
-    image_subtype: Optional[int]
-    tz_type: Optional[TrustZoneType]
+    image_subtype: int | None
+    tz_type: TrustZoneType | None
     total_len: int
+
+    def mix_init(self) -> None:
+        """Initialize IVT offsets from database if available."""
+        db = get_db(self.family)
+        if db.check_key(DatabaseManager.MBI, "ivt_offsets"):
+            cls = type(self)
+            cls.IVT_IMAGE_LENGTH_OFFSET = db.get_int(
+                DatabaseManager.MBI, ["ivt_offsets", "image_length"], self.IVT_IMAGE_LENGTH_OFFSET
+            )
+            cls.IVT_IMAGE_FLAGS_OFFSET = db.get_int(
+                DatabaseManager.MBI, ["ivt_offsets", "image_flags"], self.IVT_IMAGE_FLAGS_OFFSET
+            )
+            cls.IVT_CRC_CERTIFICATE_OFFSET = db.get_int(
+                DatabaseManager.MBI,
+                ["ivt_offsets", "crc_certificate"],
+                self.IVT_CRC_CERTIFICATE_OFFSET,
+            )
+            cls.IVT_LOAD_ADDR_OFFSET = db.get_int(
+                DatabaseManager.MBI, ["ivt_offsets", "load_addr"], self.IVT_LOAD_ADDR_OFFSET
+            )
 
     @property
     def ivt_table(self) -> Self:
@@ -1983,6 +2003,16 @@ class Mbi_MixinIvt(Mbi_Mixin):
         return ver
 
 
+class Mbi_MixinIvt16(Mbi_MixinIvt):
+    """IVT table for DSC devices."""
+
+    # DSC IVT table offsets
+    IVT_IMAGE_LENGTH_OFFSET = 166 * 4
+    IVT_IMAGE_FLAGS_OFFSET = 167 * 4
+    IVT_CRC_CERTIFICATE_OFFSET = 168 * 4
+    IVT_LOAD_ADDR_OFFSET = 169 * 4
+
+
 class Mbi_MixinIvtZeroTotalLength(Mbi_MixinIvt):
     """Master Boot Image Interrupt Vector table mixin for XIP images with zero total length.
 
@@ -2097,8 +2127,8 @@ class Mbi_MixinRelocTable(Mbi_Mixin):
     VALIDATION_SCHEMAS: list[str] = ["app_table"]
     NEEDED_MEMBERS: dict[str, Any] = {"app_table": None, "_app": None}
 
-    app_table: Optional[MultipleImageTable]
-    app: Optional[bytes]
+    app_table: MultipleImageTable | None
+    app: bytes | None
 
     def mix_len(self) -> int:
         """Get length of additional binaries block.
@@ -2158,7 +2188,7 @@ class Mbi_MixinRelocTable(Mbi_Mixin):
         if self.app_table:
             cfg_table = []
             for entry in self.app_table.entries:
-                entry_cfg: dict[str, Union[str, int]] = {}
+                entry_cfg: dict[str, str | int] = {}
                 entry_cfg["destAddress"] = entry.dst_addr
                 filename = f"mit_{hex(entry.dst_addr)}.bin"
                 write_file(entry.image, os.path.join(output_folder, filename))
@@ -2224,7 +2254,7 @@ class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
     """
 
     manifest_class = MasterBootImageManifest
-    manifest: Optional[MasterBootImageManifest]
+    manifest: MasterBootImageManifest | None
 
     VALIDATION_SCHEMAS: list[str] = ["trust_zone_mandatory", "firmware_version"]
     NEEDED_MEMBERS: dict[str, Any] = {
@@ -2236,8 +2266,8 @@ class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
     }
     PRE_PARSED: list[str] = ["cert_block"]
 
-    cert_block: Optional[Union[CertBlockV1, CertBlockV21]]
-    firmware_version: Optional[int]
+    cert_block: CertBlockV1 | CertBlockV21 | None
+    firmware_version: int | None
     ivt_table: Mbi_MixinIvt
 
     def mix_len(self) -> int:
@@ -2323,7 +2353,7 @@ class Mbi_MixinManifestCrc(Mbi_MixinManifest):
     """
 
     manifest_class = MasterBootImageManifestCrc
-    manifest: Optional[MasterBootImageManifestCrc]
+    manifest: MasterBootImageManifestCrc | None
 
     def mix_load_from_config(self, config: Config) -> None:
         """Load configuration from dictionary.
@@ -2354,7 +2384,7 @@ class Mbi_MixinManifestDigest(Mbi_MixinManifest):
     """
 
     manifest_class = MasterBootImageManifestDigest
-    manifest: Optional[MasterBootImageManifestDigest]
+    manifest: MasterBootImageManifestDigest | None
 
     VALIDATION_SCHEMAS: list[str] = [
         "trust_zone_mandatory",
@@ -2436,10 +2466,10 @@ class Mbi_MixinCertBlockV1(Mbi_Mixin):
     VALIDATION_SCHEMAS: list[str] = ["cert_block_v1", "signer"]
     NEEDED_MEMBERS: dict[str, Any] = {"cert_block": None, "signature_provider": None}
 
-    cert_block: Optional[CertBlockV1]
-    signature_provider: Optional[SignatureProvider]
+    cert_block: CertBlockV1 | None
+    signature_provider: SignatureProvider | None
     total_len: int
-    key_store: Optional[KeyStore]
+    key_store: KeyStore | None
     ivt_table: Mbi_MixinIvt
     get_key_store_presented: Callable[[bytes], int]
     HMAC_SIZE: int
@@ -2593,8 +2623,8 @@ class Mbi_MixinCertBlockV21(Mbi_Mixin):
     VALIDATION_SCHEMAS: list[str] = ["cert_block_v21", "signer"]
     NEEDED_MEMBERS: dict[str, Any] = {"cert_block": None, "signature_provider": None}
 
-    cert_block: Optional[CertBlockV21]
-    signature_provider: Optional[SignatureProvider]
+    cert_block: CertBlockV21 | None
+    signature_provider: SignatureProvider | None
     ivt_table: Mbi_MixinIvt
 
     def mix_len(self) -> int:
@@ -2763,7 +2793,7 @@ class Mbi_MixinAhab(Mbi_Mixin):
     ivt_table: Mbi_MixinIvt
     app: bytes
     app_crc: bool
-    trust_zone: Optional[TrustZone]
+    trust_zone: TrustZone | None
     tz_type: TrustZoneType
     load_address: int
     firmware_version: int
@@ -2784,7 +2814,7 @@ class Mbi_MixinAhab(Mbi_Mixin):
         return [schema_cfg[x] for x in cls.VALIDATION_SCHEMAS]
 
     @property
-    def crc_check_record(self) -> Optional[ImageArrayEntryV2]:
+    def crc_check_record(self) -> ImageArrayEntryV2 | None:
         """Check if CRC is included in AHAB container.
 
         This method examines the AHAB (Advanced High-Assurance Boot) container to determine if it
@@ -3054,7 +3084,7 @@ class Mbi_MixinAppCrc(Mbi_Mixin):
     VALIDATION_SCHEMAS: list[str] = ["ahab_sign_support_add_crc"]
     NEEDED_MEMBERS: dict[str, Any] = {"app_crc": False}
     app_crc: bool
-    crc_check_record: Optional[ImageArrayEntryV2]
+    crc_check_record: ImageArrayEntryV2 | None
 
     def mix_len(self) -> int:
         """Get length of mix-in data.
@@ -3154,7 +3184,7 @@ class Mbi_MixinCertBlockVx(Mbi_Mixin):
     cert_block: CertBlockVx
     add_hash: bool
     just_header: bool
-    signature_provider: Optional[SignatureProvider]
+    signature_provider: SignatureProvider | None
     IMG_ISK_OFFSET: int
 
     def mix_load_from_config(self, config: Config) -> None:
@@ -3286,7 +3316,7 @@ class Mbi_MixinBca(Mbi_Mixin):
     BCA_OFFSET = 0x3C0
 
     app: bytes
-    bca: Optional[BCA]
+    bca: BCA | None
     total_len: int
 
     def mix_len(self) -> int:
@@ -3501,7 +3531,7 @@ class Mbi_MixinFcf(Mbi_Mixin):
     FCF_OFFSET = 0x400
 
     app: bytes
-    fcf: Optional[FCF]
+    fcf: FCF | None
     total_len: int
 
     def mix_len(self) -> int:
@@ -3700,7 +3730,7 @@ class Mbi_MixinHwKey(Mbi_Mixin):
     VALIDATION_SCHEMAS: list[str] = ["hw_key"]
     NEEDED_MEMBERS: dict[str, Any] = {"user_hw_key_enabled": False}
 
-    user_hw_key_enabled: Optional[bool]
+    user_hw_key_enabled: bool | None
     ivt_table: Mbi_MixinIvt
 
     def mix_load_from_config(self, config: Config) -> None:
@@ -3807,8 +3837,8 @@ class Mbi_MixinKeyStore(Mbi_Mixin):
     NEEDED_MEMBERS: dict[str, Any] = {"key_store": None, "_hmac_key": None}
     COUNT_IN_LEGACY_CERT_BLOCK_LEN: bool = False
 
-    key_store: Optional[KeyStore]
-    hmac_key: Optional[bytes]
+    key_store: KeyStore | None
+    hmac_key: bytes | None
     ivt_table: Mbi_MixinIvt
     HMAC_OFFSET: int
     HMAC_SIZE: int
@@ -3973,11 +4003,11 @@ class Mbi_MixinHmac(Mbi_Mixin):
     # length of user key or master key, in bytes
     _HMAC_KEY_LENGTH = 32
 
-    _hmac_key: Optional[bytes]
-    dek: Optional[str]
+    _hmac_key: bytes | None
+    dek: str | None
 
     @property
-    def hmac_key(self) -> Optional[bytes]:
+    def hmac_key(self) -> bytes | None:
         """Get HMAC key in bytes.
 
         :return: HMAC key as bytes if available, None otherwise.
@@ -3985,7 +4015,7 @@ class Mbi_MixinHmac(Mbi_Mixin):
         return self._hmac_key
 
     @hmac_key.setter
-    def hmac_key(self, hmac_key: Optional[Union[bytes, str]]) -> None:
+    def hmac_key(self, hmac_key: bytes | str | None) -> None:
         """Set HMAC key for authentication.
 
         Converts string representation of HMAC key to bytes if needed, or stores the provided bytes directly.
@@ -4040,7 +4070,7 @@ class Mbi_MixinHmac(Mbi_Mixin):
         :return: Result HMAC hash of input data, or empty bytes if no HMAC key is set.
         """
         if not self.hmac_key:
-            return bytes()
+            return b""
 
         key = KeyStore.derive_hmac_key(self.hmac_key)
         result = hmac(key, data)
@@ -4188,12 +4218,12 @@ class Mbi_MixinCtrInitVector(Mbi_Mixin):
     _CTR_INIT_VECTOR_SIZE = 16
 
     _ctr_init_vector: bytes
-    cert_block: Optional[Union[CertBlockV1, CertBlockV21]]
+    cert_block: CertBlockV1 | CertBlockV21 | None
     ivt_table: Mbi_MixinIvt
     HMAC_SIZE: int
 
     @property
-    def ctr_init_vector(self) -> Optional[bytes]:
+    def ctr_init_vector(self) -> bytes | None:
         """Get counter initialization vector.
 
         :return: Counter initialization vector bytes if set, None otherwise.
@@ -4201,7 +4231,7 @@ class Mbi_MixinCtrInitVector(Mbi_Mixin):
         return self._ctr_init_vector
 
     @ctr_init_vector.setter
-    def ctr_init_vector(self, ctr_iv: Optional[bytes]) -> None:
+    def ctr_init_vector(self, ctr_iv: bytes | None) -> None:
         """Set Counter initialization vector for encryption.
 
         If no vector is provided, a random vector of appropriate size is generated
@@ -4420,12 +4450,12 @@ class Mbi_ExportMixinApp(Mbi_ExportMixin):
     APP_BLOCK_NAME = "Application Block"
     APP_IMAGE_NAME = "Application"
 
-    app: Optional[bytes]
+    app: bytes | None
     clean_ivt: Callable[[bytes], bytes]
     app_table: MultipleImageTable
     disassembly_app_data: Callable[[bytes], bytes]
-    bca: Optional[BCA]
-    fcf: Optional[FCF]
+    bca: BCA | None
+    fcf: FCF | None
     BCA_OFFSET: int
     FCF_OFFSET: int
     total_len: int
@@ -4504,7 +4534,7 @@ class Mbi_ExportMixinAppTrustZone(Mbi_ExportMixinApp):
     :cvar TRUST_ZONE_IMAGE_NAME: Default name for TrustZone preset data section.
     """
 
-    trust_zone: Optional[TrustZone]
+    trust_zone: TrustZone | None
     tz_type: TrustZoneType
     family: FamilyRevision
     TRUST_ZONE_IMAGE_NAME = "TrustZone Preset data"
@@ -4559,7 +4589,7 @@ class Mbi_ExportMixinAppTrustZoneV2(Mbi_ExportMixinAppTrustZone):
     """
 
     # Override the type annotation for trust_zone
-    trust_zone: Optional[TrustZoneV2]  # type: ignore
+    trust_zone: TrustZoneV2 | None  # type: ignore
 
     def collect_data(self) -> BinaryImage:
         """Collect application data and TrustZone configuration into a binary image.
@@ -4622,14 +4652,14 @@ class Mbi_ExportMixinAppTrustZoneCertBlock(Mbi_ExportMixin):
     proper IVT updates and alignment requirements.
     """
 
-    app: Optional[bytes]
+    app: bytes | None
     family: FamilyRevision
-    trust_zone: Optional[TrustZone]
+    trust_zone: TrustZone | None
     total_len: int
     total_length_for_cert_block: int
     app_len: int
     ivt_table: Mbi_MixinIvt
-    cert_block: Optional[Union[CertBlockV1, CertBlockV21]]
+    cert_block: CertBlockV1 | CertBlockV21 | None
     app_table: MultipleImageTable
     disassembly_app_data: Callable[[bytes], bytes]
     tz_type: TrustZoneType
@@ -4707,14 +4737,14 @@ class Mbi_ExportMixinAppTrustZoneCertBlockV2(Mbi_ExportMixin):
     existing images back into individual components.
     """
 
-    app: Optional[bytes]
+    app: bytes | None
     app_len: int
     total_len: int
     ivt_table: Mbi_MixinIvt
-    cert_block: Optional[Union[CertBlockV1, CertBlockV21]]
+    cert_block: CertBlockV1 | CertBlockV21 | None
     disassembly_app_data: Callable[[bytes], bytes]
-    data_to_sign: Optional[bytes]
-    trust_zone: Optional[TrustZone]
+    data_to_sign: bytes | None
+    trust_zone: TrustZone | None
     tz_type: TrustZoneType
 
     def collect_data(self) -> BinaryImage:
@@ -4769,14 +4799,14 @@ class Mbi_ExportMixinAppCertBlockManifest(Mbi_ExportMixin):
     with proper structure for NXP MCU boot processes.
     """
 
-    app: Optional[bytes]
+    app: bytes | None
     app_len: int
     total_len: int
     ivt_table: Mbi_MixinIvt
-    cert_block: Optional[Union[CertBlockV1, CertBlockV21]]
-    manifest: Optional[T_Manifest]  # type: ignore  # we don't use regular bound method
+    cert_block: CertBlockV1 | CertBlockV21 | None
+    manifest: T_Manifest | None  # type: ignore  # we don't use regular bound method
     disassembly_app_data: Callable[[bytes], bytes]
-    data_to_sign: Optional[bytes]
+    data_to_sign: bytes | None
 
     def collect_data(self) -> BinaryImage:
         """Collect application data, Certification Block and Manifest including update IVT.
@@ -4987,8 +5017,8 @@ class Mbi_ExportMixinRsaSign(Mbi_ExportMixin):
     certificate block versions.
     """
 
-    signature_provider: Optional[SignatureProvider]
-    cert_block: Optional[Union[CertBlockV21, CertBlockV1]]
+    signature_provider: SignatureProvider | None
+    cert_block: CertBlockV21 | CertBlockV1 | None
 
     def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
         """Calculate RSA signature and return updated image with signature.
@@ -5035,9 +5065,9 @@ class Mbi_ExportMixinEccSign(Mbi_ExportMixin):
     signing operations and signature reversion for testing purposes.
     """
 
-    signature_provider: Optional[SignatureProvider]
-    cert_block: Optional[Union[CertBlockV21, CertBlockV1]]
-    data_to_sign: Optional[bytes]
+    signature_provider: SignatureProvider | None
+    cert_block: CertBlockV21 | CertBlockV1 | None
+    data_to_sign: bytes | None
 
     def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
         """Calculate ECC signature and return updated image with signature.
@@ -5091,7 +5121,7 @@ class Mbi_ExportMixinHmacKeyStoreFinalize(Mbi_ExportMixin):
     compute_hmac: Callable[[bytes], bytes]
     HMAC_OFFSET: int
     HMAC_SIZE: int
-    key_store: Optional[KeyStore]
+    key_store: KeyStore | None
     ivt_table: Mbi_MixinIvt
 
     def finalize(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
@@ -5424,8 +5454,8 @@ class Mbi_ExportMixinEccSignVx(Mbi_ExportMixin):
     :cvar IMG_DATA_START: Starting position of image data in the binary layout.
     """
 
-    app: Optional[bytes]
-    signature_provider: Optional[SignatureProvider]
+    app: bytes | None
+    signature_provider: SignatureProvider | None
     add_hash: bool
     cert_block: CertBlockVx
     bca: BCA
@@ -5497,7 +5527,7 @@ class Mbi_ExportMixinAppTzCrcAhab(Mbi_ExportMixin):
     total_len: int
     firmware_version: int
     ahab: AHABContainerV2
-    crc_check_record: Optional[ImageArrayEntryV2]
+    crc_check_record: ImageArrayEntryV2 | None
     CRC_IMAGE_NAME = "CRC-32 MPEG checksum"
     AHAB_IMAGE_NAME = "AHAB Container"
     IMAGE_ALIGNMENT = 4
@@ -5661,18 +5691,18 @@ class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
     :cvar HMAC_OFFSET: Offset for HMAC calculation in the image structure.
     """
 
-    app: Optional[bytes]
-    trust_zone: Optional[TrustZone]
+    app: bytes | None
+    trust_zone: TrustZone | None
     total_len: int
     app_len: int
     ivt_table: Mbi_MixinIvt
-    cert_block: Optional[Union[CertBlockV1, CertBlockV21]]
+    cert_block: CertBlockV1 | CertBlockV21 | None
     app_table: MultipleImageTable
     disassembly_app_data: Callable[[bytes], bytes]
     HMAC_OFFSET: int
-    hmac_key: Optional[bytes]
+    hmac_key: bytes | None
     ctr_init_vector: bytes
-    key_store: Optional[KeyStore]
+    key_store: KeyStore | None
     tz_type: TrustZoneType
 
     def collect_data(self) -> BinaryImage:

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -15,7 +14,8 @@ validation, and cryptographic type conversions.
 
 import logging
 import os
-from typing import Any, Callable, Iterable, Optional
+from collections.abc import Callable, Iterable
+from typing import Any
 
 from spsdk.crypto.certificate import Certificate, generate_extensions, generate_name
 from spsdk.crypto.crypto_types import SPSDKEncoding, SPSDKName
@@ -50,7 +50,7 @@ def get_matching_key_id_from_signature(
     public_keys: list[PublicKey],
     signed_data: bytes,
     signature: bytes,
-    algorithm: Optional[EnumHashAlgorithm] = None,
+    algorithm: EnumHashAlgorithm | None = None,
     **kwargs: Any,
 ) -> int:
     """Get index of public key that matches given signed data and signature.
@@ -73,7 +73,7 @@ def get_matching_key_id_from_signature(
     raise SPSDKValueError("There is no match of signature in given list.")
 
 
-def extract_public_key_from_data(object_data: bytes, password: Optional[str] = None) -> PublicKey:
+def extract_public_key_from_data(object_data: bytes, password: str | None = None) -> PublicKey:
     """Extract any kind of public key from data containing Certificate, Private Key or Public Key.
 
     The method attempts to parse the input data as a certificate first, then as a private key,
@@ -123,7 +123,7 @@ def extract_public_key_from_data(object_data: bytes, password: Optional[str] = N
 
 
 def extract_public_key(
-    file_path: str, password: Optional[str] = None, search_paths: Optional[list[str]] = None
+    file_path: str, password: str | None = None, search_paths: list[str] | None = None
 ) -> PublicKey:
     """Extract any kind of public key from a file.
 
@@ -145,8 +145,8 @@ def extract_public_key(
 
 def extract_public_keys(
     secret_files: Iterable[str],
-    password: Optional[str] = None,
-    search_paths: Optional[list[str]] = None,
+    password: str | None = None,
+    search_paths: list[str] | None = None,
 ) -> list[PublicKey]:
     """Extract public keys from multiple files containing certificates, private keys, or public keys.
 
@@ -192,7 +192,7 @@ def generate_key_pair(
     is_ca: bool,
     password: str,
     print_func: Callable[[str], None] = print,
-    key_postfix: Optional[str] = None,
+    key_postfix: str | None = None,
 ) -> tuple[PrivateKey, PublicKey, str, str]:
     """Generate key pair with the naming convention.
 
@@ -250,10 +250,10 @@ def generate_img_csf_key(
     duration: int,
     idx: int,
     password: str,
-    serial: Optional[list[int]] = None,
+    serial: list[int] | None = None,
     print_func: Callable[[str], None] = print,
     start_idx: int = 0,
-    key_postfix: Optional[str] = None,
+    key_postfix: str | None = None,
 ) -> None:
     """Generate IMG and CSF keys and certificates.
 
@@ -355,7 +355,7 @@ def generate_srk_keys(
     srk_is_ca: bool,
     password: str,
     keys_number: int,
-    serial: Optional[list[int]] = None,
+    serial: list[int] | None = None,
     print_func: Callable[[str], None] = print,
     start_idx: int = 0,
     use_img_csf: bool = False,

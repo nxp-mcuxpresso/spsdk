@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -15,7 +14,7 @@ and provides the main BootableImage class for comprehensive image operations.
 import logging
 import os
 from copy import deepcopy
-from typing import Any, Optional, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -40,6 +39,40 @@ from spsdk.utils.verifier import Verifier, VerifierResult
 logger = logging.getLogger(__name__)
 
 
+def _add_alt_name_to_schema(schema: Any, field_name: str, alt_names: str | list[str]) -> bool:
+    """Recursively search schema and append alternative filename notes to a field description.
+
+    :param schema: Schema dict or list to search.
+    :param field_name: Name of the image field to annotate (e.g., ``spl``, ``uboot``).
+    :param alt_names: Board-specific Yocto machine filename(s) to mention as alternatives.
+        Can be a single string or a list of strings.
+    :return: True if the field was found and annotated, False otherwise.
+    """
+    if isinstance(schema, dict):
+        if "properties" in schema and field_name in schema["properties"]:
+            prop = schema["properties"][field_name]
+            if isinstance(prop, dict) and "description" in prop:
+                names = [alt_names] if isinstance(alt_names, str) else alt_names
+                if len(names) == 1:
+                    prop[
+                        "description"
+                    ] += f"\nAlternatively, use the board-specific Yocto machine name: {names[0]}"
+                else:
+                    names_str = ", ".join(names)
+                    prop[
+                        "description"
+                    ] += f"\nAlternatively, use one of the board-specific Yocto machine names: {names_str}"
+            return True
+        for value in schema.values():
+            if _add_alt_name_to_schema(value, field_name, alt_names):
+                return True
+    elif isinstance(schema, list):
+        for item in schema:
+            if _add_alt_name_to_schema(item, field_name, alt_names):
+                return True
+    return False
+
+
 class BootableImage(FeatureBaseClass):
     """Bootable Image representation for NXP MCU devices.
 
@@ -56,7 +89,7 @@ class BootableImage(FeatureBaseClass):
         self,
         family: FamilyRevision,
         mem_type: MemoryType,
-        init_offset: Union[BootableImageSegment, int] = 0,
+        init_offset: BootableImageSegment | int = 0,
     ) -> None:
         """Bootable Image constructor.
 
@@ -106,7 +139,7 @@ class BootableImage(FeatureBaseClass):
 
         return files
 
-    def set_init_offset(self, init_offset: Union[BootableImageSegment, int]) -> None:
+    def set_init_offset(self, init_offset: BootableImageSegment | int) -> None:
         """Set init offset by name of segment or length.
 
         The method allows setting the initialization offset either by providing a direct
@@ -125,7 +158,7 @@ class BootableImage(FeatureBaseClass):
                 raise SPSDKError(f"Segment with name {init_offset.label} does not exist.")
             self.init_offset = segment.full_image_offset
 
-    def get_segment(self, segment: Union[str, BootableImageSegment]) -> Segment:
+    def get_segment(self, segment: str | BootableImageSegment) -> Segment:
         """Get bootable segment by its name or Enum class.
 
         :param segment: Name of segment as string or BootableImageSegment enum value.
@@ -220,7 +253,7 @@ class BootableImage(FeatureBaseClass):
                 return segment.full_image_offset
 
             # It should be dynamically computed
-            prev_seg: Optional[Segment] = None
+            prev_seg: Segment | None = None
             for seg in segments:
                 if seg == segment:
                     if prev_seg is None:
@@ -295,14 +328,14 @@ class BootableImage(FeatureBaseClass):
 
         :return: True if image contains only bootable header, False otherwise.
         """
-        return all((x.BOOT_HEADER or len(x) == 0 for x in self.segments))
+        return all(x.BOOT_HEADER or len(x) == 0 for x in self.segments)
 
     def _filter_dek_map_for_segment(
         self,
-        dek_map: Optional[dict[Optional[Union[str, int]], dict[Optional[int], str]]],
+        dek_map: dict[str | int | None, dict[int | None, str]] | None,
         seg_ix: int,
         segment: Segment,
-    ) -> Optional[dict[Optional[int], str]]:
+    ) -> dict[int | None, str] | None:
         """Filter DEK map to include only keys relevant to the current segment.
 
         Extracts DEKs that apply to the specified segment, including:
@@ -318,7 +351,7 @@ class BootableImage(FeatureBaseClass):
         if not dek_map:
             return None
 
-        segment_dek_map: dict[Optional[int], str] = {}
+        segment_dek_map: dict[int | None, str] = {}
 
         # Include global DEK (None key)
         if None in dek_map and None in dek_map[None]:
@@ -338,7 +371,7 @@ class BootableImage(FeatureBaseClass):
     def _parse(
         self,
         binary: bytes,
-        dek_map: Optional[dict[Optional[Union[str, int]], dict[Optional[int], str]]] = None,
+        dek_map: dict[str | int | None, dict[int | None, str]] | None = None,
     ) -> None:
         """Parse binary data into bootable image segments.
 
@@ -390,10 +423,10 @@ class BootableImage(FeatureBaseClass):
     def _parse_all(
         cls,
         binary: bytes,
-        family: Optional[FamilyRevision] = None,
-        mem_type: Optional[MemoryType] = None,
+        family: FamilyRevision | None = None,
+        mem_type: MemoryType | None = None,
         no_errors: bool = True,
-        dek_map: Optional[dict[Optional[Union[str, int]], dict[Optional[int], str]]] = None,
+        dek_map: dict[str | int | None, dict[int | None, str]] | None = None,
     ) -> list[Self]:
         """Parse binary data into bootable image objects.
 
@@ -470,9 +503,9 @@ class BootableImage(FeatureBaseClass):
     def parse(
         cls,
         binary: bytes,
-        family: Optional[FamilyRevision] = None,
-        mem_type: Optional[MemoryType] = None,
-        dek_map: Optional[dict[Optional[Union[str, int]], dict[Optional[int], str]]] = None,
+        family: FamilyRevision | None = None,
+        mem_type: MemoryType | None = None,
+        dek_map: dict[str | int | None, dict[int | None, str]] | None = None,
     ) -> Self:
         """Parse binary data into a bootable image object.
 
@@ -543,7 +576,7 @@ class BootableImage(FeatureBaseClass):
 
     @classmethod
     def get_validation_schemas(
-        cls, family: FamilyRevision, mem_type: Optional[MemoryType] = None
+        cls, family: FamilyRevision, mem_type: MemoryType | None = None
     ) -> list[dict[str, Any]]:
         """Get validation schemas for bootable image configuration.
 
@@ -590,10 +623,13 @@ class BootableImage(FeatureBaseClass):
             schemas.append(sch_name)
         return schemas
 
-    def get_config(self, data_path: str = "./") -> Config:
+    def get_config(self, data_path: str = "./", parse_nxp: bool = False, **_kwargs: Any) -> Config:
         """Create configuration of the AHAB Image.
 
         :param data_path: Path to store the data files of configuration.
+        :param parse_nxp: When True, fully parse NXP-signed containers inside any AHAB segment
+            instead of extracting them to a binary file.  Defaults to False.
+        :param _kwargs: Additional keyword arguments (ignored, accepted for API compatibility).
         :return: Configuration dictionary.
         """
         config = Config()
@@ -602,12 +638,12 @@ class BootableImage(FeatureBaseClass):
         config["memory_type"] = self.mem_type.label
         config["init_offset"] = self.init_offset
         for segment in self._segments:
-            config[segment.cfg_key()] = segment.create_config(data_path)
+            config[segment.cfg_key()] = segment.create_config(data_path, parse_nxp=parse_nxp)
 
         return config
 
     @staticmethod
-    def _init_offset_from_cfg(config: Config) -> Union[int, BootableImageSegment]:
+    def _init_offset_from_cfg(config: Config) -> int | BootableImageSegment:
         """Convert configuration value to correct format of init offset.
 
         Processes the init_offset configuration value and converts it to either an integer
@@ -862,9 +898,7 @@ class BootableImage(FeatureBaseClass):
         return cls._get_config_template(family, schemas)
 
     @classmethod
-    def get_supported_memory_types(
-        cls, family: Optional[FamilyRevision] = None
-    ) -> list[MemoryType]:
+    def get_supported_memory_types(cls, family: FamilyRevision | None = None) -> list[MemoryType]:
         """Get supported memory types for bootable images.
 
         The method retrieves memory types either for a specific family from the database
@@ -971,13 +1005,13 @@ class BootableImage(FeatureBaseClass):
         return templates[template_name]
 
     @classmethod
-    def get_board_filenames(cls, family: FamilyRevision, board: str) -> dict[str, str]:
+    def get_board_filenames(cls, family: FamilyRevision, board: str) -> dict[str, str | list[str]]:
         """Get board-specific filename mappings.
 
         :param family: Target chip family and revision.
         :param board: Board name to get filenames for.
         :raises SPSDKKeyError: When board doesn't exist for the family.
-        :return: Dictionary mapping image types to filenames.
+        :return: Dictionary mapping image types to filenames or lists of alternative filenames.
         """
         try:
             database = get_db(family)
@@ -1006,13 +1040,112 @@ class BootableImage(FeatureBaseClass):
             return []
 
     @classmethod
+    def _process_container_def(
+        cls,
+        container_def: dict[str, Any],
+        family: FamilyRevision,
+        primary_filenames: dict[str, str],
+        input_dir: str | None,
+        sign: bool = False,
+    ) -> tuple[dict[str, Any], dict[str, Any] | None]:
+        """Process a single container definition into config and schema info.
+
+        :param container_def: Container definition from template.
+        :param family: Target chip family and revision.
+        :param primary_filenames: Board-specific filename overrides.
+        :param input_dir: Optional input directory path.
+        :param sign: Whether to include signing configuration.
+        :return: Tuple of (container config dict, optional schema info dict).
+        """
+        if "path" in container_def:
+            path = container_def["path"]
+            container_name = container_def.get("name", "")
+            if primary_filenames and container_name in primary_filenames:
+                path = primary_filenames[container_name]
+            if input_dir and not os.path.isabs(path):
+                path = os.path.join(input_dir, os.path.basename(path))
+            return {"binary_container": {"path": path}}, None
+
+        container_config = {"container": {"images": container_def["images"]}}
+        ahab_config_dict = AHABImage.generate_config_template_for_container(
+            family=family,
+            container_config=container_config,
+            board_filenames=primary_filenames,
+            input_dir=input_dir,
+            sign=sign,
+        )
+        ordered_schemas = ahab_config_dict.pop("_schemas", [])
+        image_names = ahab_config_dict.pop("_image_names", [])
+        schema_info = {"schemas": ordered_schemas, "images": image_names}
+        return ahab_config_dict, schema_info
+
+    @classmethod
+    def _build_config_yaml(
+        cls,
+        config_def: dict[str, Any],
+        config_name: str,
+        config_containers: list[dict[str, Any]],
+        family: FamilyRevision,
+        board_filenames: dict[str, str | list[str]],
+        output_dir: str,
+    ) -> str:
+        """Build and write a YAML config file for a set of containers.
+
+        :param config_def: Original config definition from template.
+        :param config_name: Name of this configuration.
+        :param config_containers: List of processed container configs.
+        :param family: Target chip family and revision.
+        :param board_filenames: Board-specific filenames including alt entries.
+        :param output_dir: Directory where template files will be created.
+        :return: Path to the generated config file.
+        """
+        full_config: dict[str, Any] = {
+            "family": family.name,
+            "revision": family.revision,
+            "output": f"{config_name}.bin",
+            "target_memory": "standard",
+            "containers": config_containers,
+        }
+        schemas = AHABImage.get_validation_schemas(family)
+        if board_filenames:
+            alt_fields = {k[:-4]: v for k, v in board_filenames.items() if k.endswith("_alt")}
+            if alt_fields:
+                schemas = deepcopy(schemas)
+                for field_name, alt_name in alt_fields.items():
+                    _add_alt_name_to_schema(schemas, field_name, alt_name)
+
+        container_descriptions = []
+        for cont_def in config_def.get("containers", []):
+            if "images" in cont_def:
+                container_descriptions.append(
+                    f"{cont_def['name']}: {', '.join(cont_def['images'])}"
+                )
+            elif "path" in cont_def:
+                container_descriptions.append(
+                    f"{cont_def['name']}: binary container from {cont_def['path']}"
+                )
+
+        config_gen = CommentedConfig(
+            main_title=f"{config_name} Configuration",
+            schemas=schemas,
+            note="\n".join(container_descriptions),
+        )
+        commented_map = config_gen.export(full_config)
+        yaml_output = CommentedConfig.convert_cm_to_yaml(commented_map)
+
+        config_file_name = f"{config_name}.yaml"
+        config_file = os.path.join(output_dir, config_file_name)
+        write_file(yaml_output, config_file)
+        return config_file
+
+    @classmethod
     def generate_extended_templates(
         cls,
         family: FamilyRevision,
         template_name: str,
         output_dir: str,
-        board: Optional[str] = None,
-        input_dir: Optional[str] = None,
+        board: str | None = None,
+        input_dir: str | None = None,
         sign: bool = False,
     ) -> list[str]:
         """Generate configuration templates based on template definition.
@@ -1033,110 +1166,42 @@ class BootableImage(FeatureBaseClass):
         mem_type = MemoryType.from_label(template_info.get("mem_type", "emmc_boot"))
         generated_files = []
 
-        # Get board-specific filenames if board is specified
-        board_filenames = {}
+        board_filenames: dict[str, str | list[str]] = {}
+        primary_filenames: dict[str, str] = {}
         if board:
             board_filenames = cls.get_board_filenames(family, board)
+            primary_filenames = {k: v for k, v in board_filenames.items() if isinstance(v, str)}
 
-        # Track container set assignments for bootable image
         container_set_assignments = {}
 
-        # Process each config section from template
         for config_def in template_info.get("configs", []):
             config_name = config_def.get("name")
             config_type = config_def.get("type", "primary_image_container_set")
-
-            # Track this config file for the bootable image
             config_file_name = f"{config_name}.yaml"
             container_set_assignments[config_type] = config_file_name
 
-            # Collect all containers for this config
             config_containers = []
-            all_ordered_schemas = []
-
-            # Process each container in this config
             for container_def in config_def.get("containers", []):
-                # Check if this is a binary container or regular container
-                if "path" in container_def:
-                    # Binary container - apply board filename override if available
-                    path = container_def["path"]
-
-                    # Apply board-specific filename if available
-                    container_name = container_def.get("name", "")
-                    if board_filenames and container_name in board_filenames:
-                        path = board_filenames[container_name]
-
-                    # Prepend input directory if specified
-                    if input_dir and not os.path.isabs(path):
-                        filename = os.path.basename(path)
-                        path = os.path.join(input_dir, filename)
-
-                    config_containers.append({"binary_container": {"path": path}})
-
-                elif "images" in container_def:
-                    # Regular container - generate configuration
-                    images = container_def["images"]
-
-                    # Generate container config using the new structure
-                    container_config = {"container": {"images": images}}
-
-                    ahab_config_dict = AHABImage.generate_config_template_for_container(
-                        family=family,
-                        container_config=container_config,
-                        board_filenames=board_filenames,
-                        input_dir=input_dir,
-                        sign=sign,
-                    )
-
-                    # Extract schemas and image names for later use
-                    ordered_schemas = ahab_config_dict.pop("_schemas", [])
-                    image_names = ahab_config_dict.pop("_image_names", [])
-
-                    all_ordered_schemas.append({"schemas": ordered_schemas, "images": image_names})
-
-                    config_containers.append(ahab_config_dict)
-
-            # Generate a single YAML file for this config with all containers
-            if config_containers:
-                # Build full config structure with all containers
-                full_config = {
-                    "family": family.name,
-                    "revision": family.revision,
-                    "output": f"{config_name}.bin",
-                    "target_memory": "standard",
-                    "containers": config_containers,
-                }
-
-                # Get validation schemas
-                schemas = AHABImage.get_validation_schemas(family)
-
-                # Build note with all containers info
-                container_descriptions = []
-                for cont_def in config_def.get("containers", []):
-                    if "images" in cont_def:
-                        container_descriptions.append(
-                            f"{cont_def['name']}: {', '.join(cont_def['images'])}"
-                        )
-                    elif "path" in cont_def:
-                        container_descriptions.append(
-                            f"{cont_def['name']}: binary container from {cont_def['path']}"
-                        )
-
-                config_gen = CommentedConfig(
-                    main_title=f"{config_name} Configuration",
-                    schemas=schemas,
-                    note="\n".join(container_descriptions),
+                container_cfg, _ = cls._process_container_def(
+                    container_def,
+                    family,
+                    primary_filenames,
+                    input_dir,
+                    sign=sign,
                 )
+                config_containers.append(container_cfg)
 
-                commented_map = config_gen.export(full_config)
-                yaml_output = CommentedConfig.convert_cm_to_yaml(commented_map)
-
-                # Save config file
-                config_file = os.path.join(output_dir, config_file_name)
-                write_file(yaml_output, config_file)
+            if config_containers:
+                config_file = cls._build_config_yaml(
+                    config_def,
+                    config_name,
+                    config_containers,
+                    family,
+                    board_filenames,
+                    output_dir,
+                )
                 generated_files.append(config_file)
 
-        # Generate bootable image configuration
         bimg_config = cls._generate_bootable_image_config_from_schema(
             family=family,
             mem_type=mem_type,
@@ -1144,7 +1209,6 @@ class BootableImage(FeatureBaseClass):
             container_set_assignments=container_set_assignments,
         )
 
-        # Save bootable image configuration
         bimg_file = os.path.join(output_dir, "bootable_image.yaml")
         write_file(bimg_config, bimg_file)
         generated_files.append(bimg_file)
