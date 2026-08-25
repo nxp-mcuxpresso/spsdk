@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2026 NXP
 #
@@ -14,7 +13,6 @@ authenticated encryption modes (CCM, GCM).
 """
 
 # Used security modules
-from typing import Optional
 
 from cryptography.hazmat.primitives import keywrap
 from cryptography.hazmat.primitives.ciphers import Cipher, aead, algorithms, modes
@@ -45,7 +43,7 @@ class Counter:
     def __init__(
         self,
         nonce: bytes,
-        ctr_value: Optional[int] = None,
+        ctr_value: int | None = None,
         ctr_byteorder_encoding: Endianness = Endianness.LITTLE,
     ):
         """Initialize AES counter mode cipher.
@@ -125,7 +123,7 @@ def aes_ecb_decrypt(key: bytes, encrypted_data: bytes) -> bytes:
     return enc.update(encrypted_data) + enc.finalize()
 
 
-def aes_cbc_encrypt(key: bytes, plain_data: bytes, iv_data: Optional[bytes] = None) -> bytes:
+def aes_cbc_encrypt(key: bytes, plain_data: bytes, iv_data: bytes | None = None) -> bytes:
     """Encrypt plain data with AES in CBC mode.
 
     The function performs AES encryption using Cipher Block Chaining (CBC) mode with PKCS7
@@ -153,7 +151,7 @@ def aes_cbc_encrypt(key: bytes, plain_data: bytes, iv_data: Optional[bytes] = No
     )
 
 
-def aes_cbc_decrypt(key: bytes, encrypted_data: bytes, iv_data: Optional[bytes] = None) -> bytes:
+def aes_cbc_decrypt(key: bytes, encrypted_data: bytes, iv_data: bytes | None = None) -> bytes:
     """Decrypt encrypted data with AES in CBC mode.
 
     The function performs AES decryption using Cipher Block Chaining (CBC) mode with
@@ -280,7 +278,7 @@ def aes_ccm_decrypt(
     return aesccm.decrypt(nonce, encrypted_data, associated_data)
 
 
-def sm4_cbc_encrypt(key: bytes, plain_data: bytes, iv_data: Optional[bytes] = None) -> bytes:
+def sm4_cbc_encrypt(key: bytes, plain_data: bytes, iv_data: bytes | None = None) -> bytes:
     """Encrypt plain data with SM4 in CBC mode.
 
     The method encrypts input data using SM4 algorithm in CBC (Cipher Block Chaining) mode.
@@ -309,7 +307,7 @@ def sm4_cbc_encrypt(key: bytes, plain_data: bytes, iv_data: Optional[bytes] = No
     )
 
 
-def sm4_cbc_decrypt(key: bytes, encrypted_data: bytes, iv_data: Optional[bytes] = None) -> bytes:
+def sm4_cbc_decrypt(key: bytes, encrypted_data: bytes, iv_data: bytes | None = None) -> bytes:
     """Decrypt encrypted data with SM4 in CBC mode.
 
     :param key: The key for data decryption.
@@ -332,7 +330,7 @@ def sm4_cbc_decrypt(key: bytes, encrypted_data: bytes, iv_data: Optional[bytes] 
 
 
 def aes_gcm_encrypt(
-    key: bytes, plain_data: bytes, init_vector: Optional[bytes] = None, associated_data: bytes = b""
+    key: bytes, plain_data: bytes, init_vector: bytes | None = None, associated_data: bytes = b""
 ) -> bytes:
     """Encrypt plain data with AES in GCM mode (Galois/Counter Mode).
 

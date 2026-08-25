@@ -73,7 +73,7 @@ fuse_version: 0
 # Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
 # private key used for sign the container header. Header can be signed by SRK. The referenced SRK must not have been
 # revoked.
-signer: ../../_data/keys/mldsa65/imgkey_mldsa65.pem
+signer: ../../_data/keys/mldsa65/imgkey_mldsa65_native.pem
 
 # ======================================================================================================================
 #                                         == Configuration of AHAB SRK table ==
@@ -90,10 +90,10 @@ srk_table:
   # sha3_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1, rsa2048, rsa4096, dilithium3, sm2.
   # Certificate may be of Certificate Authority. Dilithium algorithms are supported just in new type of AHAB container
   srk_array:
-    - ../../_data/keys/mldsa65/srk0_mldsa65.pub
-    - ../../_data/keys/mldsa65/srk1_mldsa65.pub
-    - ../../_data/keys/mldsa65/srk2_mldsa65.pub
-    - ../../_data/keys/mldsa65/srk3_mldsa65.pub
+    - ../../_data/keys/mldsa65/srk0_mldsa65_native.pub
+    - ../../_data/keys/mldsa65/srk1_mldsa65_native.pub
+    - ../../_data/keys/mldsa65/srk2_mldsa65_native.pub
+    - ../../_data/keys/mldsa65/srk3_mldsa65_native.pub
 # ======================================================================================================================
 #                                   == Secure Binary v3.1 / v4.0 Commands Settings ==
 # ======================================================================================================================

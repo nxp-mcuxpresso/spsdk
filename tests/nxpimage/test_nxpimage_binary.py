@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2023,2025-2026 NXP
 #
@@ -16,7 +15,7 @@ import filecmp
 import logging
 import os
 import struct
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 
@@ -920,7 +919,7 @@ def test_special_handling_pattern_condition_edge_cases() -> None:
 
 
 @pytest.mark.parametrize("execution_address", [None, 0, 0x1000, 0xFFFFFFFF])
-def test_execution_start_address_condition_variations(execution_address: Optional[int]) -> None:
+def test_execution_start_address_condition_variations(execution_address: int | None) -> None:
     """Test various execution start address values for special handling condition.
 
     Validates that BinaryImage correctly handles different execution start address values,

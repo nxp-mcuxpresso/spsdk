@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +13,7 @@ device filters based on various USB properties and NXP-specific device identific
 
 import platform
 import re
-from typing import Any, Optional
+from typing import Any
 
 from spsdk.utils.database import UsbId
 from spsdk.utils.misc import get_hash
@@ -57,7 +56,7 @@ class USBDeviceFilter:
 
     def __init__(
         self,
-        usb_id: Optional[str] = None,
+        usb_id: str | None = None,
         search_by_pid: bool = False,
     ):
         """Initialize the USB Device Filtering.
@@ -132,7 +131,7 @@ class USBDeviceFilter:
 
         return False
 
-    def _is_vid_or_pid(self, vid: Optional[int], pid: Optional[int]) -> bool:
+    def _is_vid_or_pid(self, vid: int | None, pid: int | None) -> bool:
         """Check if USB ID matches given vendor ID or product ID.
 
         The method validates the USB ID format using regex and compares it against
@@ -238,8 +237,8 @@ class NXPUSBDeviceFilter(USBDeviceFilter):
 
     def __init__(
         self,
-        usb_id: Optional[str] = None,
-        nxp_device_names: Optional[dict[str, list[UsbId]]] = None,
+        usb_id: str | None = None,
+        nxp_device_names: dict[str, list[UsbId]] | None = None,
     ):
         """Initialize the USB Device Filtering.
 
@@ -271,7 +270,7 @@ class NXPUSBDeviceFilter(USBDeviceFilter):
 
         return self._is_nxp_device(vendor_id)
 
-    def _is_vid_or_pid(self, vid: Optional[int], pid: Optional[int]) -> bool:
+    def _is_vid_or_pid(self, vid: int | None, pid: int | None) -> bool:
         """Check if the device matches NXP vendor ID and optionally product ID.
 
         This method validates that the vendor ID belongs to NXP's registered VIDs

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """DK6 Prog CLI interface for NXP DK6 programmer device communication.
 
 This module provides command-line interface functionality for interacting with
@@ -70,7 +70,6 @@ def print_memory_table(memories: dict[int, DK6Memory]) -> str:
         "Memory Type",
         "Access",
     ]
-
     table = prettytable.PrettyTable(header)
     table.align = "l"
     table.header = True

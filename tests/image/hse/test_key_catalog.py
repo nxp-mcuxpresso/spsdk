@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -8,7 +7,7 @@
 """Unit tests for the HSE key catalog module."""
 
 import os
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 import yaml
@@ -28,7 +27,7 @@ def family() -> FamilyRevision:
 
 
 @pytest.fixture
-def key_group_config() -> Dict[str, Any]:
+def key_group_config() -> dict[str, Any]:
     """Return a basic key group configuration for testing."""
     return {
         "muMask": "ALL",
@@ -40,7 +39,7 @@ def key_group_config() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def key_catalog_config() -> Dict[str, Any]:
+def key_catalog_config() -> dict[str, Any]:
     """Return a basic key catalog configuration for testing."""
     return {
         "family": "mcxe31b",

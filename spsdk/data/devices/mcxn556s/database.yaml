@@ -398,6 +398,9 @@ features:
 
   # ======== EL2GO TP section ========
   el2go_tp:
+    monotonic_counters:
+      - field008  # Secure_FW_Version
+      - field00C  # NS_FW_Version
     el2go_name: MCXN
     prov_method: dispatch_fw
     dispatch_method: sb_only

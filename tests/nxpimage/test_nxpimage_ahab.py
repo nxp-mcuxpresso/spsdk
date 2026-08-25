@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -16,10 +15,10 @@ generation, and re-signing workflows for AHAB-related operations in the SPSDK ec
 """
 
 import filecmp
+import logging
 import os
 import shutil
 import tempfile
-from typing import Optional, Tuple
 
 import pytest
 
@@ -45,6 +44,7 @@ from spsdk.utils.misc import (
     use_working_directory,
     value_to_bytes,
     value_to_int,
+    write_file,
 )
 from tests.cli_runner import CliRunner
 from tests.misc import compare_bin_files
@@ -121,7 +121,7 @@ def test_nxpimage_ahab_export_signed_encrypted(
     tmpdir: str,
     data_dir: str,
     config_file: str,
-    tool_override: Optional[str],
+    tool_override: str | None,
 ) -> None:
     """Test AHAB export functionality for signed and encrypted configurations.
 
@@ -155,7 +155,7 @@ def test_nxpimage_ahab_export_signed_encrypted(
             return
 
         # Helper function to find files with either oem0 or oem1
-        def find_oem_file(base_pattern: str) -> Optional[str]:
+        def find_oem_file(base_pattern: str) -> str | None:
             """Find OEM-specific file based on base pattern.
 
             Searches for OEM-specific files by replacing the {oem} placeholder in the base pattern
@@ -1023,7 +1023,7 @@ def test_nxpimage_ahab_update_keyblob_bootable_formats(
     ],
 )
 def test_nxpimage_ahab_update_keyblob_bootable_multiple_containers_with_keyblob(
-    cli_runner: CliRunner, tmpdir: str, data_dir: str, combination: Tuple[int, int, str]
+    cli_runner: CliRunner, tmpdir: str, data_dir: str, combination: tuple[int, int, str]
 ) -> None:
     image, container, expected_result = combination
     with use_working_directory(data_dir):
@@ -1196,7 +1196,7 @@ def test_nxpimage_ahab_fuses(cli_runner: CliRunner, tmpdir: str, data_dir: str) 
             assert f"efuse-program-once {fuse_start+fuse_ix} 0x{value_to_int(value):X}" in fuses
 
         # Change family to mx93
-        with open(new_config, "r", encoding="ascii") as f:
+        with open(new_config, encoding="ascii") as f:
             config_mx93 = f.read().replace("mimxrt1189", "mx93")
 
         with open(new_config, "w", encoding="ascii") as f:
@@ -1272,10 +1272,7 @@ def test_nxpimage_ahab_fuses(cli_runner: CliRunner, tmpdir: str, data_dir: str) 
             "ahab_mx95_dilithium3.bin",
             "sha3_256",
             b"\xbd>P\xf0A\xef\xde\x1d#\xd6N\xc5\x92\x03Kh\xdf\xf9*\x0bLvx\xdc\xde$=~2\x19\xde\xfe\t\x05f\xa1$\x12S\xacj\x05\xb4\x14\x83\xd4\xb37q\x9f\xb9)=\xa2m$\xa6<\xfc\xcf\xf0VM ",
-            b"\x9d\xa6\xe7p\xd1`\xe6\x16v\xe8\xcb\x9d\xd1H\x90zY\x1e\xa5\\\x9b\x17\xc0\x87V\x1dk\x1e\xb1\x07\xcf-^\xc4hm5\xb2\x97\xfaV\xd7c\x01\xcaLA\xc1^\x08PE\xb8\x1c\xa7\x8bt\xa7m\xda\xfe\x94\xb7\xef",
-            marks=pytest.mark.skipif(
-                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
-            ),
+            b"\xbc\x87}\xc4.\xa6\x18C\x99\xcb\xe8+6\xf2\xa7\x9f\xf3\xa5\x05\xbet\x98\x03\xc6\xb845\x1eh8\xf8wC\xf8y\xd2I\x9cR}\xd5\xf1[\x12f\xfbQu\xe6{:\xd6\xe2\x07\x91\xb9\xbe\xddu~d)\xa3\xfa",
         ),
         pytest.param(
             "container_sign_config_mx95b0_rsa4096_mldsa65_legacy.yaml",
@@ -1285,7 +1282,7 @@ def test_nxpimage_ahab_fuses(cli_runner: CliRunner, tmpdir: str, data_dir: str) 
             b"u4\xaf\xef\x9f\x86\x04\xd1\r\xf2\xefT\x99\x1c\xac\xe9\x81X, \xb5r\xf23&\x86\xe3w\xd1\xca\xd0\x146<\xcb\xcd\xf5v\xaf\xa2R\xf27\xf6\x15\xd1\n\xb5&\xfc\xc9\x8f\xb1\x86\x1f\xc9[r\xa7>\xc2S\xd5\x03",
             b"\x9d\xa6\xe7p\xd1`\xe6\x16v\xe8\xcb\x9d\xd1H\x90zY\x1e\xa5\\\x9b\x17\xc0\x87V\x1dk\x1e\xb1\x07\xcf-^\xc4hm5\xb2\x97\xfaV\xd7c\x01\xcaLA\xc1^\x08PE\xb8\x1c\xa7\x8bt\xa7m\xda\xfe\x94\xb7\xef",
             marks=pytest.mark.skipif(
-                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
+                not IS_DILITHIUM_SUPPORTED, reason="Legacy ML-DSA fixtures require spsdk-pqc"
             ),
         ),
     ],
@@ -1350,7 +1347,7 @@ def test_nxpimage_ahab_sign(
         ahab = AHABImage.parse(signed_image, family_revision)
 
         # Helper function to find files with either oem0 or oem1
-        def find_oem_file(base_pattern: str) -> Optional[str]:
+        def find_oem_file(base_pattern: str) -> str | None:
             """Find OEM-specific file based on base pattern.
 
             Searches for OEM-specific files by replacing the {oem} placeholder in the base pattern
@@ -1551,6 +1548,39 @@ def test_nxpimage_ahab_sign_emmc(cli_runner: CliRunner, tmpdir: str, data_dir: s
             f"AHAB container must be at 0x8000 in eMMC format, "
             f"but found at 0x{primary_segments[0].full_image_offset:x}"
         )
+
+
+def test_bootable_image_parse_suppresses_probe_container_type_errors(
+    data_dir: str, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Test bootable-image probing does not emit error logs for unsupported probe candidates.
+
+    BootableImage parsing probes multiple memory types. Some probe offsets may accidentally
+    match an AHAB V1-like header pattern even for a V2-only family (mimx943). Those expected
+    probe failures must not be logged at ERROR level.
+
+    :param data_dir: Directory containing test data files.
+    :param caplog: Pytest log capture fixture.
+    """
+    binary_path = os.path.join(
+        data_dir,
+        "bootable_image",
+        "mimx943",
+        "serial_downloader",
+        "inputs",
+        "mx943a0-ahab-container.img",
+    )
+    binary = bytearray(load_binary(binary_path))
+
+    # Inject a minimal V1-like header pattern at 0x1000 to trigger a probe mismatch
+    # for one of alternative memory type candidates while serial_downloader parsing remains valid.
+    binary[0x1000:0x1010] = bytes.fromhex("00100087") + (b"\x00" * 12)
+
+    with caplog.at_level(logging.ERROR, logger="spsdk.image.ahab.ahab_image"):
+        bimg = BootableImage.parse(bytes(binary), family=FamilyRevision("mimx943"))
+
+    assert bimg.mem_type.label == "serial_downloader"
+    assert not any("does not support container type V1" in rec.message for rec in caplog.records)
 
 
 @pytest.mark.skip(reason="not ready yet")
@@ -1768,3 +1798,148 @@ def test_nxpimage_ahab_keyblob_export_parse_roundtrip(
         if os.path.isfile(dek_file):
             decrypted_dek = load_binary(dek_file)
             assert decrypted_dek == original_dek, "Decrypted DEK does not match original"
+
+
+def test_nxpimage_ahab_parse_nxp_containers_as_binary(data_dir: str, tmpdir: str) -> None:
+    """Test SPSDK-3746: NXP containers are extracted as binary_container by default.
+
+    Verifies that when parsing an AHAB binary that contains NXP-signed containers
+    (flag_srk_set == FlagsSrkSet.NXP), the default behavior (parse_nxp=False) extracts
+    those containers to a ``binary_container`` file rather than fully parsing them.
+    The OEM container must still be fully parsed.
+
+    :param data_dir: Directory containing test data files.
+    :param tmpdir: Temporary directory for test output files.
+    """
+    binary_path = os.path.join(data_dir, "ahab", "cntr_signed_ctcm_cm33.bin")
+    original = load_binary(binary_path)
+    ahab = AHABImage.parse(original, FamilyRevision("mimxrt1189"), "nor")
+    ahab.verify().validate()
+
+    # Default: parse_nxp=False — NXP container must become binary_container
+    cfg = ahab.get_config(tmpdir, parse_nxp=False)
+    containers = cfg["containers"]
+    assert len(containers) == 2
+    assert (
+        "binary_container" in containers[0]
+    ), "NXP container must be extracted as binary_container"
+    assert "container" in containers[1], "OEM container must be fully parsed"
+
+    nxp_bin_path = os.path.join(tmpdir, containers[0]["binary_container"]["path"])
+    assert os.path.isfile(nxp_bin_path), "NXP binary file must be created"
+
+    # The NXP binary must be re-parseable and contain the NXP container
+    nxp_bin = load_binary(nxp_bin_path)
+    ahab_nxp = AHABImage.parse(nxp_bin, FamilyRevision("mimxrt1189"), "nor")
+    assert len(ahab_nxp.ahab_containers) == 1
+    assert ahab_nxp.ahab_containers[0].flag_srk_set == FlagsSrkSet.NXP
+
+
+def test_nxpimage_ahab_parse_nxp_containers_full_with_flag(data_dir: str, tmpdir: str) -> None:
+    """Test SPSDK-3746: --parse-nxp flag enables full parsing of NXP containers.
+
+    Verifies that when parse_nxp=True, all containers including NXP-signed ones are
+    fully parsed as ``container`` entries (not binary_container).
+
+    :param data_dir: Directory containing test data files.
+    :param tmpdir: Temporary directory for test output files.
+    """
+    binary_path = os.path.join(data_dir, "ahab", "cntr_signed_ctcm_cm33.bin")
+    original = load_binary(binary_path)
+    ahab = AHABImage.parse(original, FamilyRevision("mimxrt1189"), "nor")
+    ahab.verify().validate()
+
+    # parse_nxp=True — all containers must be fully parsed
+    cfg = ahab.get_config(tmpdir, parse_nxp=True)
+    containers = cfg["containers"]
+    assert len(containers) == 2
+    assert all("container" in c for c in containers), "All containers must be fully parsed"
+    assert not any("binary_container" in c for c in containers)
+
+
+def test_nxpimage_ahab_parse_nxp_cli_default(
+    cli_runner: CliRunner, data_dir: str, tmpdir: str
+) -> None:
+    """Test SPSDK-3746: CLI 'ahab parse' without --parse-nxp extracts NXP as binary_container.
+
+    Runs the CLI command without the --parse-nxp flag and checks that the output config
+    YAML contains a binary_container entry for the NXP container.
+
+    :param cli_runner: CLI runner instance for executing nxpimage commands.
+    :param data_dir: Directory containing test data files.
+    :param tmpdir: Temporary directory for test output files.
+    """
+    with use_working_directory(data_dir):
+        cmd = f"ahab parse -f mimxrt1189 -b ahab/cntr_signed_ctcm_cm33.bin -o {tmpdir}/parsed"
+        cli_runner.invoke(nxpimage.main, cmd.split())
+
+        config_path = os.path.join(tmpdir, "parsed", "parsed_config.yaml")
+        assert os.path.isfile(config_path)
+        config_text = load_text(config_path)
+        assert "binary_container" in config_text, "NXP container must appear as binary_container"
+        assert os.path.isfile(os.path.join(tmpdir, "parsed", "ahab_nxp_containers_0.bin"))
+
+
+def test_nxpimage_ahab_parse_nxp_cli_with_flag(
+    cli_runner: CliRunner, data_dir: str, tmpdir: str
+) -> None:
+    """Test SPSDK-3746: CLI 'ahab parse --parse-nxp' fully parses NXP containers.
+
+    Runs the CLI command with the --parse-nxp flag and checks that the output config
+    YAML contains only regular container entries (no binary_container).
+
+    :param cli_runner: CLI runner instance for executing nxpimage commands.
+    :param data_dir: Directory containing test data files.
+    :param tmpdir: Temporary directory for test output files.
+    """
+    with use_working_directory(data_dir):
+        cmd = f"ahab parse -f mimxrt1189 -b ahab/cntr_signed_ctcm_cm33.bin -o {tmpdir}/parsed --parse-nxp"
+        cli_runner.invoke(nxpimage.main, cmd.split())
+
+        config_path = os.path.join(tmpdir, "parsed", "parsed_config.yaml")
+        assert os.path.isfile(config_path)
+        config_text = load_text(config_path)
+        assert "binary_container" not in config_text, "No binary_container with --parse-nxp"
+
+
+def test_nxpimage_ahab_parse_nxp_roundtrip(data_dir: str, tmpdir: str) -> None:
+    """Test SPSDK-3746: Full roundtrip parse → binary_container config → reload → export == original.
+
+    Verifies that an AHAB image containing an NXP-signed container (goes to binary_container)
+    and an unsigned OEM container (srk_set=none, no signing keys needed) can be fully
+    reconstructed from the parsed config. This is the primary use case: the user makes a
+    small change to the unsigned OEM container while the NXP container is preserved as-is.
+
+    The test uses test_img_for_sign.bin which contains:
+    - Container 0: NXP-signed (extracted as binary_container)
+    - Container 1: unsigned (srk_set=none, can be rebuilt without keys)
+
+    The file is a full flash image; only the AHAB portion (= len(recreated)) is compared.
+
+    :param data_dir: Directory containing test data files.
+    :param tmpdir: Temporary directory for test output files.
+    """
+    binary_path = os.path.join(data_dir, "ahab", "test_img_for_sign.bin")
+    original = load_binary(binary_path)
+    ahab = AHABImage.parse(original, FamilyRevision("mimxrt1189"), "nor")
+    ahab.verify().validate()
+
+    # Verify the containers are NXP + unsigned (no keys needed)
+    assert ahab.ahab_containers[0].flag_srk_set == FlagsSrkSet.NXP
+    assert ahab.ahab_containers[1].flag_srk_set == FlagsSrkSet.NONE
+
+    # Parse to config with binary_container for NXP
+    yaml_str = ahab.get_config_yaml(tmpdir, parse_nxp=False)
+    config_path = os.path.join(tmpdir, "config.yaml")
+    write_file(yaml_str, config_path)
+
+    # Reload from config (no keys needed — NXP is binary_container, OEM is unsigned)
+    cfg = Config.create_from_file(config_path)
+    ahab2 = AHABImage.load_from_config(cfg)
+    ahab2.update_fields()
+    ahab2.verify().validate()
+    recreated = ahab2.export()
+
+    # The recreated binary must match the original AHAB portion exactly
+    ahab_size = len(recreated)
+    assert original[:ahab_size] == recreated, "Roundtrip mismatch: AHAB portion differs"

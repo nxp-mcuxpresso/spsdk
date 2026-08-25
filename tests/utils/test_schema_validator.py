@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -14,7 +13,7 @@ the SPSDK framework.
 
 import logging
 import os
-from typing import Any, Optional
+from typing import Any
 from unittest import mock
 
 import pytest
@@ -244,7 +243,7 @@ def test_schema_validator_required(test_vector: dict[str, Any], result: bool) ->
             check_config(test_vector, [schema])
 
 
-def _is_yaml_comment(yaml_data: str, comment: str, key: Optional[str] = None) -> bool:
+def _is_yaml_comment(yaml_data: str, comment: str, key: str | None = None) -> bool:
     """Check if specified text exists in YAML comments.
 
     Searches through YAML data line by line to determine if the given comment text

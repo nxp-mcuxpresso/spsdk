@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -15,7 +14,7 @@ post-quantum cryptography certificates for container signature verification.
 import logging
 import os
 from struct import pack, unpack
-from typing import Any, Optional, Type, cast
+from typing import Any, cast
 
 from typing_extensions import Self
 
@@ -156,11 +155,11 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         permissions_data: bytes = b"",
         permission_data_ext: int = 0,
         fuse_version: int = 0,
-        uuid: Optional[bytes] = None,
-        public_key_0: Optional[SRKRecordV2] = None,
-        signature_provider_0: Optional[SignatureProvider] = None,
-        public_key_1: Optional[SRKRecordV2] = None,
-        signature_provider_1: Optional[SignatureProvider] = None,
+        uuid: bytes | None = None,
+        public_key_0: SRKRecordV2 | None = None,
+        signature_provider_0: SignatureProvider | None = None,
+        public_key_1: SRKRecordV2 | None = None,
+        signature_provider_1: SignatureProvider | None = None,
     ):
         """Initialize AHAB certificate container.
 
@@ -445,7 +444,7 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
             )
         return cert
 
-    def verify(self, srk: Optional[SRKTableArray] = None) -> Verifier:
+    def verify(self, srk: SRKTableArray | None = None) -> Verifier:
         """Verify container certificate data.
 
         Performs comprehensive verification of the certificate including header validation,
@@ -528,7 +527,7 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
 
             srk_table_cnt = srk.srk_count
 
-            def check_key_type(ix: int, srk_key: SRKRecordV2, key: Optional[SRKRecordV2]) -> None:
+            def check_key_type(ix: int, srk_key: SRKRecordV2, key: SRKRecordV2 | None) -> None:
                 """Validate SRK key type compatibility with certificate key.
 
                 Compares the signing algorithm, hash algorithm, key size, and SRK flags between
@@ -582,7 +581,7 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
             data_to_sign = self.get_signature_data()
 
             # Verify Signature
-            def check_signature(ix: int, signature: Optional[ContainerSignature]) -> None:
+            def check_signature(ix: int, signature: ContainerSignature | None) -> None:
                 """Verify signature against SRK table record.
 
                 Validates a container signature using the corresponding SRK (Super Root Key) table record
@@ -605,15 +604,31 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
                     sig_verify = signature.verify()
                     signatures_ver.add_child(sig_verify)
                     if not sig_verify.has_errors:
-                        signatures_ver.add_record(
-                            f"Signature {ix} verification",
-                            srk_public_key.verify_signature(
-                                signature=signature.signature_data,
-                                data=data_to_sign,
-                                algorithm=srk_hash,
-                            ),
-                            bytes_to_print(signature.signature_data),
+                        sign_ok = srk_public_key.verify_signature(
+                            signature=signature.signature_data,
+                            data=data_to_sign,
+                            algorithm=srk_hash,
                         )
+                        if sign_ok:
+                            signatures_ver.add_record(
+                                f"Signature {ix} verification",
+                                sign_ok,
+                                bytes_to_print(signature.signature_data),
+                            )
+                        else:
+                            signatures_ver.add_record(
+                                f"Signature {ix} verification",
+                                VerifierResult.ERROR,
+                                (
+                                    "Certificate signature verification FAILED. "
+                                    f"The SRK key (ID: {used_srk_id}) does not match "
+                                    "the key that signed this certificate. Ensure that "
+                                    "all key files (SRK, IMG, certificate) belong to "
+                                    "the same key set. If keys were re-generated, "
+                                    "re-create the certificate as well. "
+                                    f"Signature: {bytes_to_print(signature.signature_data)}"
+                                ),
+                            )
 
             signatures_ver = Verifier("Signatures")
             srk_checks_ver.add_child(signatures_ver)
@@ -685,7 +700,7 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         )
 
     @classmethod
-    def parse(cls, data: bytes, family: Optional[FamilyRevision] = None) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision | None = None) -> Self:
         """Parse input binary chunk to the container object.
 
         The method parses binary data containing an AHAB certificate block and reconstructs
@@ -1068,7 +1083,7 @@ class AhabCertificateMcuPqc(AhabCertificate):
         )
 
 
-def get_ahab_certificate_class(family: FamilyRevision) -> Type[AhabCertificate]:
+def get_ahab_certificate_class(family: FamilyRevision) -> type[AhabCertificate]:
     """Get the appropriate AHAB certificate class based on the MCU family revision.
 
     This method retrieves the certificate type from the database for the given family

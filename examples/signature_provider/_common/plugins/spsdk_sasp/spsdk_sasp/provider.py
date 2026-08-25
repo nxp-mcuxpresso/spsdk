@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,6 @@ signature capabilities for SPSDK applications.
 """
 
 import base64
-from typing import Optional
 
 import requests
 
@@ -37,7 +35,7 @@ class SuperAwesomeSP(SignatureProvider):
     identifier = "sasp"
 
     def __init__(
-        self, key_number: int, key_type: str, hash_alg: Optional[EnumHashAlgorithm] = None, **kwargs
+        self, key_number: int, key_type: str, hash_alg: EnumHashAlgorithm | None = None, **kwargs
     ) -> None:
         """Initialize the Super Awesome SignatureProvider.
 

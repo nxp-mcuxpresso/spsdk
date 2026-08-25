@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +13,7 @@ external flash memory.
 """
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from typing_extensions import Self
 
@@ -70,7 +69,7 @@ class FCF(SegmentBase):
         return self._registers
 
     @classmethod
-    def parse(cls, binary: bytes, offset: int = 0, family: Optional[FamilyRevision] = None) -> Self:
+    def parse(cls, binary: bytes, offset: int = 0, family: FamilyRevision | None = None) -> Self:
         """Parse binary block into FCF object.
 
         :param binary: Binary image containing FCF data.

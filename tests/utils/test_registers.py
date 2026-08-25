@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK registers utility test suite.
 
 This module contains comprehensive tests for the SPSDK registers utility functionality,
@@ -13,7 +13,7 @@ and configuration management.
 """
 
 import os
-from typing import Any, Optional
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -683,7 +683,7 @@ def test_bitfield_enums() -> None:
         assert index == bitfield.get_enum_constant(f"{TEST_ENUM_NAME}{index}")
         assert enums[index].name in enum_names
 
-    for index in range((1 << TEST_BITFIELD_WIDTH)):
+    for index in range(1 << TEST_BITFIELD_WIDTH):
         bitfield.set_value(index)
         if index < (1 << TEST_BITFIELD_WIDTH) - 1:
             assert f"{TEST_ENUM_NAME}{index}" == bitfield.get_enum_value()
@@ -1055,7 +1055,7 @@ def test_load_grouped_register_value_compatibility(data_dir: str) -> None:
     ]
     regs._load_spec(data_dir + "/grp_regs.json", grouped_regs=group)
     yaml = YAML()
-    with open(data_dir + "/group_none_reg.yml", "r", encoding="utf-8") as yml_file:
+    with open(data_dir + "/group_none_reg.yml", encoding="utf-8") as yml_file:
         data = yaml.load(yml_file)
     regs.load_from_config(data)
     reg = regs.find_reg("TestRegA")
@@ -1352,9 +1352,9 @@ class SPSDK_TestDatabase:
     :cvar _quick_info: Cached QuickDatabase instance for quick access operations.
     """
 
-    _instance: Optional["SPSDK_TestDatabase"] = None
-    _db: Optional[Database] = None
-    _quick_info: Optional[QuickDatabase] = None
+    _instance: "SPSDK_TestDatabase | None" = None
+    _db: Database | None = None
+    _quick_info: QuickDatabase | None = None
 
     @property
     def db(self) -> Database:

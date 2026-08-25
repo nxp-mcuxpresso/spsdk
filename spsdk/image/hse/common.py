@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -15,7 +14,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import IntEnum
 from struct import calcsize, pack, unpack
-from typing import Any, Optional, Type
+from typing import Any
 
 from typing_extensions import Self
 
@@ -248,7 +247,7 @@ class KeyHandle:
         try:
             return KeyCatalogId.from_tag(catalog_id)
         except SPSDKKeyError:
-            raise SPSDKError("Invalid catalog with id: 0x{:02X}".format(catalog_id))
+            raise SPSDKError(f"Invalid catalog with id: 0x{catalog_id:02X}")
 
     def export(self) -> bytes:
         """Export the key handle to bytes.
@@ -360,7 +359,7 @@ class AuthScheme:
     # export() always pads to this size so the hseSmrEntry_t binary layout is correct.
     AUTH_SCHEME_TOTAL_SIZE: int = 12
 
-    _registry: dict[AuthSchemeEnum, Type["AuthScheme"]] = {}
+    _registry: dict[AuthSchemeEnum, type["AuthScheme"]] = {}
 
     def __repr__(self) -> str:
         """Return representation of authentication scheme.
@@ -399,7 +398,7 @@ class AuthScheme:
         return self.get_size()
 
     @classmethod
-    def register(cls, scheme_cls: Type["AuthScheme"]) -> Type["AuthScheme"]:
+    def register(cls, scheme_cls: type["AuthScheme"]) -> type["AuthScheme"]:
         """Register a MAC scheme implementation.
 
         :param mac_scheme_cls: The MAC scheme class to register
@@ -411,7 +410,7 @@ class AuthScheme:
         return scheme_cls
 
     @classmethod
-    def auth_schemes(cls) -> dict[AuthSchemeEnum, Type["AuthScheme"]]:
+    def auth_schemes(cls) -> dict[AuthSchemeEnum, type["AuthScheme"]]:
         """Get the registry of all registered authentication schemes."""
         return cls._registry
 
@@ -1076,10 +1075,10 @@ class KeyContainer:
         self,
         key_container_len: int = 0,
         key_container_addr: int = 0,
-        auth_key_handle: Optional[KeyHandle] = None,
-        auth_scheme: Optional[AuthScheme] = None,
-        auth_len: Optional[tuple] = None,
-        auth_addr: Optional[tuple] = None,
+        auth_key_handle: KeyHandle | None = None,
+        auth_scheme: AuthScheme | None = None,
+        auth_len: tuple | None = None,
+        auth_addr: tuple | None = None,
     ):
         """Initialize HSE Key Container for authenticated key import operations.
 
@@ -1103,7 +1102,7 @@ class KeyContainer:
         self.key_container_addr: int = key_container_addr
         # Authentication parameters
         self.auth_key_handle: KeyHandle = auth_key_handle or KeyHandle(KeyHandle.INVALID_KEY_HANDLE)
-        self.auth_scheme: Optional[AuthScheme] = auth_scheme
+        self.auth_scheme: AuthScheme | None = auth_scheme
         # Authentication tag parameters
         self.auth_len: tuple = auth_len or (0, 0)
         if len(self.auth_len) != 2:

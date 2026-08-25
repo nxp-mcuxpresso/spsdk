@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -14,11 +13,12 @@ covering basic operations, debug port access, memory operations, and error handl
 import pytest
 
 from spsdk.debuggers.debug_probe import (
+    MemorySpace,
     SPSDKDebugProbeError,
     SPSDKDebugProbeNotOpenError,
     SPSDKDebugProbeTransferError,
 )
-from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
+from tests.debuggers.debug_probe_virtual import DebugProbeDscVirtual, DebugProbeVirtual
 
 
 def test_virtualprobe_basic() -> None:
@@ -262,3 +262,130 @@ def test_virtualprobe_block_memory() -> None:
     virtual_probe.mem_block_write(0x6004, bytes([0xDD] * 8))
     overlapped_read = virtual_probe.mem_block_read(0x6000, 12)
     assert overlapped_read == bytes([0xCC] * 4 + [0xDD] * 8)
+
+
+# ---------------------------------------------------------------------------
+# DebugProbeDscVirtual tests
+# ---------------------------------------------------------------------------
+
+
+def test_dsc_virtual_data_space_block_read_write() -> None:
+    """Test DATA space block memory read/write via DebugProbeDscVirtual.
+
+    Verifies that block writes and reads using the default DATA (X:) space
+    round-trip correctly for typical byte counts.
+    """
+    probe = DebugProbeDscVirtual()
+
+    data = bytes([0x11, 0x22, 0x33, 0x44, 0x55, 0x66])
+    probe.mem_block_write(0x1000, data)
+    result = probe.mem_block_read(0x1000, len(data))
+    assert result == data
+
+
+def test_dsc_virtual_program_space_block_read_write() -> None:
+    """Test PROGRAM space block memory read/write via DebugProbeDscVirtual.
+
+    Verifies that block writes and reads using the PROGRAM (P:) space
+    round-trip correctly and do not contaminate DATA space.
+    """
+    probe = DebugProbeDscVirtual()
+
+    p_data = bytes([0xAA, 0xBB, 0xCC, 0xDD])
+    probe.mem_block_write(0x2000, p_data, space=MemorySpace.PROGRAM)
+    result = probe.mem_block_read(0x2000, len(p_data), space=MemorySpace.PROGRAM)
+    assert result == p_data
+
+    # DATA space at same address must still be zero
+    data_result = probe.mem_block_read(0x2000, len(p_data))
+    assert data_result == b"\x00" * len(p_data)
+
+
+def test_dsc_virtual_data_and_program_independence() -> None:
+    """Test that DATA and PROGRAM spaces are fully independent.
+
+    Writing to DATA space must not affect PROGRAM space and vice-versa.
+    """
+    probe = DebugProbeDscVirtual()
+
+    probe.mem_block_write(0x0100, bytes([0x12, 0x34]))
+    probe.mem_block_write(0x0100, bytes([0x56, 0x78]), space=MemorySpace.PROGRAM)
+
+    assert probe.mem_block_read(0x0100, 2) == bytes([0x12, 0x34])
+    assert probe.mem_block_read(0x0100, 2, space=MemorySpace.PROGRAM) == bytes([0x56, 0x78])
+
+
+def test_dsc_virtual_mem_reg_read_data_space() -> None:
+    """Test mem_reg_read for DATA space returns a 32-bit value from two consecutive words."""
+    probe = DebugProbeDscVirtual()
+
+    # Store low word at addr, high word at addr+1
+    probe.data_memory[0x0010] = 0xCDEF  # low
+    probe.data_memory[0x0011] = 0xAB12  # high
+
+    value = probe.mem_reg_read(0x0010, space=MemorySpace.DATA)
+    assert value == 0xAB12CDEF
+
+
+def test_dsc_virtual_mem_reg_read_program_space() -> None:
+    """Test mem_reg_read for PROGRAM space returns the 16-bit word at the given address."""
+    probe = DebugProbeDscVirtual()
+
+    probe.program_memory[0x0020] = 0xBEEF
+
+    value = probe.mem_reg_read(0x0020, space=MemorySpace.PROGRAM)
+    assert value == 0xBEEF
+    # Upper 16 bits must be zero for PROGRAM space
+    assert value & 0xFFFF0000 == 0
+
+
+def test_dsc_virtual_mem_reg_write_data_space() -> None:
+    """Test mem_reg_write for DATA space stores two 16-bit words correctly."""
+    probe = DebugProbeDscVirtual()
+
+    probe.mem_reg_write(0x0030, 0xDEADBEEF, space=MemorySpace.DATA)
+
+    assert probe.data_memory[0x0030] == 0xBEEF
+    assert probe.data_memory[0x0031] == 0xDEAD
+
+
+def test_dsc_virtual_mem_reg_write_program_space() -> None:
+    """Test mem_reg_write for PROGRAM space stores only the lower 16-bit word."""
+    probe = DebugProbeDscVirtual()
+
+    probe.mem_reg_write(0x0040, 0x00001234, space=MemorySpace.PROGRAM)
+
+    assert probe.program_memory[0x0040] == 0x1234
+    # DATA space at same address must be unaffected
+    assert 0x0040 not in probe.data_memory
+
+
+def test_dsc_virtual_program_space_backward_compat_default() -> None:
+    """Test that calling mem_block_read/write without space defaults to DATA space."""
+    probe = DebugProbeDscVirtual()
+
+    probe.mem_block_write(0x0050, bytes([0x11, 0x22, 0x33, 0x44]))
+    result = probe.mem_block_read(0x0050, 4)
+    assert result == bytes([0x11, 0x22, 0x33, 0x44])
+
+    # PROGRAM space at same address must still be empty
+    assert 0x0050 not in probe.program_memory
+
+
+def test_dsc_virtual_enum_labels() -> None:
+    """Test DscMemorySpace enum has expected labels for Click CLI integration."""
+    labels = MemorySpace.labels()
+    assert "data" in labels
+    assert "program" in labels
+    assert MemorySpace.from_label("data") == MemorySpace.DATA
+    assert MemorySpace.from_label("program") == MemorySpace.PROGRAM
+
+
+def test_dsc_virtual_odd_byte_count_program_space() -> None:
+    """Test that an odd byte count is handled correctly in PROGRAM space block ops."""
+    probe = DebugProbeDscVirtual()
+
+    # 3-byte write: should be padded to 2 words (4 bytes); read back 3 bytes
+    probe.mem_block_write(0x0060, bytes([0xAA, 0xBB, 0xCC]), space=MemorySpace.PROGRAM)
+    result = probe.mem_block_read(0x0060, 3, space=MemorySpace.PROGRAM)
+    assert result == bytes([0xAA, 0xBB, 0xCC])

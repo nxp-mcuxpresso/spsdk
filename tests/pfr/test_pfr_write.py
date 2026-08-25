@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Tests for PFR write methods and error paths."""
 
+import struct
 from unittest.mock import MagicMock
 
 import pytest
@@ -19,6 +19,7 @@ from spsdk.utils.family import FamilyRevision
 LPC55S6X = FamilyRevision("lpc55s6x")
 LPC55S3X = FamilyRevision("lpc55s3x")
 MCXA286 = FamilyRevision("mcxa286")
+MCXA457 = FamilyRevision("mcxa457")
 
 
 # ---------------------------------------------------------------------------
@@ -103,8 +104,8 @@ def test_write_to_device_single_region_failure() -> None:
 
 
 def test_write_to_device_single_region_cfpa_success() -> None:
-    """write_to_device should succeed for CFPA single region."""
-    cfpa = CFPA(LPC55S6X)
+    """write_to_device should succeed for CFPA single region (family without monotonic counters)."""
+    cfpa = CFPA(LPC55S3X)
     write_mock = MagicMock(return_value=True)
     result = cfpa.write_to_device(write_mock)
     assert result is True
@@ -157,7 +158,9 @@ def test_write_to_device_cfpa_cmpa_split_success() -> None:
     obj = UPDATE_CFPA_CMPA(MCXA286)
     assert obj.additional_data_config.type == "CFPA_CMPA_SPLIT"
     write_mock = MagicMock(return_value=True)
-    result = obj.write_to_device(write_mock)
+    cfpa = obj.get_region("CFPA")
+    read_mock = MagicMock(return_value=b"\x00" * cfpa.registers_size)
+    result = obj.write_to_device(write_mock, read_method=read_mock)
     assert result is True
     # Should write at least CFPA and CMPA (and UPDATE if present)
     assert write_mock.call_count >= 2
@@ -167,17 +170,20 @@ def test_write_to_device_cfpa_cmpa_split_cfpa_write_fails() -> None:
     """CFPA_CMPA_SPLIT write should return False if CFPA write fails."""
     obj = UPDATE_CFPA_CMPA(MCXA286)
     cfpa = obj.get_region("CFPA")
+    read_mock = MagicMock(return_value=b"\x00" * cfpa.registers_size)
     write_mock = MagicMock(side_effect=lambda addr, data: addr != cfpa.write_address)
-    result = obj.write_to_device(write_mock)
+    result = obj.write_to_device(write_mock, read_method=read_mock)
     assert result is False
 
 
 def test_write_to_device_cfpa_cmpa_split_cmpa_write_fails() -> None:
     """CFPA_CMPA_SPLIT write should return False if CMPA write fails."""
     obj = UPDATE_CFPA_CMPA(MCXA286)
+    cfpa = obj.get_region("CFPA")
     cmpa = obj.get_region("CMPA")
+    read_mock = MagicMock(return_value=b"\x00" * cfpa.registers_size)
     write_mock = MagicMock(side_effect=lambda addr, data: addr != cmpa.write_address)
-    result = obj.write_to_device(write_mock)
+    result = obj.write_to_device(write_mock, read_method=read_mock)
     assert result is False
 
 
@@ -195,8 +201,9 @@ def test_write_to_device_cfpa_cmpa_split_with_additional_data() -> None:
     # Set CFPA additional data
     cfpa.additional_data = b"\xaa" * 16
 
+    read_mock = MagicMock(return_value=b"\x00" * cfpa.registers_size)
     write_mock = MagicMock(return_value=True)
-    result = obj.write_to_device(write_mock)
+    result = obj.write_to_device(write_mock, read_method=read_mock)
     assert result is True
     # Should have written CFPA, CMPA, AD block, UPDATE = 4 calls
     assert write_mock.call_count >= 3
@@ -400,3 +407,132 @@ def test_multi_region_parse_without_family_raises() -> None:
     """UPDATE_CFPA_CMPA.parse without family parameter should raise SPSDKPfrError."""
     with pytest.raises(SPSDKPfrError, match="family parameter is mandatory"):
         UPDATE_CFPA_CMPA.parse(b"\x00" * 1024, family=None)
+
+
+# ---------------------------------------------------------------------------
+# CFPA monotonic counter preprocessing tests
+# ---------------------------------------------------------------------------
+
+
+def _make_cfpa_device_data(cfpa: CFPA, field_values: dict[str, int]) -> bytes:
+    """Build fake raw CFPA bytes with specified register values.
+
+    :param cfpa: CFPA instance (used for registers_size and register offsets).
+    :param field_values: Mapping of register name → value to embed in the binary.
+    :return: Bytes of length ``cfpa.registers_size`` with given values set.
+    """
+    data = bytearray(cfpa.registers_size)
+    for name, value in field_values.items():
+        reg = cfpa.registers.find_reg(name)
+        struct.pack_into("<I", data, reg.offset, value)
+    return bytes(data)
+
+
+def test_cfpa_monotonic_counter_names_mcxa457() -> None:
+    """CFPA for mcxa457 should have non-empty monotonic_counter_names."""
+    cfpa = CFPA(MCXA457)
+    names = cfpa.monotonic_counter_names
+    assert len(names) > 0
+    assert "field010" in names  # EE0_FW_Version
+
+
+def test_cfpa_monotonic_counter_names_empty_for_lpc55s3x() -> None:
+    """CFPA for lpc55s3x has no monotonic_counter_names declared."""
+    cfpa = CFPA(LPC55S3X)
+    assert cfpa.monotonic_counter_names == []
+
+
+def test_preprocess_retain_keeps_current_value() -> None:
+    """MONOTONIC_RETAIN (0xFFFFFFFF) should be replaced by the current device value."""
+    cfpa = CFPA(MCXA457)
+    reg = cfpa.registers.find_reg("EE0_FW_Version")
+    reg.set_value(CFPA.MONOTONIC_RETAIN)
+
+    device_data = _make_cfpa_device_data(cfpa, {"EE0_FW_Version": 5})
+    read_mock = MagicMock(return_value=device_data)
+
+    cfpa._preprocess_monotonic_counters(read_mock)
+
+    assert reg.get_value() == 5
+
+
+def test_preprocess_increment_adds_one() -> None:
+    """MONOTONIC_INCREMENT (0xFFFFFFFE) should be replaced by current device value + 1."""
+    cfpa = CFPA(MCXA457)
+    reg = cfpa.registers.find_reg("EE1_FW_Version")
+    reg.set_value(CFPA.MONOTONIC_INCREMENT)
+
+    device_data = _make_cfpa_device_data(cfpa, {"EE1_FW_Version": 3})
+    read_mock = MagicMock(return_value=device_data)
+
+    cfpa._preprocess_monotonic_counters(read_mock)
+
+    assert reg.get_value() == 4
+
+
+def test_preprocess_absolute_value_unchanged() -> None:
+    """A normal (absolute) register value must not be touched by preprocessing."""
+    cfpa = CFPA(MCXA457)
+    reg = cfpa.registers.find_reg("EE0_FW_Version")
+    reg.set_value(42)
+
+    read_mock = MagicMock(return_value=b"\x00" * cfpa.registers_size)
+    cfpa._preprocess_monotonic_counters(read_mock)
+
+    # read_mock should NOT have been called because no sentinel was present
+    read_mock.assert_not_called()
+    assert reg.get_value() == 42
+
+
+def test_preprocess_no_read_when_no_sentinels() -> None:
+    """read_method must not be called when no sentinel values are present in the registers."""
+    cfpa = CFPA(MCXA457)
+    # Leave all registers at default (0) — no sentinel
+    read_mock = MagicMock(return_value=b"\x00" * cfpa.registers_size)
+    cfpa._preprocess_monotonic_counters(read_mock)
+    read_mock.assert_not_called()
+
+
+def test_preprocess_skipped_for_chip_without_monotonic_counters() -> None:
+    """Chips without monotonic_counters in DB must not trigger any read."""
+    cfpa = CFPA(LPC55S3X)
+    read_mock = MagicMock(return_value=b"\x00" * cfpa.registers_size)
+    cfpa._preprocess_monotonic_counters(read_mock)
+    read_mock.assert_not_called()
+
+
+def test_write_to_device_cfpa_requires_read_method_for_monotonic_chip() -> None:
+    """write_to_device for mcxa457 CFPA must raise if read_method is omitted."""
+    cfpa = CFPA(MCXA457)
+    cfpa.registers.find_reg("EE0_FW_Version").set_value(CFPA.MONOTONIC_RETAIN)
+    write_mock = MagicMock(return_value=True)
+    with pytest.raises(SPSDKPfrError, match="read_method"):
+        cfpa.write_to_device(write_mock, read_method=None)
+
+
+def test_write_to_device_cfpa_monotonic_end_to_end() -> None:
+    """write_to_device for mcxa457 should resolve sentinel values and write correct data."""
+    cfpa = CFPA(MCXA457)
+    reg = cfpa.registers.find_reg("EE0_FW_Version")
+    reg.set_value(CFPA.MONOTONIC_RETAIN)
+
+    device_data = _make_cfpa_device_data(cfpa, {"EE0_FW_Version": 9})
+    read_mock = MagicMock(return_value=device_data)
+    write_mock = MagicMock(return_value=True)
+
+    result = cfpa.write_to_device(write_mock, read_method=read_mock)
+    assert result is True
+
+    # Verify that the written data contains the resolved value (9), not the sentinel
+    written_addr, written_data = write_mock.call_args[0]
+    assert written_addr == cfpa.write_address
+    resolved = struct.unpack_from("<I", written_data, reg.offset)[0]
+    assert resolved == 9
+
+
+def test_write_to_device_cfpa_no_monotonic_no_read_required() -> None:
+    """write_to_device for lpc55s3x CFPA should succeed without read_method."""
+    cfpa = CFPA(LPC55S3X)
+    write_mock = MagicMock(return_value=True)
+    result = cfpa.write_to_device(write_mock, read_method=None)
+    assert result is True

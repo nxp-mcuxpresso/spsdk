@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2026 NXP
 #
@@ -14,7 +13,6 @@ certificates and various hash algorithms for secure message authentication.
 
 # Used security modules
 from datetime import datetime
-from typing import Optional
 
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.crypto_types import SPSDKEncoding
@@ -28,8 +26,8 @@ def cms_sign(
     zulu: datetime,
     data: bytes,
     certificate: Certificate,
-    signing_key: Optional[PrivateKey],
-    signature_provider: Optional[SignatureProvider],
+    signing_key: PrivateKey | None,
+    signature_provider: SignatureProvider | None,
 ) -> bytes:
     """Sign provided data and return CMS signature.
 
@@ -143,8 +141,8 @@ def cms_sign(
 
 def sign_data(
     data_to_sign: bytes,
-    signing_key: Optional[PrivateKey],
-    signature_provider: Optional[SignatureProvider],
+    signing_key: PrivateKey | None,
+    signature_provider: SignatureProvider | None,
 ) -> bytes:
     """Sign the data using either a private key or signature provider.
 

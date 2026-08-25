@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """Tests for SPSDK nxpdebugmbox utility application.
 
 This module contains comprehensive test cases for the nxpdebugmbox command-line
@@ -13,11 +13,15 @@ and debug credential generation across NXP MCU portfolio.
 
 import filecmp
 import os
-from typing import Any, Optional
+from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 
 from spsdk.apps.nxpdebugmbox import main
+from spsdk.apps.utils.utils import SPSDKAppError
+from spsdk.dat.dm_commands import ProgramLifecycle, SetBrickedMode
+from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.family import get_device, get_families
 from spsdk.utils.misc import use_working_directory
 from tests.cli_runner import CliRunner
@@ -37,7 +41,7 @@ def test_command_line_interface_main(cli_runner: CliRunner) -> None:
 
 
 def get_all_devices_and_revision(
-    feature: str, sub_feature: Optional[str] = None, append_latest: bool = True
+    feature: str, sub_feature: str | None = None, append_latest: bool = True
 ) -> list[tuple[str, str]]:
     """Get list of tuples with complete device list with all revisions.
 
@@ -156,6 +160,184 @@ def test_nxpdebugmbox_erase_exe(cli_runner: CliRunner) -> None:
     """
     cmd = f"-i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} -vv cmd -f lpc55s69 erase"
     cli_runner.invoke(main, cmd.split())
+
+
+def test_nxpdebugmbox_set_bricked_mode_exe(cli_runner: CliRunner) -> None:
+    """Test for set-bricked-mode command of nxp debug mailbox.
+
+    This test verifies that the set-bricked-mode command succeeds through the CLI
+    interface using a virtual debug probe. The virtual probe returns a successful
+    response from the RETURN register.
+
+    :param cli_runner: Click CLI runner instance for testing command execution.
+    """
+    cmd = f"-i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} -vv cmd -f lpc55s69 set-bricked-mode"
+    result = cli_runner.invoke(main, cmd.split())
+    assert "Set bricked mode succeeded" in result.output
+
+
+def test_nxpdebugmbox_program_lifecycle_exe(cli_runner: CliRunner) -> None:
+    """Test for program-lifecycle command of nxp debug mailbox.
+
+    Exercises the CLI subcommand against the virtual debug probe. The probe is
+    primed (at AP=1 / RETURN offset 0x08 for the mcxc151 dmbox_ap_ix) with:
+    ACK token (remainCount=1 << 16 | 0xA5A5 = 0x1A5A5) for the parameter,
+    followed by a success status (0x0) for the final response.
+    """
+    hw_responses = '-o subs_ap={"16777224":[107941,0]}'
+    cmd = (
+        f"-i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {hw_responses} -vv "
+        f"cmd -f mcxc151 program-lifecycle -l 0x96368BC7"
+    )
+    result = cli_runner.invoke(main, cmd.split())
+    assert "Program lifecycle (0x96368bc7) succeeded" in result.output
+
+
+def test_nxpdebugmbox_program_lifecycle_help(cli_runner: CliRunner) -> None:
+    """The program-lifecycle subcommand exposes a --lifecycle option."""
+    cmd = f"-i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} cmd -f mcxc151 program-lifecycle --help"
+    result = cli_runner.invoke(main, cmd.split())
+    assert "--lifecycle" in result.output
+    assert "LIFECYCLE_STATE_DP" in result.output
+
+
+def test_nxpdebugmbox_program_lifecycle_unsupported_family(cli_runner: CliRunner) -> None:
+    """The program-lifecycle subcommand must reject families without the flag.
+
+    lpc55s69 does not list 'program_lifecycle' in its dat.sub_features, so the
+    command must fail fast with a clear, family-named error rather than send
+    an unknown opcode to the device.
+    """
+    cmd = (
+        f"-i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} cmd -f lpc55s69 "
+        f"program-lifecycle -l 0x96368BC7"
+    )
+    result = cli_runner.invoke(main, cmd.split(), expected_code=1)
+    assert isinstance(result.exception, SPSDKAppError)
+    assert "not supported for device lpc55s69" in str(result.exception)
+
+
+def test_nxpdebugmbox_program_lifecycle_by_name(cli_runner: CliRunner) -> None:
+    """--lifecycle accepts a symbolic name (IN_FIELD1) from cmpa_lc.json."""
+    hw_responses = '-o subs_ap={"16777224":[107941,0]}'
+    cmd = (
+        f"-i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {hw_responses} "
+        f"cmd -f mcxc151 program-lifecycle -l IN_FIELD1"
+    )
+    result = cli_runner.invoke(main, cmd.split())
+    assert "Program lifecycle IN_FIELD1 (0x9635f807) succeeded" in result.output
+
+
+def test_nxpdebugmbox_program_lifecycle_by_deprecated_name(cli_runner: CliRunner) -> None:
+    """--lifecycle also resolves deprecated_names (e.g. ROP_LEVEL1 -> IN_FIELD1)."""
+    hw_responses = '-o subs_ap={"16777224":[107941,0]}'
+    cmd = (
+        f"-i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {hw_responses} "
+        f"cmd -f mcxc151 program-lifecycle -l rop_level1"
+    )
+    result = cli_runner.invoke(main, cmd.split())
+    assert "Program lifecycle IN_FIELD1 (0x9635f807) succeeded" in result.output
+
+
+def test_nxpdebugmbox_program_lifecycle_unknown_name(cli_runner: CliRunner) -> None:
+    """Unknown lifecycle names must be rejected with a helpful error."""
+    cmd = (
+        f"-i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} "
+        f"cmd -f mcxc151 program-lifecycle -l NOPE"
+    )
+    result = cli_runner.invoke(main, cmd.split(), expected_code=1)
+    assert isinstance(result.exception, SPSDKAppError)
+    msg = str(result.exception)
+    assert "Cannot resolve lifecycle 'NOPE' for device mcxc151" in msg
+    assert "DEVELOP" in msg
+    assert "IN_FIELD1" in msg
+
+
+def test_set_bricked_mode_handles_timeout() -> None:
+    """Test that SetBrickedMode handles communication timeout as a success.
+
+    When the device receives and processes the bricked mode command, it becomes
+    permanently unresponsive. The resulting SPSDKTimeoutError on the RETURN register
+    read must be treated as a successful outcome, not an error.
+    """
+    dm = MagicMock()
+    dm.registers = {
+        "REQUEST": {"address": 0x04},
+        "RETURN": {"address": 0x08},
+    }
+    dm.command_delays = {}
+    dm.spin_read.side_effect = SPSDKTimeoutError(
+        "The Debug Mailbox read operation ends on timeout."
+    )
+
+    cmd = SetBrickedMode(dm=dm)
+    result = cmd.run()
+
+    dm.spin_write.assert_called_once()
+    assert result == []
+
+
+def test_set_bricked_mode_handles_successful_response() -> None:
+    """Test that SetBrickedMode returns the response when device responds normally.
+
+    In scenarios where the device responds to the bricked mode command (e.g. in
+    simulation or test environments), the response value should be returned.
+    """
+    dm = MagicMock()
+    dm.registers = {
+        "REQUEST": {"address": 0x04},
+        "RETURN": {"address": 0x08},
+    }
+    dm.command_delays = {}
+    dm.spin_read.return_value = 0x00000000
+
+    cmd = SetBrickedMode(dm=dm)
+    result = cmd.run()
+
+    dm.spin_write.assert_called_once()
+    assert result == [0x00000000]
+
+
+def test_program_lifecycle_handles_timeout() -> None:
+    """Test that ProgramLifecycle treats post-reset unresponsiveness as success.
+
+    The ROM issues NVIC_SystemReset right after writing the response register,
+    so a SPSDKTimeoutError while reading the final status word must be
+    interpreted as a completed lifecycle transition, not an error.
+    """
+    dm = MagicMock()
+    dm.registers = {
+        "REQUEST": {"address": 0x04},
+        "RETURN": {"address": 0x08},
+    }
+    dm.command_delays = {}
+    dm.non_standard_statuses = {}
+    # First read is the ACK for the parameter, second read times out.
+    dm.read_return.side_effect = [
+        (1 << 16) | 0xA5A5,
+        SPSDKTimeoutError("The Debug Mailbox read operation ends on timeout."),
+    ]
+
+    cmd = ProgramLifecycle(dm=dm)
+    result = cmd.run([0x96368BC7])
+
+    assert result == []
+    # Two spin_writes: the request word and the lifecycle value.
+    assert dm.spin_write.call_count == 2
+
+
+def test_program_lifecycle_paramlen() -> None:
+    """ProgramLifecycle must always advertise a single 32-bit parameter."""
+    dm = MagicMock()
+    dm.registers = {
+        "REQUEST": {"address": 0x04},
+        "RETURN": {"address": 0x08},
+    }
+    dm.command_delays = {}
+    dm.non_standard_statuses = {}
+
+    cmd = ProgramLifecycle(dm=dm)
+    assert cmd.paramlen == 1
 
 
 def test_generate_rsa_dc_file(cli_runner: CliRunner, tmpdir: Any, data_dir: str) -> None:

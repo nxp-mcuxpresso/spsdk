@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2026 NXP
 #
@@ -15,7 +14,6 @@ management and device abstraction for NXP USB-SIO hardware.
 import logging
 import re
 from dataclasses import dataclass
-from typing import Optional, Union
 
 import libusbsio
 from libusbsio.libusbsio import LIBUSBSIO
@@ -41,7 +39,7 @@ class UsbSioConfig:
     into structured configuration objects.
     """
 
-    usb_config: Optional[str]
+    usb_config: str | None
     port_num: int
     interface_args: list
     interface_kwargs: dict
@@ -101,7 +99,7 @@ class UsbSioConfig:
                  keyword arguments.
         """
 
-        def _cast_arg(arg: str) -> Union[str, int]:
+        def _cast_arg(arg: str) -> str | int:
             """Cast the string argument to the type expected in object initialization.
 
             Attempts to convert a string argument to an integer using value_to_int().
@@ -149,9 +147,9 @@ class UsbSioDevice(DeviceBase):
         self,
         dev: int = 0,
         port_num: int = 0,
-        nirq_port: Optional[int] = None,
-        nirq_pin: Optional[int] = None,
-        timeout: Optional[int] = None,
+        nirq_port: int | None = None,
+        nirq_pin: int | None = None,
+        timeout: int | None = None,
     ) -> None:
         """Initialize the USBSIO device interface.
 
@@ -166,7 +164,7 @@ class UsbSioDevice(DeviceBase):
         :raises SPSDKError: When LIBUSBSIO device cannot be opened or configured.
         """
         # device is the LIBUSBSIO.PORT instance (LIBUSBSIO.SPI or LIBUSBSIO.I2C class)
-        self.port: Optional[Union[LIBUSBSIO.SPI, LIBUSBSIO.I2C]] = None
+        self.port: LIBUSBSIO.SPI | LIBUSBSIO.I2C | None = None
 
         # work with the global LIBUSBSIO instance
         self.dev_ix = dev
@@ -252,7 +250,7 @@ class UsbSioDevice(DeviceBase):
                 self.sio.Close()
 
     @classmethod
-    def scan(cls, config: str, timeout: Optional[int] = None) -> list[Self]:
+    def scan(cls, config: str, timeout: int | None = None) -> list[Self]:
         """Scan connected USB-SIO bridge devices.
 
         The method discovers and initializes USB-SIO bridge devices that match the specified
@@ -350,7 +348,7 @@ class UsbSioDevice(DeviceBase):
 
     @staticmethod
     def _process_interface_config(
-        interface_config: str, timeout: Optional[int] = None
+        interface_config: str, timeout: int | None = None
     ) -> tuple[list, dict]:
         """Convert the string configuration to the arguments and keyword arguments.
 
@@ -364,7 +362,7 @@ class UsbSioDevice(DeviceBase):
         :return: Tuple containing list of positional arguments and dictionary of keyword arguments.
         """
 
-        def _cast_arg(arg: str) -> Union[str, int]:
+        def _cast_arg(arg: str) -> str | int:
             """Cast the string argument to the type expected in object initialization.
 
             Attempts to convert a string argument to an integer using value_to_int().
@@ -416,7 +414,7 @@ class UsbSioDevice(DeviceBase):
             raise SPSDKError(str(e)) from e
 
     @classmethod
-    def get_usbsio_devices(cls, usb_config: Optional[str] = None) -> list[int]:
+    def get_usbsio_devices(cls, usb_config: str | None = None) -> list[int]:
         """Get list of port indexes of USBSIO devices.
 
         The method retrieves all available USBSIO device ports and optionally filters them
@@ -494,8 +492,8 @@ class UsbSioSPIDevice(UsbSioDevice):
         speed_khz: int = 1000,
         cpol: int = 1,
         cpha: int = 1,
-        nirq_port: Optional[int] = None,
-        nirq_pin: Optional[int] = None,
+        nirq_port: int | None = None,
+        nirq_pin: int | None = None,
         timeout: int = 5000,
     ) -> None:
         """Initialize the UsbSioSPI Interface object.
@@ -544,17 +542,21 @@ class UsbSioSPIDevice(UsbSioDevice):
         if not self.port:
             raise SPSDKError("Cannot open lpcusbsio SPI interface.\n")
 
-    def read(self, length: int, timeout: Optional[int] = None) -> bytes:
+    def read(self, length: int, timeout: int | None = None) -> bytes:
         """Read specified number of bytes from the SPI device.
 
         Performs a SPI transfer operation to read data from the connected device using the configured
         select port and pin settings.
 
+        When the device NAKs the read (negative result or empty data), an empty bytes object is
+        returned instead of raising an exception. This allows the caller's polling loop (e.g.,
+        ``_wait_for_data``) to retry within the configured timeout, which is important when the
+        device is temporarily busy with internal operations such as flash programming.
+
         :param length: Number of bytes to read from the device.
         :param timeout: Read timeout in milliseconds (currently not used in implementation).
-        :return: Data read from the device.
-        :raises SPSDKConnectionError: When reading data from device fails.
-        :raises SPSDKTimeoutError: When no data received or transfer result indicates failure.
+        :return: Data read from the device, or empty bytes when the device NAKs the read.
+        :raises SPSDKConnectionError: When reading data from device fails with a communication error.
         """
         try:
             data, result = self.port.Transfer(
@@ -566,11 +568,11 @@ class UsbSioSPIDevice(UsbSioDevice):
         except Exception as e:
             raise SPSDKConnectionError(str(e)) from e
         if result < 0 or not data:
-            raise SPSDKTimeoutError()
+            return b""
         logger.trace(f"<{' '.join(f'{b:02x}' for b in data)}>")
         return data
 
-    def write(self, data: bytes, timeout: Optional[int] = None) -> None:
+    def write(self, data: bytes, timeout: int | None = None) -> None:
         """Send data to device via USB-SIO interface.
 
         This method transfers data to the connected device using the SPI interface
@@ -611,8 +613,8 @@ class UsbSioI2CDevice(UsbSioDevice):
         port_num: int = 0,
         address: int = 0x10,
         speed_khz: int = 100,
-        nirq_port: Optional[int] = None,
-        nirq_pin: Optional[int] = None,
+        nirq_port: int | None = None,
+        nirq_pin: int | None = None,
         timeout: int = 5000,
     ) -> None:
         """Initialize the UsbSioI2C Interface object.
@@ -648,29 +650,33 @@ class UsbSioI2CDevice(UsbSioDevice):
         if not self.port:
             raise SPSDKError("Cannot open lpcusbsio I2C interface.\n")
 
-    def read(self, length: int, timeout: Optional[int] = None) -> bytes:
+    def read(self, length: int, timeout: int | None = None) -> bytes:
         """Read data from the USB-SIO I2C device.
 
         The method reads the specified number of bytes from the connected I2C device
-        through the USB-SIO interface. It handles communication errors and timeouts
-        appropriately.
+        through the USB-SIO interface.
+
+        When the device NAKs the read (negative result or empty data), an empty bytes object is
+        returned instead of raising an exception. This allows the caller's polling loop (e.g.,
+        ``_wait_for_data``) to retry within the configured timeout, which is important when the
+        device is temporarily busy with internal operations such as flash programming or
+        cryptographic processing of SB files.
 
         :param length: Number of bytes to read from the device.
         :param timeout: Read timeout in milliseconds (currently not used by underlying API).
-        :return: Data read from the device.
-        :raises SPSDKConnectionError: When reading data from device fails.
-        :raises SPSDKTimeoutError: When no data received or operation times out.
+        :return: Data read from the device, or empty bytes when the device NAKs the read.
+        :raises SPSDKConnectionError: When reading data from device fails with a communication error.
         """
         try:
             data, result = self.port.DeviceRead(devAddr=self.i2c_address, rxSize=length)
         except Exception as e:
             raise SPSDKConnectionError(str(e)) from e
         if result < 0 or not data:
-            raise SPSDKTimeoutError()
+            return b""
         logger.trace(f"<{' '.join(f'{b:02x}' for b in data)}>")
         return data
 
-    def write(self, data: bytes, timeout: Optional[int] = None) -> None:
+    def write(self, data: bytes, timeout: int | None = None) -> None:
         """Send data to device.
 
         :param data: Data to send to the device.

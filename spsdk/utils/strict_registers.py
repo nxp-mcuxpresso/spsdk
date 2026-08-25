@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK strict register management utilities.
 
 This module provides enhanced register handling with strict validation and
@@ -11,7 +11,7 @@ type checking. It extends the base register functionality with additional
 safety measures and validation rules for secure provisioning operations.
 """
 
-from typing import Any, Union
+from typing import Any
 
 from spsdk.utils.misc import value_to_int
 from spsdk.utils.registers import (
@@ -122,7 +122,7 @@ class StrictRegsBitField(RegsBitField):
                     f"Allowed values are: {allowed_values_str}"
                 )
 
-    def set_enum_value(self, new_val: Union[str, int], raw: bool = False) -> None:
+    def set_enum_value(self, new_val: str | int, raw: bool = False) -> None:
         """Set enum value for bitfield with strict validation.
 
         Updates the value of the bitfield by its enum value. In strict mode, validates that

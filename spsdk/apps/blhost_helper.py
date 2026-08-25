@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +13,7 @@ provisioning operations, and output display utilities.
 
 import inspect
 import json
-from typing import Any, Optional, Type
+from typing import Any
 
 import click
 
@@ -74,7 +73,7 @@ class OemSetMasterShareHelp(click.Command):
         click.echo(indent + "OEM_ENC_MASTER_SHARE_INPUT_SIZE")
 
 
-def parse_property_tag(property_tag: str, family: Optional[FamilyRevision] = None) -> int:
+def parse_property_tag(property_tag: str, family: FamilyRevision | None = None) -> int:
     """Convert the property as name or stringified number into integer.
 
     :param property_tag: Name or number of the property tag
@@ -129,7 +128,7 @@ def parse_trust_prov_wrapping_key_type(key_type: str) -> int:
 
 
 def _parse_key_type(
-    user_input: str, collection: Type[SpsdkEnum], default: Optional[int] = None
+    user_input: str, collection: type[SpsdkEnum], default: int | None = None
 ) -> int:
     try:
         return value_to_int(user_input)
@@ -144,11 +143,11 @@ def _parse_key_type(
 
 
 def display_output(
-    response: Optional[list] = None,
+    response: list | None = None,
     status_code: int = 0,
     use_json: bool = False,
     suppress: bool = False,
-    extra_output: Optional[str] = None,
+    extra_output: str | None = None,
 ) -> None:
     """Displays response and status code.
 
@@ -184,4 +183,4 @@ def display_output(
     # Force exit to handover the current status code.
     # We could do that because this function is called as last from each subcommand
     if status_code:
-        raise SPSDKAppError()
+        raise SPSDKAppError(stringify_status_code(status_code))

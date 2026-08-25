@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,6 @@ support for WPC Qi authentication certificates within the SPSDK framework.
 """
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Union
 
 from cryptography import x509
 from cryptography.exceptions import UnsupportedAlgorithm
@@ -32,7 +30,7 @@ from spsdk.crypto.crypto_types import (
     SPSDKVersion,
 )
 from spsdk.crypto.hash import EnumHashAlgorithm
-from spsdk.crypto.keys import IS_DILITHIUM_SUPPORTED, PrivateKey, PrivateKeyRsa, PublicKey
+from spsdk.crypto.keys import PrivateKey, PrivateKeyRsa, PublicKey
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.misc import align_block, load_binary, write_file
@@ -71,10 +69,10 @@ class Certificate(BaseClass):
         issuer: x509.Name,
         subject_public_key: PublicKey,
         issuer_private_key: PrivateKey,
-        serial_number: Optional[int] = None,
-        duration: Optional[int] = None,
-        extensions: Optional[list[x509.ExtensionType]] = None,
-        pss_padding: Optional[bool] = None,
+        serial_number: int | None = None,
+        duration: int | None = None,
+        extensions: list[x509.ExtensionType] | None = None,
+        pss_padding: bool | None = None,
     ) -> "Certificate":
         """Generate X.509 certificate with specified parameters.
 
@@ -202,7 +200,7 @@ class Certificate(BaseClass):
         oid_end = oid_start + len(oid_bytes)
 
         pub_data, _ = decode(self.cert.tbs_certificate_bytes[oid_end:], univ.BitString())
-        if IS_DILITHIUM_SUPPORTED and oid_str.startswith("2.16.840.1.101.3.4.3"):
+        if oid_str.startswith("2.16.840.1.101.3.4.3"):
             from spsdk.crypto.keys import PublicKeyMLDSA
 
             # Special handling for ML-DSA keys
@@ -240,7 +238,7 @@ class Certificate(BaseClass):
     @property
     def signature_hash_algorithm(
         self,
-    ) -> Optional[hashes.HashAlgorithm]:
+    ) -> hashes.HashAlgorithm | None:
         """Get signature hash algorithm from certificate.
 
         Returns the hash algorithm used for signing the certificate digest.
@@ -521,7 +519,7 @@ def validate_ca_flag_in_cert_chain(chain_list: list[Certificate]) -> bool:
     return chain_list[0].ca
 
 
-X509NameConfig = Union[list[dict[str, str]], dict[str, Union[str, list[str]]]]
+X509NameConfig = list[dict[str, str]] | dict[str, str | list[str]]
 
 
 def generate_name(config: X509NameConfig) -> x509.Name:

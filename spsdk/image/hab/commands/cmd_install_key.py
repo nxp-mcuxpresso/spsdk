@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -14,7 +13,6 @@ secret key installation operations.
 
 import os
 from struct import pack, unpack_from
-from typing import Optional, Union
 
 from typing_extensions import Self
 
@@ -109,7 +107,7 @@ class SecCmdInstallKey(CmdBase):
         self.target_index = tgt_index
         self.cmd_data_location = location
         self._header.length = CmdHeader.SIZE + 8
-        self._certificate_ref: Optional[Union[HabCertificate, SrkTable]] = None
+        self._certificate_ref: HabCertificate | SrkTable | None = None
 
     @property
     def flags(self) -> InstallKeyFlagsEnum:
@@ -268,7 +266,7 @@ class SecCmdInstallKey(CmdBase):
         return True
 
     @property  # type: ignore
-    def cmd_data_reference(self) -> Optional[Union[HabCertificate, SrkTable]]:
+    def cmd_data_reference(self) -> HabCertificate | SrkTable | None:
         """Get reference to additional data such as certificate or signature.
 
         Returns the certificate reference if one was assigned to this command,
@@ -280,7 +278,7 @@ class SecCmdInstallKey(CmdBase):
         return self._certificate_ref
 
     @cmd_data_reference.setter
-    def cmd_data_reference(self, value: Union[HabCertificate, Signature, MAC, SrkTable]) -> None:
+    def cmd_data_reference(self, value: HabCertificate | Signature | MAC | SrkTable) -> None:
         """Set command data reference for certificate or SRK table.
 
         This method assigns a certificate or SRK table reference to the install key command.
@@ -293,7 +291,7 @@ class SecCmdInstallKey(CmdBase):
             raise SPSDKError(f"Expected HabCertificate or SrkTable, got {type(value).__name__}")
         self._certificate_ref = value
 
-    def parse_cmd_data(self, data: bytes) -> Union[HabCertificate, SrkTable, None]:
+    def parse_cmd_data(self, data: bytes) -> HabCertificate | SrkTable | None:
         """Parse additional command data from binary data.
 
         The method parses binary data into either a HAB certificate or SRK table based on the
@@ -303,14 +301,14 @@ class SecCmdInstallKey(CmdBase):
         :return: Parsed data object - either HabCertificate or SrkTable depending on format.
         """
         if self.certificate_format == CertFormatEnum.SRK:
-            result: Union[HabCertificate, SrkTable] = SrkTable.parse(data)
+            result: HabCertificate | SrkTable = SrkTable.parse(data)
         else:
             result = HabCertificate.parse(data)
         self.cmd_data_reference = result
         return result
 
     @property
-    def certificate_ref(self) -> Union[HabCertificate, SrkTable, None]:
+    def certificate_ref(self) -> HabCertificate | SrkTable | None:
         """Get corresponding certificate referenced by key-location.
 
         :return: Certificate object (HabCertificate or SrkTable) if available, None otherwise.
@@ -318,7 +316,7 @@ class SecCmdInstallKey(CmdBase):
         return self._certificate_ref
 
     @certificate_ref.setter
-    def certificate_ref(self, value: Union[HabCertificate, SrkTable]) -> None:
+    def certificate_ref(self, value: HabCertificate | SrkTable) -> None:
         """Set the certificate reference for the install key command.
 
         :param value: Certificate to be installed by the command, either a HAB certificate or SRK table.
@@ -426,7 +424,7 @@ class CmdInstallSrk(SecCmdInstallKey):
     CMD_IDENTIFIER = CmdName.INSTALL_SRK
 
     @classmethod
-    def load_from_config(cls, config: Config, cmd_index: Optional[int] = None) -> Self:
+    def load_from_config(cls, config: Config, cmd_index: int | None = None) -> Self:
         """Load configuration into the install key command.
 
         Creates an InstallKey command instance from HAB image configuration data, parsing the SRK
@@ -485,7 +483,7 @@ class CmdInstallCsfk(SecCmdInstallKey):
     CMD_IDENTIFIER = CmdName.INSTALL_CSFK
 
     @classmethod
-    def load_from_config(cls, config: Config, cmd_index: Optional[int] = None) -> Self:
+    def load_from_config(cls, config: Config, cmd_index: int | None = None) -> Self:
         """Load configuration into the install key command.
 
         Creates an InstallKey command instance from HAB image configuration data. The method loads
@@ -557,7 +555,7 @@ class CmdInstallKey(SecCmdInstallKey):
     CMD_IDENTIFIER = CmdName.INSTALL_KEY
 
     @classmethod
-    def load_from_config(cls, config: Config, cmd_index: Optional[int] = None) -> Self:
+    def load_from_config(cls, config: Config, cmd_index: int | None = None) -> Self:
         """Load configuration into the install key command.
 
         Creates an InstallKey command instance from HAB image configuration data, including
@@ -644,7 +642,7 @@ class CmdInstallSecretKey(SecCmdInstallKey):
         tgt_index: int = 0,
         location: int = 0,
         secret_len: int = 128,
-        secret_key_path: Optional[str] = None,
+        secret_key_path: str | None = None,
     ) -> None:
         """Initialize Install Key command.
 
@@ -661,12 +659,12 @@ class CmdInstallSecretKey(SecCmdInstallKey):
         :param secret_key_path: Optional path to the secret key file.
         """
         super().__init__(flags, cert_fmt, hash_alg, src_index, tgt_index, location)
-        self._secret_key: Optional[bytes] = None
+        self._secret_key: bytes | None = None
         self.secret_key_path = secret_key_path
         self.secret_len = secret_len
 
     @property
-    def secret_key(self) -> Optional[bytes]:
+    def secret_key(self) -> bytes | None:
         """Get secret key bytes.
 
         :return: Secret key bytes if available, None otherwise.
@@ -690,7 +688,7 @@ class CmdInstallSecretKey(SecCmdInstallKey):
         self._secret_key = value
 
     @classmethod
-    def load_from_config(cls, config: Config, cmd_index: Optional[int] = None) -> Self:
+    def load_from_config(cls, config: Config, cmd_index: int | None = None) -> Self:
         """Load configuration into the install key command.
 
         Creates an InstallKeyCommand instance from HAB image configuration data, including secret key
@@ -817,7 +815,7 @@ class CmdInstallNOCAK(SecCmdInstallKey):
     CMD_IDENTIFIER = CmdName.INSTALL_NOCAK
 
     @classmethod
-    def load_from_config(cls, config: Config, cmd_index: Optional[int] = None) -> Self:
+    def load_from_config(cls, config: Config, cmd_index: int | None = None) -> Self:
         """Load configuration into the install key command.
 
         Creates an InstallKey command instance from HAB image configuration data. The method

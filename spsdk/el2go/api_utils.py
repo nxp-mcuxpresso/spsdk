@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -21,7 +20,7 @@ import os
 import struct
 import time
 from enum import Enum
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 
 from spsdk.el2go.client import CleanMethod, EL2GOApiResponse, EL2GOClient, SPSDKHTTPClientError
 from spsdk.el2go.secure_objects import SecureObjects
@@ -204,7 +203,7 @@ class EL2GOTPClient(EL2GOClient):
         self.fw_load_address = self.db.get_int(DatabaseManager.EL2GO_TP, "fw_load_address")
 
         self.prov_fw_path = kwargs.pop("prov_fw_path")
-        self._prov_fw: Optional[bytes] = None
+        self._prov_fw: bytes | None = None
 
         self.bootloader_path = kwargs.pop("imx_bootloader_path", None)
         self.fatwrite_filename = kwargs.pop("fatwrite_filename", "secure_objects.bin")
@@ -217,7 +216,7 @@ class EL2GOTPClient(EL2GOClient):
         if oem_prov_config_path:
             # New behaviour: host path and device filename are separate.
             # Device filename defaults to the basename of the host path.
-            self.oem_provisioning_config_filename: Optional[str] = (
+            self.oem_provisioning_config_filename: str | None = (
                 oem_prov_config_filename or os.path.basename(oem_prov_config_path)
             )
             self.oem_provisioning_config_bin = load_binary(oem_prov_config_path)
@@ -247,7 +246,7 @@ class EL2GOTPClient(EL2GOClient):
         super().__init__(api_key=api_key, url=url, timeout=timeout, raise_exceptions=True, **kwargs)
 
     @property
-    def loader(self) -> Optional[str]:
+    def loader(self) -> str | None:
         """Return path to optional loader app that is loaded before provisioning.
 
         :return: Path to the loader application file, or None if no loader is configured.
@@ -255,7 +254,7 @@ class EL2GOTPClient(EL2GOClient):
         return self.bootloader_path
 
     @property
-    def prov_fw(self) -> Optional[bytes]:
+    def prov_fw(self) -> bytes | None:
         """Get provisioning firmware binary data.
 
         Loads the provisioning firmware binary from file path if not already cached.
@@ -380,7 +379,7 @@ class EL2GOTPClient(EL2GOClient):
         self._wait_for_provisionings(device_id=device_id)
         return self._download_provisionings(device_id=device_id)
 
-    def _make_device_id_list(self, device_id: Union[str, list[str]]) -> list[str]:
+    def _make_device_id_list(self, device_id: str | list[str]) -> list[str]:
         """Convert device ID to a list format.
 
         Normalizes device ID input by converting a single string to a list containing
@@ -409,7 +408,7 @@ class EL2GOTPClient(EL2GOClient):
                 raise SPSDKError(f"Invalid domain type: {domain}")
         return sanitized
 
-    def _download_provisionings(self, device_id: Union[str, list[str]]) -> dict:
+    def _download_provisionings(self, device_id: str | list[str]) -> dict:
         """Download provisioning data for specified devices from EL2GO service.
 
         This method retrieves provisioning configurations and data for one or more devices
@@ -482,7 +481,7 @@ class EL2GOTPClient(EL2GOClient):
         :param provisionings: Dictionary containing provisioning information for devices
         :return: Serialized bytes of all provisioning data concatenated together
         """
-        data = bytes()
+        data = b""
         for dev_prov in provisionings:
             data += self._serialize_single_provisioning(dev_prov)
         return data
@@ -497,7 +496,7 @@ class EL2GOTPClient(EL2GOClient):
         :param provisioning: Dictionary containing RTP provisioning data with states and APDU commands.
         :return: Serialized binary data from all applicable APDU commands.
         """
-        data = bytes()
+        data = b""
         for rtp_prov in provisioning["rtpProvisionings"]:
             if rtp_prov["state"] == GenStatus.GENERATION_COMPLETED.value[0]:
                 data += base64.b64decode(rtp_prov["apdus"]["createApdu"]["apdu"])
@@ -547,9 +546,7 @@ class EL2GOTPClient(EL2GOClient):
 
         return devices
 
-    def _find_device_group_id(
-        self, device_id: str, group_id: Optional[Union[str, int]] = None
-    ) -> str:
+    def _find_device_group_id(self, device_id: str, group_id: str | int | None = None) -> str:
         """Find device group ID for a given device.
 
         Searches for the group ID in which the specified device is assigned. If a group ID
@@ -584,9 +581,7 @@ class EL2GOTPClient(EL2GOClient):
             f"Device {device_id} was not found in product {self.nc12} for group(s): {candidates}"
         )
 
-    def _assign_device_to_group(
-        self, device_id: Union[str, list[str]]
-    ) -> tuple[EL2GOApiResponse, str]:
+    def _assign_device_to_group(self, device_id: str | list[str]) -> tuple[EL2GOApiResponse, str]:
         """Assign a device to the configured group.
 
         This method assigns one or more devices to the device group that was configured
@@ -603,7 +598,7 @@ class EL2GOTPClient(EL2GOClient):
         return response, url
 
     def _unassign_device_from_group(
-        self, device_id: Union[str, list[str]], group_id: Optional[str] = None, wait_time: int = 10
+        self, device_id: str | list[str], group_id: str | None = None, wait_time: int = 10
     ) -> tuple[EL2GOApiResponse, str]:
         """Unassign a device from the device group.
 
@@ -652,7 +647,7 @@ class EL2GOTPClient(EL2GOClient):
 
     def register_devices(
         self, uuids: list[str], remove_errors: bool = False
-    ) -> tuple[Optional[str], Optional[int]]:
+    ) -> tuple[str | None, int | None]:
         """Register devices for provisioning job.
 
         Submits a list of device UUIDs to create a registration job. Optionally handles
@@ -707,7 +702,7 @@ class EL2GOTPClient(EL2GOClient):
             return None, None
         return response.json_body["jobId"], len(uuids)
 
-    def get_job_details(self, job_id: str) -> Optional[dict]:
+    def get_job_details(self, job_id: str) -> dict | None:
         """Get job details from EL2GO service.
 
         Retrieves detailed information about a specific job using its unique identifier.
@@ -723,7 +718,7 @@ class EL2GOTPClient(EL2GOClient):
             return None
         return response.json_body
 
-    def create_secure_objects_batch(self, devices: int) -> Optional[str]:
+    def create_secure_objects_batch(self, devices: int) -> str | None:
         """Create secure objects batch for a given number of devices.
 
         The method requests a batch job for secure object provisioning. If no dynamic data
@@ -744,7 +739,7 @@ class EL2GOTPClient(EL2GOClient):
         self.response_handling(response, url)
         return response.json_body["jobId"]
 
-    def download_secure_objects_batch(self, job_id: Optional[str] = None) -> dict:
+    def download_secure_objects_batch(self, job_id: str | None = None) -> dict:
         """Download secure objects batch for a given job or static secure objects.
 
         The method downloads either job-specific secure objects batch or static secure objects
@@ -1074,7 +1069,7 @@ def get_el2go_otp_binary(config: Config) -> bytes:
         except SPSDKRegsErrorRegisterNotFound as e:
             raise SPSDKError(f"Invalid fuse name found in user configuration: {reg_name}") from e
 
-    data = bytes()
+    data = b""
     ignored = _get_ignored_otp_indexes(family=defaults.family)
     for user_reg in selected_registers:
         if _should_ignore_register(reg=user_reg, ignore_list=ignored):

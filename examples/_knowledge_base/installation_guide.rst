@@ -403,96 +403,82 @@ The SPSDK plugins repository contains various extension modules that enhance SPS
 Shell Autocompletion
 --------------------
 
-SPSDK provides shell autocompletion support for all command-line tools to improve user experience and productivity.
+SPSDK generates **static** completion scripts for all command-line tools.
+The scripts are built once at setup time and loaded directly by the shell —
+no Python process is spawned on every TAB press, so completion is instant.
 
 Setup
 =====
 
-To enable autocompletion for all SPSDK tools, use the built-in setup command:
+Run the setup command once after installing SPSDK:
 
 .. code-block:: bash
 
-    # Auto-detect shell and setup completion for all tools
-    spsdk utils setup-autocomplete
-
-    # Setup for specific shell
-    spsdk utils setup-autocomplete --shell bash
+    # Generate completions for your shell (zsh / bash / powershell)
     spsdk utils setup-autocomplete --shell zsh
-    spsdk utils setup-autocomplete --shell fish
+    spsdk utils setup-autocomplete --shell bash
+    spsdk utils setup-autocomplete --shell powershell
 
-    # Setup for specific tools only
-    spsdk utils setup-autocomplete --tools nxpfuses nxpimage
+    # Generate completions for specific tools only
+    spsdk utils setup-autocomplete --shell zsh --tools nxpfuses nxpimage
 
-    # List all available tools
+    # List all tools that can have completions generated
     spsdk utils setup-autocomplete --list-tools
 
-    # Preview what would be done (dry run)
-    spsdk utils setup-autocomplete --dry-run
+    # Preview what would be written without touching the filesystem
+    spsdk utils setup-autocomplete --shell zsh --dry-run
+
+Completion files are written to ``~/.config/spsdk/completions/`` and the
+appropriate shell profile is updated automatically.
 
 Supported Shells
 ================
 
-- **Bash**: Supported on Linux, macOS, and Windows (Git Bash, WSL)
-- **Zsh**: Supported on macOS and Linux
-- **Fish**: Supported on Linux and macOS
-
-.. note::
-    PowerShell is not directly supported by the autocompletion library. For PowerShell users, consider using Windows Subsystem for Linux (WSL) with bash, or Git Bash for Windows.
+- **Zsh**: ``_<toolname>`` completion files; ``fpath`` block added to ``~/.zshrc``.
+- **Bash**: ``<toolname>.bash`` files; source block added to ``~/.bashrc``.
+- **PowerShell**: ``<toolname>.ps1`` files using ``Register-ArgumentCompleter``;
+  dot-source block added to ``$PROFILE``
+  (``~/Documents/PowerShell/Microsoft.PowerShell_profile.ps1`` on Windows,
+  ``~/.config/powershell/Microsoft.PowerShell_profile.ps1`` on Linux/macOS).
 
 Activation
 ==========
 
-After running the setup command, activate completion by:
-
-**Bash:**
-
-.. code-block:: bash
-
-    source ~/.bashrc
-    # or start a new terminal session
+After running the setup command, activate completion in the current session:
 
 **Zsh:**
 
 .. code-block:: bash
 
-    source ~/.zshrc
-    # or start a new terminal session
+    source ~/.zshrc   # or open a new terminal
 
-**Fish:**
+**Bash:**
 
 .. code-block:: bash
 
-    source ~/.config/fish/config.fish
-    # or start a new terminal session
+    source ~/.bashrc  # or open a new terminal
+
+**PowerShell:**
+
+.. code-block:: powershell
+
+    . $PROFILE        # or open a new PowerShell session
 
 Usage Examples
 ==============
 
-Once enabled, you can use tab completion with any SPSDK tool:
+Once enabled, TAB completion works with any SPSDK tool:
 
 .. code-block:: bash
 
-    # Complete main commands
-    spsdk <TAB><TAB>
-    # Shows: blhost nxpfuses nxpcrypto nxpdebugmbox nxpdevscan ...
-
-    # Complete subcommands
-    nxpfuses <TAB><TAB>
-    # Shows: get-template write write-single print fuses-script get-config
+    # Complete top-level sub-commands
+    nxpimage <TAB>
+    # Shows: ahab cert-block mbi sb21 sb31 ...
 
     # Complete options
-    nxpfuses --<TAB><TAB>
-    # Shows: --family --help --config --output
+    nxpfuses --<TAB>
+    # Shows: --family --config --output --help ...
 
-    # Complete family names
-    nxpfuses --family <TAB><TAB>
-    # Shows available chip families
-
-Requirements
-============
-
-The autocompletion feature requires the ``auto-click-auto`` package. If not installed, you'll see an error message with installation instructions:
-
-.. code-block:: bash
-
-    pip install auto-click-auto
+    # Complete choice values
+    nxpfuses --family <TAB>
+    # Shows available chip family names

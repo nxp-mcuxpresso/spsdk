@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -15,7 +14,6 @@ including API response models, verification services, and target definitions.
 import struct
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional, Union
 
 from typing_extensions import Self
 
@@ -35,8 +33,8 @@ class APIResponse:
     api: str
     status: str
     message: str
-    expected_had: Optional[str] = None
-    actual_had: Optional[str] = None
+    expected_had: str | None = None
+    actual_had: str | None = None
 
     @property
     def success(self) -> bool:
@@ -85,7 +83,7 @@ class DICEVerificationService(ABC):
         """
 
     @abstractmethod
-    def get_challenge(self, pre_set: Optional[str] = None) -> bytes:
+    def get_challenge(self, pre_set: str | None = None) -> bytes:
         """Get challenge vector from the service.
 
         The method retrieves a challenge vector that can be used for cryptographic operations.
@@ -151,14 +149,14 @@ class DICEResponse:
 
     def __init__(
         self,
-        die_puk: Union[str, bytes, PublicKeyEcc],
-        rtf: Union[str, bytes],
-        had: Union[str, bytes],
-        uuid: Union[str, bytes],
-        version: Union[int, bytes],
-        challenge: Union[str, bytes],
-        ca_signature: Optional[Union[str, bytes]] = None,
-        die_signature: Optional[Union[str, bytes]] = None,
+        die_puk: str | bytes | PublicKeyEcc,
+        rtf: str | bytes,
+        had: str | bytes,
+        uuid: str | bytes,
+        version: int | bytes,
+        challenge: str | bytes,
+        ca_signature: str | bytes | None = None,
+        die_signature: str | bytes | None = None,
     ) -> None:
         """Initialize the DICE Response object.
 
@@ -188,7 +186,7 @@ class DICEResponse:
         self.version_int = int.from_bytes(self.version, byteorder="big")
         self.challenge = bytes.fromhex(challenge) if isinstance(challenge, str) else challenge
 
-        self.ca_signature: Optional[bytes]  # Mypy needs a bit of help sometimes
+        self.ca_signature: bytes | None  # Mypy needs a bit of help sometimes
         if ca_signature:
             self.ca_signature = (
                 bytes.fromhex(ca_signature) if isinstance(ca_signature, str) else ca_signature
@@ -196,7 +194,7 @@ class DICEResponse:
         else:
             self.ca_signature = None
 
-        self.die_signature: Optional[bytes]  # Mypy needs a bit of help sometimes
+        self.die_signature: bytes | None  # Mypy needs a bit of help sometimes
         if die_signature:
             self.die_signature = (
                 bytes.fromhex(die_signature) if isinstance(die_signature, str) else die_signature

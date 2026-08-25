@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -15,7 +14,7 @@ behavior, and permission scenarios for NXP device scanning functionality.
 """
 
 import platform
-from typing import Any, Optional
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import libusbsio
@@ -163,7 +162,7 @@ def test_usb_device_search_extended() -> None:
 # following mock functions are only for `test_uart_device_search usage`
 
 
-def mock_mb_scan_uart(port: str, timeout: int = 0, baudrate: Optional[int] = None) -> bool:
+def mock_mb_scan_uart(port: str, timeout: int = 0, baudrate: int | None = None) -> bool:
     """Mock UART scanning function for testing purposes.
 
     Simulates the behavior of scanning a UART port for mboot communication.
@@ -178,7 +177,7 @@ def mock_mb_scan_uart(port: str, timeout: int = 0, baudrate: Optional[int] = Non
     return bool(port == "COM1")
 
 
-def mock_sdp_read_status(self: Any, *args: Any, **kwargs: Any) -> Optional[int]:
+def mock_sdp_read_status(self: Any, *args: Any, **kwargs: Any) -> int | None:
     """Mock SDP read status operation for testing purposes.
 
     This method simulates the SDP (Serial Download Protocol) read status functionality
@@ -196,7 +195,7 @@ def mock_sdp_read_status(self: Any, *args: Any, **kwargs: Any) -> Optional[int]:
 
 
 def mock_sdp_uart_init(
-    self: Any, port: Optional[str] = None, timeout: int = 5000, baudrate: int = 115200
+    self: Any, port: str | None = None, timeout: int = 5000, baudrate: int = 115200
 ) -> None:
     """Mock initialization of SDP UART interface for testing purposes.
 
@@ -343,7 +342,7 @@ class mockSdio:
     VID/PID values and basic configuration parameters.
     """
 
-    def __init__(self, path: Optional[str] = None) -> None:
+    def __init__(self, path: str | None = None) -> None:
         """Initialize the SDIO interface object.
 
         Creates an SDIO interface with the specified device path and initializes
@@ -362,7 +361,7 @@ class mockSdio:
             communication settings for secure provisioning operations.
             """
 
-            def __init__(self, _path: Optional[str]) -> None:
+            def __init__(self, _path: str | None) -> None:
                 self._opened = False
                 # Temporarily use hard code until there is a way to retrieve VID/PID
                 self.vid = 0x0471
@@ -614,9 +613,9 @@ def test_sio_device_search_fail() -> None:
 
 # def mock_uart_init_permission_error(
 #     self,
-#     port: Optional[str] = None,
-#     timeout: Optional[int] = None,
-#     baudrate: Optional[int] = None,
+#     port: str | None = None,
+#     timeout: int | None = None,
+#     baudrate: int | None = None,
 # ):
 #     if port == "COM1":
 #         raise SPSDKPermissionError()
@@ -633,10 +632,10 @@ class PermissionTestMockSerial:
 
     def __init__(
         self,
-        port: Optional[str] = None,
+        port: str | None = None,
         baudrate: int = 9600,
-        timeout: Optional[int] = None,
-        write_timeout: Optional[int] = None,
+        timeout: int | None = None,
+        write_timeout: int | None = None,
     ):
         """Initialize mock serial connection for testing.
 
@@ -747,9 +746,9 @@ def test_uart_device_search_no_device_found_error_continues() -> None:
     """
 
     def mock_mb_scan_raises(
-        port: Optional[str] = None,
-        baudrate: Optional[int] = None,
-        timeout: Optional[int] = None,
+        port: str | None = None,
+        baudrate: int | None = None,
+        timeout: int | None = None,
     ) -> list:
         """Raise SpsdkNoDeviceFoundError for every port to simulate non-mboot devices."""
         raise SpsdkNoDeviceFoundError(

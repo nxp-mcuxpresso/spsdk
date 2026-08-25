@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -16,7 +15,6 @@ key management and cryptographic operations in development environments.
 
 import abc
 import os
-from typing import Optional
 
 from typing_extensions import Self
 
@@ -66,7 +64,7 @@ class DevHsm(FeatureBaseClass):
 
     RESET_TIMEOUT = 500  # timeout for reset in milliseconds
 
-    def __init__(self, family: FamilyRevision, workspace: Optional[str] = None) -> None:
+    def __init__(self, family: FamilyRevision, workspace: str | None = None) -> None:
         """Device HSM base class constructor.
 
         Initialize Device HSM with specified chip family and optional workspace directory.
@@ -149,7 +147,7 @@ class DevHsm(FeatureBaseClass):
 
     @abc.abstractmethod
     def oem_set_master_share(
-        self, oem_seed: Optional[bytes] = None, enc_oem_share: Optional[bytes] = None
+        self, oem_seed: bytes | None = None, enc_oem_share: bytes | None = None
     ) -> bytes:
         """Set OEM Master share on the device.
 
@@ -161,7 +159,7 @@ class DevHsm(FeatureBaseClass):
         :return: Response data from the device after setting the master share.
         """
 
-    def store_temp_res(self, file_name: str, data: bytes, group: Optional[str] = None) -> None:
+    def store_temp_res(self, file_name: str, data: bytes, group: str | None = None) -> None:
         """Store temporary files into workspace.
 
         The method saves data to a file in the workspace directory. If a group is specified,
@@ -232,7 +230,7 @@ class DevHsm(FeatureBaseClass):
 
     @staticmethod
     def get_oem_share_input(
-        binary: Optional[str] = None, search_paths: Optional[list[str]] = None
+        binary: str | None = None, search_paths: list[str] | None = None
     ) -> bytes:
         """Get OEM share input data from file.
 

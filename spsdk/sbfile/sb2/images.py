@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2026 NXP
 #
@@ -14,8 +13,9 @@ capabilities for NXP MCU secure provisioning.
 
 import logging
 import os
+from collections.abc import Iterator
 from datetime import datetime
-from typing import Any, Iterator, Optional
+from typing import Any
 
 from typing_extensions import Self
 
@@ -78,11 +78,11 @@ class SBV2xAdvancedParams:
 
     def __init__(
         self,
-        dek: Optional[bytes] = None,
-        mac: Optional[bytes] = None,
-        nonce: Optional[bytes] = None,
-        timestamp: Optional[datetime] = None,
-        padding: Optional[bytes] = None,
+        dek: bytes | None = None,
+        mac: bytes | None = None,
+        nonce: bytes | None = None,
+        timestamp: datetime | None = None,
+        padding: bytes | None = None,
     ):
         """Initialize SBV2xAdvancedParams.
 
@@ -225,7 +225,7 @@ class BootImageV20(BaseClass):
         self._kek = kek
         # Set Flags value
         self._signed = signed
-        self.signature_provider: Optional[SignatureProvider] = None
+        self.signature_provider: SignatureProvider | None = None
         flags = 0x08 if self.signed else 0x04
         # Set private attributes
         self._dek: bytes = advanced_params.dek
@@ -243,7 +243,7 @@ class BootImageV20(BaseClass):
             nonce=advanced_params.nonce,
             timestamp=advanced_params.timestamp,
         )
-        self._cert_section: Optional[CertSectionV2] = None
+        self._cert_section: CertSectionV2 | None = None
         self._boot_sections: list[BootSectionV2] = []
         # Generate nonce
         if self._header.nonce is None:
@@ -297,7 +297,7 @@ class BootImageV20(BaseClass):
         return self._signed
 
     @property
-    def cert_block(self) -> Optional[CertBlockV1]:
+    def cert_block(self) -> CertBlockV1 | None:
         """Get certificate block from the SB file.
 
         The method retrieves the certificate block from the certificate section if the SB file
@@ -313,7 +313,7 @@ class BootImageV20(BaseClass):
         return cert_sect.cert_block
 
     @cert_block.setter
-    def cert_block(self, value: Optional[CertBlockV1]) -> None:
+    def cert_block(self, value: CertBlockV1 | None) -> None:
         """Set certificate block for the SB file.
 
         Assigns a certificate block to the SB file or removes previously assigned block.
@@ -499,7 +499,7 @@ class BootImageV20(BaseClass):
             raise SPSDKError(f"Boot section with duplicate UID: {str(section.uid)}")
         self._boot_sections.append(section)
 
-    def export(self, padding: Optional[bytes] = None) -> bytes:
+    def export(self, padding: bytes | None = None) -> bytes:
         """Export image object to binary format.
 
         The method serializes the complete SB2 image including header, certificates,
@@ -562,7 +562,7 @@ class BootImageV20(BaseClass):
 
     # pylint: disable=too-many-locals
     @classmethod
-    def parse(cls, data: bytes, kek: bytes = bytes()) -> Self:
+    def parse(cls, data: bytes, kek: bytes = b"") -> Self:
         """Parse SB2.x image from raw bytes data.
 
         This method parses a Secure Binary 2.x image from binary data, validates the header MAC,
@@ -683,7 +683,7 @@ class BootImageV21(BaseClass):
         :param flags: Image flags controlling SHA presence and encryption/signing behavior.
         """
         self._kek = kek
-        self.signature_provider: Optional[SignatureProvider] = (
+        self.signature_provider: SignatureProvider | None = (
             None  # this should be assigned for export, not needed for parsing
         )
         self._dek = advanced_params.dek
@@ -698,7 +698,7 @@ class BootImageV21(BaseClass):
             timestamp=advanced_params.timestamp,
             padding=advanced_params.padding,
         )
-        self._cert_block: Optional[CertBlockV1] = None
+        self._cert_block: CertBlockV1 | None = None
         self.boot_sections: list[BootSectionV2] = []
         # ...
         for section in sections:
@@ -737,7 +737,7 @@ class BootImageV21(BaseClass):
         return self._kek
 
     @property
-    def cert_block(self) -> Optional[CertBlockV1]:
+    def cert_block(self) -> CertBlockV1 | None:
         """Get certificate block from SB file.
 
         Returns the certificate block if the SB file is signed and the block has been assigned,
@@ -927,7 +927,7 @@ class BootImageV21(BaseClass):
         self.boot_sections.append(section)
 
     # pylint: disable=too-many-locals
-    def export(self, padding: Optional[bytes] = None) -> bytes:
+    def export(self, padding: bytes | None = None) -> bytes:
         """Export SB2 image to binary format.
 
         The method validates all required components, updates internal structures, and exports
@@ -950,7 +950,7 @@ class BootImageV21(BaseClass):
         # Update internals
         self.update()
         # Export Boot Sections
-        bs_data = bytes()
+        bs_data = b""
         bs_offset = (
             ImageHeaderV2.SIZE
             + self.HEADER_MAC_SIZE
@@ -993,7 +993,7 @@ class BootImageV21(BaseClass):
         cls,
         data: bytes,
         offset: int = 0,
-        kek: bytes = bytes(),
+        kek: bytes = b"",
         plain_sections: bool = False,
     ) -> "BootImageV21":
         """Parse SB2.1 boot image from binary data.
@@ -1104,7 +1104,7 @@ class BootImageV21(BaseClass):
 
     @classmethod
     def get_commands_validation_schemas(
-        cls, family: Optional[FamilyRevision] = None
+        cls, family: FamilyRevision | None = None
     ) -> list[dict[str, Any]]:
         """Create the list of validation schemas for SB2.1 commands.
 
@@ -1191,7 +1191,7 @@ class BootImageV21(BaseClass):
     def parse_sb21_config(
         cls,
         config_path: str,
-        external_files: Optional[list[str]] = None,
+        external_files: list[str] | None = None,
     ) -> Config:
         """Parse SB2.1 configuration file and create configuration object.
 
@@ -1257,11 +1257,11 @@ class BootImageV21(BaseClass):
     def load_from_config(
         cls,
         config: Config,
-        key_file_path: Optional[str] = None,
-        signature_provider: Optional[SignatureProvider] = None,
-        signing_certificate_file_paths: Optional[list[str]] = None,
-        root_key_certificate_paths: Optional[list[str]] = None,
-        rkth_out_path: Optional[str] = None,
+        key_file_path: str | None = None,
+        signature_provider: SignatureProvider | None = None,
+        signing_certificate_file_paths: list[str] | None = None,
+        root_key_certificate_paths: list[str] | None = None,
+        rkth_out_path: str | None = None,
     ) -> Self:
         """Create an instance of BootImageV21 from configuration.
 

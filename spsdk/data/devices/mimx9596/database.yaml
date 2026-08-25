@@ -383,6 +383,10 @@ features:
     spl_meta_data_start_cpu_id: 2
     spl_ddr_image_size_alignment: 0x400
 
+    fcb_copy_load_address: 0x204D7000
+    fcb_copy_image_type: dek_validation_fcb_chk
+    fcb_copy_core_id: cortex-m33
+
     v2x_dummy_load_address: 0x8b000000
     v2x_dummy_image_type: v2x_dummy
     v2x_dummy_core_id: cortex-m33
@@ -427,6 +431,7 @@ features:
         cortex_m7_app,
         spl,
         v2x_dummy,
+        fcb_copy,
         atf,
         uboot,
         tee,
@@ -506,9 +511,13 @@ features:
         oei_ddr: oei-m33-ddr.bin
         system_manager: m33_image-mx95evk.bin
         cortex_m7_app: imx95-15x15-evk_m7_TCM_power_mode_switch.bin
-        spl: u-boot-spl.bin-imx95-15x15-lpddr4x-evk-sd
+        spl: u-boot-spl.bin
+        spl_alt:
+          - u-boot-spl.bin-imx95-15x15-lpddr4x-evk-sd
         atf: bl31-imx95.bin
-        uboot: u-boot-imx95-15x15-lpddr4x-evk.bin-sd
+        uboot: u-boot.bin
+        uboot_alt:
+          - u-boot-imx95-15x15-lpddr4x-evk.bin-sd
         tee: tee.bin
       imx95-19x19-lpddr5-evk:
         lpddr_imem: lpddr5_imem_v202409.bin
@@ -518,9 +527,13 @@ features:
         oei_ddr: oei-m33-ddr.bin
         system_manager: m33_image-mx95evk.bin
         cortex_m7_app: imx95-19x19-evk_m7_TCM_power_mode_switch.bin
-        spl: u-boot-spl.bin-imx95-19x19-lpddr5-evk-sd
+        spl: u-boot-spl.bin
+        spl_alt:
+          - u-boot-spl.bin-imx95-19x19-lpddr5-evk-sd
         atf: bl31-imx95.bin
-        uboot: u-boot-imx95-19x19-lpddr5-evk.bin-sd
+        uboot: u-boot.bin
+        uboot_alt:
+          - u-boot-imx95-19x19-lpddr5-evk.bin-sd
         tee: tee.bin
       imx95-19x19-verdin:
         lpddr_imem: lpddr5_imem_v202409.bin
@@ -530,9 +543,13 @@ features:
         oei_ddr: oei-m33-ddr.bin
         system_manager: m33_image-mx95evk.bin
         cortex_m7_app: imx95-verdin-evk_m7_TCM_power_mode_switch.bin
-        spl: u-boot-spl.bin-imx95-19x19-verdin-sd
+        spl: u-boot-spl.bin
+        spl_alt:
+          - u-boot-spl.bin-imx95-19x19-verdin-sd
         atf: bl31-imx95.bin
-        uboot: u-boot-imx95-19x19-verdin.bin-sd
+        uboot: u-boot.bin
+        uboot_alt:
+          - u-boot-imx95-19x19-verdin.bin-sd
         tee: tee.bin
 
   # # ======== OTFAD section ========

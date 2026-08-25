@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023,2025 NXP
+# Copyright 2020-2023,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,13 +11,11 @@ MBoot-related exceptions in SPSDK, including inheritance relationships,
 error handling, and string representations.
 """
 
-from typing import Type
-
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.exceptions import McuBootCommandError, McuBootConnectionError, McuBootError
 
 
-def raise_and_catch(raising_exc: Exception, catching_exc: Type[Exception]) -> bool:
+def raise_and_catch(raising_exc: Exception, catching_exc: type[Exception]) -> bool:
     """Test if an exception can be caught by a specific exception type.
 
     This utility function raises a given exception and attempts to catch it

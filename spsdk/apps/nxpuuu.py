@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
@@ -14,9 +13,10 @@ family identification, and secure image flashing operations.
 
 import logging
 import os
+import re
 import sys
 from types import TracebackType
-from typing import Any, Optional, Type
+from typing import Any
 
 import click
 import colorama
@@ -36,9 +36,34 @@ from spsdk.exceptions import SPSDKError
 from spsdk.image.bootable_image.bimg import BootableImage
 from spsdk.uboot.spsdk_uuu import SPSDKUUU
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import load_binary, load_text
+from spsdk.utils.misc import get_printable_path, load_binary, load_text
 
 logger = logging.getLogger(__name__)
+
+_UUU_VERSION_RE = re.compile(r"^\s*uuu_version\s+\S+.*$", re.IGNORECASE | re.MULTILINE)
+
+
+def _strip_uuu_version(script_text: str, uuu_version_str: str) -> str:
+    """Strip ``uuu_version`` directives from a UUU script.
+
+    The original UUU tool enforces minimum tool version via ``uuu_version <ver>``
+    lines in scripts. SPSDK's nxpuuu wraps the native UUU library which may reject
+    these lines with a version mismatch. Since SPSDK uses its own version scheme,
+    the directive cannot be meaningfully enforced and is skipped with a warning so
+    that existing factory scripts continue to work unchanged.
+
+    :param script_text: Raw UUU script text.
+    :param uuu_version_str: Current native UUU library version string (for the warning).
+    :return: Script with all ``uuu_version`` lines removed.
+    """
+    matches = _UUU_VERSION_RE.findall(script_text)
+    if matches:
+        click.echo(
+            f"WARNING: uuu_version directive(s) are not enforced by nxpuuu "
+            f"(native UUU lib: {uuu_version_str}): {', '.join(m.strip() for m in matches)}",
+            err=True,
+        )
+    return _UUU_VERSION_RE.sub("", script_text)
 
 
 # List to store device information
@@ -111,16 +136,16 @@ class UUUOperation:
 
     def __exit__(
         self,
-        exception_type: Optional[Type[BaseException]] = None,
-        exception_value: Optional[BaseException] = None,
-        traceback: Optional[TracebackType] = None,
+        exception_type: type[BaseException] | None = None,
+        exception_value: BaseException | None = None,
+        traceback: TracebackType | None = None,
     ) -> None:
         """Exit the context manager and print success if no exceptions occurred."""
         if exception_type is None:
             click.echo("Success")
 
 
-def get_device_list(uuu: SPSDKUUU, usb_filter: Optional[str] = None) -> list[dict[str, Any]]:
+def get_device_list(uuu: SPSDKUUU, usb_filter: str | None = None) -> list[dict[str, Any]]:
     """Get a list of connected USB devices, optionally filtered by VID:PID.
 
     :param uuu: SPSDKUUU instance
@@ -157,7 +182,7 @@ def get_device_list(uuu: SPSDKUUU, usb_filter: Optional[str] = None) -> list[dic
     return filtered_devices
 
 
-def detect_family_from_usb(vid: int, pid: int) -> Optional[str]:
+def detect_family_from_usb(vid: int, pid: int) -> str | None:
     """Detect the device family based on VID:PID.
 
     :param vid: Vendor ID
@@ -253,6 +278,7 @@ def script(ctx: click.Context, script_file: str) -> None:
     """
     uuu: SPSDKUUU = ctx.obj["uuu"]
     script_text = load_text(script_file)
+    script_text = _strip_uuu_version(script_text, uuu.uuu.get_version_string())
     logger.debug(f"Processing script:\n{script_text}")
     with UUUOperation(uuu) as uuu_op:
         uuu_op.handle_error(uuu_op.uuu.run_script(script_text))
@@ -286,9 +312,9 @@ def script(ctx: click.Context, script_file: str) -> None:
 @click.pass_context
 def write(
     ctx: click.Context,
-    family: Optional[FamilyRevision] = None,
-    boot_device: Optional[str] = None,
-    arguments: Optional[list[str]] = None,
+    family: FamilyRevision | None = None,
+    boot_device: str | None = None,
+    arguments: list[str] | None = None,
     verify: bool = False,
     daemon: bool = False,
 ) -> None:
@@ -404,7 +430,7 @@ def write(
     metavar="VID:PID",
 )
 @click.pass_context
-def list_devices(ctx: click.Context, usb: Optional[str]) -> None:
+def list_devices(ctx: click.Context, usb: str | None) -> None:
     """List all connected USB devices."""
     uuu: SPSDKUUU = ctx.obj["uuu"]
 
@@ -415,12 +441,11 @@ def list_devices(ctx: click.Context, usb: Optional[str]) -> None:
         sys.exit(2)
 
     table = prettytable.PrettyTable()
-    table.align = "l"
     table.header = True
     table.border = True
     table.hrules = prettytable.HRuleStyle.HEADER
     table.vrules = prettytable.VRuleStyle.NONE
-    table.field_names = [
+    field_names = [
         "Path",
         "Chip",
         "Product",
@@ -429,6 +454,8 @@ def list_devices(ctx: click.Context, usb: Optional[str]) -> None:
         "BCD",
         "Serial Number",
     ]
+    table.field_names = field_names
+    table.align = "l"
     for device in filtered_devices:
         table.add_row(
             [
@@ -454,7 +481,7 @@ def list_devices(ctx: click.Context, usb: Optional[str]) -> None:
     required=False,
     help="Output file path for udev rules (default: print to stdout)",
 )
-def udev(output: Optional[str]) -> None:
+def udev(output: str | None) -> None:
     """Generate udev rules for NXP devices supporting UUU.
 
     This command generates udev rules for all NXP devices that support the
@@ -488,11 +515,11 @@ def udev(output: Optional[str]) -> None:
         try:
             with open(output, "w", encoding="utf-8") as f:
                 f.write(rules_content)
-            click.echo(f"udev rules written to: {output}")
+            click.echo(f"udev rules written to: {get_printable_path(output)}")
             click.echo("\nTo activate the rules, run:")
             click.echo("  sudo udevadm control --reload-rules")
             click.echo("  sudo udevadm trigger")
-        except (OSError, IOError) as e:
+        except OSError as e:
             raise SPSDKAppError(f"Failed to write udev rules to {output}: {e}") from e
     else:
         click.echo(rules_content)

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
 # Copyright 2019-2026 NXP
@@ -13,7 +12,6 @@ enabling secure provisioning operations over serial connections.
 """
 
 import logging
-from typing import Optional
 
 from typing_extensions import Self
 
@@ -49,9 +47,9 @@ class MbootUARTInterface(MbootSerialProtocol):
     @classmethod
     def scan(
         cls,
-        port: Optional[str] = None,
-        baudrate: Optional[int] = None,
-        timeout: Optional[int] = None,
+        port: str | None = None,
+        baudrate: int | None = None,
+        timeout: int | None = None,
     ) -> list[Self]:
         """Scan connected UART devices.
 

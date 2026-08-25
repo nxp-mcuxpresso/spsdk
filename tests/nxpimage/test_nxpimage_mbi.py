@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -17,16 +16,15 @@ generation, configuration validation, and signature provider integration.
 
 import filecmp
 import json
+import logging
 import os
 import shutil
-from typing import Optional
 
 import pytest
 import yaml
 
 from spsdk.apps import nxpimage
 from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
-from spsdk.crypto.dilithium import IS_DILITHIUM_SUPPORTED
 from spsdk.crypto.hash import get_hash
 from spsdk.crypto.keys import PrivateKey, PrivateKeyEcc, PrivateKeyRsa, PublicKeyEcc
 from spsdk.crypto.signature_provider import PlainFileSP, SignatureProvider, get_signature_provider
@@ -354,7 +352,7 @@ def test_mbi_misr_config_template(cli_runner: CliRunner, tmpdir: str) -> None:
     assert os.path.isfile(misr_template), "MISR template should be named mcxc151_xip_misr.yaml"
 
     # Load and verify template content
-    with open(misr_template, "r") as f:
+    with open(misr_template) as f:
         template_content = yaml.safe_load(f)
 
     assert "imageVersion" not in template_content, "MISR template should not include imageVersion"
@@ -769,7 +767,7 @@ def test_nxpimage_mbi_signed(
     tmpdir: str,
     config_file: str,
     device: str,
-    sign_digest: Optional[str],
+    sign_digest: str | None,
 ) -> None:
     """Test nxpimage MBI signed binary generation and validation.
 
@@ -943,9 +941,6 @@ def test_nxpimage_mbi_signed_mcxe31(
             "mb_xip_signed_ecc256_mldsa65.yaml",
             "mcxn556s",
             "SHA384",
-            marks=pytest.mark.skipif(
-                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
-            ),
         ),
         pytest.param(
             "mb_xip_signed_ecc384.yaml",
@@ -956,9 +951,6 @@ def test_nxpimage_mbi_signed_mcxe31(
             "mb_xip_signed_ecc384_mldsa87.yaml",
             "mcxa577",
             "SHA384",
-            marks=pytest.mark.skipif(
-                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
-            ),
         ),
     ],
 )
@@ -1245,7 +1237,7 @@ def test_mbi_parser_signed(
     nxpimage_data_dir: str,
     family: str,
     config_file: str,
-    sign_digest: Optional[str],
+    sign_digest: str | None,
 ) -> None:
     """Test MBI parser functionality with signed images.
 
@@ -1451,7 +1443,7 @@ def test_nxpimage_mbi_legacy_signed(
         assert len(ref_data) == len(new_data)
 
         # validate signatures
-        with open(new_config, "r") as f:
+        with open(new_config) as f:
             config_data = json.load(f)
 
         signing_key = PrivateKeyRsa.load(config_data["signer"])
@@ -1591,7 +1583,7 @@ def test_nxpimage_mbi_legacy_encrypted(
         assert len(ref_data) == len(new_data)
 
         # validate signatures
-        with open(new_config, "r") as f:
+        with open(new_config) as f:
             config_data = json.load(f)
 
         signing_key = PrivateKeyRsa.load(config_data["signer"])
@@ -1944,7 +1936,7 @@ def test_mbi_signature_provider(
     cli_runner: CliRunner,
     data_dir: str,
     tmpdir: str,
-    main_root_cert_id: Optional[int],
+    main_root_cert_id: int | None,
     sign_provider: str,
     exit_code: int,
 ) -> None:
@@ -1996,3 +1988,69 @@ def test_mbi_signature_provider(
         yaml.dump(cert_config_data, fp)
     cmd = f"mbi export -c {config_file}"
     cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=exit_code)
+
+
+def test_lpc55s16_mbi_export_warns_on_chain_cert_rsa4096(
+    cli_runner: "CliRunner",
+    nxpimage_data_dir: str,
+    tmpdir: str,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Test that nxpimage mbi export warns when chain certificates use RSA4096 for LPC55S16.
+
+    Creates a signed XIP Master Boot Image for lpc55s16 using a certificate chain where
+    the chain certificate has an RSA4096 public key. Verifies that the export command
+    succeeds and that a warning about the unsupported key size is emitted.
+
+    Static test data (certs, keys, and configs) are loaded from the data directory,
+    then YAML configs are updated with absolute paths and written to tmpdir for CLI execution.
+
+    :param cli_runner: Click CLI test runner for invoking nxpimage commands.
+    :param nxpimage_data_dir: Base directory containing nxpimage test data files.
+    :param tmpdir: Temporary directory for modified configs and output files.
+    :param caplog: Pytest log capture fixture for intercepting log output.
+    """
+    mbi_data_dir = os.path.join(nxpimage_data_dir, "mbi")
+    keys_dir = os.path.join(mbi_data_dir, "keys_and_certs")
+
+    # Load cert-block config from data directory
+    cert_block_src = os.path.join(mbi_data_dir, "lpc55s16_cert_block_chain_rsa4096.yaml")
+    with open(cert_block_src) as f:
+        cert_block_cfg = yaml.safe_load(f)
+
+    # Update paths to absolute, pointing to files in data directory
+    cert_block_cfg["signer"] = (
+        f"type=file;file_path={os.path.join(keys_dir, 'lpc55s16_chain_rsa4096.pem')}"
+    )
+    cert_block_cfg["rootCertificate0File"] = os.path.join(keys_dir, "lpc55s16_root_rsa4096.der")
+    cert_block_cfg["chainCertificate0File0"] = os.path.join(keys_dir, "lpc55s16_chain_rsa4096.der")
+    cert_block_cfg["containerOutputFile"] = os.path.join(tmpdir, "cert_block.bin")
+
+    cert_block_tmp = os.path.join(tmpdir, "lpc55s16_cert_block_chain_rsa4096.yaml")
+    with open(cert_block_tmp, "w") as f:
+        yaml.dump(cert_block_cfg, f)
+
+    # Load MBI config from data directory
+    mbi_src = os.path.join(mbi_data_dir, "lpc55s16_xip_signed_chain_rsa4096.yaml")
+    with open(mbi_src) as f:
+        mbi_cfg = yaml.safe_load(f)
+
+    # Update paths to absolute
+    mbi_cfg["signer"] = (
+        f"type=file;file_path={os.path.join(keys_dir, 'lpc55s16_chain_rsa4096.pem')}"
+    )
+    mbi_cfg["inputImageFile"] = os.path.join(mbi_data_dir, "test_application.bin")
+    mbi_cfg["certBlock"] = cert_block_tmp
+    mbi_cfg["masterBootOutputFile"] = os.path.join(tmpdir, "output.bin")
+
+    mbi_yaml_tmp = os.path.join(tmpdir, "lpc55s16_xip_signed_chain_rsa4096.yaml")
+    with open(mbi_yaml_tmp, "w") as f:
+        yaml.dump(mbi_cfg, f)
+
+    # Run CLI and capture warning
+    with caplog.at_level(logging.WARNING, logger="spsdk.image.mbi.mbi"):
+        cli_runner.invoke(nxpimage.main, ["mbi", "export", "-c", mbi_yaml_tmp])
+
+    assert any(
+        "RSA4096" in r.message and "lpc55s16" in r.message.lower() for r in caplog.records
+    ), f"Expected RSA4096 chain cert warning for lpc55s16, got: {caplog.text}"

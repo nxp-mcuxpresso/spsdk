@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-## Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK HAB image testing configuration and fixtures.
 
 This module provides pytest configuration and fixtures for testing HAB (High Assurance Boot)
@@ -32,7 +32,7 @@ def srk_pem_func(data_dir: str) -> list[bytes]:
     """
     srk_pem = []
     for i in range(4):
-        srk_pem_file = "SRK{}_sha256_4096_65537_v3_ca_crt.pem".format(i + 1)
+        srk_pem_file = f"SRK{i + 1}_sha256_4096_65537_v3_ca_crt.pem"
         with open(os.path.join(data_dir, srk_pem_file), "rb") as f:
             srk_pem.append(f.read())
     return srk_pem

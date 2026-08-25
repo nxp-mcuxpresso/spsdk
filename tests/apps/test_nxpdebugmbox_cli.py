@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2026 NXP
 #
@@ -12,12 +11,19 @@ hardware-free subcommands (get-families, get-template, etc.) to maximize
 code coverage without requiring real debug probe hardware.
 """
 
+import contextlib
 import os
+from collections.abc import Iterator
 
 import pytest
+from typing_extensions import Never
 
-from spsdk.apps.nxpdebugmbox import main
+from spsdk.apps.nxpdebugmbox import DebugMailboxParams, DebugProbeParams, main
+from spsdk.apps.nxpdebugmbox import test_connection as nxpdebugmbox_test_connection
+from spsdk.exceptions import SPSDKError
+from spsdk.utils.family import FamilyRevision
 from tests.cli_runner import CliRunner
+from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
 
 # Family used for hardware-free template/family tests
 DAT_FAMILY = "lpc55s69"
@@ -38,6 +44,38 @@ def test_nxpdebugmbox_get_families(cli_runner: CliRunner) -> None:
     """Test top-level get-families command."""
     result = cli_runner.invoke(main, ["get-families"])
     assert result.output  # Should list supported families
+
+
+@pytest.mark.parametrize(
+    ("root_options", "expected_reset"),
+    [
+        ([], True),
+        (["-n"], False),
+        (["--no-reset"], False),
+    ],
+)
+def test_nxpdebugmbox_no_reset_option(
+    cli_runner: CliRunner,
+    monkeypatch: pytest.MonkeyPatch,
+    root_options: list[str],
+    expected_reset: bool,
+) -> None:
+    """Test root --no-reset option controls debug mailbox reset."""
+    captured: dict[str, bool] = {}
+
+    def fake_famode(
+        _family: FamilyRevision,
+        _debug_probe_params: DebugProbeParams,
+        debug_mailbox_params: DebugMailboxParams,
+        _message: str,
+    ) -> None:
+        captured["reset"] = debug_mailbox_params.reset
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.famode", fake_famode)
+
+    cli_runner.invoke(main, [*root_options, "cmd", "-f", "kw47b42zb7", "famode"])
+
+    assert captured["reset"] is expected_reset
 
 
 # ---------------------------------------------------------------------------
@@ -167,6 +205,52 @@ def test_mem_tool_get_families(cli_runner: CliRunner) -> None:
     """Test mem-tool get-families lists supported families."""
     result = cli_runner.invoke(main, ["mem-tool", "get-families"])
     assert result.output
+
+
+def test_mem_tool_test_connection_failure_returns_false(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test mem-tool test_connection returns False on probe/open failures.
+
+    This is a regression test for user-facing behavior: failures during probe
+    opening should not bubble up as SPSDKAppError from the helper function.
+    """
+
+    @contextlib.contextmanager
+    def failing_open_debug_probe(*args: object, **kwargs: object) -> Iterator[Never]:
+        raise SPSDKError("The memory access port is not found!")
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.open_debug_probe", failing_open_debug_probe)
+    debug_probe_params = DebugProbeParams(
+        interface="virtual", serial_no="dummy", debug_probe_user_params={}
+    )
+
+    result = nxpdebugmbox_test_connection(
+        family=FamilyRevision(name=DAT_FAMILY),
+        debug_probe_params=debug_probe_params,
+        destination="cpu_mem",
+    )
+
+    assert result is False
+
+
+def test_mem_tool_test_connection_command_failure_has_nonzero_exit(
+    cli_runner: CliRunner,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """mem-tool test-connection command returns non-zero exit code on failure."""
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.test_connection", lambda *args, **kwargs: False)
+
+    cmd = [
+        "-i",
+        "virtual",
+        "-s",
+        DebugProbeVirtual.UNIQUE_SERIAL,
+        "mem-tool",
+        "test-connection",
+        "-f",
+        DAT_FAMILY,
+    ]
+    cli_runner.invoke(main, cmd, expected_code=1)
 
 
 # ---------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 tox<5
 tox-uv<2
 uv<1,>=0.9.5
--r requirements.txt
+-e .
 # testing
 pytest<10
 voluptuous<1
@@ -30,11 +30,11 @@ inquirerpy<1
 flask<4
 ipython<10
 notebook<8
-pytest-notebook<1,>=0.10
+nbclient<2,>=0.5
+nbformat<6,>=5.10
 cookiecutter<3
 
 # ---------------------------------------
 # Packages needed for documentation
 # ---------------------------------------
 -r docs/requirements.txt
-

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
@@ -13,7 +12,6 @@ for validating fuse programming and reading functionality.
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 from spsdk.fuses.fuse_registers import FuseRegister, FuseRegisters
 from spsdk.fuses.fuses import FuseOperator
@@ -31,7 +29,7 @@ class FuseAction:
 
     action_type: str
     fuse_index: int
-    value: Optional[int] = None
+    value: int | None = None
 
 
 class TestFuseOperator(FuseOperator):
@@ -49,7 +47,7 @@ class TestFuseOperator(FuseOperator):
 
     NAME = "test_operator"
 
-    def __init__(self, return_values: Optional[dict] = None):
+    def __init__(self, return_values: dict | None = None):
         """Initialize the test operator for fuse operations.
 
         Creates a new instance of the fuse test operator with an empty list of actions

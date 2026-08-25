@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -14,7 +13,6 @@ and MbootBulkProtocol class for handling bulk transfer operations.
 """
 
 from struct import pack, unpack_from
-from typing import Optional, Union
 
 from spsdk import get_logger
 from spsdk.exceptions import SPSDKAttributeError
@@ -112,7 +110,7 @@ class MbootBulkProtocol(MbootProtocolBase):
         frame = self._create_frame(data, ReportId.CMD_OUT)
         self.device.write(frame)
 
-    def read(self, length: Optional[int] = None) -> Union[CmdResponse, bytes]:
+    def read(self, length: int | None = None) -> CmdResponse | bytes:
         """Read data from device.
 
         Reads up to 1024 bytes from the connected device and parses the received frame
@@ -144,7 +142,7 @@ class MbootBulkProtocol(MbootProtocolBase):
         return raw_data
 
     @staticmethod
-    def _parse_frame(raw_data: bytes) -> Union[CmdResponse, bytes]:
+    def _parse_frame(raw_data: bytes) -> CmdResponse | bytes:
         """Parse USB interface frame data into command response or raw data.
 
         The method decodes raw USB data by extracting report ID, payload length, and data content.

@@ -1,10 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-#
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -23,12 +19,16 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Optional, Union
 
 try:
     from cody_api_client import send_prompt_to_cody
 except ImportError:
     sys.exit("Could not import send_prompt_to_cody from cody_api_client")
+
+try:
+    from docstring_context_loader import load_docstring_context
+except ImportError:
+    from tools.docstring_context_loader import load_docstring_context
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -50,7 +50,7 @@ class MethodInfo:
         body: str,
         start_line: int,
         end_line: int,
-        current_docstring: Optional[str] = None,
+        current_docstring: str | None = None,
     ):
         """Initialize a method representation object.
 
@@ -92,43 +92,7 @@ class DocstringUpdater:
         """
         self.target_directory = Path(target_directory)
         self.dry_run = dry_run
-        self.spsdk_context = self._gather_spsdk_context()
-
-    def _gather_spsdk_context(self) -> str:
-        """Gather context about SPSDK project structure and conventions.
-
-        This method creates a comprehensive context string that includes project information,
-        docstring style guidelines, and examples for use in documentation generation tools.
-
-        :return: Formatted context string containing SPSDK project information and style guidelines.
-        """
-        context_parts = [
-            "SPSDK (Secure Provisioning SDK) Project Context:",
-            "",
-            "SPSDK is a unified, reliable, and easy-to-use SW library working across",
-            "NXP MCU portfolio providing strong foundation from quick customer",
-            "prototyping up to production deployment.",
-            "",
-            "Docstring Style Guidelines:",
-            "- Use triple quotes with proper indentation",
-            "- Start with a brief one-line description",
-            "- Add detailed description if needed (separated by blank line)",
-            "- Document all parameters with :param name: description",
-            "- Document return values with :return: description",
-            "- Document exceptions with :raises ExceptionType: description",
-            "- Use proper type hints in function signatures",
-            "",
-            "Example of good SPSDK docstring:",
-            '"""Get common data file path.',
-            "",  # <- Empty line after title
-            "The method counts also with restricted data source and any other addons.",
-            "",  # <- Empty line after description
-            ":param path: Relative path in common data folder.",
-            ":raises SPSDKValueError: Non existing file path.",
-            ":return: Final absolute path to data file.",
-            '"""',
-        ]
-        return "\n".join(context_parts)
+        self.spsdk_context = load_docstring_context("method")
 
     def find_python_files(self) -> list[Path]:
         """Find all Python files in the target directory and subdirectories.
@@ -177,7 +141,7 @@ class DocstringUpdater:
         :return: List of MethodInfo objects containing details about found methods.
         """
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 content = f.read()
 
             tree = ast.parse(content)
@@ -198,8 +162,8 @@ class DocstringUpdater:
             return []
 
     def _extract_method_info(
-        self, node: Union[ast.FunctionDef, ast.AsyncFunctionDef], lines: list[str]
-    ) -> Optional[MethodInfo]:
+        self, node: ast.FunctionDef | ast.AsyncFunctionDef, lines: list[str]
+    ) -> MethodInfo | None:
         """Extract information about a single method from AST node.
 
         Parses the AST node to extract method signature, body, line numbers,
@@ -262,9 +226,7 @@ class DocstringUpdater:
             LOGGER.error(f"Error extracting method info for {node.name}: {e}")
             return None
 
-    def generate_docstring_with_cody(
-        self, method_info: MethodInfo, file_path: Path
-    ) -> Optional[str]:
+    def generate_docstring_with_cody(self, method_info: MethodInfo, file_path: Path) -> str | None:
         """Generate or improve a docstring for a method using Cody API.
 
         This method sends a prompt to the Cody API containing the method information,
@@ -454,7 +416,7 @@ class DocstringUpdater:
         :return: True if the docstring was successfully updated, False otherwise.
         """
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 lines = f.readlines()
 
             # Find where to insert/replace the docstring

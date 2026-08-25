@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,7 +14,7 @@ record formats for configuring memory regions and security policies.
 import logging
 from dataclasses import dataclass
 from struct import pack, unpack
-from typing import Any, Optional, Type, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -197,7 +196,7 @@ class TrustZone(FeatureBaseClass):
         return self.regs.export()
 
     @classmethod
-    def parse(cls, data: bytes, family: Optional[FamilyRevision] = None) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision | None = None) -> Self:
         """Parse TrustZone configuration from bytes array.
 
         :param data: Bytes array containing TrustZone configuration data.
@@ -349,7 +348,7 @@ class TrustZoneV2(FeatureBaseClass):
     MAGIC_CONST_END = 0x454D5A54  # "TZME" Magic word to mark end of TrustZone configuration
 
     def __init__(
-        self, family: FamilyRevision, records: Optional[list[TrustZoneV2Record]] = None
+        self, family: FamilyRevision, records: list[TrustZoneV2Record] | None = None
     ) -> None:
         """Initialize the TrustZone configuration.
 
@@ -473,7 +472,7 @@ class TrustZoneV2(FeatureBaseClass):
         return data
 
     @classmethod
-    def parse(cls, data: bytes, family: Optional[FamilyRevision] = None) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision | None = None) -> Self:
         """Parse TrustZone configuration from bytes array.
 
         The method validates magic constants at the start and end of the data,
@@ -505,7 +504,7 @@ class TrustZoneV2(FeatureBaseClass):
         return ret
 
     @staticmethod
-    def find_trustzone_block_offset(data: bytes) -> Optional[int]:
+    def find_trustzone_block_offset(data: bytes) -> int | None:
         """Find the offset of the TrustZone block in the data.
 
         This method searches for a valid TrustZone configuration block by looking for the
@@ -535,7 +534,7 @@ class TrustZoneV2(FeatureBaseClass):
         return None
 
 
-def get_tz_class(family: FamilyRevision) -> Union[Type[TrustZone], Type[TrustZoneV2]]:
+def get_tz_class(family: FamilyRevision) -> type[TrustZone] | type[TrustZoneV2]:
     """Get the appropriate TrustZone class based on family revision.
 
     The method determines which TrustZone implementation to use by querying the database
@@ -544,7 +543,7 @@ def get_tz_class(family: FamilyRevision) -> Union[Type[TrustZone], Type[TrustZon
     :param family: Family revision to determine TrustZone class.
     :return: Appropriate TrustZone class implementation (TrustZone or TrustZoneV2).
     """
-    classes: dict[str, Union[Type[TrustZone], Type[TrustZoneV2]]] = {
+    classes: dict[str, type[TrustZone] | type[TrustZoneV2]] = {
         "v1": TrustZone,
         "v2": TrustZoneV2,
     }

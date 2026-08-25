@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,7 +14,6 @@ customer firmware authentication, and secure provisioning operations.
 
 import os
 import sys
-from typing import Type, Union
 
 import click
 
@@ -95,7 +93,7 @@ def get_template(family: FamilyRevision, output: str) -> None:
     )
 
 
-def get_devhsm_class_sb3_sb4(family: FamilyRevision) -> Union[Type[DevHsmSB31], Type[DevHsmSB4]]:
+def get_devhsm_class_sb3_sb4(family: FamilyRevision) -> type[DevHsmSB31] | type[DevHsmSB4]:
     """Get DevHsm class for SB3.1 and SB4 families."""
     if family in DevHsmSB31.get_supported_families():
         return DevHsmSB31
@@ -283,7 +281,7 @@ def get_cust_fw_auth(
 
         # allow for previously set OEM Shares
         devhsm = DevHsmSB31(
-            mboot=mboot, family=family, oem_share_input=bytes(), buffer_address=buffer_address
+            mboot=mboot, family=family, oem_share_input=b"", buffer_address=buffer_address
         )
         if oem_share_input and enc_oem_master_share:
             devhsm.oem_set_master_share(

@@ -221,6 +221,11 @@ features:
     tee_meta_data_start_cpu_id: 2
     tee_image_size_alignment: 0x400
 
+    mcu_load_address: 0x1FFE0000
+    mcu_core_id: cortex-m33
+    mcu_meta_data_start_cpu_id: 0
+    mcu_image_size_alignment: 0x400
+
     kernel_load_address: 0x80400000
     kernel_core_id: cortex-a55
     kernel_meta_data_start_cpu_id: 2
@@ -233,7 +238,7 @@ features:
     dtb_image_type: data
     dtb_image_size_alignment: 0x400
 
-    extra_images: ["spl_ddr", "atf", "uboot", "tee", "kernel", "dtb"]
+    extra_images: ["spl_ddr", "atf", "uboot", "tee", "mcu", "kernel", "dtb"]
 
   # ======== EdgeLock Enclave section ========
   ele: {}
@@ -336,18 +341,26 @@ features:
         lpddr_dmem_1d: lpddr4_dmem_1d_v202201.bin
         lpddr_imem_2d: lpddr4_imem_2d_v202201.bin
         lpddr_dmem_2d: lpddr4_dmem_2d_v202201.bin
-        spl_ddr: u-boot-spl.bin-imx93-11x11-lpddr4x-evk-sd
+        spl_ddr: u-boot-spl.bin
+        spl_ddr_alt:
+          - u-boot-spl.bin-imx93-11x11-lpddr4x-evk-sd
         atf: bl31-imx93.bin
-        uboot: u-boot-imx93-11x11-lpddr4x-evk.bin-sd
+        uboot: u-boot.bin
+        uboot_alt:
+          - u-boot-imx93-11x11-lpddr4x-evk.bin-sd
         tee: tee.bin
       imx93-9x9-lpddr4-qsb:
         lpddr_imem_1d: lpddr4_imem_1d_v202201.bin
         lpddr_dmem_1d: lpddr4_dmem_1d_v202201.bin
         lpddr_imem_2d: lpddr4_imem_2d_v202201.bin
         lpddr_dmem_2d: lpddr4_dmem_2d_v202201.bin
-        spl_ddr: u-boot-spl.bin-imx93-9x9-lpddr4-qsb-sd
+        spl_ddr: u-boot-spl.bin
+        spl_ddr_alt:
+          - u-boot-spl.bin-imx93-9x9-lpddr4-qsb-sd
         atf: bl31-imx93.bin
-        uboot: u-boot-imx93-9x9-lpddr4-qsb.bin-sd
+        uboot: u-boot.bin
+        uboot_alt:
+          - u-boot-imx93-9x9-lpddr4-qsb.bin-sd
         tee: tee.bin
 
   # ======== Misc signing section ========

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -26,7 +25,7 @@ def extract_error_codes_from_h_file(h_file_path: str) -> dict[int, str]:
     """Extract error codes from the C header file."""
     error_codes = {}
 
-    with open(h_file_path, "r", encoding="utf-8") as f:
+    with open(h_file_path, encoding="utf-8") as f:
         content = f.read()
 
     # Pattern to match #define STATUS_... 0x...u
@@ -45,7 +44,7 @@ def extract_error_codes_from_py_file(py_file_path: str) -> set[int]:
     """Extract error codes from the Python file."""
     error_codes = set()
 
-    with open(py_file_path, "r", encoding="utf-8") as f:
+    with open(py_file_path, encoding="utf-8") as f:
         content = f.read()
 
     # Pattern to match enum entries with numeric values

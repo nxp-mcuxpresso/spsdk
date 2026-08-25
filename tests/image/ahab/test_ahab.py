@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -13,7 +12,7 @@ components used in secure boot processes.
 """
 
 import copy
-from typing import Any, List, cast
+from typing import Any, cast
 
 import pytest
 
@@ -213,7 +212,7 @@ def image_entry() -> ImageArrayEntry:
 
 
 @pytest.fixture(scope="function")
-def image_array(request: Any) -> List[ImageArrayEntry]:
+def image_array(request: Any) -> list[ImageArrayEntry]:
     """Get image array fixture for testing.
 
     Creates a list containing a single image entry fixture for use in AHAB tests.
@@ -455,3 +454,35 @@ def test_signature_algorithms_include_ecdsa(family: str, feature: str, base_key:
     # MCX devices do NOT support RSA or SM2
     assert "RSA" not in algo_labels, f"{family} {feature} should not have RSA: {algo_labels}"
     assert "SM2" not in algo_labels, f"{family} {feature} should not have SM2: {algo_labels}"
+
+
+def test_mimx943_revisions_use_expected_ahab_v2_algorithms() -> None:
+    """Verify i.MX943 revision-specific AHAB v2 signature and hash algorithm metadata."""
+    default_config = create_chip_config(FamilyRevision("mimx943"))
+    a0_config = create_chip_config(FamilyRevision("mimx943", "a0"))
+    a1_config = create_chip_config(FamilyRevision("mimx943", "a1"))
+
+    default_signature_labels = {
+        algorithm.label for algorithm in default_config.signature_algorithms
+    }
+    a0_signature_labels = {algorithm.label for algorithm in a0_config.signature_algorithms}
+    a1_signature_labels = {algorithm.label for algorithm in a1_config.signature_algorithms}
+    a0_hash_labels = {algorithm.label for algorithm in a0_config.hash_algorithms}
+    a1_hash_labels = {algorithm.label for algorithm in a1_config.hash_algorithms}
+
+    assert "ML-DSA" in default_signature_labels
+    assert {"RSA_PSS", "ECDSA", "SM2", "DILITHIUM"}.issubset(a0_signature_labels)
+    assert "RSA" not in a0_signature_labels
+    assert "DILITHIUM" in a0_signature_labels
+    assert "ML-DSA" not in a0_signature_labels
+    assert {"RSA_PSS", "ECDSA", "SM2", "ML-DSA"}.issubset(a1_signature_labels)
+    assert "DILITHIUM" not in a1_signature_labels
+    v2_hash_labels = {
+        "SHA3_256",
+        "SHA3_384",
+        "SHA3_512",
+        "SHAKE_128_256",
+        "SHAKE_256_512",
+    }
+    assert v2_hash_labels.issubset(a0_hash_labels)
+    assert v2_hash_labels.issubset(a1_hash_labels)

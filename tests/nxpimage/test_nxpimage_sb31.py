@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -360,3 +359,41 @@ def test_isEncrypted_requires_containerKeyBlobEncryptionKey(
             jsonschema.validate(instance=config, schema=sb31_schema)
         assert "containerKeyBlobEncryptionKey" in str(excinfo.value)
         assert "required property" in str(excinfo.value)
+
+
+def _get_sb31_command_schema_names(family: str) -> set[str]:
+    """Get SB3.1 command names available in validation schema for a family.
+
+    :param family: Device family name.
+    :return: Set of command names accepted by the command schema.
+    """
+    schemas = SecureBinary31.get_commands_validation_schemas(FamilyRevision(family))
+    command_schemas = schemas[0]["properties"]["commands"]["items"]["oneOf"]
+    return {list(command["properties"].keys())[0] for command in command_schemas}
+
+
+@pytest.mark.parametrize("family", ["mcxl253", "mcxl254", "mcxl255"])
+def test_mcxl20_sb31_supported_commands_are_restricted(family: str) -> None:
+    """Test that MCXL20 SB3.1 schema exposes only ROM-supported commands.
+
+    :param family: MCXL20 family or alias.
+    """
+    assert _get_sb31_command_schema_names(family) == {
+        "erase",
+        "load",
+        "execute",
+        "loadKeyBlob",
+        "reset",
+    }
+
+
+@pytest.mark.parametrize("command", ["programIFR", "fillMemory", "writeIFR"])
+def test_mcxl20_sb31_unsupported_commands_are_rejected(command: str) -> None:
+    """Test that MCXL20 SB3.1 schema rejects unsupported commands.
+
+    :param command: Unsupported command name to validate.
+    """
+    schemas = SecureBinary31.get_commands_validation_schemas(FamilyRevision("mcxl255"))
+    config = Config({"commands": [{command: {}}]})
+    with pytest.raises(SPSDKError, match="Configuration validation failed"):
+        config.check(schemas)

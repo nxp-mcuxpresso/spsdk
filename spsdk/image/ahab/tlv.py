@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -14,7 +13,7 @@ and key import operations.
 
 import logging
 from inspect import isclass
-from typing import Any, Optional, Type
+from typing import Any
 
 from typing_extensions import Self
 from x690.types import TypeClass, TypeNature, X690Type, decode
@@ -112,7 +111,7 @@ class TLV(FeatureBaseClass):
         ).get_template()
 
     @classmethod
-    def get_tlv_class(cls, name: str) -> Type[Self]:
+    def get_tlv_class(cls, name: str) -> type[Self]:
         """Get the dedicated class for TLV by name.
 
         Searches through all available TLV subclasses to find the one that matches the specified
@@ -211,17 +210,17 @@ class KeyImportTLV(TLV):
         family: FamilyRevision,
         key_id: int = 0,
         permitted_algorithm: KeyAlgorithm = KeyAlgorithm.SHA256,
-        key_usage: Optional[list[KeyUsage]] = None,
+        key_usage: list[KeyUsage] | None = None,
         key_type: KeyType = KeyType.AES,
         key_size_bits: int = 0,
         key_lifetime: LifeTime = LifeTime.ELE_KEY_IMPORT_PERMANENT,
         key_lifecycle: LifeCycle = LifeCycle.OPEN,
         oem_import_mk_sk_key_id: int = 0,
         wrapping_algorithm: WrappingAlgorithm = WrappingAlgorithm.RFC3394,
-        iv: Optional[bytes] = None,
+        iv: bytes | None = None,
         signing_algorithm: KeyImportSigningAlgorithm = KeyImportSigningAlgorithm.CMAC,
-        wrapped_private_key: bytes = bytes(),
-        signature: bytes = bytes(),
+        wrapped_private_key: bytes = b"",
+        signature: bytes = b"",
     ) -> None:
         """Initialize key import blob for secure key provisioning.
 
@@ -382,7 +381,7 @@ class KeyImportTLV(TLV):
         return len(self.export())
 
     def wrap_and_sign(
-        self, private_key: bytes, oem_import_mk_sk_key: bytes, srkh: Optional[bytes] = None
+        self, private_key: bytes, oem_import_mk_sk_key: bytes, srkh: bytes | None = None
     ) -> None:
         """Wrap private key and sign the Import Key message.
 
@@ -398,13 +397,13 @@ class KeyImportTLV(TLV):
         oem_import_wrap_sk = hkdf(
             salt=srkh or bytes(32),
             ikm=oem_import_mk_sk_key,
-            info="oemelefwkeyimportwrap256".encode(),
+            info=b"oemelefwkeyimportwrap256",
             length=32,
         )
         oem_import_cmac_sk = hkdf(
             salt=srkh or bytes(32),
             ikm=oem_import_mk_sk_key,
-            info="oemelefwkeyimportcmac256".encode(),
+            info=b"oemelefwkeyimportcmac256",
             length=32,
         )
         logger.info(f"Derived OEM_IMPORT_WRAP_SK: {oem_import_wrap_sk.hex()}")
@@ -630,7 +629,7 @@ class KeyImportTLV(TLV):
         for usage in self.key_usage:
             key_usage |= usage.tag
 
-        ret = bytes()
+        ret = b""
         ret += bytes(self.KiMagic(self.HEADER_MAGIC.encode()))
         ret += bytes(self.KiKeyId(self.key_id.to_bytes(4, "big")))
         ret += bytes(self.KiKeyAlgorithm(self.permitted_algorithm.tag.to_bytes(4, "big")))
@@ -675,8 +674,8 @@ class KeyImportTLV(TLV):
             wrapping_algorithm=WrappingAlgorithm.RFC3394,
             iv=None,
             signing_algorithm=KeyImportSigningAlgorithm.CMAC,
-            wrapped_private_key=bytes(),
-            signature=bytes(),
+            wrapped_private_key=b"",
+            signature=b"",
         )
 
         tlv_magic, nxt = decode(data=data, enforce_type=instance.KiMagic)

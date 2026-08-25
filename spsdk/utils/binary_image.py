@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -18,7 +17,8 @@ import os
 import re
 import sys
 import textwrap
-from typing import Any, Generator, Optional
+from collections.abc import Generator
+from typing import Any
 
 import colorama
 from typing_extensions import Self
@@ -81,7 +81,7 @@ class ColorPicker:
         """
         self.index = len(self.COLORS)
 
-    def get_color(self, unwanted_color: Optional[str] = None) -> str:
+    def get_color(self, unwanted_color: str | None = None) -> str:
         """Get next color from the color list.
 
         The method cycles through available colors and skips any unwanted color
@@ -117,13 +117,13 @@ class BinaryImage:
         name: str,
         size: int = 0,
         offset: int = 0,
-        description: Optional[str] = None,
-        binary: Optional[bytes] = None,
-        pattern: Optional[BinaryPattern] = None,
+        description: str | None = None,
+        binary: bytes | None = None,
+        pattern: BinaryPattern | None = None,
         alignment: int = 1,
-        parent: Optional["BinaryImage"] = None,
-        execution_start_address: Optional[int] = None,
-        gap_pattern: Optional[BinaryPattern] = None,
+        parent: "BinaryImage | None" = None,
+        execution_start_address: int | None = None,
+        gap_pattern: BinaryPattern | None = None,
     ) -> None:
         """Initialize a new BinaryImage instance.
 
@@ -817,7 +817,7 @@ class BinaryImage:
             raise SPSDKValueError(f"Invalid input file format: {file_format}")
 
         if file_format == "BIN":
-            data = bytes()
+            data = b""
             if self.offset:
                 data += (
                     self.pattern.get_block(self.offset) if self.pattern else b"\x00" * self.offset
@@ -1029,7 +1029,7 @@ class BinaryImage:
 
         return binary_image
 
-    def _gap_dont_care_pattern(self) -> Optional[bytes]:
+    def _gap_dont_care_pattern(self) -> bytes | None:
         """Return the 4-byte repeating fill value that represents a structural gap.
 
         Gap blocks whose content equals this pattern may be encoded as DONT_CARE in the
@@ -1192,12 +1192,12 @@ class BinaryImage:
     @staticmethod
     def _load_sparse_format(
         path: str,
-        name: Optional[str],
-        offset: Optional[int],
-        description: Optional[str],
-        pattern: Optional[BinaryPattern],
+        name: str | None,
+        offset: int | None,
+        description: str | None,
+        pattern: BinaryPattern | None,
         alignment: int,
-        parent_image: Optional["BinaryImage"],
+        parent_image: "BinaryImage | None",
     ) -> "BinaryImage":
         """Load a SPARSE format file.
 
@@ -1272,13 +1272,13 @@ class BinaryImage:
     def _create_image_from_bincopy(
         bin_file: Any,
         path: str,
-        name: Optional[str],
+        name: str | None,
         size: int,
-        offset: Optional[int],
-        description: Optional[str],
-        pattern: Optional[BinaryPattern],
+        offset: int | None,
+        description: str | None,
+        pattern: BinaryPattern | None,
         alignment: int,
-        parent_image: Optional["BinaryImage"],
+        parent_image: "BinaryImage | None",
     ) -> "BinaryImage":
         """Create BinaryImage from bincopy BinFile object.
 
@@ -1340,14 +1340,14 @@ class BinaryImage:
     @staticmethod
     def load_binary_image(
         path: str,
-        name: Optional[str] = None,
+        name: str | None = None,
         size: int = 0,
-        offset: Optional[int] = None,
-        description: Optional[str] = None,
-        pattern: Optional[BinaryPattern] = None,
-        search_paths: Optional[list[str]] = None,
+        offset: int | None = None,
+        description: str | None = None,
+        pattern: BinaryPattern | None = None,
+        search_paths: list[str] | None = None,
         alignment: int = 1,
-        parent_image: Optional["BinaryImage"] = None,
+        parent_image: "BinaryImage | None" = None,
     ) -> "BinaryImage":
         """Load binary data file into BinaryImage object.
 

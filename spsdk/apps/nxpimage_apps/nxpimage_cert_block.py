@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -28,6 +27,7 @@ from spsdk.image.cert_block.cert_blocks import CertBlock
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import get_printable_path, load_binary, write_file
+from spsdk.utils.verifier import VerifierResult
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,15 @@ def cert_block_export(config: Config) -> None:
     family = FamilyRevision.load_from_config(config)
     cert_block_class = CertBlock.get_cert_block_class(family)
     cert_block = cert_block_class.load_from_config(config)
+    # Export first: some cert block types (e.g. AHAB) compute their internal
+    # state during export, which the verifier relies on.
     cert_data = cert_block.export()
+    ver = cert_block.verify()
+    if ver.has_errors:
+        click.echo(f"Certificate Block verification failed: {ver}")
+        return
+    if ver.has_warnings:
+        logger.warning(ver.draw(results=[VerifierResult.WARNING], colorize=False))
     cert_block_output_file_path = config.get_output_file_name("containerOutputFile")
 
     write_file(cert_data, cert_block_output_file_path, mode="wb")
@@ -104,7 +112,7 @@ def cert_block_get_isk_tbs_data(family: FamilyRevision, output: str, public_key:
     isk = IskCertificateLite(pub_key=puk, constraints=0)
     tbs_data = isk.get_tbs_data()
     write_file(data=tbs_data, path=output, mode="wb")
-    click.echo(f"Success. (ISK TBS data: {output} created.)")
+    click.echo(f"Success. (ISK TBS data: {get_printable_path(output)} created.)")
 
 
 @cert_block_group.command(name="parse", no_args_is_help=True)
@@ -132,4 +140,6 @@ def cert_block_parse(binary: str, family: FamilyRevision, output: str) -> None:
     logger.info(str(cert_block))
     write_file(cert_block.get_config_yaml(output), os.path.join(output, "cert_block_config.yaml"))
     click.echo(f"RKTH: {cert_block.rkth.hex()}")
-    click.echo(f"Success. (Certificate Block: {binary} has been parsed into {output}.)")
+    click.echo(
+        f"Success. (Certificate Block: {get_printable_path(binary)} has been parsed into {get_printable_path(output)}.)"
+    )

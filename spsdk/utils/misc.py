@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 # Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -24,11 +23,12 @@ import struct
 import textwrap
 import time
 import warnings
+from collections.abc import Callable, Generator, Iterable, Iterator
 from enum import Enum
 from math import ceil
 from pathlib import Path
 from struct import pack, unpack
-from typing import Any, Callable, Generator, Iterable, Iterator, Optional, Type, TypeVar, Union
+from typing import Any, TypeVar
 
 import yaml
 
@@ -139,10 +139,10 @@ class BinaryPattern:
             return random_bytes(size)
 
         if self._pattern == "inc":
-            return bytes((x & 0xFF for x in range(size)))
+            return bytes(x & 0xFF for x in range(size))
 
         pattern = value_to_bytes(self._pattern, align_to_2n=False)
-        block = bytes(pattern * (int((size / len(pattern))) + 1))
+        block = bytes(pattern * (int(size / len(pattern)) + 1))
         return block[:size]
 
     @property
@@ -179,9 +179,9 @@ def align(number: int, alignment: int = 4) -> int:
 
 
 def align_block(
-    data: Union[bytes, bytearray],
+    data: bytes | bytearray,
     alignment: int = 4,
-    padding: Optional[Union[int, str, BinaryPattern]] = None,
+    padding: int | str | BinaryPattern | None = None,
 ) -> bytes:
     """Align binary data block length to specified boundary by adding padding bytes to the end.
 
@@ -257,7 +257,7 @@ def clean_up_file_name(original_name: str) -> str:
     return original_name
 
 
-def find_first(iterable: Iterable[T], predicate: Callable[[T], bool]) -> Optional[T]:
+def find_first(iterable: Iterable[T], predicate: Callable[[T], bool]) -> T | None:
     """Find first element from iterable that matches the given condition.
 
     :param iterable: Iterable collection of elements to search through.
@@ -267,7 +267,7 @@ def find_first(iterable: Iterable[T], predicate: Callable[[T], bool]) -> Optiona
     return next((a for a in iterable if predicate(a)), None)
 
 
-def load_binary(path: str, search_paths: Optional[list[str]] = None) -> bytes:
+def load_binary(path: str, search_paths: list[str] | None = None) -> bytes:
     """Load binary file into bytes.
 
     The method loads a binary file from the specified path or searches for it
@@ -282,7 +282,7 @@ def load_binary(path: str, search_paths: Optional[list[str]] = None) -> bytes:
     return data
 
 
-def load_text(path: str, search_paths: Optional[list[str]] = None) -> str:
+def load_text(path: str, search_paths: list[str] | None = None) -> str:
     """Load text file content into string.
 
     The method loads a text file and returns its content as a string. It supports
@@ -297,9 +297,7 @@ def load_text(path: str, search_paths: Optional[list[str]] = None) -> str:
     return text
 
 
-def load_file(
-    path: str, mode: str = "r", search_paths: Optional[list[str]] = None
-) -> Union[str, bytes]:
+def load_file(path: str, mode: str = "r", search_paths: list[str] | None = None) -> str | bytes:
     """Load file content from specified path.
 
     The method searches for the file in provided search paths and loads its content
@@ -322,7 +320,7 @@ def load_file(
 
 
 def write_file(
-    data: Union[str, bytes, bytearray],
+    data: str | bytes | bytearray,
     path: str,
     mode: str = "w",
     encoding: str = "utf-8",
@@ -383,7 +381,7 @@ def file_extension(output_format: str = "bin", add_dot: bool = True) -> str:
     return ret
 
 
-def get_abs_path(file_path: str, base_dir: Optional[str] = None) -> str:
+def get_abs_path(file_path: str, base_dir: str | None = None) -> str:
     """Convert relative or absolute file path to normalized absolute path.
 
     The method handles both relative and absolute paths, normalizing path separators
@@ -403,7 +401,7 @@ def _find_path(
     path: str,
     check_func: Callable[[str], bool],
     use_cwd: bool = True,
-    search_paths: Optional[list[str]] = None,
+    search_paths: list[str] | None = None,
     raise_exc: bool = True,
 ) -> str:
     """Find and return the full path to a file or directory.
@@ -454,7 +452,7 @@ def _find_path(
 def find_dir(
     dir_path: str,
     use_cwd: bool = True,
-    search_paths: Optional[list[str]] = None,
+    search_paths: list[str] | None = None,
     raise_exc: bool = True,
 ) -> str:
     """Find directory path with flexible search options.
@@ -482,7 +480,7 @@ def find_dir(
 def find_file(
     file_path: str,
     use_cwd: bool = True,
-    search_paths: Optional[list[str]] = None,
+    search_paths: list[str] | None = None,
     raise_exc: bool = True,
 ) -> str:
     """Find file in filesystem using multiple search strategies.
@@ -550,9 +548,7 @@ def format_value(value: int, size: int, delimiter: str = "_", use_prefix: bool =
     return f"{sign}{prefix}{rev}"
 
 
-def get_bytes_cnt_of_int(
-    value: int, align_to_2n: bool = True, byte_cnt: Optional[int] = None
-) -> int:
+def get_bytes_cnt_of_int(value: int, align_to_2n: bool = True, byte_cnt: int | None = None) -> int:
     """Calculate the minimum number of bytes needed to store an integer value.
 
     The method determines the byte count required for integer storage with optional
@@ -585,7 +581,7 @@ def get_bytes_cnt_of_int(
     return cnt
 
 
-def value_to_int(value: Union[bytes, bytearray, int, str], default: Optional[int] = None) -> int:
+def value_to_int(value: bytes | bytearray | int | str, default: int | None = None) -> int:
     """Convert value from multiple formats to integer.
 
     Supports conversion from integers, bytes, bytearrays, and string representations
@@ -620,9 +616,9 @@ def value_to_int(value: Union[bytes, bytearray, int, str], default: Optional[int
 
 
 def value_to_bytes(
-    value: Union[bytes, bytearray, int, str],
+    value: bytes | bytearray | int | str,
     align_to_2n: bool = True,
-    byte_cnt: Optional[int] = None,
+    byte_cnt: int | None = None,
     endianness: Endianness = Endianness.BIG,
 ) -> bytes:
     """Convert value from multiple formats to bytes representation.
@@ -648,7 +644,7 @@ def value_to_bytes(
     )
 
 
-def value_to_bool(value: Optional[Union[bool, int, str]]) -> bool:
+def value_to_bool(value: bool | int | str | None) -> bool:
     """Convert various input formats to boolean value.
 
     The function accepts boolean, integer, string, or None values and converts them
@@ -666,10 +662,10 @@ def value_to_bool(value: Optional[Union[bool, int, str]]) -> bool:
 
 
 def load_hex_string(
-    source: Optional[Union[str, int, bytes]],
+    source: str | int | bytes | None,
     expected_size: int,
-    search_paths: Optional[list[str]] = None,
-    name: Optional[str] = "key",
+    search_paths: list[str] | None = None,
+    name: str | None = "key",
 ) -> bytes:
     """Load hexadecimal data from various sources.
 
@@ -888,7 +884,7 @@ class Timeout:
         return overflow
 
 
-def size_fmt(num: Union[float, int], use_kibibyte: bool = True) -> str:
+def size_fmt(num: float | int, use_kibibyte: bool = True) -> str:
     """Format byte size into human-readable string representation.
 
     Converts a numeric byte value into a formatted string with appropriate
@@ -910,7 +906,7 @@ def size_fmt(num: Union[float, int], use_kibibyte: bool = True) -> str:
 
 
 def bytes_to_print(
-    data: Optional[bytes], max_length: int = 32, unavailable_text: str = "Not available"
+    data: bytes | None, max_length: int = 32, unavailable_text: str = "Not available"
 ) -> str:
     """Format bytes data for display with length-based truncation.
 
@@ -1052,7 +1048,7 @@ def check_range(x: int, start: int = 0, end: int = (1 << 32) - 1) -> bool:
     return True
 
 
-def load_configuration(path: str, search_paths: Optional[list[str]] = None) -> dict:
+def load_configuration(path: str, search_paths: list[str] | None = None) -> dict:
     """Load configuration from YAML or JSON file.
 
     The method attempts to parse the file content as JSON first, then falls back
@@ -1086,9 +1082,9 @@ def load_configuration(path: str, search_paths: Optional[list[str]] = None) -> d
     except Exception as exc:
         raise SPSDKError(f"Can't load configuration file: {str(exc)}") from exc
 
-    config_data: Optional[dict] = None
-    json_error: Optional[Exception] = None
-    yaml_error: Optional[Exception] = None
+    config_data: dict | None = None
+    json_error: Exception | None = None
+    yaml_error: Exception | None = None
     try:
         config_data = json.loads(config)
     except json.JSONDecodeError as json_exc:
@@ -1116,8 +1112,8 @@ def load_configuration(path: str, search_paths: Optional[list[str]] = None) -> d
 
 
 def _determine_primary_parsing_error(
-    config_content: str, json_error: Optional[Exception], yaml_error: Optional[Exception]
-) -> Optional[Exception]:
+    config_content: str, json_error: Exception | None, yaml_error: Exception | None
+) -> Exception | None:
     """Determine which parsing error is most relevant to show to the user.
 
     If the content starts with '{' and ends with '}' or '[' and ends with ']', it's likely JSON.
@@ -1145,7 +1141,7 @@ def _determine_primary_parsing_error(
     return yaml_error
 
 
-def split_data(data: Union[bytearray, bytes], size: int) -> Generator[bytes, None, None]:
+def split_data(data: bytearray | bytes, size: int) -> Generator[bytes, None, None]:
     """Split data into chunks of specified size.
 
     :param data: Array of bytes to be split into chunks.
@@ -1156,7 +1152,7 @@ def split_data(data: Union[bytearray, bytes], size: int) -> Generator[bytes, Non
         yield bytes(data[i : i + size])
 
 
-def get_hash(text: Union[str, bytes]) -> str:
+def get_hash(text: str | bytes) -> str:
     """Get hash of given text.
 
     Computes SHA256 hash of the input text and returns first 8 characters of the hexadecimal digest.
@@ -1242,7 +1238,7 @@ class SingletonMeta(type):
 
     _instance = None
 
-    def __call__(cls: Type[TS], *args: Any, **kwargs: Any) -> TS:  # type: ignore
+    def __call__(cls: type[TS], *args: Any, **kwargs: Any) -> TS:  # type: ignore
         """Create or return singleton instance of the class.
 
         This method implements the singleton pattern by ensuring only one instance
@@ -1261,7 +1257,9 @@ class SingletonMeta(type):
         return cls._instance
 
 
-def load_secret(value: str, search_paths: Optional[list[str]] = None) -> str:
+def load_secret(
+    value: str, search_paths: list[str] | None = None, validate_hex: bool = False
+) -> str:
     """Load secret text from the configuration value.
 
     The method supports multiple input formats for flexible secret loading:
@@ -1276,7 +1274,10 @@ def load_secret(value: str, search_paths: Optional[list[str]] = None) -> str:
 
     :param value: Input string to be used for loading the secret.
     :param search_paths: List of paths where to search for the file, defaults to None.
+    :param validate_hex: If True, validate that the returned value is valid hexadecimal.
+        Raises SPSDKValueError if validation fails.
     :return: The actual secret value.
+    :raises SPSDKValueError: If validate_hex is True and the value is not valid hexadecimal.
     """
     # value of api_key may contain '~' for user home or '$' for environment variable
     value = os.path.expanduser(os.path.expandvars(value))
@@ -1286,6 +1287,15 @@ def load_secret(value: str, search_paths: Optional[list[str]] = None) -> str:
             value = f.readline().strip()
     except SPSDKError:
         pass
+
+    if validate_hex:
+        try:
+            bytes.fromhex(value)
+        except ValueError as exc:
+            raise SPSDKValueError(
+                "Invalid hexadecimal input. Use a valid hex string or a file containing one."
+            ) from exc
+
     return value
 
 
@@ -1314,7 +1324,7 @@ class SecretManager(metaclass=SingletonMeta):
     :cvar secrets_path: Path to the secrets YAML file location.
     """
 
-    _secrets: Optional[dict[str, Any]] = None
+    _secrets: dict[str, Any] | None = None
     secrets_path = SPSDK_SECRETS_PATH
 
     def get_secret(self, key: str) -> Any:
@@ -1345,7 +1355,7 @@ class SecretManager(metaclass=SingletonMeta):
             self._secrets = {}  # Initialize with empty dict if file doesn't exist
             return
 
-        with open(self.secrets_path, "r", encoding="utf-8") as f:
+        with open(self.secrets_path, encoding="utf-8") as f:
             self._secrets = yaml.safe_load(f) or {}
 
 

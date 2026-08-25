@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -8,7 +7,7 @@
 """Unit tests for the HSE key information module."""
 
 import os
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 import yaml
@@ -34,7 +33,7 @@ def family() -> FamilyRevision:
 
 
 @pytest.fixture
-def key_info_config() -> Dict[str, Any]:
+def key_info_config() -> dict[str, Any]:
     """Return a basic key info configuration for testing."""
     return {
         "family": "mcxe31b",
@@ -433,7 +432,8 @@ def test_key_handle_predefined_constants() -> None:
     assert key_handle.slot_idx == 0
 
 
-def test_unsupported_key_types_not_in_schema_for_hse_b() -> None:
+@pytest.mark.parametrize("family_name", ["mcxe315", "mcxe316", "mcxe317", "mcxe32b", "mcxe327"])
+def test_unsupported_key_types_not_in_schema_for_hse_b(family_name: str) -> None:
     """Test that DH, SIPHASH and *_PUB_EXT key types are rejected for HSE-B devices.
 
     HSE-B firmware does not support DH, SIPHASH or application-memory (*_PUB_EXT)
@@ -443,7 +443,7 @@ def test_unsupported_key_types_not_in_schema_for_hse_b() -> None:
     from spsdk.exceptions import SPSDKError
     from spsdk.utils.schema_validator import check_config
 
-    family = FamilyRevision("mcxe315")
+    family = FamilyRevision(family_name)
     schemas = KeyInfo.get_validation_schemas(family)
 
     base_config = {

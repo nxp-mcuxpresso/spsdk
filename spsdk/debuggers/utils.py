@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -14,8 +13,9 @@ various debug probe types supported by SPSDK.
 """
 
 import contextlib
+import inspect
+from collections.abc import Callable, Iterator
 from types import ModuleType
-from typing import Callable, Iterator, Optional, Type
 
 from spsdk import SPSDK_INTERACTIVE_DISABLED, get_logger
 from spsdk.debuggers.debug_probe import (
@@ -29,36 +29,52 @@ from spsdk.debuggers.debug_probe import (
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db
+from spsdk.utils.misc import value_to_int
 from spsdk.utils.plugins import PluginsManager, PluginType
 
 logger = get_logger(__name__)
 
-PROBES: dict[str, Type[DebugProbe]] = {}
+PROBES: dict[str, type[DebugProbe]] = {}
 
 
 def get_connected_probes(
-    interface: Optional[str] = None,
-    hardware_id: Optional[str] = None,
-    options: Optional[dict] = None,
+    interface: str | None = None,
+    hardware_id: str | None = None,
+    options: dict | None = None,
+    architecture: str | None = None,
 ) -> DebugProbes:
     """Get connected debug probes in the system.
 
-    The caller can restrict the scanned interfaces by specifying interface type or hardware ID.
-    Scans all available probe interfaces and returns matching connected probes.
+    The caller can restrict the scanned interfaces by specifying interface type, hardware ID,
+    or architecture. Probes with an ``ARCHITECTURE`` other than ``"abstract"`` are excluded when
+    their architecture does not match, so DSC probes are automatically hidden when looking for a
+    Cortex-M device and vice-versa.
 
     :param interface: Interface type to scan, None to scan all available interfaces.
     :param hardware_id: Hardware ID filter, None to list all probes or specific ID to match.
     :param options: Optional configuration dictionary for probe scanning.
+    :param architecture: DB architecture string (e.g. ``"arm-cortex"``, ``"dsc56800ex"``)
+        used to filter probe types. None disables filtering.
     :return: Collection of connected debug probes matching the specified criteria.
     """
     probes = DebugProbes()
     for key, probe in PROBES.items():
         if (interface is None) or (interface.lower() == key):
+            # Skip probes that declare a specific architecture that doesn't match
+            if (
+                architecture
+                and probe.ARCHITECTURE != "abstract"
+                and probe.ARCHITECTURE != architecture
+            ):
+                logger.debug(
+                    f"Skipping probe '{key}' (architecture '{probe.ARCHITECTURE}',"
+                    f" requested '{architecture}')"
+                )
+                continue
             try:
                 probes.extend(probe.get_connected_probes(hardware_id, options))
             except SPSDKDebugProbeError as exc:
                 logger.warning(f"The {key} debug probe support is not ready({str(exc)}).")
-
     return probes
 
 
@@ -130,9 +146,9 @@ def get_test_address(family: FamilyRevision) -> int:
 
 def test_ahb_access(
     probe: DebugProbe,
-    ap_mem: Optional[int] = None,
+    ap_mem: int | None = None,
     invasive: bool = True,
-    test_mem_address: Optional[int] = None,
+    test_mem_address: int | None = None,
 ) -> bool:
     """Test the access of debug probe to AHB in target safely.
 
@@ -148,8 +164,8 @@ def test_ahb_access(
     :return: True if access to AHB is granted, False otherwise.
     """
     ahb_enabled = False
-    bck_mem_ap = probe.mem_ap_ix
-    probe.mem_ap_ix = ap_mem or probe.mem_ap_ix
+    was_halted = False  # safe default; updated inside try once MEM-AP is confirmed
+
     if test_mem_address is None:
         test_mem_address = probe.options.get("test_address")
         if test_mem_address is None:
@@ -158,14 +174,15 @@ def test_ahb_access(
                 "doesn't fit all devices is used: 0x2000_0000"
             )
             test_mem_address = 0x2000_0000
-
+        test_mem_address = value_to_int(test_mem_address)
     try:
+        # Check CPU state first — is_cpu_halted() triggers MEM-AP discovery.
+        # If MEM-AP is not yet accessible (e.g. right after POR, before debug unlock),
+        # SPSDKDebugProbeError is raised here and caught below so the caller
+        # (fuses.py::enable_debug) can proceed to the debug-mailbox unlock sequence.
+        was_halted = probe.is_cpu_halted()
         # Enter debug state and halt
-        dhcsr = probe.mem_reg_read(probe.DHCSR_REG)
-        probe.mem_reg_write(
-            addr=probe.DHCSR_REG,
-            data=(probe.DHCSR_DEBUGKEY | probe.DHCSR_C_HALT | probe.DHCSR_C_DEBUGEN),
-        )
+        probe.debug_halt()
         test_value = probe.mem_reg_read(test_mem_address)
         logger.debug(f"Test Connection: Read value at {hex(test_mem_address)} is {test_value:08X}")
         if invasive:
@@ -175,33 +192,24 @@ def test_ahb_access(
             if test_read != test_value ^ 0xAAAAAAAA:
                 raise SPSDKError("Test connection verification failed")
         ahb_enabled = True
-        # Exit debug state - restore original C_HALT/C_DEBUGEN bits.
-        # The upper 16 bits read from DHCSR are status flags, not the write key;
-        # the ARM core silently ignores any DHCSR write whose [31:16] != 0xA05F,
-        # so we must supply DHCSR_DEBUGKEY explicitly.
-        probe.mem_reg_write(
-            addr=probe.DHCSR_REG,
-            data=probe.DHCSR_DEBUGKEY | (dhcsr & 0xFFFF),
-        )
+        # Exit debug state
+        if not was_halted:
+            probe.debug_resume()
 
     except SPSDKError as exc:
         logger.debug(f"Test Connection: Chip has NOT enabled AHB access. {str(exc)}")
-        if probe.options.get("use_jtag") is not None:
-            # For JTAG it appears clearing sticky bits needed after failed AHB access
-            probe.coresight_reg_write(access_port=False, addr=4, data=0x50000F20)
-    finally:
-        probe.mem_ap_ix = bck_mem_ap
 
     return ahb_enabled
 
 
 @contextlib.contextmanager
 def open_debug_probe(
-    interface: Optional[str] = None,
-    serial_no: Optional[str] = None,
-    debug_probe_params: Optional[dict] = None,
+    interface: str | None = None,
+    serial_no: str | None = None,
+    debug_probe_params: dict | None = None,
     print_func: Callable[[str], None] = print,
     input_func: Callable[[], str] = input,
+    architecture: str | None = None,
 ) -> Iterator[DebugProbe]:
     """Open debug probe as context manager.
 
@@ -209,17 +217,42 @@ def open_debug_probe(
     allows user selection if multiple probes are found, opens the selected probe,
     and yields it as a context manager that automatically closes the probe when done.
 
+    If *architecture* is not supplied and *debug_probe_params* contains a ``"family"`` key
+    (set by :meth:`DebugProbeParams.set_family`), the architecture is looked up from the
+    device database and passed to :func:`get_connected_probes` for automatic filtering.
+
     :param interface: Interface type to scan, None to scan all available interfaces.
     :param serial_no: Serial number of specific probe, None to list all available probes.
     :param debug_probe_params: Dictionary with optional debug probe configuration parameters.
     :param print_func: Custom function to print data, defaults to print.
     :param input_func: Custom function to handle user input, defaults to input.
+    :param architecture: DB architecture string to filter probe types. When None the value
+        is derived automatically from *debug_probe_params* if a family is present.
     :return: Active DebugProbe object as context manager.
     :raises SPSDKDebugProbeError: Cannot open selected probe or probe disconnected.
     :raises SPSDKError: Raised with any kind of problems with debug probe.
     """
+    # Auto-derive architecture from the family stored in debug_probe_params
+    if architecture is None and debug_probe_params:
+        family_name = debug_probe_params.get("family")
+        if family_name:
+            try:
+                family = FamilyRevision(
+                    name=str(family_name),
+                    revision=str(debug_probe_params.get("revision", "latest")),
+                )
+                architecture = get_db(family).device.info.architecture
+                logger.debug(
+                    f"Auto-detected probe architecture '{architecture}' for family '{family_name}'"
+                )
+            except SPSDKError:
+                pass  # Non-fatal: proceed without architecture filtering
+
     debug_probes = get_connected_probes(
-        interface=interface, hardware_id=serial_no, options=debug_probe_params
+        interface=interface,
+        hardware_id=serial_no,
+        options=debug_probe_params,
+        architecture=architecture,
     )
     selected_probe = select_probe(debug_probes, print_func=print_func, input_func=input_func)
     try:
@@ -237,7 +270,16 @@ def open_debug_probe(
         debug_probe.close()
 
 
-def get_all_debug_probe_plugins() -> dict[str, Type[DebugProbe]]:
+def _defines_new_abstract_methods(cls: type, parent: type) -> bool:
+    """Check if a class introduces new abstract methods not present in its parent."""
+    parent_abstracts: frozenset[str] = getattr(parent, "__abstractmethods__", frozenset())
+    for name, method in inspect.getmembers(cls):
+        if getattr(method, "__isabstractmethod__", False) and name not in parent_abstracts:
+            return True
+    return False
+
+
+def get_all_debug_probe_plugins() -> dict[str, type[DebugProbe]]:
     """Get dictionary of all available debug probe types.
 
     This method loads all debug probe plugins and returns a mapping of probe names
@@ -248,8 +290,8 @@ def get_all_debug_probe_plugins() -> dict[str, Type[DebugProbe]]:
     """
 
     def get_subclasses(
-        base_class: Type,
-    ) -> dict[str, Type[DebugProbe]]:
+        base_class: type[DebugProbe],
+    ) -> dict[str, type[DebugProbe]]:
         """Recursively find all subclasses of a given base class.
 
         The method traverses the inheritance hierarchy and collects only the leaf
@@ -263,13 +305,13 @@ def get_all_debug_probe_plugins() -> dict[str, Type[DebugProbe]]:
             subclasses_dict = get_subclasses(subclass)
             if subclasses_dict:
                 subclasses.update(subclasses_dict)
-            else:
+            elif not _defines_new_abstract_methods(subclass, base_class):
                 # Do NOT add inner level of classes - just last one
                 subclasses[subclass.NAME] = subclass
         return subclasses
 
     load_debug_probe_plugins()
-    return get_subclasses(DebugProbe)
+    return get_subclasses(DebugProbe)  # type: ignore[type-abstract]
 
 
 def load_debug_probe_plugins() -> dict[str, ModuleType]:

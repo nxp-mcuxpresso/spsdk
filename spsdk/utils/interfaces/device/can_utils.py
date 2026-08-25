@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
@@ -13,7 +12,7 @@ for CAN message processing.
 """
 
 from queue import Empty, Queue
-from typing import Any, Optional
+from typing import Any
 
 from can import Listener  # pylint: disable=import-error
 from can.message import Message  # pylint: disable=import-error
@@ -48,7 +47,7 @@ class ByteFIFO:
         for byte in data:
             self.buffer.put(byte)
 
-    def get(self, length: int) -> Optional[bytes]:
+    def get(self, length: int) -> bytes | None:
         """Get data from buffer.
 
         Retrieves the specified number of bytes from the internal buffer with timeout handling.
@@ -97,7 +96,7 @@ class BytesBufferedReader(Listener):  # pylint: disable=abstract-method
             raise SPSDKConnectionError("Reader has already been stopped")
         self.buffer.put(bytes(msg.data))
 
-    def get(self, length: int) -> Optional[bytes]:
+    def get(self, length: int) -> bytes | None:
         """Get message from the buffer.
 
         :param length: Length of the data to be read.

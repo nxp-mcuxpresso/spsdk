@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,8 +11,6 @@ This module provides lexical analysis functionality for parsing Boot Data comman
 used in secure boot processes. It defines tokens and lexical rules for BD file syntax
 using the SLY lexer framework.
 """
-
-from typing import Union
 
 from sly import Lexer
 from sly.lex import Token
@@ -35,7 +32,7 @@ class Variable:
     lexical parsing and processing.
     """
 
-    def __init__(self, name: str, token: str, value: Union[str, int, float]) -> None:
+    def __init__(self, name: str, token: str, value: str | int | float) -> None:
         """Initialize identifier with name, token type, and value.
 
         :param name: Name of the identifier (variable).

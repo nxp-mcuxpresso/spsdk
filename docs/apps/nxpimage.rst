@@ -160,7 +160,7 @@ Key commands:
 - ``nxpimage bca parse -b <bca.bin> -f <family>`` — parse BCA block
 
 ---------------------------------------------
-Flash Encryption (IEE / BEE / OTFAD)
+Flash Encryption (IEE / IPED / BEE / OTFAD)
 ---------------------------------------------
 
 On-the-fly encryption engines protect firmware stored in external flash.
@@ -170,6 +170,9 @@ Key commands:
 
 - ``nxpimage iee get-template -f <family> -o template.yaml`` — IEE template
 - ``nxpimage iee export -c <config.yaml>`` — build IEE keyblob image
+- ``nxpimage iped get-template -f <family> -o template.yaml`` — IPED table template
+- ``nxpimage iped export -c <config.yaml>`` — build IPED table/keyblob and optional encrypted data image
+- ``nxpimage iped parse -f <family> -b <iped_table.bin> -o config.yaml`` — parse IPED table/keyblob
 - ``nxpimage bee get-template -f <family> -o template.yaml`` — BEE template
 - ``nxpimage bee export -c <config.yaml>`` — build BEE image
 - ``nxpimage otfad get-template -f <family> -o template.yaml`` — OTFAD template

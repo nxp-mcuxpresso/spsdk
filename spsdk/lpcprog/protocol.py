@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """ISP Communication protocol for LPC devices.
 
 This module implements the In-System Programming (ISP) communication protocol
@@ -13,7 +13,7 @@ device interaction capabilities for secure provisioning operations.
 
 import inspect
 import time
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from spsdk import get_logger
 from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
@@ -82,7 +82,7 @@ class LPCProgProtocol:
         self,
         interface: LPCProgInterface,
         print_func: Callable[[str], None],
-        device: Optional[LPCDevice] = None,
+        device: LPCDevice | None = None,
     ) -> None:
         """Initialize the LPCProgProtocol.
 
@@ -101,7 +101,7 @@ class LPCProgProtocol:
         # Open the interface
         self.interface.open()
 
-        self.latest_status: Optional[StatusCode] = StatusCode.SUCCESS
+        self.latest_status: StatusCode | None = StatusCode.SUCCESS
 
     def __del__(self) -> None:
         """Destructor to ensure the interface is closed properly.
@@ -158,7 +158,7 @@ class LPCProgProtocol:
 
         return self.device
 
-    def print_status(self, status: Optional[StatusCode]) -> None:
+    def print_status(self, status: StatusCode | None) -> None:
         """Print status information from the provided status code.
 
         The method displays the status label and optionally includes a detailed
@@ -192,7 +192,7 @@ class LPCProgProtocol:
             )
         return "No status"
 
-    def return_status(self, status: Optional[StatusCode]) -> bool:
+    def return_status(self, status: StatusCode | None) -> bool:
         """Check if the given status code indicates success.
 
         :param status: Status code to evaluate, can be None.
@@ -216,7 +216,7 @@ class LPCProgProtocol:
 
     def send_command(
         self, command: str, print_status: bool = False, expect_rc: bool = True
-    ) -> Optional[StatusCode]:
+    ) -> StatusCode | None:
         """Send command to the interface and process the response.
 
         The method sends a command through the interface, processes any return code
@@ -232,7 +232,7 @@ class LPCProgProtocol:
         if rc is not None:
             status = StatusCode.from_tag(rc)
             self.latest_status = status
-            logger.info((f"CMD: {inspect.stack()[1].function}, STATUS: {status.label}"))
+            logger.info(f"CMD: {inspect.stack()[1].function}, STATUS: {status.label}")
             if print_status:
                 self.print_status(status)
             return status
@@ -340,8 +340,8 @@ class LPCProgProtocol:
         self,
         address: int,
         length: int,
-        binary: Optional[str] = None,
-        progress_callback: Optional[Callable[[int, int], None]] = None,
+        binary: str | None = None,
+        progress_callback: Callable[[int, int], None] | None = None,
     ) -> bytes:
         """Read data from RAM or flash memory.
 
@@ -545,7 +545,7 @@ class LPCProgProtocol:
         uuids = [self.interface.read_line() for _ in range(4)]
         return " ".join([f"0x{int(uid):08x}" for uid in uuids])
 
-    def read_crc_checksum(self, address: int, length: int) -> Optional[int]:
+    def read_crc_checksum(self, address: int, length: int) -> int | None:
         """Read CRC checksum of a block of RAM or flash memory.
 
         This command is blocked when code read protection is enabled.
@@ -581,7 +581,7 @@ class LPCProgProtocol:
 
         raise SPSDKError("Cannot read flash signature")
 
-    def decode_part_id(self, part_id: str) -> Optional[str]:
+    def decode_part_id(self, part_id: str) -> str | None:
         """Decode part ID from the database and identify the corresponding device.
 
         This method converts the input part ID to a standardized hex format and searches
@@ -817,8 +817,8 @@ class LPCProgProtocol:
         self,
         bin_data: bytes,
         start_sector: int = 0,
-        start_page: Optional[int] = None,
-        progress_callback: Optional[Callable[[int, int], None]] = None,
+        start_page: int | None = None,
+        progress_callback: Callable[[int, int], None] | None = None,
         print_status: bool = True,
         erase: bool = True,
         verify: bool = True,

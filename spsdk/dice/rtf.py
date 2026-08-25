@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,14 +11,12 @@ This module provides functionality for calculating RTF values used in DICE
 is essential for secure boot and device identity verification processes.
 """
 
-from typing import Optional
-
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.image.mbi.mbi import CertBlockV21, MasterBootImage
 from spsdk.utils.family import FamilyRevision
 
 
-def calculate_rtf(family: FamilyRevision, mbi_data: bytes) -> Optional[bytes]:
+def calculate_rtf(family: FamilyRevision, mbi_data: bytes) -> bytes | None:
     """Calculate RTF (Root of Trust Fingerprint) for given Master Boot Image.
 
     The method extracts cryptographic components from the MBI certificate block

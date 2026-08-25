@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,7 +15,7 @@ HSM hardware.
 import base64
 import os
 from http import HTTPStatus
-from typing import Any, Optional
+from typing import Any
 
 from flask import Flask, Response, jsonify, request
 from markupsafe import escape
@@ -115,7 +114,7 @@ def sign_data(private_key: PrivateKey, data: bytes, **kwargs: Any) -> bytes:
     return private_key.sign(data=data, algorithm=algorithm, **kwargs)
 
 
-def _load_private_key(key_type: str, num: int) -> Optional[PrivateKey]:
+def _load_private_key(key_type: str, num: int) -> PrivateKey | None:
     """Load a private key from file by type and index.
 
     The method loads a private key from a PEM file located in the current directory.

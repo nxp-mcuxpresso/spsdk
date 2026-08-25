@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -19,7 +18,6 @@ import os
 import shlex
 import time
 from datetime import datetime, timedelta
-from typing import Optional
 
 import click
 
@@ -42,7 +40,7 @@ from spsdk.el2go.interface import EL2GOInterfaceHandler
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import load_binary, load_text, write_file
+from spsdk.utils.misc import get_printable_path, load_binary, load_text, write_file
 
 
 @click.group(name="dev", cls=CommandsTreeGroup)
@@ -164,11 +162,11 @@ def get_secure_objects_command(
 
 def get_secure_objects(
     config: Config,
-    interface: Optional[EL2GOInterfaceHandler] = None,
-    output: Optional[str] = None,
+    interface: EL2GOInterfaceHandler | None = None,
+    output: str | None = None,
     encoding: str = "bin",
-    database: Optional[str] = None,
-    remote_database: Optional[str] = None,
+    database: str | None = None,
+    remote_database: str | None = None,
     re_download: bool = False,
     re_assign: bool = False,
     continue_on_error: bool = False,
@@ -225,7 +223,7 @@ def get_secure_objects(
         else:
             json_data = json.dumps(provisionings, indent=2)
             write_file(data=json_data, path=output, mode="w")
-        click.echo(f"Secure Objects stored to {output}")
+        click.echo(f"Secure Objects stored to {get_printable_path(output)}")
 
 
 @dev_group.command(name="get-uuid", no_args_is_help=True)
@@ -326,10 +324,10 @@ def prepare_device_command(
 def prepare_device(
     interface: EL2GOInterfaceHandler,
     client: EL2GOTPClient,
-    secure_objects_file: Optional[str] = None,
-    database: Optional[str] = None,
-    remote_database: Optional[str] = None,
-    workspace: Optional[str] = None,
+    secure_objects_file: str | None = None,
+    database: str | None = None,
+    remote_database: str | None = None,
+    workspace: str | None = None,
     clean: bool = False,
 ) -> None:
     """Prepare device for Trust Provisioning."""
@@ -404,9 +402,9 @@ def provision_objects_commands(
 def provision_objects(
     interface: EL2GOInterfaceHandler,
     config: Config,
-    secure_objects_file: Optional[str] = None,
-    database: Optional[str] = None,
-    remote_database: Optional[str] = None,
+    secure_objects_file: str | None = None,
+    database: str | None = None,
+    remote_database: str | None = None,
     clean: bool = False,
     dry_run: bool = False,
 ) -> None:
@@ -482,7 +480,7 @@ def provision_device_command(
 def provision_device(
     interface: EL2GOInterfaceHandler,
     config: Config,
-    workspace: Optional[str] = None,
+    workspace: str | None = None,
     re_assign: bool = False,
     clean: bool = False,
     dry_run: bool = False,
@@ -717,7 +715,7 @@ def bulk_so_download(
     db = ServiceDB(file_path=database)
 
     # get UUIDs from the database
-    def _get_uuid_jobs() -> Optional[list[list[str]]]:
+    def _get_uuid_jobs() -> list[list[str]] | None:
         with db:
             uuids = db.get_uuids(empty=True, limit=limit)
         if not uuids:
@@ -830,9 +828,9 @@ def bulk_so_download(
 def _retrieve_secure_objects(
     interface: EL2GOInterfaceHandler,
     client: EL2GOTPClient,
-    database: Optional[str] = None,
-    remote_database: Optional[str] = None,
-    secure_objects_file: Optional[str] = None,
+    database: str | None = None,
+    remote_database: str | None = None,
+    secure_objects_file: str | None = None,
 ) -> bytes:
     if database or remote_database:
         db = SecureObjectsDB.create(file_path=database, host=remote_database)

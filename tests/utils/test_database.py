@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -15,7 +14,7 @@ support, and data access controls including restricted data validation.
 
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 
@@ -38,11 +37,13 @@ from spsdk.utils.database import (
     SPSDKErrorMissingDevice,
     UsbId,
     UsbIdArray,
+    _cleanup_stale_version_caches,
     _collect_usb_ids_for_feature,
     _format_udev_rule,
     _generate_device_rules,
     _generate_udev_header,
     _get_device_usb_ids,
+    _restricted_pickle_load,
     generate_udev_rules,
     get_spsdk_cache_dirname,
 )
@@ -64,9 +65,9 @@ class SPSDK_TestDatabase:
     :cvar FEATURE3: Test feature identifier for feature3.
     """
 
-    _instance: Optional["SPSDK_TestDatabase"] = None
-    _db: Optional[Database] = None
-    _quick_info: Optional[QuickDatabase] = None
+    _instance: "SPSDK_TestDatabase | None" = None
+    _db: Database | None = None
+    _quick_info: QuickDatabase | None = None
 
     @property
     def db(self) -> Database:
@@ -335,7 +336,7 @@ def test_supported_devices(  # pylint: disable=redefined-outer-name
     mock_test_database: Any,
     feature: str,
     devices: list[FamilyRevision],
-    sub_feature: Optional[str],
+    sub_feature: str | None,
     invalid: bool,
 ) -> None:
     """Test that get_families function returns correct device list for given feature.
@@ -377,7 +378,7 @@ def test_supported_devices(  # pylint: disable=redefined-outer-name
     ],
 )
 def test_supported_devices_latest(  # pylint: disable=redefined-outer-name
-    mock_test_database: Any, feature: str, devices: list[FamilyRevision], sub_feature: Optional[str]
+    mock_test_database: Any, feature: str, devices: list[FamilyRevision], sub_feature: str | None
 ) -> None:
     """Test that get_families returns the latest supported devices for a feature.
 
@@ -663,9 +664,9 @@ def test_addons_data(data_dir: str) -> None:
 def test_mem_block_names(
     full_name: str,
     name: str,
-    core: Optional[str],
-    instance: Optional[int],
-    security: Optional[bool],
+    core: str | None,
+    instance: int | None,
+    security: bool | None,
 ) -> None:
     """Test memory block name parsing and creation functionality.
 
@@ -1224,7 +1225,7 @@ def test_mem_map_get_table() -> None:
 # IspCfg
 
 
-def _make_isp(rom_proto: Optional[str] = "mboot", fl_proto: Optional[str] = "sdp") -> IspCfg:
+def _make_isp(rom_proto: str | None = "mboot", fl_proto: str | None = "sdp") -> IspCfg:
     """Build a simple IspCfg for testing."""
     rom_cfg: dict = {"interfaces": ["uart"]}
     if rom_proto:
@@ -1516,7 +1517,7 @@ def test_database_load_db_cfg_file_invalid(tmp_path: Path) -> None:
 
 
 def test_database_manager_clear_cache_nonexistent(monkeypatch: Any, caplog: Any) -> None:
-    """Lines 2287-2289: clear_cache logs error for non-existent directory."""
+    """clear_cache logs error when no cache files exist."""
     import logging
 
     monkeypatch.setattr(
@@ -1524,7 +1525,56 @@ def test_database_manager_clear_cache_nonexistent(monkeypatch: Any, caplog: Any)
     )
     with caplog.at_level(logging.ERROR, logger="spsdk.utils.database"):
         DatabaseManager.clear_cache()
-    assert any("does not exist" in r.message for r in caplog.records)
+    assert any("nothing to clear" in r.message for r in caplog.records)
+
+
+def test_cleanup_stale_version_caches_preserves_siblings(monkeypatch: Any, tmp_path: Path) -> None:
+    """Cleanup must not touch sibling folders of a configured cache directory."""
+    cache_dir = tmp_path / "spsdk_cache"
+    cache_dir.mkdir()
+    monkeypatch.setattr(database, "get_spsdk_cache_dirname", lambda: str(cache_dir))
+    monkeypatch.setattr(database.spsdk, "version", "9.9.9")
+    # Unrelated sibling folder next to the cache dir must survive.
+    sibling = tmp_path / "important_user_data"
+    sibling.mkdir()
+    (sibling / "keep.txt").write_text("keep")
+    # Stale cache files (other version) and current-version cache files.
+    (cache_dir / "db_quick_info_9.9.9.cache").write_text("current")
+    (cache_dir / "db_data_abc123_9.9.9.cache").write_text("current")
+    (cache_dir / "db_quick_info_1.0.0.cache").write_text("stale")
+    (cache_dir / "db_data_abc123_1.0.0.cache").write_text("stale")
+    (cache_dir / "db_data_abc123_1.0.0.cache.lock").write_text("")
+    (cache_dir / "unrelated.txt").write_text("keep")
+
+    _cleanup_stale_version_caches()
+
+    assert sibling.is_dir()
+    assert (sibling / "keep.txt").exists()
+    assert (cache_dir / "db_quick_info_9.9.9.cache").exists()
+    assert (cache_dir / "db_data_abc123_9.9.9.cache").exists()
+    assert (cache_dir / "unrelated.txt").exists()
+    assert not (cache_dir / "db_quick_info_1.0.0.cache").exists()
+    assert not (cache_dir / "db_data_abc123_1.0.0.cache").exists()
+    assert not (cache_dir / "db_data_abc123_1.0.0.cache.lock").exists()
+
+
+def test_clear_cache_only_removes_cache_files(monkeypatch: Any, tmp_path: Path) -> None:
+    """clear_cache removes only SPSDK cache files, never sibling folders."""
+    cache_dir = tmp_path / "spsdk_cache"
+    cache_dir.mkdir()
+    monkeypatch.setattr(database, "get_spsdk_cache_dirname", lambda: str(cache_dir))
+    sibling = tmp_path / "important_user_data"
+    sibling.mkdir()
+    (cache_dir / "db_quick_info_9.9.9.cache").write_text("x")
+    (cache_dir / "db_data_abc123_1.0.0.cache").write_text("x")
+    (cache_dir / "unrelated.txt").write_text("keep")
+
+    DatabaseManager.clear_cache()
+
+    assert sibling.is_dir()
+    assert (cache_dir / "unrelated.txt").exists()
+    assert not (cache_dir / "db_quick_info_9.9.9.cache").exists()
+    assert not (cache_dir / "db_data_abc123_1.0.0.cache").exists()
 
 
 # DatabaseManager.get_restricted_data
@@ -1635,3 +1685,25 @@ def test_revisions_get_nonexistent() -> None:
     revisions.append(Features(name="rev1", is_latest=True, device=device, features={}))
     with pytest.raises(SPSDKValueError, match="not supported"):
         revisions.get("nonexistent_rev")
+
+
+def test_restricted_unpickler_allows_database_classes() -> None:
+    """Test that the restricted unpickler loads valid database cache objects."""
+    import io
+    import pickle
+
+    quick_db = QuickDatabase()
+    data = pickle.dumps(quick_db, pickle.DEFAULT_PROTOCOL)
+    result = _restricted_pickle_load(io.BytesIO(data))
+    assert isinstance(result, QuickDatabase)
+
+
+def test_restricted_unpickler_blocks_disallowed_classes() -> None:
+    """Test that the restricted unpickler rejects non-allowlisted classes."""
+    import io
+    import pickle
+
+    # Craft a pickle that references os.system (arbitrary code execution)
+    malicious = pickle.dumps(os.system)
+    with pytest.raises(pickle.UnpicklingError, match="disallowed class"):
+        _restricted_pickle_load(io.BytesIO(malicious))

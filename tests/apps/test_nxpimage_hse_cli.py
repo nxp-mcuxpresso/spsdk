@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2026 NXP
 #
@@ -85,7 +84,7 @@ def test_key_catalog_get_template(cli_runner: CliRunner, tmp_path: Path) -> None
     assert os.path.isfile(outfile)
 
 
-@pytest.mark.parametrize("family", ["mcxe315", "mcxe317"])
+@pytest.mark.parametrize("family", ["mcxe315", "mcxe316", "mcxe317", "mcxe32b", "mcxe327"])
 def test_key_info_get_template_families(cli_runner: CliRunner, tmp_path: Path, family: str) -> None:
     """Test key-info get-template for multiple families."""
     outfile = str(tmp_path / f"key_info_{family}.yaml")

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2026 NXP
 #
@@ -15,9 +14,9 @@ and memory operations used in NXP MCU secure boot processes.
 
 import lzma
 import os
+from collections.abc import Mapping
 from enum import Enum as BuiltinEnum
 from struct import calcsize, pack, unpack_from
-from typing import Mapping, Type, Union
 
 from typing_extensions import Self
 
@@ -718,7 +717,7 @@ class CmdLoad(CmdLoadBase):
         :param data_path: Path to store any data files that might be created for large data.
         :return: Configuration object with command-specific settings.
         """
-        config_dict: dict[str, Union[str, int]] = {
+        config_dict: dict[str, str | int] = {
             "address": self.address,
             "memoryId": self.memory_id,
         }
@@ -943,7 +942,7 @@ class CmdProgFuses(CmdLoadBase):
         :param data_path: Path to store any data files (not used for this command).
         :return: Configuration object with command-specific settings.
         """
-        config_dict: dict[str, Union[str, int]] = {"address": self.address}
+        config_dict: dict[str, str | int] = {"address": self.address}
 
         # Extract fuse values from data
         # For CmdProgFuses, data should be multiples of 4 bytes (32-bit values)
@@ -1010,7 +1009,7 @@ class CmdProgIfr(CmdLoadBase):
         :return: Configuration object with command-specific settings.
         """
         # Create base config with address
-        config_dict: dict[str, Union[str, int]] = {"address": self.address}
+        config_dict: dict[str, str | int] = {"address": self.address}
 
         file_name = f"ifr_data_{self.address:08x}.bin"
         file_path = os.path.join(data_path, file_name)
@@ -1065,7 +1064,7 @@ class CmdLoadCmac(CmdLoadBase):
         :return: Configuration object with command-specific settings.
         """
         # Create base config with address
-        config_dict: dict[str, Union[str, int]] = {
+        config_dict: dict[str, str | int] = {
             "address": self.address,
             "memoryId": self.memory_id,
         }
@@ -1309,7 +1308,7 @@ class CmdLoadHashLocking(CmdLoadBase):
         :return: Configuration object with command-specific settings.
         """
         # Create base config with address and memory ID
-        config_dict: dict[str, Union[str, int]] = {
+        config_dict: dict[str, str | int] = {
             "address": self.address,
             "memoryId": self.memory_id,
         }
@@ -2053,7 +2052,7 @@ class CmdWriteIfr(BaseCmd):
         :return: Configuration object with command-specific settings.
         """
         # Create base config with address
-        config_dict: dict[str, Union[str, int]] = {
+        config_dict: dict[str, str | int] = {
             "address": self.address,
             "type": self.ifr_type.name,
         }
@@ -2203,7 +2202,7 @@ class CmdSectionHeader(BaseClass):
         return cls(section_uid=section_uid, section_type=section_type, length=length)
 
 
-TAG_TO_CLASS: Mapping[EnumCmdTag, Type[BaseCmd]] = {
+TAG_TO_CLASS: Mapping[EnumCmdTag, type[BaseCmd]] = {
     EnumCmdTag.ERASE: CmdErase,
     EnumCmdTag.LOAD: CmdLoad,
     EnumCmdTag.EXECUTE: CmdExecute,
@@ -2221,7 +2220,7 @@ TAG_TO_CLASS: Mapping[EnumCmdTag, Type[BaseCmd]] = {
     EnumCmdTag.WRITE_IFR: CmdWriteIfr,
 }
 
-CFG_NAME_TO_CLASS: Mapping[str, Type[BaseCmd]] = {
+CFG_NAME_TO_CLASS: Mapping[str, type[BaseCmd]] = {
     "erase": CmdErase,
     "load": CmdLoad,
     "loadCompress": CmdLoad,

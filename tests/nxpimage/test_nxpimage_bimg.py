@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -15,9 +14,10 @@ verification, and memory type detection functionality.
 import filecmp
 import logging
 import os
-from typing import Any, Optional, Union
+from typing import Any
 
 import pytest
+import yaml
 
 from spsdk.apps import nxpimage
 from spsdk.exceptions import SPSDKError
@@ -28,7 +28,7 @@ from spsdk.image.bootable_image.segments import BootableImageSegment
 from spsdk.image.mem_type import MemoryType
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
+from spsdk.utils.misc import load_binary, load_configuration, use_working_directory, write_file
 from spsdk.utils.verifier import Verifier, VerifierRecord, VerifierResult
 from tests.cli_runner import CliRunner
 
@@ -130,7 +130,7 @@ def test_nxpimage_bimg_merge(
     data_dir: str,
     mem_type: str,
     family: str,
-    configuration: Optional[str],
+    configuration: str | None,
     config_file: str,
 ) -> None:
     """Test bootable image merge functionality using CLI.
@@ -171,7 +171,7 @@ def test_nxpimage_bimg_parse_cli(
     data_dir: str,
     family: str,
     mem_type: str,
-    configuration: Optional[str],
+    configuration: str | None,
     blocks: list[str],
 ) -> None:
     """Test CLI parsing functionality for bootable image commands.
@@ -249,7 +249,7 @@ def test_nxpimage_bimg_template_cli(
     tmpdir: Any,
     data_dir: str,
     family: str,
-    configs: list[Union[str, tuple[str, str]]],
+    configs: list[str | tuple[str, str]],
 ) -> None:
     """Test CLI command for generating bootable image templates.
 
@@ -296,7 +296,7 @@ def test_nxpimage_bimg_template_cli(
     ],
 )
 def test_nxpimage_bimg_parse_autodetect_mem_type(
-    data_dir: str, family: str, input_path: str, expected_mem_type: Optional[str]
+    data_dir: str, family: str, input_path: str, expected_mem_type: str | None
 ) -> None:
     """Test bootable image parsing with automatic memory type detection.
 
@@ -589,8 +589,8 @@ def test_nxpimage_bimg_default_init_offset() -> None:
 def test_nxpimage_bimg_init_offset_setter(
     family_str: str,
     mem_type: str,
-    init_offset: Union[int, BootableImageSegment],
-    actual_offset: Optional[int],
+    init_offset: int | BootableImageSegment,
+    actual_offset: int | None,
 ) -> None:
     """Test BootableImage initialization and init_offset setter functionality.
 
@@ -758,7 +758,7 @@ def test_nxpimage_bimg_verify(
     data_dir: str,
     family: str,
     mem_type: str,
-    configuration: Optional[str],
+    configuration: str | None,
     blocks: list[str],
 ) -> None:
     """Test nxpimage bootable-image verify command functionality.
@@ -799,7 +799,7 @@ def test_nxpimage_bimg_merge_post_export(
     data_dir: str,
     mem_type: str,
     family: str,
-    configuration: Optional[str],
+    configuration: str | None,
     config_file: str,
 ) -> None:
     """Test bootable image export with post-export merge functionality.
@@ -1457,9 +1457,9 @@ def test_nxpimage_bimg_get_templates_verify_board_filenames(
         "oei-m33-ddr.bin",
         "m33_image-mx95evk.bin",
         "imx95-19x19-evk_m7_TCM_power_mode_switch.bin",
-        "u-boot-spl.bin-imx95-19x19-lpddr5-evk-sd",
+        "u-boot-spl.bin",
         "bl31-imx95.bin",
-        "u-boot-imx95-19x19-lpddr5-evk.bin-sd",
+        "u-boot.bin",
         "tee.bin",
     ]
 
@@ -1533,6 +1533,49 @@ def test_nxpimage_bimg_imx_bootloader_export(
             out_file,
         ]
         cli_runner.invoke(nxpimage.main, cmd, expected_code=0)
+    assert os.path.isfile(out_file), f"Output file not created: {out_file}"
+    assert os.path.getsize(out_file) > 0, "Output file is empty"
+
+
+def test_nxpimage_bimg_imx95_bootloader_export_with_binary_spl_and_uboot(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str
+) -> None:
+    """Test imx95 bootable-image export accepts binary SPL and U-Boot containers.
+
+    The bootable-image config uses ``spl``/``uboot`` aliases, while the internal segment keys are
+    ``primary_image_container_set``/``secondary_image_container_set``. This regression test covers
+    the binary-input path where both aliases are used with prebuilt AHAB binaries.
+
+    :param cli_runner: CLI test runner for invoking nxpimage commands.
+    :param tmpdir: Temporary directory path for generated binaries and output image.
+    :param data_dir: Base directory containing test data files.
+    """
+    config_dir = os.path.join(data_dir, "bootable_image", "mimx9596", "serial_downloader")
+    out_file = os.path.join(tmpdir, "bimg_mimx9596_serial_downloader_bin_segments.bin")
+    binary_cfg_path = os.path.join(tmpdir, "bootable_image_bin_segments.yaml")
+
+    with use_working_directory(config_dir):
+        for segment_name in ("spl", "uboot"):
+            ahab_config = Config.create_from_file(os.path.join(config_dir, f"{segment_name}.yaml"))
+            ahab = AHABImage.load_from_config(ahab_config)
+            ahab.update_fields()
+            write_file(ahab.export(), os.path.join(tmpdir, f"{segment_name}.bin"), mode="wb")
+
+        bootable_config = load_configuration(os.path.join(config_dir, "bootable_image.yaml"))
+        bootable_config["spl"] = os.path.join(tmpdir, "spl.bin")
+        bootable_config["uboot"] = os.path.join(tmpdir, "uboot.bin")
+        write_file(yaml.safe_dump(bootable_config), binary_cfg_path)
+
+        cmd = [
+            "bootable-image",
+            "export",
+            "-c",
+            binary_cfg_path,
+            "-o",
+            out_file,
+        ]
+        cli_runner.invoke(nxpimage.main, cmd, expected_code=0)
+
     assert os.path.isfile(out_file), f"Output file not created: {out_file}"
     assert os.path.getsize(out_file) > 0, "Output file is empty"
 

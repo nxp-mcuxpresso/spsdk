@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,7 +10,7 @@ This module provides functionality for creating, manipulating, and exporting HAB
 signatures used in secure boot processes for NXP devices.
 """
 
-from typing import Iterator, Optional, Union
+from collections.abc import Iterator
 
 from typing_extensions import Self
 
@@ -28,7 +27,7 @@ class Signature(BaseClass):
     headers and data management.
     """
 
-    def __init__(self, version: int = 0x40, data: Optional[bytes] = None) -> None:
+    def __init__(self, version: int = 0x40, data: bytes | None = None) -> None:
         """Initialize HAB signature object.
 
         :param version: Version of the signature format, defaults to 0x40
@@ -108,7 +107,7 @@ class Signature(BaseClass):
         return bytes(self._data)
 
     @data.setter
-    def data(self, value: Union[bytes, bytearray]) -> None:
+    def data(self, value: bytes | bytearray) -> None:
         """Set signature data.
 
         :param value: New signature data as bytes or bytearray.

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -15,7 +14,6 @@ and hex formats, and template generation.
 
 import logging
 import os
-from typing import Optional
 
 import click
 
@@ -95,7 +93,7 @@ def binary_create(size: int, pattern: str, output_format: str, output: str) -> N
 
     logger.info(f"Created file:\n{str(image)}")
     logger.info(f"Created file graph:\n{image.draw()}")
-    click.echo(f"Success. (Created binary file: {output} )")
+    click.echo(f"Success. (Created binary file: {get_printable_path(output)} )")
 
 
 @bin_image_group.command(name="export", no_args_is_help=True)
@@ -345,7 +343,7 @@ def binary_align_command(input_file: str, output: str, alignment: int, pattern: 
 
 
 def binary_align(
-    input_file: str, output: Optional[str] = None, alignment: int = 1, pattern: str = "zeros"
+    input_file: str, output: str | None = None, alignment: int = 1, pattern: str = "zeros"
 ) -> None:
     """Align binary file to provided alignment and padded with specified pattern.
 
@@ -402,7 +400,7 @@ def binary_pad_command(input_file: str, output: str, size: int, pattern: str) ->
 
 
 def binary_pad(
-    input_file: str, output: Optional[str] = None, size: int = 1, pattern: str = "zeros"
+    input_file: str, output: str | None = None, size: int = 1, pattern: str = "zeros"
 ) -> None:
     """Pad binary file to provided final size with specified pattern.
 
@@ -540,7 +538,7 @@ def _show_srec_details(input_file: str, no_color: bool) -> None:
     try:
         from bincopy import pretty_srec
 
-        with open(input_file, "r", encoding="utf-8") as f:
+        with open(input_file, encoding="utf-8") as f:
             data = f.read()
 
         click.echo("Motorola S-Record Format Details:\n")
@@ -571,7 +569,7 @@ def _show_hex_details(input_file: str, no_color: bool) -> None:
     try:
         from bincopy import pretty_ihex
 
-        with open(input_file, "r", encoding="utf-8") as f:
+        with open(input_file, encoding="utf-8") as f:
             data = f.read()
 
         click.echo("Intel HEX Format Details:\n")
@@ -650,7 +648,7 @@ def convert_hex2bin(input_file: str, reverse: bool, output: str) -> None:
     if reverse:
         value.reverse()
     write_file(value, output, mode="wb")
-    click.echo(f"Success. Converted file: {output}")
+    click.echo(f"Success. Converted file: {get_printable_path(output)}")
 
 
 @convert.command(
@@ -688,7 +686,7 @@ def convert_bin2hex_command(
 
 
 def convert_bin2hex(
-    input_file: str, reverse: bool, output: str, bytes_per_line: Optional[int]
+    input_file: str, reverse: bool, output: str, bytes_per_line: int | None
 ) -> None:
     """Convert binary file into hexadecimal text file with optional reverse order of stored bytes."""
     value = bytearray(load_binary(input_file))
@@ -704,7 +702,7 @@ def convert_bin2hex(
             lines.append(line)
         data = "\n".join(lines)
     write_file(data, output, mode="w")
-    click.echo(f"Success. Converted file: {output}")
+    click.echo(f"Success. Converted file: {get_printable_path(output)}")
 
 
 @convert.command(name="bin2carr", no_args_is_help=True)
@@ -807,6 +805,6 @@ def convert_bin2carr(
 
     if output:
         write_file(ret, output)
-        click.echo(f"Success. Created C file: {output}")
+        click.echo(f"Success. Created C file: {get_printable_path(output)}")
     else:
         click.echo(ret)

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,7 +15,6 @@ both positive and negative test cases for error handling.
 import os
 from binascii import unhexlify
 from datetime import datetime, timezone
-from typing import Union
 
 import pytest
 
@@ -292,7 +290,7 @@ def test_sb2x_builder(
     )
 
     # create boot image
-    boot_image: Union[BootImageV20, BootImageV21]
+    boot_image: BootImageV20 | BootImageV21
     if sb_minor_ver == 0:
         boot_image = BootImageV20(
             signed,
@@ -508,6 +506,6 @@ def test_invalid_boot_image_v2_invalid_export() -> None:
     :raises SPSDKError: When DEK or MAC is invalid during export.
     """
     bimg = BootImageV20(True, kek=bytes(31))
-    bimg._dek = bytes()
+    bimg._dek = b""
     with pytest.raises(SPSDKError, match="Invalid dek or mac"):
         bimg.export()

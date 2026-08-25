@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK LPCxxx ISP UART communication interface.
 
 This module provides the communication interface for LPCxxx microcontrollers
@@ -11,7 +11,6 @@ using In-System Programming (ISP) protocol over UART connection.
 """
 
 import time
-from typing import Optional
 
 from spsdk import get_logger
 from spsdk.exceptions import SPSDKConnectionError, SPSDKError
@@ -184,7 +183,7 @@ class LPCProgInterface:
             raise SPSDKConnectionError(f"Cannot decode {resp} as RC") from exc
         return rc
 
-    def send_command(self, command: str, expect_rc: bool = True) -> Optional[int]:
+    def send_command(self, command: str, expect_rc: bool = True) -> int | None:
         """Send command to the device and optionally wait for return code.
 
         Writes the specified command string to the device with a newline terminator.

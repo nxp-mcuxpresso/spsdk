@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,8 +11,6 @@ This module contains comprehensive test cases for the HAB (High Assurance Boot)
 Write Data command functionality, covering command creation, validation,
 serialization, and data manipulation operations.
 """
-
-from typing import List, Tuple, Union
 
 import pytest
 
@@ -26,7 +23,7 @@ from spsdk.image.hab.commands.cmd_write_data import CmdWriteData, WriteDataOpsEn
     "input_data", [[(0, 1)], ((0, 1),)]  # input data as list  # input data as tuple
 )
 def test_write_value_cmd_basic(
-    input_data: Union[List[Tuple[int, int]], Tuple[Tuple[int, int], ...]],
+    input_data: list[tuple[int, int]] | tuple[tuple[int, int], ...],
 ) -> None:
     """Test basic functionality of CmdWriteData command with various configurations.
 

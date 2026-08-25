@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -14,7 +13,7 @@ reading, writing, parsing, and serializing various HSE configuration attributes.
 
 from abc import abstractmethod
 from struct import calcsize, pack, unpack
-from typing import Any, Optional, Type
+from typing import Any
 
 from typing_extensions import Self
 
@@ -135,7 +134,7 @@ class HseAttributeHandler(BaseClass):
         """
 
     @classmethod
-    def get_attr_handler_cls(cls, attr_id: HseAttributeId) -> Type["HseAttributeHandler"]:
+    def get_attr_handler_cls(cls, attr_id: HseAttributeId) -> type["HseAttributeHandler"]:
         """Get attribute handler class for specified attribute ID.
 
         Searches through all HseAttributeHandler subclasses to find the one that handles
@@ -736,7 +735,7 @@ class AppDebugKeyAttributeHandler(HseAttributeHandler):
         return pack(self.FORMAT, self.data)
 
     @property
-    def debug_key(self) -> Optional[bytes]:
+    def debug_key(self) -> bytes | None:
         """Get the actual debug key if available.
 
         :return: The actual debug key if this instance was created for writing, None if from read.
@@ -744,7 +743,7 @@ class AppDebugKeyAttributeHandler(HseAttributeHandler):
         return self.data if not self.is_hash else None
 
     @property
-    def key_hash(self) -> Optional[bytes]:
+    def key_hash(self) -> bytes | None:
         """Get the key hash if available.
 
         :return: The SHA2_224 hash if this instance was created from read, None if for writing.

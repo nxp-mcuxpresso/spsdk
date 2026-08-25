@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK RTF calculator testing module.
 
 This module contains unit tests for the RTF (Runtime Firmware) calculator

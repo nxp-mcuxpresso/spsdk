@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -13,8 +12,6 @@ This module provides CLI commands for working with HSE features, including:
 
 The commands are organized in a hierarchical structure with 'hse' as the main group.
 """
-
-from typing import Optional
 
 import click
 
@@ -103,7 +100,10 @@ def key_info_parse_command(binary: str, family: FamilyRevision, output: str) -> 
 
     write_file(yaml_data, output)
 
-    click.echo(f"Success. (Key Info: {binary} has been parsed and stored into {output} )")
+    click.echo(
+        f"Success. (Key Info: {get_printable_path(binary)} has been parsed "
+        f"and stored into {get_printable_path(output)} )"
+    )
 
 
 def key_info_parse(config: Config) -> None:
@@ -181,7 +181,10 @@ def key_catalog_parse_command(binary: str, family: FamilyRevision, output: str) 
     ).get_config(cfg)
 
     write_file(yaml_data, output)
-    click.echo(f"Success. (Key Catalog binary: {binary} has been parsed and stored into {output} )")
+    click.echo(
+        f"Success. (Key Catalog binary: {get_printable_path(binary)} has been parsed "
+        f"and stored into {get_printable_path(output)} )"
+    )
 
 
 @hse_group.group(name="smr-entry", no_args_is_help=True, cls=CommandsTreeGroup)
@@ -240,7 +243,10 @@ def smr_entry_parse_command(binary: str, family: FamilyRevision, output: str) ->
     """Parse a binary SMR entry file and display its contents."""
     data = load_binary(binary)
     smr_entry_parse(data, family, output)
-    click.echo(f"Success. SMR Entry binary: {binary} has been parsed and stored into {output} )")
+    click.echo(
+        f"Success. SMR Entry binary: {get_printable_path(binary)} has been parsed "
+        f"and stored into {get_printable_path(output)} )"
+    )
 
 
 def smr_entry_parse(data: bytes, family: FamilyRevision, output: str) -> None:
@@ -303,8 +309,8 @@ def smr_entry_create_auth_tag(
     binary: str,
     output: str,
     key_path: str,
-    auth_scheme: Optional[AuthSchemeEnum] = None,
-    hash_algorithm: Optional[EnumHashAlgorithm] = None,
+    auth_scheme: AuthSchemeEnum | None = None,
+    hash_algorithm: EnumHashAlgorithm | None = None,
 ) -> None:
     """Calculate authentication tag for SMR entry installation."""
     data = load_binary(binary)

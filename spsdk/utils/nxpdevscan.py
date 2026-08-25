@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -17,7 +16,7 @@ import array
 import logging
 import platform
 import struct
-from typing import Any, Optional
+from typing import Any
 
 from libusbsio import LIBUSBSIO_Exception, usbsio
 from serial import SerialException
@@ -86,7 +85,7 @@ def search_nxp_sdio_devices() -> list[SDIODeviceDescription]:
     return nxp_sdio_devices
 
 
-def search_nxp_usb_devices(extend_vid_list: Optional[list] = None) -> list[USBDeviceDescription]:
+def search_nxp_usb_devices(extend_vid_list: list | None = None) -> list[USBDeviceDescription]:
     """Search all NXP USB devices based on their Vendor ID.
 
     The method enumerates all USB devices and filters them by NXP vendor IDs to identify
@@ -243,7 +242,7 @@ def search_nxp_uart_devices(
     scan_uboot: bool = True,
     timeout: int = 50,
     real_devices: bool = False,
-    baudrate: Optional[int] = None,
+    baudrate: int | None = None,
 ) -> list[UartDeviceDescription]:
     """Search for NXP UART devices connected to the system.
 
@@ -308,8 +307,11 @@ def search_nxp_uart_devices(
                 retval.append(uart_dev)
                 continue
         except (SPSDKConnectionError, SPSDKPermissionError, struct.error) as e:
-            logger.debug(f"Exception {type(e).__name__} occurred while reading status via SDP. \
-Arguments: {e.args}")
+            sdp_status_message = (
+                f"Exception {type(e).__name__} occurred while reading status via SDP. "
+                f"Arguments: {e.args}"
+            )
+            logger.debug(sdp_status_message)
         finally:
             if isinstance(sdp_com, SDP):
                 sdp_com.close()

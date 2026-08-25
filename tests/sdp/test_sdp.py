@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,6 @@ handling validation.
 """
 
 from struct import pack
-from typing import Optional
 
 import pytest
 from typing_extensions import Self
@@ -73,7 +71,7 @@ class VirtualDevice(DeviceBase):
         """
         pass
 
-    def read(self, length: int, timeout: Optional[int] = None) -> bytes:
+    def read(self, length: int, timeout: int | None = None) -> bytes:
         """Read data from the mock SDP interface.
 
         This method simulates reading data by returning the next response from the
@@ -86,7 +84,7 @@ class VirtualDevice(DeviceBase):
         """
         return self.respond_sequence.pop(0)  # type: ignore
 
-    def write(self, data: bytes, timeout: Optional[int] = None) -> None:
+    def write(self, data: bytes, timeout: int | None = None) -> None:
         """Write data to the SDP interface.
 
         Sends the provided data bytes through the SDP (Serial Download Protocol) interface
@@ -172,7 +170,7 @@ class VirtualSDPInterface:
         cls,
         params: str,
         timeout: int,
-        extra_params: Optional[str] = None,
+        extra_params: str | None = None,
     ) -> list[Self]:
         """Scan for available devices using specified parameters.
 
@@ -186,7 +184,7 @@ class VirtualSDPInterface:
         """
         return []  # not used
 
-    def read(self, length: Optional[int] = None) -> bytes:
+    def read(self, length: int | None = None) -> bytes:
         """Read data from the SDP device.
 
         This method reads a specified number of bytes from the connected SDP device.

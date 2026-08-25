@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -12,7 +11,7 @@ including IVT (Image Vector Table), Application Boot Header, and signature handl
 
 import logging
 import struct
-from typing import Any, Optional
+from typing import Any
 
 from typing_extensions import Self
 
@@ -163,11 +162,11 @@ class Ivt:
         self.family = family
         self._ivt_marker = self.DEFAULT_IVT_MARKER
         self.boot_config = BootConfig()
-        self.app_start_addr: Optional[int] = None
-        self.lc_config_addr: Optional[int] = None
-        self.hse_fw_addr: Optional[int] = None
-        self.app_boot_header_addr: Optional[int] = None
-        self.authentication_tag = bytes()
+        self.app_start_addr: int | None = None
+        self.lc_config_addr: int | None = None
+        self.hse_fw_addr: int | None = None
+        self.app_boot_header_addr: int | None = None
+        self.authentication_tag = b""
 
     def __len__(self) -> int:
         """Calculate the length of the IVT.
@@ -356,7 +355,7 @@ class Ivt:
         return self.app_start_addr - self.start_address
 
     @property
-    def app_boot_header_offset(self) -> Optional[int]:
+    def app_boot_header_offset(self) -> int | None:
         """Get the offset of the application boot header within the HSE image.
 
         This property calculates the relative offset of the application boot header from the start
@@ -369,7 +368,7 @@ class Ivt:
         return self.app_boot_header_addr - self.start_address
 
     @property
-    def lc_config_offset(self) -> Optional[int]:
+    def lc_config_offset(self) -> int | None:
         """Get the offset of the lifecycle configuration within the HSE image.
 
         This property calculates the relative offset of the lifecycle configuration from the start
@@ -728,9 +727,9 @@ class Mbi_ExportMixinHseSignature(Mbi_Mixin):
     IV_SIZE: int = 12
     SIGNATURE_SIZE = IV_SIZE + GMAC_SIZE
 
-    adkp: Optional[bytes]
+    adkp: bytes | None
     initial_vector: bytes
-    app: Optional[bytes]
+    app: bytes | None
     ivt: Ivt
     hse_app_boot_header: AppBootHeader
 
@@ -793,10 +792,10 @@ class Mbi_ExportMixinHseApp(Mbi_ExportMixin):
     APP_BLOCK_NAME = "Application Block"
     APP_IMAGE_NAME = "Application"
 
-    app: Optional[bytes]
+    app: bytes | None
     ivt: Ivt
     hse_app_boot_header: AppBootHeader
-    lifecycle: Optional["Mbi_MixinHseLifecycle.LifecycleState"]
+    lifecycle: "Mbi_MixinHseLifecycle.LifecycleState | None"
 
     def collect_data(self) -> BinaryImage:
         """Collect application data into a binary image structure.
@@ -880,8 +879,8 @@ class Mbi_ExportMixinHseAppSigned(Mbi_ExportMixinHseApp):
     handling and initial vector management for secure boot operations.
     """
 
-    adkp: Optional[bytes]
-    initial_vector: Optional[bytes]
+    adkp: bytes | None
+    initial_vector: bytes | None
 
     def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
         """Calculate signature and return updated image with authentication tag.
@@ -954,7 +953,7 @@ class Mbi_MixinHseLifecycle(Mbi_Mixin):
 
     ivt: Ivt
     app: bytes
-    lifecycle: Optional[LifecycleState]
+    lifecycle: LifecycleState | None
 
     def mix_len(self) -> int:
         """Compute length of individual mixin.

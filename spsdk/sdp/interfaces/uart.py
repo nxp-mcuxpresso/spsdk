@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,6 @@ enabling serial communication with NXP MCUs through UART protocol.
 """
 
 import logging
-from typing import Optional
 
 from typing_extensions import Self
 
@@ -50,9 +48,9 @@ class SdpUARTInterface(SDPSerialProtocol):
     @classmethod
     def scan(
         cls,
-        port: Optional[str] = None,
-        baudrate: Optional[int] = None,
-        timeout: Optional[int] = None,
+        port: str | None = None,
+        baudrate: int | None = None,
+        timeout: int | None = None,
     ) -> list[Self]:
         """Scan connected serial ports.
 

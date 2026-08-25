@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -12,7 +11,7 @@ including authentication, flash operations, and debug session management.
 """
 
 import time
-from typing import Any, Optional, Union
+from typing import Any
 
 from spsdk.dat.debug_mailbox import DebugMailbox, logger
 from spsdk.exceptions import SPSDKError
@@ -67,6 +66,12 @@ class DebugMailboxCommandID(SpsdkEnum):
 
     SET_BRICKED_MODE = (0x16, "SET_BRICKED_MODE", "Set device bricked mode")
 
+    PROGRAM_LIFECYCLE = (
+        0x17,
+        "PROGRAM_LIFECYCLE",
+        "Program CMPA lifecycle (LIFECYCLE_STATE + LIFECYCLE_STATE_DP)",
+    )
+
 
 class DebugMailboxCommandID2(SpsdkEnum):
     """Debug Mailbox Command ID enumeration for specific device implementations.
@@ -109,15 +114,15 @@ class DebugMailboxCommand:
 
     # default delay after sending a command, in seconds
     DELAY_DEFAULT = 0.03
-    CMD: Union[DebugMailboxCommandID, DebugMailboxCommandID2] = DebugMailboxCommandID.GENERAL
+    CMD: DebugMailboxCommandID | DebugMailboxCommandID2 = DebugMailboxCommandID.GENERAL
 
     def __init__(
         self,
         dm: DebugMailbox,
         paramlen: int = 0,
         resplen: int = 0,
-        delay: Optional[float] = None,
-        response_delay: Optional[float] = None,
+        delay: float | None = None,
+        response_delay: float | None = None,
     ):
         """Initialize Debug Mailbox command.
 
@@ -136,7 +141,7 @@ class DebugMailboxCommand:
         self.delay = delay or self.dm.command_delays.get(self.CMD.label, self.DELAY_DEFAULT)
         self.response_delay = response_delay
 
-    def run(self, params: Optional[list[int]] = None) -> list[Any]:
+    def run(self, params: list[int] | None = None) -> list[Any]:
         """Execute debug mailbox command with optional parameters.
 
         Sends command to debug mailbox, handles parameter transmission, waits for response,
@@ -167,7 +172,7 @@ class DebugMailboxCommand:
 
         if params:
             for i in range(paramslen):
-                ret = self.dm.spin_read(self.dm.registers["RETURN"]["address"])
+                ret = self.dm.read_return()
                 logger.debug(f"-> spin_read:  {format_value(ret, 32)}")
                 if (ret & 0xFFFF) != 0xA5A5:
                     if ret in STANDARD_ERROR_CODES:
@@ -184,7 +189,7 @@ class DebugMailboxCommand:
                 logger.debug(f"<- spin_write: {format_value(params[i], 32)}")
                 self.dm.spin_write(self.dm.registers["REQUEST"]["address"], params[i])
 
-        ret = self.dm.spin_read(self.dm.registers["RETURN"]["address"])
+        ret = self.dm.read_return()
         logger.debug(f"-> spin_read:  {format_value(ret, 32)}")
 
         # Solve non standard statuses before checking error indication
@@ -232,7 +237,7 @@ class DebugMailboxCommand:
 
         response = []
         for i in range(self.resplen):
-            ret = self.dm.spin_read(self.dm.registers["RETURN"]["address"])
+            ret = self.dm.read_return()
             logger.debug(f"-> spin_read:  {format_value(ret, 32)}")
             response.append(ret)
             ack = 0xA5A5 | ((self.resplen - i - 1) << 16)
@@ -240,7 +245,7 @@ class DebugMailboxCommand:
             self.dm.spin_write(self.dm.registers["REQUEST"]["address"], ack)
         return response
 
-    def run_safe(self, raise_if_failure: bool = True, **args: Any) -> Optional[list[Any]]:
+    def run_safe(self, raise_if_failure: bool = True, **args: Any) -> list[Any] | None:
         """Run a command and abort on first failure instead of looping forever.
 
         This method provides a safe wrapper around the run method that handles timeout
@@ -393,9 +398,87 @@ class EnterBlankDebugAuthentication(DebugMailboxCommand):
 
 
 class SetBrickedMode(DebugMailboxCommand):
-    """Class for SetBrickedMode."""
+    """Debug Mailbox command to permanently brick a device.
+
+    This command puts the device into bricked mode, making it permanently
+    inoperable. After processing the command, the device becomes unresponsive
+    to further debug communication, which is expected behavior.
+
+    :cvar CMD: Command identifier for set bricked mode operation.
+    """
 
     CMD = DebugMailboxCommandID.SET_BRICKED_MODE  # Cmd ID: 0x16
+
+    def run(self, params: list[int] | None = None) -> list[Any]:
+        """Execute the set bricked mode command.
+
+        Sends the bricked mode command to the device. After the device processes
+        the command, it becomes unresponsive to further debug reads. This timeout
+        is expected behavior indicating the brick operation succeeded.
+
+        :param params: Not used for this command.
+        :return: Empty list indicating successful command execution.
+        """
+        req = self.CMD.tag | (self.paramlen << 16)
+        logger.debug(f"<- spin_write: {format_value(req, 32)}")
+        self.dm.spin_write(self.dm.registers["REQUEST"]["address"], req)
+        time.sleep(self.delay)
+        try:
+            ret = self.dm.spin_read(self.dm.registers["RETURN"]["address"])
+            logger.debug(f"-> spin_read:  {format_value(ret, 32)}")
+            return [ret]
+        except SPSDKTimeoutError:
+            # After bricking, the device becomes unresponsive - this is expected
+            logger.debug(
+                "Set bricked mode: device is no longer responding (expected after bricking)."
+            )
+            return []
+
+
+class ProgramLifecycle(DebugMailboxCommand):
+    """Debug Mailbox command for programming the CMPA lifecycle.
+
+    Sends a single 32-bit lifecycle value which the ROM writes to both ``LIFECYCLE_STATE`` and
+    ``LIFECYCLE_STATE_DP`` words in the CMPA via ``FLASH_CMD_ProgramPhrase``,
+    then triggers a system reset. The command is only honored while the device
+    is in the ``DEVELOP`` lifecycle and requires the CMPA integrity check
+    (markers + CRCs) to pass; otherwise the device returns
+    ``ERR_DM_UNKNOWN_CMD`` (``0x00100002``) or ``ERR_DM_COMM_FAIL``
+    (``0x00100003``) respectively.
+
+    :cvar CMD: Command identifier for program lifecycle operation.
+    """
+
+    CMD = DebugMailboxCommandID.PROGRAM_LIFECYCLE  # Cmd ID: 0x17
+
+    def __init__(self, dm: DebugMailbox) -> None:
+        """Initialize the debug mailbox command.
+
+        :param dm: Debug mailbox instance to be used for command execution.
+        """
+        super().__init__(dm, paramlen=1)
+
+    def run(self, params: list[int] | None = None) -> list[Any]:
+        """Execute the program lifecycle command.
+
+        Delegates to the base implementation but tolerates a missing final
+        status read because the ROM issues ``NVIC_SystemReset`` immediately
+        after writing the response register, which can race the host read on
+        slower probes.
+
+        :param params: Single-element list with the encoded lifecycle value.
+        :return: Result of the base ``run`` call, or an empty list when the
+            device became unresponsive right after acknowledging the command.
+        """
+        try:
+            return super().run(params=params)
+        except SPSDKTimeoutError:
+            # The device resets right after sending its status word; treat the
+            # post-reset unresponsiveness as a successful transition.
+            logger.debug(
+                "Program lifecycle: device is no longer responding (expected after reset)."
+            )
+            return []
 
 
 class WriteToFlash(DebugMailboxCommand):

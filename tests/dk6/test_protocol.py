@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023,2025 NXP
+# Copyright 2022-2023,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,8 +9,6 @@
 This module contains comprehensive unit tests for the DK6 protocol implementation,
 validating frame handling, CRC calculation, and protocol communication functionality.
 """
-
-from typing import Optional
 
 import pytest
 
@@ -26,7 +23,7 @@ from spsdk.dk6.interface import Uart, to_int
         (b"\x00", CommandTag.UNLOCK_ISP, b"\x00\x00\x09\x4e\x00\xa7\x09\xae\x19"),
     ],
 )
-def test_frame(data: Optional[bytes], frame_type: CommandTag, expected_frame: bytes) -> None:
+def test_frame(data: bytes | None, frame_type: CommandTag, expected_frame: bytes) -> None:
     """Test UART frame creation with given data and frame type.
 
     Verifies that the Uart.create_frame method correctly generates a frame

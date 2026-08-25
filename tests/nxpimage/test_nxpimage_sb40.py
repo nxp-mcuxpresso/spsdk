@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -18,15 +17,12 @@ import os
 import pytest
 
 from spsdk.apps import nxpimage
-from spsdk.crypto.keys import IS_DILITHIUM_SUPPORTED
 from spsdk.sbfile.sb4.images import SecureBinary4
+from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 from tests.cli_runner import CliRunner
-
-if not IS_DILITHIUM_SUPPORTED:
-    pytest.skip(reason="PQC support is not installed", allow_module_level=True)
 
 
 def process_config_file(config_path: str, destination: str) -> tuple[str, str, str]:
@@ -325,3 +321,78 @@ def test_nxpimage_sb40_dual_signing(
             assert (
                 sb4.container.srk_hash1 is not None
             ), "Secondary SRK hash should be present for dual signing"
+
+
+@pytest.mark.parametrize(
+    "config_file,device",
+    [
+        ("sb4_ecc256_basic.yaml", "mcxn556s"),
+        ("sb4_ecc256_mldsa_dual.yaml", "mcxn556s"),
+    ],
+)
+def test_nxpimage_sb40_image_info(nxpimage_data_dir: str, config_file: str, device: str) -> None:
+    """Test SB4.0 image_info() returns a valid BinaryImage structure."""
+    with use_working_directory(nxpimage_data_dir):
+        config_path = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{config_file}"
+        if not os.path.exists(config_path):
+            pytest.skip(f"Config file {config_file} not found")
+
+        sb4 = SecureBinary4.load_from_config(config=Config.create_from_file(config_path))
+        info = sb4.image_info()
+
+        # Verify it returns a BinaryImage with correct top-level structure
+        assert isinstance(info, BinaryImage)
+        assert info.name == "SB4.0 Image"
+        assert info.size > 0
+
+        # Verify expected sub-images are present
+        sub_names = [img.name for img in info.sub_images]
+        assert "AHAB Container" in sub_names
+        assert "SB4.0 Descriptor" in sub_names
+        assert "SB4.0 Commands" in sub_names
+
+        # Verify offsets are monotonically increasing and within bounds
+        for img in info.sub_images:
+            assert img.offset >= 0
+            assert img.offset + img.size <= info.size, (
+                f"{img.name} exceeds total image size: "
+                f"offset={img.offset} + size={img.size} > {info.size}"
+            )
+
+        # Verify draw() produces non-empty output
+        drawn = info.draw()
+        assert len(drawn) > 0
+        assert "AHAB Container" in drawn
+        assert "SB4.0 Commands" in drawn
+
+
+@pytest.mark.parametrize(
+    "config_file,device",
+    [
+        ("sb4_ecc256_basic.yaml", "mcxn556s"),
+    ],
+)
+def test_nxpimage_sb40_verify_command(
+    cli_runner: CliRunner, nxpimage_data_dir: str, tmpdir: str, config_file: str, device: str
+) -> None:
+    """Test SB4.0 verify CLI command."""
+    with use_working_directory(nxpimage_data_dir):
+        config_path = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{config_file}"
+        if not os.path.exists(config_path):
+            pytest.skip(f"Config file {config_file} not found")
+
+        ref_binary, _, new_config = process_config_file(config_path, tmpdir)
+
+        orig_config = Config.create_from_file(new_config)
+        family = FamilyRevision.load_from_config(orig_config)
+        pck_info = orig_config.get("containerKeyBlobEncryptionKey")
+        kdk_access_rights = orig_config.get("kdkAccessRights", 0)
+
+        # Run verify command
+        cmd = f"sb40 verify -f {family.name} -b {ref_binary}"
+        if bool(pck_info) and orig_config.get_bool("isEncrypted", True):
+            cmd += f" -k {pck_info} -a {kdk_access_rights}"
+
+        result = cli_runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0, f"Verify command failed: {result.output}"
+        assert "SB4.0" in result.output or "AHAB" in result.output

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -18,8 +17,9 @@ and secure session management.
 import logging
 import shlex
 import sys
+from collections.abc import Callable
 from struct import pack
-from typing import Any, Callable, Optional, TypeVar, Union
+from typing import Any, TypeVar
 
 import click
 from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
@@ -58,12 +58,18 @@ from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import BinaryPattern, load_binary, load_hex_string, write_file
+from spsdk.utils.misc import (
+    BinaryPattern,
+    get_printable_path,
+    load_binary,
+    load_hex_string,
+    write_file,
+)
 
 logger = logging.getLogger(__name__)
 
 
-FC = TypeVar("FC", bound=Union[Callable[..., Any], click.Command])
+FC = TypeVar("FC", bound=Callable[..., Any] | click.Command)
 
 
 def nxpele_options(options: FC) -> Callable:
@@ -123,19 +129,19 @@ def nxpele_options(options: FC) -> Callable:
 @click.pass_context
 def main(
     ctx: click.Context,
-    port: Optional[str],
-    usb: Optional[str],
-    lpcusbsio: Optional[str],
-    buspal: Optional[str],
+    port: str | None,
+    usb: str | None,
+    lpcusbsio: str | None,
+    buspal: str | None,
     log_level: int,
     timeout: int,
     family: FamilyRevision,
-    device: Optional[str],
-    buffer_addr: Optional[int],
-    buffer_size: Optional[int],
-    fb_addr: Optional[int],
-    fb_size: Optional[int],
-    uboot_prompt: Optional[str],
+    device: str | None,
+    buffer_addr: int | None,
+    buffer_size: int | None,
+    fb_addr: int | None,
+    fb_size: int | None,
+    uboot_prompt: str | None,
 ) -> int:
     """Utility for communication with the EdgeLock Enclave on target over BLHOST or UBOOT."""
     log_level = log_level or logging.WARNING
@@ -294,9 +300,10 @@ def ele_reset(ele_handler: EleMessageHandler) -> None:
     with ele_handler:
         try:
             ele_handler.send_message(reset)
+            click.echo("ELE Reset ends successfully")
         except (McuBootCommandError, SPSDKError) as exc:
             logger.debug(f"Reset by ELE failed: {str(exc)}")
-    click.echo("ELE Reset ends successfully")
+            click.echo("ELE reset failed", err=True, color=True)
 
 
 @main.command(name="get-ele-fw-status", no_args_is_help=False)
@@ -373,7 +380,7 @@ def ele_get_ele_fw_version(ele_handler: EleMessageHandler) -> None:
 @click.pass_obj
 def cmd_get_info(
     handler: EleMessageHandler,
-    attribute: Optional[str],
+    attribute: str | None,
 ) -> None:
     """Get information from EdgeLock Enclave.
 
@@ -383,7 +390,7 @@ def cmd_get_info(
     ele_get_info(handler, attribute)
 
 
-def ele_get_info(ele_handler: EleMessageHandler, attribute: Optional[str] = None) -> None:
+def ele_get_info(ele_handler: EleMessageHandler, attribute: str | None = None) -> None:
     """ELE Get Info command.
 
     :param ele_handler: ELE handler class
@@ -420,9 +427,7 @@ def ele_get_info(ele_handler: EleMessageHandler, attribute: Optional[str] = None
     help="File name with binary of EdgeLock Enclave firmware.",
 )
 @click.pass_obj
-def cmd_ele_fw_auth(
-    handler: EleMessageHandler, address: Optional[int], binary: Optional[str]
-) -> None:
+def cmd_ele_fw_auth(handler: EleMessageHandler, address: int | None, binary: str | None) -> None:
     """Authenticate and execute EdgeLock Enclave firmware.
 
     Firmware should be placed in any memory accessible by ROM code if '-a' is used, otherwise
@@ -432,7 +437,7 @@ def cmd_ele_fw_auth(
 
 
 def ele_ele_fw_auth(
-    ele_handler: EleMessageHandler, address: Optional[int], binary: Optional[str]
+    ele_handler: EleMessageHandler, address: int | None, binary: str | None
 ) -> None:
     """Authenticate and execute EdgeLock Enclave firmware command.
 
@@ -478,7 +483,7 @@ def ele_ele_fw_auth(
 @click.pass_obj
 def cmd_dump_debug_buffer(
     handler: EleMessageHandler,
-    output: Optional[str],
+    output: str | None,
     dump_all: bool,
 ) -> None:
     """Dump EdgeLock Enclave debug buffer logs.
@@ -502,7 +507,7 @@ def cmd_dump_debug_buffer(
                 log_content += f"S40X: 0x{log_pair[0]:x}\n"
 
         write_file(log_content.encode(), output, mode="wb")
-        click.echo(f"ELE Debug logs saved to: {output}")
+        click.echo(f"ELE Debug logs saved to: {get_printable_path(output)}")
 
     click.echo("ELE Dump Debug Buffer ends successfully")
 
@@ -641,7 +646,7 @@ def cmd_oem_cntn_auth(handler: EleMessageHandler, address: int, binary: str) -> 
 
 
 def ele_oem_cntn_auth(
-    ele_handler: EleMessageHandler, address: Optional[int], binary: Optional[str]
+    ele_handler: EleMessageHandler, address: int | None, binary: str | None
 ) -> None:
     """Authenticate OEM container.
 
@@ -718,8 +723,8 @@ def ele_commit(ele_handler: EleMessageHandler, commit_info: list[EleInfo2Commit]
 def cmd_derive_key(
     handler: EleMessageHandler,
     size: str,
-    key_diversification_context: Optional[str],
-    output: Optional[str],
+    key_diversification_context: str | None,
+    output: str | None,
 ) -> None:
     """Derive key.
 
@@ -738,7 +743,7 @@ def cmd_derive_key(
 
 
 def ele_derive_key(
-    ele_handler: EleMessageHandler, size: int, key_diversification_context: Optional[bytes]
+    ele_handler: EleMessageHandler, size: int, key_diversification_context: bytes | None
 ) -> bytes:
     """Derive key.
 
@@ -1915,7 +1920,7 @@ def cmd_public_key_export(
     keystore_handle: int,
     key_id: int,
     buffer_size: int,
-    output: Optional[str],
+    output: str | None,
 ) -> None:
     """Export public key from EdgeLock Enclave key store.
 
@@ -1934,7 +1939,9 @@ def cmd_public_key_export(
     if public_key:
         if output:
             write_file(public_key, output, mode="wb")
-            click.echo(f"ELE Public Key Export ends successfully. Public key saved to: {output}")
+            click.echo(
+                f"ELE Public Key Export ends successfully. Public key saved to: {get_printable_path(output)}"
+            )
         else:
             click.echo("ELE Public Key Export ends successfully.")
             click.echo(f"Public key ({len(public_key)} bytes): {public_key.hex()}")

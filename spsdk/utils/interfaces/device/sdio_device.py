@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -15,7 +14,6 @@ class for handling SDIO protocol communications with NXP MCU devices.
 import os
 import time
 from io import FileIO
-from typing import Optional
 
 from typing_extensions import Self
 
@@ -42,8 +40,8 @@ class SdioDevice(DeviceBase):
 
     def __init__(
         self,
-        path: Optional[str] = None,
-        timeout: Optional[int] = None,
+        path: str | None = None,
+        timeout: int | None = None,
     ) -> None:
         """Initialize the SDIO interface object.
 
@@ -60,7 +58,7 @@ class SdioDevice(DeviceBase):
             raise SPSDKConnectionError("No SDIO device path")
         self.path = path
         self.is_blocking = False
-        self.device: Optional[FileIO] = None
+        self.device: FileIO | None = None
 
     @property
     def timeout(self) -> int:
@@ -136,7 +134,7 @@ class SdioDevice(DeviceBase):
                     f"Unable to close device '{self.path}' VID={self.vid} PID={self.pid}"
                 ) from error
 
-    def read(self, length: int, timeout: Optional[int] = None) -> bytes:
+    def read(self, length: int, timeout: int | None = None) -> bytes:
         """Read specified number of bytes from the SDIO device.
 
         The method uses either blocking or non-blocking read operation based on the device
@@ -157,7 +155,7 @@ class SdioDevice(DeviceBase):
         logger.trace(f"<{' '.join(f'{b:02x}' for b in data)}>")
         return data
 
-    def _read_blocking(self, length: int, timeout: Optional[int] = None) -> bytes:
+    def _read_blocking(self, length: int, timeout: int | None = None) -> bytes:
         """Read specified number of bytes from device in blocking mode.
 
         The method reads data from the SDIO device using blocking I/O operation.
@@ -177,7 +175,7 @@ class SdioDevice(DeviceBase):
         except Exception as e:
             raise SPSDKConnectionError(str(e)) from e
 
-    def _read_non_blocking(self, length: int, timeout: Optional[int] = None) -> bytes:
+    def _read_non_blocking(self, length: int, timeout: int | None = None) -> bytes:
         """Read specified number of bytes from device in non-blocking mode.
 
         The method continuously attempts to read data until the requested length is achieved or timeout
@@ -219,7 +217,7 @@ class SdioDevice(DeviceBase):
                 break
         return bytes(data)
 
-    def write(self, data: bytes, timeout: Optional[int] = None) -> None:
+    def write(self, data: bytes, timeout: int | None = None) -> None:
         """Send data to device.
 
         The method automatically selects blocking or non-blocking mode based on device configuration
@@ -236,7 +234,7 @@ class SdioDevice(DeviceBase):
         _write = self._write_blocking if self.is_blocking else self._write_non_blocking
         _write(data=data, timeout=timeout)
 
-    def _write_blocking(self, data: bytes, timeout: Optional[int] = None) -> None:
+    def _write_blocking(self, data: bytes, timeout: int | None = None) -> None:
         """Write data to device in blocking mode.
 
         :param data: Data to be written to the device.
@@ -252,7 +250,7 @@ class SdioDevice(DeviceBase):
         except Exception as e:
             raise SPSDKConnectionError(str(e)) from e
 
-    def _write_non_blocking(self, data: bytes, timeout: Optional[int] = None) -> None:
+    def _write_non_blocking(self, data: bytes, timeout: int | None = None) -> None:
         """Write data to device in non-blocking mode.
 
         The method writes data in chunks with timeout handling and sleep intervals
@@ -293,7 +291,7 @@ class SdioDevice(DeviceBase):
     def scan(
         cls,
         device_path: str,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> list[Self]:
         """Scan connected SDIO devices.
 

@@ -116,3 +116,8 @@ loadKeyBlob: >2
     #     wrappingKeyId: NXP_CUST_KEK_EXT_SK
     #     file: wrapped_key_blob.bin
     #
+
+writeIFR: >2
+    # Write IFR (Information Flash Region) - CFPA and CMPA configuration
+    - writeIFR:
+        type: {type}

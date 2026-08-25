@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -14,7 +13,6 @@ image signing and verification, and attribute retrieval operations.
 
 import json
 import logging
-from typing import Optional
 
 import click
 
@@ -161,7 +159,7 @@ def get_key_info(
     help="Binary file with HSE firmware to load to target memory before update (optional).",
 )
 def fw_update(
-    ele_handler: EleMessageHandler, mode: str, fw_addr: int, length: int, binary: Optional[str]
+    ele_handler: EleMessageHandler, mode: str, fw_addr: int, length: int, binary: str | None
 ) -> None:
     """Update HSE firmware.
 

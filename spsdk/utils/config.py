@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 # Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -15,7 +14,7 @@ import logging
 import os
 from abc import abstractmethod
 from copy import deepcopy
-from typing import Any, Optional, TypeVar, Union, cast
+from typing import Any, TypeVar, cast
 
 from typing_extensions import Self
 
@@ -83,7 +82,7 @@ class Config(dict):
         return cfg
 
     @classmethod
-    def get_path(cls, key: Union[str, int]) -> list:
+    def get_path(cls, key: str | int) -> list:
         """Get keypath in list format.
 
         Converts a key (string or integer) into a list of path components. String keys are split
@@ -93,7 +92,7 @@ class Config(dict):
         :param key: Key to convert - either string path with separators or single integer.
         :return: List of path components as integers or strings.
         """
-        ret: list[Union[int, str]] = []
+        ret: list[int | str] = []
 
         if isinstance(key, int):
             return [str(key)]
@@ -104,7 +103,7 @@ class Config(dict):
                 ret.append(k)
         return ret
 
-    def get(self, key: str, defaults: Optional[Any] = None) -> Any:
+    def get(self, key: str, defaults: Any | None = None) -> Any:
         """Get configuration value with nested key support.
 
         Overrides the original dictionary get method to support nested addressing of items
@@ -248,7 +247,7 @@ class Config(dict):
         output_file_name = self.get_output_file_name(key)
         return os.path.dirname(output_file_name)
 
-    def load_sub_config(self, key: str, target_klass: Optional[type] = None) -> "Config":
+    def load_sub_config(self, key: str, target_klass: type | None = None) -> "Config":
         """Load sub-configuration from a file path specified by the given key.
 
         The method resolves the file path using the current configuration's search paths,
@@ -274,7 +273,7 @@ class Config(dict):
         return ret
 
     def get_list_of_configs(
-        self, key: str, default: Optional[list["Config"]] = None
+        self, key: str, default: list["Config"] | None = None
     ) -> list["Config"]:
         """Get list of sub configurations.
 
@@ -296,7 +295,7 @@ class Config(dict):
             ret.append(self.get_config(f"{key}/{i}"))
         return ret
 
-    def get_config(self, key: str, default: Optional["Config"] = None) -> "Config":
+    def get_config(self, key: str, default: "Config | None" = None) -> "Config":
         """Get the key value as Config object.
 
         Retrieves a configuration value by key and converts it to a Config instance.
@@ -316,7 +315,7 @@ class Config(dict):
 
         return ret
 
-    def get_dict(self, key: str, default: Optional[dict] = None) -> dict:
+    def get_dict(self, key: str, default: dict | None = None) -> dict:
         """Get the key value as dictionary.
 
         Retrieves a configuration value for the specified key and ensures it is a dictionary type.
@@ -332,7 +331,7 @@ class Config(dict):
             raise SPSDKError(f"The value is not dictionary at key: {key}")
         return ret
 
-    def get_list(self, key: str, default: Optional[list] = None) -> list:
+    def get_list(self, key: str, default: list | None = None) -> list:
         """Get the key value as list.
 
         :param key: Key name of the configuration entry.
@@ -345,7 +344,7 @@ class Config(dict):
             raise SPSDKError(f"The value is not list at key: {key}")
         return ret
 
-    def get_int(self, key: str, default: Optional[int] = None) -> int:
+    def get_int(self, key: str, default: int | None = None) -> int:
         """Get the key value as integer.
 
         :param key: Key name of the sub configuration.
@@ -358,7 +357,7 @@ class Config(dict):
             raise SPSDKError(f"The value is not integer at key: {key}")
         return value_to_int(ret)
 
-    def get_bytes(self, key: str, default: Optional[bytes] = None) -> bytes:
+    def get_bytes(self, key: str, default: bytes | None = None) -> bytes:
         """Get the key value as bytes.
 
         The method retrieves a configuration value by key and converts it to bytes format.
@@ -374,7 +373,7 @@ class Config(dict):
             raise SPSDKError(f"The value is not bytes at key: {key}")
         return value_to_bytes(ret, align_to_2n=False)
 
-    def get_str(self, key: str, default: Optional[str] = None) -> str:
+    def get_str(self, key: str, default: str | None = None) -> str:
         """Get the key value as string.
 
         Retrieves the configuration value for the specified key and ensures it's a string type.
@@ -390,7 +389,7 @@ class Config(dict):
             raise SPSDKError(f"The value is not string at key: {key}")
         return ret
 
-    def get_bool(self, key: str, default: Optional[bool] = None) -> bool:
+    def get_bool(self, key: str, default: bool | None = None) -> bool:
         """Get the key value as boolean.
 
         Retrieves a configuration value for the specified key and ensures it is a boolean type.
@@ -423,8 +422,8 @@ class Config(dict):
         self,
         key: str,
         expected_size: int,
-        default: Optional[bytes] = None,
-        name: Optional[str] = "key",
+        default: bytes | None = None,
+        name: str | None = "key",
     ) -> bytes:
         """Load symmetric key from configuration.
 
@@ -447,7 +446,7 @@ class Config(dict):
             source=ret, expected_size=expected_size, search_paths=self.search_paths, name=name
         )
 
-    def load_secret(self, key: str, default: Optional[str] = None) -> str:
+    def load_secret(self, key: str, default: str | None = None) -> str:
         """Load secret text from the configuration value.
 
         There are several options how the secret is loaded from the input string:
@@ -493,7 +492,7 @@ class PreValidationHook:
     case-insensitive processing across different configuration formats.
     """
 
-    def __init__(self, register_keys: Optional[list[str]] = None):
+    def __init__(self, register_keys: list[str] | None = None):
         """Initialize the hook with specific register keys to process.
 
         :param register_keys: List of keys in the config that contain register configurations.

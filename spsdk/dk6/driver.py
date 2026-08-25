@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,7 +15,7 @@ and connection management.
 import logging
 import time
 from enum import Enum
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from spsdk.dk6.serial_device import SerialDevice
 from spsdk.exceptions import SPSDKError
@@ -70,7 +69,7 @@ class DeviceInfo:
 
     def __init__(
         self,
-        device_id: Union[str, int],
+        device_id: str | int,
         vid: int,
         pid: int,
         sn: str,

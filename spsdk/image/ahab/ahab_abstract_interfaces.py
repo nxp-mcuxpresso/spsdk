@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -15,7 +14,6 @@ serialization, parsing, validation, and header management across different conta
 import textwrap
 from dataclasses import dataclass
 from struct import calcsize, unpack
-from typing import Optional, Union
 
 import colorama
 from typing_extensions import Self
@@ -36,7 +34,7 @@ class Container(BaseClass):
     :cvar _parser_verifier: Optional verifier for parsing validation.
     """
 
-    _parser_verifier: Optional[Verifier]
+    _parser_verifier: Verifier | None
 
     @classmethod
     def fixed_length(cls) -> int:
@@ -177,8 +175,8 @@ class HeaderContainer(Container):
     :cvar DIFF_ATTRIBUTES_OBJECTS: List of object attributes used in diff operations.
     """
 
-    TAG: Union[int, list[int]] = 0x00
-    VERSION: Union[int, list[int]] = 0x00
+    TAG: int | list[int] = 0x00
+    VERSION: int | list[int] = 0x00
 
     DIFF_ATTRIBUTES_VALUES: list[str] = []
     DIFF_ATTRIBUTES_OBJECTS: list[str] = []
@@ -193,7 +191,7 @@ class HeaderContainer(Container):
         self.length = length
         self.tag = tag
         self.version = version
-        self._parsed_header: Optional[HeaderContainerData] = None
+        self._parsed_header: HeaderContainerData | None = None
 
     def __eq__(self, other: object) -> bool:
         """Check equality with another HeaderContainer or HeaderContainerInverted object.
@@ -256,7 +254,7 @@ class HeaderContainer(Container):
 
     @classmethod
     def _verify_header(
-        cls, tag: int, length: int, version: int, object_length: Optional[int] = None
+        cls, tag: int, length: int, version: int, object_length: int | None = None
     ) -> Verifier:
         """Verify the header of container properties.
 
@@ -387,9 +385,7 @@ class HeaderContainer(Container):
         """
         diff_dict = {}
 
-        def compare_objects(
-            self_obj: Optional[Union[dict, list]], other_obj: Optional[Union[dict, list]]
-        ) -> dict:
+        def compare_objects(self_obj: dict | list | None, other_obj: dict | list | None) -> dict:
             """Compare two objects recursively and return their differences.
 
             This method handles comparison of dictionaries, lists, and objects with diff methods.

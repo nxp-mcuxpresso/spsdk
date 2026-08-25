@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,8 +11,9 @@ including device configuration, USB interface setup, and McuBoot instance
 creation for automated testing scenarios.
 """
 
+from collections.abc import Generator
 from os import path
-from typing import Generator, Optional, cast
+from typing import cast
 
 import pytest
 
@@ -42,7 +42,7 @@ def target(request: pytest.FixtureRequest) -> str:
 
 
 @pytest.fixture(scope="module")
-def config(target: str) -> Optional[DevConfig]:  # pylint: disable=redefined-outer-name
+def config(target: str) -> DevConfig | None:  # pylint: disable=redefined-outer-name
     """Get device configuration for the specified target.
 
     Loads device configuration from YAML files located in the devices directory.
@@ -60,7 +60,7 @@ def config(target: str) -> Optional[DevConfig]:  # pylint: disable=redefined-out
 
 @pytest.fixture(scope="module")
 def device(  # pylint: disable=redefined-outer-name
-    target: str, config: Optional[DevConfig]
+    target: str, config: DevConfig | None
 ) -> VirtualMbootInterface:
     """Create device interface based on target specification.
 

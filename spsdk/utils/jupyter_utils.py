@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -309,7 +308,7 @@ try:
             :raises UnicodeDecodeError: When the configuration file contains invalid UTF-8.
             :return: HTML string containing download button with embedded config data.
             """
-            with open(self.user_cfg_path, "r", encoding="utf-8") as file:
+            with open(self.user_cfg_path, encoding="utf-8") as file:
                 user_cfg_content = file.read()
             user_cfg_base64 = base64.b64encode(user_cfg_content.encode()).decode()
             download_button_html = f"""

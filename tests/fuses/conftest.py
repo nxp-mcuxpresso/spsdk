@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK test configuration and fixtures for fuses testing.
 
 This module provides pytest configuration and shared fixtures for testing
@@ -12,7 +12,7 @@ management utilities and mock objects for consistent test setup.
 """
 
 import os
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 
@@ -35,8 +35,8 @@ class TestDatabaseManager:
     """
 
     _instance = None
-    _db: Optional[Database] = None
-    _quick_info: Optional[QuickDatabase] = None
+    _db: Database | None = None
+    _quick_info: QuickDatabase | None = None
 
     @property
     def db(self) -> Database:

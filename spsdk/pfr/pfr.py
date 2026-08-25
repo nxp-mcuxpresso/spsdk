@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -16,9 +15,10 @@ import logging
 import math
 import os
 from abc import abstractmethod
+from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, Type, cast
+from typing import Any, cast
 
 from typing_extensions import Self
 
@@ -60,7 +60,7 @@ class AdditionalDataCfg:
     type: str  # Supported types:
     # - CFPA_CMPA_SPLIT: Splitted CFPA and CMPA additional data, split offset defined in CMPA register * 32
     # - CFPA_ONLY: Additional data only after CFPA
-    offset: Optional[str]  # name of the register where the offset is stored in CMPA
+    offset: str | None  # name of the register where the offset is stored in CMPA
     max_size: int  # Maximum size of the additional data area
 
     @classmethod
@@ -111,6 +111,9 @@ class AbstractBaseConfigArea(FeatureBaseClass):
     REQUIRED_IN_SCHEMAS = True
     SKIP_IN_TEMPLATE = False
 
+    # Registers holding the configuration values; populated by subclasses.
+    registers: Registers
+
     def __init__(self, family: FamilyRevision) -> None:
         """Initialize PFR instance for specified device family.
 
@@ -122,7 +125,7 @@ class AbstractBaseConfigArea(FeatureBaseClass):
         """
         self.db = get_db(family)
         self.family = family
-        self._additional_data = bytes()
+        self._additional_data = b""
 
         self.support_additional_data = self.db.get_bool(
             self.FEATURE, [self.SUB_FEATURE, "support_additional_data"], default=False
@@ -256,7 +259,7 @@ class AbstractBaseConfigArea(FeatureBaseClass):
 
     @classmethod
     @abstractmethod
-    def parse(cls, data: bytes, family: Optional[FamilyRevision] = None) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision | None = None) -> Self:
         """Parse input binary data to registers.
 
         :param data: Input binary data of PFR block.
@@ -287,7 +290,7 @@ class AbstractBaseConfigArea(FeatureBaseClass):
     def write_to_device(
         self,
         write_method: Callable[[int, bytes], bool],
-        read_method: Optional[Callable[[int, int], bytes]] = None,
+        read_method: Callable[[int, int], bytes] | None = None,
         add_seal: bool = False,
     ) -> bool:
         """Write PFR configuration to device using provided write method.
@@ -347,8 +350,8 @@ class AbstractBaseConfigArea(FeatureBaseClass):
     @abstractmethod
     def compute_rotkh(
         self,
-        keys: Optional[list[PublicKey]] = None,
-        rotkh: Optional[bytes] = None,
+        keys: list[PublicKey] | None = None,
+        rotkh: bytes | None = None,
     ) -> None:
         """Compute and set ROTKH (Root of Trust Key Hash) in the register.
 
@@ -400,6 +403,17 @@ class BaseConfigArea(AbstractBaseConfigArea):
     management. It handles register loading, binary size calculations, and
     family-specific database operations for NXP MCU protected flash regions.
 
+    Monotonic counter sentinel values (supported generically for any sub-feature
+    that declares ``monotonic_counters`` in the device database):
+
+    - ``MONOTONIC_RETAIN`` (0xFFFFFFFF): Retain the current device value (no change).
+    - ``MONOTONIC_INCREMENT`` (0xFFFFFFFE): Auto-increment the current device value by 1.
+
+    When a sub-feature lists counter register names under
+    ``pfr.<sub_feature>.monotonic_counters`` in the database, these sentinel values
+    are transparently resolved by reading the current page from the device before
+    writing.
+
     :cvar SUB_FEATURE: Sub-feature identifier to be defined by subclasses.
     :cvar BINARY_SIZE_DEFAULT: Default binary size in bytes for configuration area.
     :cvar ROTKH_SIZE: Size of Root of Trust Key Hash in bytes.
@@ -409,6 +423,8 @@ class BaseConfigArea(AbstractBaseConfigArea):
     :cvar IMAGE_PREFILL_PATTERN: Default pattern for prefilling binary images.
     :cvar WRITE_METHOD: Memory interface method name for write operations.
     :cvar READ_METHOD: Memory interface method name for read operations.
+    :cvar MONOTONIC_RETAIN: Sentinel value — keep the current counter value on device.
+    :cvar MONOTONIC_INCREMENT: Sentinel value — auto-increment the current counter by 1.
     """
 
     PRE_VALIDATION_CFG_HOOK = RegistersPreValidationHook(register_keys=["settings"])
@@ -419,6 +435,9 @@ class BaseConfigArea(AbstractBaseConfigArea):
     MARK = b"SEAL"
     DESCRIPTION = "Base Config Area"
     IMAGE_PREFILL_PATTERN = "0x00"
+
+    MONOTONIC_RETAIN: int = 0xFFFFFFFF
+    MONOTONIC_INCREMENT: int = 0xFFFFFFFE
 
     def __init__(self, family: FamilyRevision) -> None:
         """Initialize PFR instance for specified device family.
@@ -519,8 +538,8 @@ class BaseConfigArea(AbstractBaseConfigArea):
 
     def compute_rotkh(
         self,
-        keys: Optional[list[PublicKey]] = None,
-        rotkh: Optional[bytes] = None,
+        keys: list[PublicKey] | None = None,
+        rotkh: bytes | None = None,
     ) -> None:
         """Compute and set ROTKH (Root of Trust Key Hash) in the register.
 
@@ -779,11 +798,9 @@ class BaseConfigArea(AbstractBaseConfigArea):
                         continue
                     self.compute_register(reg, method)
                     logger.warning(
-                        (
-                            f"The {reg_name} register has been recomputed, because "
-                            f"it has been used in configuration and the bitfield {bitfield.name} "
-                            "has not been specified"
-                        )
+                        f"The {reg_name} register has been recomputed, because "
+                        f"it has been used in configuration and the bitfield {bitfield.name} "
+                        "has not been specified"
                     )
 
     @classmethod
@@ -930,7 +947,7 @@ class BaseConfigArea(AbstractBaseConfigArea):
         return bytes(data)
 
     @classmethod
-    def parse(cls, data: bytes, family: Optional[FamilyRevision] = None) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision | None = None) -> Self:
         """Parse input binary data to registers.
 
         The method parses binary data into PFR registers and handles additional data
@@ -949,10 +966,87 @@ class BaseConfigArea(AbstractBaseConfigArea):
 
         return ret
 
+    @property
+    def monotonic_counter_names(self) -> list[str]:
+        """Return the list of monotonic counter register names for this sub-feature.
+
+        The list is read from ``pfr.<sub_feature>.monotonic_counters`` in the device
+        database.  Returns an empty list for devices that do not declare the key or
+        for sub-features that do not use monotonic counters.
+
+        :return: List of register names that are monotonic counters.
+        """
+        return self.db.get_list(self.FEATURE, [self.SUB_FEATURE, "monotonic_counters"], default=[])
+
+    def _preprocess_monotonic_counters(self, read_method: Callable[[int, int], bytes]) -> None:
+        """Read current region from device and resolve monotonic counter sentinel values.
+
+        For each register listed in :attr:`monotonic_counter_names`, if the configured
+        value equals MONOTONIC_RETAIN (0xFFFFFFFF) or MONOTONIC_INCREMENT (0xFFFFFFFE),
+        the current device value is read and substituted (or incremented by 1 for
+        MONOTONIC_INCREMENT) before writing.
+
+        The device read is performed only when at least one sentinel value is found
+        in the registers.
+
+        :param read_method: Callable that reads ``size`` bytes from ``address``.
+        :raises SPSDKPfrError: If the region cannot be read from the device.
+        """
+        counter_names = self.monotonic_counter_names
+        if not counter_names:
+            return
+
+        sentinel_values = {self.MONOTONIC_RETAIN, self.MONOTONIC_INCREMENT}
+        registers_to_resolve: list[Register] = []
+
+        for name in counter_names:
+            try:
+                reg = self.registers.find_reg(name)
+            except SPSDKRegsErrorRegisterNotFound:
+                logger.debug(f"Monotonic counter register '{name}' not found, skipping")
+                continue
+            if reg.get_value() in sentinel_values:
+                registers_to_resolve.append(reg)
+
+        if not registers_to_resolve:
+            return
+
+        logger.info(
+            f"Monotonic counter sentinel value detected — reading current "
+            f"{self.SUB_FEATURE.upper()} from device at {self.read_address:#x}"
+        )
+        current_data = read_method(self.read_address, self.registers_size)
+        if not current_data:
+            raise SPSDKPfrError(
+                f"Failed to read current {self.SUB_FEATURE.upper()} from device "
+                "for monotonic counter preprocessing"
+            )
+
+        current_regs = self._load_registers(self.family)
+        current_regs.parse(current_data)
+
+        for reg in registers_to_resolve:
+            try:
+                current_reg = current_regs.find_reg(reg.name)
+            except SPSDKRegsErrorRegisterNotFound:
+                logger.warning(
+                    f"Cannot find register '{reg.name}' in device "
+                    f"{self.SUB_FEATURE.upper()} data, skipping"
+                )
+                continue
+            current_value = current_reg.get_value()
+            if reg.get_value() == self.MONOTONIC_RETAIN:
+                reg.set_value(current_value)
+                logger.debug(f"  {reg.name}: retain → {current_value:#010x}")
+            else:  # MONOTONIC_INCREMENT
+                new_value = current_value + 1
+                reg.set_value(new_value)
+                logger.debug(f"  {reg.name}: increment {current_value:#010x} → {new_value:#010x}")
+
     def write_to_device(
         self,
         write_method: Callable[[int, bytes], bool],
-        read_method: Optional[Callable[[int, int], bytes]] = None,
+        read_method: Callable[[int, int], bytes] | None = None,
         add_seal: bool = False,
     ) -> bool:
         """Write single region PFR configuration to device.
@@ -960,12 +1054,28 @@ class BaseConfigArea(AbstractBaseConfigArea):
         For single regions (CMPA, CFPA), this method writes the region data
         including any additional data that follows contiguously.
 
+        When the device database declares ``monotonic_counters`` for this sub-feature,
+        monotonic counter sentinel values (MONOTONIC_RETAIN / MONOTONIC_INCREMENT) are
+        resolved against the current device state before writing.  In that case a
+        ``read_method`` must be supplied.
+
         :param write_method: Callable that writes data to device memory.
-        :param read_method: Optional callable for reading from device (not used for single regions).
+        :param read_method: Callable for reading device memory. Required when the device
+            declares ``monotonic_counters`` for this sub-feature.
         :param add_seal: Whether to add seal to the exported data.
         :return: True if write operation succeeded, False otherwise.
-        :raises SPSDKPfrError: If write operation fails.
+        :raises SPSDKPfrError: If monotonic counter preprocessing requires a read_method
+            that was not provided, or if the device read/write operation fails.
         """
+        if self.monotonic_counter_names:
+            if read_method is None:
+                raise SPSDKPfrError(
+                    f"A read_method is required to write {self.SUB_FEATURE.upper()} "
+                    f"for {self.family.name} because it declares monotonic_counters. "
+                    "Please provide a read_method callable."
+                )
+            self._preprocess_monotonic_counters(read_method)
+
         try:
             # Export region data with additional data if present
             data = self.export(add_seal=add_seal)
@@ -1073,6 +1183,10 @@ class CFPA(BaseConfigArea):
     This class manages the Customer In-Field Programmable Area (CFPA) configuration
     data for NXP MCU devices, providing functionality to handle customer-specific
     programmable settings that can be modified in the field.
+
+    Monotonic counter sentinel value support (MONOTONIC_RETAIN / MONOTONIC_INCREMENT)
+    is provided by :class:`BaseConfigArea` and activated automatically when the device
+    database declares ``monotonic_counters`` under ``pfr.cfpa``.
 
     :cvar SUB_FEATURE: Identifier for the CFPA sub-feature.
     :cvar DESCRIPTION: Human-readable description of the configuration area.
@@ -1644,8 +1758,8 @@ class MultiRegionBaseConfigArea(AbstractBaseConfigArea):
 
     def compute_rotkh(
         self,
-        keys: Optional[list[PublicKey]] = None,
-        rotkh: Optional[bytes] = None,
+        keys: list[PublicKey] | None = None,
+        rotkh: bytes | None = None,
     ) -> None:
         """Compute and set ROTKH (Root of Trust Key Hash) in the register.
 
@@ -1680,7 +1794,7 @@ class MultiRegionBaseConfigArea(AbstractBaseConfigArea):
         :param draw: Enable drawing/visualization during export process.
         :return: Binary block with PFR configuration.
         """
-        data = bytes()
+        data = b""
 
         # Export each region and concatenate
         for region in self.regions:
@@ -1696,7 +1810,7 @@ class MultiRegionBaseConfigArea(AbstractBaseConfigArea):
         return data
 
     @classmethod
-    def parse(cls, data: bytes, family: Optional[FamilyRevision] = None) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision | None = None) -> Self:
         """Parse input binary data to create PFR instance with populated registers.
 
         The method sequentially parses each region from the binary data, creating
@@ -1782,7 +1896,7 @@ class MultiRegionBaseConfigArea(AbstractBaseConfigArea):
     def write_to_device(
         self,
         write_method: Callable[[int, bytes], bool],
-        read_method: Optional[Callable[[int, int], bytes]] = None,
+        read_method: Callable[[int, int], bytes] | None = None,
         add_seal: bool = False,
     ) -> bool:
         """Write multi-region PFR configuration to device.
@@ -1792,9 +1906,14 @@ class MultiRegionBaseConfigArea(AbstractBaseConfigArea):
         - CFPA_ONLY: Write CFPA, then its additional data, then other regions
         - CFPA_CMPA_SPLIT: Write CFPA, CMPA (with its AD), CFPA AD (using split offset), then UPDATE
 
+        Monotonic counter sentinel values (MONOTONIC_RETAIN / MONOTONIC_INCREMENT) in the CFPA
+        region are resolved against the current device state before any write is performed,
+        provided the device database declares ``monotonic_counters`` under ``pfr.cfpa``.
+
         :param write_method: Callable that writes data to device memory.
-        :param read_method: Optional callable for reading from device. Required for CFPA_ONLY strategy
-            (needs to read CMPA for split offset).
+        :param read_method: Optional callable for reading from device. Required for CFPA_ONLY
+            strategy (needs to read CMPA for split offset) and for CFPA_CMPA_SPLIT when the
+            CFPA region declares monotonic_counters.
         :param add_seal: Finish the export with seal in the PFR record.
         :return: True if all write operations succeeded, False otherwise.
         :raises SPSDKPfrError: If write operation fails or required dependencies are missing.
@@ -1813,7 +1932,14 @@ class MultiRegionBaseConfigArea(AbstractBaseConfigArea):
                 return self._write_cfpa_only(write_method, read_method)
 
             if ad_type == "CFPA_CMPA_SPLIT":
-                return self._write_cfpa_cmpa_split(write_method, add_seal)
+                cfpa = self.get_region("CFPA")
+                if cfpa.monotonic_counter_names and read_method is None:
+                    raise SPSDKPfrError(
+                        f"A read_method is required to write CFPA for {self.family.name} "
+                        "because it declares monotonic_counters. "
+                        "Please provide a read_method callable."
+                    )
+                return self._write_cfpa_cmpa_split(write_method, add_seal, read_method)
 
             raise SPSDKPfrError(f"Unsupported additional data type: {ad_type}")
 
@@ -1839,7 +1965,7 @@ class MultiRegionBaseConfigArea(AbstractBaseConfigArea):
         logger.info(f"Writing {self.SUB_FEATURE.upper()} configuration (simple mode)")
 
         # Separate UPDATE region from other regions
-        update_region: Optional[BaseConfigArea] = None
+        update_region: BaseConfigArea | None = None
         other_regions: list[BaseConfigArea] = []
 
         for region in self.regions:
@@ -1888,7 +2014,7 @@ class MultiRegionBaseConfigArea(AbstractBaseConfigArea):
         offset. The process includes writing the CFPA region, any additional data at
         the calculated offset, and optionally the UPDATE region.
         Strategy:
-        1. Read CMPA from device to get split offset
+        1. Resolve monotonic counter sentinel values in CFPA (if declared in database)
         2. Write CFPA region
         3. Write CFPA additional data at (base + split_offset)
         4. Write UPDATE region (if present)
@@ -1900,6 +2026,9 @@ class MultiRegionBaseConfigArea(AbstractBaseConfigArea):
         logger.info(f"Writing {self.SUB_FEATURE.upper()} configuration (CFPA_ONLY mode)")
 
         cfpa = self.get_region("CFPA")
+
+        # Resolve monotonic counter sentinel values before writing
+        cfpa._preprocess_monotonic_counters(read_method)
 
         # Write CFPA region (without additional data)
         cfpa_data = cfpa.export()
@@ -1956,6 +2085,7 @@ class MultiRegionBaseConfigArea(AbstractBaseConfigArea):
         self,
         write_method: Callable[[int, bytes], bool],
         add_seal: bool = False,
+        read_method: Callable[[int, int], bytes] | None = None,
     ) -> bool:
         """Write CFPA and CMPA regions with split additional data strategy.
 
@@ -1963,23 +2093,34 @@ class MultiRegionBaseConfigArea(AbstractBaseConfigArea):
         data is split between CMPA and CFPA regions. The strategy ensures proper ordering and
         alignment of data blocks during the write process.
         Strategy:
-        1. Write CFPA region
-        2. Write CMPA region (without additional data)
-        3. Build complete additional data block:
+        1. Resolve monotonic counter sentinel values in CFPA (if declared in database)
+        2. Write CFPA region
+        3. Write CMPA region (without additional data)
+        4. Build complete additional data block:
            - CMPA additional data at offset 0
            - Padding/alignment to split offset
            - CFPA additional data at split offset
-        4. Write complete additional data block as one operation
-        5. Write UPDATE region
+        5. Write complete additional data block as one operation
+        6. Write UPDATE region
 
         :param write_method: Callable that writes data to device memory at specified address.
         :param add_seal: Finish the export with seal in the PFR record.
+        :param read_method: Optional callable for reading device memory. Required when the
+            CFPA region declares ``monotonic_counters`` in the database (validated in caller).
         :return: True if all writes succeeded, False otherwise.
         """
         logger.info(f"Writing {self.SUB_FEATURE.upper()} configuration (CFPA_CMPA_SPLIT mode)")
 
         cfpa = self.get_region("CFPA")
         cmpa = self.get_region("CMPA")
+
+        # Resolve monotonic counter sentinel values before writing.
+        # Caller (write_to_device) guarantees read_method is not None when needed.
+        if cfpa.monotonic_counter_names:
+            assert (
+                read_method is not None
+            ), "read_method must be provided when monotonic_counters are declared"
+            cfpa._preprocess_monotonic_counters(read_method)
 
         # Write CFPA region (without additional data)
         cfpa_data = cfpa.export()
@@ -2071,8 +2212,7 @@ class MultiRegionBaseConfigArea(AbstractBaseConfigArea):
 
         # Build block with padding pattern (0xFF is common for flash)
         return extend_block(
-            extend_block(data=cmpa_ad or bytes(), length=split_offset, padding=0xFF) + cfpa_ad
-            or bytes(),
+            extend_block(data=cmpa_ad or b"", length=split_offset, padding=0xFF) + cfpa_ad or b"",
             length=self.additional_data_config.max_size,
             padding=0xFF,
         )
@@ -2236,7 +2376,7 @@ class UPDATE_CFPA_CMPA(MultiRegionBaseConfigArea):
             update_reg.set_value(update_field_value)
 
 
-CONFIG_AREA_CLASSES: dict[str, Type[AbstractBaseConfigArea]] = {
+CONFIG_AREA_CLASSES: dict[str, type[AbstractBaseConfigArea]] = {
     "cmpa": CMPA,
     "cfpa": CFPA,
     "update": UPDATE,
@@ -2285,7 +2425,7 @@ def calc_pub_key_hash(
     return get_hash(n2_bytes + n1_bytes, algorithm=EnumHashAlgorithm.from_label(f"sha{sha_width}"))
 
 
-def get_ifr_pfr_class(area_name: str, family: FamilyRevision) -> Type[AbstractBaseConfigArea]:
+def get_ifr_pfr_class(area_name: str, family: FamilyRevision) -> type[AbstractBaseConfigArea]:
     """Get IFR/PFR configuration area class based on area name and family.
 
     Retrieves the appropriate configuration area class for the specified area name
@@ -2296,7 +2436,7 @@ def get_ifr_pfr_class(area_name: str, family: FamilyRevision) -> Type[AbstractBa
     :raises SPSDKAppError: When the area is not supported by the specified family.
     :return: Configuration area class type for the specified area and family.
     """
-    _cls: Type[AbstractBaseConfigArea] = globals()[area_name.upper()]
+    _cls: type[AbstractBaseConfigArea] = globals()[area_name.upper()]
     if family not in _cls.get_supported_families(True):
         raise SPSDKAppError(
             f"The {_cls.FEATURE.upper()} {area_name.upper()} area is not supported by {family.name} family"
@@ -2304,7 +2444,7 @@ def get_ifr_pfr_class(area_name: str, family: FamilyRevision) -> Type[AbstractBa
     return _cls
 
 
-def get_ifr_pfr_class_from_config(config: Config) -> Type[AbstractBaseConfigArea]:
+def get_ifr_pfr_class_from_config(config: Config) -> type[AbstractBaseConfigArea]:
     """Get IFR/PFR configuration area class from configuration object.
 
     Retrieves the appropriate configuration area class based on the configuration

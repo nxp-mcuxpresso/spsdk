@@ -5084,6 +5084,12 @@
           "name": "BOOT_CFG3",
           "description": "NXP Reserved - BOOT Configuration",
           "index_int": "0x001B",
+          "lock": {
+            "register_id": "fuse7",
+            "write_lock_int": "0x0040",
+            "read_lock_int": "0x0100",
+            "operation_lock_int": "0x0080"
+          },
           "bitfields": [
             {
               "width": 3,
@@ -5277,6 +5283,12 @@
           "name": "BOOT_CFG8",
           "description": "Boot Configuration See tab BOOT_CFG",
           "index_int": "0x0020",
+          "lock": {
+            "register_id": "fuse7",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          },
           "bitfields": [
             {
               "width": 8
@@ -5754,6 +5766,12 @@
           "name": "BOOT_CFG11",
           "description": "NXP Reserved - BOOT Configuration",
           "index_int": "0x0023",
+          "lock": {
+            "register_id": "fuse7",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          },
           "bitfields": [
             {
               "width": 1,
@@ -7205,7 +7223,13 @@
           "id": "fuse136",
           "name": "OEM_SRKH8",
           "description": "HASH of OEM SRK table in container for boot image.",
-          "index_int": "0x0088"
+          "index_int": "0x0088",
+          "lock": {
+            "register_id": "fuse8",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse137",
@@ -7223,25 +7247,49 @@
           "id": "fuse138",
           "name": "OEM_SRKH10",
           "description": "HASH of OEM SRK table in container for boot image.",
-          "index_int": "0x008A"
+          "index_int": "0x008A",
+          "lock": {
+            "register_id": "fuse8",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse139",
           "name": "OEM_SRKH11",
           "description": "HASH of OEM SRK table in container for boot image.",
-          "index_int": "0x008B"
+          "index_int": "0x008B",
+          "lock": {
+            "register_id": "fuse8",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse140",
           "name": "OEM_SRKH12",
           "description": "HASH of OEM SRK table in container for boot image.",
-          "index_int": "0x008C"
+          "index_int": "0x008C",
+          "lock": {
+            "register_id": "fuse8",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse141",
           "name": "OEM_SRKH13",
           "description": "HASH of OEM SRK table in container for boot image.",
-          "index_int": "0x008D"
+          "index_int": "0x008D",
+          "lock": {
+            "register_id": "fuse8",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse142",
@@ -7587,25 +7635,49 @@
           "id": "fuse180",
           "name": "GPR1_CFG0",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM CLOSED.",
-          "index_int": "0x00B4"
+          "index_int": "0x00B4",
+          "lock": {
+            "register_id": "fuse7",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          }
         },
         {
           "id": "fuse181",
           "name": "GPR1_CFG1",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM CLOSED.",
-          "index_int": "0x00B5"
+          "index_int": "0x00B5",
+          "lock": {
+            "register_id": "fuse7",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          }
         },
         {
           "id": "fuse182",
           "name": "GPR1_CFG2",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM CLOSED.",
-          "index_int": "0x00B6"
+          "index_int": "0x00B6",
+          "lock": {
+            "register_id": "fuse7",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          }
         },
         {
           "id": "fuse183",
           "name": "GPR1_CFG3",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM CLOSED.",
-          "index_int": "0x00B7"
+          "index_int": "0x00B7",
+          "lock": {
+            "register_id": "fuse7",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          }
         }
       ]
     },
@@ -8671,13 +8743,25 @@
           "id": "fuse314",
           "name": "GPR2_CFG1",
           "description": "Secure General Purpose Fuse for customer use, programmable in OEM OPEN lifecycle. Private fuse value available through secure EdgeLock Enclave API calls.",
-          "index_int": "0x013A"
+          "index_int": "0x013A",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0001",
+            "read_lock_int": "0x0004",
+            "operation_lock_int": "0x0002"
+          }
         },
         {
           "id": "fuse315",
           "name": "GPR2_CFG2",
           "description": "Secure General Purpose Fuse for customer use, programmable in OEM OPEN lifecycle. Private fuse value available through secure EdgeLock Enclave API calls.",
-          "index_int": "0x013B"
+          "index_int": "0x013B",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0001",
+            "read_lock_int": "0x0004",
+            "operation_lock_int": "0x0002"
+          }
         }
       ]
     },
@@ -9314,31 +9398,61 @@
           "id": "fuse376",
           "name": "GPR4_CFG0",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0178"
+          "index_int": "0x0178",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0040",
+            "read_lock_int": "0x0100",
+            "operation_lock_int": "0x0080"
+          }
         },
         {
           "id": "fuse377",
           "name": "GPR4_CFG1",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0179"
+          "index_int": "0x0179",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0040",
+            "read_lock_int": "0x0100",
+            "operation_lock_int": "0x0080"
+          }
         },
         {
           "id": "fuse378",
           "name": "GPR4_CFG2",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x017A"
+          "index_int": "0x017A",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0040",
+            "read_lock_int": "0x0100",
+            "operation_lock_int": "0x0080"
+          }
         },
         {
           "id": "fuse379",
           "name": "GPR4_CFG3",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x017B"
+          "index_int": "0x017B",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0040",
+            "read_lock_int": "0x0100",
+            "operation_lock_int": "0x0080"
+          }
         },
         {
           "id": "fuse380",
           "name": "GPR4_CFG4",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x017C"
+          "index_int": "0x017C",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0040",
+            "read_lock_int": "0x0100",
+            "operation_lock_int": "0x0080"
+          }
         },
         {
           "id": "fuse381",
@@ -9356,7 +9470,13 @@
           "id": "fuse382",
           "name": "GPR4_CFG6",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x017E"
+          "index_int": "0x017E",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0040",
+            "read_lock_int": "0x0100",
+            "operation_lock_int": "0x0080"
+          }
         },
         {
           "id": "fuse383",
@@ -9374,25 +9494,49 @@
           "id": "fuse384",
           "name": "GPR4_CFG8",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0180"
+          "index_int": "0x0180",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0040",
+            "read_lock_int": "0x0100",
+            "operation_lock_int": "0x0080"
+          }
         },
         {
           "id": "fuse385",
           "name": "GPR4_CFG9",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0181"
+          "index_int": "0x0181",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0040",
+            "read_lock_int": "0x0100",
+            "operation_lock_int": "0x0080"
+          }
         },
         {
           "id": "fuse386",
           "name": "GPR4_CFG10",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0182"
+          "index_int": "0x0182",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0040",
+            "read_lock_int": "0x0100",
+            "operation_lock_int": "0x0080"
+          }
         },
         {
           "id": "fuse387",
           "name": "GPR4_CFG11",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0183"
+          "index_int": "0x0183",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0040",
+            "read_lock_int": "0x0100",
+            "operation_lock_int": "0x0080"
+          }
         },
         {
           "id": "fuse388",
@@ -9410,19 +9554,37 @@
           "id": "fuse389",
           "name": "GPR4_CFG13",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0185"
+          "index_int": "0x0185",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0040",
+            "read_lock_int": "0x0100",
+            "operation_lock_int": "0x0080"
+          }
         },
         {
           "id": "fuse390",
           "name": "GPR4_CFG14",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0186"
+          "index_int": "0x0186",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0040",
+            "read_lock_int": "0x0100",
+            "operation_lock_int": "0x0080"
+          }
         },
         {
           "id": "fuse391",
           "name": "GPR4_CFG15",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0187"
+          "index_int": "0x0187",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0040",
+            "read_lock_int": "0x0100",
+            "operation_lock_int": "0x0080"
+          }
         }
       ]
     },
@@ -9436,97 +9598,193 @@
           "id": "fuse392",
           "name": "GPR5_CFG0",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0188"
+          "index_int": "0x0188",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse393",
           "name": "GPR5_CFG1",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0189"
+          "index_int": "0x0189",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse394",
           "name": "GPR5_CFG2",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x018A"
+          "index_int": "0x018A",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse395",
           "name": "GPR5_CFG3",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x018B"
+          "index_int": "0x018B",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse396",
           "name": "GPR5_CFG4",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x018C"
+          "index_int": "0x018C",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse397",
           "name": "GPR5_CFG5",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x018D"
+          "index_int": "0x018D",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse398",
           "name": "GPR5_CFG6",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x018E"
+          "index_int": "0x018E",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse399",
           "name": "GPR5_CFG7",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x018F"
+          "index_int": "0x018F",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse400",
           "name": "GPR5_CFG8",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0190"
+          "index_int": "0x0190",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse401",
           "name": "GPR5_CFG9",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0191"
+          "index_int": "0x0191",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse402",
           "name": "GPR5_CFG10",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0192"
+          "index_int": "0x0192",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse403",
           "name": "GPR5_CFG11",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0193"
+          "index_int": "0x0193",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse404",
           "name": "GPR5_CFG12",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0194"
+          "index_int": "0x0194",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse405",
           "name": "GPR5_CFG13",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0195"
+          "index_int": "0x0195",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse406",
           "name": "GPR5_CFG14",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0196"
+          "index_int": "0x0196",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         },
         {
           "id": "fuse407",
           "name": "GPR5_CFG15",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
-          "index_int": "0x0197"
+          "index_int": "0x0197",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x0200",
+            "read_lock_int": "0x0800",
+            "operation_lock_int": "0x0400"
+          }
         }
       ]
     },
@@ -9554,6 +9812,12 @@
           "name": "GPR6_CFG1",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
           "index_int": "0x0199",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          },
           "reg_width": 16
         },
         {
@@ -9561,6 +9825,12 @@
           "name": "GPR6_CFG2",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
           "index_int": "0x019A",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          },
           "reg_width": 16
         },
         {
@@ -9568,6 +9838,12 @@
           "name": "GPR6_CFG3",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
           "index_int": "0x019B",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          },
           "reg_width": 16
         },
         {
@@ -9575,6 +9851,12 @@
           "name": "GPR6_CFG4",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
           "index_int": "0x019C",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          },
           "reg_width": 16
         },
         {
@@ -9582,6 +9864,12 @@
           "name": "GPR6_CFG5",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
           "index_int": "0x019D",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          },
           "reg_width": 16
         },
         {
@@ -9589,6 +9877,12 @@
           "name": "GPR6_CFG6",
           "description": "General Purpose fuse for customer use. Can be programmed in OEM OPEN or OEM closed.",
           "index_int": "0x019E",
+          "lock": {
+            "register_id": "fuse11",
+            "write_lock_int": "0x1000",
+            "read_lock_int": "0x4000",
+            "operation_lock_int": "0x2000"
+          },
           "reg_width": 16
         },
         {

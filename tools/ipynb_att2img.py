@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +13,7 @@ from Jupyter notebook files and save them as separate external files.
 import base64
 import json
 import os
-from typing import Any, Optional
+from typing import Any
 
 import click
 
@@ -47,7 +46,7 @@ def export_images(filepath: str, output_dir: str) -> None:
     img_store_path = os.path.join(os.path.dirname(filepath), output_dir)
     for c_id, cell in enumerate(jupiter_cells):
         if cell.get("cell_type") == "markdown":
-            attachments: Optional[dict[str, dict[str, str]]] = cell.get("attachments")
+            attachments: dict[str, dict[str, str]] | None = cell.get("attachments")
             if attachments:
                 att_solved: list[str] = []
                 for k, v in attachments.items():

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +13,8 @@ secure boot process.
 
 import os
 import tempfile
-from typing import Any, Dict, Generator
+from collections.abc import Generator
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -114,7 +114,7 @@ class TestSB4KeyLoading:
         return file_path
 
     @pytest.fixture
-    def sb4_config_template(self) -> Dict[str, Any]:
+    def sb4_config_template(self) -> dict[str, Any]:
         """Get basic SB4 configuration template for testing.
 
         This method provides a standard configuration dictionary used for SB4 file
@@ -328,7 +328,7 @@ class TestSB4KeyLoading:
         mock_ahab: Any,
         mock_commands: Any,
         hex_key_file: str,
-        sb4_config_template: Dict[str, Any],
+        sb4_config_template: dict[str, Any],
     ) -> None:
         """Test SB4 configuration loading with hex key file.
 
@@ -373,7 +373,7 @@ class TestSB4KeyLoading:
         mock_ahab: Any,
         mock_commands: Any,
         binary_key_file: str,
-        sb4_config_template: Dict[str, Any],
+        sb4_config_template: dict[str, Any],
     ) -> None:
         """Test SB4 configuration loading with binary key file.
 

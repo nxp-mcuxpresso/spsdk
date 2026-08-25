@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +13,6 @@ the DICEVerificationService interface for remote attestation operations.
 """
 
 import logging
-from typing import Optional
 
 import requests
 
@@ -40,7 +38,7 @@ class RemoteDICEVerificationService(DICEVerificationService):
         self.base_url = base_url
 
     def _handle_request(
-        self, method: str, url: str, payload: Optional[dict[str, str]] = None
+        self, method: str, url: str, payload: dict[str, str] | None = None
     ) -> APIResponse:
         """Handle REST API call.
 
@@ -103,7 +101,7 @@ class RemoteDICEVerificationService(DICEVerificationService):
         )
         return response
 
-    def get_challenge(self, pre_set: Optional[str] = None) -> bytes:
+    def get_challenge(self, pre_set: str | None = None) -> bytes:
         """Get challenge vector from the service.
 
         Retrieves a challenge vector from the remote DICE service for authentication purposes.
