@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
 # Copyright 2019-2026 NXP
@@ -103,13 +102,58 @@ class StatusCode(SpsdkEnum):
     OTFAD_INVALID_KEY           = (502, "OtfadInvalidKey", "OTFAD Driver: Invalid Key")
     OTFAD_INVALID_KEY_BLOB      = (503, "OtfadInvalidKeyBlob", "OTFAD Driver: Invalid Key Blob")
 
-    # Sending errors.
-    SDMMC_CARD_COMMUNICATION_ERROR    = (1801, "SDMMCTransferFailed", "Communication Error with the SDMMC Memory Card")
-    SENDING_OPERATION_CONDITION_ERROR = (1812, "SendOperationConditionError", "Send Operation Condition failed")
-
     # SDMMC driver errors.
+    SDMMC_NOT_SUPPORT_YET                   = (1800, "SDMMCNotSupportYet", "SDMMC Driver: Not Supported Yet")
+    SDMMC_TRANSFER_FAILED                   = (1801, "SDMMCTransferFailed", "SDMMC Driver: Transfer Failed")
+    SDMMC_SET_CARD_BLOCK_SIZE_FAILED        = (1802, "SDMMCSetCardBlockSizeFailed", "SDMMC Driver: Set Card Block Size Failed")
+    SDMMC_HOST_NOT_SUPPORT                  = (1803, "SDMMCHostNotSupport", "SDMMC Driver: Host Not Supported")
+    SDMMC_CARD_NOT_SUPPORT                  = (1804, "SDMMCCardNotSupport", "SDMMC Driver: Card Not Supported")
+    SDMMC_ALL_SEND_CID_FAILED              = (1805, "SDMMCAllSendCidFailed", "SDMMC Driver: All Send CID Failed")
+    SDMMC_SEND_RELATIVE_ADDRESS_FAILED     = (1806, "SDMMCSendRelativeAddressFailed", "SDMMC Driver: Send Relative Address Failed")
+    SDMMC_SEND_CSD_FAILED                  = (1807, "SDMMCSendCsdFailed", "SDMMC Driver: Send CSD Failed")
+    SDMMC_SELECT_CARD_FAILED               = (1808, "SDMMCSelectCardFailed", "SDMMC Driver: Select Card Failed")
+    SDMMC_SEND_SCR_FAILED                  = (1809, "SDMMCSendScrFailed", "SDMMC Driver: Send SCR Failed")
+    SDMMC_SET_DATA_BUS_WIDTH_FAILED        = (1810, "SDMMCSetDataBusWidthFailed", "SDMMC Driver: Set Data Bus Width Failed")
+    SDMMC_GO_IDLE_FAILED                   = (1811, "SDMMCGoIdleFailed", "SDMMC Driver: Go Idle Failed")
+    SDMMC_HANDSHAKE_OPERATION_CONDITION_FAILED = (1812, "SDMMCHandShakeOperationConditionFailed", "SDMMC Driver: HandShake Operation Condition Failed")
+    SDMMC_SEND_APPLICATION_COMMAND_FAILED  = (1813, "SDMMCSendApplicationCommandFailed", "SDMMC Driver: Send Application Command Failed")
+    SDMMC_SWITCH_FAILED                    = (1814, "SDMMCSwitchFailed", "SDMMC Driver: Switch Command Failed")
+    SDMMC_STOP_TRANSMISSION_FAILED         = (1815, "SDMMCStopTransmissionFailed", "SDMMC Driver: Stop Transmission Failed")
+    SDMMC_WAIT_WRITE_COMPLETE_FAILED       = (1816, "SDMMCWaitWriteCompleteFailed", "SDMMC Driver: Wait Write Complete Failed")
+    SDMMC_SET_BLOCK_COUNT_FAILED           = (1817, "SDMMCSetBlockCountFailed", "SDMMC Driver: Set Block Count Failed")
+    SDMMC_SET_RELATIVE_ADDRESS_FAILED      = (1818, "SDMMCSetRelativeAddressFailed", "SDMMC Driver: Set Relative Address Failed")
+    SDMMC_SWITCH_BUS_TIMING_FAILED         = (1819, "SDMMCSwitchBusTimingFailed", "SDMMC Driver: Switch Bus Timing Failed")
+    SDMMC_SEND_EXTENDED_CSD_FAILED         = (1820, "SDMMCSendExtendedCsdFailed", "SDMMC Driver: Send Extended CSD Failed")
+    SDMMC_CONFIGURE_BOOT_FAILED            = (1821, "SDMMCConfigureBootFailed", "SDMMC Driver: Configure Boot Failed")
+    SDMMC_CONFIGURE_EXTENDED_CSD_FAILED    = (1822, "SDMMCConfigureExtendedCsdFailed", "SDMMC Driver: Configure Extended CSD Failed")
+    SDMMC_ENABLE_HIGH_CAPACITY_ERASE_FAILED = (1823, "SDMMCEnableHighCapacityEraseFailed", "SDMMC Driver: Enable High Capacity Erase Failed")
+    SDMMC_SEND_TEST_PATTERN_FAILED         = (1824, "SDMMCSendTestPatternFailed", "SDMMC Driver: Send Test Pattern Failed")
+    SDMMC_RECEIVE_TEST_PATTERN_FAILED      = (1825, "SDMMCReceiveTestPatternFailed", "SDMMC Driver: Receive Test Pattern Failed")
+    SDMMC_SDIO_RESPONSE_ERROR              = (1826, "SdmmcSdioResponseError", "SDMMC Driver: SDIO Response Error")
+    SDMMC_SDIO_INVALID_ARGUMENT            = (1827, "SdmmcSdioInvalidArgument", "SDMMC Driver: SDIO Invalid Argument")
+    SDMMC_SDIO_SEND_OPERATION_CONDITION_FAIL = (1828, "SdmmcSdioSendOperationConditionFail", "SDMMC Driver: SDIO Send Operation Condition Failed")
+    SDMMC_INVALID_VOLTAGE                  = (1829, "SDMMCInvalidVoltage", "SDMMC Driver: Invalid Voltage")
+    SDMMC_SDIO_SWITCH_HIGH_SPEED_FAIL      = (1830, "SdmmcSdioSwitchHighSpeedFail", "SDMMC Driver: SDIO Switch High Speed Failed")
+    SDMMC_SDIO_READ_CIS_FAIL              = (1831, "SdmmcSdioReadCisFail", "SDMMC Driver: SDIO Read CIS Failed")
+    SDMMC_SDIO_INVALID_CARD               = (1832, "SdmmcSdioInvalidCard", "SDMMC Driver: SDIO Invalid Card")
+    SDMMC_TUNING_FAIL                      = (1833, "SDMMCTuningFail", "SDMMC Driver: Tuning Failed")
+    SDMMC_SWITCH_VOLTAGE_FAIL              = (1834, "SDMMCSwitchVoltageFail", "SDMMC Driver: Switch Voltage Failed")
+    SDMMC_RETUNING_REQUEST                 = (1835, "SDMMCReTuningRequest", "SDMMC Driver: Re-Tuning Request")
+    SDMMC_SET_DRIVER_STRENGTH_FAIL         = (1836, "SDMMCSetDriverStrengthFail", "SDMMC Driver: Set Driver Strength Failed")
+    SDMMC_SET_POWER_CLASS_FAIL             = (1837, "SDMMCSetPowerClassFail", "SDMMC Driver: Set Power Class Failed")
+    SDMMC_HOST_NOT_READY                   = (1838, "SDMMCHostNotReady", "SDMMC Driver: Host Controller Not Ready")
+    SDMMC_CARD_DETECT_FAILED               = (1839, "SDMMCCardDetectFailed", "SDMMC Driver: Card Detect Failed")
 
-    # FlexSPI statuses.
+    # USDHC driver errors.
+    USDHC_BUSY_TRANSFERRING                = (6500, "USDHCBusyTransferring", "USDHC Driver: Busy Transferring")
+    USDHC_PREPARE_ADMA_DESCRIPTOR_FAILED   = (6501, "USdhcPrepareAdmaDescriptorFailed", "USDHC Driver: Prepare ADMA Descriptor Failed")
+    USDHC_SEND_COMMAND_FAILED              = (6502, "USdhcSendCommandFailed", "USDHC Driver: Send Command Failed")
+    USDHC_TRANSFER_DATA_FAILED             = (6503, "USdhcTransferDataFailed", "USDHC Driver: Transfer Data Failed")
+    USDHC_DMA_DATA_ADDR_NOT_ALIGN          = (6504, "USdhcDMADataAddrNotAlign", "USDHC Driver: DMA Data Address Not Aligned")
+    USDHC_RETUNING_REQUEST                 = (6505, "USdhcReTuningRequest", "USDHC Driver: Re-Tuning Request")
+    USDHC_TUNING_ERROR                     = (6506, "USdhcTuningError", "USDHC Driver: Tuning Error")
+
+    # FlexSPI statuses (group 60 - bootloader mapping).
     FLEXSPI_SEQUENCE_EXECUTION_TIMEOUT_1 = (6000, "FLEXSPI_SequenceExecutionTimeout", "FLEXSPI: Sequence Execution Timeout")
     FLEXSPI_INVALID_SEQUENCE_1   = (6001, "FLEXSPI_InvalidSequence", "FLEXSPI: Invalid Sequence")
     FLEXSPI_DEVICE_TIMEOUT_1    = (6002, "FLEXSPI_DeviceTimeout", "FLEXSPI: Device Timeout")

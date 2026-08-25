@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK NXP Image BCA (Boot Configuration Area) command-line interface.
 
 This module provides CLI commands for managing Boot Configuration Area (BCA)
@@ -66,7 +66,7 @@ def bca_export(config: Config, output: str) -> None:
     write_file(bca_data, output, mode="wb")
 
     logger.info(f"Created BCA Image:\n{str(bca_image.registers.image_info())}")
-    click.echo(f"Success. (BCA: {output} created.)")
+    click.echo(f"Success. (BCA: {get_printable_path(output)} created.)")
 
 
 @bca_group.command(name="parse", no_args_is_help=True)
@@ -91,4 +91,6 @@ def bca_parse(binary: str, family: FamilyRevision, output: str) -> None:
     logger.info(f"Parsed BCA image memory map: {bca_image.registers.image_info().draw()}")
     config = bca_image.get_config_yaml()
     write_file(config, output)
-    click.echo(f"Success. (BCA: {binary} has been parsed and stored into {output}.)")
+    click.echo(
+        f"Success. (BCA: {get_printable_path(binary)} has been parsed and stored into {get_printable_path(output)}.)"
+    )

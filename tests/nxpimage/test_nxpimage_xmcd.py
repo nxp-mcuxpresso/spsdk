@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """Test module for XMCD functionality in nxpimage application.
 
 This module contains comprehensive tests for External Memory Configuration Data (XMCD)
@@ -13,7 +13,7 @@ validation, and CRC calculation functionality.
 
 import filecmp
 import os
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 
@@ -55,7 +55,7 @@ def test_nxpimage_xmcd_export(
     family: str,
     mem_type: str,
     config_type: str,
-    option: Optional[int],
+    option: int | None,
 ) -> None:
     """Test XMCD export functionality through CLI interface.
 
@@ -109,7 +109,7 @@ def test_nxpimage_xmcd_parse_cli(
     family: str,
     mem_type: str,
     config_type: str,
-    option: Optional[int],
+    option: int | None,
 ) -> None:
     """Test CLI parsing of XMCD binary files to YAML configuration.
 
@@ -188,7 +188,7 @@ def test_nxpimage_xmcd_template_cli(
     ],
 )
 def test_nxpimage_xmcd_export_invalid(
-    data_dir: str, mem_type: str, config_type: str, option: Optional[int]
+    data_dir: str, mem_type: str, config_type: str, option: int | None
 ) -> None:
     """Test XMCD export functionality with invalid configurations.
 

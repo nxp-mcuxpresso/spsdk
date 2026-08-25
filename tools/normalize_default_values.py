@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-## Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK JSON configuration file default value normalizer.
 
 This module provides utilities for normalizing default_value_int fields across
@@ -705,7 +705,7 @@ class DefaultValueNormalizer:
         :return: True if processing was successful, False if an error was found.
         """
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 data = json.load(f)
 
             modified = False

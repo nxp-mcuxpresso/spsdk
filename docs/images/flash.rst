@@ -3,9 +3,9 @@
 Flash encryption engines
 =========================
 
-*nxpimage* currently supports generation of bootable images and keyblobs for NXP bus encryption engines -- OTFAD (On-the-fly AES decryption engines), BEE (Bus encryption engine) and IEE (Inline encryption engine).
+*nxpimage* currently supports generation of bootable images and keyblobs for NXP bus encryption engines -- OTFAD (On-the-fly AES decryption engines), BEE (Bus encryption engine), IEE (Inline encryption engine), and IPED table/keyblob images.
 
-.. note:: For Prince algorithm based inline encryption & decryption engines (IPED, Prince & NPX) we don't support offline image creation.
+.. note:: For PRINCE-based IPED flows, SPSDK creates the IPED configuration table/keyblob and can optionally encrypt configured data blobs through the external ``iped-offline-tool`` backend. SPSDK does not include a native PRINCE/IPED encryption implementation.
 
 ----
 IEE
@@ -56,6 +56,114 @@ First step is to get a template for configuration. The template might look like 
 
 Fill the configuration file and export the image.
 ``nxpimage iee export iee_template.yaml``
+
+------
+IPED
+------
+
+The IPED support in SPSDK creates the register-image table consumed by the boot ROM/ELE
+handoff for supported external-flash decrypted-XIP flows, such as i.MX943.
+The table contains up to 16 IPED contexts followed by the ``IPEDCTRL`` and ``IPEDCTXCTRL``
+register values. The exported binary is typically placed in the bootable-image ``keyblob``
+area at offset ``0x0``, before the FCB at offset ``0x400``.
+
+SPSDK can also encrypt configured ``data_blobs`` by using the optional
+``iped-offline-tool`` package as an in-process PRINCE/IPED backend. Install the backend in
+the active Python environment when encrypted data output is required. The context ``key`` value is used only for offline
+encryption and is not serialized into the IPED table.
+
+Two access paths are used in the flag names:
+
+- ``IP`` or ``IP-command`` means commands issued through the memory controller command
+  interface.
+- ``AHB`` means memory-mapped bus access, including normal XIP reads from external flash.
+
+For a common read-only decrypted-XIP image using CTR mode, enable ``enable`` and
+``ahb_read_enable`` and leave write flags disabled. For GCM or XEX contexts, use the
+corresponding GCM or XEX read/write flags instead of the CTR flags. The optional
+``control_word`` field can be used to provide a raw ``IPEDCTRL`` value; when it is present,
+all boolean flags are ignored.
+
+.. list-table:: IPED control flags
+   :header-rows: 1
+   :widths: 25 20 55
+
+   * - Configuration option
+     - IPEDCTRL bit
+     - Meaning
+   * - ``double_encryption``
+     - ``CONFIG``
+     - Enables the hardware double encryption/decryption path. Keep disabled unless the
+       encrypted image was prepared for that flow.
+   * - ``enable``
+     - ``IPED_EN``
+     - Enables the CTR/GCM IPED engine.
+   * - ``ip_write_enable``
+     - ``IPWR_EN``
+     - Enables CTR encryption for writes through the IP-command path.
+   * - ``ahb_write_enable``
+     - ``AHBWR_EN``
+     - Enables CTR encryption for writes on the memory-mapped AHB/XIP path.
+   * - ``ahb_read_enable``
+     - ``AHBRD_EN``
+     - Enables CTR decryption for memory-mapped AHB/XIP reads.
+   * - ``ip_gcm_write_enable``
+     - ``IPGCMWR``
+     - Enables GCM encryption for writes through the IP-command path.
+   * - ``ahb_gcm_write_enable``
+     - ``AHGCMWR``
+     - Enables GCM encryption for writes on the memory-mapped AHB/XIP path.
+   * - ``ahb_gcm_read_enable``
+     - ``AHBGCMRD``
+     - Enables GCM decryption/authenticated reads on the memory-mapped AHB/XIP path.
+   * - ``protection``
+     - ``IPED_PROTECT``
+     - Requests hardware protection of the loaded IPED configuration registers.
+   * - ``xex_enable``
+     - ``IPED_XEX_EN``
+     - Enables the XEX IPED engine.
+   * - ``ip_xex_write_enable``
+     - ``IPSXEXWE``
+     - Enables XEX encryption for writes through the IP-command path.
+   * - ``ahb_xex_write_enable``
+     - ``AHBXEXWE``
+     - Enables XEX encryption for writes on the memory-mapped AHB/XIP path.
+   * - ``ahb_xex_read_enable``
+     - ``AHBXEXRE``
+     - Enables XEX decryption for memory-mapped AHB/XIP reads.
+
+Generate an IPED template and export the table:
+
+.. code-block:: bash
+
+    nxpimage iped get-template -f mimx943 -o iped_template.yaml
+    nxpimage iped export -c iped_template.yaml
+
+To generate encrypted data in the same run, add ``data_blobs`` and a matching context
+``key`` to the configuration. The export then creates the table/keyblob file, the encrypted
+data blob file, and a combined image containing both.
+
+.. code-block:: yaml
+
+    keyblob_address: 0x28000000
+    contexts:
+      - start_address: 0x28001000
+        end_address: 0x28002000
+        mode: ctr
+        iv: 0x0001020304050607
+        key: 0x00000000000000000000000000000001
+    data_blobs:
+      - data: application_plain.bin
+        address: 0x28001000
+
+Parse an existing IPED table/keyblob back into YAML:
+
+.. code-block:: bash
+
+    nxpimage iped parse -f mimx943 -b iped_table.bin -o parsed_iped.yaml
+
+.. include:: ../_prebuild/iped_schemas.inc
+   :parser: myst_parser.sphinx_
 
 ------
 OTFAD

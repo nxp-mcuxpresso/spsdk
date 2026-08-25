@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,6 @@ and secure objects container management.
 """
 
 from enum import Enum
-from typing import Union
 
 from typing_extensions import Self
 
@@ -77,7 +75,7 @@ class TLVElement:
     encoding and decoding of binary data according to TLV format specifications.
     """
 
-    def __init__(self, tag: Union[ElementTag, int], data: bytes):
+    def __init__(self, tag: ElementTag | int, data: bytes):
         """Create TLV element.
 
         Initialize a Tag-Length-Value element with the specified tag and data.

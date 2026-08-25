@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
 # Copyright 2019-2026 NXP
@@ -15,8 +14,8 @@ through various transport protocols.
 
 import struct
 import time
+from collections.abc import Callable, Sequence
 from types import TracebackType
-from typing import Callable, Optional, Sequence, Type, Union
 
 from spsdk import get_logger
 from spsdk.mboot.commands import (
@@ -109,7 +108,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         self,
         interface: MbootProtocolBase,
         cmd_exception: bool = False,
-        family: Optional[FamilyRevision] = None,
+        family: FamilyRevision | None = None,
     ) -> None:
         """Initialize the McuBoot object.
 
@@ -125,9 +124,9 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         self.family = family
         self.reopen = False
         self.enable_data_abort = False
-        self._pause_point: Optional[int] = None
+        self._pause_point: int | None = None
         self.available_commands_lst: list[CommandTag] = []
-        self.max_packet_size: Optional[int] = None
+        self.max_packet_size: int | None = None
 
     def __enter__(self) -> "McuBoot":
         """Enter the runtime context of the McuBoot object.
@@ -143,9 +142,9 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
     def __exit__(
         self,
-        exception_type: Optional[Type[Exception]] = None,
-        exception_value: Optional[Exception] = None,
-        traceback: Optional[TracebackType] = None,
+        exception_type: type[Exception] | None = None,
+        exception_value: Exception | None = None,
+        traceback: TracebackType | None = None,
     ) -> None:
         """Close the MCU boot interface context manager.
 
@@ -196,7 +195,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         self,
         cmd_tag: CommandTag,
         length: int,
-        progress_callback: Optional[Callable[[int, int], None]] = None,
+        progress_callback: Callable[[int, int], None] | None = None,
     ) -> bytes:
         """Read data from device.
 
@@ -260,7 +259,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         self,
         cmd_tag: CommandTag,
         data: list[bytes],
-        progress_callback: Optional[Callable[[int, int], None]] = None,
+        progress_callback: Callable[[int, int], None] | None = None,
     ) -> bool:
         """Send data part of specific command to the target device.
 
@@ -306,7 +305,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             if expect_response:
                 response = self._interface.read()
             else:
-                self._status_code = StatusCode.SENDING_OPERATION_CONDITION_ERROR.tag
+                self._status_code = StatusCode.FAIL.tag
+                raise McuBootCommandError(cmd_tag.label, self._status_code) from e
 
         if expect_response:
             assert isinstance(response, CmdResponse)
@@ -665,9 +665,9 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         address: int,
         length: int,
         mem_id: int = 0,
-        progress_callback: Optional[Callable[[int, int], None]] = None,
+        progress_callback: Callable[[int, int], None] | None = None,
         fast_mode: bool = False,
-    ) -> Optional[bytes]:
+    ) -> bytes | None:
         """Read data from MCU memory.
 
         The method implements a workaround for better USB-HID reliability by splitting large reads
@@ -735,7 +735,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         address: int,
         data: bytes,
         mem_id: int = 0,
-        progress_callback: Optional[Callable[[int, int], None]] = None,
+        progress_callback: Callable[[int, int], None] | None = None,
     ) -> bool:
         """Write data into MCU memory.
 
@@ -800,9 +800,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         )
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
-    def get_property(
-        self, prop_tag: Union[PropertyTag, int], index: int = 0
-    ) -> Optional[list[int]]:
+    def get_property(self, prop_tag: PropertyTag | int, index: int = 0) -> list[int] | None:
         """Get specified property value from the MCU device.
 
         Retrieves a property value using the get-property command. The property can be
@@ -823,7 +821,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             raise McuBootError(f"Received invalid get-property response: {str(cmd_response)}")
         return None
 
-    def set_property(self, prop_tag: Union[PropertyTag, int], value: int) -> bool:
+    def set_property(self, prop_tag: PropertyTag | int, value: int) -> bool:
         """Set value of specified property.
 
         This method sets a property value on the target device using the SetProperty command.
@@ -842,7 +840,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def receive_sb_file(
         self,
         data: bytes,
-        progress_callback: Optional[Callable[[int, int], None]] = None,
+        progress_callback: Callable[[int, int], None] | None = None,
         check_errors: bool = False,
     ) -> bool:
         """Receive SB file.
@@ -976,7 +974,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         cmd_packet = CmdPacket(CommandTag.FLASH_ERASE_ALL_UNSECURE, CommandFlag.NONE.tag)
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
-    def efuse_read_once(self, index: int) -> Optional[int]:
+    def efuse_read_once(self, index: int) -> int | None:
         """Read from MCU flash program once region.
 
         The method reads a 32-bit value from the specified index in the MCU's
@@ -1027,7 +1025,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             return False
         return cmd_response.status == StatusCode.SUCCESS
 
-    def flash_read_once(self, index: int, count: int = 4) -> Optional[bytes]:
+    def flash_read_once(self, index: int, count: int = 4) -> bytes | None:
         """Read from MCU flash program once region.
 
         The method reads data from the MCU's one-time programmable (OTP) flash region.
@@ -1064,7 +1062,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         )
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
-    def flash_read_resource(self, address: int, length: int, option: int = 1) -> Optional[bytes]:
+    def flash_read_resource(self, address: int, length: int, option: int = 1) -> bytes | None:
         """Read resource of flash module.
 
         The method reads data from specific flash memory areas like IFR or Firmware ID.
@@ -1122,7 +1120,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         dek_data: bytes,
         key_sel: int = GenerateKeyBlobSelect.OPTMK.tag,
         count: int = 72,
-    ) -> Optional[bytes]:
+    ) -> bytes | None:
         """Generate Key Blob.
 
         This method creates a key blob by wrapping a Data Encryption Key (DEK) using the
@@ -1275,7 +1273,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             return self._send_data(CommandTag.KEY_PROVISIONING, data_chunks)
         return False
 
-    def kp_read_key_store(self) -> Optional[bytes]:
+    def kp_read_key_store(self) -> bytes | None:
         """Read key data from key store area.
 
         This method performs a key provisioning operation to retrieve key data
@@ -1295,7 +1293,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return None
 
     def load_image(
-        self, data: bytes, progress_callback: Optional[Callable[[int, int], None]] = None
+        self, data: bytes, progress_callback: Callable[[int, int], None] | None = None
     ) -> bool:
         """Load a boot image to the device.
 
@@ -1313,7 +1311,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         self._status_code = StatusCode.SUCCESS.tag
         return self._send_data(CommandTag.NO_COMMAND, data_chunks, progress_callback)
 
-    def tp_prove_genuinity(self, address: int, buffer_size: int) -> Optional[int]:
+    def tp_prove_genuinity(self, address: int, buffer_size: int) -> int | None:
         """Start the process of proving genuinity.
 
         :param address: Address where to prove genuinity request (challenge) container.
@@ -1325,7 +1323,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             address=address, buffer_size=buffer_size, opcode=TrustProvOperation.PROVE_GENUINITY.tag
         )
 
-    def tp_prove_genuinity_hybrid(self, address: int, buffer_size: int) -> Optional[int]:
+    def tp_prove_genuinity_hybrid(self, address: int, buffer_size: int) -> int | None:
         """Start the process of proving genuinity using hybrid mode.
 
         This method initiates a trust provisioning operation to prove the genuinity
@@ -1342,7 +1340,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             opcode=TrustProvOperation.PROVE_GENUINITY_HYBRID.tag,
         )
 
-    def _tp_prove_genuinity(self, address: int, buffer_size: int, opcode: int) -> Optional[int]:
+    def _tp_prove_genuinity(self, address: int, buffer_size: int, opcode: int) -> int | None:
         """Internal method to prove genuinity with configurable operation code.
 
         This method sends a trust provisioning command to prove device genuinity by processing
@@ -1429,7 +1427,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             return self._send_data(CommandTag.FUSE_PROGRAM, data_chunks)
         return False
 
-    def fuse_read(self, address: int, length: int, mem_id: int = 0) -> Optional[bytes]:
+    def fuse_read(self, address: int, length: int, mem_id: int = 0) -> bytes | None:
         """Read fuse memory from the target device.
 
         This method reads data from the fuse memory at the specified address and length.
@@ -1503,7 +1501,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         key_blob_output_size: int,
         ecdsa_puk_output_addr: int,
         ecdsa_puk_output_size: int,
-    ) -> Optional[list[int]]:
+    ) -> list[int] | None:
         """Generate HSM keys for trust provisioning operations.
 
         This method generates common keys used in trust provisioning, including manufacturing
@@ -1546,7 +1544,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         oem_enc_master_share_output_size: int,
         oem_cust_cert_puk_output_addr: int,
         oem_cust_cert_puk_output_size: int,
-    ) -> Optional[list[int]]:
+    ) -> list[int] | None:
         """Generate OEM master share for trust provisioning.
 
         Takes the entropy seed provided by the OEM as input and generates encrypted shares
@@ -1629,7 +1627,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         oem_cust_cert_dice_puk_output_addr: int,
         oem_cust_cert_dice_puk_output_size: int,
         mldsa: bool = False,
-    ) -> Optional[int]:
+    ) -> int | None:
         """Get OEM customer certificate DICE public key.
 
         Creates the initial DICE CA keys by processing OEM Root Key Table Hash (RKTH) input
@@ -1670,7 +1668,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         challenge_size: int,
         response_addr: int,
         response_size: int,
-    ) -> Optional[int]:
+    ) -> int | None:
         """Create DICE response for given challenge.
 
         This method generates a Device Identifier Composition Engine (DICE) response
@@ -1705,7 +1703,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         key_input_size: int,
         key_blob_output_addr: int,
         key_blob_output_size: int,
-    ) -> Optional[list[int]]:
+    ) -> list[int] | None:
         """Trust provisioning: Store OEM common keys.
 
         This method stores OEM common keys using the trust provisioning HSM functionality.
@@ -1791,7 +1789,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         block_data_input_size: int,
         signature_output_addr: int,
         signature_output_size: int,
-    ) -> Optional[int]:
+    ) -> int | None:
         """Sign data using HSM encryption and signing operation.
 
         This method performs Trust Provisioning HSM encryption and signing operation on the provided
@@ -1826,7 +1824,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         self,
         wpc_id_blob_addr: int,
         wpc_id_blob_size: int,
-    ) -> Optional[int]:
+    ) -> int | None:
         """Command used for harvesting device ID blob.
 
         The method retrieves the Wireless Power Consortium (WPC) device identification
@@ -1853,7 +1851,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         self,
         id_blob_addr: int,
         id_blob_size: int,
-    ) -> Optional[int]:
+    ) -> int | None:
         """Harvest device ID blob during wafer test as part of RTS flow.
 
         This command retrieves the device ID blob from the specified memory location
@@ -1882,7 +1880,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         wpc_cert_len: int,
         ec_id_offset: int,
         wpc_puk_offset: int,
-    ) -> Optional[int]:
+    ) -> int | None:
         """Insert WPC certificate for validation before writing to flash.
 
         This command extracts ECID and WPC PUK from the certificate and validates both
@@ -1915,7 +1913,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         csr_tbs_len: int,
         signature_addr: int,
         signature_len: int,
-    ) -> Optional[int]:
+    ) -> int | None:
         """Sign CSR data using the TBS (To Be Signed) portion.
 
         This command signs Certificate Signing Request data and stores the resulting signature
@@ -1948,7 +1946,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         oem_seed_input_size: int,
         oem_share_output_addr: int,
         oem_share_output_size: int,
-    ) -> Optional[int]:
+    ) -> int | None:
         """Create DSC HSM session for trust provisioning.
 
         Command used by OEM to provide its share to create the initial trust provisioning keys.
@@ -1981,7 +1979,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         block_num: int,
         block_data_addr: int,
         block_data_size: int,
-    ) -> Optional[int]:
+    ) -> int | None:
         """Command used to encrypt the given block sliced by the nxpimage.
 
         This command is only supported after issuance of dsc_hsm_create_session.
@@ -2016,7 +2014,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         block_data_input_size: int,
         signature_output_addr: int,
         signature_output_size: int,
-    ) -> Optional[int]:
+    ) -> int | None:
         """Sign data buffer using DSC HSM encryption.
 
         This command is only supported after issuance of dsc_hsm_create_session.
@@ -2042,7 +2040,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             return cmd_response.values[0]
         return None
 
-    def el2go_get_version(self) -> Optional[list[int]]:
+    def el2go_get_version(self) -> list[int] | None:
         """Get version of the EL2GO Provisioning FW.
 
         This method retrieves the firmware version information from the EL2GO (EdgeLock 2GO)
@@ -2060,7 +2058,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             return cmd_response.values
         return None
 
-    def el2go_close_device(self, address: int, dry_run: bool = False) -> Optional[int]:
+    def el2go_close_device(self, address: int, dry_run: bool = False) -> int | None:
         """Close device using EL2GO Provisioning FW.
 
         This command finalizes the device provisioning process by closing the device
@@ -2088,8 +2086,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         data_address: int,
         report_address: int = 0xFFFF_FFFF,
         dry_run: bool = False,
-        progress_callback: Optional[Callable[[int, int], None]] = None,
-    ) -> tuple[Optional[int], Optional[bytes]]:
+        progress_callback: Callable[[int, int], None] | None = None,
+    ) -> tuple[int | None, bytes | None]:
         """Perform EL2GO batch trust provisioning operation.
 
         Executes product-based trust provisioning using secure objects stored at the specified

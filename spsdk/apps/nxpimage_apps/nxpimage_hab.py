@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -93,7 +92,7 @@ def hab_convert_command(
     """
     configuration = hab_convert(command, external)
     write_file(configuration, output, mode="w")
-    click.echo(f"Success. (HAB Configuration converted to YAML: {output})")
+    click.echo(f"Success. (HAB Configuration converted to YAML: {get_printable_path(output)})")
 
 
 def hab_convert(command: str, external: list[str]) -> str:
@@ -137,8 +136,8 @@ def hab_parse_command(binary: str, family: FamilyRevision, output: str) -> None:
     file_bin = load_binary(binary)
     created_files = hab_parse(file_bin, family, output)
     for file_path in created_files:
-        click.echo(f"File has been created: {file_path}")
-    click.echo(f"Success. (HAB container parsed into: {output}.)")
+        click.echo(f"File has been created: {get_printable_path(file_path)}")
+    click.echo(f"Success. (HAB container parsed into: {get_printable_path(output)}.)")
 
 
 def hab_parse(binary: bytes, family: FamilyRevision, output: str) -> list[str]:

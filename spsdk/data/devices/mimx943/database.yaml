@@ -3,9 +3,52 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 revisions:
-  a0: {}
+  a0:
+    features:
+      ahab:
+        signature_algorithms:
+          __replace__: true
+          RSA_PSS: [0x22, "RSA_PSS", "RSA PSS signature algorithm"]
+          ECDSA: [0x27, "ECDSA", "ECDSA signature algorithm"]
+          SM2: [0x28, "SM2", "SM2 signature algorithm"]
+          DILITHIUM: [0xD1, "DILITHIUM", "Dilithium PQC algorithm"]
+        hash_algorithms:
+          __replace__: true
+          SHA256: [0x00, "SHA256", "SHA-256 hash algorithm"]
+          SHA384: [0x01, "SHA384", "SHA-384 hash algorithm"]
+          SHA512: [0x02, "SHA512", "SHA-512 hash algorithm"]
+          SM3: [0x03, "SM3", "SM3 hash algorithm"]
+          SHA3_256: [0x04, "SHA3_256", "SHA3-256 hash algorithm"]
+          SHA3_384: [0x05, "SHA3_384", "SHA3-384 hash algorithm"]
+          SHA3_512: [0x06, "SHA3_512", "SHA3-512 hash algorithm"]
+          SHAKE_128_256:
+            [0x08, "SHAKE_128_256", "SHAKE-128 with 256-bit output"]
+          SHAKE_256_512:
+            [0x09, "SHAKE_256_512", "SHAKE-256 with 512-bit output"]
+  a1:
+    features:
+      ahab:
+        signature_algorithms:
+          __replace__: true
+          RSA_PSS: [0x22, "RSA_PSS", "RSA PSS signature algorithm"]
+          ECDSA: [0x27, "ECDSA", "ECDSA signature algorithm"]
+          SM2: [0x28, "SM2", "SM2 signature algorithm"]
+          ML_DSA: [0xD2, "ML-DSA", "ML-DSA PQC algorithm"]
+        hash_algorithms:
+          __replace__: true
+          SHA256: [0x00, "SHA256", "SHA-256 hash algorithm"]
+          SHA384: [0x01, "SHA384", "SHA-384 hash algorithm"]
+          SHA512: [0x02, "SHA512", "SHA-512 hash algorithm"]
+          SM3: [0x03, "SM3", "SM3 hash algorithm"]
+          SHA3_256: [0x04, "SHA3_256", "SHA3-256 hash algorithm"]
+          SHA3_384: [0x05, "SHA3_384", "SHA3-384 hash algorithm"]
+          SHA3_512: [0x06, "SHA3_512", "SHA3-512 hash algorithm"]
+          SHAKE_128_256:
+            [0x08, "SHAKE_128_256", "SHAKE-128 with 256-bit output"]
+          SHAKE_256_512:
+            [0x09, "SHAKE_256_512", "SHAKE-256 with 512-bit output"]
 
-latest: a0
+latest: a1
 
 # General MCU information
 info:
@@ -398,6 +441,42 @@ features:
 
   # # ======== OTFAD section ========
   # otfad:
+
+  # ======== IPED section ========
+  iped:
+    iped_version: 1
+    table_size: 0x400
+    raw_table_size: 0x210
+    max_contexts: 16
+    min_contexts: 1
+    address_alignment: 0x100
+    fuses:
+      _name: "IPED"
+      _no_verify: true
+      fuse180: "__iped_key_word0"
+      fuse181: "__iped_key_word1"
+      fuse182: "__iped_key_word2"
+      fuse183: "__iped_key_word3"
+      fuse33:
+        fuse33-bit-26: 1
+    context_keys:
+      xspi1:
+        - 0xdfdb6654139a8d29143f48e580d6e0eb
+        - 0x6a5ab8157a0e72405ab6d2e7189a6ae6
+        - 0xdd0e6598902a9fbcdf006021a9385787
+        - 0x1ffe65f6c00c3caabf000ec334827851
+        - 0xa2dafcc88ce9b61a92ddee88e5dcdb3b
+        - 0xdffb97a6ef579f51caeb4f42aa007474
+        - 0x8fe83f0293c1f049b23812b13f032455
+        - 0xc96d26a4d55df9f928c7acfe938c4d6b
+        - 0x9a640be3eb380899e48c04d85fcca128
+        - 0xf0bbd4ad1f0abe127aa69fc15b826bc0
+        - 0x234317828ebdc7ee5aa3b2ab86c68b2a
+        - 0x88ffa08cc85067a6aab0a85d5437b180
+        - 0x09b4ec5ef58ccfd4c6fdc0e1f3f158c3
+        - 0x253f0d0a76667c2a405484abe3a9fb34
+        - 0xc17a13051b643f301e9f61bbc601d2ad
+        - 0x6aec99d52216fc982e5156e4218931b9
 
   #   # ======== Device Hardware Security Module (HSM) section ========
   # devhsm: EdgeLock 2 Go

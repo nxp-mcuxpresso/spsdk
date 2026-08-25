@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -114,7 +113,9 @@ def mbi_parse(family: FamilyRevision, binary: str, dek: str, output: str) -> Non
 
     write_file(yaml_data, os.path.join(output, "mbi_config.yaml"))
 
-    click.echo(f"Success. (MBI: {binary} has been parsed and stored into {output} )")
+    click.echo(
+        f"Success. (MBI: {get_printable_path(binary)} has been parsed and stored into {get_printable_path(output)} )"
+    )
 
 
 @mbi_group.command(name="verify", no_args_is_help=True)

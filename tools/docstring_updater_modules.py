@@ -1,10 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-#
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -22,12 +18,16 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Optional
 
 try:
     from cody_api_client import send_prompt_to_cody
 except ImportError:
     sys.exit("Could not import send_prompt_to_cody from cody_api_client")
+
+try:
+    from docstring_context_loader import load_docstring_context
+except ImportError:
+    from tools.docstring_context_loader import load_docstring_context
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -45,11 +45,11 @@ class ModuleInfo:
     def __init__(
         self,
         file_path: Path,
-        current_docstring: Optional[str] = None,
-        imports: Optional[list[str]] = None,
-        classes: Optional[list[str]] = None,
-        functions: Optional[list[str]] = None,
-        constants: Optional[list[str]] = None,
+        current_docstring: str | None = None,
+        imports: list[str] | None = None,
+        classes: list[str] | None = None,
+        functions: list[str] | None = None,
+        constants: list[str] | None = None,
     ):
         """Initialize module information container.
 
@@ -94,43 +94,7 @@ class ModuleDocstringUpdater:
         """
         self.target_directory = Path(target_directory)
         self.dry_run = dry_run
-        self.spsdk_context = self._gather_spsdk_context()
-
-    def _gather_spsdk_context(self) -> str:
-        """Gather context about SPSDK project structure and conventions.
-
-        This method builds a comprehensive context string containing SPSDK project
-        information, coding standards, and module docstring formatting guidelines
-        that can be used for documentation generation or validation purposes.
-
-        :return: Multi-line string containing SPSDK context information and style guidelines.
-        """
-        context_parts = [
-            "SPSDK (Secure Provisioning SDK) Project Context:",
-            "",
-            "SPSDK is a unified, reliable, and easy-to-use SW library working across",
-            "NXP MCU portfolio providing strong foundation from quick customer",
-            "prototyping up to production deployment.",
-            "",
-            "Module Docstring Style Guidelines:",
-            "- Module docstrings should be at the very top of the file (after shebang and encoding)",
-            "- Use triple quotes with proper formatting",
-            "- Start with a brief one-line description of the module's purpose",
-            "- Add detailed description if needed (separated by blank line)",
-            "- Describe the main functionality and components",
-            "- Mention key classes, functions, or constants if relevant",
-            "- Keep it concise but informative",
-            "",
-            "Example of good SPSDK module docstring:",
-            '"""SPSDK Certificate management utilities.',
-            "",
-            "This module provides functionality for handling X.509 certificates,",
-            "certificate chains, and certificate validation in SPSDK context.",
-            '"""',
-            "",
-            "Module docstring should reflect the actual content and purpose of the module.",
-        ]
-        return "\n".join(context_parts)
+        self.spsdk_context = load_docstring_context("module")
 
     def find_python_files(self) -> list[Path]:
         """Find all Python files in the target directory and subdirectories.
@@ -168,7 +132,7 @@ class ModuleDocstringUpdater:
         LOGGER.info(f"Found {len(python_files)} Python files to process")
         return python_files
 
-    def analyze_module(self, file_path: Path) -> Optional[ModuleInfo]:
+    def analyze_module(self, file_path: Path) -> ModuleInfo | None:
         """Analyze a Python module and extract its structure.
 
         Parses the given Python file using AST to extract module-level information
@@ -179,7 +143,7 @@ class ModuleDocstringUpdater:
         :return: ModuleInfo object containing extracted structure information, or None if analysis fails.
         """
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 content = f.read()
 
             tree = ast.parse(content)
@@ -233,7 +197,7 @@ class ModuleDocstringUpdater:
             LOGGER.error(f"Error analyzing module {file_path}: {e}")
             return None
 
-    def generate_module_docstring_with_cody(self, module_info: ModuleInfo) -> Optional[str]:
+    def generate_module_docstring_with_cody(self, module_info: ModuleInfo) -> str | None:
         """Generate or improve a module docstring using Cody API.
 
         Analyzes the provided module information and constructs a detailed prompt
@@ -438,7 +402,7 @@ class ModuleDocstringUpdater:
         :return: True if the docstring was successfully updated, False otherwise.
         """
         try:
-            with open(module_info.file_path, "r", encoding="utf-8") as f:
+            with open(module_info.file_path, encoding="utf-8") as f:
                 lines = f.readlines()
 
             # Find where to insert/replace the module docstring

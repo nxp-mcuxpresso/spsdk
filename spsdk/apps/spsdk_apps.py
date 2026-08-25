@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -12,16 +11,16 @@ offering improved discoverability and easier access to the complete toolkit
 of secure provisioning utilities across NXP MCU portfolio.
 """
 
+import os
 import sys
 import textwrap
-from typing import Any, Optional
+from typing import Any
 
 import click
 import colorama
 
 # Early cache clear: handle corrupted cache before heavy imports that load database
 if "clear-cache" in sys.argv:
-    import os
     import shutil
 
     from spsdk.utils.database import get_spsdk_cache_dirname
@@ -48,6 +47,7 @@ from spsdk.apps.nxpele import main as nxpele_main
 from spsdk.apps.nxpfuses import main as nxpfuses_main
 from spsdk.apps.nxpimage import main as nxpimage_main
 from spsdk.apps.nxpmemcfg import main as nxpmemcfg_main
+from spsdk.apps.nxpshe import main as nxpshe_main
 from spsdk.apps.nxpuuu import main as nxpuuu_main
 from spsdk.apps.nxpwpc import main as nxpwpc_main
 from spsdk.apps.pfr import main as pfr_main
@@ -77,6 +77,7 @@ main.add_command(nxpele_main, name="nxpele")
 main.add_command(nxpdice_main, name="nxpdice")
 main.add_command(nxpimage_main, name="nxpimage")
 main.add_command(nxpmemcfg_main, name="nxpmemcfg")
+main.add_command(nxpshe_main, name="nxpshe")
 main.add_command(nxpuuu_main, name="nxpuuu")
 main.add_command(nxpwpc_main, name="nxpwpc")
 main.add_command(pfr_main, name="pfr")
@@ -105,26 +106,6 @@ def clear_cache(ctx: click.Context) -> None:
     ctx.exit()
 
 
-def _check_auto_click_auto_import() -> tuple[Any, Any]:
-    """Check if auto-click-auto is available and import required modules.
-
-    :return: tuple of (enable_click_shell_completion, ShellType) or (None, None) if not available
-    """
-    try:
-        from auto_click_auto import enable_click_shell_completion
-        from auto_click_auto.constants import ShellType
-
-        return enable_click_shell_completion, ShellType
-    except ImportError:
-        click.echo(
-            colorama.Fore.RED
-            + "Error: auto-click-auto is not installed. Please install it with:\n"
-            + "pip install auto-click-auto"
-            + colorama.Fore.RESET
-        )
-        return None, None
-
-
 def _get_spsdk_tools() -> list[str]:
     """Get list of all SPSDK tools.
 
@@ -141,6 +122,7 @@ def _get_spsdk_tools() -> list[str]:
         "nxpdice",
         "nxpimage",
         "nxpmemcfg",
+        "nxpshe",
         "nxpuuu",
         "nxpwpc",
         "pfr",
@@ -150,6 +132,7 @@ def _get_spsdk_tools() -> list[str]:
         "dk6prog",
         "el2go-host",
         "lpcprog",
+        "spsdk",
     ]
 
 
@@ -160,7 +143,56 @@ def _list_available_tools() -> None:
         click.echo(f"  • {tool}")
 
 
-def _validate_and_get_tools(tools: tuple) -> Optional[list[str]]:
+# Map tool names to their Click command objects for static completion generation.
+# Must stay in sync with _get_spsdk_tools().
+_TOOL_COMMANDS: dict[str, click.Command] = {
+    "blhost": blhost_main,
+    "nxpfuses": nxpfuses_main,
+    "nxpcrypto": nxpcrypto_main,
+    "nxpdebugmbox": nxpdebugmbox_main,
+    "nxpdevscan": nxpdevscan_main,
+    "nxpdevhsm": nxpdevhsm_main,
+    "nxpele": nxpele_main,
+    "nxpdice": nxpdice_main,
+    "nxpimage": nxpimage_main,
+    "nxpmemcfg": nxpmemcfg_main,
+    "nxpshe": nxpshe_main,
+    "nxpuuu": nxpuuu_main,
+    "nxpwpc": nxpwpc_main,
+    "pfr": pfr_main,
+    "sdphost": sdphost_main,
+    "sdpshost": sdpshost_main,
+    "shadowregs": shadowregs_main,
+    "dk6prog": dk6prog_main,
+    "el2go-host": el2go_main,
+    "lpcprog": lpcprog_main,
+    "spsdk": main,
+}
+
+
+def _detect_shell() -> str:
+    """Detect the current shell type from the execution environment.
+
+    Detection order:
+    1. Windows platform → ``"powershell"``
+    2. ``$SHELL`` environment variable → ``"zsh"`` or ``"bash"``
+    3. Fallback → ``"bash"``
+
+    :return: Detected shell name (``"powershell"``, ``"zsh"``, or ``"bash"``).
+    """
+    import platform
+
+    if platform.system() == "Windows":
+        return "powershell"
+    shell_env = os.environ.get("SHELL", "")
+    if "zsh" in shell_env:
+        return "zsh"
+    if "bash" in shell_env:
+        return "bash"
+    return "bash"
+
+
+def _validate_and_get_tools(tools: tuple) -> list[str] | None:
     """Validate tool names and return list of tools to setup.
 
     :param tools: tuple of tool names from command line
@@ -182,122 +214,50 @@ def _validate_and_get_tools(tools: tuple) -> Optional[list[str]]:
     return tools_to_setup
 
 
-def _get_shell_type(shell: Optional[str], ShellType: Any) -> Optional[Any]:
-    """Get shell type from string.
-
-    :param shell: Shell name string
-    :param ShellType: ShellType enum class
-    :return: ShellType instance or None
-    """
-    if not shell:
-        return None
-
-    try:
-        return ShellType(shell.lower())
-    except ValueError:
-        click.echo(
-            colorama.Fore.RED
-            + f"Error: Unsupported shell '{shell}'. Supported shells: bash, zsh, fish"
-            + colorama.Fore.RESET
-        )
-        return None
-
-
-def _show_dry_run_info(shell_type: Any, tools_to_setup: list[str]) -> None:
-    """Display dry run information.
-
-    :param shell_type: Shell type or None
-    :param tools_to_setup: list of tools to setup
-    """
-    click.echo("Dry run mode - showing what would be done:")
-    click.echo(f"Shell: {shell_type.value if shell_type else 'auto-detect'}")
-    click.echo(f"Tools: {', '.join(tools_to_setup)}")
-
-
-def _setup_tools_completion(
-    tools_to_setup: list[str], shell_type: Any, enable_click_shell_completion: Any
+def _setup_static_completion(
+    tools_to_setup: list[str], shell: str, dry_run: bool
 ) -> tuple[int, list[str]]:
-    """Setup completion for tools and return results.
+    """Generate static completion files for the requested tools.
 
-    :param tools_to_setup: list of tools to setup
-    :param shell_type: Shell type or None
-    :param enable_click_shell_completion: Function to enable completion
-    :return: tuple of (success_count, failed_tools)
+    :param tools_to_setup: Tool names to process.
+    :param shell: Target shell (``"zsh"``).
+    :param dry_run: When True show what would be done without writing files.
+    :return: Tuple of (success_count, failed_tools).
     """
+    from spsdk.utils.autocomplete import setup_shell_completion
+
     success_count = 0
     failed_tools = []
 
-    click.echo(f"Setting up autocompletion for {len(tools_to_setup)} tools...")
+    click.echo(f"Setting up {shell} autocompletion for {len(tools_to_setup)} tools...")
 
     for tool in tools_to_setup:
-        try:
-            enable_click_shell_completion(
-                program_name=tool,
-                shells={shell_type} if shell_type else None,
-                verbose=False,  # We'll handle our own output
+        cmd = _TOOL_COMMANDS.get(tool)
+        if cmd is None:
+            click.echo(
+                f"  {colorama.Fore.YELLOW}?{colorama.Fore.RESET} {tool}: no Click command object found"
             )
-            click.echo(f"  {colorama.Fore.GREEN}✓{colorama.Fore.RESET} {tool}")
+            failed_tools.append(tool)
+            continue
+
+        ok, msg = setup_shell_completion(tool, cmd, shell=shell, dry_run=dry_run)
+        if ok:
+            click.echo(f"  {colorama.Fore.GREEN}✓{colorama.Fore.RESET} {tool}  {msg}")
             success_count += 1
-        except Exception as e:
-            click.echo(f"  {colorama.Fore.RED}✗{colorama.Fore.RESET} {tool}: {str(e)}")
+        else:
+            click.echo(f"  {colorama.Fore.RED}✗{colorama.Fore.RESET} {tool}: {msg}")
             failed_tools.append(tool)
 
     return success_count, failed_tools
 
 
-def _show_activation_instructions(shell_type: Any, ShellType: Any) -> None:
-    """Show shell-specific activation instructions.
-
-    :param shell_type: Shell type or None
-    :param ShellType: ShellType enum class
-    """
-    detected_shell = shell_type.value if shell_type else "your shell"
-    click.echo(f"\nTo activate completion in {detected_shell}, run:")
-
-    if not shell_type or shell_type == ShellType.BASH:
-        click.echo("  source ~/.bashrc")
-    elif shell_type == ShellType.ZSH:
-        click.echo("  source ~/.zshrc")
-    elif shell_type == ShellType.FISH:
-        click.echo("  source ~/.config/fish/config.fish")
-
-    click.echo("\nOr start a new terminal session.")
-
-
-def _show_completion_summary(
-    success_count: int, failed_tools: list[str], shell_type: Any, ShellType: Any
-) -> None:
-    """Show completion setup summary.
-
-    :param success_count: Number of successfully setup tools
-    :param failed_tools: list of failed tools
-    :param shell_type: Shell type or None
-    :param ShellType: ShellType enum class
-    """
-    click.echo()
-    if success_count > 0:
-        click.echo(
-            colorama.Fore.GREEN
-            + f"Successfully enabled autocompletion for {success_count} tools."
-            + colorama.Fore.RESET
-        )
-        _show_activation_instructions(shell_type, ShellType)
-
-    if failed_tools:
-        click.echo(
-            colorama.Fore.YELLOW
-            + f"\nWarning: Failed to enable completion for {len(failed_tools)} tools: "
-            + ", ".join(failed_tools)
-            + colorama.Fore.RESET
-        )
-        click.echo("This might be because these tools are not installed or not in your PATH.")
-
-
 @utils_group.command(name="setup-autocomplete", no_args_is_help=False)
 @click.option(
     "--shell",
-    type=click.Choice(["bash", "zsh", "fish"], case_sensitive=False),
-    help="Shell type (auto-detected if not specified)",
+    type=click.Choice(["zsh", "bash", "powershell"], case_sensitive=False),
+    default=None,
+    show_default=False,
+    help="Target shell for which to generate static completion files (auto-detected if not specified).",
 )
 @click.option(
     "--tools",
@@ -307,49 +267,84 @@ def _show_completion_summary(
 @click.option(
     "--list-tools",
     is_flag=True,
-    help="list all available SPSDK tools and exit",
+    help="List all available SPSDK tools and exit.",
 )
 @click.option(
     "--dry-run",
     is_flag=True,
-    help="Show what would be done without actually setting up completion",
+    help="Show what would be done without writing any files.",
 )
-def setup_autocomplete(shell: str, tools: tuple, list_tools: bool, dry_run: bool) -> None:
-    """Setup shell autocompletion for SPSDK tools.
+def setup_autocomplete(shell: str | None, tools: tuple, list_tools: bool, dry_run: bool) -> None:
+    """Setup static shell autocompletion for SPSDK tools.
 
-    This command enables tab completion for SPSDK command-line tools.
-    If no shell is specified, it will attempt to auto-detect your current shell.
+    Generates a pre-built completion script for each tool that loads
+    instantly on TAB — no Python process is spawned during completion.
+
+    The target shell is auto-detected from the environment (Windows →
+    PowerShell; ``$SHELL`` variable → zsh/bash) but can be overridden with
+    ``--shell``.
+
+    For zsh, completion files are written to
+    ``~/.config/spsdk/completions/`` and the required ``fpath`` entry is
+    added to ``~/.zshrc``.
 
     Examples:
-        spsdk utils setup-autocomplete --shell bash
+        spsdk utils setup-autocomplete
+
+        spsdk utils setup-autocomplete --shell powershell
+
         spsdk utils setup-autocomplete --tools nxpfuses nxpimage
+
         spsdk utils setup-autocomplete --list-tools
     """
     if list_tools:
         _list_available_tools()
         return
 
-    enable_click_shell_completion, ShellType = _check_auto_click_auto_import()
-    if not enable_click_shell_completion:
-        return
-
+    if shell is None:
+        shell = _detect_shell()
+        click.echo(f"Auto-detected shell: {shell}")
+    shell = shell.lower()
     tools_to_setup = _validate_and_get_tools(tools)
     if tools_to_setup is None:
         return
 
-    shell_type = _get_shell_type(shell, ShellType)
-    if shell and shell_type is None:
-        return
+    success_count, failed_tools = _setup_static_completion(tools_to_setup, shell, dry_run)
 
-    if dry_run:
-        _show_dry_run_info(shell_type, tools_to_setup)
-        return
+    click.echo()
+    if success_count > 0:
+        click.echo(
+            colorama.Fore.GREEN
+            + f"Generated static completion for {success_count} tool(s)."
+            + colorama.Fore.RESET
+        )
+        from spsdk.utils.autocomplete import (
+            get_completions_dir,
+            setup_bash_profile,
+            setup_powershell_profile,
+            setup_zsh_profile,
+        )
 
-    success_count, failed_tools = _setup_tools_completion(
-        tools_to_setup, shell_type, enable_click_shell_completion
-    )
+        completions_dir = get_completions_dir()
+        if shell == "zsh":
+            profile_msg = setup_zsh_profile(completions_dir, dry_run=dry_run)
+            click.echo(profile_msg)
+            click.echo("\nRestart your shell or run:  source ~/.zshrc")
+        elif shell == "bash":
+            profile_msg = setup_bash_profile(completions_dir, dry_run=dry_run)
+            click.echo(profile_msg)
+            click.echo("\nRestart your shell or run:  source ~/.bashrc")
+        elif shell == "powershell":
+            profile_msg = setup_powershell_profile(completions_dir, dry_run=dry_run)
+            click.echo(profile_msg)
+            click.echo("\nRestart PowerShell or run:  . $PROFILE")
 
-    _show_completion_summary(success_count, failed_tools, shell_type, ShellType)
+    if failed_tools:
+        click.echo(
+            colorama.Fore.YELLOW
+            + f"\nFailed to generate completion for: {', '.join(failed_tools)}"
+            + colorama.Fore.RESET
+        )
 
 
 @utils_group.command(name="family-info", no_args_is_help=True)

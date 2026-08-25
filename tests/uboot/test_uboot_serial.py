@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Unit tests for UbootSerial port and baudrate parsing."""
 
-from typing import Any, Generator
+from collections.abc import Generator
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest

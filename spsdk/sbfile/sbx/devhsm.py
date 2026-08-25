@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,8 @@ framework.
 """
 
 import logging
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from typing_extensions import Self
 
@@ -51,14 +51,14 @@ class DevHsmSBx(DevHsm):
         self,
         mboot: McuBoot,
         family: FamilyRevision,
-        oem_share_input: Optional[bytes] = None,
-        oem_enc_master_share_input: Optional[bytes] = None,
-        sbx: Optional[SecureBinaryX] = None,
-        workspace: Optional[str] = None,
-        initial_reset: Optional[bool] = False,
-        final_reset: Optional[bool] = True,
-        buffer_address: Optional[int] = None,
-        info_print: Optional[Callable] = None,
+        oem_share_input: bytes | None = None,
+        oem_enc_master_share_input: bytes | None = None,
+        sbx: SecureBinaryX | None = None,
+        workspace: str | None = None,
+        initial_reset: bool | None = False,
+        final_reset: bool | None = True,
+        buffer_address: int | None = None,
+        info_print: Callable | None = None,
     ) -> None:
         """Initialize device HSM class for creating provisioned SBX files.
 
@@ -97,7 +97,7 @@ class DevHsmSBx(DevHsm):
         # store input of OEM_SHARE_INPUT to workspace in case that is generated randomly
         self.store_temp_res("OEM_SHARE_INPUT.BIN", self.oem_share_input)
 
-        self.final_sb = bytes()
+        self.final_sb = b""
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
@@ -229,7 +229,7 @@ class DevHsmSBx(DevHsm):
 
         # 7: Merge all parts together
         self.info_print(" 7: Composing final SBx file.")
-        self.final_sb = bytes()
+        self.final_sb = b""
         self.final_sb += sbx_header
         self.final_sb += header_signature
         self.final_sb += enc_final_data
@@ -253,7 +253,7 @@ class DevHsmSBx(DevHsm):
         return self.final_sb
 
     def oem_generate_master_share(
-        self, oem_share_input: Optional[bytes] = None
+        self, oem_share_input: bytes | None = None
     ) -> tuple[bytes, bytes, bytes]:
         """Generate on device Encrypted OEM master share outputs.
 
@@ -292,10 +292,10 @@ class DevHsmSBx(DevHsm):
             raise SPSDKError("Cannot read OEM ENCRYPTED SHARE OUTPUT from device.")
         self.store_temp_res("ENC_OEM_SHARE.bin", oem_enc_share)
 
-        return oem_enc_share, bytes(), bytes()
+        return oem_enc_share, b"", b""
 
     def oem_set_master_share(
-        self, oem_seed: Optional[bytes] = None, enc_oem_share: Optional[bytes] = None
+        self, oem_seed: bytes | None = None, enc_oem_share: bytes | None = None
     ) -> bytes:
         """Set OEM Master share on the device.
 
@@ -391,7 +391,7 @@ class DevHsmSBx(DevHsm):
 
     @classmethod
     def load_from_config(
-        cls, config: Config, mboot: Optional[McuBoot] = None, info_print: Optional[Callable] = None
+        cls, config: Config, mboot: McuBoot | None = None, info_print: Callable | None = None
     ) -> Self:
         """Load the class from configuration.
 

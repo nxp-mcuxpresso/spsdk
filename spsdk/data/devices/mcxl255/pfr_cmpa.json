@@ -4849,7 +4849,7 @@
                             "description": "Secure boot option for low power wake up from deep power down 1 & 2",
                             "values": [
                                 {
-                                    "name": "Enabled_0",
+                                    "name": "ENABLED_0",
                                     "value": 0,
                                     "description": "Same as cold boot (enforcement dictated by SEC_BOOT_EN), application address considered as SBL_START_ADDR or 0x0",
                                     "deprecated_names": [
@@ -4857,7 +4857,7 @@
                                     ]
                                 },
                                 {
-                                    "name": "Enabled_1",
+                                    "name": "ENABLED_1",
                                     "value": 1,
                                     "description": "Same as cold boot (enforcement dictated by SEC_BOOT_EN), application address considered as SBL_START_ADDR or 0x0",
                                     "deprecated_names": [
@@ -4865,7 +4865,7 @@
                                     ]
                                 },
                                 {
-                                    "name": "Disabled",
+                                    "name": "DISABLED",
                                     "value": 2,
                                     "description": "Faster wakeup path supported",
                                     "deprecated_names": [
@@ -4873,7 +4873,7 @@
                                     ]
                                 },
                                 {
-                                    "name": "Enabled_3",
+                                    "name": "ENABLED_3",
                                     "value": 3,
                                     "description": "Same as cold boot (enforcement dictated by SEC_BOOT_EN), application address considered as SBL_START_ADDR or 0x0",
                                     "deprecated_names": [
@@ -4889,12 +4889,12 @@
                             "description": "Boot time attestation record generation",
                             "values": [
                                 {
-                                    "name": "Enabled",
+                                    "name": "ENABLED",
                                     "value": 0,
                                     "description": "Not skipped"
                                 },
                                 {
-                                    "name": "Disabled",
+                                    "name": "DISABLED",
                                     "value": 1,
                                     "description": "Skipped"
                                 }

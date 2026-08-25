@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -16,9 +15,9 @@ EdgeLock Enclave specific implementations for secure debug access control.
 import abc
 import logging
 from struct import calcsize, pack, unpack, unpack_from
-from typing import Any, Optional, Type
+from typing import Any, TypeAlias
 
-from typing_extensions import Self, TypeAlias
+from typing_extensions import Self
 
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.keys import PublicKey, PublicKeyEcc, PublicKeyRsa
@@ -65,8 +64,8 @@ class DebugCredentialCertificate(FeatureBaseClass):
         cc_vu: int,
         cc_beacon: int,
         rot_pub: PublicKey,
-        signature: Optional[bytes] = None,
-        signature_provider: Optional[SignatureProvider] = None,
+        signature: bytes | None = None,
+        signature_provider: SignatureProvider | None = None,
     ) -> None:
         """Initialize the DebugCredential object.
 
@@ -223,8 +222,8 @@ class DebugCredentialCertificate(FeatureBaseClass):
 
     @classmethod
     def _get_class(
-        cls, family: FamilyRevision, version: Optional[ProtocolVersion] = None
-    ) -> Type[Self]:
+        cls, family: FamilyRevision, version: ProtocolVersion | None = None
+    ) -> type[Self]:
         """Get the appropriate debug credential class for the given family and protocol version.
 
         This method determines which debug credential implementation to use based on the
@@ -259,7 +258,7 @@ class DebugCredentialCertificate(FeatureBaseClass):
         return DebugCredentialCertificateEcc  # type: ignore
 
     @classmethod
-    def _get_class_from_cfg(cls, config: Config) -> Type[Self]:
+    def _get_class_from_cfg(cls, config: Config) -> type[Self]:
         """Get the appropriate class type based on configuration settings.
 
         Determines the correct debug credential class by analyzing the family configuration

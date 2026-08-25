@@ -118,6 +118,26 @@ info:
         hid_pack_size: 1020
 
 features:
+  # ======== Fuses section ========
+  fuses:
+    tool: nxpele
+    grouped_registers:
+      - uid: srkh
+        name: SRKH
+        width: 256
+        reversed: True
+        config_as_hexstring: True
+        description: "SHA256 hash digest of OEM SRK public keys stored in Container"
+        sub_regs: [fuse120, fuse121, fuse122, fuse123, fuse124, fuse125, fuse126, fuse127]
+      - uid: otfad_key
+        name: OTFAD_KEY
+        width: 128
+        reverse_subregs_order: True
+        reversed: True
+        config_as_hexstring: true
+        description: OTFAD Key known as KEK.
+        sub_regs: [fuse184, fuse185, fuse186, fuse187]
+
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x8000_0000
@@ -149,6 +169,9 @@ features:
     containers_max_cnt: 3
     valid_offset_minimal_alignment: 0x400
     container_types: [1] # Supported container types
+    fuses_0:
+      _name: "AHAB SRKH"
+      srkh: "__srk_hash" # SRK hash fuse
     core_ids:
       CORTEX_M33: [1, "cortex-m33", "Cortex M33"]
       CORTEX_A35_1: [2, "cortex-a35-1", "Cortex A35 1"]
@@ -236,9 +259,17 @@ features:
   otfad:
     keyblob_byte_swap_cnt: 0
     sb_21_supported: False
-    has_kek_fuses: False
+    has_kek_fuses: True
     supports_key_scrambling: True
-    # TODO add fuses
+    fuses_1: # Fuses for OTFAD
+      _name: Configuration of fuses for OTFAD
+      _no_verify: True
+      fuse188: # OTFAD CFG Fuse
+        fuse188-bit-0: 1 # OTFAD Enable
+        fuse188-bit-2: __scramble_enabled # OTFAD enable scrambling
+        fuse188-bits-3-10: __key_scramble_align # OTFAD scramble align
+      fuse189: __key_scramble_mask # OTFAD Scramble Key
+      otfad_key: __kek # OTFAD Key
     additional_template: ["otfad_scramble"]
 
   # ======== Bootable image section ========

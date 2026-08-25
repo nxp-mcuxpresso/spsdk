@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,12 +11,17 @@ functionality, ensuring proper validation of configuration strings and
 error handling for invalid inputs.
 """
 
-from typing import Any, Optional, Union
+from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 
-from spsdk.exceptions import SPSDKError
-from spsdk.utils.interfaces.device.usbsio_device import UsbSioConfig
+from spsdk.exceptions import SPSDKConnectionError, SPSDKError
+from spsdk.utils.interfaces.device.usbsio_device import (
+    UsbSioConfig,
+    UsbSioI2CDevice,
+    UsbSioSPIDevice,
+)
 
 
 @pytest.mark.parametrize(
@@ -87,9 +91,9 @@ from spsdk.utils.interfaces.device.usbsio_device import UsbSioConfig
 def test_libusbsio_parse_valid_configuration_string(
     interface: str,
     config: str,
-    usb_cfg: Optional[str],
+    usb_cfg: str | None,
     port_num: int,
-    args: list[Union[int, str]],
+    args: list[int | str],
     kwargs: dict[str, Any],
 ) -> None:
     """Test parsing of valid USBSIO configuration strings.
@@ -133,3 +137,106 @@ def test_libusbsio_parse_invalid_configuration_string(interface: str, config: st
     """
     with pytest.raises(SPSDKError):
         UsbSioConfig.from_config_string(config, interface)
+
+
+def _make_i2c_device() -> UsbSioI2CDevice:
+    """Create an UsbSioI2CDevice with mocked internals for unit testing.
+
+    :return: Configured UsbSioI2CDevice with mocked port.
+    """
+    device = UsbSioI2CDevice.__new__(UsbSioI2CDevice)
+    device._timeout = 5000
+    device.i2c_address = 0x10
+    device.port = MagicMock()
+    return device
+
+
+def _make_spi_device() -> UsbSioSPIDevice:
+    """Create an UsbSioSPIDevice with mocked internals for unit testing.
+
+    :return: Configured UsbSioSPIDevice with mocked port.
+    """
+    device = UsbSioSPIDevice.__new__(UsbSioSPIDevice)
+    device._timeout = 5000
+    device.spi_sselport = 0
+    device.spi_sselpin = 15
+    device.port = MagicMock()
+    return device
+
+
+@pytest.mark.parametrize("result,data", [(-1, None), (-1, b""), (0, b"")])
+def test_usbsio_i2c_read_nak_returns_empty_bytes(result: int, data: bytes | None) -> None:
+    """Test that UsbSioI2CDevice.read returns empty bytes when device NAKs.
+
+    When libusbsio DeviceRead returns a negative result or empty data (device NAK),
+    read() must return b'' so that the _wait_for_data polling loop can retry
+    within the global timeout rather than raising immediately.
+
+    :param result: libusbsio result code to simulate.
+    :param data: Data returned by libusbsio to simulate.
+    """
+    device = _make_i2c_device()
+    device.port.DeviceRead.return_value = (data, result)
+    assert device.read(1) == b""
+
+
+def test_usbsio_i2c_read_success_returns_data() -> None:
+    """Test that UsbSioI2CDevice.read returns data on successful reads.
+
+    When libusbsio DeviceRead returns a non-negative result and non-empty data,
+    read() must return that data unchanged.
+    """
+    device = _make_i2c_device()
+    device.port.DeviceRead.return_value = (b"\x5a", 1)
+    assert device.read(1) == b"\x5a"
+
+
+def test_usbsio_i2c_read_exception_raises_connection_error() -> None:
+    """Test that UsbSioI2CDevice.read raises SPSDKConnectionError on libusbsio exception.
+
+    Communication errors from libusbsio (e.g. device disconnected) must be
+    converted to SPSDKConnectionError rather than propagating the raw exception.
+    """
+    device = _make_i2c_device()
+    device.port.DeviceRead.side_effect = RuntimeError("bus error")
+    with pytest.raises(SPSDKConnectionError):
+        device.read(1)
+
+
+@pytest.mark.parametrize("result,data", [(-1, None), (-1, b""), (0, b"")])
+def test_usbsio_spi_read_nak_returns_empty_bytes(result: int, data: bytes | None) -> None:
+    """Test that UsbSioSPIDevice.read returns empty bytes when device NAKs.
+
+    When libusbsio Transfer returns a negative result or empty data (device NAK),
+    read() must return b'' so that the _wait_for_data polling loop can retry
+    within the global timeout rather than raising immediately.
+
+    :param result: libusbsio result code to simulate.
+    :param data: Data returned by libusbsio to simulate.
+    """
+    device = _make_spi_device()
+    device.port.Transfer.return_value = (data, result)
+    assert device.read(1) == b""
+
+
+def test_usbsio_spi_read_success_returns_data() -> None:
+    """Test that UsbSioSPIDevice.read returns data on successful reads.
+
+    When libusbsio Transfer returns a non-negative result and non-empty data,
+    read() must return that data unchanged.
+    """
+    device = _make_spi_device()
+    device.port.Transfer.return_value = (b"\xa5", 1)
+    assert device.read(1) == b"\xa5"
+
+
+def test_usbsio_spi_read_exception_raises_connection_error() -> None:
+    """Test that UsbSioSPIDevice.read raises SPSDKConnectionError on libusbsio exception.
+
+    Communication errors from libusbsio (e.g. device disconnected) must be
+    converted to SPSDKConnectionError rather than propagating the raw exception.
+    """
+    device = _make_spi_device()
+    device.port.Transfer.side_effect = RuntimeError("bus error")
+    with pytest.raises(SPSDKConnectionError):
+        device.read(1)

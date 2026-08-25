@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -14,8 +13,8 @@ boot process.
 """
 
 import logging
+from collections.abc import Iterator
 from datetime import datetime, timezone
-from typing import Iterator, Optional
 
 from typing_extensions import Self
 
@@ -403,7 +402,7 @@ class HabSegmentCSF(HabSegmentBase):
     KEYBLOB_SIZE = 0x200
     SEGMENT_IDENTIFIER = HabSegmentEnum.CSF
 
-    def __init__(self, csf: SegCSF, signature_timestamp: Optional[datetime] = None):
+    def __init__(self, csf: SegCSF, signature_timestamp: datetime | None = None):
         """Initialize CSF segment with command sequence and timestamp.
 
         Creates a new CSF (Command Sequence File) segment containing security commands
@@ -636,7 +635,7 @@ class HabSegmentCSF(HabSegmentBase):
         raise SPSDKSegmentNotPresent(f"Segment {cls.__name__} is not present")
 
     @property
-    def dek(self) -> Optional[bytes]:
+    def dek(self) -> bytes | None:
         """Get the Data Encryption Key (DEK) from install key command.
 
         This property searches for a CmdInstallSecretKey command in the commands list
@@ -660,7 +659,7 @@ class HabSegmentCSF(HabSegmentBase):
         return self.CSF_SIZE
 
     @property
-    def mac_len(self) -> Optional[int]:
+    def mac_len(self) -> int | None:
         """Get MAC length from decrypt data command.
 
         Searches through the CSF commands to find a CmdDecryptData instance and returns
@@ -674,7 +673,7 @@ class HabSegmentCSF(HabSegmentBase):
         return decrypt_data.mac_len
 
     @property
-    def nonce(self) -> Optional[bytes]:
+    def nonce(self) -> bytes | None:
         """Get nonce value from decrypt data command.
 
         Retrieves the nonce from the first CmdDecryptData command found in the
@@ -778,7 +777,7 @@ class HabSegmentCSF(HabSegmentBase):
         command = self.get_decrypt_data_cmd()
         if command is None:
             raise SPSDKValueError("Decrypt data command not present.")
-        data_to_encrypt = bytes()
+        data_to_encrypt = b""
         for block in blocks:
             command.append(block.base_address, block.size)
             data_to_encrypt += image_data[block.start : block.start + block.size]
@@ -786,7 +785,7 @@ class HabSegmentCSF(HabSegmentBase):
             key=self.dek,
             plain_data=data_to_encrypt,
             nonce=self.nonce,
-            associated_data=bytes(),
+            associated_data=b"",
             tag_len=self.mac_len,
         )
         if len(encr) != len(data_to_encrypt) + self.mac_len:
@@ -803,7 +802,7 @@ class HabSegmentCSF(HabSegmentBase):
         self.csf._header.length += len(blocks) * 8
         return enc_data
 
-    def get_authenticate_csf_cmd(self) -> Optional[CmdAuthData]:
+    def get_authenticate_csf_cmd(self) -> CmdAuthData | None:
         """Get authenticate CSF segment command.
 
         Searches through all commands in the CSF segment to find the first
@@ -814,7 +813,7 @@ class HabSegmentCSF(HabSegmentBase):
         commands = [cmd for cmd in self.commands if isinstance(cmd, CmdAuthData)]
         return commands[0] if len(commands) >= 1 else None
 
-    def get_authenticate_data_cmd(self) -> Optional[CmdAuthData]:
+    def get_authenticate_data_cmd(self) -> CmdAuthData | None:
         """Get authenticate image data command.
 
         Retrieves the second authenticate data command from the CSF commands list.
@@ -827,7 +826,7 @@ class HabSegmentCSF(HabSegmentBase):
         commands = [cmd for cmd in self.commands if isinstance(cmd, CmdAuthData)]
         return commands[1] if len(commands) >= 2 else None
 
-    def get_decrypt_data_cmd(self) -> Optional[CmdAuthData]:
+    def get_decrypt_data_cmd(self) -> CmdAuthData | None:
         """Get decrypt data command from CSF segment.
 
         Retrieves the third CmdAuthData command from the commands list, which represents

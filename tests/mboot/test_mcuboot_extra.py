@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2026 NXP
 #
@@ -9,7 +8,7 @@
 
 # pylint: disable=redefined-outer-name
 import os
-from typing import Generator
+from collections.abc import Generator
 
 import pytest
 

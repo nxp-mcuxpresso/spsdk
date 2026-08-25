@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -13,7 +12,7 @@ for boot device configuration and HAB image operations.
 """
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from typing_extensions import Self
 
@@ -75,8 +74,8 @@ class HabImage(FeatureBaseClass):
         flags: int,
         start_address: int,
         segments: list[HabSegmentBase],
-        boot_device: Optional[BootDevice] = None,
-        ivt_offset: Optional[int] = None,
+        boot_device: BootDevice | None = None,
+        ivt_offset: int | None = None,
         image_pattern: str = "zeros",
     ) -> None:
         """Initialize HAB (High Assurance Boot) image.
@@ -261,7 +260,7 @@ class HabImage(FeatureBaseClass):
         family = FamilyRevision.load_from_config(options)
         return cls.get_validation_schemas(family)
 
-    def get_segment(self, segment: HabSegmentEnum) -> Optional[HabSegmentBase]:
+    def get_segment(self, segment: HabSegmentEnum) -> HabSegmentBase | None:
         """Get image's segment by segment type.
 
         Searches through all segments in the image to find the one matching
@@ -326,7 +325,7 @@ class HabImage(FeatureBaseClass):
         return seg
 
     @property
-    def dcd_segment(self) -> Optional[HabSegmentDcd]:
+    def dcd_segment(self) -> HabSegmentDcd | None:
         """Get DCD segment object if it exists.
 
         :return: DCD segment object if exists, None otherwise.
@@ -335,7 +334,7 @@ class HabImage(FeatureBaseClass):
         return seg  # type: ignore
 
     @property
-    def xmcd_segment(self) -> Optional[HabSegmentXMCD]:
+    def xmcd_segment(self) -> HabSegmentXMCD | None:
         """Get XMCD segment object from the HAB image.
 
         Retrieves the XMCD (External Memory Configuration Data) segment if it exists
@@ -363,7 +362,7 @@ class HabImage(FeatureBaseClass):
         return seg
 
     @property
-    def csf_segment(self) -> Optional[HabSegmentCSF]:
+    def csf_segment(self) -> HabSegmentCSF | None:
         """Get CSF segment object if it exists.
 
         :return: CSF segment object if exists, None otherwise.
@@ -546,9 +545,9 @@ class HabImage(FeatureBaseClass):
             except SPSDKSegmentNotPresent:
                 pass
 
-        ivt = next((seg for seg in segments if seg.SEGMENT_IDENTIFIER == HabSegmentEnum.IVT))
+        ivt = next(seg for seg in segments if seg.SEGMENT_IDENTIFIER == HabSegmentEnum.IVT)
         assert isinstance(ivt, HabSegmentIvt)
-        bdt = next((seg for seg in segments if seg.SEGMENT_IDENTIFIER == HabSegmentEnum.BDT))
+        bdt = next(seg for seg in segments if seg.SEGMENT_IDENTIFIER == HabSegmentEnum.BDT)
         assert isinstance(bdt, HabSegmentBDT)
         start_address = bdt.app_start
         ivt_offset = ivt.ivt_address - bdt.app_start

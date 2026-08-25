@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -409,7 +408,8 @@ def test_multi_region_write_to_device_cfpa_cmpa_split_success() -> None:
         calls.append(addr)
         return True
 
-    result = multi.write_to_device(_write)
+    # mcxa457 declares monotonic_counters, so read_method must be provided
+    result = multi.write_to_device(_write, read_method=lambda addr, size: bytes(size))
     assert result is True
     assert len(calls) > 0
 
@@ -436,7 +436,9 @@ def test_multi_region_write_to_device_cfpa_only_success() -> None:
 def test_multi_region_write_to_device_cfpa_cmpa_split_first_write_fails() -> None:
     """Test _write_cfpa_cmpa_split returns False when first region write fails."""
     multi = UPDATE_CFPA_CMPA(MCXA_FAMILY)
-    result = multi._write_cfpa_cmpa_split(lambda addr, data: False)
+    result = multi._write_cfpa_cmpa_split(
+        lambda addr, data: False, read_method=lambda addr, size: bytes(size)
+    )
     assert result is False
 
 
@@ -448,7 +450,7 @@ def test_multi_region_write_to_device_exception() -> None:
         raise RuntimeError("flash write error")
 
     with pytest.raises(SPSDKPfrError, match="Failed to write"):
-        multi.write_to_device(_exc_write)
+        multi.write_to_device(_exc_write, read_method=lambda addr, size: bytes(size))
 
 
 # ---------------------------------------------------------------------------

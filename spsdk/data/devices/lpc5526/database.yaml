@@ -86,6 +86,8 @@ features:
       reg_spec: pfr_cfpa.json
       seal_start: field1E0 # SHA256_DIGEST0
       seal_count: 8
+      monotonic_counters:
+        - field00C  # NS_FW_Version
     cmpa: # CMPA description
       address: 0x9_E400
       size: 512

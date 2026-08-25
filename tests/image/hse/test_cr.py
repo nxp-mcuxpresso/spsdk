@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -8,7 +7,7 @@
 """Unit tests for the HSE Core Reset module."""
 
 import os
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 import yaml
@@ -29,7 +28,7 @@ def family() -> FamilyRevision:
 
 
 @pytest.fixture
-def core_reset_config() -> Dict[str, Any]:
+def core_reset_config() -> dict[str, Any]:
     """Return a basic Core Reset entry configuration for testing."""
     return {
         "family": "mcxe31b",

@@ -18,6 +18,74 @@ Release Notes
 =============
 
 ------
+3.11.0
+------
+
+**New Product Introduction or Updates**
+
+* add support for rt1150 and rt1152
+* add support for mcxa557
+* add support for mcxe32b and mcxe327
+* add support for kw43b43z92, kw43b43z93, kw43b43z96, kw43b43z97, kw43b43zc2, kw43b43zc3, kw43b43zc6, kw43b43zc7, kw43e43zc7, mcxw706a, mcxw706c, mcxw706d, mcxw70aa, mcxw70ac, and mcxw70ad
+* add support for mimx93714 and mimx93734
+* add mimx943 A1 support
+
+**New features**
+
+* :ref:`nxpdebugmbox`:
+    - add program lifecycle debug mailbox command for mcxc151, mcxc161, and mcxc162 devices
+* `nxpimage`_:
+    - add IPED tool
+    - add ``raw_export_as_subregs`` flag for grouped register byte export
+    - add BinaryImage draw support for SB4.0 containers
+    - add cert_version support to V2 AHAB signed message containers
+    - allow ``parse`` command to print YAML to stdout when output is not specified
+    - use Yocto generic filenames as defaults in MPU bootable image templates
+    - add ``--no-fuse-scripts`` to ahab export and handle ``uuu_version`` in nxpuuu scripts
+* `pfr`_:
+    - support writing monotonic counter special values
+    - support MBI binary as rot-config input for pfr export
+    - add RSA4096 chain certificate warning for LPC55S16
+* use ML-DSA implementation from cryptography 48
+* add support for Python 3.14
+
+**Bugfixes**
+
+* `nxpdebugmbox`_:
+    - fix test connection handling
+    - fix mismatched expected transfer size
+    - fix no-reset debug mailbox option
+    - fix mcxn947 flash read over J-Link
+    - revert debug auth reset that broke J-Link DAT authentication
+* :ref:`nxpdevhsm`:
+    - fix keyblob command position
+* `nxpimage`_:
+    - fix KeyError in hex_value_option for multi-word options
+    - fix mcxc151 IMG_MISR_SEED byte order in CMPA_PSWD
+    - fix mimx943 A0 AHABv2 algorithm definitions
+    - parse NXP containers as binary
+    - fix ECC-only MBI broken by PQC signature_algorithms addition
+    - fix PQC SRKH fuses and add DILITHIUM/ML-DSA to signature_algorithms
+    - limit RSA pubExponentSize to 8 bytes for HSE-B devices
+    - disable SIPHASH and DH key types for HSE-B devices
+    - improve AHAB signature verification error messages
+    - fix mimx95 b0 fastboot container order and alignment
+    - restrict mcxl255 SB3.1 commands
+* :ref:`nxpshe`:
+    - raise a user-friendly error on reset instead of a generic ValueError
+* `pfr`_:
+    - prevent empty custom_value dict from falling through to template defaults
+* fix mimx95 reset problem
+* harden database cache deserialization with restricted unpickler
+* fix HMAC cache race condition in schema_validator
+* add missing mboot error codes from mcu-boot repo
+* fix vulnerable OpenSSL included in cryptography wheels
+* fix duplicated log and reduce false AHAB V1 error log
+* add ECC individual write lock type for fuses and missing OEM_SRKH locks for mimx95
+* handle expected timeout in SetBrickedMode command
+* fix UsbSio I2C/SPI read returning error on device NAK
+
+------
 3.10.0
 ------
 

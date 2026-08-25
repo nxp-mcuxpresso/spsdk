@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
 # Copyright 2019-2026 NXP
@@ -14,7 +13,7 @@ operations through various interfaces.
 """
 
 import math
-from typing import Any, Optional
+from typing import Any
 
 from spsdk import get_logger
 from spsdk.sdp.commands import CmdPacket, CommandTag, ResponseValue
@@ -174,7 +173,7 @@ class SDP:
 
         return response.value
 
-    def _read_data(self, length: int) -> Optional[bytes]:
+    def _read_data(self, length: int) -> bytes | None:
         """Read data from device.
 
         The method reads data in chunks with maximum size of 64 bytes and handles HAB status
@@ -272,7 +271,7 @@ class SDP:
 
         return ret_val
 
-    def read(self, address: int, length: int, data_format: int = 32) -> Optional[bytes]:
+    def read(self, address: int, length: int, data_format: int = 32) -> bytes | None:
         """Read value from register or memory at specified address.
 
         :param address: Start address of the first register or memory location
@@ -289,10 +288,10 @@ class SDP:
     def read_safe(
         self,
         address: int,
-        length: Optional[int] = None,
+        length: int | None = None,
         data_format: int = 32,
         align_count: bool = False,
-    ) -> Optional[bytes]:
+    ) -> bytes | None:
         """Read value from register/memory at specified address.
 
         This method is safe because it validates input arguments and prevents fault execution.
@@ -447,7 +446,7 @@ class SDP:
         cmd_packet = CmdPacket(CommandTag.JUMP_ADDRESS, address, 0, 0)
         return self._process_cmd(cmd_packet)
 
-    def read_status(self) -> Optional[int]:
+    def read_status(self) -> int | None:
         """Read error status from the device.
 
         This method sends a command to read the current error status and processes

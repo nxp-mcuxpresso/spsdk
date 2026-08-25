@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -12,9 +11,10 @@ beyond standard Python enums, including flexible member lookup, soft enums for
 dynamic values, and enhanced error handling tailored for SPSDK applications.
 """
 
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass
 from enum import Enum, IntFlag
-from typing import TYPE_CHECKING, Any, Callable, Iterator, Optional, Sequence, Type, Union, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from typing_extensions import Self
 
@@ -35,7 +35,7 @@ class SpsdkEnumMember:
 
     tag: int
     label: str
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class SpsdkEnum(SpsdkEnumMember, Enum):
@@ -86,7 +86,7 @@ class SpsdkEnum(SpsdkEnumMember, Enum):
         return [value.tag for value in cls.__members__.values()]
 
     @classmethod
-    def contains(cls, obj: Union[int, str]) -> bool:
+    def contains(cls, obj: int | str) -> bool:
         """Check if given member with given tag/label exists in enum.
 
         :param obj: Label or tag of enum member to check for existence.
@@ -123,7 +123,7 @@ class SpsdkEnum(SpsdkEnumMember, Enum):
         return value.label
 
     @classmethod
-    def get_description(cls, tag: int, default: Optional[str] = None) -> Optional[str]:
+    def get_description(cls, tag: int, default: str | None = None) -> str | None:
         """Get description of enum member with given tag.
 
         :param tag: Tag to be used for searching.
@@ -134,7 +134,7 @@ class SpsdkEnum(SpsdkEnumMember, Enum):
         return value.description or default
 
     @classmethod
-    def from_attr(cls, attribute: Union[int, str]) -> Self:
+    def from_attr(cls, attribute: int | str) -> Self:
         """Get enum member with given tag/label attribute.
 
         The method automatically determines whether to use tag (for int) or label (for str)
@@ -181,7 +181,7 @@ class SpsdkEnum(SpsdkEnumMember, Enum):
         raise SPSDKKeyError(f"There is no {cls.__name__} item with label {label} defined")
 
     @classmethod
-    def create_from_dict(cls, name: str, config: dict[str, Union[tuple, list]]) -> Type[Self]:
+    def create_from_dict(cls, name: str, config: dict[str, tuple | list]) -> type[Self]:
         """Create the Enum in runtime from the Dictionary configuration.
 
         The method dynamically creates an Enum class using the provided name and configuration
@@ -222,7 +222,7 @@ class SpsdkSoftEnum(SpsdkEnum):
             return f"Unknown ({tag})"
 
     @classmethod
-    def get_description(cls, tag: int, default: Optional[str] = None) -> Optional[str]:
+    def get_description(cls, tag: int, default: str | None = None) -> str | None:
         """Get description of enum member with given tag.
 
         The method searches for an enum member by tag and returns its description.
@@ -286,8 +286,8 @@ class SpsdkDynamicEnum:
         feature: str,
         enum_key: str,
         enum_name: str,
-        base_key: Optional[list[str]] = None,
-        fallback_enum: Optional[Type[SpsdkEnum]] = None,
+        base_key: list[str] | None = None,
+        fallback_enum: type[SpsdkEnum] | None = None,
     ):
         """Initialize dynamic enum loader.
 
@@ -304,9 +304,9 @@ class SpsdkDynamicEnum:
         self._enum_name = enum_name
         self._base_key = base_key
         self._fallback_enum = fallback_enum
-        self._cached_enum: Optional[Type[SpsdkEnum]] = None
+        self._cached_enum: type[SpsdkEnum] | None = None
 
-    def _make_key(self, key: str) -> Union[str, list[str]]:
+    def _make_key(self, key: str) -> str | list[str]:
         """Create a composite key from base key and provided key.
 
         :param key: The key to be combined with base key.
@@ -319,7 +319,7 @@ class SpsdkDynamicEnum:
         ret.append(key)
         return ret
 
-    def _get_enum_class(self) -> Type[SpsdkEnum]:
+    def _get_enum_class(self) -> type[SpsdkEnum]:
         """Get or create the dynamic enum class.
 
         Loads enum data from database and creates a SpsdkSoftEnum class. Results are
@@ -334,7 +334,7 @@ class SpsdkDynamicEnum:
         try:
             enum_data = self._db.get_dict(self._feature, self._make_key(self._enum_key))
             self._cached_enum = cast(
-                Type[SpsdkEnum],
+                type[SpsdkEnum],
                 SpsdkSoftEnum.create_from_dict(self._enum_name, enum_data),
             )
             return self._cached_enum
@@ -351,9 +351,9 @@ class SpsdkDynamicEnum:
         feature: str,
         enum_key: str,
         enum_name: str,
-        base_key: Optional[list[str]] = None,
-        fallback_enum: Optional[Type[SpsdkEnum]] = None,
-    ) -> Type[SpsdkEnum]:
+        base_key: list[str] | None = None,
+        fallback_enum: type[SpsdkEnum] | None = None,
+    ) -> type[SpsdkEnum]:
         """Create a dynamic enum class from database configuration.
 
         This is a convenience class method that creates an instance and immediately
@@ -470,7 +470,7 @@ class SpsdkIntFlag(IntFlag):
         return result
 
     @classmethod
-    def from_list(cls, items: Sequence[Union[str, int, "Self"]]) -> Self:
+    def from_list(cls, items: Sequence[str | int | Self]) -> Self:
         """Get flag from mixed list of labels and values.
 
         :param items: List containing label strings and/or integer values

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -15,9 +14,7 @@ image creation.
 
 import logging
 from dataclasses import dataclass, field
-from typing import Optional, Type, Union, cast
-
-from typing_extensions import TypeAlias
+from typing import TypeAlias, cast
 
 from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.database import DatabaseManager, Features
@@ -179,7 +176,7 @@ class AHABSignHashAlgorithm(SpsdkEnum):
     )
 
 
-def get_signature_algorithm_enum(chip_config: Optional["AhabChipConfig"] = None) -> Type[SpsdkEnum]:
+def get_signature_algorithm_enum(chip_config: "AhabChipConfig | None" = None) -> type[SpsdkEnum]:
     """Get signature algorithm enum, either from chip config or default.
 
     :param chip_config: Optional chip configuration with dynamic enums
@@ -191,7 +188,7 @@ def get_signature_algorithm_enum(chip_config: Optional["AhabChipConfig"] = None)
     return AHABSignAlgorithm
 
 
-def get_hash_algorithm_enum(chip_config: Optional["AhabChipConfig"] = None) -> Type[SpsdkEnum]:
+def get_hash_algorithm_enum(chip_config: "AhabChipConfig | None" = None) -> type[SpsdkEnum]:
     """Get hash algorithm enum, either from chip config or default.
 
     :param chip_config: Optional chip configuration with dynamic enums
@@ -635,13 +632,13 @@ class AhabChipConfig:
     target_memory: TargetMemoryDescr = field(
         default_factory=lambda: MEMORY_TARGET_DESCRIPTIONS[AhabTargetMemory.TARGET_MEMORY_STANDARD]
     )
-    core_ids: Type[SpsdkSoftEnum] = DummyEnum
-    image_types: dict[str, Type[SpsdkSoftEnum]] = field(default_factory=dict)
+    core_ids: type[SpsdkSoftEnum] = DummyEnum
+    image_types: dict[str, type[SpsdkSoftEnum]] = field(default_factory=dict)
     image_types_mapping: dict[str, list[int]] = field(default_factory=dict)
 
-    signature_algorithms: Type[SpsdkEnum] = field(default_factory=lambda: AHABSignAlgorithm)
-    hash_algorithms: Type[SpsdkEnum] = field(default_factory=lambda: AHABSignHashAlgorithm)
-    srk_sets: Type[SpsdkSoftEnum] = field(default_factory=lambda: FlagsSrkSet)
+    signature_algorithms: type[SpsdkEnum] = field(default_factory=lambda: AHABSignAlgorithm)
+    hash_algorithms: type[SpsdkEnum] = field(default_factory=lambda: AHABSignHashAlgorithm)
+    srk_sets: type[SpsdkSoftEnum] = field(default_factory=lambda: FlagsSrkSet)
 
     containers_max_cnt: int = 3
     images_max_cnt: int = 8
@@ -670,8 +667,8 @@ class AhabChipContainerConfig:
 
 
 def load_images_types(
-    db: Features, feature: str = DatabaseManager.AHAB, base_key: Optional[list[str]] = None
-) -> dict[str, Type[SpsdkSoftEnum]]:
+    db: Features, feature: str = DatabaseManager.AHAB, base_key: list[str] | None = None
+) -> dict[str, type[SpsdkSoftEnum]]:
     """Load image types from the database.
 
     Retrieves image type definitions from the specified database feature and converts them into
@@ -683,7 +680,7 @@ def load_images_types(
     :return: Dictionary mapping image type names to their corresponding SpsdkSoftEnum classes.
     """
 
-    def make_key(key: str) -> Union[str, list[str]]:
+    def make_key(key: str) -> str | list[str]:
         """Create a composite key from base key and provided key.
 
         The method combines a base key (if available) with the provided key to form
@@ -710,7 +707,7 @@ def create_chip_config(
     family: FamilyRevision,
     target_memory: str = AhabTargetMemory.TARGET_MEMORY_STANDARD.label,
     feature: str = DatabaseManager.AHAB,
-    base_key: Optional[list[str]] = None,
+    base_key: list[str] | None = None,
 ) -> AhabChipConfig:
     """Create AHAB chip configuration structure.
 
@@ -726,7 +723,7 @@ def create_chip_config(
     :return: Complete AHAB chip configuration structure with device-specific settings
     """
 
-    def make_key(key: str) -> Union[str, list[str]]:
+    def make_key(key: str) -> str | list[str]:
         """Create a composite key from base key and provided key.
 
         The method combines a base key (if available) with the provided key to form
@@ -758,7 +755,7 @@ def create_chip_config(
         enum_key="core_ids",
         enum_name="AHABCoreId",
         base_key=base_key,
-        fallback_enum=cast(Type[SpsdkEnum], DummyEnum),
+        fallback_enum=cast(type[SpsdkEnum], DummyEnum),
     )
 
     image_types = load_images_types(db, feature=feature, base_key=base_key)
@@ -779,7 +776,7 @@ def create_chip_config(
         enum_key="signature_algorithms",
         enum_name="AHABSignAlgorithm",
         base_key=base_key,
-        fallback_enum=cast(Type[SpsdkEnum], AHABSignAlgorithm),
+        fallback_enum=cast(type[SpsdkEnum], AHABSignAlgorithm),
     )
 
     hash_algorithms = SpsdkDynamicEnum.create_from_db(
@@ -788,7 +785,7 @@ def create_chip_config(
         enum_key="hash_algorithms",
         enum_name="AHABSignHashAlgorithm",
         base_key=base_key,
-        fallback_enum=cast(Type[SpsdkEnum], AHABSignHashAlgorithm),
+        fallback_enum=cast(type[SpsdkEnum], AHABSignHashAlgorithm),
     )
 
     srk_sets = SpsdkDynamicEnum.create_from_db(
@@ -797,7 +794,7 @@ def create_chip_config(
         enum_key="srk_sets",
         enum_name="FlagsSrkSet",
         base_key=base_key,
-        fallback_enum=cast(Type[SpsdkEnum], FlagsSrkSet),
+        fallback_enum=cast(type[SpsdkEnum], FlagsSrkSet),
     )
 
     metadata_type = AhabMetadataType.from_label(db.get_str(feature, "metadata", "scfw").upper())
@@ -805,12 +802,12 @@ def create_chip_config(
     return AhabChipConfig(
         family=family,
         target_memory=MEMORY_TARGET_DESCRIPTIONS[AhabTargetMemory.from_label(target_memory)],
-        core_ids=cast(Type[SpsdkSoftEnum], core_ids),
+        core_ids=cast(type[SpsdkSoftEnum], core_ids),
         image_types=image_types,
         image_types_mapping=image_types_mapping,
-        signature_algorithms=cast(Type[SpsdkEnum], signature_algorithms),
-        hash_algorithms=cast(Type[SpsdkEnum], hash_algorithms),
-        srk_sets=cast(Type[SpsdkSoftEnum], srk_sets),
+        signature_algorithms=cast(type[SpsdkEnum], signature_algorithms),
+        hash_algorithms=cast(type[SpsdkEnum], hash_algorithms),
+        srk_sets=cast(type[SpsdkSoftEnum], srk_sets),
         containers_max_cnt=containers_max_cnt,
         images_max_cnt=images_max_cnt,
         container_types=container_types,

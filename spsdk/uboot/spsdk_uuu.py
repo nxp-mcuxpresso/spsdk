@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
@@ -13,21 +12,22 @@ Serial Download Protocol (SDP) mode for flashing and recovery purposes.
 """
 
 import re
+from collections.abc import Callable
 from ctypes import CFUNCTYPE, POINTER, c_char_p, c_int, c_uint16, c_void_p
 from functools import wraps
 from types import TracebackType
-from typing import Any, Callable, Optional, no_type_check
+from typing import Any, no_type_check
 
 from libuuu import LibUUU, UUUNotifyCallback, UUUState
 from libuuu.libuuu import UUUNotifyStruct, UUUNotifyType, _default_notify_callback
 
 from spsdk import get_logger
 from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.utils.cancellable_wait import CancellableWait
 from spsdk.utils.database import DatabaseManager, UsbId
 from spsdk.utils.family import FamilyRevision, get_db, get_families
 from spsdk.utils.misc import load_text
 from spsdk.utils.progress_bar import ProgressBarManager
-from spsdk.utils.threading import CancellableWait
 
 logger = get_logger(__name__)
 
@@ -193,8 +193,8 @@ class SPSDKUUU:
         wait_next_timeout: int = 5,
         poll_period: int = 200,
         progress_bar: bool = True,
-        usb_path_filter: Optional[str] = None,
-        usb_serial_no_filter: Optional[str] = None,
+        usb_path_filter: str | None = None,
+        usb_serial_no_filter: str | None = None,
     ) -> None:
         """Initialize the SPSDKUUU object.
 
@@ -350,7 +350,7 @@ class SPSDKUUU:
         return input_string
 
     def get_uuu_script(
-        self, boot_device: str, family: FamilyRevision, args: Optional[list[str]]
+        self, boot_device: str, family: FamilyRevision, args: list[str] | None
     ) -> str:
         """Get the uuu script for the given boot device.
 
@@ -622,8 +622,8 @@ class SPSDKUUU:
                 self.uuu = uuu_instance
                 self.temp_wait = temp_wait
                 self.temp_next = temp_next
-                self.original_wait: Optional[int] = None
-                self.original_next: Optional[int] = None
+                self.original_wait: int | None = None
+                self.original_next: int | None = None
 
             def __enter__(self) -> "TimeoutContext":
                 """Enter the timeout context manager.
@@ -639,9 +639,9 @@ class SPSDKUUU:
 
             def __exit__(
                 self,
-                exc_type: Optional[type[BaseException]],
-                exc_val: Optional[BaseException],
-                exc_tb: Optional[TracebackType],
+                exc_type: type[BaseException] | None,
+                exc_val: BaseException | None,
+                exc_tb: TracebackType | None,
             ) -> None:
                 """Exit the timeout context manager and restore original timeout values.
 

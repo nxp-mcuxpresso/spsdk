@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -14,7 +13,7 @@ application code execution.
 
 import logging
 import os
-from typing import Iterator, Optional
+from collections.abc import Iterator
 
 from typing_extensions import Self
 
@@ -207,7 +206,7 @@ class SegDCD(PaddingSegment):
         self._commands.clear()
         self._header.length = self._header.size
 
-    def export_txt(self, txt_data: Optional[str] = None) -> str:
+    def export_txt(self, txt_data: str | None = None) -> str:
         """Export Device Configuration Data (DCD) segment to text format.
 
         Converts the DCD segment commands into a human-readable text representation. The method
@@ -428,7 +427,7 @@ class SegDcdBuilder:
         consecutive write operations of the same type.
         """
         self.line_cnt = 0  # current line number to be displayed in the error message
-        self.cmd_write: Optional[CmdWriteData] = (
+        self.cmd_write: CmdWriteData | None = (
             None  # this is cache to merge several write commands of same type
         )
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -19,7 +18,7 @@ import logging
 import struct
 from dataclasses import dataclass, field
 from enum import IntEnum
-from typing import BinaryIO, Optional
+from typing import BinaryIO
 
 import colorama
 from typing_extensions import Self
@@ -178,7 +177,7 @@ class SparseChunk:
         chunk_type: SparseChunkType,
         chunk_blocks: int,
         total_size: int,
-        data: Optional[bytes] = None,
+        data: bytes | None = None,
     ) -> None:
         """Initialize sparse chunk.
 
@@ -275,8 +274,8 @@ class ChunkBuilderContext:
     """
 
     # Current chunk being built
-    current_chunk_type: Optional[SparseChunkType] = None
-    current_fill_value: Optional[bytes] = None
+    current_chunk_type: SparseChunkType | None = None
+    current_fill_value: bytes | None = None
     current_blocks: int = 0
     current_data: bytearray = field(default_factory=bytearray)
 
@@ -318,7 +317,7 @@ class SparseImage:
 
         self.block_size = block_size
         self.calculate_crc = calculate_crc
-        self.header: Optional[SparseImageHeader] = None
+        self.header: SparseImageHeader | None = None
         self.chunks: list[SparseChunk] = []
 
     def __repr__(self) -> str:
@@ -371,7 +370,7 @@ class SparseImage:
         self.chunks.append(chunk)
 
     def _add_binary_chunks(
-        self, data: bytes, context: ChunkBuilderContext, dont_care_pattern: Optional[bytes] = None
+        self, data: bytes, context: ChunkBuilderContext, dont_care_pattern: bytes | None = None
     ) -> None:
         """Process binary data and add chunks using provided context.
 
@@ -712,7 +711,7 @@ class SparseImage:
         return "\n".join(info)
 
     def finalize_sparse_image(
-        self, context: ChunkBuilderContext, image_checksum: Optional[int] = None
+        self, context: ChunkBuilderContext, image_checksum: int | None = None
     ) -> None:
         """Finalize the sparse image creation process.
 
@@ -768,8 +767,8 @@ class SparseImageReader:
         :raises SPSDKError: Invalid sparse image file.
         """
         self.file_path = file_path
-        self.file_handle: Optional[BinaryIO] = None
-        self.header: Optional[SparseImageHeader] = None
+        self.file_handle: BinaryIO | None = None
+        self.header: SparseImageHeader | None = None
         self.chunk_index: list[ChunkIndexEntry] = []
 
         # Open file and parse header

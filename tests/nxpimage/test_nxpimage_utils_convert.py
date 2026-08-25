@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +13,7 @@ conversion functionality.
 
 import filecmp
 import os
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 
@@ -174,9 +173,9 @@ def test_nxpimage_convert_bin2carr(
     data_dir: str,
     in_file: str,
     out_str: str,
-    type: Optional[str],
-    padding: Optional[str],
-    endian: Optional[Endianness],
+    type: str | None,
+    padding: str | None,
+    endian: Endianness | None,
     error: bool,
 ) -> None:
     """Test nxpimage convert bin2carr CLI command functionality.

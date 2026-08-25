@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,7 @@ file format support, and validation operations.
 """
 
 import os
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 
@@ -186,7 +185,7 @@ def test_load_binary_image(path: str, data_dir: str) -> None:
     ],
 )
 def test_execution_start_address(
-    path: str, execution_start_address: Optional[str], data_dir: str
+    path: str, execution_start_address: str | None, data_dir: str
 ) -> None:
     """Test execution start address of a binary image.
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK DICE utilities for device identity and certificate operations.
 
 This module provides utility functions and classes for DICE (Device Identifier
@@ -13,7 +13,7 @@ handling, device support queries, and hardware attestation functionality.
 
 import logging
 import secrets
-from typing import Callable, Optional, Union
+from collections.abc import Callable
 
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
@@ -51,7 +51,7 @@ def get_supported_devices() -> list[FamilyRevision]:
     return get_families(DatabaseManager.DICE)
 
 
-def reconstruct_ecc_key(puk_data: Union[str, bytes]) -> ec.EllipticCurvePublicKey:
+def reconstruct_ecc_key(puk_data: str | bytes) -> ec.EllipticCurvePublicKey:
     """Reconstruct ECC public key from raw X,Y coordinates.
 
     Converts raw byte data containing X and Y coordinates of an elliptic curve point
@@ -82,7 +82,7 @@ def serialize_ecc_key(key: ec.EllipticCurvePublicKey) -> str:
     ).decode("utf-8")
 
 
-HADDifferences = list[Union[tuple[RegsBitField, RegsBitField], tuple[Register, Register]]]
+HADDifferences = list[tuple[RegsBitField, RegsBitField] | tuple[Register, Register]]
 
 
 class HADDiff:
@@ -106,7 +106,7 @@ class HADDiff:
         self.critical_registers = database.get_list(DatabaseManager.DICE, "critical_had_members")
 
     def get_diff(
-        self, expected: Union[str, bytes], actual: Union[str, bytes], critical_only: bool = False
+        self, expected: str | bytes, actual: str | bytes, critical_only: bool = False
     ) -> HADDifferences:
         """Compare provided HAD data and return registers/bitfields containing different values.
 
@@ -186,8 +186,8 @@ class ProveGenuinity:
     def get_response(
         family: FamilyRevision,
         interface: MbootProtocolBase,
-        challenge: Optional[bytes] = None,
-        mode: Optional[Mode] = Mode.ECDSA,
+        challenge: bytes | None = None,
+        mode: Mode | None = Mode.ECDSA,
     ) -> bytes:
         """Generate a response for genuinity proof.
 
@@ -236,7 +236,7 @@ class ProveGenuinity:
     def verify_response(
         response: bytes,
         keys: list[bytes],
-        challenge: Optional[bytes] = None,
+        challenge: bytes | None = None,
         strict: bool = False,
         print_fn: Callable[[str], None] = print,
     ) -> bool:
@@ -355,7 +355,7 @@ class ProveGenuinity:
         csr_data: bytes,
         prod_keys: list[bytes],
         dice_ca_keys: list[bytes],
-        challenge: Optional[bytes] = None,
+        challenge: bytes | None = None,
         extract_alias_keys: bool = False,
         strict: bool = False,
         print_fn: Callable[[str], None] = print,
@@ -469,9 +469,9 @@ class ProveGenuinity:
         cls,
         response: bytes,
         ca_prk: bytes,
-        subject_common_name: Optional[str] = None,
-        ca_puk: Optional[bytes] = None,
-        ca_name: Optional[str] = None,
+        subject_common_name: str | None = None,
+        ca_puk: bytes | None = None,
+        ca_name: str | None = None,
         use_full_der_for_serial: bool = False,
     ) -> bytes:
         """Create IDevID certificate from PG response data.
@@ -500,7 +500,7 @@ class ProveGenuinity:
 
         for i, dev_key in enumerate(dev_keys):
             if isinstance(dev_key, (PublicKeyDilithium, PublicKeyMLDSA)):
-                dev_keys[i] = PublicKeyMLDSA.parse(dev_key.key.public_data)
+                dev_keys[i] = PublicKeyMLDSA.parse(dev_key.export(SPSDKEncoding.NXP))
 
         print(f"{ca_prk_key = }")
         print(f"{dev_keys = }")

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -17,7 +16,7 @@ import logging
 import os
 from inspect import isclass
 from struct import unpack
-from typing import Optional, Type, Union
+from typing import Any
 
 import colorama
 from typing_extensions import Self
@@ -35,7 +34,8 @@ from spsdk.sbfile.sb31.images import SecureBinary31
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
-from spsdk.utils.family import FamilyRevision
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import BinaryPattern, Endianness, align, value_to_int, write_file
 from spsdk.utils.schema_validator import SPSDKErrorValidationFailed
 from spsdk.utils.spsdk_enum import SpsdkEnum
@@ -96,8 +96,8 @@ class Segment(BaseClass):
     NAME = BootableImageSegment.UNKNOWN
     BOOT_HEADER = True
     INIT_SEGMENT = False
-    CFG_NAME: Optional[str] = None
-    ALT_NAME: Optional[str] = None
+    CFG_NAME: str | None = None
+    ALT_NAME: str | None = None
     IMAGE_PATTERNS = ["zeros", "ones"]
     OFFSET_ALIGNMENT = 1
 
@@ -106,7 +106,7 @@ class Segment(BaseClass):
         offset: int,
         family: FamilyRevision,
         mem_type: MemoryType,
-        raw_block: Optional[BinaryImage] = None,
+        raw_block: BinaryImage | None = None,
     ) -> None:
         """Initialize a bootable image segment with basic properties.
 
@@ -223,7 +223,7 @@ class Segment(BaseClass):
         """
         return []
 
-    def info(self, ix: int, actual_offset: Optional[int] = None) -> str:
+    def info(self, ix: int, actual_offset: int | None = None) -> str:
         """Get information about the segment in human-readable format.
 
         :param ix: Actual index in bootable image
@@ -300,9 +300,7 @@ class Segment(BaseClass):
         """
         raise NotImplementedError
 
-    def parse_binary(
-        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
-    ) -> None:
+    def parse_binary(self, binary: bytes, dek_map: dict[int | None, str] | None = None) -> None:
         """Parse binary block into Segment object.
 
         This method processes a binary block and populates the segment object with the parsed data.
@@ -342,13 +340,14 @@ class Segment(BaseClass):
             return True
         return False
 
-    def create_config(self, output_dir: str) -> Union[str, int, dict]:
+    def create_config(self, output_dir: str, **_kwargs: Any) -> str | int | dict:
         """Create configuration and store segment data to specified directory.
 
         Exports the segment data to a binary file in the output directory if the segment
         is present, otherwise returns an empty string.
 
         :param output_dir: Directory path where the segment data file should be stored.
+        :param _kwargs: Additional keyword arguments (ignored, accepted for API compatibility).
         :return: Filename of the created binary file or empty string if segment not present.
         """
         if not self.is_present:
@@ -357,6 +356,22 @@ class Segment(BaseClass):
         ret = f"segment_{name}.bin"
         write_file(self.export(), os.path.join(output_dir, ret), mode="wb")
         return ret
+
+    def _load_binary_from_config(self, config: Config, config_key: str) -> None:
+        """Load binary content for a segment from the given configuration key.
+
+        :param config: Configuration object containing segment settings and file paths.
+        :param config_key: Configuration key pointing to the binary file path.
+        :raises SPSDKValueError: When the binary file path is invalid or cannot be loaded.
+        """
+        try:
+            self.raw_block = BinaryImage.load_binary_image(
+                path=config.get_input_file_name(config_key), name=self.NAME.label + "_data"
+            )
+        except SPSDKError as exc:
+            raise SPSDKValueError(
+                f"The binary file path to load {self.NAME.label} segment expected."
+            ) from exc
 
     def load_config(self, config: Config) -> None:
         """Load segment from configuration.
@@ -374,14 +389,7 @@ class Segment(BaseClass):
                 f"The segment '{self.NAME.label}' is not present in the config file"
             )
 
-        try:
-            self.raw_block = BinaryImage.load_binary_image(
-                path=config.get_input_file_name(self.cfg_key()), name=self.NAME.label + "_data"
-            )
-        except SPSDKError as exc:
-            raise SPSDKValueError(
-                f"The binary file path to load {self.NAME.label} segment expected."
-            ) from exc
+        self._load_binary_from_config(config, self.cfg_key())
 
     def pre_parse_verify(self, data: bytes) -> Verifier:
         """Pre-parse binary to validate data before full parsing.
@@ -454,9 +462,54 @@ class SegmentKeyBlob(Segment):
     def size(self) -> int:
         """Get the size of the keyblob segment.
 
-        :return: Size of the keyblob segment in bytes (always 256).
+        :return: Size of the keyblob segment in bytes.
         """
+        db = get_db(self.family)
+        if DatabaseManager.IPED in db.features:
+            return db.get_int(DatabaseManager.IPED, "table_size")
         return 256
+
+    def load_config(self, config: Config) -> None:
+        """Load keyblob segment from configuration.
+
+        The keyblob segment accepts the historical raw binary input and, for IPED-enabled
+        families, an IPED YAML configuration that is exported into the keyblob area.
+
+        :param config: Configuration object containing segment settings and file paths.
+        :raises SPSDKSegmentNotPresent: When the segment is not present in config file.
+        :raises SPSDKValueError: When the keyblob path cannot be loaded.
+        """
+        cfg_value = config.get(self.cfg_key())
+        if not cfg_value:
+            raise SPSDKSegmentNotPresent(
+                f"The segment '{self.NAME.label}' is not present in the config file"
+            )
+
+        file_path = config.get_input_file_name(self.cfg_key())
+        try:
+            iped_config = Config.create_from_file(file_path)
+            from spsdk.image.iped.iped import Iped  # pylint: disable=import-outside-toplevel
+
+            iped = Iped.load_from_config(iped_config)
+            if iped.family.name != self.family.name:
+                raise SPSDKValueError(
+                    f"IPED keyblob family {iped.family.name} does not match "
+                    f"bootable image family {self.family.name}."
+                )
+            self.raw_block = BinaryImage(
+                name=self.NAME.label + "_data", binary=iped.export(), size=iped.table_size
+            )
+        except (SPSDKNotTextFileError, SPSDKParsingError):
+            try:
+                self.raw_block = BinaryImage.load_binary_image(
+                    path=file_path, name=self.NAME.label + "_data"
+                )
+            except SPSDKError as exc:
+                raise SPSDKValueError(
+                    f"The binary file path to load {self.NAME.label} segment expected."
+                ) from exc
+        except SPSDKError as exc:
+            raise SPSDKValueError(f"Cannot load IPED keyblob configuration: {str(exc)}") from exc
 
 
 class SegmentFcb(Segment):
@@ -478,8 +531,8 @@ class SegmentFcb(Segment):
         offset: int,
         family: FamilyRevision,
         mem_type: MemoryType,
-        raw_block: Optional[BinaryImage] = None,
-        fcb: Optional[FCB] = None,
+        raw_block: BinaryImage | None = None,
+        fcb: FCB | None = None,
     ) -> None:
         """Initialize FCB segment with offset and memory configuration.
 
@@ -497,7 +550,7 @@ class SegmentFcb(Segment):
         self.fcb = fcb
         if fcb and raw_block and raw_block.export() != fcb.export():
             raise SPSDKParsingError("The FCB block doesn't match the raw data.")
-        self._size: Optional[int] = None
+        self._size: int | None = None
 
     @property
     def is_fcb_supported(self) -> bool:
@@ -541,9 +594,7 @@ class SegmentFcb(Segment):
                 self._size = -1
         return self._size
 
-    def parse_binary(
-        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
-    ) -> None:
+    def parse_binary(self, binary: bytes, dek_map: dict[int | None, str] | None = None) -> None:
         """Parse binary block into FCB Segment object.
 
         The method attempts to parse the binary data as an FCB (Flash Configuration Block).
@@ -577,13 +628,14 @@ class SegmentFcb(Segment):
             raise SPSDKSegmentNotPresent("The FCB segment is not present.")
         raise SPSDKParsingError("Parsing of FCB segment failed.")
 
-    def create_config(self, output_dir: str) -> Union[str, int, dict]:
+    def create_config(self, output_dir: str, **_kwargs: Any) -> str | int | dict:
         """Create configuration and store data to specified path.
 
         The method generates configuration data for the segment and optionally writes
         FCB configuration to a YAML file in the output directory.
 
         :param output_dir: Path where the configuration information should be stored.
+        :param _kwargs: Additional keyword arguments (ignored, accepted for API compatibility).
         :return: Value of segment for configuration file.
         """
         ret = super().create_config(output_dir)
@@ -659,9 +711,7 @@ class SegmentImageVersion(Segment):
         """
         return 4
 
-    def parse_binary(
-        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
-    ) -> None:
+    def parse_binary(self, binary: bytes, dek_map: dict[int | None, str] | None = None) -> None:
         """Parse binary block into Segment object.
 
         The method extracts segment data from the provided binary based on the segment size
@@ -680,13 +730,14 @@ class SegmentImageVersion(Segment):
             size=self.size,
         )
 
-    def create_config(self, output_dir: str) -> Union[str, int, dict]:
+    def create_config(self, output_dir: str, **_kwargs: Any) -> str | int | dict:
         """Create configuration and extract segment value.
 
         Extracts the first 4 bytes from the raw block data and converts them to an
         integer using little-endian byte order.
 
         :param output_dir: Path where the information should be stored.
+        :param _kwargs: Additional keyword arguments (ignored, accepted for API compatibility).
         :return: Integer value extracted from segment data, or 0 if segment not
             present.
         :raises AssertionError: If raw_block is not an instance of BinaryImage.
@@ -757,12 +808,13 @@ class SegmentImageVersionAntiPole(Segment):
         """
         return 4
 
-    def create_config(self, output_dir: str) -> Union[str, int, dict]:
+    def create_config(self, output_dir: str, **_kwargs: Any) -> str | int | dict:
         """Create configuration and extract segment value.
 
         Extracts a 2-byte value from the raw block data in little-endian format.
 
         :param output_dir: Path where the information should be stored (unused).
+        :param _kwargs: Additional keyword arguments (ignored, accepted for API compatibility).
         :return: Extracted 2-byte value from raw block, or 0 if segment is not present.
         :raises AssertionError: If raw_block is not a BinaryImage instance.
         """
@@ -797,9 +849,7 @@ class SegmentImageVersionAntiPole(Segment):
             size=self.size,
         )
 
-    def parse_binary(
-        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
-    ) -> None:
+    def parse_binary(self, binary: bytes, dek_map: dict[int | None, str] | None = None) -> None:
         """Parse binary block into Segment object.
 
         The method validates the binary size against the segment requirements and stores
@@ -937,8 +987,8 @@ class SegmentXmcd(Segment):
         offset: int,
         family: FamilyRevision,
         mem_type: MemoryType,
-        raw_block: Optional[BinaryImage] = None,
-        xmcd: Optional[XMCD] = None,
+        raw_block: BinaryImage | None = None,
+        xmcd: XMCD | None = None,
     ) -> None:
         """Initialize XMCD segment with configuration data.
 
@@ -966,9 +1016,7 @@ class SegmentXmcd(Segment):
         super().clear()
         self.xmcd = None
 
-    def parse_binary(
-        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
-    ) -> None:
+    def parse_binary(self, binary: bytes, dek_map: dict[int | None, str] | None = None) -> None:
         """Parse binary block into XMCD Segment object.
 
         The method parses the input binary data to create an XMCD (External Memory
@@ -994,13 +1042,14 @@ class SegmentXmcd(Segment):
         self.xmcd = xmcd
         self.not_parsed = False
 
-    def create_config(self, output_dir: str) -> Union[str, int, dict]:
+    def create_config(self, output_dir: str, **_kwargs: Any) -> str | int | dict:
         """Create configuration and store data to specified path.
 
         The method creates configuration data by calling the parent class method and
         additionally writes XMCD configuration to a YAML file if XMCD data exists.
 
         :param output_dir: Directory path where the configuration files should be stored.
+        :param _kwargs: Additional keyword arguments (ignored, accepted for API compatibility).
         :return: Configuration value for the segment.
         """
         ret = super().create_config(output_dir)
@@ -1077,8 +1126,8 @@ class SegmentMbi(Segment):
         offset: int,
         family: FamilyRevision,
         mem_type: MemoryType,
-        raw_block: Optional[BinaryImage] = None,
-        mbi: Optional[MasterBootImage] = None,
+        raw_block: BinaryImage | None = None,
+        mbi: MasterBootImage | None = None,
     ) -> None:
         """Initialize MBI segment with offset and configuration data.
 
@@ -1135,9 +1184,7 @@ class SegmentMbi(Segment):
             return self.mbi.total_len
         return super().__len__()
 
-    def parse_binary(
-        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
-    ) -> None:
+    def parse_binary(self, binary: bytes, dek_map: dict[int | None, str] | None = None) -> None:
         """Parse binary block into Segment object.
 
         The method parses a binary image into a Master Boot Image (MBI) object, validates it,
@@ -1166,13 +1213,14 @@ class SegmentMbi(Segment):
         self.mbi = mbi
         self.not_parsed = False
 
-    def create_config(self, output_dir: str) -> Union[str, int, dict]:
+    def create_config(self, output_dir: str, **_kwargs: Any) -> str | int | dict:
         """Create configuration and store data to specified path.
 
         The method generates configuration data for the segment and optionally creates
         an MBI configuration YAML file if an MBI object is present.
 
         :param output_dir: Directory path where configuration files should be stored.
+        :param _kwargs: Additional keyword arguments (ignored, accepted for API compatibility).
         :return: Configuration value for the segment.
         """
         ret = super().create_config(output_dir)
@@ -1255,8 +1303,8 @@ class SegmentHab(Segment):
         offset: int,
         family: FamilyRevision,
         mem_type: MemoryType,
-        raw_block: Optional[BinaryImage] = None,
-        hab: Optional[HabImage] = None,
+        raw_block: BinaryImage | None = None,
+        hab: HabImage | None = None,
     ) -> None:
         """Initialize HAB segment with raw data and configuration.
 
@@ -1316,9 +1364,7 @@ class SegmentHab(Segment):
         image.name = self.NAME.label
         return image
 
-    def parse_binary(
-        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
-    ) -> None:
+    def parse_binary(self, binary: bytes, dek_map: dict[int | None, str] | None = None) -> None:
         """Parse binary block into Segment object.
 
         The method parses the provided binary data into a HAB (High Assurance Boot) image format
@@ -1369,13 +1415,14 @@ class SegmentHab(Segment):
                 f"Cannot export HAB container from the configuration:\n{str(exc)}"
             ) from exc
 
-    def create_config(self, output_dir: str) -> Union[str, int, dict]:
+    def create_config(self, output_dir: str, **_kwargs: Any) -> str | int | dict:
         """Create configuration and store data to specified path.
 
         Generates configuration for the segment and writes HAB configuration
         to YAML file if HAB container is present.
 
         :param output_dir: Directory path where configuration files should be stored.
+        :param _kwargs: Additional keyword arguments (ignored, accepted for API compatibility).
         :return: Relative path to generated configuration file or inherited value.
         """
         ret = super().create_config(output_dir)
@@ -1409,8 +1456,8 @@ class SegmentAhab(Segment):
         offset: int,
         family: FamilyRevision,
         mem_type: MemoryType,
-        raw_block: Optional[BinaryImage] = None,
-        ahab: Optional[AHABImage] = None,
+        raw_block: BinaryImage | None = None,
+        ahab: AHABImage | None = None,
     ) -> None:
         """Initialize AHAB segment with bootable image parameters.
 
@@ -1466,9 +1513,7 @@ class SegmentAhab(Segment):
         image.name = self.NAME.label
         return image
 
-    def parse_binary(
-        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
-    ) -> None:
+    def parse_binary(self, binary: bytes, dek_map: dict[int | None, str] | None = None) -> None:
         """Parse binary block into AHAB Segment object.
 
         The method validates the binary data contains a valid AHAB container header,
@@ -1548,20 +1593,26 @@ class SegmentAhab(Segment):
         """
         return AHABImage.find_offset_of_ahab(binary)
 
-    def create_config(self, output_dir: str) -> Union[str, int, dict]:
+    def create_config(
+        self, output_dir: str, parse_nxp: bool = False, **_kwargs: Any
+    ) -> str | int | dict:
         """Create configuration and store data to specified path.
 
         Generates configuration for the segment and writes AHAB configuration
-        to YAML file if AHAB container is present.
+        to YAML file if AHAB container is present.  By default, NXP-signed containers
+        inside the AHAB image are extracted to a binary file (see ``parse_nxp``).
 
         :param output_dir: Directory path where configuration files should be stored.
+        :param parse_nxp: When True, fully parse NXP-signed containers instead of
+            extracting them to a binary file.  Defaults to False.
+        :param _kwargs: Additional keyword arguments (ignored, accepted for API compatibility).
         :return: Relative path to generated configuration file or inherited value.
         """
         ret = super().create_config(output_dir)
         if self.ahab:
             ahab_parse_path = os.path.join(output_dir, self.ALT_NAME)
             cfg_path = os.path.join(ahab_parse_path, f"{self.ALT_NAME}.yaml")
-            write_file(self.ahab.get_config_yaml(ahab_parse_path), cfg_path)
+            write_file(self.ahab.get_config_yaml(ahab_parse_path, parse_nxp=parse_nxp), cfg_path)
             ret = os.path.join(f"{self.ALT_NAME}", f"{self.ALT_NAME}.yaml")
         return ret
 
@@ -1623,7 +1674,7 @@ class SegmentAhab(Segment):
             ) from exc
         except SPSDKNotTextFileError:
             # In case that the file is not configuration, load is as binary
-            super().load_config(config)
+            self._load_binary_from_config(config, key)
             return
 
         self._cross_validate_family(config, config_data, key)
@@ -1666,7 +1717,7 @@ class SegmentAhab(Segment):
             ret.add_child(self.ahab.verify())
         return ret
 
-    def info(self, ix: int, actual_offset: Optional[int] = None) -> str:
+    def info(self, ix: int, actual_offset: int | None = None) -> str:
         """Get information about the AHAB segment in human-readable format.
 
         Returns a formatted string containing segment information from the parent class
@@ -1738,16 +1789,20 @@ class SegmentSecondaryAhab(SegmentAhab):
             config[self.cfg_key()] = cfg_value["path"]
         super().load_config(config)
 
-    def create_config(self, output_dir: str) -> Union[str, int, dict]:
+    def create_config(
+        self, output_dir: str, parse_nxp: bool = False, **kwargs: Any
+    ) -> str | int | dict:
         """Create configuration and store data to specified path.
 
         The method generates configuration data for the segment and optionally includes
         offset information if the segment is not positioned right behind the previous segment.
 
         :param output_dir: Path where the segment information should be stored.
+        :param parse_nxp: When True, NXP-signed containers are extracted as binary blobs.
+        :param kwargs: Additional keyword arguments forwarded to the parent.
         :return: Configuration value - either basic segment data or dictionary with path and offset.
         """
-        ret = super().create_config(output_dir)
+        ret = super().create_config(output_dir, parse_nxp=parse_nxp, **kwargs)
         # if offset is not < 0, the segment isn't right behind the previous segment
         if self.full_image_offset < 0:
             return ret
@@ -1775,8 +1830,8 @@ class SegmentSB21(Segment):
         offset: int,
         family: FamilyRevision,
         mem_type: MemoryType,
-        raw_block: Optional[BinaryImage] = None,
-        sb21: Optional[BootImageV21] = None,
+        raw_block: BinaryImage | None = None,
+        sb21: BootImageV21 | None = None,
     ) -> None:
         """Initialize Segment with bootable image data.
 
@@ -1839,9 +1894,7 @@ class SegmentSB21(Segment):
                 f"Cannot export SB2.1 from the configuration:\n{str(exc)}"
             ) from exc
 
-    def parse_binary(
-        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
-    ) -> None:
+    def parse_binary(self, binary: bytes, dek_map: dict[int | None, str] | None = None) -> None:
         """Parse binary block into Segment object.
 
         This method validates the binary header using BootImageV21 validation and then
@@ -1878,8 +1931,8 @@ class SegmentSB31(Segment):
         offset: int,
         family: FamilyRevision,
         mem_type: MemoryType,
-        raw_block: Optional[BinaryImage] = None,
-        sb31: Optional[SecureBinary31] = None,
+        raw_block: BinaryImage | None = None,
+        sb31: SecureBinary31 | None = None,
     ) -> None:
         """Initialize segment with bootable image data and secure binary configuration.
 
@@ -1936,9 +1989,7 @@ class SegmentSB31(Segment):
                 f"Cannot export SB3.1 from the configuration:\n{str(exc)}"
             ) from exc
 
-    def parse_binary(
-        self, binary: bytes, dek_map: Optional[dict[Optional[int], str]] = None
-    ) -> None:
+    def parse_binary(self, binary: bytes, dek_map: dict[int | None, str] | None = None) -> None:
         """Parse binary block into Segment object.
 
         This method validates the binary header and delegates parsing to the parent class
@@ -1954,7 +2005,7 @@ class SegmentSB31(Segment):
         super().parse_binary(binary=binary, dek_map=dek_map)
 
 
-def get_segments() -> dict[BootableImageSegment, Type[Segment]]:
+def get_segments() -> dict[BootableImageSegment, type[Segment]]:
     """Get dictionary of all supported bootable image segments.
 
     The method dynamically discovers all segment classes that inherit from the base
@@ -1972,7 +2023,7 @@ def get_segments() -> dict[BootableImageSegment, Type[Segment]]:
     return ret
 
 
-def get_segment_class(name: BootableImageSegment) -> Type["Segment"]:
+def get_segment_class(name: BootableImageSegment) -> type["Segment"]:
     """Get the segment class type for a bootable image segment.
 
     :param name: The bootable image segment identifier.

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -14,7 +13,7 @@ command parsing functionality, and image block handling for NXP MCU secure provi
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Optional, Type, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -53,7 +52,7 @@ class ImageBlock:
     size: int
 
 
-CmdSecretRefType = Union[HabCertificate, Signature, MAC, SrkTable]
+CmdSecretRefType = HabCertificate | Signature | MAC | SrkTable
 
 
 class CmdBase(BaseClass):
@@ -67,10 +66,10 @@ class CmdBase(BaseClass):
     :cvar CMD_TAG: Command tag that identifies the specific command type.
     """
 
-    CMD_IDENTIFIER: Optional[CmdName] = None
+    CMD_IDENTIFIER: CmdName | None = None
     CMD_TAG: CmdTag
 
-    def __init__(self, param: int, length: Optional[int] = None):
+    def __init__(self, param: int, length: int | None = None):
         """Initialize HAB command with header parameters.
 
         :param param: Command-specific parameter value.
@@ -129,7 +128,7 @@ class CmdBase(BaseClass):
         raise SPSDKError("cmd-data not supported by the command")
 
     @property
-    def cmd_data_reference(self) -> Optional[CmdSecretRefType]:
+    def cmd_data_reference(self) -> CmdSecretRefType | None:
         """Get reference to command data.
 
         Returns reference to command data such as certificate, signature, or other
@@ -200,7 +199,7 @@ class CmdBase(BaseClass):
         raise NotImplementedError(f"Derived class {cls.__name__} has to implement this method.")
 
     @classmethod
-    def load_from_config(cls, config: Config, cmd_index: Optional[int] = None) -> Self:
+    def load_from_config(cls, config: Config, cmd_index: int | None = None) -> Self:
         """Load command from HAB configuration.
 
         A full HAB configuration is needed as some commands require additional data, such as options.
@@ -228,7 +227,7 @@ class CmdBase(BaseClass):
         )
 
     @classmethod
-    def _get_cmd_config(cls, config: Config, cmd_index: Optional[int] = None) -> Config:
+    def _get_cmd_config(cls, config: Config, cmd_index: int | None = None) -> Config:
         """Get command configuration from the main configuration object.
 
         Extracts the configuration for a specific command type identified by CMD_IDENTIFIER.
@@ -262,7 +261,7 @@ class CmdBase(BaseClass):
         return cmd_configs[cmd_index].get_config(cls.CMD_IDENTIFIER.label)
 
     @classmethod
-    def get_all_command_types(cls) -> list[Type["CmdBase"]]:
+    def get_all_command_types(cls) -> list[type["CmdBase"]]:
         """Get all command types that inherit from CmdBase.
 
         This method recursively finds all subclasses of CmdBase to provide a complete list of
@@ -271,7 +270,7 @@ class CmdBase(BaseClass):
         :return: List of all command types that inherit from CmdBase.
         """
 
-        def get_subclasses(base_class: Type) -> list[Type["CmdBase"]]:
+        def get_subclasses(base_class: type) -> list[type["CmdBase"]]:
             """Recursively find all subclasses of the given base class.
 
             This method performs a depth-first search through the class hierarchy to collect

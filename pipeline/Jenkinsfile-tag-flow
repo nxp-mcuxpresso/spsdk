@@ -1,0 +1,58 @@
+@Library('shared-lib') _
+
+// Abort older builds
+def buildNumber = BUILD_NUMBER as int
+if (buildNumber > 1) milestone(buildNumber - 1)
+milestone(buildNumber)
+
+pipeline {
+    agent { label 'linux-spsdk' }
+    options {
+        timeout(time: 30, unit: 'MINUTES', activity: true)
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout([
+                    $class: 'GitSCM',
+                    branches: scm.branches,
+                    doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
+                    extensions: scm.extensions + [[$class: 'CloneOption', noTags: false, reference: '', shallow: false]],
+                    submoduleCfg: [],
+                    userRemoteConfigs: scm.userRemoteConfigs,
+                ])
+            }
+        }
+
+        stage('Auto Tag Flow') {
+            when {
+                expression {
+                    return env.BRANCH_NAME == 'master' || (env.BRANCH_NAME ==~ /^release\/\d+\.\d+\.\d+$/)
+                }
+            }
+            steps {
+                script {
+                    echo "==================================================================="
+                    echo "SPSDK Auto Tag Flow"
+                    echo "Branch        : ${env.BRANCH_NAME}"
+                    echo "Commit        : ${env.GIT_COMMIT}"
+                    echo "Build         : #${env.BUILD_NUMBER}"
+                    echo "-------------------------------------------------------------------"
+                    echo "What runs here:"
+                    echo " - master        -> create one next-minor vX.(Y+1).0-DEV0 tag (once)"
+                    echo " - release/X.Y.Z -> ensure DEV anchor, then sequential RC tags"
+                    echo "The script is idempotent: re-runs on the same commit are no-ops."
+                    echo "Detailed WHAT/WHY decisions are printed by the Python script below."
+                    echo "==================================================================="
+                    withCredentials([string(credentialsId: 'bitbucket-token', variable: 'BITBUCKET_TOKEN')]) {
+                        withVenv(
+                            "GIT_TERMINAL_PROMPT=0 SPSDK_TAG_VERBOSE=1 python pipeline/.bitbucket/ci/auto_tag_flow.py --branch '${env.BRANCH_NAME}'"
+                        )
+                    }
+                    echo "Auto Tag Flow finished. Review the decision log above for details."
+                }
+            }
+        }
+    }
+}

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +13,6 @@ parameters and their binary representations used in CFPA and CMPA structures.
 """
 
 import logging
-from typing import Optional
 
 from spsdk.pfr.exceptions import SPSDKPfrcMissingConfigError
 from spsdk.pfr.pfr import CFPA, CMPA
@@ -32,8 +30,8 @@ class Translator:
 
     def __init__(
         self,
-        cmpa: Optional[CMPA] = None,
-        cfpa: Optional[CFPA] = None,
+        cmpa: CMPA | None = None,
+        cfpa: CFPA | None = None,
     ) -> None:
         """Initialize CMPA and CFPA data.
 

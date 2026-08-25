@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,10 +14,9 @@ in SPSDK context.
 import logging
 import math
 import struct
-from typing import Optional
+from typing import Literal
 
 from cryptography import x509
-from typing_extensions import Literal
 
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.keys import EccCurve, PrivateKey, PrivateKeyEcc, PrivateKeyMLDSA, SPSDKEncoding
@@ -39,7 +37,7 @@ from spsdk.utils.misc import load_binary, write_file
 logger = logging.getLogger(__name__)
 
 
-def to_be_bytes(number: int, length: Optional[int] = None) -> bytes:
+def to_be_bytes(number: int, length: int | None = None) -> bytes:
     """Convert number into big-endian bytes with given length.
 
     :param number: Integer number to convert to bytes.

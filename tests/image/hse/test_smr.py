@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -8,12 +7,11 @@
 """Unit tests for the HSE SMR (Secure Memory Region) module."""
 
 import os
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 import yaml
 
-from spsdk.apps.utils.common_cli_options import Optional
 from spsdk.crypto.keys import PrivateKeyEcc, PrivateKeyRsa
 from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKValueError
 from spsdk.image.hse.common import (
@@ -68,7 +66,7 @@ def smr_decrypt(key_handle: KeyHandle) -> SmrDecrypt:
 
 
 @pytest.fixture
-def smr_entry_config() -> Dict[str, Any]:
+def smr_entry_config() -> dict[str, Any]:
     """Return a basic SMR entry configuration for testing."""
     return {
         "family": "mcxe31b",
@@ -1089,7 +1087,7 @@ def test_get_auth_tag_lengths(
     ],
 )
 def test_create_auth_tag_symmetric(
-    explicit_scheme: Optional[AuthSchemeEnum],
+    explicit_scheme: AuthSchemeEnum | None,
     key: str,
     expected_scheme: AuthSchemeEnum,
     expected_auth_tag: str,
@@ -1154,7 +1152,7 @@ def ecc256_key(tests_root_dir: str) -> PrivateKeyEcc:
     ],
 )
 def test_create_auth_tag_rsa(
-    rsa2048_key: PrivateKeyRsa, explicit_scheme: Optional[AuthSchemeEnum]
+    rsa2048_key: PrivateKeyRsa, explicit_scheme: AuthSchemeEnum | None
 ) -> None:
     data = b""
     auth_scheme = SmrAuthenticationTag.get_auth_scheme(explicit_scheme, rsa2048_key)
@@ -1172,7 +1170,7 @@ def test_create_auth_tag_rsa(
     ],
 )
 def test_create_auth_tag_ecc(
-    ecc256_key: PrivateKeyEcc, explicit_scheme: Optional[AuthSchemeEnum]
+    ecc256_key: PrivateKeyEcc, explicit_scheme: AuthSchemeEnum | None
 ) -> None:
     data = b""
     auth_scheme = SmrAuthenticationTag.get_auth_scheme(explicit_scheme, ecc256_key)

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -14,7 +13,6 @@ implementation for secure boot operations.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Optional
 
 from typing_extensions import Self
 
@@ -145,7 +143,7 @@ class HabSegmentBase(VerifyBaseClass):
     :cvar SEGMENT_IDENTIFIER: Optional segment type identifier for HAB operations.
     """
 
-    SEGMENT_IDENTIFIER: Optional[HabSegmentEnum] = None
+    SEGMENT_IDENTIFIER: HabSegmentEnum | None = None
 
     def __init__(self) -> None:
         """Initialize the segment.
@@ -153,7 +151,7 @@ class HabSegmentBase(VerifyBaseClass):
         Sets up a new segment instance with default values. The offset is initially
         set to None and will be configured later during segment processing.
         """
-        self._offset: Optional[int] = None
+        self._offset: int | None = None
 
     def __repr__(self) -> str:
         """Return string representation of the segment object.

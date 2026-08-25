@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,7 +14,7 @@ communication capabilities.
 
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from typing_extensions import Self
 
@@ -45,7 +44,7 @@ class ConfigBaseClass(ABC):
     """
 
     FEATURE = "Not defined"
-    SUB_FEATURE: Optional[str] = None
+    SUB_FEATURE: str | None = None
 
     family: FamilyRevision
 

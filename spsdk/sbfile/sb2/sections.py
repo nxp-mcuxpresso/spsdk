@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2026 NXP
 #
@@ -12,8 +11,8 @@ including boot sections and certificate sections with encryption and authenticat
 capabilities.
 """
 
+from collections.abc import Iterator
 from struct import unpack_from
-from typing import Iterator, Optional
 
 from spsdk.crypto.spsdk_hmac import hmac
 from spsdk.crypto.symmetric import Counter, aes_ctr_decrypt, aes_ctr_encrypt
@@ -222,7 +221,7 @@ class BootSectionV2(BaseClass):
         self,
         dek: bytes = b"",
         mac: bytes = b"",
-        counter: Optional[Counter] = None,
+        counter: Counter | None = None,
     ) -> bytes:
         """Export Boot Section object to encrypted binary format.
 
@@ -288,7 +287,7 @@ class BootSectionV2(BaseClass):
         plain_sect: bool = False,
         dek: bytes = b"",
         mac: bytes = b"",
-        counter: Optional[Counter] = None,
+        counter: Counter | None = None,
     ) -> "BootSectionV2":
         """Parse Boot Section from bytes.
 
@@ -432,9 +431,7 @@ class CertSectionV2(BaseClass):
         """
         return str(self.cert_block)
 
-    def export(
-        self, dek: bytes = b"", mac: bytes = b"", counter: Optional[Counter] = None
-    ) -> bytes:
+    def export(self, dek: bytes = b"", mac: bytes = b"", counter: Counter | None = None) -> bytes:
         """Export Certificate Section object to binary format.
 
         The method encrypts the header using AES-CTR, generates HMAC for authentication,
@@ -474,7 +471,7 @@ class CertSectionV2(BaseClass):
         offset: int = 0,
         dek: bytes = b"",
         mac: bytes = b"",
-        counter: Optional[Counter] = None,
+        counter: Counter | None = None,
     ) -> "CertSectionV2":
         """Parse Certificate Section from bytes array.
 

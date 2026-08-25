@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,8 +11,6 @@ This module provides USB communication interface for SDP operations,
 enabling secure provisioning and device management over USB connections
 for NXP MCU devices.
 """
-
-from typing import Optional
 
 from typing_extensions import Self
 
@@ -63,8 +60,8 @@ class SdpUSBInterface(SDPBulkProtocol):
     @classmethod
     def scan(
         cls,
-        device_id: Optional[str] = None,
-        timeout: Optional[int] = None,
+        device_id: str | None = None,
+        timeout: int | None = None,
     ) -> list[Self]:
         """Scan connected USB devices.
 

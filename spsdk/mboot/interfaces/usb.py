@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,8 +10,6 @@
 This module provides USB-based communication interface for MBoot protocol,
 enabling secure provisioning operations over USB connections with NXP MCUs.
 """
-
-from typing import Optional
 
 from typing_extensions import Self
 
@@ -79,8 +76,8 @@ class MbootUSBInterface(MbootBulkProtocol):
     @classmethod
     def scan(
         cls,
-        device_id: Optional[str] = None,
-        timeout: Optional[int] = None,
+        device_id: str | None = None,
+        timeout: int | None = None,
     ) -> list[Self]:
         """Scan connected USB devices.
 

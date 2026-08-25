@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -15,7 +14,7 @@ both standard and version 2 signature block formats for secure boot operations.
 import logging
 import os
 from struct import calcsize, pack, unpack
-from typing import Any, Optional, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -105,10 +104,10 @@ class SignatureBlock(HeaderContainer):
     def __init__(
         self,
         chip_config: AhabChipContainerConfig,
-        srk_assets: Optional[SRKTable] = None,
-        container_signature: Optional[ContainerSignature] = None,
-        certificate: Optional[AhabCertificate] = None,
-        blob: Optional[AhabBlob] = None,
+        srk_assets: SRKTable | None = None,
+        container_signature: ContainerSignature | None = None,
+        certificate: AhabCertificate | None = None,
+        blob: AhabBlob | None = None,
     ):
         """Initialize the AHAB signature block object.
 
@@ -332,12 +331,10 @@ class SignatureBlock(HeaderContainer):
 
         def verify_block(
             name: str,
-            obj: Optional[
-                Union[SRKTable, SRKTableArray, ContainerSignature, AhabCertificate, AhabBlob]
-            ],
+            obj: SRKTable | SRKTableArray | ContainerSignature | AhabCertificate | AhabBlob | None,
             min_offset: int,
             offset: int,
-            verify_data: Optional[Any] = None,
+            verify_data: Any | None = None,
         ) -> Verifier:
             """Verify AHAB container block consistency and validity.
 
@@ -511,11 +508,29 @@ class SignatureBlock(HeaderContainer):
                         ),
                         pss_padding=True,
                     )
-                    ver_sign.add_record(
-                        "Signature",
-                        sign_ok,
-                        self.signature.signature_data.hex(),
-                    )
+                    if sign_ok:
+                        ver_sign.add_record(
+                            "Signature",
+                            sign_ok,
+                            self.signature.signature_data.hex(),
+                        )
+                    else:
+                        key_source = (
+                            "certificate image key"
+                            if used_image_key
+                            else f"SRK key (ID: {self.chip_config.used_srk_id})"
+                        )
+                        ver_sign.add_record(
+                            "Signature",
+                            VerifierResult.ERROR,
+                            (
+                                "Signature verification FAILED. "
+                                f"The {key_source} does not match the key used to sign the container. "
+                                "Possible causes: wrong signing key file, certificate does not "
+                                "correspond to the signing key, or corrupted image data. "
+                                f"Signature: {bytes_to_print(self.signature.signature_data)}"
+                            ),
+                        )
 
         ver_sign = Verifier("Container signing")
         # Show revoke keys
@@ -850,11 +865,11 @@ class SignatureBlockV2(HeaderContainer):
     def __init__(
         self,
         chip_config: AhabChipContainerConfig,
-        srk_assets: Optional[SRKTableArray] = None,
-        container_signature: Optional[ContainerSignature] = None,
-        certificate: Optional[AhabCertificate] = None,
-        blob: Optional[AhabBlob] = None,
-        container_signature_2: Optional[ContainerSignature] = None,
+        srk_assets: SRKTableArray | None = None,
+        container_signature: ContainerSignature | None = None,
+        certificate: AhabCertificate | None = None,
+        blob: AhabBlob | None = None,
+        container_signature_2: ContainerSignature | None = None,
     ):
         """Initialize AHAB sign block with cryptographic components.
 
@@ -1092,12 +1107,10 @@ class SignatureBlockV2(HeaderContainer):
 
         def verify_block(
             name: str,
-            obj: Optional[
-                Union[SRKTable, SRKTableArray, ContainerSignature, AhabCertificate, AhabBlob]
-            ],
+            obj: SRKTable | SRKTableArray | ContainerSignature | AhabCertificate | AhabBlob | None,
             min_offset: int,
             offset: int,
-            verify_data: Optional[Any] = None,
+            verify_data: Any | None = None,
         ) -> Verifier:
             """Verify AHAB container signature block.
 
@@ -1241,7 +1254,18 @@ class SignatureBlockV2(HeaderContainer):
                 and self.certificate
                 and self.certificate.verify(self.srk_assets).has_errors
             ):
-                ver_sign.add_record("Signature", VerifierResult.ERROR, "Invalid Certificate")
+                cert_ver = self.certificate.verify(self.srk_assets)
+                ver_sign.add_record(
+                    "Signature",
+                    VerifierResult.ERROR,
+                    (
+                        "Invalid Certificate: the certificate block does not match the SRK table. "
+                        "Ensure that the certificate was generated using the same set of keys "
+                        "as the SRK table. If keys were re-generated, the certificate must be "
+                        "re-created as well."
+                    ),
+                )
+                ver_sign.add_child(cert_ver)
             elif not signature_container:
                 ver_sign.add_record(
                     "Signature", VerifierResult.ERROR, "Missing Signature Container"
@@ -1315,11 +1339,30 @@ class SignatureBlockV2(HeaderContainer):
                         pss_padding=True,
                     )
 
-                    ver_sign.add_record(
-                        "Signature",
-                        sign_ok,
-                        bytes_to_print(signature_container.signature_data),
-                    )
+                    if sign_ok:
+                        ver_sign.add_record(
+                            "Signature",
+                            sign_ok,
+                            bytes_to_print(signature_container.signature_data),
+                        )
+                    else:
+                        key_source = (
+                            f"certificate image key (key #{ix})"
+                            if used_image_key
+                            else f"SRK key (table: {ix}, ID: {self.chip_config.used_srk_id})"
+                        )
+                        ver_sign.add_record(
+                            "Signature",
+                            VerifierResult.ERROR,
+                            (
+                                "Signature verification FAILED. "
+                                f"The {key_source} does not match the key used to sign "
+                                "the container. Possible causes: wrong signing key file, "
+                                "certificate does not correspond to the signing key, "
+                                "or corrupted image data. "
+                                f"Signature: {bytes_to_print(signature_container.signature_data)}"
+                            ),
+                        )
             return ver_sign
 
         ret = Verifier("Container signing")

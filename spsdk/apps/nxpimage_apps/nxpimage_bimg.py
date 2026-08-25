@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -14,7 +13,6 @@ Configuration Data), and related components for NXP microcontrollers.
 
 import logging
 import os
-from typing import Optional, Union
 
 import click
 
@@ -120,19 +118,40 @@ def bootable_image_export(config: Config) -> None:
     ),
 )
 @spsdk_output_option(directory=True)
+@click.option(
+    "--parse-nxp",
+    is_flag=True,
+    default=False,
+    help=(
+        "Also fully parse NXP-signed containers (SECO/ELE/V2X) inside AHAB segments. "
+        "By default these containers are extracted as a binary file and referenced via "
+        "binary_container in the output config, because they cannot be reconstructed "
+        "without the NXP private keys."
+    ),
+)
 def bootable_image_parse_command(
-    family: FamilyRevision, mem_type: Optional[str], binary: str, dek: tuple[str, ...], output: str
+    family: FamilyRevision,
+    mem_type: str | None,
+    binary: str,
+    dek: tuple[str, ...],
+    output: str,
+    parse_nxp: bool,
 ) -> None:
-    """Parse Bootable Image into YAML configuration and binary images."""
+    """Parse Bootable Image into YAML configuration and binary images.
+
+    By default, NXP-signed containers (SECO/ELE/V2X) inside AHAB segments are not fully parsed.
+    They are extracted as a binary file and referenced via binary_container so the image can be
+    re-assembled without the NXP private keys. Use --parse-nxp to also parse NXP-signed containers.
+    """
     memory = None
     if mem_type:
         memory = MemoryType.from_label(mem_type)
-    bootable_image_parse(family, memory, binary, dek, output)
+    bootable_image_parse(family, memory, binary, dek, output, parse_nxp=parse_nxp)
 
 
 def parse_bootable_image_dek_parameter(
     dek_values: tuple[str, ...],
-) -> dict[Optional[Union[str, int]], dict[Optional[int], str]]:
+) -> dict[str | int | None, dict[int | None, str]]:
     """Parse bootable image DEK parameter values into a nested dictionary.
 
     Supports multiple formats:
@@ -147,7 +166,7 @@ def parse_bootable_image_dek_parameter(
             {seg_id: {cnt_id: dek}} for container-specific
     :raises SPSDKAppError: If the format is invalid
     """
-    result: dict[Optional[Union[str, int]], dict[Optional[int], str]] = {}
+    result: dict[str | int | None, dict[int | None, str]] = {}
 
     for dek_value in dek_values:
         # Check for segment-specific format: seg<name|index>=<dek> or seg<name|index>:cnt<index>=<dek>
@@ -162,7 +181,7 @@ def parse_bootable_image_dek_parameter(
                     # Extract segment identifier
                     seg_id_str = seg_part[3:]  # Remove 'seg' prefix
                     try:
-                        seg_id: Union[str, int] = int(seg_id_str)
+                        seg_id: str | int = int(seg_id_str)
                     except ValueError:
                         seg_id = seg_id_str  # It's a segment name
 
@@ -217,16 +236,26 @@ def parse_bootable_image_dek_parameter(
 
 def bootable_image_parse(
     family: FamilyRevision,
-    mem_type: Optional[MemoryType],
+    mem_type: MemoryType | None,
     binary: str,
     dek: tuple[str, ...],
     output: str,
+    parse_nxp: bool = False,
 ) -> None:
-    """Parse Bootable Image into YAML configuration and binary images."""
+    """Parse Bootable Image into YAML configuration and binary images.
+
+    :param family: Chip family.
+    :param mem_type: Target memory type, or None to auto-detect.
+    :param binary: Path to binary Bootable image.
+    :param dek: Data encryption keys for decryption.
+    :param output: Output directory for parsed files.
+    :param parse_nxp: When True, fully parse NXP-signed containers inside AHAB segments.
+        Defaults to False (extract as binary_container).
+    """
     data = load_binary(binary)
 
     # Parse DEK parameters if provided
-    dek_map: Optional[dict[Optional[Union[str, int]], dict[Optional[int], str]]] = None
+    dek_map: dict[str | int | None, dict[int | None, str]] | None = None
     if dek:
         dek_map = parse_bootable_image_dek_parameter(dek)
 
@@ -247,7 +276,7 @@ def bootable_image_parse(
     bimg_image_info = bimg_image.image_info()
     logger.info(f"Parsed Bootable image memory map: {bimg_image_info.draw()}")
     write_file(
-        bimg_image.get_config_yaml(output),
+        bimg_image.get_config_yaml(output, parse_nxp=parse_nxp),
         os.path.join(output, f"bootable_image_{family.name}_{bimg_image.mem_type.label}.yaml"),
     )
     click.echo(
@@ -294,9 +323,9 @@ def bootable_image_parse(
 def bootable_image_get_templates_command(
     family: FamilyRevision,
     output: str,
-    template: Optional[str],
-    board: Optional[str],
-    input_dir: Optional[str],
+    template: str | None,
+    board: str | None,
+    input_dir: str | None,
     sign: bool,
 ) -> None:
     """Create template of configurations in YAML format.
@@ -334,8 +363,8 @@ def bootable_image_get_template_specific(
     family: FamilyRevision,
     output: str,
     template: str,
-    board: Optional[str],
-    input_dir: Optional[str],
+    board: str | None,
+    input_dir: str | None,
     sign: bool = False,
 ) -> None:
     """Generate a specific template with optional board configuration.
@@ -393,8 +422,8 @@ def bootable_image_get_template_specific(
 def bootable_image_get_all_templates(
     family: FamilyRevision,
     output: str,
-    board: Optional[str],
-    input_dir: Optional[str],
+    board: str | None,
+    input_dir: str | None,
     sign: bool = False,
 ) -> None:
     """Generate all templates including standard and extra templates.
@@ -525,8 +554,8 @@ def bootable_image_get_template(
     family: FamilyRevision,
     template: str,
     output: str,
-    board: Optional[str] = None,
-    input_dir: Optional[str] = None,
+    board: str | None = None,
+    input_dir: str | None = None,
     sign: bool = False,
 ) -> None:
     """Generate bootable image template with AHAB containers."""
@@ -728,7 +757,7 @@ def bootable_image_verify(
     data = load_binary(binary)
 
     # Parse DEK parameters if provided
-    dek_map: Optional[dict[Optional[Union[str, int]], dict[Optional[int], str]]] = None
+    dek_map: dict[str | int | None, dict[int | None, str]] | None = None
     if dek:
         dek_map = parse_bootable_image_dek_parameter(dek)
 
@@ -787,9 +816,7 @@ def bootable_image_verify(
     required=True,
     help="Path to binary bootable image to analyze.",
 )
-def bootable_image_info_command(
-    family: FamilyRevision, mem_type: Optional[str], binary: str
-) -> None:
+def bootable_image_info_command(family: FamilyRevision, mem_type: str | None, binary: str) -> None:
     """Display information about bootable image and its segments."""
     memory = None
     if mem_type:
@@ -797,9 +824,7 @@ def bootable_image_info_command(
     bootable_image_info(family, memory, binary)
 
 
-def bootable_image_info(
-    family: FamilyRevision, mem_type: Optional[MemoryType], binary: str
-) -> None:
+def bootable_image_info(family: FamilyRevision, mem_type: MemoryType | None, binary: str) -> None:
     """Display information about bootable image and its segments."""
     data = BinaryImage.load_binary_image(binary).export()
 
@@ -836,12 +861,12 @@ def fcb_export(config: Config, output: str) -> None:
 
     logger.info(f"Created FCB Image:\n{str(fcb_image.registers.image_info())}")
     logger.info(f"Created FCB Image memory map:\n{fcb_image.registers.image_info().draw()}")
-    click.echo(f"Success. (FCB: {output} created.)")
+    click.echo(f"Success. (FCB: {get_printable_path(output)} created.)")
 
 
 def fcb_mem_type_callback(
-    ctx: click.Context, param: click.Option, value: Optional[str]
-) -> Optional[MemoryType]:
+    ctx: click.Context, param: click.Option, value: str | None
+) -> MemoryType | None:
     """Dynamically set memory type choices based on selected family."""
     # If family is not available yet, return None and let Click handle validation
     if "family" not in ctx.params or ctx.params["family"] is None:
@@ -898,7 +923,9 @@ def fcb_parse(family: FamilyRevision, mem_type: MemoryType, binary: str, output:
     fcb_image = FCB.parse(load_binary(binary), family=family, mem_type=mem_type)
     logger.info(f"Parsed FCB image memory map: {fcb_image.registers.image_info().draw()}")
     write_file(fcb_image.get_config_yaml(), output)
-    click.echo(f"Success. (FCB: {binary} has been parsed and stored into {output} .)")
+    click.echo(
+        f"Success. (FCB: {get_printable_path(binary)} has been parsed and stored into {get_printable_path(output)} .)"
+    )
 
 
 @fcb.command(name="get-templates", no_args_is_help=True)
@@ -950,7 +977,7 @@ def xmcd_export(config: Config, output: str) -> None:
 
     logger.info(f"Created XMCD :\n{str(xmcd_image.registers.image_info())}")
     logger.info(f"Created XMCD memory map:\n{xmcd_image.registers.image_info().draw()}")
-    click.echo(f"Success. (XMCD: {output} created.)")
+    click.echo(f"Success. (XMCD: {get_printable_path(output)} created.)")
 
 
 @xmcd.command(name="parse", no_args_is_help=True)
@@ -977,7 +1004,9 @@ def xmcd_parse(family: FamilyRevision, binary: str, output: str) -> None:
         raise SPSDKAppError("Parsing of XMCD binary failed.")
     logger.info(f"Parsed XMCD: {xmcd_image.registers.image_info().draw()}")
     write_file(xmcd_image.get_config_yaml(), output)
-    click.echo(f"Success. (XMCD: {binary} has been parsed and stored into {output} .)")
+    click.echo(
+        f"Success. (XMCD: {get_printable_path(binary)} has been parsed and stored into {get_printable_path(output)} .)"
+    )
 
 
 @xmcd.command(name="get-templates", no_args_is_help=True)
@@ -1065,7 +1094,7 @@ def xmcd_crc_fuses_script_command(family: FamilyRevision, binary: str, output: s
     xmcd_block = XMCD.parse(load_binary(binary), family=family)
     fuses_script = xmcd_block.create_crc_hash_fuses_script()
     write_file(fuses_script, output)
-    click.echo(f"Success. (Created fuses script: {output} )")
+    click.echo(f"Success. (Created fuses script: {get_printable_path(output)} )")
 
 
 @bootable_image_group.group(name="wic", cls=CommandsTreeGroup)

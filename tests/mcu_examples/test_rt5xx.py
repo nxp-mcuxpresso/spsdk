@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -19,7 +18,6 @@ import os
 from datetime import datetime, timezone
 from struct import pack
 from time import sleep
-from typing import Optional
 
 import pytest
 from bitstring import BitArray
@@ -164,7 +162,7 @@ def write_shadow_regis(data_dir: str, writes: list[tuple[int, int]]) -> None:
         datatable_old += "2" + char + "436587"
     assert len(datatable_old) == 12 * 8 * 2 + 2
     # this is new table content
-    datatable_new = bytes()
+    datatable_new = b""
     for addr, value in writes:
         datatable_new += pack("<I", value)
         datatable_new += pack("<I", addr)
@@ -226,7 +224,7 @@ def open_mboot() -> McuBoot:
     return mboot
 
 
-def burn_img_via_usb_into_flexspi_flash(data_dir: str, img_data: bytes) -> Optional[McuBoot]:
+def burn_img_via_usb_into_flexspi_flash(data_dir: str, img_data: bytes) -> McuBoot | None:
     """Burn image into external FLASH connected through FlexSPI.
 
     This function configures the FlexSPI NOR flash memory, erases the target region,
@@ -595,7 +593,7 @@ def test_ram_signed_keystore(data_dir: str, image_file_name: str, ram_addr: int)
 
     key_store = get_keystore(data_dir)
 
-    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), "r") as f:
+    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt")) as f:
         hmac_user_key = f.readline()
 
     family = FamilyRevision("rt5xx")
@@ -678,7 +676,7 @@ def test_ram_encrypted_otp(data_dir: str, image_file_name: str, ram_addr: int) -
     cert_block = create_cert_block(data_dir)
     signature_provider = create_signature_provider(data_dir)
 
-    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), "r") as f:
+    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt")) as f:
         hmac_user_key = f.readline()
 
     family = FamilyRevision("rt5xx")
@@ -727,7 +725,7 @@ def test_ram_encrypted_keystore(data_dir: str, image_file_name: str, ram_addr: i
     cert_block = create_cert_block(data_dir)
     signature_provider = create_signature_provider(data_dir)
 
-    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), "r") as f:
+    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt")) as f:
         hmac_user_key = f.readline()
 
     family = FamilyRevision("rt5xx")
@@ -782,7 +780,7 @@ def test_sb_unsigned_keystore(data_dir: str, subdir: str, image_name: str) -> No
     if not TEST_IMG_CONTENT:
         write_shadow_regis(data_dir, [(0x40130194, 0x00000080)])  # BOOT_CFG[5]: USE_PUF = 1
 
-    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "SBkek_PUF.txt"), "r") as f:
+    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "SBkek_PUF.txt")) as f:
         sbkek_str = f.readline()
 
     adv_params = SBV2xAdvancedParams(
@@ -957,7 +955,7 @@ def test_sb_signed_encr_keystore(data_dir: str, subdir: str, image_name: str) ->
             ],
         )
 
-    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "SBkek_PUF.txt"), "r") as f:
+    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "SBkek_PUF.txt")) as f:
         sbkek_str = f.readline()
 
     adv_params = SBV2xAdvancedParams(
@@ -1042,7 +1040,7 @@ def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: 
             ],
         )
 
-    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "SBkek_PUF.txt"), "r") as f:
+    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "SBkek_PUF.txt")) as f:
         sbkek_str = f.readline()
 
     key_store = get_keystore(data_dir)
@@ -1096,7 +1094,7 @@ def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: 
     otfad[3] = KeyBlob(0x8FFF000, 0x8FFFFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
     # zero_fill and crc should be used only for testing !
     encr_image_data = otfad.encrypt_image(align_block(plain_image_data, 512), 0x8001000, False)
-    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "OTFADKek_PUF.txt"), "r") as f:
+    with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "OTFADKek_PUF.txt")) as f:
         otfad_kek = f.readline()
 
     # create boot section 0

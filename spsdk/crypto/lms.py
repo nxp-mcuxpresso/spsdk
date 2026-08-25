@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
@@ -8,9 +7,7 @@
 """Integration submodule for LMS."""
 
 import importlib.util
-from typing import Optional, Union
-
-from typing_extensions import Literal
+from typing import Literal
 
 IS_LMS_SUPPORTED = importlib.util.find_spec("pyhsslms") is not None
 
@@ -31,8 +28,8 @@ if IS_LMS_SUPPORTED:
             height: Literal[5, 10, 15, 20, 25],
             w: Literal[1, 2, 4, 8],
             hash_alg: str = "sha256",  # Literal["sha256", "shake", "shake256"],
-            seed: Optional[bytes] = None,
-            i: Optional[bytes] = None,
+            seed: bytes | None = None,
+            i: bytes | None = None,
             q: int = 0,
         ):
             """Initialize LMS parameter set."""
@@ -108,7 +105,7 @@ if IS_LMS_SUPPORTED:
             )
 
         @classmethod
-        def from_key(cls, key: Union[LmsPublicKey, LmsPrivateKey]) -> "LMSParams":
+        def from_key(cls, key: LmsPublicKey | LmsPrivateKey) -> "LMSParams":
             """Create LMSParams from an existing LMS private key."""
             alg1, m, h = lms_params[key.lms_type]
             alg2, n, _p, w, _ls = lmots_params[key.lmots_type]
@@ -132,7 +129,7 @@ if IS_LMS_SUPPORTED:
             return LMSParams(**init_params)
 
         @staticmethod
-        def calc_signature_length(key: Union[LmsPublicKey, LmsPrivateKey]) -> int:
+        def calc_signature_length(key: LmsPublicKey | LmsPrivateKey) -> int:
             """Calculate signature length for given key."""
             _alg1, m, h = lms_params[key.lms_type]
             _alg2, n, p, _w, _ls = lmots_params[key.lmots_type]

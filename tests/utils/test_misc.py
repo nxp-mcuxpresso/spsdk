@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -16,7 +15,7 @@ import filecmp
 import os
 import tempfile
 import time
-from typing import Any, Optional, Union
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -136,9 +135,7 @@ def test_align_block(test_input: bytes, alignment: int, padding: int, expected: 
         (b"\x02", 16, 16),
     ],
 )
-def test_align_block_fill_random(
-    test_input: bytes, alignment: int, expected: Union[int, bytes]
-) -> None:
+def test_align_block_fill_random(test_input: bytes, alignment: int, expected: int | bytes) -> None:
     """Test the align_block_fill_random function with various inputs and alignments.
 
     This test verifies that align_block_fill_random produces the same results as
@@ -443,7 +440,7 @@ def test_reg_long_reverse() -> None:
     ],
 )
 def test_get_bytes_cnt(
-    num: int, output: int, align_2_2n: bool, byte_cnt: Optional[int], exception: bool
+    num: int, output: int, align_2_2n: bool, byte_cnt: int | None, exception: bool
 ) -> None:
     """Test get_bytes_cnt_of_int function with various parameters.
 
@@ -511,7 +508,7 @@ def test_change_endianness(value: bytes, res: bytes, exc: bool) -> None:
         ("InvalidValue", 0, True),
     ],
 )
-def test_value_to_int(value: Union[int, str, bytes, bytearray], res: int, exc: bool) -> None:
+def test_value_to_int(value: int | str | bytes | bytearray, res: int, exc: bool) -> None:
     """Test the value_to_int function with various input types and expected outcomes.
 
     This test function validates the value_to_int function by testing it with different
@@ -544,9 +541,7 @@ def test_value_to_int(value: Union[int, str, bytes, bytearray], res: int, exc: b
         ("InvalidValue", 0, True),
     ],
 )
-def test_value_to_bytes(
-    value: Union[int, str, bytes, bytearray], res: Union[bytes, int], exc: bool
-) -> None:
+def test_value_to_bytes(value: int | str | bytes | bytearray, res: bytes | int, exc: bool) -> None:
     """Test the value_to_bytes function with various input types and expected outcomes.
 
     This test function validates the behavior of value_to_bytes function by checking
@@ -578,7 +573,7 @@ def test_value_to_bytes(
         (b"\x20", True, False),
     ],
 )
-def test_value_to_bool(value: Optional[Union[int, bool, str]], res: bool, exc: bool) -> None:
+def test_value_to_bool(value: int | bool | str | None, res: bool, exc: bool) -> None:
     """Test the value_to_bool function with various input types and expected outcomes.
 
     This test function validates the behavior of value_to_bool function by checking

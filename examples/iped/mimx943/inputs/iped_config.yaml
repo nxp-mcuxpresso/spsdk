@@ -1,0 +1,33 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# IPED configuration for i.MX943
+# This config encrypts a firmware image using IPED PRINCE cipher
+family: mimx943
+revision: latest
+output_folder: ../workspace
+output_format: bin
+
+# XSPI interface (only xspi1 is supported on i.MX943)
+xspi_instance: xspi1
+
+# User key - 128-bit key programmed into IPED0_KEY fuses
+# The SoC reads back a "ciphertext" version of this key after programming
+user_key: "0x7bfb7a1cd3c2a9a98bcf48daaa081bbe"
+
+# Firmware version used in IV derivation (anti-rollback counter)
+fw_version: "0x00000000"
+
+# Region configuration
+# Each region defines a memory range to encrypt with PRINCE cipher
+regions:
+  - region_id: 0
+    start_address: "0x28000000"
+    end_address: "0x28100000"
+    nonce: "0x0000000000000000"
+
+# Data blobs to encrypt
+data_blobs:
+  - data: inputs/firmware.bin
+    address: "0x28001000"

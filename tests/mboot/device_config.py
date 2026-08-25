@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -483,7 +482,7 @@ class DevConfig:
         :raises yaml.YAMLError: If the YAML file is malformed or cannot be parsed.
         :raises SchemaError: If the configuration does not match the expected schema.
         """
-        with open(config_file, "r", encoding="utf-8") as f:
+        with open(config_file, encoding="utf-8") as f:
             dev_cfg = yaml.safe_load(f)
         validator = Schema(SCHEMA, extra=ALLOW_EXTRA)
         dev_cfg = validator(dev_cfg)

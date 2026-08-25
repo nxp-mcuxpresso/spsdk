@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023,2025 NXP
+# Copyright 2022-2023,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK NXP Memory Configuration test fixtures and utilities.
 
 This module provides pytest configuration and shared fixtures for testing

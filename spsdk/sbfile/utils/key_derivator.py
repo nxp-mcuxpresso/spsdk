@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2023,2025,2026 NXP
 #
@@ -15,7 +14,7 @@ key derivation modes with CMAC-based key generation algorithms.
 import abc
 import functools
 import logging
-from typing import Any, Optional, Union
+from typing import Any
 
 from spsdk.crypto.cmac import cmac
 from spsdk.crypto.symmetric import aes_cbc_decrypt, aes_cbc_encrypt
@@ -64,7 +63,7 @@ class SB31KeyDerivator(ServiceProvider):
         """
         super().__init__(*args, **kwargs)
         self._configured = False
-        self.kdk = bytes()
+        self.kdk = b""
         self.timestamp = 0
         self.kdk_access_rights = 0
         self.key_length = 0
@@ -205,9 +204,9 @@ class LocalKeyDerivator(SB31KeyDerivator):
 
     def __init__(
         self,
-        file_path: Optional[str] = None,
-        search_paths: Optional[list[str]] = None,
-        data: Optional[str] = None,
+        file_path: str | None = None,
+        search_paths: list[str] | None = None,
+        data: str | None = None,
         **kwargs: str,
     ) -> None:
         """Initialize the Local Key Derivator.
@@ -303,7 +302,7 @@ class RemoteKeyDerivator(HTTPClientBase, SB31KeyDerivator):
         port: int = 8000,
         url_prefix: str = "api",
         timeout: int = 60,
-        **kwargs: Union[str, int, bool],
+        **kwargs: str | int | bool,
     ) -> None:
         """Initialize remote key derivator.
 
@@ -334,9 +333,9 @@ class RemoteKeyDerivator(HTTPClientBase, SB31KeyDerivator):
 
 
 def get_sb31_key_derivator(
-    kd_cfg: Optional[str] = None,
-    local_file_key: Optional[str] = None,
-    search_paths: Optional[list[str]] = None,
+    kd_cfg: str | None = None,
+    local_file_key: str | None = None,
+    search_paths: list[str] | None = None,
     **kwargs: Any,
 ) -> SB31KeyDerivator:
     """Factory function to create an appropriate key derivator.

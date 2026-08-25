@@ -1,19 +1,16 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK NXP DICE Prove Genuinity testing module.
 
 This module contains test cases for the NXP DICE Prove Genuinity functionality,
 validating both ECDSA and hybrid cryptographic response mechanisms.
 """
 
-import pytest
-
 from spsdk.apps.nxpdice import main as nxpdice_main
-from spsdk.crypto.keys import IS_DILITHIUM_SUPPORTED
 from tests.cli_runner import CliRunner
 
 
@@ -42,7 +39,6 @@ def test_pg_ecdsa_response(cli_runner: CliRunner, data_dir: str) -> None:
     assert result.exit_code == 0, f"Command failed with output: {result.output}"
 
 
-@pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed")
 def test_pg_hybrid_response(cli_runner: CliRunner, data_dir: str) -> None:
     """Test Hybrid response for Prove Genuinity.
 

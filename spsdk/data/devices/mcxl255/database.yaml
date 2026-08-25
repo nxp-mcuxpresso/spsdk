@@ -111,6 +111,9 @@ features:
       address: 0x7_FFF0
       size: 16
       reg_spec: pfr_cfpa.json
+      monotonic_counters:
+        - field000  # nonSecureSwVersion
+        - field004  # secureSwVersion
 
   # ======== Bootable image section ========
   bootable_image:

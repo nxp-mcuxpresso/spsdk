@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -11,8 +10,6 @@ This module provides the SDPBulkProtocol class that implements bulk transfer
 protocol for Serial Download Protocol (SDP) operations, enabling efficient
 data transfer with NXP MCU devices during provisioning and programming tasks.
 """
-
-from typing import Optional
 
 from spsdk import get_logger
 from spsdk.exceptions import SPSDKAttributeError, SPSDKConnectionError
@@ -90,7 +87,7 @@ class SDPBulkProtocol(SDPProtocolBase):
         for frame in frames:
             self.device.write(frame)
 
-    def read(self, length: Optional[int] = None) -> CmdResponse:
+    def read(self, length: int | None = None) -> CmdResponse:
         """Read data from device.
 
         Reads raw data from the device and decodes it into a command response format.

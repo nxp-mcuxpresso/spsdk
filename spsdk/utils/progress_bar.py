@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2026 NXP
 #
@@ -10,7 +9,7 @@ import shutil
 import sys
 from dataclasses import dataclass
 from types import TracebackType
-from typing import Any, Optional, Type
+from typing import Any
 
 import click
 from typing_extensions import Self
@@ -39,7 +38,7 @@ class ProgressTask:
     label: str
     total_steps: int
     step: int = 0
-    bar: Optional[ProgressBar] = None
+    bar: ProgressBar | None = None
 
     @property
     def is_complete(self) -> bool:
@@ -167,9 +166,9 @@ class ProgressBarManager:
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         """Exit context manager, ensuring cleanup runs even on exception.
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -15,7 +14,7 @@ operations for NXP MCUs.
 import logging
 import os
 from struct import pack, unpack
-from typing import Any, Optional
+from typing import Any
 
 from typing_extensions import Self
 
@@ -104,8 +103,8 @@ class AhabBlob(HeaderContainer):
         size: int = 0,
         algorithm: KeyBlobEncryptionAlgorithm = KeyBlobEncryptionAlgorithm.AES_CBC,
         mode: int = 0,
-        dek: Optional[bytes] = None,
-        dek_keyblob: Optional[bytes] = None,
+        dek: bytes | None = None,
+        dek_keyblob: bytes | None = None,
         key_identifier: int = 0,
     ) -> None:
         """Initialize AHAB key blob container.
@@ -454,15 +453,15 @@ class AhabBlobOffline(FeatureBaseClass, AhabBlob):
         size: int = 256,
         algorithm: KeyBlobEncryptionAlgorithm = KeyBlobEncryptionAlgorithm.AES_CBC,
         mode: int = 0,
-        dek: Optional[bytes] = None,
-        dek_keyblob: Optional[bytes] = None,
+        dek: bytes | None = None,
+        dek_keyblob: bytes | None = None,
         key_identifier: int = 0,
-        customer_master_key: Optional[bytes] = None,
+        customer_master_key: bytes | None = None,
         lifecycle_state: KeyblobLifeCycle = KeyblobLifeCycle.OEM_OPEN,
         debug_enable: DebugEnable = DebugEnable.NO,
-        srkh0: Optional[bytes] = None,
-        srkh1: Optional[bytes] = None,
-        blob_key: Optional[bytes] = None,
+        srkh0: bytes | None = None,
+        srkh1: bytes | None = None,
+        blob_key: bytes | None = None,
     ) -> None:
         """Initialize AHAB blob generator.
 

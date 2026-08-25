@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -13,7 +12,7 @@ additional functionality for SPSDK applications.
 """
 
 # pylint: disable=unused-import  # Type is necessary for Mypy
-from typing import Optional, Type
+from typing import Type
 
 from spsdk import get_logger
 
@@ -49,7 +48,7 @@ class SerialProxy:
         cls.ignore_ack = ignore_ack
         return cls
 
-    def __init__(self, port: str, timeout: int, baudrate: int, write_timeout: Optional[int] = None):
+    def __init__(self, port: str, timeout: int, baudrate: int, write_timeout: int | None = None):
         """Initialize serial proxy with connection parameters.
 
         The initialization signature accommodates instantiation compatible with serial.Serial
@@ -65,7 +64,7 @@ class SerialProxy:
         self.write_timeout = write_timeout
         self.baudrate = baudrate
         self.is_open = False
-        self.buffer = bytes()
+        self.buffer = b""
 
     def open(self) -> None:
         """Simulates opening a serial port.
@@ -156,7 +155,7 @@ class SimpleReadSerialProxy(SerialProxy):
     :cvar FULL_BUFFER: Static buffer containing all data to be read sequentially.
     """
 
-    FULL_BUFFER = bytes()
+    FULL_BUFFER = b""
 
     @classmethod
     def init_data_proxy(cls, data: bytes) -> "Type[SimpleReadSerialProxy]":
@@ -171,7 +170,7 @@ class SimpleReadSerialProxy(SerialProxy):
         cls.FULL_BUFFER = data
         return cls
 
-    def __init__(self, port: str, timeout: int, baudrate: int, write_timeout: Optional[int] = None):
+    def __init__(self, port: str, timeout: int, baudrate: int, write_timeout: int | None = None):
         """Initialize serial proxy with specified communication parameters.
 
         This constructor sets up the serial proxy by calling the parent serial.Serial

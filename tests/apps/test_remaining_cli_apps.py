@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2026 NXP
 #
@@ -13,7 +12,7 @@ and get-template with a supported family to maximize coverage without real hardw
 
 import sys
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -22,6 +21,7 @@ from spsdk.apps.nxpdevhsm import main as nxpdevhsm_main
 from spsdk.apps.nxpshe import main as nxpshe_main
 from spsdk.apps.nxpuuu import main as nxpuuu_main
 from spsdk.apps.nxpwpc import main as nxpwpc_main
+from spsdk.exceptions import SPSDKError
 from tests.cli_runner import CliRunner
 
 # ---------------------------------------------------------------------------
@@ -118,6 +118,45 @@ def test_nxpshe_get_template(cli_runner: CliRunner, tmp_path: Path) -> None:
     out = str(tmp_path / "she_template.yaml")
     result = cli_runner.invoke(nxpshe_main, ["get-template", "-f", family, "-o", out])
     assert result.exit_code == 0
+
+
+def test_nxpshe_reset_invalid_key_raises_spsdk_error(cli_runner: CliRunner) -> None:
+    """Test nxpshe reset invalid key is surfaced as SPSDKValueError."""
+
+    class DummyInterfaceConfig:
+        """Minimal interface configuration for CLI tests."""
+
+        IDENTIFIER = "dummy"
+
+        def get_scan_args(self) -> dict:
+            """Return empty scan args for the mocked interface."""
+            return {}
+
+    class DummyInterface:
+        """Minimal interface class for CLI tests."""
+
+        @staticmethod
+        def scan_single(**kwargs: str) -> MagicMock:
+            """Return a mocked interface instance."""
+            return MagicMock()
+
+    with (
+        patch(
+            "spsdk.apps.utils.common_cli_options.load_interface_config",
+            return_value=DummyInterfaceConfig(),
+        ),
+        patch(
+            "spsdk.apps.utils.common_cli_options.MbootProtocolBase.get_interface_class",
+            return_value=DummyInterface,
+        ),
+    ):
+        result = cli_runner.invoke(
+            nxpshe_main,
+            ["reset", "-p", "COM1", "-k", "not_a_valid_hex_key"],
+            expected_code=1,
+        )
+
+    assert isinstance(result.exception, SPSDKError)
 
 
 # ---------------------------------------------------------------------------

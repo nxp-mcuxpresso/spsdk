@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK base classes for image segments.
 
 This module provides abstract base functionality for image segments used across
@@ -12,7 +12,6 @@ foundation for all segment implementations in the image module.
 """
 
 import abc
-from typing import Optional
 
 from spsdk.image.mem_type import MemoryType
 from spsdk.utils.abstract_features import FeatureBaseClass
@@ -67,9 +66,7 @@ class SegmentBase(FeatureBaseClass):
         return get_db(family).get_dict(cls.FEATURE, "mem_types", default={})
 
     @classmethod
-    def get_supported_memory_types(
-        cls, family: Optional[FamilyRevision] = None
-    ) -> list[MemoryType]:
+    def get_supported_memory_types(cls, family: FamilyRevision | None = None) -> list[MemoryType]:
         """Get list of supported memory types data from database.
 
         The method retrieves memory types either for a specific chip family or all available

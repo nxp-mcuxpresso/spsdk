@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,7 @@ USB, UART, SPI, I2C, CAN, and SDIO interfaces.
 """
 
 from abc import abstractmethod
-from typing import Any, Optional
+from typing import Any
 
 from typing_extensions import Self
 
@@ -35,7 +34,7 @@ class InterfaceConfig:
     IDENTIFIER: str = "Unknown"
 
     def __init__(
-        self, params: str, timeout: Optional[int] = None, extra_params: Optional[str] = None
+        self, params: str, timeout: int | None = None, extra_params: str | None = None
     ) -> None:
         """Interface config initialization."""
         self.params = params
@@ -44,7 +43,7 @@ class InterfaceConfig:
 
     @classmethod
     @abstractmethod
-    def load(cls, cli_params: dict) -> Optional[Self]:
+    def load(cls, cli_params: dict) -> Self | None:
         """Load from dictionary of CLI parameters."""
 
     @abstractmethod
@@ -52,7 +51,7 @@ class InterfaceConfig:
         """Get arguments for scan method."""
 
     @staticmethod
-    def get_timeout(cli_params: dict) -> Optional[int]:
+    def get_timeout(cli_params: dict) -> int | None:
         """Get timeout value from command line parameters."""
         if "timeout" in cli_params:
             return int(cli_params["timeout"])
@@ -71,7 +70,7 @@ class UsbInterfaceConfig(InterfaceConfig):
     IDENTIFIER = "usb"
 
     @classmethod
-    def load(cls, cli_params: dict[str, str]) -> Optional[Self]:
+    def load(cls, cli_params: dict[str, str]) -> Self | None:
         """Load from dictionary of CLI parameters."""
         if not cli_params.get("usb"):
             return None
@@ -98,7 +97,7 @@ class UartInterfaceConfig(InterfaceConfig):
     IDENTIFIER = "uart"
 
     @classmethod
-    def load(cls, cli_params: dict[str, str]) -> Optional[Self]:
+    def load(cls, cli_params: dict[str, str]) -> Self | None:
         """Load from dictionary of CLI parameters."""
         if not cli_params.get("port") or cli_params.get("buspal"):
             return None
@@ -128,7 +127,7 @@ class BuspalSpiInterfaceConfig(InterfaceConfig):
     IDENTIFIER = "buspal_spi"
 
     @classmethod
-    def load(cls, cli_params: dict[str, str]) -> Optional[Self]:
+    def load(cls, cli_params: dict[str, str]) -> Self | None:
         """Load from dictionary of CLI parameters."""
         if (
             not cli_params.get("port")
@@ -170,7 +169,7 @@ class BuspalI2cInterfaceConfig(InterfaceConfig):
     IDENTIFIER = "buspal_i2c"
 
     @classmethod
-    def load(cls, cli_params: dict[str, str]) -> Optional[Self]:
+    def load(cls, cli_params: dict[str, str]) -> Self | None:
         """Load from dictionary of CLI parameters."""
         if (
             not cli_params.get("port")
@@ -212,7 +211,7 @@ class UsbsioSpiInterfaceConfig(InterfaceConfig):
     IDENTIFIER = "usbsio_spi"
 
     @classmethod
-    def load(cls, cli_params: dict[str, str]) -> Optional[Self]:
+    def load(cls, cli_params: dict[str, str]) -> Self | None:
         """Load from dictionary of CLI parameters."""
         if not cli_params.get("lpcusbsio") or "spi" not in cli_params["lpcusbsio"]:
             return None
@@ -239,7 +238,7 @@ class UsbsioI2cInterfaceConfig(InterfaceConfig):
     IDENTIFIER = "usbsio_i2c"
 
     @classmethod
-    def load(cls, cli_params: dict[str, str]) -> Optional[Self]:
+    def load(cls, cli_params: dict[str, str]) -> Self | None:
         """Load from dictionary of CLI parameters."""
         if not cli_params.get("lpcusbsio") or "i2c" not in cli_params["lpcusbsio"]:
             return None
@@ -266,7 +265,7 @@ class UsbSdioInterfaceConfig(InterfaceConfig):
     IDENTIFIER = "sdio"
 
     @classmethod
-    def load(cls, cli_params: dict[str, str]) -> Optional[Self]:
+    def load(cls, cli_params: dict[str, str]) -> Self | None:
         """Load from dictionary of CLI parameters."""
         if not cli_params.get("sdio"):
             return None
@@ -293,7 +292,7 @@ class CanInterfaceConfig(InterfaceConfig):
     IDENTIFIER = "can"
 
     @classmethod
-    def load(cls, cli_params: dict[str, str]) -> Optional[Self]:
+    def load(cls, cli_params: dict[str, str]) -> Self | None:
         """Load from dictionary of CLI parameters."""
         if not cli_params.get("can"):
             return None
@@ -331,7 +330,7 @@ class PluginInterfaceConfig(InterfaceConfig):
     IDENTIFIER = "plugin"
 
     @classmethod
-    def load(cls, cli_params: dict[str, str]) -> Optional[Self]:
+    def load(cls, cli_params: dict[str, str]) -> Self | None:
         """Load from dictionary of CLI parameters."""
         if not cli_params.get("plugin"):
             return None

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK LPC device management and configuration utilities.
 
 This module provides the LPCDevice class for handling LPC microcontroller

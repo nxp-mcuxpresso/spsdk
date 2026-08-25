@@ -1,10 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-#
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -22,12 +18,16 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Optional
 
 try:
     from cody_api_client import send_prompt_to_cody
 except ImportError:
     sys.exit("Could not import send_prompt_to_cody from cody_api_client")
+
+try:
+    from docstring_context_loader import load_docstring_context
+except ImportError:
+    from tools.docstring_context_loader import load_docstring_context
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -52,7 +52,7 @@ class ClassInfo:
         base_classes: list[str],
         methods: list[str],
         attributes: list[str],
-        current_docstring: Optional[str] = None,
+        current_docstring: str | None = None,
     ):
         """Initialize a class instance with metadata and structure information.
 
@@ -101,55 +101,7 @@ class ClassDocstringUpdater:
         """
         self.target_directory = Path(target_directory)
         self.dry_run = dry_run
-        self.spsdk_context = self._gather_spsdk_context()
-
-    def _gather_spsdk_context(self) -> str:
-        """Gather context about SPSDK project structure and conventions.
-
-        This method collects comprehensive information about SPSDK project standards,
-        including class docstring formatting guidelines, examples, and best practices
-        for documentation within the SPSDK ecosystem.
-
-        :return: Formatted context string containing SPSDK project information and docstring guidelines.
-        """
-        context_parts = [
-            "SPSDK (Secure Provisioning SDK) Project Context:",
-            "",
-            "SPSDK is a unified, reliable, and easy-to-use SW library working across",
-            "NXP MCU portfolio providing strong foundation from quick customer",
-            "prototyping up to production deployment.",
-            "",
-            "Class Docstring Style Guidelines:",
-            "- Use triple quotes with proper indentation",
-            "- Start with a brief one-line description of the class purpose",
-            "- Add detailed description if needed (separated by blank line)",
-            "- Document class variables with :cvar name: description (only if relevant)",
-            "- DO NOT document __init__ parameters (:param) - those belong in __init__ method",
-            "- DO NOT document instance variables (:ivar) - those belong in __init__ method",
-            "- DO NOT document exceptions (:raises) - those belong in individual methods",
-            "- Use proper type hints in class definitions",
-            "",
-            "Example of good SPSDK class docstring:",
-            '"""SPSDK Configuration Manager.',
-            "",  # <- Empty line after title
-            "This class manages configuration data for SPSDK operations including",
-            "validation, loading, and processing of configuration files.",
-            "",  # <- Empty line after description
-            ":cvar DEFAULT_CONFIG: Default configuration template.",
-            '"""',
-            "",
-            "Class docstrings should:",
-            "- Explain the class purpose and responsibility",
-            "- Describe what the class represents or manages",
-            "- Document only class variables (:cvar) if they are important",
-            "- Mention key functionality or usage patterns",
-            "- Include usage examples for complex classes",
-            "- Focus on the class as a whole, not individual method details",
-            "- DO NOT document __init__ parameters (:param) - those belong in __init__ method",
-            "- DO NOT document instance variables (:ivar) - those belong in __init__ method",
-            "- DO NOT document exceptions (:raises) - those belong in individual methods",
-        ]
-        return "\n".join(context_parts)
+        self.spsdk_context = load_docstring_context("class")
 
     def find_python_files(self) -> list[Path]:
         """Find all Python files in the target directory and subdirectories.
@@ -198,7 +150,7 @@ class ClassDocstringUpdater:
         :return: List of ClassInfo objects containing details about each class found in the file.
         """
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 content = f.read()
 
             tree = ast.parse(content)
@@ -218,7 +170,7 @@ class ClassDocstringUpdater:
             LOGGER.error(f"Error processing file {file_path}: {e}")
             return []
 
-    def _extract_class_info(self, node: ast.ClassDef, lines: list[str]) -> Optional[ClassInfo]:
+    def _extract_class_info(self, node: ast.ClassDef, lines: list[str]) -> ClassInfo | None:
         """Extract information about a single class from AST node.
 
         Parses the class definition to extract comprehensive information including
@@ -311,7 +263,7 @@ class ClassDocstringUpdater:
             LOGGER.error(f"Error extracting class info for {node.name}: {e}")
             return None
 
-    def generate_docstring_with_cody(self, class_info: ClassInfo, file_path: Path) -> Optional[str]:
+    def generate_docstring_with_cody(self, class_info: ClassInfo, file_path: Path) -> str | None:
         """Generate or improve a class docstring using Cody API.
 
         This method constructs a detailed prompt containing class information and sends it
@@ -518,7 +470,7 @@ class ClassDocstringUpdater:
         :return: True if the docstring was successfully updated, False otherwise.
         """
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 lines = f.readlines()
 
             # Find where to insert/replace the docstring

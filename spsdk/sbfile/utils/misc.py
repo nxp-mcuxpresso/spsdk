@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,8 +10,9 @@ This module provides utility functions and classes for SBFile operations,
 including timestamp handling, version management, and block size definitions.
 """
 
+from collections.abc import Sequence
 from datetime import datetime, timezone
-from typing import Any, Sequence, Union
+from typing import Any, TypeAlias
 
 from spsdk.exceptions import SPSDKError
 from spsdk.utils import misc
@@ -90,7 +90,7 @@ class SecBootBlckSize:
 
 
 # the type represents input formats for BcdVersion3 value, see BcdVersion3.to_version
-BcdVersion3Format = Union["BcdVersion3", str]
+BcdVersion3Format: TypeAlias = "BcdVersion3 | str"
 
 
 class BcdVersion3:

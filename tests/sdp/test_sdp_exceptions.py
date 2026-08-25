@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023,2025 NXP
+# Copyright 2020-2023,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,13 +10,11 @@ This module contains unit tests for SDP (Serial Download Protocol) exception
 classes, verifying proper inheritance hierarchy and exception handling behavior.
 """
 
-from typing import Type
-
 from spsdk.exceptions import SPSDKError
 from spsdk.sdp.sdp import SdpCommandError, SdpConnectionError, SdpError
 
 
-def raise_and_catch(raising_exc: Exception, catching_exc: Type[Exception]) -> bool:
+def raise_and_catch(raising_exc: Exception, catching_exc: type[Exception]) -> bool:
     """Test if an exception can be caught by a specific exception type.
 
     This utility function raises the provided exception and attempts to catch it

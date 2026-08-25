@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK FCB header to JSON conversion utility.
 
 This module provides functionality to convert FCB (Flexspi Configuration Block)
@@ -277,7 +277,7 @@ def process_struct_member(regs: Registers, member: StructMember, offset: int, he
     :param header: Header string identifier for the register.
     :return: Total width in bits consumed by this member (count * register width).
     """
-    logger.debug((str(member)))
+    logger.debug(str(member))
     logger.debug(f"Offset:{hex(offset // 8)}")
     reg = get_reg(member, offset, header)
     if member.cnt == 1:

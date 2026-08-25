@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -14,7 +13,8 @@ identify supported NXP microcontrollers and development boards.
 
 import os
 import sys
-from typing import IO, TYPE_CHECKING, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import IO, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import prettytable as pt
@@ -34,13 +34,13 @@ from spsdk.utils.devicedescription import (
     UUUDeviceDescription,
 )
 
-_AnyDevice = Union[
-    SDIODeviceDescription,
-    USBDeviceDescription,
-    UartDeviceDescription,
-    SIODeviceDescription,
-    UUUDeviceDescription,
-]
+_AnyDevice = (
+    SDIODeviceDescription
+    | USBDeviceDescription
+    | UartDeviceDescription
+    | SIODeviceDescription
+    | UUUDeviceDescription
+)
 
 _VERTICAL_SEP = "\x00"  # sentinel emitted by _build_vertical_lines between devices
 
@@ -156,7 +156,6 @@ def _make_device_table(devices: Sequence[_AnyDevice]) -> "pt.PrettyTable":
 
     first = devices[0]
     table = pt.PrettyTable()
-    table.align = "l"
     table.header = True
     table.border = False
     table.hrules = pt.HRuleStyle.NONE
@@ -173,11 +172,13 @@ def _make_device_table(devices: Sequence[_AnyDevice]) -> "pt.PrettyTable":
     elif isinstance(first, SDIODeviceDescription):
         _fill_sdio_table(table, devices)
 
+    table.align = "l"
+
     return table
 
 
 def _build_device_table_lines(
-    devices: Sequence[_AnyDevice], max_width: Optional[int] = None
+    devices: Sequence[_AnyDevice], max_width: int | None = None
 ) -> list[str]:
     """Build plain-text table lines for the given device list.
 
@@ -438,7 +439,7 @@ def main(
     uboot: bool,
     timeout: int = 50,
     real_devices: bool = False,
-    baudrate: Optional[int] = None,
+    baudrate: int | None = None,
 ) -> None:
     """Utility listing all connected NXP USB and UART devices.
 

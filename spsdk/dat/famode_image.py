@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
@@ -17,7 +16,7 @@ import logging
 import os
 import struct
 from inspect import isclass
-from typing import Any, Type, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -209,7 +208,7 @@ class FaModeImage(FeatureBaseClass):
         return schemas
 
     @staticmethod
-    def get_famode_classes(family: FamilyRevision) -> dict[str, Type["MasterBootImage"]]:
+    def get_famode_classes(family: FamilyRevision) -> dict[str, type["MasterBootImage"]]:
         """Get all Master Boot Image supported classes for chip family.
 
         Creates dynamically generated MasterBootImage classes with appropriate mixins
@@ -240,11 +239,11 @@ class FaModeImage(FeatureBaseClass):
                 "IMAGE_AUTHENTICATIONS": "nxp_signed" if "nxp" in cls_name else "signed",
             }
             # Get all objects to be mixed together
-            base_classes: list[Union[Type[MasterBootImage], Type[mbi_mixin.Mbi_Mixin]]] = [
+            base_classes: list[type[MasterBootImage] | type[mbi_mixin.Mbi_Mixin]] = [
                 MasterBootImage
             ]
             for mixin in class_descr["mixins"]:
-                mixin_cls: Type[mbi_mixin.Mbi_Mixin] = vars(mbi_mixin)[mixin]
+                mixin_cls: type[mbi_mixin.Mbi_Mixin] = vars(mbi_mixin)[mixin]
                 if isclass(mixin_cls) and issubclass(mixin_cls, mbi_mixin.Mbi_Mixin):
                     for member, init_value in mixin_cls.NEEDED_MEMBERS.items():
                         if member not in members:
@@ -254,7 +253,7 @@ class FaModeImage(FeatureBaseClass):
             return type(cls_name, tuple(base_classes), members)
 
         db = get_db(family)
-        ret: dict[str, Type["MasterBootImage"]] = {}
+        ret: dict[str, type["MasterBootImage"]] = {}
 
         images: list[str] = db.get_list(DatabaseManager.DAT, "famode_cert")
         mbi_classes = db.get_dict(DatabaseManager.MBI, "mbi_classes")

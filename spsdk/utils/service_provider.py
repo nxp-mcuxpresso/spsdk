@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +13,8 @@ pattern across SPSDK components, enabling flexible service registration and disc
 import abc
 import inspect
 import logging
-from typing import Any, Iterator, Optional, Type, Union
+from collections.abc import Iterator
+from typing import Any
 
 from typing_extensions import Self
 
@@ -53,10 +53,8 @@ class ServiceProvider(abc.ABC):
         if not inspect.isabstract(cls) and hasattr(cls, cls.legacy_identifier_name):
             identifier = getattr(cls, cls.legacy_identifier_name)
             logger.warning(
-                (
-                    f"Class {cls.__name__} uses legacy identifier '{cls.legacy_identifier_name} = {identifier}', "
-                    f"please use 'identifier = {identifier}' instead"
-                )
+                f"Class {cls.__name__} uses legacy identifier '{cls.legacy_identifier_name} = {identifier}', "
+                f"please use 'identifier = {identifier}' instead"
             )
             setattr(cls, "identifier", getattr(cls, cls.legacy_identifier_name))
 
@@ -87,7 +85,7 @@ class ServiceProvider(abc.ABC):
         ]
 
     @classmethod
-    def filter_params(cls, klass: Type[Self], params: dict[str, str]) -> dict[str, str]:
+    def filter_params(cls, klass: type[Self], params: dict[str, str]) -> dict[str, str]:
         """Filter unused parameters from dictionary based on class constructor.
 
         Removes parameters that are not accepted by the class constructor's __init__ method,
@@ -134,7 +132,7 @@ class ServiceProvider(abc.ABC):
         return result
 
     @classmethod
-    def create(cls, params: Union[str, dict]) -> Optional[Self]:
+    def create(cls, params: str | dict) -> Self | None:
         """Create a concrete instance of signature provider.
 
         Loads available plugins and creates an instance of the appropriate signature provider
@@ -172,7 +170,7 @@ class ServiceProvider(abc.ABC):
             manager.load_from_entrypoints(cls.plugin_identifier)
 
     @classmethod
-    def get_all_providers(cls, include_abstract: bool = False) -> list[Type[Self]]:
+    def get_all_providers(cls, include_abstract: bool = False) -> list[type[Self]]:
         """Get list of all available signature providers.
 
         The method recursively searches through all subclasses of the current class to find
@@ -183,8 +181,8 @@ class ServiceProvider(abc.ABC):
         """
 
         def get_subclasses(
-            base_class: Type[Self],
-        ) -> Iterator[Type[Self]]:
+            base_class: type[Self],
+        ) -> Iterator[type[Self]]:
             """Recursively find all subclasses of the given base class.
 
             This method traverses the inheritance hierarchy to discover all direct and indirect
@@ -202,7 +200,7 @@ class ServiceProvider(abc.ABC):
         return list(filter(lambda x: not inspect.isabstract(x), get_subclasses(cls)))
 
     @classmethod
-    def get_provider(cls, identifier: str) -> Type[Self]:
+    def get_provider(cls, identifier: str) -> type[Self]:
         """Get provider class with given identifier.
 
         Searches through all available providers and returns the one that matches
@@ -220,10 +218,10 @@ class ServiceProvider(abc.ABC):
     @classmethod
     def create_ex(
         cls,
-        service_config: Optional[str] = None,
-        local_provider: Optional[Type[Self]] = None,
-        local_file: Optional[str] = None,
-        search_paths: Optional[list[str]] = None,
+        service_config: str | None = None,
+        local_provider: type[Self] | None = None,
+        local_file: str | None = None,
+        search_paths: list[str] | None = None,
         **kwargs: Any,
     ) -> Self:
         """Create instance of a Service Provider with external providers.

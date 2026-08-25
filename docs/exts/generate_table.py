@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -16,7 +15,7 @@ device support, features, MBI configurations, and other documentation assets.
 import itertools
 import os
 from functools import lru_cache
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 import nbformat
 import requests
@@ -238,7 +237,7 @@ def generate_table(
     :param use_markdown: Whether to generate Markdown format instead of RST format.
     :return: Formatted table as a string in the specified format.
     """
-    writer: Union[MarkdownTableWriter, RstGridTableWriter]
+    writer: MarkdownTableWriter | RstGridTableWriter
     if use_markdown:
         writer = MarkdownTableWriter(
             table_name=title,

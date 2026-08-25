@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
@@ -12,7 +11,7 @@ interface for SPSDK, enabling reliable data exchange with NXP MCUs over CAN bus.
 The CANDevice class implements the base device interface for CAN protocol operations.
 """
 
-from typing import Any, Optional, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -45,11 +44,11 @@ class CANDevice(DeviceBase):
     def __init__(
         self,
         interface: str,
-        channel: Optional[Union[str, int]] = None,
-        bitrate: Optional[int] = None,
-        timeout: Optional[int] = None,
-        txid: Optional[int] = None,
-        rxid: Optional[int] = None,
+        channel: str | int | None = None,
+        bitrate: int | None = None,
+        timeout: int | None = None,
+        txid: int | None = None,
+        rxid: int | None = None,
     ) -> None:
         """Initialize the CAN interface object.
 
@@ -72,8 +71,8 @@ class CANDevice(DeviceBase):
         self.txid = txid or self.DEFAULT_TX_ARBITRATION_ID
         self.rxid = rxid or self.DEFAULT_RX_ARBITRATION_ID
 
-        self.device: Optional[Any] = None
-        self.listener: Optional[Any] = None
+        self.device: Any | None = None
+        self.listener: Any | None = None
 
     @property
     def timeout(self) -> int:
@@ -135,7 +134,7 @@ class CANDevice(DeviceBase):
         """
         self._opened = False
 
-    def read(self, length: int, timeout: Optional[int] = None) -> bytes:
+    def read(self, length: int, timeout: int | None = None) -> bytes:
         """Read data from the CAN device.
 
         This method retrieves the specified number of bytes from the CAN device through
@@ -158,7 +157,7 @@ class CANDevice(DeviceBase):
         logger.trace(f"<{' '.join(f'{b:02x}' for b in data)}>")
         return data
 
-    def write(self, data: bytes, timeout: Optional[int] = None) -> None:
+    def write(self, data: bytes, timeout: int | None = None) -> None:
         """Send data to CAN device.
 
         The method splits data into chunks that fit the maximum CAN message size
@@ -204,11 +203,11 @@ class CANDevice(DeviceBase):
     def scan(
         cls,
         interface: str,
-        channel: Optional[Union[str, int]] = None,
-        bitrate: Optional[int] = None,
-        timeout: Optional[int] = None,
-        txid: Optional[int] = None,
-        rxid: Optional[int] = None,
+        channel: str | int | None = None,
+        bitrate: int | None = None,
+        timeout: int | None = None,
+        txid: int | None = None,
+        rxid: int | None = None,
     ) -> list[Self]:
         """Scan connected CAN devices.
 

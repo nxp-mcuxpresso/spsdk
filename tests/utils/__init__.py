@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020,2025 NXP
+# Copyright 2020,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK test utilities package.
 
 This package provides common utilities and helper functions for SPSDK testing.

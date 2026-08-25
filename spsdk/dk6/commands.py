@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -14,7 +13,6 @@ protocol implementation.
 """
 
 from struct import unpack_from
-from typing import Optional, Type, Union
 
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -193,7 +191,7 @@ class CmdPacket:
         """
         return "CMDPacket[" + ", ".join(f"{b:02X}" for b in self.data) + "]"
 
-    def export(self) -> Optional[bytes]:
+    def export(self) -> bytes | None:
         """Export CmdPacket into bytes.
 
         :return: Exported object data as bytes, or None if no data is available.
@@ -580,19 +578,21 @@ class MemCloseResponse(CmdResponse):
         return f"Tag={tag}, Status={status}"
 
 
-def parse_cmd_response(data: bytes, frame_type: int) -> Union[
-    CmdResponse,
-    GenericResponse,
-    GetChipIdResponse,
-    MemOpenResponse,
-    MemEraseResponse,
-    MemBlankCheckResponse,
-    MemReadResponse,
-    MemWriteResponse,
-    MemCloseResponse,
-    MemGetInfoResponse,
-    IspUnlockResponse,
-]:
+def parse_cmd_response(
+    data: bytes, frame_type: int
+) -> (
+    CmdResponse
+    | GenericResponse
+    | GetChipIdResponse
+    | MemOpenResponse
+    | MemEraseResponse
+    | MemBlankCheckResponse
+    | MemReadResponse
+    | MemWriteResponse
+    | MemCloseResponse
+    | MemGetInfoResponse
+    | IspUnlockResponse
+):
     """Parse command response based on frame type.
 
     This method analyzes the frame type and returns the appropriate response object
@@ -604,7 +604,7 @@ def parse_cmd_response(data: bytes, frame_type: int) -> Union[
     :return: Parsed response object specific to the command type, or generic
              CmdResponse if frame type is unknown.
     """
-    known_response: dict[ResponseTag, Type[CmdResponse]] = {
+    known_response: dict[ResponseTag, type[CmdResponse]] = {
         ResponseTag.RESET: GenericResponse,
         ResponseTag.EXECUTE: GenericResponse,
         ResponseTag.SET_BAUD: GenericResponse,

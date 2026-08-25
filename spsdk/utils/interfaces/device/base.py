@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2023,2025-2026 NXP
 #
@@ -13,7 +12,6 @@ interfaces in SPSDK, defining the common contract for device operations.
 
 from abc import ABC, abstractmethod
 from types import TracebackType
-from typing import Optional, Type
 
 from typing_extensions import Self
 
@@ -44,9 +42,9 @@ class DeviceBase(ABC):
 
     def __exit__(
         self,
-        exception_type: Optional[Type[Exception]] = None,
-        exception_value: Optional[Exception] = None,
-        traceback: Optional[TracebackType] = None,
+        exception_type: type[Exception] | None = None,
+        exception_value: Exception | None = None,
+        traceback: TracebackType | None = None,
     ) -> None:
         """Clean up device resources and close the connection.
 
@@ -84,7 +82,7 @@ class DeviceBase(ABC):
         """
 
     @abstractmethod
-    def read(self, length: int, timeout: Optional[int] = None) -> bytes:
+    def read(self, length: int, timeout: int | None = None) -> bytes:
         """Read data from the device.
 
         :param length: Length of data to be read in bytes.
@@ -93,7 +91,7 @@ class DeviceBase(ABC):
         """
 
     @abstractmethod
-    def write(self, data: bytes, timeout: Optional[int] = None) -> None:
+    def write(self, data: bytes, timeout: int | None = None) -> None:
         """Write data to the device.
 
         :param data: Data to be written to the device.

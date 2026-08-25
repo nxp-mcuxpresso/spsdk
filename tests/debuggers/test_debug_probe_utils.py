@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -43,6 +42,32 @@ def test_debugprobes_discovery() -> None:
 
     probe_list = get_connected_probes("virtual", DebugProbeVirtual.UNIQUE_SERIAL, {"exc": None})
     assert len(probe_list) == 0
+
+
+def test_debugprobes_architecture_filter() -> None:
+    """Test architecture-based filtering in get_connected_probes.
+
+    Verifies that probes whose ``ARCHITECTURE`` does not match the requested
+    architecture string are excluded from the result, while probes with the
+    matching architecture or ``"abstract"`` are included.
+
+    :raises AssertionError: When architecture filtering doesn't work as expected.
+    """
+    # Virtual inherits DebugProbeCoreSightOnly which has ARCHITECTURE = "arm-cortex"
+    probe_list = get_connected_probes(
+        "virtual", DebugProbeVirtual.UNIQUE_SERIAL, architecture="arm-cortex"
+    )
+    assert len(probe_list) == 1
+
+    # DSC architecture should exclude the cortex-m virtual probe
+    probe_list = get_connected_probes(
+        "virtual", DebugProbeVirtual.UNIQUE_SERIAL, architecture="dsc56800ex"
+    )
+    assert len(probe_list) == 0
+
+    # No architecture filter means all probes are included
+    probe_list = get_connected_probes("virtual", DebugProbeVirtual.UNIQUE_SERIAL, architecture=None)
+    assert len(probe_list) == 1
 
 
 def test_debugprobes_get_probe() -> None:

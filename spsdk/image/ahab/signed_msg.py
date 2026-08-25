@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -22,9 +21,9 @@ import os
 from abc import abstractmethod
 from inspect import isclass
 from struct import calcsize, pack, unpack
-from typing import Any, Optional, Type, Union
+from typing import Any, TypeAlias
 
-from typing_extensions import Self, TypeAlias
+from typing_extensions import Self
 
 from spsdk.crypto.hkdf import hkdf
 from spsdk.crypto.keys import PrivateKeyEcc, PublicKeyEcc
@@ -162,9 +161,9 @@ class Message(Container):
         family: FamilyRevision,
         cert_ver: int = 0,
         permissions: int = 0,
-        issue_date: Optional[int] = None,
+        issue_date: int | None = None,
         cmd: int = 0,
-        unique_id: Optional[bytes] = None,
+        unique_id: bytes | None = None,
         unique_id_len: int = UNIQUE_ID_LEN,
         header_flags: int = 0,
     ) -> None:
@@ -354,7 +353,7 @@ class Message(Container):
         return msg_cls._load_from_config(config, family, cls)
 
     @classmethod
-    def load_from_config_generic(cls, config: Config) -> tuple[int, int, Optional[int], bytes, int]:
+    def load_from_config_generic(cls, config: Config) -> tuple[int, int, int | None, bytes, int]:
         """Load configuration data into message components.
 
         Converts the general configuration options from container configurations
@@ -422,7 +421,7 @@ class Message(Container):
         """
 
     @classmethod
-    def get_message_class(cls, cmd: str) -> Type[Self]:
+    def get_message_class(cls, cmd: str) -> type[Self]:
         """Get the dedicated message class for command.
 
         Searches through all available Message subclasses to find the one that matches
@@ -442,7 +441,7 @@ class Message(Container):
         raise SPSDKValueError(f"Command {cmd} is not supported.")
 
     @classmethod
-    def parse(cls, data: bytes, family: Optional[FamilyRevision] = None) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision | None = None) -> Self:
         """Parse input binary to the signed message object.
 
         The method extracts message components from binary data including issue date,
@@ -523,8 +522,8 @@ class MessageReturnLifeCycle(Message):
         family: FamilyRevision,
         cert_ver: int = 0,
         permissions: int = 0,
-        issue_date: Optional[int] = None,
-        unique_id: Optional[bytes] = None,
+        issue_date: int | None = None,
+        unique_id: bytes | None = None,
         unique_id_len: int = Message.UNIQUE_ID_LEN,
         life_cycle: int = 0,
         header_flags: int = 0,
@@ -671,13 +670,13 @@ class MessageWriteSecureFuse(Message):
         family: FamilyRevision,
         cert_ver: int = 0,
         permissions: int = 0,
-        issue_date: Optional[int] = None,
-        unique_id: Optional[bytes] = None,
+        issue_date: int | None = None,
+        unique_id: bytes | None = None,
         unique_id_len: int = Message.UNIQUE_ID_LEN,
         fuse_id: int = 0,
         length: int = 0,
         flags: int = 0,
-        data: Optional[list[int]] = None,
+        data: list[int] | None = None,
         header_flags: int = 0,
     ) -> None:
         """Initialize EdgeLock signed message for device communication.
@@ -882,8 +881,8 @@ class MessageKeyStoreReprovisioningEnable(Message):
         family: FamilyRevision,
         cert_ver: int = 0,
         permissions: int = 0,
-        issue_date: Optional[int] = None,
-        unique_id: Optional[bytes] = None,
+        issue_date: int | None = None,
+        unique_id: bytes | None = None,
         unique_id_len: int = Message.UNIQUE_ID_LEN,
         monotonic_counter: int = 0,
         user_sab_id: int = 0,
@@ -1087,8 +1086,8 @@ class MessageKeyExchange(Message):
         family: FamilyRevision,
         cert_ver: int = 0,
         permissions: int = 0,
-        issue_date: Optional[int] = None,
-        unique_id: Optional[bytes] = None,
+        issue_date: int | None = None,
+        unique_id: bytes | None = None,
         unique_id_len: int = Message.UNIQUE_ID_LEN,
         key_store_id: int = 0,
         key_exchange_algorithm: KeyAlgorithm = KeyAlgorithm.HKDF_SHA256,
@@ -1097,15 +1096,15 @@ class MessageKeyExchange(Message):
         derived_key_size_bits: int = 0,
         derived_key_type: KeyType = KeyType.AES,
         derived_key_lifetime: LifeTime = LifeTime.PERSISTENT,
-        derived_key_usage: Optional[list[KeyUsage]] = None,
+        derived_key_usage: list[KeyUsage] | None = None,
         derived_key_permitted_algorithm: KeyDerivationAlgorithm = KeyDerivationAlgorithm.HKDF_SHA256,
         derived_key_lifecycle: LifeCycle = LifeCycle.OPEN,
         derived_key_id: int = 0,
         private_key_id: int = 0,
-        input_peer_public_key_digest: bytes = bytes(),
-        input_user_fixed_info_digest: bytes = bytes(),
-        oem_private_key: Optional[PrivateKeyEcc] = None,
-        nxp_prod_ka_pub: Optional[PublicKeyEcc] = None,
+        input_peer_public_key_digest: bytes = b"",
+        input_user_fixed_info_digest: bytes = b"",
+        oem_private_key: PrivateKeyEcc | None = None,
+        nxp_prod_ka_pub: PublicKeyEcc | None = None,
         header_flags: int = 0,
     ) -> None:
         """Initialize key exchange signed message with ECDH support.
@@ -1185,10 +1184,10 @@ class MessageKeyExchange(Message):
         self.nxp_prod_ka_pub = nxp_prod_ka_pub
 
         # Derived keys storage
-        self._shared_secret: Optional[bytes] = None
-        self._oem_import_mk_sk: Optional[bytes] = None
-        self._oem_import_wrap_sk: Optional[bytes] = None
-        self._oem_import_cmac_sk: Optional[bytes] = None
+        self._shared_secret: bytes | None = None
+        self._oem_import_mk_sk: bytes | None = None
+        self._oem_import_wrap_sk: bytes | None = None
+        self._oem_import_cmac_sk: bytes | None = None
 
         if input_peer_public_key_digest == bytes(32) and oem_private_key:
             oem_public_key = oem_private_key.get_public_key()
@@ -1199,7 +1198,7 @@ class MessageKeyExchange(Message):
         else:
             self.input_peer_public_key_digest = input_peer_public_key_digest
 
-    def perform_ecdh_key_derivation(self, srkh: Optional[bytes] = None) -> None:
+    def perform_ecdh_key_derivation(self, srkh: bytes | None = None) -> None:
         """Perform ECDH key derivation following the C code flow.
 
         This method performs a multi-step key derivation process:
@@ -1270,7 +1269,7 @@ class MessageKeyExchange(Message):
             raise SPSDKError(f"ECDH key derivation failed: {str(exc)}") from exc
 
     @property
-    def shared_secret(self) -> Optional[bytes]:
+    def shared_secret(self) -> bytes | None:
         """Get the ECDH shared secret.
 
         :return: The ECDH shared secret bytes if available, None otherwise.
@@ -1278,7 +1277,7 @@ class MessageKeyExchange(Message):
         return self._shared_secret
 
     @property
-    def oem_import_mk_sk(self) -> Optional[bytes]:
+    def oem_import_mk_sk(self) -> bytes | None:
         """Get the derived OEM_Import_MK_SK.
 
         :return: The derived OEM Import Master Key Signing Key bytes, or None if not set.
@@ -1286,7 +1285,7 @@ class MessageKeyExchange(Message):
         return self._oem_import_mk_sk
 
     @property
-    def oem_import_wrap_sk(self) -> Optional[bytes]:
+    def oem_import_wrap_sk(self) -> bytes | None:
         """Get the derived OEM Import Wrap Secret Key.
 
         This method retrieves the OEM Import Wrap Secret Key that has been derived during the
@@ -1297,7 +1296,7 @@ class MessageKeyExchange(Message):
         return self._oem_import_wrap_sk
 
     @property
-    def oem_import_cmac_sk(self) -> Optional[bytes]:
+    def oem_import_cmac_sk(self) -> bytes | None:
         """Get the derived OEM Import CMAC secret key.
 
         :return: The derived OEM Import CMAC secret key if available, None otherwise.
@@ -1642,7 +1641,7 @@ class MessageKeyExchange(Message):
 
         return cfg
 
-    def get_derived_keys_info(self) -> dict[str, Optional[str]]:
+    def get_derived_keys_info(self) -> dict[str, str | None]:
         """Get information about derived keys for external use.
 
         This method provides access to the derived cryptographic keys in hexadecimal string format
@@ -1733,8 +1732,8 @@ class MessageDat(Message):
         family: FamilyRevision,
         cert_ver: int = 0,
         permissions: int = 0,
-        issue_date: Optional[int] = None,
-        unique_id: Optional[bytes] = None,
+        issue_date: int | None = None,
+        unique_id: bytes | None = None,
         unique_id_len: int = Message.UNIQUE_ID_LEN,
         challenge_vector: bytes = bytes(32),
         authentication_beacon: int = 0,
@@ -1985,9 +1984,9 @@ class SignedMessageContainer(AHABContainerBase):
         flags: int = 0,
         fuse_version: int = 0,
         sw_version: int = 0,
-        message: Optional[Union[Message, MessageV2]] = None,
-        signature_block: Optional[Union[SignatureBlock, SignatureBlockV2]] = None,
-        encrypt_iv: Optional[bytes] = None,
+        message: Message | MessageV2 | None = None,
+        signature_block: SignatureBlock | SignatureBlockV2 | None = None,
+        encrypt_iv: bytes | None = None,
     ):
         """Initialize AHAB signed message container.
 
@@ -2139,7 +2138,7 @@ class SignedMessageContainer(AHABContainerBase):
             self.fuse_version,
             RESERVED,
             self._signature_block_offset,
-            RESERVED,  # Reserved field
+            RESERVED,  # Reserved field (bytes 14-15)
             1 if self.encrypt_iv else 0,
             RESERVED,
             RESERVED,
@@ -2207,7 +2206,7 @@ class SignedMessageContainer(AHABContainerBase):
             fuse_version,
             _,  # number_of_images
             signature_block_offset,
-            _,  # reserved
+            _,  # reserved (bytes 14-15)
             descriptor_flags,
             _,  # reserved
             _,  # reserved
@@ -2310,6 +2309,10 @@ class SignedMessageContainerV2(SignedMessageContainer):
     signature blocks, message types, and validation schemas that support enhanced security
     features including dual signature verification and certificate-based authentication.
 
+    In the V2 format, the container header carries a ``cert_version`` byte at offset 14
+    (previously reserved, always 0 in V1 containers). The message header no longer carries
+    ``cert_version`` or ``cert_permission`` fields — those bytes are reserved (0) in V2.
+
     :cvar VERSION: Container format version identifier (0x02).
     :cvar SIGNATURE_BLOCK: Type alias for V2 signature block implementation.
     :cvar MESSAGE_TYPE: Type alias for V2 message format implementation.
@@ -2320,11 +2323,200 @@ class SignedMessageContainerV2(SignedMessageContainer):
     MESSAGE_TYPE: TypeAlias = MessageV2
 
     @classmethod
+    def format(cls) -> str:
+        """Get binary format string for V2 signed message container.
+
+        Overrides the inherited format to split the reserved UINT16 field (bytes 14-15)
+        into ``UINT8(cert_version) + UINT8(reserved)`` as required by the V2 specification.
+        All other fields are identical to the V1 layout.
+
+        :return: Format string for struct operations with binary data.
+        """
+        return (
+            LITTLE_ENDIAN
+            + UINT8  # Version
+            + UINT16  # Length
+            + UINT8  # Tag
+            + UINT32  # Flags
+            + UINT16  # SW version
+            + UINT8  # Fuse version
+            + UINT8  # Number of Images
+            + UINT16  # Signature Block Offset
+            + UINT8  # Cert version (V2 format: byte 14 of container header)
+            + UINT8  # Reserved (byte 15)
+            + UINT8  # Descriptor Flags
+            + UINT8  # Reserved
+            + UINT16  # Reserved
+            + "32s"  # IV - Initial Vector if encryption is enabled
+        )
+
+    def __init__(
+        self,
+        chip_config: AhabChipConfig,
+        flags: int = 0,
+        fuse_version: int = 0,
+        sw_version: int = 0,
+        message: Message | MessageV2 | None = None,
+        signature_block: SignatureBlock | SignatureBlockV2 | None = None,
+        encrypt_iv: bytes | None = None,
+        cert_version: int = 0,
+    ):
+        """Initialize AHAB V2 signed message container with certificate version.
+
+        :param chip_config: Chip configuration for AHAB operations.
+        :param flags: Container flags for message processing.
+        :param fuse_version: Minimum fuse version required, must be equal to or greater
+            than the version stored in fuses to allow loading this container.
+        :param sw_version: Software version used by PHBC to select between multiple images.
+        :param message: Message command to be signed.
+        :param signature_block: Signature block for message verification.
+        :param encrypt_iv: Encryption Initial Vector; when provided enables encryption.
+        :param cert_version: Certificate version stored in the container header (byte 14).
+            This field replaces the previously reserved byte in the V2 container header.
+        """
+        super().__init__(
+            chip_config=chip_config,
+            flags=flags,
+            fuse_version=fuse_version,
+            sw_version=sw_version,
+            message=message,
+            signature_block=signature_block,
+            encrypt_iv=encrypt_iv,
+        )
+        self.cert_version = cert_version
+
+    def _export(self) -> bytes:
+        """Export V2 signed message to binary format.
+
+        Exports the container with ``cert_version`` placed at container header byte 14
+        (previously a reserved byte in V1). The message header bytes 2-3 (cert_version
+        and permissions) are always zero in V2 format.
+
+        :return: Binary representation of the V2 signed message with all components.
+        """
+        signed_message = pack(
+            self.format(),
+            self.version,
+            len(self),
+            self.tag,
+            self.flags,
+            self.sw_version,
+            self.fuse_version,
+            RESERVED,
+            self._signature_block_offset,
+            self.cert_version,  # Cert version at container header byte 14 (V2 format)
+            RESERVED,  # Reserved field (byte 15)
+            1 if self.encrypt_iv else 0,
+            RESERVED,
+            RESERVED,
+            self.encrypt_iv if self.encrypt_iv else bytes(32),
+        )
+        # Add Message Header + Message Payload
+        assert isinstance(self.message, Message)
+        signed_message += self.message.export()
+        # Add Signature Block
+        if self.signature_block:
+            signed_message += align_block(self.signature_block.export(), CONTAINER_ALIGNMENT)
+        return signed_message
+
+    @classmethod
+    def parse(cls, data: bytes, chip_config: AhabChipConfig) -> Self:  # type: ignore # pylint: disable=arguments-differ
+        """Parse binary data to create a V2 signed message container object.
+
+        Extracts the ``cert_version`` from container header byte 14. The message header
+        bytes 2-3 are reserved in V2 and their parsed values (always 0) are discarded.
+
+        :param data: Binary data containing the AHAB V2 container block to parse.
+        :param chip_config: AHAB chip configuration settings for the target device.
+        :return: Parsed V2 SignedMessage container object with all extracted fields.
+        """
+        cls.check_container_head(data)
+        image_format = cls.format()
+        (
+            _,  # version
+            container_length,
+            _,  # tag
+            flags,
+            sw_version,
+            fuse_version,
+            _,  # number_of_images
+            signature_block_offset,
+            cert_version,  # cert_version at container header byte 14 (V2 format)
+            _,  # reserved
+            descriptor_flags,
+            _,  # reserved
+            _,  # reserved
+            iv,
+        ) = unpack(image_format, data[: cls.fixed_length()])
+
+        ret = cls(
+            chip_config=chip_config,
+            flags=flags,
+            fuse_version=fuse_version,
+            sw_version=sw_version,
+            cert_version=cert_version,
+            message=cls.MESSAGE_TYPE.parse(
+                data[cls.fixed_length() : signature_block_offset], family=chip_config.family
+            ),
+            encrypt_iv=iv if bool(descriptor_flags & 0x01) else None,
+        )
+        ret.chip_config.base.signature_algorithms = chip_config.signature_algorithms
+        ret.chip_config.base.hash_algorithms = chip_config.hash_algorithms
+        ret.length = container_length
+        ret.signature_block = cls.SIGNATURE_BLOCK.parse(
+            data[signature_block_offset:], ret.chip_config
+        )
+        return ret
+
+    def get_config(self, data_path: str = "./") -> Config:
+        """Create configuration of the V2 Signed Message.
+
+        Produces a config dict with ``cert_version`` at the container level.
+        The ``cert_version`` and ``cert_permission`` keys are omitted from the message
+        section since those fields are reserved (always 0) in the V2 message header.
+
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary.
+        """
+        cfg = self._create_config(0, data_path)
+        cfg["output"] = "N/A"
+        cfg["cert_version"] = self.cert_version
+        assert isinstance(self.message, Message)
+        msg_cfg = self.message.get_config()
+        # For V2 format, cert_version and cert_permission live in the container header,
+        # not in the message header — remove them from the message-level config.
+        msg_cfg.pop("cert_version", None)
+        msg_cfg.pop("cert_permission", None)
+        cfg["message"] = msg_cfg
+        return cfg
+
+    @classmethod
+    def load_from_config(cls, chip_config: AhabChipConfig, config: Config) -> Self:
+        """Load V2 signed message object from configuration.
+
+        Reads ``cert_version`` from the container-level config (not from the message
+        section, where those fields are reserved in V2).
+
+        :param chip_config: AHAB chip configuration containing chip-specific settings.
+        :param config: Configuration dictionary containing signed message parameters.
+        :return: Configured V2 signed message object.
+        """
+        signed_msg = cls(chip_config)
+        signed_msg.load_from_config_generic(config)
+        signed_msg.cert_version = config.get_int("cert_version", 0)
+
+        message = config.get_config("message")
+        signed_msg.message = cls.MESSAGE_TYPE.load_from_config(message, chip_config.family)
+        return signed_msg
+
+    @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:
-        """Get list of validation schemas for AHAB signed message.
+        """Get list of validation schemas for AHAB V2 signed message.
 
         The method retrieves and customizes validation schemas based on family-specific features
         like container types, certificate support, and signature validation requirements.
+        For V2 families, ``cert_version`` is exposed at the container level and removed from
+        the message-level properties.
 
         :param family: Family revision for which the validation schema should be generated.
         :return: List containing family schema and customized signed message schema.
@@ -2354,6 +2546,12 @@ class SignedMessageContainerV2(SignedMessageContainer):
                 "skip_in_template"
             ] = False
             sch["signed_message"]["properties"]["signer_#2"]["skip_in_template"] = False
+            # V2 format: cert_version is in the container header, not the message header.
+            # Expose it at container level and remove from message-level schema.
+            sch["signed_message"]["properties"]["cert_version"]["skip_in_template"] = False
+            msg_props = sch["signed_message"]["properties"]["message"]["properties"]
+            msg_props.pop("cert_version", None)
+            msg_props.pop("cert_permission", None)
         return [sch_family, sch["signed_message"]]
 
 
@@ -2372,9 +2570,7 @@ class SignedMessage(FeatureBaseClass):
     def __init__(
         self,
         family: FamilyRevision,
-        signed_msg_container: Optional[
-            Union[SignedMessageContainer, SignedMessageContainerV2]
-        ] = None,
+        signed_msg_container: SignedMessageContainer | SignedMessageContainerV2 | None = None,
     ) -> None:
         """Initialize AHAB Image instance.
 
@@ -2387,9 +2583,9 @@ class SignedMessage(FeatureBaseClass):
         """
         self.chip_config = create_chip_config(family=family)
         self.signed_msg_container = signed_msg_container
-        self._container_type: Optional[
-            Union[Type[SignedMessageContainer], Type[SignedMessageContainerV2]]
-        ] = None
+        self._container_type: (
+            type[SignedMessageContainer] | type[SignedMessageContainerV2] | None
+        ) = None
         self.db = get_db(family)
 
     @property
@@ -2409,7 +2605,7 @@ class SignedMessage(FeatureBaseClass):
         self.chip_config.family = value
 
     @property
-    def container_type(self) -> Union[Type[SignedMessageContainer], Type[SignedMessageContainerV2]]:
+    def container_type(self) -> type[SignedMessageContainer] | type[SignedMessageContainerV2]:
         """Get container class type.
 
         Determines and returns the type of the signed message container. The container type
@@ -2616,7 +2812,7 @@ class SignedMessage(FeatureBaseClass):
         return ret
 
     @classmethod
-    def parse(cls, data: bytes, family: Optional[FamilyRevision] = None) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision | None = None) -> Self:
         """Parse input binary chunk to the container object.
 
         The method parses binary data containing a signed message and creates the appropriate
@@ -2672,7 +2868,7 @@ class SignedMessage(FeatureBaseClass):
 
     @classmethod
     def get_config_template(
-        cls, family: FamilyRevision, message: Optional[MessageCommands] = None
+        cls, family: FamilyRevision, message: MessageCommands | None = None
     ) -> str:
         """Get AHAB configuration template.
 
@@ -2699,7 +2895,7 @@ class SignedMessage(FeatureBaseClass):
     @staticmethod
     def _parse_signed_message_type(
         data: bytes,
-    ) -> Union[Type[SignedMessageContainer], Type[SignedMessageContainerV2]]:
+    ) -> type[SignedMessageContainer] | type[SignedMessageContainerV2]:
         """Recognize container type from binary data.
 
         The method analyzes the provided binary data to determine whether it represents
@@ -2722,7 +2918,7 @@ class SignedMessage(FeatureBaseClass):
     @staticmethod
     def _get_signed_message_class(
         family: FamilyRevision,
-    ) -> Union[Type[SignedMessageContainer], Type[SignedMessageContainerV2]]:
+    ) -> type[SignedMessageContainer] | type[SignedMessageContainerV2]:
         """Get signed message container class based on family revision.
 
         The method determines whether to use classic or PQC (Post-Quantum Cryptography) version

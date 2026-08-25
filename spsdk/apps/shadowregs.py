@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -15,8 +14,8 @@ register manipulation, configuration management, and fuse programming scripts.
 import contextlib
 import logging
 import sys
+from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Iterator, Optional
 
 import click
 import colorama
@@ -56,9 +55,9 @@ class DebugProbeCfg:
     parameters used for device communication and debugging operations.
     """
 
-    interface: Optional[str] = None
-    serial_no: Optional[str] = None
-    debug_probe_params: Optional[dict] = None
+    interface: str | None = None
+    serial_no: str | None = None
+    debug_probe_params: dict | None = None
 
     def set_test_address(self, test_address: int) -> None:
         """Set if not already sets, the test address for AHB access.
@@ -116,8 +115,8 @@ def _open_shadow_registers(
 
 def create_debug_probe_cfg(
     family: FamilyRevision,
-    interface: Optional[str],
-    serial_no: Optional[str],
+    interface: str | None,
+    serial_no: str | None,
     debug_probe_option: list[str],
 ) -> DebugProbeCfg:
     """Create DebugProbeCfg from command line options.
@@ -231,7 +230,7 @@ def save_config(
     output: str,
     save_diff: bool,
     ignore_access_rights: bool,
-    family: Optional[FamilyRevision],
+    family: FamilyRevision | None,
 ) -> None:
     """Save current state of shadow registers to YAML file."""
     family = pass_obj["family"] or family
@@ -269,7 +268,7 @@ def get_config(
     output: str,
     diff_only: bool,
     ignore_access_rights: bool,
-    family: Optional[FamilyRevision],
+    family: FamilyRevision | None,
 ) -> None:
     """Save current state of shadow registers to YAML file."""
     family = pass_obj["family"] or family
@@ -316,7 +315,9 @@ def get_config_command(
             except SPSDKError as exc:
                 raise SPSDKAppError(f"Reading the shadow registers failed: ({str(exc)})") from exc
         write_file(shadow_regs.get_config_yaml(diff=diff_only), output)
-        click.echo(f"The shadow registers configuration has been saved into {output}")
+        click.echo(
+            f"The shadow registers configuration has been saved into {get_printable_path(output)}"
+        )
 
 
 @main.command(
@@ -395,7 +396,7 @@ def write_command(
 @spsdk_output_option(force=True)
 @spsdk_family_option(families=get_families(DatabaseManager.SHADOW_REGS), required=False)
 @click.pass_obj
-def get_template(pass_obj: dict, output: str, family: Optional[FamilyRevision]) -> None:
+def get_template(pass_obj: dict, output: str, family: FamilyRevision | None) -> None:
     """Generate the template of Shadow registers YAML configuration file."""
     family = pass_obj["family"] or family
     if not family:
@@ -420,7 +421,7 @@ def get_template(pass_obj: dict, output: str, family: Optional[FamilyRevision]) 
 )
 @spsdk_family_option(families=get_families(DatabaseManager.SHADOW_REGS), required=False)
 @click.pass_obj
-def print_regs(pass_obj: dict, rich: bool, family: Optional[FamilyRevision]) -> None:
+def print_regs(pass_obj: dict, rich: bool, family: FamilyRevision | None) -> None:
     """Print all Shadow registers including theirs current values.
 
     In case of needed more information, there is also provided rich format of print.
@@ -449,7 +450,7 @@ def print_regs(pass_obj: dict, rich: bool, family: Optional[FamilyRevision]) -> 
 )
 @spsdk_family_option(families=get_families(DatabaseManager.SHADOW_REGS), required=False)
 @click.pass_obj
-def get_reg(pass_obj: dict, reg: str, rich: bool, family: Optional[FamilyRevision]) -> None:
+def get_reg(pass_obj: dict, reg: str, rich: bool, family: FamilyRevision | None) -> None:
     """The command prints the current value of one shadow register."""
     family = pass_obj["family"] or family
     if not family:
@@ -486,10 +487,10 @@ def get_reg(pass_obj: dict, reg: str, rich: bool, family: Optional[FamilyRevisio
 @click.pass_obj
 def print_registers(
     pass_obj: dict,
-    name: Optional[str],
+    name: str | None,
     rich: bool,
     ignore_access_rights: bool,
-    family: Optional[FamilyRevision],
+    family: FamilyRevision | None,
 ) -> None:
     """Print the current state of shadow registers from device."""
     family = pass_obj["family"] or family
@@ -507,7 +508,7 @@ def print_registers(
 def print_registers_command(
     family: FamilyRevision,
     debug_probe_cfg: DebugProbeCfg,
-    name: Optional[str],
+    name: str | None,
     rich: bool,
     ignore_access_rights: bool,
 ) -> None:
@@ -583,7 +584,7 @@ def set_reg(
     reg_val: str,
     verify: bool,
     raw: bool,
-    family: Optional[FamilyRevision],
+    family: FamilyRevision | None,
 ) -> None:
     """The command sets a value of one shadow register defined by parameter."""
     family = pass_obj["family"] or family
@@ -624,7 +625,7 @@ def set_reg(
 @spsdk_family_option(families=get_families(DatabaseManager.SHADOW_REGS), required=False)
 @click.pass_obj
 def write_single(
-    pass_obj: dict, name: str, value: str, verify: bool, raw: bool, family: Optional[FamilyRevision]
+    pass_obj: dict, name: str, value: str, verify: bool, raw: bool, family: FamilyRevision | None
 ) -> None:
     """Write single shadow register into device."""
     family = pass_obj["family"] or family
@@ -675,7 +676,7 @@ def write_single_command(
 @main.command(no_args_is_help=False)
 @spsdk_family_option(families=get_families(DatabaseManager.SHADOW_REGS), required=False)
 @click.pass_obj
-def reset(pass_obj: dict, family: Optional[FamilyRevision]) -> None:
+def reset(pass_obj: dict, family: FamilyRevision | None) -> None:
     """The command resets connected device."""
     family = pass_obj["family"] or family
     if not family:
@@ -714,7 +715,7 @@ def fuses_script(pass_obj: dict, config: Config, output: str) -> None:
         shadow_regs.create_fuse_blhost_script(list(config.get_dict("registers").keys())),
         output,
     )
-    click.echo(f"BLHOST script to burn fuses has been generated: {output}")
+    click.echo(f"BLHOST script to burn fuses has been generated: {get_printable_path(output)}")
 
 
 @catch_spsdk_error

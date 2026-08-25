@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
@@ -13,7 +12,7 @@ management across NXP MCU devices.
 """
 
 import os
-from typing import Any, Union
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -134,7 +133,7 @@ def test_nxpfuses_fuses_write(cli_runner: CliRunner, data_dir: str) -> None:
 @patch("spsdk.apps.nxpfuses.get_fuse_operator", mock_fuses_operator)
 @patch("spsdk.fuses.fuses.Fuses.fuse_operator_type", TestBlhostFuseOperator)
 def test_nxpfuses_fuses_print_single(
-    cli_runner: CliRunner, data_dir: str, caplog: Any, name: Union[str, int]
+    cli_runner: CliRunner, data_dir: str, caplog: Any, name: str | int
 ) -> None:
     """Test printing a single fuse using the nxpfuses CLI command.
 

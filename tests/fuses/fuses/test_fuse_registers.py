@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK Fuse Registers testing module.
 
 This module contains comprehensive tests for the fuse registers functionality in SPSDK,
@@ -12,7 +12,7 @@ management operations for NXP MCU fuse handling.
 """
 
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import pytest
 
@@ -28,7 +28,7 @@ from spsdk.utils.misc import load_configuration
 from spsdk.utils.registers import Access
 
 
-def get_reg_from_cfg(cfg: dict, group_name: str, fuse_name: str) -> Dict[str, Any]:
+def get_reg_from_cfg(cfg: dict, group_name: str, fuse_name: str) -> dict[str, Any]:
     """Get register configuration from configuration dictionary.
 
     Searches through the configuration groups to find a specific register
@@ -76,7 +76,7 @@ def get_reg_from_cfg(cfg: dict, group_name: str, fuse_name: str) -> Dict[str, An
         ),
     ],
 )
-def test_fuse_lock_register_load_config(config: Dict[str, str], exception: Optional[type]) -> None:
+def test_fuse_lock_register_load_config(config: dict[str, str], exception: type | None) -> None:
     """Test loading FuseLockRegister from configuration data.
 
     This test verifies that FuseLockRegister.load_from_config() properly handles
@@ -109,7 +109,7 @@ def test_fuse_lock_register_load_config(config: Dict[str, str], exception: Optio
         },
     ],
 )
-def test_fuse_lock_register_create_config(config: Dict[str, str]) -> None:
+def test_fuse_lock_register_create_config(config: dict[str, str]) -> None:
     """Test fuse lock register configuration creation and validation.
 
     This test verifies that a FuseLockRegister can be created from a configuration
@@ -162,7 +162,7 @@ def test_fuse_register_create_from_spec(
     fuse_name: str,
     otp_index: int,
     shadow_offset: int,
-    fuse_lock_register: Optional[FuseLockRegister],
+    fuse_lock_register: FuseLockRegister | None,
 ) -> None:
     """Test creation of FuseRegister from specification configuration.
 
@@ -270,7 +270,7 @@ def test_fuse_register_access(data_dir: str) -> None:
     ],
 )
 def test_grouped_register_invalid_params(
-    mock_test_database: Any, data_dir: str, group_reg: List[Dict[str, Any]]
+    mock_test_database: Any, data_dir: str, group_reg: list[dict[str, Any]]
 ) -> None:
     """Test grouped register loading with invalid parameters.
 
@@ -371,7 +371,7 @@ def test_get_by_otp_index(mock_test_database: Any, data_dir: str) -> None:
     ],
 )
 def test_get_lock_fuse(
-    mock_test_database: Any, data_dir: str, fuse_id: str, lock_fuse_name: Optional[str]
+    mock_test_database: Any, data_dir: str, fuse_id: str, lock_fuse_name: str | None
 ) -> None:
     """Test the get_lock_fuse method functionality.
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -13,7 +12,6 @@ and SIO interfaces.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Union
 
 from libusbsio.libusbsio import LIBUSBSIO
 
@@ -67,7 +65,7 @@ class UartDeviceDescription(DeviceDescription):
     regardless of the underlying UART library used.
     """
 
-    def __init__(self, name: Optional[str] = None, dev_type: Optional[str] = None) -> None:
+    def __init__(self, name: str | None = None, dev_type: str | None = None) -> None:
         """Initialize device description with port name and device type.
 
         The 'dev_type' can be in general any string identifying the device type.
@@ -105,7 +103,7 @@ class USBDeviceDescription(DeviceDescription):
         manufacturer_string: str,
         name: str,
         serial: str,
-        original_path: Optional[Union[str, bytes]] = None,
+        original_path: str | bytes | None = None,
     ) -> None:
         """Initialize USB device description.
 
@@ -293,7 +291,7 @@ class SIODeviceDescription(DeviceDescription):
 
 
 def get_usb_device_name(
-    vid: int, pid: int, device_names: Optional[dict[str, list[UsbId]]] = None
+    vid: int, pid: int, device_names: dict[str, list[UsbId]] | None = None
 ) -> list[str]:
     """Get USB device name based on VID/PID.
 

@@ -1,0 +1,13 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# NXP lpc55s1x PFR CMPA configuration
+family: lpc55s1x  # The NXP device name.
+type: CMPA # The PFR type (CMPA, CFPA) or IFR type.
+
+settings: # The CMPA registers configuration.
+  SECURE_BOOT_CFG:  # Secure boot configuration
+    bitfields:  # The register bitfields
+      RSA4K: '0x1'  # Enable RSA4096 root keys
+      SEC_BOOT_EN: '0x1'  # Enable secure boot

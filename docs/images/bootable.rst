@@ -6,7 +6,7 @@ Bootable image is primarily intended for booting from the external memories, for
 Bootable image encapsulates the executable application images and adds additional data processed by the bootROM that are needed for boot, like for example configuration of the flash memories.
 The bootable image might consists of:
 
-- Keyblob for data decryption
+- Keyblob or IPED table for data decryption
 - Keystore
 - FlexSPI Configuration Block (FCB)
 - External Memory Configuration Data (XMCD)
@@ -15,6 +15,12 @@ The bootable image might consists of:
 
 For details on AHAB container layout used in i.MX 9x imx-boot images, see :doc:`ahab` section
 "AHAB Container Structure for imx-boot".
+
+For IPED-enabled families, the ``keyblob`` segment may point either to a raw binary IPED
+table or to an IPED YAML configuration. When a YAML configuration is used, bootable-image
+export creates the IPED table during image assembly and places it in the same offset used by
+other keyblob-style decryption tables. See :doc:`flash` for IPED flag meanings and template
+details.
 
 Generating Templates
 ====================

@@ -34,7 +34,7 @@ pipeline {
                 stage('Codecheck') {
                     steps {
                         withVenv(
-                            'tox --recreate -e py310,py313'
+                            'tox --recreate -e py310,py314 -- -dc gitcov'
                         )
                     }
                 }
@@ -50,7 +50,7 @@ pipeline {
                             userRemoteConfigs: scm.userRemoteConfigs
                         ])
                         withVenv(
-                            'uv pip install ".[all]" -r docs/requirements.txt && cd docs && make html SPHINXOPTS="-W --keep-going"'
+                            'uv pip install --prerelease=allow ".[all]" -r docs/requirements.txt && cd docs && make html SPHINXOPTS="-W --keep-going"'
                         )
                     }
                 }
@@ -60,12 +60,13 @@ pipeline {
 
     post {
         always {
-                archiveArtifacts artifacts: 'reports_py310/**/*.txt, reports_py313/**/*.txt', fingerprint: true
-
-        emailext(body: '${DEFAULT_CONTENT}', mimeType: 'text/html',
-            replyTo: '$DEFAULT_REPLYTO', subject: '${DEFAULT_SUBJECT}',
-            to: emailextrecipients([[$class: 'CulpritsRecipientProvider'],
-                                    [$class: 'RequesterRecipientProvider']]))
+            archiveArtifacts artifacts: 'reports_py310/**/*.txt, reports_py314/**/*.txt', fingerprint: true
+        }
+        failure {
+            emailext(body: '${DEFAULT_CONTENT}', mimeType: 'text/html',
+                replyTo: '$DEFAULT_REPLYTO', subject: '${DEFAULT_SUBJECT}',
+                to: emailextrecipients([[$class: 'DevelopersRecipientProvider'],
+                                        [$class: 'RequesterRecipientProvider']]))
         }
     }
 }

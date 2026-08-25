@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,8 +12,8 @@ UART interface.
 """
 
 import logging
+from collections.abc import Callable
 from types import TracebackType
-from typing import Callable, Optional, Type, Union
 
 from spsdk.dk6.commands import (
     GetChipIdResponse,
@@ -210,11 +209,11 @@ class DK6Device:
         :param device: SerialDevice that will be used for communication with the DK6 device.
         """
         self.memories: dict[int, DK6Memory] = {}
-        self.chip_id: Union[GetChipIdResponse, None] = None
+        self.chip_id: GetChipIdResponse | None = None
         self.uart = Uart(device)
         self.protocol = DK6Protocol(self.uart)
-        self.mac_addr: Optional[bytes] = None
-        self.dev_type: Optional[DK6DeviceId] = None
+        self.mac_addr: bytes | None = None
+        self.dev_type: DK6DeviceId | None = None
         self.initialized = False
 
     def __del__(self) -> None:
@@ -244,9 +243,9 @@ class DK6Device:
 
     def __exit__(
         self,
-        exception_type: Optional[Type[BaseException]] = None,
-        exception_value: Optional[BaseException] = None,
-        traceback: Optional[TracebackType] = None,
+        exception_type: type[BaseException] | None = None,
+        exception_value: BaseException | None = None,
+        traceback: TracebackType | None = None,
     ) -> None:
         """Exit the context manager and close the DK6 device.
 
@@ -389,7 +388,7 @@ class DK6Device:
         address: int,
         length: int,
         access: MemoryAccessValues = MemoryAccessValues.WRITE,
-        progress_callback: Optional[Callable[[int, int], None]] = None,
+        progress_callback: Callable[[int, int], None] | None = None,
         relative: bool = False,
     ) -> bytes:
         """Read memory from the DK6 device.
@@ -449,7 +448,7 @@ class DK6Device:
         length: int,
         data: bytes,
         access: MemoryAccessValues = MemoryAccessValues.ALL,
-        progress_callback: Optional[Callable[[int, int], None]] = None,
+        progress_callback: Callable[[int, int], None] | None = None,
         relative: bool = False,
     ) -> None:
         """Write memory to the DK6 device.
@@ -509,7 +508,7 @@ class DK6Device:
         address: int,
         length: int,
         access: MemoryAccessValues = MemoryAccessValues.ALL,
-        progress_callback: Optional[Callable[[int, int], None]] = None,
+        progress_callback: Callable[[int, int], None] | None = None,
         relative: bool = False,
         verify: bool = False,
     ) -> None:

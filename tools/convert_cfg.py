@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -18,7 +17,8 @@ conversion interface.
 
 import os
 import sys
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 import click
 import colorama
@@ -500,7 +500,7 @@ CONVERTORS = {
 }
 
 
-def convert_file(config: str, cfg_type: Optional[str] = None) -> Optional[str]:
+def convert_file(config: str, cfg_type: str | None = None) -> str | None:
     """Convert any type of configuration file to a standardized format.
 
     This method attempts to load and convert configuration files using available
@@ -581,8 +581,8 @@ def convert_file(config: str, cfg_type: Optional[str] = None) -> Optional[str]:
 def main(
     config: list[str],
     recursive: bool,
-    config_type: Optional[str],
-    output: Optional[str],
+    config_type: str | None,
+    output: str | None,
     rename: bool,
 ) -> None:
     """Main configuration file conversion utility.

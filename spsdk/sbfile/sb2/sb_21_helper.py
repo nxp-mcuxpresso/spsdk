@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2025 NXP
+# Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,7 @@ operations, including key blob handling and cryptographic operations support.
 
 import logging
 import struct
-from typing import Callable, Optional, Union
+from collections.abc import Callable
 
 from spsdk.exceptions import SPSDKError
 from spsdk.image.otfad.otfad import KeyBlob
@@ -52,9 +51,7 @@ class SB21Helper:
     loading, encryption, key management, and memory operations.
     """
 
-    def __init__(
-        self, search_paths: Optional[list[str]] = None, zero_filling: bool = False
-    ) -> None:
+    def __init__(self, search_paths: list[str] | None = None, zero_filling: bool = False) -> None:
         """Initialize SB21 helper for processing secure boot commands.
 
         The helper manages command execution with configurable search paths for data files
@@ -80,7 +77,7 @@ class SB21Helper:
         self.zero_filling = zero_filling
 
     @staticmethod
-    def get_mem_id(mem_opt: Union[int, str]) -> int:
+    def get_mem_id(mem_opt: int | str) -> int:
         """Get memory ID from string or integer in BD file.
 
         Converts memory option from BD file format to integer memory ID. Supports
@@ -136,7 +133,7 @@ class SB21Helper:
         pattern = value_to_int(cmd_args["pattern"])
         return CmdFill(address=address, pattern=pattern, zero_filling=self.zero_filling)
 
-    def _load(self, cmd_args: dict) -> Union[CmdLoad, CmdProg]:
+    def _load(self, cmd_args: dict) -> CmdLoad | CmdProg:
         """Create load command from command arguments.
 
         The load statement is used to store data into the memory.
@@ -483,7 +480,7 @@ class SB21Helper:
         fw_version = value_to_int(cmd_args["fw_version"])
         return CmdVersionCheck(VersionCheckType.from_tag(ver_type), fw_version)
 
-    def _validate_keyblob(self, keyblobs: list, keyblob_id: int) -> Optional[dict]:
+    def _validate_keyblob(self, keyblobs: list, keyblob_id: int) -> dict | None:
         """Validate keyblob definition for correctness.
 
         Validates that a keyblob with the specified ID exists in the provided list and contains

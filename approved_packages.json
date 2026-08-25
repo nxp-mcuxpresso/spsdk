@@ -995,6 +995,18 @@
             }
         },
         {
+            "home_page": "https://github.com/tgree/libusb_package_tng",
+            "name": "libusb_package_tng",
+            "package": {
+                "name": "libusb_package_tng",
+                "license": "MIT"
+            },
+            "github": {
+                "project_name": "tgree/libusb_package_tng",
+                "license": "MIT"
+            }
+        },
+        {
             "home_page": "UNKNOWN",
             "name": "libusbsio",
             "package": {

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2023,2025 NXP
+# Copyright 2023,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """Tests for SBX (Secure Binary eXecutable) file format.
 
 This module contains test cases for validating SBX file creation, parsing,

@@ -20,7 +20,7 @@ image_hash_type: sha384
 srk_set: oem
 used_srk_id: 0
 signer: ../../_data/keys/ecc384/srk0_ecc384.pem
-signer_#2: ../../_data/keys/mldsa87/srk0_mldsa87.pem
+signer_#2: ../../_data/keys/mldsa87/srk0_mldsa87_native.pem
 
 srk_table:
   srk_array:
@@ -30,7 +30,7 @@ srk_table:
     - ../../_data/keys/ecc384/srk3_ecc384.pub
   srk_table_#2:
     srk_array:
-      - ../../_data/keys/mldsa87/srk0_mldsa87.pub
-      - ../../_data/keys/mldsa87/srk1_mldsa87.pub
-      - ../../_data/keys/mldsa87/srk2_mldsa87.pub
-      - ../../_data/keys/mldsa87/srk3_mldsa87.pub
+      - ../../_data/keys/mldsa87/srk0_mldsa87_native.pub
+      - ../../_data/keys/mldsa87/srk1_mldsa87_native.pub
+      - ../../_data/keys/mldsa87/srk2_mldsa87_native.pub
+      - ../../_data/keys/mldsa87/srk3_mldsa87_native.pub

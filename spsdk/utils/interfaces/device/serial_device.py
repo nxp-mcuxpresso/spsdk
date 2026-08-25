@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -11,8 +10,6 @@ This module provides SerialDevice class for communication with devices
 over serial/UART interfaces, including device discovery and connection
 management functionality.
 """
-
-from typing import Optional
 
 from serial import Serial, SerialTimeoutException
 from serial.tools.list_ports import comports
@@ -42,9 +39,9 @@ class SerialDevice(DeviceBase):
 
     def __init__(
         self,
-        port: Optional[str] = None,
-        timeout: Optional[int] = None,
-        baudrate: Optional[int] = None,
+        port: str | None = None,
+        timeout: int | None = None,
+        baudrate: int | None = None,
     ):
         """Initialize the UART interface.
 
@@ -129,7 +126,7 @@ class SerialDevice(DeviceBase):
             except Exception as e:
                 raise SPSDKConnectionError(str(e)) from e
 
-    def read(self, length: int, timeout: Optional[int] = None) -> bytes:
+    def read(self, length: int, timeout: int | None = None) -> bytes:
         """Read data from the serial device.
 
         Reads the specified number of bytes from the connected serial device.
@@ -153,7 +150,7 @@ class SerialDevice(DeviceBase):
         logger.trace(f"<{' '.join(f'{b:02x}' for b in data)}>")
         return data
 
-    def write(self, data: bytes, timeout: Optional[int] = None) -> None:
+    def write(self, data: bytes, timeout: int | None = None) -> None:
         """Send data to device.
 
         The method clears input/output buffers before sending data and flushes the output
@@ -193,9 +190,9 @@ class SerialDevice(DeviceBase):
     @classmethod
     def scan(
         cls,
-        port: Optional[str] = None,
-        baudrate: Optional[int] = None,
-        timeout: Optional[int] = None,
+        port: str | None = None,
+        baudrate: int | None = None,
+        timeout: int | None = None,
     ) -> list[Self]:
         """Scan connected serial ports for responding devices.
 
@@ -222,7 +219,7 @@ class SerialDevice(DeviceBase):
         return devices
 
     @classmethod
-    def _check_port(cls, port: str, baudrate: int, timeout: int) -> Optional[Self]:
+    def _check_port(cls, port: str, baudrate: int, timeout: int) -> Self | None:
         """Check if device on serial port responds to connection attempt.
 
         The method tries to establish connection with a device on the specified serial port

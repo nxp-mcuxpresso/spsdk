@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +13,6 @@ configuration validation for CFPA and CMPA regions.
 
 import logging
 from dataclasses import dataclass
-from typing import Optional
 
 from spsdk.pfr.exceptions import SPSDKPfrcMissingConfigError, SPSDKPfrConfigError
 from spsdk.pfr.pfr import CFPA, CMPA, SPSDKPfrError
@@ -92,8 +90,8 @@ class Pfrc:
 
     def __init__(
         self,
-        cmpa: Optional[CMPA] = None,
-        cfpa: Optional[CFPA] = None,
+        cmpa: CMPA | None = None,
+        cfpa: CFPA | None = None,
     ) -> None:
         """Initialize PFRC instance with CMPA and/or CFPA configurations.
 
@@ -122,26 +120,33 @@ class Pfrc:
 
         self.db = get_db(self.chip_family)
 
+    _supported_families_cache: dict[bool, list["FamilyRevision"]] = {}
+
     @staticmethod
     def get_supported_families(include_predecessors: bool = False) -> list[FamilyRevision]:
         """Get supported families for PFR operations.
 
         Returns a list of device families that have PFR (Protected Flash Region) support
-        by checking for available PFRC rules in the database.
+        by checking for available PFRC rules in the database. Results are cached to
+        avoid repeated expensive database lookups.
 
         :param include_predecessors: Include predecessor family names in the result list.
         :return: List of supported families with PFR capabilities.
         """
+        if include_predecessors in Pfrc._supported_families_cache:
+            return Pfrc._supported_families_cache[include_predecessors]
+
         pfr_devices = get_families(DatabaseManager.PFR, include_predecessors=include_predecessors)
         ret = []
         for dev in pfr_devices:
             pfrc_rules = get_db(dev).get_list(DatabaseManager.PFR, "rules", [])
             if pfrc_rules:
                 ret.append(dev)
+        Pfrc._supported_families_cache[include_predecessors] = ret
         return ret
 
     def validate_brick_conditions(
-        self, additional_rules_file: Optional[str] = None
+        self, additional_rules_file: str | None = None
     ) -> tuple[RulesList, RulesList, RulesList]:
         """Validate brick conditions for the specified configuration.
 
@@ -183,7 +188,7 @@ class Pfrc:
             raise SPSDKPfrError(f"Error e({e}) while evaluating {rule.cond}") from e
         return passed_rules, failed_rules, skipped_rules
 
-    def load_rules(self, additional_rules_file: Optional[str] = None) -> RulesList:
+    def load_rules(self, additional_rules_file: str | None = None) -> RulesList:
         """Load rules for device family with optional additional user rules.
 
         The method retrieves default rules from the database for the current device family

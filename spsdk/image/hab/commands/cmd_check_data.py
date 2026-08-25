@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """HAB Check Data command implementation.
 
 This module implements the Check Data command for High Assurance Boot (HAB),
@@ -11,7 +11,6 @@ providing functionality to verify data integrity during the boot process.
 """
 
 from struct import pack, unpack_from
-from typing import Optional
 
 from typing_extensions import Self
 
@@ -66,7 +65,7 @@ class CmdCheckData(CmdBase):
         ops: CheckDataOpsEnum = CheckDataOpsEnum.ALL_SET,
         address: int = 0,
         mask: int = 0,
-        count: Optional[int] = None,
+        count: int | None = None,
     ) -> None:
         """Initialize the check data command.
 

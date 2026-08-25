@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -17,8 +16,9 @@ import functools
 import logging
 import os
 import sys
+from collections.abc import Callable, Sequence
 from gettext import gettext, ngettext
-from typing import Any, Callable, Optional, Sequence, Type, TypeVar, Union, cast, overload
+from typing import Any, TypeVar, cast, overload
 
 import click
 import colorama
@@ -41,7 +41,7 @@ from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_hex_string
 
-FC = TypeVar("FC", bound=Union[Callable[..., Any], click.Command])
+FC = TypeVar("FC", bound=Callable[..., Any] | click.Command)
 logger = logging.getLogger(__name__)
 
 
@@ -70,7 +70,7 @@ class FamilyChoice(click.Choice):
             [x.name for x in choices]
         )
         self.all_families = choices
-        super().__init__(choices=sorted(list(set(x.name for x in choices))), case_sensitive=False)
+        super().__init__(choices=sorted(list({x.name for x in choices})), case_sensitive=False)
 
     def to_info_dict(self) -> dict[str, Any]:  # type: ignore[override]
         """Prepare base Click choice metadata enriched with SPSDK-specific predecessor aliases."""
@@ -97,9 +97,7 @@ class FamilyChoice(click.Choice):
         # Use square braces to indicate an option or optional argument.
         return f"[{choices_str}]"
 
-    def convert(
-        self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]
-    ) -> Any:
+    def convert(self, value: Any, param: click.Parameter | None, ctx: click.Context | None) -> Any:
         """Normalize user input."""
         # Match through normalization and case sensitivity
         # first do token_normalize_func, then lowercase
@@ -514,8 +512,8 @@ def spsdk_apps_common_options(options: FC) -> FC:
 def spsdk_family_option(
     families: list[FamilyRevision],
     required: bool = True,
-    default: Optional[FamilyRevision] = None,
-    help: Optional[str] = None,  # pylint: disable=redefined-builtin
+    default: FamilyRevision | None = None,
+    help: str | None = None,  # pylint: disable=redefined-builtin
     add_revision: bool = True,
     **option_kwargs: Any,
 ) -> Callable:
@@ -589,8 +587,8 @@ def spsdk_family_option(
 
 def spsdk_config_option(
     required: bool = True,
-    klass: Optional[Type[ConfigBaseClass]] = None,
-    help: Optional[str] = None,  # pylint: disable=redefined-builtin
+    klass: type[ConfigBaseClass] | None = None,
+    help: str | None = None,  # pylint: disable=redefined-builtin
 ) -> Callable:
     """Click decorator handling config files.
 
@@ -696,7 +694,8 @@ def hex_value_option(
         @click.pass_context
         def wrapper(ctx: click.Context, *args: Any, **kwargs: Any) -> Any:
             # Get the value from kwargs using the name parameter
-            cmd_name = name.removeprefix("--")
+            # Click converts option names to Python identifiers (dashes -> underscores)
+            cmd_name = name.removeprefix("--").replace("-", "_")
             value = kwargs.pop(cmd_name)
 
             # Convert to bytes using load_hex_string if value is provided
@@ -735,7 +734,7 @@ def spsdk_output_option(
     required: bool = True,
     directory: bool = False,
     force: bool = False,
-    help: Optional[str] = None,  # pylint: disable=redefined-builtin
+    help: str | None = None,  # pylint: disable=redefined-builtin
 ) -> Callable:
     """Click decorator handling on output file or directory.
 
@@ -796,7 +795,7 @@ def spsdk_output_option(
 
 def spsdk_output_option_to_config(
     key_output: str,
-    key_output_format: Optional[str] = None,
+    key_output_format: str | None = None,
     directory: bool = False,
 ) -> Callable:
     """Click decorator for convert standard output option into override configuration option.
@@ -899,9 +898,9 @@ def spsdk_sdp_interface(
             ctx: click.Context,
             timeout: int,
             *args: Any,
-            port: Optional[str] = None,
-            usb: Optional[str] = None,
-            plugin: Optional[str] = None,
+            port: str | None = None,
+            usb: str | None = None,
+            plugin: str | None = None,
             **kwargs: Any,
         ) -> Any:
             # if --help is provided anywhere on command line, skip interface lookup
@@ -956,7 +955,6 @@ def spsdk_mboot_interface(
 
     :return: Click decorator.
     """
-    spsdk_logger.install(level=logging.WARNING)
 
     def decorator(func: Callable[[FC], FC]) -> Callable:
         @functools.wraps(func)
@@ -965,13 +963,13 @@ def spsdk_mboot_interface(
             ctx: click.Context,
             timeout: int,
             *args: Any,
-            port: Optional[str] = None,
-            usb: Optional[str] = None,
-            sdio: Optional[str] = None,
-            buspal: Optional[str] = None,
-            can: Optional[str] = None,
-            lpcusbsio: Optional[str] = None,
-            plugin: Optional[str] = None,
+            port: str | None = None,
+            usb: str | None = None,
+            sdio: str | None = None,
+            buspal: str | None = None,
+            can: str | None = None,
+            lpcusbsio: str | None = None,
+            plugin: str | None = None,
             **kwargs: Any,
         ) -> Any:
             # if --help is provided anywhere on command line, skip interface lookup
@@ -995,7 +993,11 @@ def spsdk_mboot_interface(
             }
             # Install logger with user-requested level before interface scan so
             # that ping failures and connection attempts are properly logged.
-            spsdk_logger.install(level=kwargs.get("log_level") or logging.WARNING)
+            # For subcommands, log level is typically defined on the parent command.
+            log_level = kwargs.get("log_level")
+            if log_level is None and ctx.parent:
+                log_level = ctx.parent.params.get("log_level")
+            spsdk_logger.install(level=log_level or logging.WARNING)
             try:
                 interface_params = load_interface_config(cli_params)
                 interface_cls = MbootProtocolBase.get_interface_class(interface_params.IDENTIFIER)
@@ -1062,20 +1064,20 @@ def spsdk_el2go_interface(
             ctx: click.Context,
             timeout: int,
             *args: Any,
-            port: Optional[str] = None,
-            usb: Optional[str] = None,
-            sdio: Optional[str] = None,
-            buspal: Optional[str] = None,
-            can: Optional[str] = None,
-            lpcusbsio: Optional[str] = None,
-            plugin: Optional[str] = None,
-            device: Optional[str] = None,
-            family: Optional[FamilyRevision] = None,
-            fb_addr: Optional[int] = None,
-            fb_size: Optional[int] = None,
-            usbpath: Optional[str] = None,
-            usbserial: Optional[str] = None,
-            uboot_prompt: Optional[str] = None,
+            port: str | None = None,
+            usb: str | None = None,
+            sdio: str | None = None,
+            buspal: str | None = None,
+            can: str | None = None,
+            lpcusbsio: str | None = None,
+            plugin: str | None = None,
+            device: str | None = None,
+            family: FamilyRevision | None = None,
+            fb_addr: int | None = None,
+            fb_size: int | None = None,
+            usbpath: str | None = None,
+            usbserial: str | None = None,
+            uboot_prompt: str | None = None,
             **kwargs: Any,
         ) -> Any:
             # if --help is provided anywhere on command line, skip interface lookup
@@ -1164,10 +1166,10 @@ class GetFamiliesCommand(click.Command):
             callback=self.handle_families_info,
         )
 
-        self.group_family_param: Optional[click.Parameter] = None
+        self.group_family_param: click.Parameter | None = None
         self.cmd_family_params: dict[str, click.Parameter] = {}
 
-    def add_cmd(self, family_param: click.Parameter, cmd_name: Optional[str] = None) -> None:
+    def add_cmd(self, family_param: click.Parameter, cmd_name: str | None = None) -> None:
         """Add the command or group family choices parameter.
 
         :param family_param: Mandatory family choices parameters
@@ -1189,7 +1191,7 @@ class GetFamiliesCommand(click.Command):
             choice = cast(click.Choice, self.params[0].type)
             choice.choices = tuple([*choice.choices, cmd_name])
 
-    def handle_families_info(self, cmd_name: Optional[str] = None) -> None:
+    def handle_families_info(self, cmd_name: str | None = None) -> None:
         """Show the supported families."""
 
         def print_families(family_param: click.Parameter) -> None:
@@ -1344,7 +1346,7 @@ class SpsdkClickCommand(click.Command):
                 opts.append(rv)
 
         if opts:
-            with formatter.section(("Options")):
+            with formatter.section("Options"):
                 formatter.write_dl(opts)
 
 
@@ -1367,7 +1369,7 @@ class SpsdkClickGroup(click.Group):
             attrs["no_args_is_help"] = True
 
         super().__init__(**attrs)
-        self.get_families: Optional[GetFamiliesCommand] = None
+        self.get_families: GetFamiliesCommand | None = None
         if "params" in attrs:
             params: list[click.Parameter] = attrs["params"]
             for param in params:
@@ -1377,7 +1379,7 @@ class SpsdkClickGroup(click.Group):
                     self.add_command(self.get_families)
                     break
 
-    def add_command(self, cmd: click.Command, name: Optional[str] = None) -> None:
+    def add_command(self, cmd: click.Command, name: str | None = None) -> None:
         """Overload add command method, to check commands if contains family option."""
         super().add_command(cmd, name)
         name = name or cmd.name
@@ -1392,11 +1394,11 @@ class SpsdkClickGroup(click.Group):
     def command(self, f: F) -> click.Command: ...
 
     @overload
-    def command(self, name: Optional[str] = None, **attrs: Any) -> Callable[[F], click.Command]: ...
+    def command(self, name: str | None = None, **attrs: Any) -> Callable[[F], click.Command]: ...
 
     def command(
         self, *args: Any, **kwargs: Any
-    ) -> Union[Callable[[Callable[..., Any]], click.Command], click.Command]:
+    ) -> Callable[[Callable[..., Any]], click.Command] | click.Command:
         """Override command decorator to use SpsdkClickCommand by default."""
         kwargs.setdefault("cls", SpsdkClickCommand)
         return super().command(*args, **kwargs)
@@ -1426,7 +1428,7 @@ class CommandsTreeGroup(SpsdkClickGroup):
 
 def _get_tree(
     command: _CommandWrapper,
-    rows: Optional[list] = None,
+    rows: list | None = None,
     depth: int = 0,
     is_last_item: bool = False,
     is_last_parent: bool = False,
@@ -1453,7 +1455,7 @@ def _get_tree(
 
     parent_prefix = parent_prefix + (prefix if depth > 1 else "")
     col1 = parent_prefix + tree_item + command.name
-    col2 = str()
+    col2 = ""
     doc: str = command.command.__doc__
     if doc:
         formatted_doc = doc.partition("\n")[0]  # take just first line of doc

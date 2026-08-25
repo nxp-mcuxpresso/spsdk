@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,8 +10,6 @@ This module contains comprehensive test cases for the SPSDK application utilitie
 functionality, including string processing, data formatting, file operations,
 hexadecimal data parsing, error handling, and configuration management.
 """
-
-from typing import Optional
 
 import pytest
 
@@ -115,7 +112,7 @@ def test_parse_hex_data_error(input_hex_data: str) -> None:
 
 
 @catch_spsdk_error
-def function_under_test(to_raise: Optional[Exception] = None) -> int:
+def function_under_test(to_raise: Exception | None = None) -> int:
     """Test utility function that optionally raises an exception.
 
     This function is designed for testing purposes to simulate both successful

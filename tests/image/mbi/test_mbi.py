@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -14,7 +13,6 @@ chain validation, Trust Zone configurations, and multi-image handling.
 """
 
 import os
-from typing import List, Optional, Type, Union
 
 import pytest
 
@@ -41,9 +39,9 @@ from spsdk.utils.misc import load_binary, write_file
 def certificate_block(
     data_dir: str,
     family: FamilyRevision,
-    der_file_names: List[Optional[str]],
+    der_file_names: list[str | None],
     index: int = 0,
-    chain_der_file_names: Optional[List[str]] = None,
+    chain_der_file_names: list[str] | None = None,
 ) -> CertBlockV1:
     """Create certificate block for testing purposes.
 
@@ -58,7 +56,7 @@ def certificate_block(
     :return: Configured certificate block ready for testing.
     """
     # read public certificate
-    cert_data_list: List[Optional[bytes]] = list()
+    cert_data_list: list[bytes | None] = list()
     for der_file_name in der_file_names:
         if der_file_name:
             with open(os.path.join(data_dir, "keys_and_certs", der_file_name), "rb") as f:
@@ -248,7 +246,7 @@ def test_signed_xip_single_certificate_no_tz(
     ],
 )
 def test_signed_ram_single_certificate_no_tz(
-    data_dir: str, user_key: Union[str, bytes], key_store_filename: Optional[str], expected_mbi: str
+    data_dir: str, user_key: str | bytes, key_store_filename: str | None, expected_mbi: str
 ) -> None:
     """Test non-XIP signed image with single certificate.
 
@@ -320,7 +318,7 @@ def test_signed_ram_single_certificate_no_tz(
 def test_encrypted_ram_single_certificate_no_tz(
     data_dir: str,
     keysource: KeySourceType,
-    keystore_fn: Optional[str],
+    keystore_fn: str | None,
     ctr_iv: str,
     expected_mbi: str,
 ) -> None:
@@ -478,7 +476,7 @@ def test_signed_xip_multiple_certificates_invalid_input(data_dir: str) -> None:
     """
     family = FamilyRevision("rt6xx")
     # indexed certificate is not specified
-    der_file_names: list[Optional[str]] = [
+    der_file_names: list[str | None] = [
         "selfsign_4096_v3.der.crt",
         "selfsign_3072_v3.der.crt",
         "selfsign_2048_v3.der.crt",
@@ -830,9 +828,9 @@ def test_multiple_image_entry_table_invalid() -> None:
     :raises SPSDKError: When destination address exceeds valid range or invalid flags are provided.
     """
     with pytest.raises(SPSDKError, match="Invalid destination address"):
-        MultipleImageEntry(img=bytes(), dst_addr=0xFFFFFFFFA)
+        MultipleImageEntry(img=b"", dst_addr=0xFFFFFFFFA)
     with pytest.raises(SPSDKError):
-        MultipleImageEntry(img=bytes(), dst_addr=0xFFFFFFFF, flags=4)
+        MultipleImageEntry(img=b"", dst_addr=0xFFFFFFFF, flags=4)
 
 
 def test_multiple_image_table_invalid() -> None:
@@ -878,7 +876,7 @@ def test_master_boot_image_invalid_hmac(data_dir: str) -> None:
         key_store=key_store,
     )
     mbi.hmac_key = None  # type: ignore
-    assert mbi.compute_hmac(data=bytes(16)) == bytes()  # type: ignore
+    assert mbi.compute_hmac(data=bytes(16)) == b""  # type: ignore
 
 
 def test_invalid_export_mbi(data_dir: str) -> None:
@@ -1158,9 +1156,9 @@ def test_parse_name(name: str, expected_auth: str, expected_target: str) -> None
 )
 def test_get_mbi_class(
     config: dict[str, str],
-    expected_target: Optional[str],
-    expected_auth: Optional[str],
-    expected_exception: Optional[Type[Exception]],
+    expected_target: str | None,
+    expected_auth: str | None,
+    expected_exception: type[Exception] | None,
 ) -> None:
     """Test get_mbi_class method with various configurations.
 

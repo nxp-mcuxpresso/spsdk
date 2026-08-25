@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,6 @@ management over CAN bus networks.
 """
 
 import logging
-from typing import Optional, Union
 
 from typing_extensions import Self
 
@@ -52,11 +50,11 @@ class MbootCANInterface(MbootSerialProtocol):
     def scan(
         cls,
         interface: str,
-        channel: Optional[Union[str, int]] = None,
-        bitrate: Optional[int] = None,
-        timeout: Optional[int] = None,
-        txid: Optional[int] = None,
-        rxid: Optional[int] = None,
+        channel: str | int | None = None,
+        bitrate: int | None = None,
+        timeout: int | None = None,
+        txid: int | None = None,
+        rxid: int | None = None,
     ) -> list[Self]:
         """Scan connected CAN devices.
 

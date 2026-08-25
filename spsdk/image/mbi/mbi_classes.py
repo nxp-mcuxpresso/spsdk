@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -15,7 +14,8 @@ CRC validation, and multiple image table management.
 
 import logging
 import struct
-from typing import Optional, Sequence, TypeVar
+from collections.abc import Sequence
+from typing import TypeVar
 
 from typing_extensions import Self
 
@@ -49,7 +49,7 @@ class MasterBootImageManifest:
     def __init__(
         self,
         firmware_version: int,
-        trust_zone: Optional[TrustZone] = None,
+        trust_zone: TrustZone | None = None,
     ) -> None:
         """Initialize MBI Manifest object.
 
@@ -145,7 +145,7 @@ class MasterBootImageManifest:
             )
 
     @classmethod
-    def _parse_manifest(cls, data: bytes) -> tuple[int, Optional[EnumHashAlgorithm], bytes]:
+    def _parse_manifest(cls, data: bytes) -> tuple[int, EnumHashAlgorithm | None, bytes]:
         """Parse manifest binary data.
 
         The method extracts firmware version and extra data from MBI manifest binary format
@@ -276,8 +276,8 @@ class MasterBootImageManifestDigest(MasterBootImageManifest):
     def __init__(
         self,
         firmware_version: int,
-        trust_zone: Optional[TrustZone] = None,
-        digest_hash_algo: Optional[EnumHashAlgorithm] = None,
+        trust_zone: TrustZone | None = None,
+        digest_hash_algo: EnumHashAlgorithm | None = None,
     ) -> None:
         """Initialize MBI Manifest object.
 
@@ -340,7 +340,7 @@ class MasterBootImageManifestDigest(MasterBootImageManifest):
         return cls(firmware_version=fw_version, trust_zone=trust_zone, digest_hash_algo=hash_algo)
 
     @classmethod
-    def _parse_manifest(cls, data: bytes) -> tuple[int, Optional[EnumHashAlgorithm], bytes]:
+    def _parse_manifest(cls, data: bytes) -> tuple[int, EnumHashAlgorithm | None, bytes]:
         """Parse manifest binary data.
 
         The method extracts firmware version, hash algorithm type, and extra data
@@ -354,7 +354,7 @@ class MasterBootImageManifestDigest(MasterBootImageManifest):
             cls.FORMAT, data[: struct.calcsize(cls.FORMAT)]
         )
         cls._verify_manifest_data(data, magic, version, total_length)
-        hash_algo: Optional[EnumHashAlgorithm] = None
+        hash_algo: EnumHashAlgorithm | None = None
         if flags & cls.DIGEST_PRESENT_FLAG:
             hash_algo = {
                 0: None,
@@ -456,7 +456,7 @@ class MasterBootImageManifestCrc(MasterBootImageManifest):
     def __init__(
         self,
         firmware_version: int,
-        trust_zone: Optional[TrustZone] = None,
+        trust_zone: TrustZone | None = None,
     ) -> None:
         """Initialize MBI Manifest object.
 
@@ -665,7 +665,7 @@ class MultipleImageEntry:
 
         :return: Binary representation of the relocation table entry (16 bytes total).
         """
-        result = bytes()
+        result = b""
         result += struct.pack("<I", self.src_addr)  # source address
         result += struct.pack("<I", self.dst_addr)  # dest address
         result += struct.pack("<I", self.size)  # length
@@ -689,7 +689,7 @@ class MultipleImageEntry:
 
         return MultipleImageEntry(data[src_addr : src_addr + size], dst_addr, flags)
 
-    def verify(self, index: Optional[int] = None) -> Verifier:
+    def verify(self, index: int | None = None) -> Verifier:
         """Verify the Multiple Image Entry configuration.
 
         Validates that the entry has valid addresses, image data, and flags.
@@ -802,7 +802,7 @@ class MultipleImageTable:
         :param start_addr: Start address of the relocation table in memory.
         :return: Binary data containing the complete relocation table.
         """
-        result = bytes()
+        result = b""
         # export relocation entries table
         for entry in self.entries:
             result += entry.export_entry()
@@ -829,7 +829,7 @@ class MultipleImageTable:
             raise SPSDKError("There must be at least one entry for export")
         self.start_address = start_addr
         src_addr = start_addr
-        result = bytes()
+        result = b""
         for entry in self.entries:
             if entry.is_load:
                 entry.src_addr = src_addr
@@ -840,7 +840,7 @@ class MultipleImageTable:
         return result
 
     @staticmethod
-    def parse(data: bytes) -> Optional["MultipleImageTable"]:
+    def parse(data: bytes) -> "MultipleImageTable | None":
         """Parse binary data to get the Multiple Image Table.
 
         The method extracts the multiple application table from binary data by parsing

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -12,7 +11,6 @@ of variable configuration items, such as preferred cryptographic engines.
 """
 
 from struct import pack, unpack_from
-from typing import Optional
 
 from typing_extensions import Self
 
@@ -207,7 +205,7 @@ class CmdSet(CmdBase):
         )
 
     @classmethod
-    def load_from_config(cls, config: Config, cmd_index: Optional[int] = None) -> Self:
+    def load_from_config(cls, config: Config, cmd_index: int | None = None) -> Self:
         """Load configuration into the command.
 
         This method creates a new command instance and populates it with configuration data

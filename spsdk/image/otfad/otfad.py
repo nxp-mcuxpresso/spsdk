@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2026 NXP
 #
@@ -17,7 +16,7 @@ import os
 from copy import deepcopy
 from dataclasses import dataclass
 from struct import pack
-from typing import Any, Optional, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -115,12 +114,12 @@ class KeyBlob:
         self,
         start_addr: int,
         end_addr: int,
-        key: Optional[bytes] = None,
-        counter_iv: Optional[bytes] = None,
+        key: bytes | None = None,
+        counter_iv: bytes | None = None,
         key_flags: int = KEY_FLAG_VLD | KEY_FLAG_ADE,
         # for testing
-        zero_fill: Optional[bytes] = None,
-        crc: Optional[bytes] = None,
+        zero_fill: bytes | None = None,
+        crc: bytes | None = None,
     ):
         """Initialize OTFAD key blob with encryption parameters.
 
@@ -189,7 +188,7 @@ class KeyBlob:
         :raises SPSDKError: Invalid CRC fill parameter length (must be 4 bytes).
         :raises SPSDKError: Invalid binary data length (must be 64 bytes).
         """
-        result = bytes()
+        result = b""
         result += self.key
         result += self.ctr_init_vector
         result += pack("<I", self.start_addr)
@@ -228,7 +227,7 @@ class KeyBlob:
     # pylint: disable=invalid-name
     def export(
         self,
-        kek: Union[bytes, str],
+        kek: bytes | str,
         iv: bytes = bytes([0xA6] * 8),
         byte_swap_cnt: int = 0,
     ) -> bytes:
@@ -256,7 +255,7 @@ class KeyBlob:
         if len(plaintext) < n * 8:
             raise SPSDKError("Invalid length of data to be encrypted")
 
-        blobs = bytes()
+        blobs = b""
         wrap = aes_key_wrap(kek, plaintext[:40])
         if byte_swap_cnt > 0:
             for i in range(0, len(wrap), byte_swap_cnt):
@@ -321,7 +320,7 @@ class KeyBlob:
         base_address: int,
         data: bytes,
         byte_swap: bool,
-        counter_value: Optional[int] = None,
+        counter_value: int | None = None,
     ) -> bytes:
         """Encrypt image data using AES-CTR encryption with OTFAD key blob.
 
@@ -349,7 +348,7 @@ class KeyBlob:
                 f"{hex(self.start_addr)}-{hex(self.end_addr)}."
                 " Ignore this if flash remap feature is used"
             )
-        result = bytes()
+        result = b""
 
         if not counter_value:
             counter_value = self.start_addr
@@ -417,17 +416,17 @@ class Otfad(FeatureBaseClass):
     def __init__(
         self,
         family: FamilyRevision,
-        kek: Union[bytes, str],
+        kek: bytes | str,
         table_address: int = 0,
-        key_blobs: Optional[list[KeyBlob]] = None,
-        key_scramble_mask: Optional[int] = None,
-        key_scramble_align: Optional[int] = None,
-        binaries: Optional[BinaryImage] = None,
+        key_blobs: list[KeyBlob] | None = None,
+        key_scramble_mask: int | None = None,
+        key_scramble_align: int | None = None,
+        binaries: BinaryImage | None = None,
         data_alignment: int = 512,
         otfad_table_name: str = "OTFAD_Table",
         otfad_all_name: str = "otfad_whole_image",
         generate_readme: bool = True,
-        index: Optional[int] = None,
+        index: int | None = None,
         output_format: str = "bin",
     ) -> None:
         """Initialize OTFAD (On-The-Fly AES Decryption) configuration.
@@ -575,7 +574,7 @@ class Otfad(FeatureBaseClass):
 
         :return: Binary key blobs joined together and aligned to 256 bytes.
         """
-        result = bytes()
+        result = b""
         for key_blob in self._key_blobs:
             result += key_blob.plain_data()
         return align_block(
@@ -584,9 +583,9 @@ class Otfad(FeatureBaseClass):
 
     def encrypt_key_blobs(
         self,
-        kek: Union[bytes, str],
-        key_scramble_mask: Optional[int] = None,
-        key_scramble_align: Optional[int] = None,
+        kek: bytes | str,
+        key_scramble_mask: int | None = None,
+        key_scramble_align: int | None = None,
         byte_swap_cnt: int = 0,
     ) -> bytes:
         """Encrypt key blobs with specified KEK (Key Encryption Key).
@@ -621,8 +620,8 @@ class Otfad(FeatureBaseClass):
                 4, byteorder=Endianness.LITTLE.value
             )
             logger.debug(f"The inverted scramble key is: {key_scramble_mask_bytes.hex()}")
-        result = bytes()
-        scrambled: Union[bytes, bytearray] = bytes()
+        result = b""
+        scrambled: bytes | bytearray = b""
         for i, key_blob in enumerate(self._key_blobs):
             if scramble_enabled:
                 assert isinstance(key_scramble_mask, int) and isinstance(key_scramble_align, int)
@@ -723,7 +722,7 @@ class Otfad(FeatureBaseClass):
         swap_bytes: bool = False,
         join_sub_images: bool = True,
         table_address: int = 0,
-    ) -> Optional[BinaryImage]:
+    ) -> BinaryImage | None:
         """Export OTFAD key blob as binary image representation.
 
         The method processes binary data by aligning blocks to encryption size, optionally

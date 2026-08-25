@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 # Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -12,7 +11,7 @@ for family validation, device lookup, and database management operations.
 """
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from typing_extensions import Self
 
@@ -135,7 +134,7 @@ class FamilyRevision:
         """
         if not isinstance(config, dict):
             raise SPSDKError("Configuration, where should be family information, is not dictionary")
-        family: Optional[str] = config.get("family")
+        family: str | None = config.get("family")
         if not family:
             raise SPSDKError("Family must be specified in configuration")
         revision: str = config.get("revision", "latest")
@@ -143,7 +142,7 @@ class FamilyRevision:
 
 
 def update_validation_schema_family(
-    sch: dict[str, Any], devices: list[FamilyRevision], family: Optional[FamilyRevision] = None
+    sch: dict[str, Any], devices: list[FamilyRevision], family: FamilyRevision | None = None
 ) -> None:
     """Update validation family schema to properly validate and show the families.
 
@@ -197,8 +196,8 @@ def get_device(family: FamilyRevision) -> Device:
 
 
 def get_families(
-    feature: Optional[str] = None,
-    sub_feature: Optional[str] = None,
+    feature: str | None = None,
+    sub_feature: str | None = None,
     include_predecessors: bool = False,
     single_revision: bool = False,
 ) -> list[FamilyRevision]:
