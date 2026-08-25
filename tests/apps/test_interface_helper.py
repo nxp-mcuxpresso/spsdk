@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,7 +11,7 @@ specifically testing the loading and validation of interface configurations
 used across SPSDK applications.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 
@@ -131,7 +130,7 @@ from spsdk.apps.utils.utils import SPSDKAppError
     ],
 )
 def test_load_interface_config(
-    cli_params: dict[str, Any], interface: str, params: str, extra_params: Optional[str]
+    cli_params: dict[str, Any], interface: str, params: str, extra_params: str | None
 ) -> None:
     """Test loading interface configuration with given parameters.
 

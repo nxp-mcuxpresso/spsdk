@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,8 +9,6 @@
 This module provides USBSIO-based communication interfaces for MBoot protocol,
 supporting both I2C and SPI transport layers through USB-to-serial bridge devices.
 """
-
-from typing import Optional, Union
 
 from typing_extensions import Self
 
@@ -27,7 +24,7 @@ class MbootUsbSioInterface(MbootSerialProtocol):
     data waiting capabilities.
     """
 
-    device: Union[UsbSioI2CDevice, UsbSioSPIDevice]
+    device: UsbSioI2CDevice | UsbSioSPIDevice
 
     def _wait_for_data(self) -> int:
         """Wait for first "not ready" frame.
@@ -63,7 +60,7 @@ class MbootUsbSioI2CInterface(MbootUsbSioInterface):
         super().__init__(device=device)
 
     @classmethod
-    def scan(cls, config: str, timeout: Optional[int] = None) -> list[Self]:
+    def scan(cls, config: str, timeout: int | None = None) -> list[Self]:
         """Scan connected USB-SIO bridge devices.
 
         The method scans for available USB-SIO bridge devices that match the specified
@@ -102,7 +99,7 @@ class MbootUsbSioSPIInterface(MbootUsbSioInterface):
         super().__init__(device)
 
     @classmethod
-    def scan(cls, config: str, timeout: Optional[int] = None) -> list[Self]:
+    def scan(cls, config: str, timeout: int | None = None) -> list[Self]:
         """Scan connected USB-SIO bridge devices.
 
         The method scans for available USB-SIO bridge devices that match the specified

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -13,11 +12,14 @@ compatibility testing.
 """
 
 import os
-from typing import Any, Optional, Type, Union
+from contextlib import ExitStack
+from typing import Any
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.keys import PublicKeyRsa
 from spsdk.crypto.signature_provider import PlainFileSP
 from spsdk.exceptions import SPSDKError
 from spsdk.image.cert_block.cert_block_v1 import CertBlockHeader, CertBlockV1
@@ -90,7 +92,7 @@ def test_cert_block_basic() -> None:
     assert cb.header.image_length == 1
     # invalid root key size
     with pytest.raises(SPSDKError):
-        cb.set_root_key_hash(0, bytes())
+        cb.set_root_key_hash(0, b"")
 
 
 def test_cert_block(data_dir: str) -> None:
@@ -263,7 +265,7 @@ def test_get_main_cert_index(
     data_dir: str,
     config: dict[str, Any],
     passed: bool,
-    expected_result: Union[int, Type[Exception]],
+    expected_result: int | type[Exception],
 ) -> None:
     """Test getting main certificate index from certificate block configuration.
 
@@ -356,7 +358,7 @@ def test_get_main_cert_index(
     ],
 )
 def test_find_main_cert_index(
-    data_dir: str, config: dict[str, str], index: Optional[int], cert_block_version: str
+    data_dir: str, config: dict[str, str], index: int | None, cert_block_version: str
 ) -> None:
     """Test finding the main certificate index in certificate blocks.
 
@@ -444,7 +446,7 @@ def test_find_main_cert_index(
     ],
 )
 def test_find_root_certificates(
-    config: dict[str, str], error: Optional[Type[Exception]], expected_list: Optional[list[str]]
+    config: dict[str, str], error: type[Exception] | None, expected_list: list[str] | None
 ) -> None:
     """Test function for finding root certificates with various configurations.
 
@@ -544,3 +546,200 @@ def test_cert_block_v31(data_dir: str) -> None:
     cert.calculate()
     exported = cert.export()
     CertBlockV21.parse(exported)
+
+
+def test_chain_cert_rsa_over_2048_warning_for_lpc55s16(data_dir: str) -> None:
+    """Test that a chain certificate with RSA key > 2048 bits is reported by verify() for LPC55S16.
+
+    Verifies that when a chain certificate whose public key size exceeds 2048 bits is added
+    to a CertBlockV1 configured for the lpc55s16 family, ``verify`` produces a WARNING record.
+    The chain certificate's public key is mocked to report an RSA4096 key size while still
+    passing the chain validation against the real root certificate.
+
+    :param data_dir: Directory path containing test certificate files.
+    """
+    from spsdk.utils.verifier import VerifierResult
+
+    family = FamilyRevision("lpc55s16")
+    cb = CertBlockV1(family=family)
+
+    # Add a real self-signed root certificate
+    root_cert = Certificate.load(os.path.join(data_dir, "selfsign_2048_v3.der.crt"))
+    cb.add_certificate(root_cert)
+
+    # Build a chain cert object that validates against itself (same cert, self-signed)
+    # and mock its key to report RSA4096 so the warning path is exercised.
+    chain_cert = Certificate.load(os.path.join(data_dir, "selfsign_2048_v3.der.crt"))
+    mock_key = MagicMock(spec=PublicKeyRsa)
+    mock_key.key_size = 4096
+
+    with patch.object(chain_cert, "get_public_key", return_value=mock_key):
+        # validate() is called internally; patch it to pass so we reach the key-size check
+        with patch.object(chain_cert, "validate", return_value=True):
+            cb.add_certificate(chain_cert)
+            ver = cb.verify()
+
+    assert ver.get_count([VerifierResult.WARNING]) >= 1
+    output = str(ver)
+    assert "RSA4096" in output and "lpc55s16" in output.lower()
+    assert "Chain certificate 1 key size" in output
+
+
+def test_chain_cert_rsa_over_2048_no_warning_for_other_cert_block_1_families(
+    data_dir: str,
+) -> None:
+    """Test that chain certificates with RSA key > 2048 bits do NOT warn for other cert_block_1 devices.
+
+    Verifies that the warning is specific to lpc55s16 and is not emitted for other
+    cert_block_1 families (e.g. lpc55s06) that do not declare chain_cert_rsa2048_only.
+
+    :param data_dir: Directory path containing test certificate files.
+    """
+    from spsdk.utils.verifier import VerifierResult
+
+    family = FamilyRevision("lpc55s06")
+    cb = CertBlockV1(family=family)
+
+    root_cert = Certificate.load(os.path.join(data_dir, "selfsign_2048_v3.der.crt"))
+    cb.add_certificate(root_cert)
+
+    chain_cert = Certificate.load(os.path.join(data_dir, "selfsign_2048_v3.der.crt"))
+    mock_key = MagicMock(spec=PublicKeyRsa)
+    mock_key.key_size = 4096
+
+    with patch.object(chain_cert, "get_public_key", return_value=mock_key):
+        with patch.object(chain_cert, "validate", return_value=True):
+            cb.add_certificate(chain_cert)
+            ver = cb.verify()
+
+    assert ver.get_count([VerifierResult.WARNING]) == 0
+    assert "only supports RSA2048" not in str(ver)
+
+
+def test_chain_cert_rsa_over_2048_multiple_warnings_for_lpc55s16(data_dir: str) -> None:
+    """Test that each chain certificate with RSA key > 2048 bits produces a separate warning.
+
+    Verifies that a cert block with two chain certificates whose RSA key size > 2048 bits
+    produces a verify() WARNING record for each one when the target family is lpc55s16.
+
+    :param data_dir: Directory path containing test certificate files.
+    """
+    from spsdk.utils.verifier import VerifierResult
+
+    family = FamilyRevision("lpc55s16")
+    cb = CertBlockV1(family=family)
+
+    root_cert = Certificate.load(os.path.join(data_dir, "selfsign_2048_v3.der.crt"))
+    cb.add_certificate(root_cert)
+
+    with ExitStack() as stack:
+        for key_size in (3072, 4096):
+            chain_cert = Certificate.load(os.path.join(data_dir, "selfsign_2048_v3.der.crt"))
+            mock_key = MagicMock(spec=PublicKeyRsa)
+            mock_key.key_size = key_size
+            stack.enter_context(patch.object(chain_cert, "get_public_key", return_value=mock_key))
+            stack.enter_context(patch.object(chain_cert, "validate", return_value=True))
+            cb.add_certificate(chain_cert)
+        ver = cb.verify()
+
+    assert ver.get_count([VerifierResult.WARNING]) == 2
+    output = str(ver)
+    assert "RSA3072" in output
+    assert "RSA4096" in output
+
+
+def test_chain_cert_rsa2048_no_warning_for_lpc55s16(data_dir: str) -> None:
+    """Test that a chain certificate with RSA2048 key does NOT trigger a warning for LPC55S16.
+
+    Verifies that verify() emits no key-size WARNING when the chain certificate's key size is
+    exactly 2048 bits, which is the supported size for lpc55s16.
+
+    :param data_dir: Directory path containing test certificate files.
+    """
+    from spsdk.utils.verifier import VerifierResult
+
+    family = FamilyRevision("lpc55s16")
+    cb = CertBlockV1(family=family)
+
+    root_cert = Certificate.load(os.path.join(data_dir, "selfsign_2048_v3.der.crt"))
+    cb.add_certificate(root_cert)
+
+    chain_cert = Certificate.load(os.path.join(data_dir, "selfsign_2048_v3.der.crt"))
+    mock_key = MagicMock(spec=PublicKeyRsa)
+    mock_key.key_size = 2048
+
+    with patch.object(chain_cert, "get_public_key", return_value=mock_key):
+        with patch.object(chain_cert, "validate", return_value=True):
+            cb.add_certificate(chain_cert)
+            ver = cb.verify()
+
+    assert ver.get_count([VerifierResult.WARNING]) == 0
+    assert "only supports RSA2048" not in str(ver)
+
+
+def test_chain_cert_rsa_over_2048_no_warning_for_unknown_family(data_dir: str) -> None:
+    """Test that no warning is emitted for families without chain_cert_rsa2048_only flag.
+
+    Verifies that the RSA key-size WARNING is suppressed for device families that do
+    not declare the chain_cert_rsa2048_only constraint in their device database, even
+    if the chain certificate key size exceeds 2048 bits.
+
+    :param data_dir: Directory path containing test certificate files.
+    """
+    from spsdk.utils.verifier import VerifierResult
+
+    family = FamilyRevision("Ambassador")
+    cb = CertBlockV1(family=family)
+
+    root_cert = Certificate.load(os.path.join(data_dir, "selfsign_2048_v3.der.crt"))
+    cb.add_certificate(root_cert)
+
+    chain_cert = Certificate.load(os.path.join(data_dir, "selfsign_2048_v3.der.crt"))
+    mock_key = MagicMock(spec=PublicKeyRsa)
+    mock_key.key_size = 4096
+
+    # Mock get_db to return False for chain_cert_rsa2048_only flag
+    mock_db_features = MagicMock()
+    mock_db_features.get_bool.return_value = False
+
+    with patch.object(chain_cert, "get_public_key", return_value=mock_key):
+        with patch.object(chain_cert, "validate", return_value=True):
+            with patch(
+                "spsdk.image.cert_block.cert_block_v1.get_db", return_value=mock_db_features
+            ):
+                cb.add_certificate(chain_cert)
+                ver = cb.verify()
+
+    assert ver.get_count([VerifierResult.WARNING]) == 0
+    assert "only supports RSA2048" not in str(ver)
+
+
+def test_chain_cert_rsa_over_2048_unknown_family_does_not_raise(data_dir: str) -> None:
+    """Regression test: building a chain with RSA>2048 for an unknown family must not raise.
+
+    When a binary cert block is parsed without a known family (e.g. during pfr export
+    ROT extraction), the family defaults to "Unknown" which is not present in the device
+    database. Parsing rebuilds the certificate chain via ``add_certificate``, which must
+    NOT perform a device-database lookup (the RSA key-size advisory is deferred to
+    ``export``). Otherwise parsing would raise ``SPSDKErrorMissingDevice`` and fall back to
+    MBI parsing with a misleading "Unsupported MBI type detected" error.
+
+    :param data_dir: Directory path containing test certificate files.
+    """
+    family = FamilyRevision("Unknown")
+    cb = CertBlockV1(family=family)
+
+    root_cert = Certificate.load(os.path.join(data_dir, "selfsign_2048_v3.der.crt"))
+    cb.add_certificate(root_cert)
+
+    chain_cert = Certificate.load(os.path.join(data_dir, "selfsign_2048_v3.der.crt"))
+    mock_key = MagicMock(spec=PublicKeyRsa)
+    mock_key.key_size = 4096
+
+    with patch.object(chain_cert, "get_public_key", return_value=mock_key):
+        with patch.object(chain_cert, "validate", return_value=True):
+            # Must not perform a device-database lookup and must not raise for the
+            # unknown family while building/parsing the certificate chain.
+            cb.add_certificate(chain_cert)
+
+    assert len(cb._cert) == 2

@@ -267,6 +267,15 @@ features:
         field000: # HEADER
           field000-bits8-15: pfr_reg_inverse_lower_8_bits # INV_CFPA_LC_STATE
       support_additional_data: True
+      monotonic_counters:
+        - field010  # EE0_FW_Version
+        - field014  # EE1_FW_Version
+        - field018  # EE2_FW_Version
+        - field01C  # EE3_FW_Version
+        - field020  # FMC_SBL_FW_Version
+        - field024  # RECOVERY_SB3_Version
+        - field028  # UPDATE_SB3_Version
+        - field02C  # LP_FW_Version
 
     cmpa:
       read_address: 0x100_0200

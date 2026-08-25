@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -13,7 +12,7 @@ for Application Cores.
 """
 
 from struct import calcsize, pack, unpack
-from typing import Any, Dict, List, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -156,11 +155,11 @@ class CoreResetEntry(FeatureBaseClass):
         family: FamilyRevision,
         core_id: CoreId = CoreId.CORE_M7_0,
         cr_sanction: HseCrSanction = HseCrSanction.KEEP_CORE_IN_RESET,
-        pre_boot_smr_map: Union[HseSmrMap, int, List[Union[int, HseSmrMap]]] = HseSmrMap.NONE,
+        pre_boot_smr_map: HseSmrMap | int | list[int | HseSmrMap] = HseSmrMap.NONE,
         pass_reset_addr: int = 0,
-        alt_pre_boot_smr_map: Union[HseSmrMap, int, List[Union[int, HseSmrMap]]] = HseSmrMap.NONE,
+        alt_pre_boot_smr_map: HseSmrMap | int | list[int | HseSmrMap] = HseSmrMap.NONE,
         alt_reset_addr: int = 0,
-        post_boot_smr_map: Union[HseSmrMap, int, List[Union[int, HseSmrMap]]] = HseSmrMap.NONE,
+        post_boot_smr_map: HseSmrMap | int | list[int | HseSmrMap] = HseSmrMap.NONE,
         start_option: HseCrStartOption = HseCrStartOption.AUTO_START,
     ) -> None:
         """Initialize Core Reset Entry.
@@ -190,9 +189,7 @@ class CoreResetEntry(FeatureBaseClass):
         self.start_option = start_option
 
     @classmethod
-    def _convert_smr_map(
-        cls, smr_map: Union[HseSmrMap, int, List[Union[int, HseSmrMap]]]
-    ) -> HseSmrMap:
+    def _convert_smr_map(cls, smr_map: HseSmrMap | int | list[int | HseSmrMap]) -> HseSmrMap:
         """Convert various SMR map formats to HseSmrMap.
 
         :param smr_map: SMR map in various formats
@@ -392,7 +389,7 @@ class CoreResetEntry(FeatureBaseClass):
         )
         return [family_schema, schemas["cr"]]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert Core Reset Entry to dictionary representation.
 
         :return: Dictionary containing all Core Reset entry fields

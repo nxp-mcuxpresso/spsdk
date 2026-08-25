@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,7 +10,7 @@ This module provides functionality for handling boot sections in SB1 (Secure Bin
 including section parsing, validation, and management within the SPSDK framework.
 """
 
-from typing import Sequence
+from collections.abc import Sequence
 
 from typing_extensions import Self
 

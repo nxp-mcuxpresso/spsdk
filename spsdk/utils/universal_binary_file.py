@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -13,7 +12,7 @@ binary file formats including Binary, SPARSE, SREC, and Intel HEX formats.
 
 import logging
 import os
-from typing import IO, Optional
+from typing import IO
 
 from typing_extensions import Self
 
@@ -55,16 +54,16 @@ class UniversalBinaryFile:
 
         Creates an uninitialized file handler. Call open() to open a file.
         """
-        self.path: Optional[str] = None
+        self.path: str | None = None
         self.mode: str = "rb"
         self.position = 0
         self.format_type: str = "BIN"  # Default format
         self.is_open = False
 
         # Format-specific handlers
-        self._file_handle: Optional[IO] = None  # For BIN format
-        self._sparse_reader: Optional[SparseImageReader] = None  # For SPARSE format
-        self._binary_image: Optional[BinaryImage] = None  # For SREC/HEX formats
+        self._file_handle: IO | None = None  # For BIN format
+        self._sparse_reader: SparseImageReader | None = None  # For SPARSE format
+        self._binary_image: BinaryImage | None = None  # For SREC/HEX formats
         self._modified = False  # Track if SREC/HEX has been modified
 
     def _validate_mode(self, mode: str) -> bool:

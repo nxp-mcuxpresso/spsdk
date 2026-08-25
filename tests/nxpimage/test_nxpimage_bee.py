@@ -1,8 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-#!/usr/bin/env python(tmpdir
-# -*- coding: UTF-8 -*-
+#!/usr/bin/env python
 #
 # Copyright 2022-2026 NXP
 #
@@ -17,7 +15,7 @@ template generation, and multiple region configurations.
 
 import os
 import shutil
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 import yaml
@@ -49,7 +47,7 @@ def test_nxpimage_bee(
     data_dir: str,
     case: str,
     config: str,
-    reference: Optional[str],
+    reference: str | None,
     engines: list[int],
 ) -> None:
     """Test NXP image BEE encryption functionality.

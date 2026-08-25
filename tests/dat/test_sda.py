@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2026 NXP
 #
@@ -33,7 +32,7 @@ def debug_probe(sda_ap_registers: dict) -> DebugProbeVirtual:
     probe = DebugProbeVirtual(DebugProbeVirtual.UNIQUE_SERIAL, options={})
     probe.open()
     probe.connect()
-    probe.coresight_ap.update(sda_ap_registers)
+    probe.virtual_memory.update(sda_ap_registers)
     return probe
 
 
@@ -96,7 +95,7 @@ def test_sda_verify_ap_failure(family: FamilyRevision, debug_probe: DebugProbeVi
     :param debug_probe: Virtual debug probe fixture.
     """
     # Setup virtual probe with incorrect IDR
-    debug_probe.coresight_ap[0x070000FC] = 0xDEADBEEF
+    debug_probe.virtual_memory[0x070000FC] = 0xDEADBEEF
 
     with pytest.raises(SPSDKError, match="SDA AP verification failed"):
         SdaAuthentication(family=family, debug_probe=debug_probe)
@@ -230,11 +229,9 @@ def test_write_response_and_authenticate_success(
     sda._write_keyresp_registers(response)
     sda._trigger_authentication_and_verify()
 
-    # Verify AUTHCTL was written
+    # Verify AUTHCTL and DBGENCTRL were written via CoreSight AP path.
     assert 0x07000004 in debug_probe.coresight_ap
     assert debug_probe.coresight_ap[0x07000004] == 0x00000001  # HSEAUTHREQ bit
-
-    # Verify DBGENCTRL was written
     assert 0x07000080 in debug_probe.coresight_ap
     assert debug_probe.coresight_ap[0x07000080] == 0x10000010  # GDBGEN | CDBGEN
 
@@ -249,7 +246,7 @@ def test_write_response_and_authenticate_failure(
     """
 
     # Set authentication status to failure (bits 30-29 not set)
-    debug_probe.coresight_ap[0x07000000] = 0x00000000
+    debug_probe.virtual_memory[0x07000000] = 0x00000000
 
     sda = SdaAuthentication(family=family, debug_probe=debug_probe)
 
@@ -347,16 +344,14 @@ def test_authenticate_password_success(
     sda.authenticate_password(password)
 
     # Verify password was written to first 4 KEYRESP registers (0x40-0x4C)
-    assert 0x07000040 in debug_probe.coresight_ap  # KEYRESP0
-    assert 0x07000044 in debug_probe.coresight_ap  # KEYRESP1
-    assert 0x07000048 in debug_probe.coresight_ap  # KEYRESP2
-    assert 0x0700004C in debug_probe.coresight_ap  # KEYRESP3
+    assert 0x07000040 in debug_probe.virtual_memory  # KEYRESP0
+    assert 0x07000044 in debug_probe.virtual_memory  # KEYRESP1
+    assert 0x07000048 in debug_probe.virtual_memory  # KEYRESP2
+    assert 0x0700004C in debug_probe.virtual_memory  # KEYRESP3
 
-    # Verify AUTHCTL.HSEAUTHREQ was set
+    # Verify AUTHCTL and DBGENCTRL were written via CoreSight AP path.
     assert 0x07000004 in debug_probe.coresight_ap
     assert debug_probe.coresight_ap[0x07000004] == 0x00000001
-
-    # Verify DBGENCTRL.GDBGEN and DBGENCTRL.CDBGEN were set
     assert 0x07000080 in debug_probe.coresight_ap
     assert debug_probe.coresight_ap[0x07000080] == 0x10000010
 
@@ -372,7 +367,7 @@ def test_authenticate_password_failure_wrong_password(
     :param debug_probe: Virtual debug probe fixture.
     :param sda_ap_registers_failure: SDA AP register values for failure.
     """
-    debug_probe.coresight_ap.update(sda_ap_registers_failure)
+    debug_probe.virtual_memory.update(sda_ap_registers_failure)
 
     sda = SdaAuthentication(family=family, debug_probe=debug_probe)
 

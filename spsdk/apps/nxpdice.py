@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK NXPDICE application for DICE-related operations and device provisioning.
 
 This module provides a command-line interface for managing Device Identity Composition Engine (DICE)
@@ -16,7 +16,6 @@ import os
 import secrets
 import sys
 import textwrap
-from typing import Optional
 
 import click
 import colorama
@@ -108,7 +107,7 @@ def store_artifact_options(options: FC) -> FC:
 
 
 def get_verification_service(
-    service_url: Optional[str] = None, database: Optional[str] = None
+    service_url: str | None = None, database: str | None = None
 ) -> DICEVerificationService:
     """Factory method for retrieving concrete verification service instance."""
     if service_url and database:
@@ -123,8 +122,8 @@ def get_verification_service(
 def get_dice_target(
     port: str,
     timeout: int = 5000,
-    family: Optional[FamilyRevision] = None,
-    models_dir: Optional[str] = None,
+    family: FamilyRevision | None = None,
+    models_dir: str | None = None,
 ) -> DICETarget:
     """Factory method for retrieving concrete DICE target instance."""
     if port is None:
@@ -524,7 +523,7 @@ def display_had_diff_table(
         header_style="cap",
         hrules=True,
     )
-    table.align["description"] = "l"
+    table.align = {"description": "l"}
 
     def format_bitfield(b: RegsBitField) -> str:
         if b.width == 1:
@@ -583,7 +582,7 @@ def prove_genuinity_get_response(
     interface: MbootProtocolBase,
     family: FamilyRevision,
     output: str,
-    challenge: Optional[str] = None,
+    challenge: str | None = None,
     mode: str = "ECDSA",
 ) -> None:
     """Get Prove-Genuinity response from the target."""
@@ -628,7 +627,7 @@ def prove_genuinity_get_response(
     ),
     required=False,
 )
-def verify_pg_response(response: str, challenge: Optional[str], key_file: list[str]) -> None:
+def verify_pg_response(response: str, challenge: str | None, key_file: list[str]) -> None:
     """Verify the Prove Genuinity response."""
     response_data = load_binary(response)
     keys = [load_binary(key) for key in key_file]
@@ -691,8 +690,8 @@ def verify_csr(
     csr_file: str,
     product_key_file: list[str],
     dice_ca_key_file: list[str],
-    challenge: Optional[str] = None,
-    export_alias_keys: Optional[str] = None,
+    challenge: str | None = None,
+    export_alias_keys: str | None = None,
     strict: bool = False,
 ) -> None:
     """Verify the DICE CSR. Optionally export the DICE Alias keys."""

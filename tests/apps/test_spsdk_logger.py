@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2026 NXP
 #
@@ -79,6 +78,23 @@ def test_install_non_tty_stream() -> None:
     logger.handlers.clear()
     install(level=logging.DEBUG, stream=stream, logger=logger, create_debug_logger=False)
     assert len(logger.handlers) >= 1
+
+
+def test_install_repeated_call_reuses_console_handler() -> None:
+    """Test repeated install() calls don't duplicate console handlers and update level."""
+    logger = logging.getLogger("spsdk_test_repeated_install")
+    logger.handlers.clear()
+    stream = StringIO()
+
+    install(level=logging.WARNING, stream=stream, logger=logger, create_debug_logger=False)
+    install(level=logging.DEBUG, stream=stream, logger=logger, create_debug_logger=False)
+
+    console_handlers = [h for h in logger.handlers if getattr(h, "_spsdk_console_handler", False)]
+    assert len(console_handlers) == 1
+
+    logger.debug("debug message after reinstall")
+    assert "debug message after reinstall" in stream.getvalue()
+    logger.handlers.clear()
 
 
 def test_install_with_debug_logger(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

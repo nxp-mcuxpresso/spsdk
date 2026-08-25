@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -12,7 +11,6 @@ for authenticated encryption and decryption operations.
 """
 
 from struct import pack, unpack_from
-from typing import Optional
 
 from typing_extensions import Self
 
@@ -40,7 +38,7 @@ class MAC(BaseClass):
         version: int = 0x40,
         nonce_len: int = 0,
         mac_len: int = AES128_BLK_LEN,
-        data: Optional[bytes] = None,
+        data: bytes | None = None,
     ):
         """Initialize HAB MAC segment.
 
@@ -55,7 +53,7 @@ class MAC(BaseClass):
         self._header = Header(tag=SegmentTag.MAC.tag, param=version)
         self.nonce_len = nonce_len
         self.mac_len = mac_len
-        self._data: bytes = bytes() if data is None else bytes(data)
+        self._data: bytes = b"" if data is None else bytes(data)
         if data:
             self._validate_data()
 

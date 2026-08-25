@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
@@ -13,8 +12,9 @@ record management, and formatted output capabilities for verification processes.
 """
 
 import textwrap
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Iterable, Optional, Type, Union
+from typing import Any
 
 import colorama
 import prettytable
@@ -70,7 +70,7 @@ class VerifierRecord:
     # Strictly defined result
     result: VerifierResult = VerifierResult.ERROR
     # String / Integer / Boolean value of result representation
-    value: Optional[Union[str, int, bool]] = None
+    value: str | int | bool | None = None
     # Important - In case of succeeded result this record won't be printed
     important: bool = True
     # Raw record without any formatting
@@ -97,7 +97,7 @@ class Verifier:
         self,
         name: str,
         indent: int = 2,
-        description: Optional[str] = None,
+        description: str | None = None,
         important: bool = True,
         raw: bool = False,
     ) -> None:
@@ -113,7 +113,7 @@ class Verifier:
         :param raw: Flag for raw verifier output without formatting, defaults to False.
         """
         self.name = name
-        self.records: list[Union[VerifierRecord, "Verifier"]] = []
+        self.records: list[VerifierRecord | Verifier] = []
         self.description = description
         self.indent = indent
         self.level = 1
@@ -176,7 +176,7 @@ class Verifier:
             ret += wrap_text(self.description, self.max_line) + "\n" + delimiter + rst_color + "\n"
         return ret
 
-    def draw(self, results: Optional[list[VerifierResult]] = None, colorize: bool = True) -> str:
+    def draw(self, results: list[VerifierResult] | None = None, colorize: bool = True) -> str:
         """Draw the results of the verifier with optional formatting and filtering.
 
         The method generates a formatted string representation of the verifier results,
@@ -188,7 +188,7 @@ class Verifier:
         :return: Formatted string representation of the verifier results.
         """
 
-        def could_shorten_to() -> Optional[VerifierRecord]:
+        def could_shorten_to() -> VerifierRecord | None:
             """Check if this verifier could be shortened to a single record.
 
             A verifier can be shortened if it has no description and contains at most one
@@ -270,8 +270,8 @@ class Verifier:
     def add_record(
         self,
         name: str,
-        result: Union[VerifierResult, bool],
-        value: Optional[Union[str, int, bool]] = None,
+        result: VerifierResult | bool,
+        value: str | int | bool | None = None,
         important: bool = True,
         raw: bool = False,
     ) -> None:
@@ -293,7 +293,7 @@ class Verifier:
         self.records.append(record)
 
     def add_record_bit_range(
-        self, name: str, value: Optional[int], bit_range: int = 32, important: bool = True
+        self, name: str, value: int | None, bit_range: int = 32, important: bool = True
     ) -> None:
         """Add verifier check for bit range validation of a record.
 
@@ -320,7 +320,7 @@ class Verifier:
     def add_record_range(
         self,
         name: str,
-        value: Optional[Union[int, str]],
+        value: int | str | None,
         min_val: int = 0,
         max_val: int = (1 << 32) - 1,
     ) -> None:
@@ -362,7 +362,7 @@ class Verifier:
         else:
             self.add_record(name, VerifierResult.SUCCEEDED, display_value)
 
-    def add_record_contains(self, name: str, value: Optional[Any], collection: Iterable) -> None:
+    def add_record_contains(self, name: str, value: Any | None, collection: Iterable) -> None:
         """Add to verifier check the presence of item in collection.
 
         The method validates whether a given value exists within the specified collection.
@@ -392,9 +392,9 @@ class Verifier:
     def add_record_bytes(
         self,
         name: str,
-        value: Optional[bytes],
+        value: bytes | None,
         min_length: int = 0,
-        max_length: Optional[int] = None,
+        max_length: int | None = None,
     ) -> None:
         """Add bytes record validation to verifier.
 
@@ -426,7 +426,7 @@ class Verifier:
             )
 
     def add_record_enum(
-        self, name: str, value: Optional[Union[SpsdkEnum, int, str]], enum: Type[SpsdkEnum]
+        self, name: str, value: SpsdkEnum | int | str | None, enum: type[SpsdkEnum]
     ) -> None:
         """Add to verifier check of the value into enum record.
 
@@ -473,7 +473,7 @@ class Verifier:
             value_enum.label + f", {value_enum.description}" if value_enum.description else "",
         )
 
-    def add_child(self, child: "Verifier", prefix_name: Optional[str] = None) -> None:
+    def add_child(self, child: "Verifier", prefix_name: str | None = None) -> None:
         """Add child Verifier object to this verifier.
 
         The child verifier will be appended to the records list and optionally
@@ -486,7 +486,7 @@ class Verifier:
             child.name = f"{prefix_name}: {child.name}"
         self.records.append(child)
 
-    def get_count(self, results: Optional[list[VerifierResult]] = None) -> int:
+    def get_count(self, results: list[VerifierResult] | None = None) -> int:
         """Get count of records of requested result state.
 
         The method recursively counts verification records that match the specified result types.
@@ -512,6 +512,14 @@ class Verifier:
         :return: True if verifier contains at least one error, False otherwise.
         """
         return bool(self.get_count([VerifierResult.ERROR]))
+
+    @property
+    def has_warnings(self) -> bool:
+        """Check if the verifier contains any warning.
+
+        :return: True if verifier contains at least one warning, False otherwise.
+        """
+        return bool(self.get_count([VerifierResult.WARNING]))
 
     @property
     def result(self) -> VerifierResult:

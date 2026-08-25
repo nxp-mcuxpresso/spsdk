@@ -13,6 +13,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Operating System :: POSIX :: Linux",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: MacOS :: MacOS X",
@@ -88,7 +89,7 @@ requires = ["setuptools_scm<10", "setuptools>=77", "wheel"]
 
 [tool.black]
 line-length = 100
-target-version = ['py310', 'py311', 'py312', 'py313']
+target-version = ['py310', 'py311', 'py312', 'py313', 'py314']
 include = '\.pyi?$'
 force-exclude = '''
 '''
@@ -103,6 +104,15 @@ line_length = 100
 extend_skip_glob = ["**/__version__.py"]
 
 
+[tool.ruff]
+# Match the project's line length (black/isort use 100).
+line-length = 100
+
+[tool.ruff.lint]
+# Pin the selection to the pre-0.16 default set so linter behavior is unchanged after upgrading ruff.
+# To adopt additional rule groups later, extend this list (e.g. "UP", "SIM", ...).
+select = ["E4", "E7", "E9", "F"]
+
 [tool.mypy]
 disallow_untyped_defs = true
 ignore_missing_imports = true
@@ -115,7 +125,6 @@ exclude = [
 
 [tool.pytest.ini_options]
 junit_family = "xunit1"
-addopts = "-p no:nb_regression"
 
 [tool.coverage.report]
 exclude_lines = [
@@ -228,7 +237,7 @@ checkers = [
     { "pytest" = { check_paths = [
         "spsdk",
     ], timeout = 1200 } },
-    { "gitcov" = { info_only = true } },
+    { "gitcov" = {} },
     { "pylint" = { timeout = 300 } },
     { "mypy" = { timeout = 300 } },
     "dependencies",
@@ -243,7 +252,9 @@ checkers = [
     { "black" = { timeout = 120 } },
     { "isort" = { timeout = 200 } },
     "copyright",
-    "py_headers",
+    { "py_headers" = { args = [
+        '--header "#!/usr/bin/env python"',
+    ] } },
     { "cyclic" = { info_only = true, check_paths = [
         "spsdk",
         "tests",

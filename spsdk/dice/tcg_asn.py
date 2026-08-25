@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +13,6 @@ and cryptographic operations support.
 """
 
 from datetime import datetime, timezone
-from typing import Optional, Union
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
@@ -34,7 +32,7 @@ from spsdk.crypto.keys import (
 )
 
 
-def _OID(*components: Union[int, univ.ObjectIdentifier]) -> univ.ObjectIdentifier:
+def _OID(*components: int | univ.ObjectIdentifier) -> univ.ObjectIdentifier:
     """Create Object Identifier from components.
 
     Constructs an ASN.1 Object Identifier by combining integer components and existing
@@ -514,12 +512,12 @@ class TBSCertificate(univ.Sequence):
         cls,
         subject: x509.Name,
         public_key: PublicKey,
-        serial: Optional[int] = None,
-        issuer: Optional[x509.Name] = None,
-        not_before: Optional[datetime] = None,
-        not_after: Optional[datetime] = None,
-        extensions: Optional[list[x509.ExtensionType]] = None,
-        critical_extensions: Optional[list[x509.ExtensionType]] = None,
+        serial: int | None = None,
+        issuer: x509.Name | None = None,
+        not_before: datetime | None = None,
+        not_after: datetime | None = None,
+        extensions: list[x509.ExtensionType] | None = None,
+        critical_extensions: list[x509.ExtensionType] | None = None,
     ) -> "TBSCertificate":
         """Create TBS (To Be Signed) ASN.1 certificate structure.
 
@@ -669,7 +667,7 @@ class Certificate(univ.Sequence):
         return encode(self)
 
 
-def get_oid_for_key(key: Union[PrivateKey, PublicKey]) -> bytes:
+def get_oid_for_key(key: PrivateKey | PublicKey) -> bytes:
     """Get signature OID for given key.
 
     This method returns the appropriate signature algorithm Object Identifier (OID) based on the

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,7 @@ SPSDK test suites for common testing operations and debugging support.
 """
 
 # name if data sub-directory with logs from output generation
-from typing import Optional, TextIO
+from typing import TextIO
 
 DEBUG_LOG_SUBDIR = "debug_logs"
 
@@ -44,16 +43,14 @@ class GetPassMock:
     user input during testing scenarios.
     """
 
-    def __init__(self, passphrase: Optional[str]) -> None:
+    def __init__(self, passphrase: str | None) -> None:
         """Initialize the object with an optional passphrase.
 
         :param passphrase: Optional passphrase string for authentication or encryption purposes.
         """
         self.passphrase = passphrase
 
-    def get_pass(
-        self, prompt: Optional[str] = None, stream: Optional[TextIO] = None
-    ) -> Optional[str]:
+    def get_pass(self, prompt: str | None = None, stream: TextIO | None = None) -> str | None:
         """Get passphrase for authentication.
 
         Returns the stored passphrase that was previously set for this instance.

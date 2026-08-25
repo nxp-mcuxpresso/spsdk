@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2025 NXP
 #
@@ -135,3 +134,13 @@ rediraffe_redirects = {"usage/installation": "examples/_knowledge_base/installat
 # decrease logging verbosity for markdown_it to prevent excessive output
 markdown_it_logger = logging.getLogger("markdown_it")
 markdown_it_logger.setLevel(logging.WARNING)
+
+# Sphinx 9 compatibility fix for sphinx_click: in Sphinx 9, autodoc.mock is a module,
+# not the context manager function. Patch sphinx_click to use the correct callable.
+try:
+    import sphinx_click.ext as _sphinx_click_ext
+    from sphinx.ext.autodoc.mock import mock as _sphinx_autodoc_mock
+
+    _sphinx_click_ext.mock = _sphinx_autodoc_mock
+except Exception:
+    pass

@@ -328,6 +328,10 @@ features:
     spl_meta_data_start_cpu_id: 2
     spl_ddr_image_size_alignment: 0x400
 
+    fcb_copy_load_address: 0x204D7000
+    fcb_copy_image_type: dek_validation_fcb_chk
+    fcb_copy_core_id: cortex-m33
+
     v2x_dummy_load_address: 0x8b000000
     v2x_dummy_image_type: v2x_dummy
     v2x_dummy_core_id: cortex-m33
@@ -369,6 +373,7 @@ features:
         system_manager,
         cortex_m7_app,
         v2x_dummy,
+        fcb_copy,
         spl,
         atf,
         uboot,
@@ -443,9 +448,13 @@ features:
         lpddr_dmem_qb: lpddr4x_dmem_qb_v202409.bin
         oei_ddr: oei-m33-ddr.bin
         system_manager: m33_image-mx952evk.bin
-        spl: u-boot-spl.bin-imx952-15x15-lpddr4x-evk-sd
+        spl: u-boot-spl.bin
+        spl_alt:
+          - u-boot-spl.bin-imx952-15x15-lpddr4x-evk-sd
         atf: bl31-imx952.bin
-        uboot: u-boot-imx952-15x15-lpddr4x-evk.bin-sd
+        uboot: u-boot.bin
+        uboot_alt:
+          - u-boot-imx952-15x15-lpddr4x-evk.bin-sd
         tee: tee.bin
       imx952-19x19-lpddr5-evk:
         lpddr_imem: lpddr5_imem_v202409.bin
@@ -454,9 +463,13 @@ features:
         lpddr_dmem_qb: lpddr5_dmem_qb_v202409.bin
         oei_ddr: oei-m33-ddr.bin
         system_manager: m33_image-mx952evk.bin
-        spl: u-boot-spl.bin-imx952-19x19-lpddr5-evk-sd
+        spl: u-boot-spl.bin
+        spl_alt:
+          - u-boot-spl.bin-imx952-19x19-lpddr5-evk-sd
         atf: bl31-imx952.bin
-        uboot: u-boot-imx952-19x19-lpddr5-evk.bin-sd
+        uboot: u-boot.bin
+        uboot_alt:
+          - u-boot-imx952-19x19-lpddr5-evk.bin-sd
         tee: tee.bin
 
   # # ======== OTFAD section ========

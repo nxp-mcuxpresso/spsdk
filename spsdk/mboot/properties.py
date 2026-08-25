@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -17,9 +16,9 @@ and security features.
 
 import ctypes
 import logging
+from collections.abc import Callable
 from copy import deepcopy
 from enum import Enum
-from typing import Callable, Optional, Type, Union
 
 from typing_extensions import Self
 
@@ -39,7 +38,7 @@ logger = logging.getLogger(__name__)
 ########################################################################################################################
 # McuBoot helper functions
 ########################################################################################################################
-def size_fmt(value: Union[int, float], kibibyte: bool = True) -> str:
+def size_fmt(value: int | float, kibibyte: bool = True) -> str:
     """Convert size value into human-readable string format.
 
     Converts a numeric size value (in bytes) into a formatted string with appropriate
@@ -98,7 +97,7 @@ class Version:
     mark, major, minor, and fixation components.
     """
 
-    def __init__(self, *args: Union[str, int], **kwargs: int):
+    def __init__(self, *args: str | int, **kwargs: int):
         """Initialize the Version object.
 
         Creates a Version object from either an integer or string representation,
@@ -352,7 +351,7 @@ class PropertyTag(Enum):
         raise SPSDKValueError(f"There is no {cls.__name__} item with name {name} defined")
 
     @classmethod
-    def from_index(cls, index: int, family: Optional[FamilyRevision] = None) -> "PropertyTag":
+    def from_index(cls, index: int, family: FamilyRevision | None = None) -> "PropertyTag":
         """Convert property index to its corresponding PropertyTag.
         
         The method searches through available properties for the given family
@@ -409,7 +408,7 @@ COMMON_PROPERTY_INDEXES = {
     0xFF: PropertyTag.UNKNOWN,
 }
 
-def get_property_index(prop:Union[PropertyTag, int], family:Optional[FamilyRevision] = None) -> int:
+def get_property_index(prop:PropertyTag | int, family:FamilyRevision | None = None) -> int:
     """Get index of given property.
     
     Retrieves the numeric index for a property, either by returning the integer directly
@@ -428,7 +427,7 @@ def get_property_index(prop:Union[PropertyTag, int], family:Optional[FamilyRevis
             return idx
     raise SPSDKError(f"Unknown property: {prop.name}")
 
-def get_properties(family: Optional[FamilyRevision] = None)-> dict[int, PropertyTag]:
+def get_properties(family: FamilyRevision | None = None)-> dict[int, PropertyTag]:
     """Get all properties including family specific properties if family defined.
     
     This method retrieves common property indexes and optionally merges them with
@@ -511,9 +510,7 @@ class PropertyValueBase:
 
     __slots__ = ("prop", "name", "desc")
 
-    def __init__(
-        self, prop: PropertyTag, name: Optional[str] = None, desc: Optional[str] = None
-    ) -> None:
+    def __init__(self, prop: PropertyTag, name: str | None = None, desc: str | None = None) -> None:
         """Initialize the base of property.
 
         :param prop: Property tag, see: `PropertyTag`
@@ -719,7 +716,7 @@ class EnumValue(PropertyValueBase):
         self,
         prop: PropertyTag,
         raw_values: list[int],
-        enum: Type[SpsdkEnum],
+        enum: type[SpsdkEnum],
         na_msg: str = "Unknown Item",
     ) -> None:
         """Initialize the enumeration-based property object.
@@ -1459,11 +1456,11 @@ PROPERTY_RESPONSE: dict[PropertyTag, dict] = {
 
 
 def parse_property_value(
-    property_tag: Union[int, PropertyTag],
+    property_tag: int | PropertyTag,
     raw_values: list[int],
-    ext_mem_id: Optional[int] = None,
-    family: Optional[FamilyRevision] = None,
-) -> Optional[PropertyValueBase]:
+    ext_mem_id: int | None = None,
+    family: FamilyRevision | None = None,
+) -> PropertyValueBase | None:
     """Parse the property value received from the device.
 
     The method converts raw property data from device into a structured property object.
@@ -1495,7 +1492,7 @@ def parse_property_value(
 
 
 def get_property_tag_label(
-    mboot_property: Union[PropertyTag, int], family: Optional[FamilyRevision] = None
+    mboot_property: PropertyTag | int, family: FamilyRevision | None = None
 ) -> tuple[int, str]:
     """Get property tag and label from property identifier.
 

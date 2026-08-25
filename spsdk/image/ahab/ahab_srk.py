@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -16,10 +15,11 @@ post-quantum cryptography (Dilithium/ML-DSA).
 import logging
 import math
 import os
+from collections.abc import Sequence
 from struct import pack, unpack
-from typing import Optional, Sequence, TypedDict, TypeVar, cast
+from typing import TypeAlias, TypedDict, TypeVar, cast
 
-from typing_extensions import Self, TypeAlias
+from typing_extensions import Self
 
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.keys import (
@@ -162,14 +162,14 @@ class SRKRecordBase(HeaderContainerInverted):
 
     def __init__(
         self,
-        src_key: Optional[PublicKey] = None,
-        signing_algorithm: Optional[SpsdkEnum] = None,
-        hash_type: Optional[SpsdkEnum] = None,
+        src_key: PublicKey | None = None,
+        signing_algorithm: SpsdkEnum | None = None,
+        hash_type: SpsdkEnum | None = None,
         key_size: int = 0,
         srk_flags: int = 0,
         crypto_params: bytes = b"",
         legacy_rsa_exponent_size: bool = False,
-        chip_config: Optional[AhabChipConfig] = None,
+        chip_config: AhabChipConfig | None = None,
     ):
         """Initialize AHAB SRK Record object.
 
@@ -208,7 +208,7 @@ class SRKRecordBase(HeaderContainerInverted):
         self.srk_flags = srk_flags
         self.crypto_params = crypto_params
         self.legacy_rsa_exponent_size = legacy_rsa_exponent_size
-        self._param_lengths: Optional[tuple[int, int]] = None
+        self._param_lengths: tuple[int, int] | None = None
 
     @property
     def key_sizes(self) -> tuple[int, int]:
@@ -523,9 +523,9 @@ class SRKRecordBase(HeaderContainerInverted):
         public_key: PublicKey,
         srk_flags: int = 0,
         srk_id: int = 0,
-        hash_algorithm: Optional[SpsdkEnum] = None,
+        hash_algorithm: SpsdkEnum | None = None,
         legacy_rsa_exponent_size: bool = False,
-        chip_config: Optional[AhabChipConfig] = None,
+        chip_config: AhabChipConfig | None = None,
     ) -> Self:
         """Create AHAB SRK instance from cryptographic key data.
 
@@ -626,7 +626,7 @@ class SRKRecordBase(HeaderContainerInverted):
         raise SPSDKUnsupportedOperation(f"Unsupported public key type: {type(public_key)}")
 
     @classmethod
-    def parse(cls, data: bytes, chip_config: Optional[AhabChipConfig] = None) -> Self:
+    def parse(cls, data: bytes, chip_config: AhabChipConfig | None = None) -> Self:
         """Parse input binary chunk to the container object.
 
         The method parses binary data containing SRK (Super Root Key) record block and recreates
@@ -948,14 +948,14 @@ class SRKRecordV2(SRKRecordBase):
 
     def __init__(
         self,
-        src_key: Optional[PublicKey] = None,
+        src_key: PublicKey | None = None,
         signing_algorithm: SpsdkEnum = AHABSignAlgorithm.RSA_PSS,
         hash_type: SpsdkEnum = AHABSignHashAlgorithm.SHA256,
         key_size: int = 0,
         srk_flags: int = 0,
         crypto_params: bytes = b"",
         legacy_rsa_exponent_size: bool = False,
-        chip_config: Optional[AhabChipConfig] = None,
+        chip_config: AhabChipConfig | None = None,
     ):
         """Initialize AHAB SRK record with cryptographic parameters.
 
@@ -981,7 +981,7 @@ class SRKRecordV2(SRKRecordBase):
             legacy_rsa_exponent_size,
             chip_config=chip_config,
         )
-        self.srk_data: Optional[SRKData] = None
+        self.srk_data: SRKData | None = None
 
     def __eq__(self, other: object) -> bool:
         """Check equality between two AHAB SRK objects.
@@ -1194,9 +1194,9 @@ class SRKRecordV2(SRKRecordBase):
         public_key: PublicKey,
         srk_flags: int = 0,
         srk_id: int = 0,
-        hash_algorithm: Optional[SpsdkEnum] = None,
+        hash_algorithm: SpsdkEnum | None = None,
         legacy_rsa_exponent_size: bool = False,
-        chip_config: Optional[AhabChipConfig] = None,
+        chip_config: AhabChipConfig | None = None,
     ) -> Self:
         """Create instance from key data.
 
@@ -1239,8 +1239,8 @@ class SRKRecordV2(SRKRecordBase):
     def _get_key_parameters(
         cls,
         public_key: PublicKey,
-        hash_algorithm: Optional[SpsdkEnum],
-        chip_config: Optional[AhabChipConfig],
+        hash_algorithm: SpsdkEnum | None,
+        chip_config: AhabChipConfig | None,
     ) -> KeyParameters:
         """Get key parameters based on public key type.
 
@@ -1263,7 +1263,7 @@ class SRKRecordV2(SRKRecordBase):
         if IS_DILITHIUM_SUPPORTED and isinstance(public_key, PublicKeyDilithium):
             return cls._get_dilithium_parameters(public_key, hash_algorithm, chip_config)
 
-        if IS_DILITHIUM_SUPPORTED and isinstance(public_key, PublicKeyMLDSA):
+        if isinstance(public_key, PublicKeyMLDSA):
             return cls._get_mldsa_parameters(public_key, hash_algorithm, chip_config)
 
         if IS_LMS_SUPPORTED and isinstance(public_key, PublicKeyLMS):
@@ -1282,9 +1282,9 @@ class SRKRecordV2(SRKRecordBase):
 
         if IS_DILITHIUM_SUPPORTED:
             error_parts.append("  - Dilithium (level 3, 5)")
-            error_parts.append("  - ML-DSA (level 3, 5)")
         else:
-            error_parts.append("  - Dilithium/ML-DSA (install 'spsdk-pqc' to enable)")
+            error_parts.append("  - Dilithium (install 'spsdk-pqc' to enable)")
+        error_parts.append("  - ML-DSA (level 3, 5)")
 
         raise SPSDKValueError("\n".join(error_parts))
 
@@ -1292,8 +1292,8 @@ class SRKRecordV2(SRKRecordBase):
     def _get_rsa_parameters(
         cls,
         public_key: PublicKeyRsa,
-        hash_algorithm: Optional[SpsdkEnum],
-        chip_config: Optional[AhabChipConfig],
+        hash_algorithm: SpsdkEnum | None,
+        chip_config: AhabChipConfig | None,
     ) -> KeyParameters:
         """Get RSA key parameters.
 
@@ -1315,8 +1315,8 @@ class SRKRecordV2(SRKRecordBase):
     def _get_ecc_parameters(
         cls,
         public_key: PublicKeyEcc,
-        hash_algorithm: Optional[SpsdkEnum],
-        chip_config: Optional[AhabChipConfig],
+        hash_algorithm: SpsdkEnum | None,
+        chip_config: AhabChipConfig | None,
     ) -> KeyParameters:
         """Get ECC key parameters.
 
@@ -1343,8 +1343,8 @@ class SRKRecordV2(SRKRecordBase):
     @classmethod
     def _get_sm2_parameters(
         cls,
-        hash_algorithm: Optional[SpsdkEnum],
-        chip_config: Optional[AhabChipConfig],
+        hash_algorithm: SpsdkEnum | None,
+        chip_config: AhabChipConfig | None,
     ) -> KeyParameters:
         """Get SM2 key parameters.
 
@@ -1365,8 +1365,8 @@ class SRKRecordV2(SRKRecordBase):
     def _get_dilithium_parameters(
         cls,
         public_key: PublicKeyDilithium,
-        hash_algorithm: Optional[SpsdkEnum],
-        chip_config: Optional[AhabChipConfig],
+        hash_algorithm: SpsdkEnum | None,
+        chip_config: AhabChipConfig | None,
     ) -> KeyParameters:
         """Get Dilithium key parameters.
 
@@ -1390,8 +1390,8 @@ class SRKRecordV2(SRKRecordBase):
     def _get_mldsa_parameters(
         cls,
         public_key: PublicKeyMLDSA,
-        hash_algorithm: Optional[SpsdkEnum],
-        chip_config: Optional[AhabChipConfig],
+        hash_algorithm: SpsdkEnum | None,
+        chip_config: AhabChipConfig | None,
     ) -> KeyParameters:
         """Get ML-DSA key parameters.
 
@@ -1423,8 +1423,8 @@ class SRKRecordV2(SRKRecordBase):
     def _get_lms_parameters(
         cls,
         public_key: PublicKeyLMS,
-        hash_algorithm: Optional[SpsdkEnum],
-        chip_config: Optional[AhabChipConfig],
+        hash_algorithm: SpsdkEnum | None,
+        chip_config: AhabChipConfig | None,
     ) -> KeyParameters:
         """Get LMS key parameters.
 
@@ -1494,11 +1494,10 @@ class SRKRecordV2(SRKRecordBase):
                 "DILITHIUM"
             ):
                 return PublicKeyDilithium.parse(self.srk_data.data)
-
-            if "ML-DSA" in sig_enum.labels() and self.signing_algorithm == sig_enum.from_label(
-                "ML-DSA"
-            ):
-                return PublicKeyMLDSA.parse(self.srk_data.data)
+        if "ML-DSA" in sig_enum.labels() and self.signing_algorithm == sig_enum.from_label(
+            "ML-DSA"
+        ):
+            return PublicKeyMLDSA.parse(self.srk_data.data)
         if IS_LMS_SUPPORTED:
             if "LMS" in sig_enum.labels() and self.signing_algorithm == sig_enum.from_label("LMS"):
                 return PublicKeyLMS.parse(self.srk_data.data)
@@ -1537,10 +1536,10 @@ class SRKRecordV2(SRKRecordBase):
         if IS_DILITHIUM_SUPPORTED:
             if "DILITHIUM" in sig_enum.labels():
                 error_parts.append("  - Dilithium")
-            if "ML-DSA" in sig_enum.labels():
-                error_parts.append("  - ML-DSA")
         else:
-            error_parts.append("  - Dilithium/ML-DSA (install 'spsdk-pqc' to enable)")
+            error_parts.append("  - Dilithium (install 'spsdk-pqc' to enable)")
+        if "ML-DSA" in sig_enum.labels():
+            error_parts.append("  - ML-DSA")
 
         return "\n".join(error_parts)
 
@@ -1574,7 +1573,7 @@ class SRKData(HeaderContainer):
     VERSION = 0
     DIFF_ATTRIBUTES_VALUES = ["srk_id", "data"]
 
-    def __init__(self, srk_id: int, src_key: Optional[PublicKey] = None, data: bytes = b""):
+    def __init__(self, srk_id: int, src_key: PublicKey | None = None, data: bytes = b""):
         """Initialize AHAB SRK Data object.
 
         Creates a new SRK (Super Root Key) Data object for AHAB container with specified
@@ -1825,7 +1824,7 @@ class SRKTable(HeaderContainerInverted):
     SRK_RECORD = SRKRecord
     DIFF_ATTRIBUTES_OBJECTS = ["srk_records"]
 
-    def __init__(self, srk_records: Optional[Sequence[SRKRecordBase]] = None) -> None:
+    def __init__(self, srk_records: Sequence[SRKRecordBase] | None = None) -> None:
         """Initialize SRK Table with optional SRK records.
 
         Creates a new SRK Table instance with the specified SRK records or an empty list if none provided.
@@ -1835,7 +1834,7 @@ class SRKTable(HeaderContainerInverted):
         super().__init__(tag=self.TAG, length=-1, version=self.VERSION)
         self.srk_records: list[SRKRecordBase] = list(srk_records) if srk_records else []
         # Store chip_config for use in add_record
-        self._chip_config: Optional[AhabChipConfig] = None
+        self._chip_config: AhabChipConfig | None = None
 
     def __repr__(self) -> str:
         """Return string representation of AHAB SRK Table.
@@ -1873,7 +1872,7 @@ class SRKTable(HeaderContainerInverted):
         public_key: PublicKey,
         srk_flags: int = 0,
         srk_id: int = 0,
-        hash_algorithm: Optional[AHABSignHashAlgorithm] = None,
+        hash_algorithm: AHABSignHashAlgorithm | None = None,
         legacy_rsa_exponent_size: bool = False,
     ) -> None:
         """Add SRK table record.
@@ -2056,7 +2055,7 @@ class SRKTable(HeaderContainerInverted):
     def parse(
         cls,
         data: bytes,
-        chip_config: Optional[AhabChipConfig] = None,
+        chip_config: AhabChipConfig | None = None,
     ) -> Self:
         """Parse input binary chunk to the container object.
 
@@ -2146,7 +2145,7 @@ class SRKTable(HeaderContainerInverted):
         return ret_cfg
 
     @classmethod
-    def load_from_config(cls, config: Config, chip_config: Optional[AhabChipConfig] = None) -> Self:
+    def load_from_config(cls, config: Config, chip_config: AhabChipConfig | None = None) -> Self:
         """Load SRK table from configuration.
 
         Creates an SRK (Super Root Key) table object from the provided configuration
@@ -2222,7 +2221,7 @@ class SRKTableV2(SRKTable):
     SRK_HASH_ALGORITHM = EnumHashAlgorithm.SHA512
 
     @classmethod
-    def load_from_config(cls, config: Config, chip_config: Optional[AhabChipConfig] = None) -> Self:
+    def load_from_config(cls, config: Config, chip_config: AhabChipConfig | None = None) -> Self:
         """Create SRK Table from configuration data.
 
         Processes the configuration to build an SRK (Super Root Key) Table with public keys
@@ -2343,7 +2342,7 @@ class SRKTableArray(HeaderContainer):
     DIFF_ATTRIBUTES_OBJECTS = ["_srk_tables"]
 
     def __init__(
-        self, chip_config: AhabChipContainerConfig, srk_tables: Optional[list[SRKTableV2]] = None
+        self, chip_config: AhabChipContainerConfig, srk_tables: list[SRKTableV2] | None = None
     ) -> None:
         """Initialize AHAB SRK (Super Root Key) container.
 

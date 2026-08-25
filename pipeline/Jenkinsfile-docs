@@ -28,8 +28,8 @@ pipeline {
         stage('Codecheck') {
             steps {
                 withVenv(
-                    'uv pip install --force-reinstall ".[all]"',
-                    'uv pip install --upgrade -r docs/requirements.txt',
+                    'uv pip install --prerelease=allow --extra-index-url https://nl2-nxrm.sw.nxp.com/repository/spsdk_pypi/simple/ --force-reinstall ".[all]"',
+                    'uv pip install --prerelease=allow --extra-index-url https://nl2-nxrm.sw.nxp.com/repository/spsdk_pypi/simple/ --upgrade -r docs/requirements.txt',
                     'cd docs',
                     'make clean',
                     'make html SPHINXOPTS="--fail-on-warning --warning-file warnings.log"',
@@ -42,11 +42,12 @@ pipeline {
 	post {
 		always {
 			archiveArtifacts artifacts: 'docs/_build/html/**, docs/warnings.log', fingerprint: true
+		}
+		failure {
 			emailext(body: '${DEFAULT_CONTENT}', mimeType: 'text/html',
-			replyTo: '$DEFAULT_REPLYTO', subject: '${DEFAULT_SUBJECT}',
-			to: emailextrecipients([[$class: 'CulpritsRecipientProvider'],
-									[$class: 'RequesterRecipientProvider']]))
-
+				replyTo: '$DEFAULT_REPLYTO', subject: '${DEFAULT_SUBJECT}',
+				to: emailextrecipients([[$class: 'DevelopersRecipientProvider'],
+										[$class: 'RequesterRecipientProvider']]))
 		}
 	}
 }

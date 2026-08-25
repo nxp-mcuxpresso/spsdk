@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,7 +14,7 @@ commands used in NXP MCU bootloader testing.
 
 import logging
 from struct import pack
-from typing import Any, Optional, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -52,7 +51,7 @@ def pack_response(tag: ResponseTag, *params: int) -> tuple[bool, bytes]:
     return True, pack(f"<4B{len(params)}I", tag.tag, 0, 0, len(params), *params)
 
 
-def set_error_code(step_index: int, fail_step: Optional[int]) -> int:
+def set_error_code(step_index: int, fail_step: int | None) -> int:
     """Set error code based on step index and failure condition.
 
     This method determines whether to return a success or failure status code
@@ -366,7 +365,7 @@ def cmd_reset(*args: Any, **kwargs: Any) -> tuple[bool, bytes]:
 
 
 def cmd_generate_keyblob(
-    *args: Any, index: int, fail_step: Optional[int], **kwargs: Any
+    *args: Any, index: int, fail_step: int | None, **kwargs: Any
 ) -> tuple[bool, bytes]:
     """Generate key blob command response for virtual device testing.
 
@@ -401,7 +400,7 @@ def cmd_generate_keyblob(
 ######################################
 # Key Provisioning support functions #
 ######################################
-def cmd_key_prov_no_data(index: int, fail_step: Optional[int]) -> tuple[bool, bytes]:
+def cmd_key_prov_no_data(index: int, fail_step: int | None) -> tuple[bool, bytes]:
     """Generate key provisioning response command with no data.
 
     Creates a response for key provisioning operations that contains only the response
@@ -416,7 +415,7 @@ def cmd_key_prov_no_data(index: int, fail_step: Optional[int]) -> tuple[bool, by
     )
 
 
-def cmd_key_prov_write(index: int, fail_step: Optional[int]) -> tuple[bool, bytes]:
+def cmd_key_prov_write(index: int, fail_step: int | None) -> tuple[bool, bytes]:
     """Simulate key provisioning write command response.
 
     Generates appropriate response data for key provisioning write operations
@@ -434,7 +433,7 @@ def cmd_key_prov_write(index: int, fail_step: Optional[int]) -> tuple[bool, byte
     }[index]
 
 
-def cmd_key_prov_read(index: int, fail_step: Optional[int]) -> tuple[bool, bytes]:
+def cmd_key_prov_read(index: int, fail_step: int | None) -> tuple[bool, bytes]:
     """Read key provisioning data based on index.
 
     Simulates key provisioning read command for virtual device testing.
@@ -454,7 +453,7 @@ def cmd_key_prov_read(index: int, fail_step: Optional[int]) -> tuple[bool, bytes
 
 
 def cmd_key_provisioning(
-    *args: Any, index: int, fail_step: Optional[int], **kwargs: Any
+    *args: Any, index: int, fail_step: int | None, **kwargs: Any
 ) -> tuple[bool, bytes]:
     """Handle key provisioning command operations.
 
@@ -497,7 +496,7 @@ def cmd_no_command(*args: Any, **kwargs: Any) -> tuple[bool, bytes]:
 ########################################
 # Trust Provisioning support functions #
 ########################################
-def cmd_trust_prov_prove_genuinity(index: int, fail_step: Optional[int]) -> tuple[bool, bytes]:
+def cmd_trust_prov_prove_genuinity(index: int, fail_step: int | None) -> tuple[bool, bytes]:
     """Simulate trust provisioning prove genuinity command for virtual device.
 
     This method simulates the trust provisioning prove genuinity command response,
@@ -518,7 +517,7 @@ def cmd_trust_prov_prove_genuinity(index: int, fail_step: Optional[int]) -> tupl
     )
 
 
-def cmd_trust_prov_set_wrap_data(index: int, fail_step: Optional[int]) -> tuple[bool, bytes]:
+def cmd_trust_prov_set_wrap_data(index: int, fail_step: int | None) -> tuple[bool, bytes]:
     """Set trust provisioning wrap data command response.
 
     Packs a response for the trust provisioning set wrap data command with optional error simulation.
@@ -531,7 +530,7 @@ def cmd_trust_prov_set_wrap_data(index: int, fail_step: Optional[int]) -> tuple[
 
 
 def cmd_trust_provisioning(
-    *args: Any, index: int, fail_step: Optional[int], **kwargs: Any
+    *args: Any, index: int, fail_step: int | None, **kwargs: Any
 ) -> tuple[bool, bytes]:
     """Execute trust provisioning command with specified operation.
 
@@ -607,10 +606,10 @@ class VirtualDevice(DeviceBase):
         self._dev_conf = config
         self._cmd_tag = 0
         self._cmd_params: list[int] = []
-        self._cmd_data = bytes()
+        self._cmd_data = b""
         self._response_index = 0
         self._need_data_split = True
-        self.fail_step: Optional[int] = None
+        self.fail_step: int | None = None
 
     @property
     def is_opened(self) -> bool:
@@ -646,7 +645,7 @@ class VirtualDevice(DeviceBase):
         """
         return "Virtual Device"
 
-    def read(self, length: int, timeout: Optional[int] = None) -> bytes:
+    def read(self, length: int, timeout: int | None = None) -> bytes:
         """Read data from the virtual device and generate appropriate response.
 
         This method processes commands sent to the virtual device by validating the command tag
@@ -678,7 +677,7 @@ class VirtualDevice(DeviceBase):
         )
         return parse_cmd_response(raw_data) if cmd else raw_data  # type: ignore
 
-    def write(self, data: bytes, timeout: Optional[int] = None) -> None:
+    def write(self, data: bytes, timeout: int | None = None) -> None:
         """Write raw data to the virtual device.
 
         Logs the outgoing data in hexadecimal format for debugging purposes.
@@ -773,7 +772,7 @@ class VirtualMbootInterface:
         cls,
         params: str,
         timeout: int,
-        extra_params: Optional[str] = None,
+        extra_params: str | None = None,
     ) -> list[Self]:
         """Scan for virtual devices with specified parameters.
 
@@ -788,7 +787,7 @@ class VirtualMbootInterface:
         """
         return []
 
-    def read(self, length: Optional[int] = None) -> Union[CmdResponseBase, bytes]:
+    def read(self, length: int | None = None) -> CmdResponseBase | bytes:
         """Read data from the virtual device.
 
         This method delegates the read operation to the underlying device implementation,

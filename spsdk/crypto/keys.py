@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -13,17 +12,29 @@ and cryptographic operations like signing and verification across the SPSDK
 ecosystem.
 """
 
+# pylint: disable=too-many-lines
+
 import abc
 import getpass
 import logging
 import math
+from collections.abc import Callable
 from enum import Enum
-from typing import Any, Callable, Optional, Union, cast
+from typing import Any, Protocol, TypeGuard, cast
 
 from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
+from cryptography.hazmat.primitives.asymmetric.mldsa import (
+    MLDSA44PrivateKey,
+    MLDSA44PublicKey,
+    MLDSA65PrivateKey,
+    MLDSA65PublicKey,
+    MLDSA87PrivateKey,
+    MLDSA87PublicKey,
+)
 from cryptography.hazmat.primitives.serialization import (
     BestAvailableEncryption,
+    Encoding,
     NoEncryption,
     PrivateFormat,
     PublicFormat,
@@ -43,6 +54,7 @@ from cryptography.hazmat.primitives.serialization import (
 from typing_extensions import Self
 
 from spsdk import SPSDK_INTERACTIVE_DISABLED
+from spsdk.crypto._legacy_mldsa_asn1 import extract_legacy_mldsa_public, extract_legacy_mldsa_seed
 from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.dilithium import IS_DILITHIUM_SUPPORTED
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash, get_hash_algorithm, hashes
@@ -60,6 +72,29 @@ from spsdk.utils.misc import Endianness, load_binary, load_file, value_to_bytes,
 
 logger = logging.getLogger(__name__)
 
+
+def _normalize_mldsa_pem(data: bytes) -> bytes:
+    """Normalize ML-DSA-specific PEM labels to generic PKCS#8/SPKI labels."""
+    normalized = data
+    for level in ("44", "65", "87"):
+        normalized = (
+            normalized.replace(
+                f"-----BEGIN ML-DSA-{level} PRIVATE KEY-----".encode(),
+                b"-----BEGIN PRIVATE KEY-----",
+            )
+            .replace(
+                f"-----END ML-DSA-{level} PRIVATE KEY-----".encode(), b"-----END PRIVATE KEY-----"
+            )
+            .replace(
+                f"-----BEGIN ML-DSA-{level} PUBLIC KEY-----".encode(), b"-----BEGIN PUBLIC KEY-----"
+            )
+            .replace(
+                f"-----END ML-DSA-{level} PUBLIC KEY-----".encode(), b"-----END PUBLIC KEY-----"
+            )
+        )
+    return normalized
+
+
 if IS_OSCCA_SUPPORTED:
     from gmssl import sm2  # pylint: disable=import-error
 
@@ -68,24 +103,72 @@ if IS_OSCCA_SUPPORTED:
 if IS_DILITHIUM_SUPPORTED:
     # pylint: disable=import-error
     import spsdk_pqc.wrapper
-    from spsdk_pqc import (
-        DilithiumPrivateKey,
-        DilithiumPublicKey,
-        MLDSAPrivateKey,
-        MLDSAPublicKey,
-        PQCAlgorithm,
-        PQCError,
-    )
+    from spsdk_pqc import DilithiumPrivateKey, DilithiumPublicKey
+    from spsdk_pqc import MLDSAPrivateKey as LegacyMLDSAPrivateKey
+    from spsdk_pqc import MLDSAPublicKey as LegacyMLDSAPublicKey
+    from spsdk_pqc import PQCAlgorithm, PQCError
 
     if hasattr(spsdk_pqc.wrapper, "DISABLE_DIL_MLDSA_PUBLIC_KEY_MISMATCH_WARNING"):
         spsdk_pqc.wrapper.DISABLE_DIL_MLDSA_PUBLIC_KEY_MISMATCH_WARNING = True
+
+MLDSAPrivateKeyClass = type[MLDSA44PrivateKey] | type[MLDSA65PrivateKey] | type[MLDSA87PrivateKey]
+MLDSAPublicKeyClass = type[MLDSA44PublicKey] | type[MLDSA65PublicKey] | type[MLDSA87PublicKey]
+MLDSAPrivateKeyType = MLDSA44PrivateKey | MLDSA65PrivateKey | MLDSA87PrivateKey
+MLDSAPublicKeyType = MLDSA44PublicKey | MLDSA65PublicKey | MLDSA87PublicKey
+
+
+class LegacyMLDSAPublicKeyProtocol(Protocol):
+    """Typing contract for legacy ML-DSA public keys from spsdk_pqc."""
+
+    signature_size: int
+    public_data: bytes
+    level: int
+
+    def verify(self, *, data: bytes, signature: bytes) -> bool:
+        """Verify a legacy ML-DSA signature."""
+        raise NotImplementedError
+
+    def export(self, pem: bool = True) -> bytes:
+        """Export a legacy ML-DSA public key."""
+        raise NotImplementedError
+
+
+class LegacyMLDSAPrivateKeyProtocol(Protocol):
+    """Typing contract for legacy ML-DSA private keys from spsdk_pqc."""
+
+    private_data: bytes
+    public_data: bytes | None
+
+    def sign(self, *, data: bytes) -> bytes:
+        """Sign data with a legacy ML-DSA private key."""
+        raise NotImplementedError
+
+    def export(self, pem: bool = True) -> bytes:
+        """Export a legacy ML-DSA private key."""
+        raise NotImplementedError
+
+
+MLDSA_PRIVATE_KEY_TYPES = (MLDSA44PrivateKey, MLDSA65PrivateKey, MLDSA87PrivateKey)
+MLDSA_PUBLIC_KEY_TYPES = (MLDSA44PublicKey, MLDSA65PublicKey, MLDSA87PublicKey)
+MLDSA_PRIVATE_KEY_CLASSES: dict[int, MLDSAPrivateKeyClass] = {
+    2: MLDSA44PrivateKey,
+    3: MLDSA65PrivateKey,
+    5: MLDSA87PrivateKey,
+}
+MLDSA_PUBLIC_KEY_CLASSES: dict[int, MLDSAPublicKeyClass] = {
+    2: MLDSA44PublicKey,
+    3: MLDSA65PublicKey,
+    5: MLDSA87PublicKey,
+}
+MLDSA_PUBLIC_KEY_LENGTHS = {2: 1312, 3: 1952, 5: 2592}
+MLDSA_SIGNATURE_SIZES = {2: 2420, 3: 3309, 5: 4627}
 
 if IS_LMS_SUPPORTED:
     # pylint: disable=import-error
     from spsdk.crypto.lms import LMSParams, LmsPrivateKey, LmsPublicKey
 
 
-def _load_pem_private_key(data: bytes, password: Optional[bytes]) -> Any:
+def _load_pem_private_key(data: bytes, password: bytes | None) -> Any:
     """Load PEM private key from binary data.
 
     The method attempts to load a private key using multiple algorithms including
@@ -118,24 +201,26 @@ def _load_pem_private_key(data: bytes, password: Optional[bytes]) -> Any:
 
     if IS_DILITHIUM_SUPPORTED:
         try:
-            return DilithiumPrivateKey.parse(data=data)
+            parsed_key = DilithiumPrivateKey.parse(data=data)
+            if parsed_key.__class__.__name__ != "DilithiumPrivateKey":
+                raise PQCError("Parsed PQC private key is not Dilithium")
+            return parsed_key
         except PQCError as exc:
             errors.append(f"Dilithium: {exc}")
 
-        try:
-            return MLDSAPrivateKey.parse(data=data)
-        except PQCError as exc:
-            errors.append(f"ML-DSA: {exc}")
-    else:
-        errors.append(
-            "PQC (Dilithium/ML-DSA) keys support is not installed. If you want to use it, install 'spsdk-pqc'"
-        )
+    try:
+        # pylint: disable=possibly-used-before-assignment
+        return PrivateKeyMLDSA.parse(
+            data=data, password=password.decode("utf-8") if password else None
+        ).key
+    except SPSDKError as exc:
+        errors.append(f"ML-DSA: {exc}")
 
     error_details = "\n- ".join([""] + errors)
     raise SPSDKError(f"Cannot load PEM private key. Attempted methods failed: {error_details}")
 
 
-def _load_der_private_key(data: bytes, password: Optional[bytes]) -> Any:
+def _load_der_private_key(data: bytes, password: bytes | None) -> Any:
     """Load DER private key from binary data.
 
     The method attempts to load a DER-encoded private key using multiple algorithms
@@ -167,18 +252,19 @@ def _load_der_private_key(data: bytes, password: Optional[bytes]) -> Any:
 
     if IS_DILITHIUM_SUPPORTED:
         try:
-            return DilithiumPrivateKey.parse(data=data)
+            parsed_key = DilithiumPrivateKey.parse(data=data)
+            if parsed_key.__class__.__name__ != "DilithiumPrivateKey":
+                raise PQCError("Parsed PQC private key is not Dilithium")
+            return parsed_key
         except PQCError as exc:
             errors.append(f"Dilithium: {exc}")
 
-        try:
-            return MLDSAPrivateKey.parse(data=data)
-        except PQCError as exc:
-            errors.append(f"ML-DSA: {exc}")
-    else:
-        errors.append(
-            "PQC (Dilithium/ML-DSA) keys support is not installed. If you want to use it, install 'spsdk-pqc'"
-        )
+    try:
+        return PrivateKeyMLDSA.parse(
+            data=data, password=password.decode("utf-8") if password else None
+        ).key
+    except SPSDKError as exc:
+        errors.append(f"ML-DSA: {exc}")
 
     if IS_LMS_SUPPORTED:
         try:
@@ -207,9 +293,7 @@ def _load_der_private_key(data: bytes, password: Optional[bytes]) -> Any:
     raise SPSDKError(f"Cannot load DER private key. Attempted methods failed: {error_details}")
 
 
-def _crypto_load_private_key(
-    encoding: SPSDKEncoding, data: bytes, password: Optional[bytes]
-) -> Union[ec.EllipticCurvePrivateKey, rsa.RSAPrivateKey]:
+def _crypto_load_private_key(encoding: SPSDKEncoding, data: bytes, password: bytes | None) -> Any:
     """Load private key from encoded data.
 
     The method supports both DER and PEM encoding formats and handles encrypted
@@ -231,10 +315,19 @@ def _crypto_load_private_key(
     }[encoding]
     try:
         private_key = crypto_load_function(data, password)
-        assert isinstance(private_key, (ec.EllipticCurvePrivateKey, rsa.RSAPrivateKey))
+        assert isinstance(
+            private_key,
+            (ec.EllipticCurvePrivateKey, rsa.RSAPrivateKey) + MLDSA_PRIVATE_KEY_TYPES,
+        )
         return private_key
     except ValueError as exc:
-        if "Incorrect password" in exc.args[0]:
+        err_msg = exc.args[0] if exc.args else ""
+        if "Incorrect password" in err_msg:
+            raise SPSDKWrongKeyPassphrase("Provided password was incorrect.") from exc
+        # On some platforms (e.g., macOS), a wrong password causes an ASN.1 parse error
+        # instead of an "Incorrect password" message. Detect this by checking whether
+        # the data is explicitly marked as encrypted and a password was supplied.
+        if password is not None and b"ENCRYPTED PRIVATE KEY" in data:
             raise SPSDKWrongKeyPassphrase("Provided password was incorrect.") from exc
         raise exc
     except TypeError as exc:
@@ -257,7 +350,10 @@ def _load_pem_public_key(data: bytes) -> Any:
     errors: list[str] = []
 
     try:
-        return crypto_load_pem_public_key(data)
+        standard_key = crypto_load_pem_public_key(data)
+        if isinstance(standard_key, (ec.EllipticCurvePublicKey, rsa.RSAPublicKey)):
+            return standard_key
+        errors.append(f"Standard crypto unsupported key type: {type(standard_key)}")
     except (UnsupportedAlgorithm, ValueError) as exc:
         errors.append(f"Standard crypto: {exc}")
 
@@ -275,18 +371,18 @@ def _load_pem_public_key(data: bytes) -> Any:
 
     if IS_DILITHIUM_SUPPORTED:
         try:
-            return DilithiumPublicKey.parse(data=data)
+            parsed_key = DilithiumPublicKey.parse(data=data)
+            if parsed_key.__class__.__name__ != "DilithiumPublicKey":
+                raise PQCError("Parsed PQC public key is not Dilithium")
+            return parsed_key
         except PQCError as exc:
             errors.append(f"Dilithium: {exc}")
 
-        try:
-            return MLDSAPublicKey.parse(data=data)
-        except PQCError as exc:
-            errors.append(f"ML-DSA: {exc}")
-    else:
-        errors.append(
-            "PQC (Dilithium/ML-DSA) keys support is not installed. If you want to use it, install 'spsdk-pqc'"
-        )
+    try:
+        # pylint: disable=possibly-used-before-assignment
+        return PublicKeyMLDSA.parse(data=data).key
+    except SPSDKError as exc:
+        errors.append(f"ML-DSA: {exc}")
 
     error_details = "\n- ".join([""] + errors)
     raise SPSDKError(f"Cannot load PEM public key. Attempted methods failed: {error_details}")
@@ -306,7 +402,10 @@ def _load_der_public_key(data: bytes) -> Any:
     errors: list[str] = []
 
     try:
-        return crypto_load_der_public_key(data)
+        standard_key = crypto_load_der_public_key(data)
+        if isinstance(standard_key, (ec.EllipticCurvePublicKey, rsa.RSAPublicKey)):
+            return standard_key
+        errors.append(f"Standard crypto unsupported key type: {type(standard_key)}")
     except (UnsupportedAlgorithm, ValueError) as exc:
         errors.append(f"Standard crypto: {exc}")
 
@@ -323,18 +422,17 @@ def _load_der_public_key(data: bytes) -> Any:
 
     if IS_DILITHIUM_SUPPORTED:
         try:
-            return DilithiumPublicKey.parse(data=data)
+            parsed_key = DilithiumPublicKey.parse(data=data)
+            if parsed_key.__class__.__name__ != "DilithiumPublicKey":
+                raise PQCError("Parsed PQC public key is not Dilithium")
+            return parsed_key
         except PQCError as exc:
             errors.append(f"Dilithium: {exc}")
 
-        try:
-            return MLDSAPublicKey.parse(data=data)
-        except PQCError as exc:
-            errors.append(f"ML-DSA: {exc}")
-    else:
-        errors.append(
-            "PQC (Dilithium/ML-DSA) keys support is not installed. If you want to use it, install 'spsdk-pqc'"
-        )
+    try:
+        return PublicKeyMLDSA.parse(data=data).key
+    except SPSDKError as exc:
+        errors.append(f"ML-DSA: {exc}")
 
     if IS_LMS_SUPPORTED:
         try:
@@ -454,7 +552,7 @@ class PrivateKey(BaseClass, abc.ABC):
     def save(
         self,
         file_path: str,
-        password: Optional[str] = None,
+        password: str | None = None,
         encoding: SPSDKEncoding = SPSDKEncoding.PEM,
     ) -> None:
         """Save the Private key to the given file.
@@ -467,7 +565,7 @@ class PrivateKey(BaseClass, abc.ABC):
         write_file(self.export(password=password, encoding=encoding), file_path, mode="wb")
 
     @classmethod
-    def load(cls, file_path: str, password: Optional[str] = None) -> Self:
+    def load(cls, file_path: str, password: str | None = None) -> Self:
         """Load the Private key from the given file.
 
         :param file_path: Path to the file where the key is stored.
@@ -493,7 +591,7 @@ class PrivateKey(BaseClass, abc.ABC):
     @abc.abstractmethod
     def export(
         self,
-        password: Optional[str] = None,
+        password: str | None = None,
         encoding: SPSDKEncoding = SPSDKEncoding.DER,
     ) -> bytes:
         """Export key into bytes in requested format.
@@ -504,7 +602,7 @@ class PrivateKey(BaseClass, abc.ABC):
         """
 
     @classmethod
-    def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
+    def parse(cls, data: bytes, password: str | None = None) -> Self:
         """Parse private key from bytes array.
 
         The method supports multiple encodings (PEM, DER) and various key types including
@@ -528,7 +626,9 @@ class PrivateKey(BaseClass, abc.ABC):
                 return cls.create(private_key)
             if IS_DILITHIUM_SUPPORTED and isinstance(private_key, DilithiumPrivateKey):
                 return cls.create(private_key)
-            if IS_DILITHIUM_SUPPORTED and isinstance(private_key, MLDSAPrivateKey):
+            if IS_DILITHIUM_SUPPORTED and PrivateKeyMLDSA._is_legacy_key(private_key):
+                return cls.create(private_key)
+            if PrivateKeyMLDSA._is_native_key(private_key):
                 return cls.create(private_key)
             if IS_LMS_SUPPORTED and isinstance(private_key, LmsPrivateKey):
                 return cls.create(private_key)
@@ -548,7 +648,7 @@ class PrivateKey(BaseClass, abc.ABC):
         :raises SPSDKInvalidKeyType: Unsupported private key type provided.
         :return: SPSDK Private Key object wrapping the input key.
         """
-        SUPPORTED_KEYS = {
+        SUPPORTED_KEYS: dict[type[PrivateKey], Any] = {
             PrivateKeyEcc: ec.EllipticCurvePrivateKey,
             PrivateKeyRsa: rsa.RSAPrivateKey,
         }
@@ -557,14 +657,17 @@ class PrivateKey(BaseClass, abc.ABC):
 
         if IS_DILITHIUM_SUPPORTED:
             SUPPORTED_KEYS[PrivateKeyDilithium] = DilithiumPrivateKey
-            SUPPORTED_KEYS[PrivateKeyMLDSA] = MLDSAPrivateKey
+        if IS_DILITHIUM_SUPPORTED:
+            SUPPORTED_KEYS[PrivateKeyMLDSA] = (LegacyMLDSAPrivateKey,) + MLDSA_PRIVATE_KEY_TYPES
+        else:
+            SUPPORTED_KEYS[PrivateKeyMLDSA] = MLDSA_PRIVATE_KEY_TYPES
 
         if IS_LMS_SUPPORTED:
             SUPPORTED_KEYS[PrivateKeyLMS] = LmsPrivateKey
 
         for k, v in SUPPORTED_KEYS.items():
             if isinstance(key, v):
-                return k(key)
+                return cast(Self, cast(Any, k)(key))
 
         raise SPSDKInvalidKeyType(f"Unsupported key type: {str(key)}")
 
@@ -638,7 +741,7 @@ class PublicKey(BaseClass, abc.ABC):
         self,
         signature: bytes,
         data: bytes,
-        algorithm: Optional[EnumHashAlgorithm] = None,
+        algorithm: EnumHashAlgorithm | None = None,
         **kwargs: Any,
     ) -> bool:
         """Verify signature against input data using cryptographic algorithm.
@@ -696,10 +799,10 @@ class PublicKey(BaseClass, abc.ABC):
                 return cast(Self, PublicKeyDilithium.parse(data=data))
             except (SPSDKError, ValueError):
                 pass
-            try:
-                return cast(Self, PublicKeyMLDSA.parse(data=data))
-            except (SPSDKError, ValueError):
-                pass
+        try:
+            return cast(Self, PublicKeyMLDSA.parse(data=data))
+        except (SPSDKError, ValueError):
+            pass
 
         if IS_LMS_SUPPORTED:
             try:
@@ -755,7 +858,7 @@ class PublicKey(BaseClass, abc.ABC):
         :raises SPSDKInvalidKeyType: Unsupported public key type provided.
         :return: SPSDK Public Key object wrapping the input key.
         """
-        SUPPORTED_KEYS = {
+        SUPPORTED_KEYS: dict[type[PublicKey], Any] = {
             PublicKeyEcc: ec.EllipticCurvePublicKey,
             PublicKeyRsa: rsa.RSAPublicKey,
         }
@@ -764,14 +867,17 @@ class PublicKey(BaseClass, abc.ABC):
 
         if IS_DILITHIUM_SUPPORTED:
             SUPPORTED_KEYS[PublicKeyDilithium] = DilithiumPublicKey
-            SUPPORTED_KEYS[PublicKeyMLDSA] = MLDSAPublicKey
+        if IS_DILITHIUM_SUPPORTED:
+            SUPPORTED_KEYS[PublicKeyMLDSA] = (LegacyMLDSAPublicKey,) + MLDSA_PUBLIC_KEY_TYPES
+        else:
+            SUPPORTED_KEYS[PublicKeyMLDSA] = MLDSA_PUBLIC_KEY_TYPES
 
         if IS_LMS_SUPPORTED:
             SUPPORTED_KEYS[PublicKeyLMS] = LmsPublicKey
 
         for k, v in SUPPORTED_KEYS.items():
             if isinstance(key, v):
-                return k(key)
+                return cast(Self, cast(Any, k)(key))
 
         raise SPSDKInvalidKeyType(f"Unsupported key type: {str(key)}")
 
@@ -912,7 +1018,7 @@ class PrivateKeyRsa(PrivateKey):
 
     def export(
         self,
-        password: Optional[str] = None,
+        password: str | None = None,
         encoding: SPSDKEncoding = SPSDKEncoding.DER,
     ) -> bytes:
         """Export the Private key to the bytes in requested encoding.
@@ -933,7 +1039,7 @@ class PrivateKeyRsa(PrivateKey):
     def sign(
         self,
         data: bytes,
-        algorithm: Optional[EnumHashAlgorithm] = None,
+        algorithm: EnumHashAlgorithm | None = None,
         pss_padding: bool = False,
         prehashed: bool = False,
         **kwargs: Any,
@@ -962,7 +1068,7 @@ class PrivateKeyRsa(PrivateKey):
         return signature
 
     @classmethod
-    def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
+    def parse(cls, data: bytes, password: str | None = None) -> Self:
         """Parse RSA private key from bytes array.
 
         The method parses binary data to recreate an RSA private key object with optional
@@ -1073,8 +1179,8 @@ class PublicKeyRsa(PublicKey):
     def export(
         self,
         encoding: SPSDKEncoding = SPSDKEncoding.NXP,
-        exp_length: Optional[int] = None,
-        modulus_length: Optional[int] = None,
+        exp_length: int | None = None,
+        modulus_length: int | None = None,
     ) -> bytes:
         """Export the public key to bytes in specified format.
 
@@ -1103,7 +1209,7 @@ class PublicKeyRsa(PublicKey):
         self,
         signature: bytes,
         data: bytes,
-        algorithm: Optional[EnumHashAlgorithm] = None,
+        algorithm: EnumHashAlgorithm | None = None,
         pss_padding: bool = False,
         prehashed: bool = False,
         **kwargs: Any,
@@ -1278,7 +1384,7 @@ class KeyEccCommon:
     curve types used in SPSDK cryptographic operations.
     """
 
-    key: Union[ec.EllipticCurvePrivateKey, ec.EllipticCurvePublicKey]
+    key: ec.EllipticCurvePrivateKey | ec.EllipticCurvePublicKey
 
     @property
     def default_hash_algorithm(self) -> EnumHashAlgorithm:
@@ -1431,7 +1537,7 @@ class PrivateKeyEcc(KeyEccCommon, PrivateKey):
 
     def export(
         self,
-        password: Optional[str] = None,
+        password: str | None = None,
         encoding: SPSDKEncoding = SPSDKEncoding.DER,
     ) -> bytes:
         """Export the Private key to the bytes in requested format.
@@ -1458,7 +1564,7 @@ class PrivateKeyEcc(KeyEccCommon, PrivateKey):
     def sign(
         self,
         data: bytes,
-        algorithm: Optional[EnumHashAlgorithm] = None,
+        algorithm: EnumHashAlgorithm | None = None,
         der_format: bool = False,
         prehashed: bool = False,
         **kwargs: Any,
@@ -1496,7 +1602,7 @@ class PrivateKeyEcc(KeyEccCommon, PrivateKey):
         return self.key.private_numbers().private_value
 
     @classmethod
-    def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
+    def parse(cls, data: bytes, password: str | None = None) -> Self:
         """Parse ECC private key object from bytes array.
 
         The method parses the provided byte data to recreate an ECC private key object.
@@ -1583,7 +1689,7 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
         self,
         signature: bytes,
         data: bytes,
-        algorithm: Optional[EnumHashAlgorithm] = None,
+        algorithm: EnumHashAlgorithm | None = None,
         prehashed: bool = False,
         **kwargs: Any,
     ) -> bool:
@@ -1665,7 +1771,7 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
         return cls(key)
 
     @classmethod
-    def recreate_from_data(cls, data: bytes, curve: Optional[EccCurve] = None) -> Self:
+    def recreate_from_data(cls, data: bytes, curve: EccCurve | None = None) -> Self:
         """Recreate ECC public key from coordinates in data blob.
 
         The method supports both raw binary format (X,Y coordinates in Big Endian) and DER format.
@@ -1679,7 +1785,7 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
         """
 
         def get_curves(
-            data_length: int, curve: Optional[EccCurve] = None
+            data_length: int, curve: EccCurve | None = None
         ) -> list[tuple[EccCurve, bool]]:
             """Determine possible ECC curves and encoding formats from data length.
 
@@ -1872,7 +1978,7 @@ if IS_OSCCA_SUPPORTED:
         def sign(
             self,
             data: bytes,
-            salt: Optional[str] = None,
+            salt: str | None = None,
             use_ber: bool = False,
             **kwargs: Any,
         ) -> bytes:
@@ -1902,7 +2008,7 @@ if IS_OSCCA_SUPPORTED:
 
         def export(
             self,
-            password: Optional[str] = None,
+            password: str | None = None,
             encoding: SPSDKEncoding = SPSDKEncoding.DER,
         ) -> bytes:
             """Export SM2 private key to bytes format supported by NXP.
@@ -1967,7 +2073,7 @@ if IS_OSCCA_SUPPORTED:
         def save(
             self,
             file_path: str,
-            password: Optional[str] = None,
+            password: str | None = None,
             encoding: SPSDKEncoding = SPSDKEncoding.PEM,
         ) -> None:
             """Save the Private key to the given file.
@@ -2008,7 +2114,7 @@ if IS_OSCCA_SUPPORTED:
             self,
             signature: bytes,
             data: bytes,
-            algorithm: Optional[EnumHashAlgorithm] = None,
+            algorithm: EnumHashAlgorithm | None = None,
             **kwargs: Any,
         ) -> bool:
             """Verify SM2 signature against provided data.
@@ -2262,11 +2368,11 @@ if IS_DILITHIUM_SUPPORTED:
 
         SUPPORTED_LEVELS = [2, 3, 5]
         RECOMMENDED_ENCODING = SPSDKEncoding.PEM
-        key: Union[DilithiumPrivateKey, DilithiumPublicKey, MLDSAPublicKey, MLDSAPublicKey]
+        key: DilithiumPrivateKey | DilithiumPublicKey
 
         def __init__(
             self,
-            key: Union[DilithiumPrivateKey, DilithiumPublicKey, MLDSAPublicKey, MLDSAPublicKey],
+            key: DilithiumPrivateKey | DilithiumPublicKey,
         ):
             """Initialize PQC key.
 
@@ -2332,7 +2438,7 @@ if IS_DILITHIUM_SUPPORTED:
             self,
             signature: bytes,
             data: bytes,
-            algorithm: Optional[EnumHashAlgorithm] = None,
+            algorithm: EnumHashAlgorithm | None = None,
             prehashed: bool = False,
             **kwargs: Any,
         ) -> bool:
@@ -2363,7 +2469,7 @@ if IS_DILITHIUM_SUPPORTED:
         operations and provides comparison functionality for PQC public keys.
         """
 
-        key: Union[DilithiumPublicKey, MLDSAPublicKey]
+        key: DilithiumPublicKey
 
         def export(self, encoding: SPSDKEncoding = SPSDKEncoding.NXP) -> bytes:
             """Export key into bytes to requested format.
@@ -2411,12 +2517,12 @@ if IS_DILITHIUM_SUPPORTED:
         cryptographic operations across different PQC algorithms.
         """
 
-        key: Union[DilithiumPrivateKey, MLDSAPrivateKey]
+        key: DilithiumPrivateKey
 
         def sign(
             self,
             data: bytes,
-            algorithm: Optional[EnumHashAlgorithm] = None,
+            algorithm: EnumHashAlgorithm | None = None,
             prehashed: bool = False,
             **kwargs: Any,
         ) -> bytes:
@@ -2439,7 +2545,7 @@ if IS_DILITHIUM_SUPPORTED:
             return self.key.sign(data=data_to_sign)
 
         def export(
-            self, password: Optional[str] = None, encoding: SPSDKEncoding = SPSDKEncoding.DER
+            self, password: str | None = None, encoding: SPSDKEncoding = SPSDKEncoding.DER
         ) -> bytes:
             """Export key into bytes to requested format.
 
@@ -2448,7 +2554,7 @@ if IS_DILITHIUM_SUPPORTED:
             :return: Byte representation of key.
             """
             if encoding == SPSDKEncoding.NXP:
-                return self.key.private_data + (self.key.public_data or bytes())
+                return self.key.private_data + (self.key.public_data or b"")
             return self.key.export(pem=encoding == SPSDKEncoding.PEM)
 
         def __repr__(self) -> str:
@@ -2489,7 +2595,10 @@ if IS_DILITHIUM_SUPPORTED:
             :return: Recreated Dilithium public key object.
             """
             try:
-                return cls(DilithiumPublicKey.parse(data=data))
+                parsed_key = DilithiumPublicKey.parse(data=data)
+                if not isinstance(parsed_key, DilithiumPublicKey):
+                    raise PQCError("Parsed PQC public key is not Dilithium")
+                return cls(parsed_key)
             except PQCError as e:
                 raise SPSDKInvalidKeyType(f"Can't parse Dilithium Public from data: {e}") from e
 
@@ -2504,7 +2613,7 @@ if IS_DILITHIUM_SUPPORTED:
 
         @classmethod
         def generate_key(
-            cls, level: Optional[int] = None, algorithm: Optional[PQCAlgorithm] = None
+            cls, level: int | None = None, algorithm: PQCAlgorithm | None = None
         ) -> Self:
             """Generate SPSDK Key (private key).
 
@@ -2547,7 +2656,7 @@ if IS_DILITHIUM_SUPPORTED:
             return self.key.public_data == public_key.key.public_data
 
         @classmethod
-        def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
+        def parse(cls, data: bytes, password: str | None = None) -> Self:
             """Parse object from bytes array.
 
             :param data: Data to be parsed.
@@ -2556,11 +2665,20 @@ if IS_DILITHIUM_SUPPORTED:
             :return: Recreated key.
             """
             try:
-                return cls(DilithiumPrivateKey.parse(data=data))
+                parsed_key = DilithiumPrivateKey.parse(data=data)
+                if not isinstance(parsed_key, DilithiumPrivateKey):
+                    raise PQCError("Parsed PQC private key is not Dilithium")
+                return cls(parsed_key)
             except PQCError as e:
                 raise SPSDKError(f"Could not parse key: {e}") from e
 
-    class PublicKeyMLDSA(PQCPublicKey):
+else:
+    PrivateKeyDilithium = NonSupportingPrivateKey  # type: ignore
+    PublicKeyDilithium = NonSupportingPublicKey  # type: ignore
+
+if MLDSA_PUBLIC_KEY_TYPES:
+
+    class PublicKeyMLDSA(PublicKey):
         """ML-DSA (Module-Lattice-Based Digital Signature Algorithm) public key implementation.
 
         This class provides a wrapper for ML-DSA public keys, offering parsing capabilities
@@ -2568,7 +2686,98 @@ if IS_DILITHIUM_SUPPORTED:
         cryptographic signature algorithm designed to be secure against quantum attacks.
         """
 
-        key: MLDSAPublicKey
+        key: MLDSAPublicKeyType | LegacyMLDSAPublicKeyProtocol
+
+        def __init__(self, key: MLDSAPublicKeyType | LegacyMLDSAPublicKeyProtocol) -> None:
+            """Initialize ML-DSA public key wrapper."""
+            self.key = key
+
+        @staticmethod
+        def _is_legacy_key(key: object) -> TypeGuard[LegacyMLDSAPublicKeyProtocol]:
+            return IS_DILITHIUM_SUPPORTED and key.__class__.__name__ == "MLDSAPublicKey"
+
+        @staticmethod
+        def _is_native_key(key: object) -> TypeGuard[MLDSAPublicKeyType]:
+            return isinstance(key, MLDSA_PUBLIC_KEY_TYPES)
+
+        @property
+        def default_hash_algorithm(self) -> EnumHashAlgorithm:
+            """Get default hash algorithm for ML-DSA signing and verification."""
+            return EnumHashAlgorithm.SHA384
+
+        @property
+        def signature_size(self) -> int:
+            """Get the signature size in bytes."""
+            if self._is_legacy_key(self.key):
+                return self.key.signature_size
+            for level, key_cls in MLDSA_PUBLIC_KEY_CLASSES.items():
+                if isinstance(self.key, key_cls):
+                    return MLDSA_SIGNATURE_SIZES[level]
+            raise SPSDKError("Unsupported ML-DSA public key type")
+
+        @property
+        def public_numbers(self) -> bytes:
+            """Get public key data as raw bytes."""
+            if self._is_legacy_key(self.key):
+                return self.key.public_data
+            assert self._is_native_key(self.key)
+            return self.key.public_bytes_raw()
+
+        @property
+        def key_size(self) -> int:
+            """Get key size in bytes."""
+            return len(self.public_numbers)
+
+        @property
+        def level(self) -> int:
+            """Get NIST level for the key."""
+            if self._is_legacy_key(self.key):
+                return self.key.level
+            for level, key_cls in MLDSA_PUBLIC_KEY_CLASSES.items():
+                if isinstance(self.key, key_cls):
+                    return level
+            raise SPSDKError("Unsupported ML-DSA public key type")
+
+        def verify_signature(
+            self,
+            signature: bytes,
+            data: bytes,
+            algorithm: EnumHashAlgorithm | None = None,
+            prehashed: bool = False,
+            **kwargs: Any,
+        ) -> bool:
+            """Verify signature against input data using the public key."""
+            data_to_verify = (
+                data if prehashed else get_hash(data, algorithm or self.default_hash_algorithm)
+            )
+            if self._is_legacy_key(self.key):
+                return self.key.verify(data=data_to_verify, signature=signature)
+            try:
+                assert self._is_native_key(self.key)
+                self.key.verify(signature, data_to_verify, kwargs.get("context"))
+                return True
+            except InvalidSignature:
+                return False
+
+        def export(self, encoding: SPSDKEncoding = SPSDKEncoding.NXP) -> bytes:
+            """Export key into bytes to requested format."""
+            if encoding == SPSDKEncoding.NXP:
+                return self.public_numbers
+            if self._is_legacy_key(self.key):
+                return self.key.export(pem=encoding == SPSDKEncoding.PEM)
+            assert self._is_native_key(self.key)
+            return self.key.public_bytes(
+                encoding=Encoding.PEM if encoding == SPSDKEncoding.PEM else Encoding.DER,
+                format=PublicFormat.SubjectPublicKeyInfo,
+            )
+
+        def __repr__(self) -> str:
+            """Return string representation of the public key."""
+            return f"ML-DSA-{ {2: 44, 3: 65, 5: 87}[self.level] } Public key"
+
+        def __str__(self) -> str:
+            """Return string representation of the public key."""
+            return repr(self)
 
         @classmethod
         def parse(cls, data: bytes) -> Self:
@@ -2579,11 +2788,45 @@ if IS_DILITHIUM_SUPPORTED:
             :return: Recreated MLDSA public key instance.
             """
             try:
-                return cls(MLDSAPublicKey.parse(data=data))
-            except PQCError as e:
-                raise SPSDKError(f"Could not parse key: {e}") from e
+                raw_key = MLDSA_PUBLIC_KEY_CLASSES[
+                    next(
+                        level
+                        for level, length in MLDSA_PUBLIC_KEY_LENGTHS.items()
+                        if len(data) == length
+                    )
+                ].from_public_bytes(data)
+                return cls(raw_key)
+            except (StopIteration, ValueError):
+                pass
+            normalized = _normalize_mldsa_pem(data)
+            try:
+                loaded_key = crypto_load_pem_public_key(normalized)
+                if isinstance(loaded_key, MLDSA_PUBLIC_KEY_TYPES):
+                    return cls(loaded_key)
+            except (UnsupportedAlgorithm, ValueError):
+                pass
+            try:
+                loaded_key = crypto_load_der_public_key(normalized)
+                if isinstance(loaded_key, MLDSA_PUBLIC_KEY_TYPES):
+                    return cls(loaded_key)
+            except (UnsupportedAlgorithm, ValueError):
+                pass
+            try:
+                level, public_data = extract_legacy_mldsa_public(data)
+                return cls(MLDSA_PUBLIC_KEY_CLASSES[level].from_public_bytes(public_data))
+            except (SPSDKError, ValueError):
+                pass
+            if IS_DILITHIUM_SUPPORTED:
+                try:
+                    parsed_key = LegacyMLDSAPublicKey.parse(data=data)
+                    if parsed_key.__class__.__name__ != "MLDSAPublicKey":
+                        raise PQCError("Parsed PQC public key is not ML-DSA")
+                    return cls(parsed_key)
+                except (AttributeError, PQCError):
+                    pass
+            raise SPSDKError("Could not parse key")
 
-    class PrivateKeyMLDSA(PQCPrivateKey):
+    class PrivateKeyMLDSA(PrivateKey):
         """ML-DSA Private Key for post-quantum cryptographic operations.
 
         This class provides a wrapper around ML-DSA (Module-Lattice-Based Digital Signature Algorithm)
@@ -2591,55 +2834,141 @@ if IS_DILITHIUM_SUPPORTED:
         operations within the SPSDK framework.
         """
 
-        key: MLDSAPrivateKey
+        key: MLDSAPrivateKeyType | LegacyMLDSAPrivateKeyProtocol
+
+        def __init__(self, key: MLDSAPrivateKeyType | LegacyMLDSAPrivateKeyProtocol) -> None:
+            """Initialize ML-DSA private key wrapper."""
+            self.key = key
+
+        @staticmethod
+        def _is_legacy_key(key: object) -> TypeGuard[LegacyMLDSAPrivateKeyProtocol]:
+            return IS_DILITHIUM_SUPPORTED and key.__class__.__name__ == "MLDSAPrivateKey"
+
+        @staticmethod
+        def _is_native_key(key: object) -> TypeGuard[MLDSAPrivateKeyType]:
+            return isinstance(key, MLDSA_PRIVATE_KEY_TYPES)
+
+        @property
+        def default_hash_algorithm(self) -> EnumHashAlgorithm:
+            """Get default hash algorithm for ML-DSA signing and verification."""
+            return EnumHashAlgorithm.SHA384
+
+        @property
+        def signature_size(self) -> int:
+            """Get the signature size in bytes."""
+            return self.get_public_key().signature_size
+
+        @property
+        def public_numbers(self) -> bytes:
+            """Get public key data as raw bytes."""
+            return self.get_public_key().public_numbers
+
+        @property
+        def key_size(self) -> int:
+            """Get key size in bytes."""
+            return len(self.public_numbers)
 
         @classmethod
-        def generate_key(
-            cls, level: Optional[int] = None, algorithm: Optional[PQCAlgorithm] = None
-        ) -> Self:
+        def generate_key(cls, level: int | None = None, algorithm: Any | None = None) -> Self:
             """Generate SPSDK Key (private key).
 
             One of 'level' or 'algorithm' must be specified.
 
             :param level: NIST claim level, defaults to None
             :param algorithm: Exact PQC algorithm to use, defaults to None
-            :raises SPSDKError: Could not create Dilithium key
+            :raises SPSDKError: Could not create ML-DSA key
             :return: ML-DSA Private key
             """
-            try:
-                key = MLDSAPrivateKey(level=level, algorithm=algorithm)
-            except PQCError as e:
-                raise SPSDKError(f"Could not create Dilithium key: {e}") from e
-            return cls(key)
+            if algorithm is not None:
+                raise SPSDKError("ML-DSA key generation no longer accepts PQCAlgorithm")
+            if level not in MLDSA_PRIVATE_KEY_CLASSES:
+                raise SPSDKError(f"Could not create ML-DSA key: unsupported level {level}")
+            return cls(MLDSA_PRIVATE_KEY_CLASSES[level].generate())
+
+        def sign(
+            self,
+            data: bytes,
+            algorithm: EnumHashAlgorithm | None = None,
+            prehashed: bool = False,
+            **kwargs: Any,
+        ) -> bytes:
+            """Sign input data with the private key."""
+            data_to_sign = (
+                data if prehashed else get_hash(data, algorithm or self.default_hash_algorithm)
+            )
+            if self._is_legacy_key(self.key):
+                return self.key.sign(data=data_to_sign)
+            assert self._is_native_key(self.key)
+            return self.key.sign(data_to_sign, kwargs.get("context"))
+
+        def export(
+            self, password: str | None = None, encoding: SPSDKEncoding = SPSDKEncoding.DER
+        ) -> bytes:
+            """Export key into bytes to requested format."""
+            if encoding == SPSDKEncoding.NXP:
+                if self._is_legacy_key(self.key):
+                    return self.key.private_data + (self.key.public_data or bytes())
+                assert self._is_native_key(self.key)
+                return self.key.private_bytes_raw() + self.public_numbers
+            if self._is_legacy_key(self.key):
+                return self.key.export(pem=encoding == SPSDKEncoding.PEM)
+            encryption = (
+                NoEncryption()
+                if password is None
+                else BestAvailableEncryption(password=password.encode("utf-8"))
+            )
+            assert self._is_native_key(self.key)
+            return self.key.private_bytes(
+                encoding=Encoding.PEM if encoding == SPSDKEncoding.PEM else Encoding.DER,
+                format=PrivateFormat.PKCS8,
+                encryption_algorithm=encryption,
+            )
+
+        def __repr__(self) -> str:
+            """Return string representation of the private key."""
+            return f"ML-DSA-{ {2: 44, 3: 65, 5: 87}[self.get_public_key().level] } Private key"
+
+        def __str__(self) -> str:
+            """Return string representation of the private key."""
+            return repr(self)
+
+        def __eq__(self, obj: Any) -> bool:
+            """Check equality of two private key objects."""
+            return isinstance(obj, self.__class__) and self.export(
+                encoding=SPSDKEncoding.NXP
+            ) == obj.export(encoding=SPSDKEncoding.NXP)
 
         def get_public_key(self) -> PublicKeyMLDSA:
-            """Get the public key from the Dilithium private key.
+            """Get the public key from the ML-DSA private key.
 
-            Extracts and returns the public key portion of the ML-DSA (Dilithium) key pair.
+            Extracts and returns the public key portion of the ML-DSA key pair.
 
-            :raises SPSDKUnsupportedOperation: When the Dilithium key doesn't have a public portion.
             :return: The public key as PublicKeyMLDSA instance.
             """
-            if self.key.public_data is None:
-                raise SPSDKUnsupportedOperation("Dilithium key doesn't have public portion")
-            return PublicKeyMLDSA(MLDSAPublicKey(public_data=self.key.public_data))
+            if self._is_legacy_key(self.key):
+                public_data = self.key.public_data
+                if public_data is None:
+                    raise SPSDKUnsupportedOperation("ML-DSA key doesn't have public portion")
+                return PublicKeyMLDSA(LegacyMLDSAPublicKey(public_data=public_data))
+            assert self._is_native_key(self.key)
+            return PublicKeyMLDSA(self.key.public_key())
 
         def verify_public_key(self, public_key: PublicKey) -> bool:
             """Verify that the provided public key matches this private key.
 
-            The method checks if the public key is of the correct type (Dilithium/ML-DSA) and
+            The method checks if the public key is of the correct type (ML-DSA) and
             compares the public data to ensure it corresponds to this private key.
 
             :param public_key: The public key to verify against this private key.
-            :raises SPSDKInvalidKeyType: If the public key is not a Dilithium public key.
+            :raises SPSDKInvalidKeyType: If the public key is not an ML-DSA public key.
             :return: True if the public key matches this private key, False otherwise.
             """
             if not isinstance(public_key, PublicKeyMLDSA):
-                raise SPSDKInvalidKeyType("Public key type is not a Dilithium public key")
-            return self.key.public_data == public_key.key.public_data
+                raise SPSDKInvalidKeyType("Public key type is not an ML-DSA public key")
+            return self.public_numbers == public_key.public_numbers
 
         @classmethod
-        def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
+        def parse(cls, data: bytes, password: str | None = None) -> Self:
             """Parse MLDSA private key object from bytes array.
 
             :param data: Raw bytes data containing the MLDSA private key to be parsed.
@@ -2647,16 +2976,36 @@ if IS_DILITHIUM_SUPPORTED:
             :raises SPSDKError: When the key parsing fails or data is invalid.
             :return: Recreated MLDSA private key object.
             """
+            normalized = _normalize_mldsa_pem(data)
             try:
-                return cls(MLDSAPrivateKey.parse(data=data))
-            except PQCError as e:
-                raise SPSDKError(f"Could not parse key: {e}") from e
-
-else:
-    PrivateKeyDilithium = NonSupportingPrivateKey  # type: ignore
-    PublicKeyDilithium = NonSupportingPublicKey  # type: ignore
-    PrivateKeyMLDSA = NonSupportingPrivateKey  # type: ignore
-    PublicKeyMLDSA = NonSupportingPublicKey  # type: ignore
+                loaded_key = {
+                    SPSDKEncoding.PEM: crypto_load_pem_private_key,
+                    SPSDKEncoding.DER: crypto_load_der_private_key,
+                }[SPSDKEncoding.get_file_encodings(normalized)](
+                    normalized, password.encode("utf-8") if password else None
+                )
+                if isinstance(loaded_key, MLDSA_PRIVATE_KEY_TYPES):
+                    return cls(loaded_key)
+            except (UnsupportedAlgorithm, ValueError, TypeError, KeyError):
+                pass
+            try:
+                level, seed = extract_legacy_mldsa_seed(data)
+                return cls(MLDSA_PRIVATE_KEY_CLASSES[level].from_seed_bytes(seed))
+            except (SPSDKError, ValueError):
+                pass
+            if IS_DILITHIUM_SUPPORTED:
+                try:
+                    parsed_key = LegacyMLDSAPrivateKey.parse(data=data)
+                    if parsed_key.__class__.__name__ != "MLDSAPrivateKey":
+                        raise PQCError("Parsed PQC private key is not ML-DSA")
+                    logger.info(
+                        "Legacy ML-DSA private key detected. SPSDK loaded this expanded-secret "
+                        "format via spsdk_pqc compatibility mode."
+                    )
+                    return cls(parsed_key)
+                except (AttributeError, PQCError):
+                    pass
+            raise SPSDKError("Could not parse key")
 
 
 # ===================================================================================================
@@ -2723,7 +3072,7 @@ if IS_LMS_SUPPORTED:
             return self.key.publicKey().serialize() == public_key.key.serialize()
 
         @classmethod
-        def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
+        def parse(cls, data: bytes, password: str | None = None) -> Self:
             """Parse object from bytes array."""
             try:
                 return cls(LmsPrivateKey.deserialize(buffer=data))
@@ -2731,7 +3080,7 @@ if IS_LMS_SUPPORTED:
                 raise SPSDKError(f"Could not parse LMS private key: {e}") from e
 
         def export(
-            self, password: Optional[str] = None, encoding: SPSDKEncoding = SPSDKEncoding.DER
+            self, password: str | None = None, encoding: SPSDKEncoding = SPSDKEncoding.DER
         ) -> bytes:
             """Export key into bytes in requested format."""
             return self.key.serialize()
@@ -2739,7 +3088,7 @@ if IS_LMS_SUPPORTED:
         def sign(
             self,
             data: bytes,
-            algorithm: Optional[EnumHashAlgorithm] = None,
+            algorithm: EnumHashAlgorithm | None = None,
             prehashed: bool = False,
             **kwargs: Any,
         ) -> bytes:
@@ -2813,7 +3162,7 @@ if IS_LMS_SUPPORTED:
             self,
             signature: bytes,
             data: bytes,
-            algorithm: Optional[EnumHashAlgorithm] = None,
+            algorithm: EnumHashAlgorithm | None = None,
             prehashed: bool = False,
             **kwargs: Any,
         ) -> bool:
@@ -2851,7 +3200,7 @@ else:
 # # ===================================================================================================
 # # ===================================================================================================
 
-GeneratorParams = dict[str, Union[int, str, bool]]
+GeneratorParams = dict[str, int | str | bool]
 KeyGeneratorInfo = dict[str, tuple[Callable[..., PrivateKey], GeneratorParams]]
 
 
@@ -2885,9 +3234,9 @@ def get_supported_keys_generators(basic: bool = False) -> KeyGeneratorInfo:
         ret["dil2"] = (PrivateKeyDilithium.generate_key, {"level": 2})
         ret["dil3"] = (PrivateKeyDilithium.generate_key, {"level": 3})
         ret["dil5"] = (PrivateKeyDilithium.generate_key, {"level": 5})
-        ret["mldsa44"] = (PrivateKeyMLDSA.generate_key, {"level": 2})
-        ret["mldsa65"] = (PrivateKeyMLDSA.generate_key, {"level": 3})
-        ret["mldsa87"] = (PrivateKeyMLDSA.generate_key, {"level": 5})
+    ret["mldsa44"] = (PrivateKeyMLDSA.generate_key, {"level": 2})
+    ret["mldsa65"] = (PrivateKeyMLDSA.generate_key, {"level": 3})
+    ret["mldsa87"] = (PrivateKeyMLDSA.generate_key, {"level": 5})
 
     if IS_LMS_SUPPORTED:
         ret["lms"] = (PrivateKeyLMS.generate_key, {})  # LMSParams must be provided by caller
@@ -2933,7 +3282,7 @@ def prompt_for_passphrase() -> str:
     return password
 
 
-def load_key(key_path: str) -> Union[PrivateKey, PublicKey, bytes]:
+def load_key(key_path: str) -> PrivateKey | PublicKey | bytes:
     """Load a cryptographic key from the specified file path.
 
     This function attempts to load a key using multiple parsers in sequence:
@@ -2957,7 +3306,7 @@ def load_key(key_path: str) -> Union[PrivateKey, PublicKey, bytes]:
             str_key = "0x" + str_key
         return value_to_bytes(str_key)
 
-    parsers: list[Callable[[str], Union[PrivateKey, PublicKey, bytes]]] = [
+    parsers: list[Callable[[str], PrivateKey | PublicKey | bytes]] = [
         PrivateKey.load,
         PublicKey.load,
         load_hex,

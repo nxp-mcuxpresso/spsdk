@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -14,7 +13,7 @@ different encryption schemes including no encryption and SB3.1 encryption.
 
 import abc
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.symmetric import aes_cbc_encrypt
@@ -202,9 +201,9 @@ class SB31EncryptionProvider(EncryptionProvider):
 
 def get_encryption_provider(
     is_encrypted: bool = True,
-    service_config: Optional[str] = None,
-    local_file: Optional[str] = None,
-    search_paths: Optional[list[str]] = None,
+    service_config: str | None = None,
+    local_file: str | None = None,
+    search_paths: list[str] | None = None,
     **kwargs: Any,
 ) -> EncryptionProvider:
     """Factory function to create an appropriate encryption provider.

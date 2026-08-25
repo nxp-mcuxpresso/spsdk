@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2026 NXP
 #
@@ -15,8 +14,8 @@ and utilities for device and memory identification.
 
 import math
 from abc import abstractmethod
+from collections.abc import Mapping
 from struct import calcsize, pack, unpack_from
-from typing import Mapping, Optional, Type
 
 from typing_extensions import Self
 
@@ -554,7 +553,7 @@ class CmdFill(CmdBaseClass):
         return size
 
     def __init__(
-        self, address: int, pattern: int, length: Optional[int] = None, zero_filling: bool = False
+        self, address: int, pattern: int, length: int | None = None, zero_filling: bool = False
     ) -> None:
         """Initialize Command Fill.
 
@@ -695,7 +694,7 @@ class CmdJump(CmdBaseClass):
         self._header.data = value
 
     @property
-    def spreg(self) -> Optional[int]:
+    def spreg(self) -> int | None:
         """Return command's Stack Pointer.
 
         The Stack Pointer value is only available when the command header flags field
@@ -709,7 +708,7 @@ class CmdJump(CmdBaseClass):
         return None
 
     @spreg.setter
-    def spreg(self, value: Optional[int] = None) -> None:
+    def spreg(self, value: int | None = None) -> None:
         """Set command's Stack Pointer.
 
         Configures the stack pointer value for the command. When value is None, the flags and count
@@ -725,7 +724,7 @@ class CmdJump(CmdBaseClass):
             self._header.flags = 2
             self._header.count = value
 
-    def __init__(self, address: int = 0, argument: int = 0, spreg: Optional[int] = None) -> None:
+    def __init__(self, address: int = 0, argument: int = 0, spreg: int | None = None) -> None:
         """Initialize Command Jump.
 
         :param address: Jump target address, defaults to 0.
@@ -1484,7 +1483,7 @@ class CmdKeyStoreRestore(CmdKeyStoreBackupRestore):
 ########################################################################################################################
 # Command parser from binary format
 ########################################################################################################################
-_CMD_CLASS: Mapping[EnumCmdTag, Type[CmdBaseClass]] = {
+_CMD_CLASS: Mapping[EnumCmdTag, type[CmdBaseClass]] = {
     EnumCmdTag.NOP: CmdNop,
     EnumCmdTag.TAG: CmdTag,
     EnumCmdTag.LOAD: CmdLoad,

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -13,7 +12,6 @@ start address, length, and plugin flags required for secure boot configuration.
 """
 
 from struct import calcsize, pack, unpack_from
-from typing import Type
 
 from typing_extensions import Self
 
@@ -172,7 +170,7 @@ class HabSegmentBDT(HabSegmentBase):
         """
         options = config.get_config("options")
         segment = cls(SegBDT(app_start=options["startAddress"]))
-        end_segments: dict[int, Type[HabSegmentBase]] = {
+        end_segments: dict[int, type[HabSegmentBase]] = {
             0: HabSegmentApp,
             1: HabSegmentCSF,
         }

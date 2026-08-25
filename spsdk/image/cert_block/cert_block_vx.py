@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2026 NXP
 #
@@ -15,7 +14,7 @@ Vx, and AHAB certificate blocks with their respective headers and structures.
 
 import logging
 from struct import calcsize, pack, unpack_from
-from typing import Any, Optional, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -62,7 +61,7 @@ class IskCertificateLite(BaseClass):
 
     def __init__(
         self,
-        pub_key: Union[PublicKeyEcc, bytes],
+        pub_key: PublicKeyEcc | bytes,
         constraints: int = 1,
     ) -> None:
         """Constructor for ISK certificate.
@@ -72,7 +71,7 @@ class IskCertificateLite(BaseClass):
         """
         self.constraints = constraints
         self.pub_key = convert_to_ecc_key(pub_key)
-        self.signature = bytes()
+        self.signature = b""
         self.isk_public_key_data = self.pub_key.export()
 
     @property
@@ -112,7 +111,7 @@ class IskCertificateLite(BaseClass):
         return info
 
     def create_isk_signature(
-        self, signature_provider: Optional[SignatureProvider], force: bool = False
+        self, signature_provider: SignatureProvider | None, force: bool = False
     ) -> None:
         """Create ISK (Issuer Signing Key) signature for the certificate.
 
@@ -372,8 +371,8 @@ class CertBlockVx(CertBlock):
     def __init__(
         self,
         family: FamilyRevision,
-        isk_cert: Union[PublicKeyEcc, bytes],
-        signature_provider: Optional[SignatureProvider] = None,
+        isk_cert: PublicKeyEcc | bytes,
+        signature_provider: SignatureProvider | None = None,
         self_signed: bool = True,
     ) -> None:
         """Initialize Certificate block with ISK certificate and signature provider.
@@ -439,7 +438,7 @@ class CertBlockVx(CertBlock):
 
         :return: Certificate block data as bytes.
         """
-        isk_cert_data = bytes()
+        isk_cert_data = b""
         self.isk_certificate.create_isk_signature(self.signature_provider)
         isk_cert_data = self.isk_certificate.export()
         return isk_cert_data

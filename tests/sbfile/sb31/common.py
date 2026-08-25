@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023,2025 NXP
+# Copyright 2020-2023,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,10 +11,9 @@ used by SB31 (Secure Binary version 3.1) test cases.
 """
 
 from os import path
-from typing import Union
 
 
-def read_file(data_dir: str, file_name: str, mode: str = "rb") -> Union[str, bytes]:
+def read_file(data_dir: str, file_name: str, mode: str = "rb") -> str | bytes:
     """Read file from specified directory.
 
     Reads the content of a file located in the given directory using the specified mode.

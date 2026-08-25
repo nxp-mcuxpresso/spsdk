@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -13,9 +12,10 @@ for RSA and ECC algorithms, and hash-based key representations.
 """
 
 import math
+from collections.abc import Iterator
 from hashlib import sha256
 from struct import pack, unpack, unpack_from
-from typing import Any, Iterator
+from typing import Any
 
 from typing_extensions import Self
 
@@ -267,7 +267,7 @@ class SrkItemHash(SrkItem):
 
         :return: Formatted string with hash algorithm and digest value.
         """
-        msg = str()
+        msg = ""
         msg += f"Hash algorithm: {EnumAlgorithm.from_tag(self._header.param)}\n"
         msg += "Hash value:\n"
         msg += hexdump_fmt(self.digest)

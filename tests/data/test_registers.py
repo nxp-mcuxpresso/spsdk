@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -17,7 +16,6 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Optional
 
 import pytest
 
@@ -714,7 +712,7 @@ def validate_lock_functional_consistency(data: dict) -> dict:
                     "register": register,
                 }
 
-    def parse_lock_mask(mask_str: str) -> Optional[int]:
+    def parse_lock_mask(mask_str: str) -> int | None:
         """Parse lock mask string to integer.
 
         Converts a string representation of a lock mask to its integer equivalent.
@@ -732,7 +730,7 @@ def validate_lock_functional_consistency(data: dict) -> dict:
         except ValueError:
             return None
 
-    def find_bit_position(mask_value: Optional[int]) -> list[int]:
+    def find_bit_position(mask_value: int | None) -> list[int]:
         """Find the bit position(s) from a mask value.
 
         This method analyzes a bitmask and returns a list of all bit positions
@@ -1290,7 +1288,7 @@ def validate_enum_default_value_match(data: dict) -> dict:
     if not isinstance(data, dict) or "groups" not in data:
         return errors
 
-    def parse_int_value(value_str: str) -> Optional[int]:
+    def parse_int_value(value_str: str) -> int | None:
         """Parse integer value from string (hex or decimal).
 
         The method supports both hexadecimal (0x prefix) and decimal formats,
@@ -1318,8 +1316,8 @@ def validate_enum_default_value_match(data: dict) -> dict:
         return sign * int(value_str)
 
     def extract_bitfield_value_from_register_default(
-        register_default: Optional[int], bitfield_offset: int, bitfield_width: int
-    ) -> Optional[int]:
+        register_default: int | None, bitfield_offset: int, bitfield_width: int
+    ) -> int | None:
         """Extract bitfield value from register default value.
 
         Extracts a specific bitfield from a register's default value using the provided
@@ -1909,7 +1907,7 @@ def test_data_files(test_path: str) -> None:
 
     for json_file in json_files:
         try:
-            with open(json_file, "r", encoding="utf-8") as f:
+            with open(json_file, encoding="utf-8") as f:
                 data = json.load(f)
 
         except json.JSONDecodeError as e:

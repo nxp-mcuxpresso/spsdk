@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2026 NXP
 #
@@ -28,7 +27,6 @@ import logging
 import logging.config
 import os
 import sys
-from typing import Optional, Union
 
 from packaging.version import Version, parse
 from platformdirs import PlatformDirs
@@ -179,7 +177,7 @@ def get_spsdk_version() -> Version:
     return parse(spsdk_version)
 
 
-def value_to_bool(value: Optional[Union[bool, int, str]]) -> bool:
+def value_to_bool(value: bool | int | str | None) -> bool:
     """Convert value to boolean from various input formats.
 
     Supports conversion from string representations like "True", "true", "T", "1"

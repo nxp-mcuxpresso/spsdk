@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """Test module for IEE (Inline Encryption Engine) functionality in nxpimage.
 
 This module contains comprehensive tests for the IEE-related features of the

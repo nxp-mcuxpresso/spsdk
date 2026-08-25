@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,7 +15,6 @@ import json
 import logging
 import uuid
 from enum import Enum
-from typing import Optional
 
 from typing_extensions import Self
 
@@ -107,8 +105,8 @@ class EL2GOClient(HTTPClientBase):
         self,
         method: HTTPClientBase.Method,
         url: str,
-        param_data: Optional[dict] = None,
-        json_data: Optional[dict] = None,
+        param_data: dict | None = None,
+        json_data: dict | None = None,
     ) -> EL2GOApiResponse:
         """Handle EL2GO API request with correlation ID tracking and error handling.
 

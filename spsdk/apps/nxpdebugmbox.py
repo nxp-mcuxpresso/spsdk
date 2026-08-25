@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -19,9 +18,10 @@ import logging
 import os
 import struct
 import sys
+from collections.abc import Iterator
 from dataclasses import dataclass
 from time import sleep
-from typing import Iterator, Optional, Type
+from typing import cast
 
 import click
 import colorama
@@ -36,7 +36,13 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_family_option,
     spsdk_output_option,
 )
-from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error, format_raw_data
+from spsdk.apps.utils.utils import (
+    INT,
+    SPSDKAppError,
+    catch_spsdk_error,
+    format_raw_data,
+    resolve_lifecycle,
+)
 from spsdk.crypto.keys import PrivateKey, PublicKey, load_key
 from spsdk.dat import dm_commands
 from spsdk.dat.dac_packet import DebugAuthenticationChallenge
@@ -50,7 +56,15 @@ from spsdk.dat.debug_mailbox import DebugMailbox
 from spsdk.dat.famode_image import FaModeImage
 from spsdk.dat.rot_meta import RotMetaEcc, RotMetaRSA
 from spsdk.dat.sda import DebugAuthMode, SdaAuthentication
-from spsdk.debuggers.utils import PROBES, get_test_address, open_debug_probe, test_ahb_access
+from spsdk.debuggers.debug_probe import MemorySpace
+from spsdk.debuggers.debug_probe_arm import DebugProbeCoreSightOnly
+from spsdk.debuggers.utils import (
+    PROBES,
+    get_connected_probes,
+    get_test_address,
+    open_debug_probe,
+    test_ahb_access,
+)
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
@@ -192,7 +206,7 @@ def _open_debugmbox(
     "--no-reset",
     "no_reset",
     is_flag=True,
-    default=True,
+    default=False,
     help=(
         "Omit reset of debug mailbox during initialization,"
         " default behavior is reset debug mailbox during initialization."
@@ -245,7 +259,7 @@ def main(
 
     ctx.obj = {
         "debug_mailbox_params": DebugMailboxParams(
-            reset=no_reset,
+            reset=not no_reset,
             more_delay=timing,
             operation_timeout=operation_timeout,
         ),
@@ -578,6 +592,7 @@ def start_debug_session(
     try:
         with _open_debugmbox(family, debug_probe_params, debug_mailbox_params) as mail_box:
             dm_commands.StartDebugSession(dm=mail_box).run()
+
     except Exception as e:
         raise SPSDKAppError(f"Start debug session failed: {e}") from e
 
@@ -711,7 +726,7 @@ def get_dac_command(
         rot_hash_length=int(rot_hash_length),
         nxp_keys=nxp_keys,
     )
-    click.echo(f"The DAC data has been stored to: {output}.")
+    click.echo(f"The DAC data has been stored to: {get_printable_path(output)}.")
     write_file(dac_data, output, mode="wb")
 
 
@@ -850,6 +865,69 @@ def set_bricked_mode(
         raise SPSDKAppError(f"Set bricked mode failed: {e}") from e
 
 
+@cmd_group.command(name="program-lifecycle", no_args_is_help=True)
+@click.option(
+    "-l",
+    "--lifecycle",
+    type=str,
+    required=True,
+    help=(
+        "Lifecycle to program into CMPA (written to both LIFECYCLE_STATE and "
+        "LIFECYCLE_STATE_DP). Accepts either a symbolic name from the device's "
+        "cmpa_lc.json (e.g. IN_FIELD1, DEVELOP, IN_FIELD2, IN_FIELD_LOCKED, BRICKED, "
+        "or any deprecated alias such as ROP_LEVEL1) or an encoded 32-bit integer "
+        "(e.g. 0x96368BC7)."
+    ),
+)
+@click.pass_obj
+def program_lifecycle_command(pass_obj: dict, lifecycle: str) -> None:
+    """Program the CMPA lifecycle (LC + LC_DP) and reset the device.
+
+    Sends the PROGRAM_LIFECYCLE (0x17) debug-mailbox command. Only honored
+    while the device is in the DEVELOP lifecycle and the CMPA passes its
+    integrity check (header markers + CRCs). The device resets immediately
+    after acknowledging the new value.
+    """
+    # Check if program-lifecycle is supported for this device
+    family = pass_obj["family"]
+    db = get_db(family)
+    sub_features = db.get_list(DatabaseManager.DAT, "sub_features", [])
+    if "program_lifecycle" not in sub_features:
+        raise SPSDKAppError(f"Program lifecycle is not supported for device {family.name}")
+
+    lifecycle_value, pretty = resolve_lifecycle(family, lifecycle)
+    program_lifecycle(
+        family,
+        pass_obj["debug_probe_params"],
+        pass_obj["debug_mailbox_params"],
+        lifecycle_value,
+    )
+    click.echo(f"Program lifecycle {pretty} succeeded")
+
+
+def program_lifecycle(
+    family: FamilyRevision,
+    debug_probe_params: DebugProbeParams,
+    debug_mailbox_params: DebugMailboxParams,
+    lifecycle: int,
+) -> None:
+    """Program CMPA lifecycle via the debug mailbox.
+
+    :param family: Device family.
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
+    :param lifecycle: Encoded 32-bit lifecycle value to program.
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
+    if not 0 <= lifecycle <= 0xFFFFFFFF:
+        raise SPSDKAppError("Lifecycle value must fit into a 32-bit unsigned integer.")
+    try:
+        with _open_debugmbox(family, debug_probe_params, debug_mailbox_params) as mail_box:
+            dm_commands.ProgramLifecycle(dm=mail_box).run([lifecycle])
+    except Exception as e:
+        raise SPSDKAppError(f"Program lifecycle failed: {e}") from e
+
+
 @main.group("famode-image", cls=CommandsTreeGroup)
 def famode_image_group() -> None:
     """Group of sub-commands related to Fault Analysis Mode Image (related to some families)."""
@@ -877,7 +955,7 @@ def famode_image_export(config: Config) -> None:
     mbi_output_file_path = config.get_output_file_name("masterBootOutputFile")
     write_file(mbi_data, mbi_output_file_path, mode="wb")
 
-    click.echo(f"Success. (Master Boot Image: {mbi_output_file_path} created.)")
+    click.echo(f"Success. (Master Boot Image: {get_printable_path(mbi_output_file_path)} created.)")
 
 
 @famode_image_group.command(name="parse", no_args_is_help=True)
@@ -907,7 +985,10 @@ def famode_image_parse(family: FamilyRevision, binary: str, output: str) -> None
 
     write_file(yaml_data, os.path.join(output, "famode_config.yaml"))
 
-    click.echo(f"Success. (FA mode image: {binary} has been parsed and stored into {output} )")
+    click.echo(
+        f"Success. (FA mode image: {get_printable_path(binary)} has been parsed "
+        f"and stored into {get_printable_path(output)} )"
+    )
 
 
 @famode_image_group.command("get-templates", no_args_is_help=True)
@@ -1019,13 +1100,11 @@ def auth(
                 ).run(dar_data_words)
             logger.debug(f"DAR response: {dar_response}")
             if not no_exit:
+                based_on_ele = get_db(family).get_bool(DatabaseManager.DAT, "based_on_ele", False)
                 try:
                     exit_response = dm_commands.ExitDebugMailbox(dm=mail_box).run()
                     logger.debug(f"Exit response: {exit_response}")
                 except SPSDKError:
-                    based_on_ele = get_db(family).get_bool(
-                        DatabaseManager.DAT, "based_on_ele", False
-                    )
                     if based_on_ele:
                         logger.info(
                             "Exit command ends without response as usual on devices based on EdgeLock Enclave."
@@ -1034,8 +1113,11 @@ def auth(
                         logger.error(
                             "Exit command failed. Maybe too early reset happen on hardware."
                         )
+                if get_db(family).get_bool(DatabaseManager.DAT, "reset_after_auth", False):
+                    logger.info("Performing reset recovery and AHB access test.")
+                    mail_box.debug_probe.reset()
 
-                        # Do test of access to AHB bus with retry logic
+                # Do test of access to AHB bus with retry logic
                 sleep(0.2)
                 ahb_access_granted = False
                 max_attempts = 20
@@ -1211,9 +1293,9 @@ def nxp_ssf_insert_cert_command(
         f"Seed response: {response.hex()}"
     )
     if output_ecdsa_puk:
-        click.echo(f"ECDSA PUK saved to: {output_ecdsa_puk}")
+        click.echo(f"ECDSA PUK saved to: {get_printable_path(output_ecdsa_puk)}")
     if output_hybrid_puk:
-        click.echo(f"Hybrid PUK saved to: {output_hybrid_puk}")
+        click.echo(f"Hybrid PUK saved to: {get_printable_path(output_hybrid_puk)}")
 
 
 def nxp_ssf_insert_cert(
@@ -1221,8 +1303,8 @@ def nxp_ssf_insert_cert(
     debug_probe_params: DebugProbeParams,
     debug_mailbox_params: DebugMailboxParams,
     seed: bytes,
-    output_ecdsa_puk: Optional[str] = None,
-    output_hybrid_puk: Optional[str] = None,
+    output_ecdsa_puk: str | None = None,
+    output_hybrid_puk: str | None = None,
     response_delay: float = 1.0,
 ) -> bytes:
     """Command to create self-signed certificate as part of Self sign flow (SSF).
@@ -1477,7 +1559,7 @@ def dc_get_template(family: FamilyRevision, output: str) -> None:
     :param output: Path to output file.
     """
     try:
-        klass: Type[DebugCredentialCertificate] = DebugCredentialCertificate._get_class(
+        klass: type[DebugCredentialCertificate] = DebugCredentialCertificate._get_class(
             family=family
         )
     except SPSDKError:
@@ -1495,6 +1577,14 @@ def mem_group() -> None:
 @spsdk_family_option(get_families())  # All supported families by SPSDK
 @click.option("-a", "--address", type=INT(), required=True, help="Starting address")
 @click.option("-c", "--count", type=INT(), required=True, help="Number of bytes to read")
+@click.option(
+    "-s",
+    "--space",
+    type=click.Choice(MemorySpace.labels(), case_sensitive=False),
+    default=MemorySpace.DATA.label,
+    show_default=True,
+    help="Memory space to read from (DSC targets only). DATA: X: bus (default). PROGRAM: P: bus (16-bit words).",
+)
 @spsdk_output_option(required=False)
 @click.option("-h", "--use-hexdump", is_flag=True, default=False, help="Use hexdump format")
 @click.pass_obj
@@ -1503,14 +1593,16 @@ def read_memory_command(
     family: FamilyRevision,
     address: int,
     count: int,
+    space: str,
     output: str,
     use_hexdump: bool,
 ) -> None:
     """Reads the memory and writes it to the file or stdout."""
-    data = read_memory(family, pass_obj["debug_probe_params"], address, count)
+    mem_space = MemorySpace.from_label(space)
+    data = read_memory(family, pass_obj["debug_probe_params"], address, count, mem_space)
     if output:
         write_file(data, output, mode="wb")
-        click.echo(f"The memory has been read and written into {output}")
+        click.echo(f"The memory has been read and written into {get_printable_path(output)}")
     else:
         click.echo(format_raw_data(data, use_hexdump=use_hexdump))
 
@@ -1520,6 +1612,7 @@ def read_memory(
     debug_probe_params: DebugProbeParams,
     address: int,
     byte_count: int,
+    space: MemorySpace = MemorySpace.DATA,
 ) -> bytes:
     """Reads the memory.
 
@@ -1527,9 +1620,10 @@ def read_memory(
     :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
     :param address: Starting address.
     :param byte_count: Number of bytes to read.
+    :param space: Memory space selector (DATA or PROGRAM). Relevant for DSC targets only.
     :raises SPSDKAppError: Raised if any error occurred.
     """
-    data = bytes()
+    data = b""
     debug_probe_params.set_family(family)
     with open_debug_probe(
         interface=debug_probe_params.interface,
@@ -1539,7 +1633,7 @@ def read_memory(
     ) as debug_probe:
         debug_probe.connect_safe()
         try:
-            data = debug_probe.mem_block_read(addr=address, size=byte_count)
+            data = debug_probe.mem_block_read(addr=address, size=byte_count, space=space)
         except SPSDKError as exc:
             raise SPSDKAppError(str(exc)) from exc
 
@@ -1561,9 +1655,23 @@ def read_memory(
 )
 @optgroup.option("-h", "--hex-string", type=str, help="String of hex values. e.g. '1234', '12 34'")
 @click.option("-c", "--count", type=INT(), required=False, help="Number of bytes to write")
+@click.option(
+    "-s",
+    "--space",
+    type=click.Choice(MemorySpace.labels(), case_sensitive=False),
+    default=MemorySpace.DATA.label,
+    show_default=True,
+    help="Memory space to write to (DSC targets only). DATA: X: bus (default). PROGRAM: P: bus (16-bit words).",
+)
 @click.pass_obj
 def write_memory_command(
-    pass_obj: dict, family: FamilyRevision, address: int, file: str, hex_string: str, count: int
+    pass_obj: dict,
+    family: FamilyRevision,
+    address: int,
+    file: str,
+    hex_string: str,
+    count: int,
+    space: str,
 ) -> None:
     """Writes memory from a file or a hex-data."""
     if file:
@@ -1571,12 +1679,17 @@ def write_memory_command(
             data = f.read(count)
     else:
         data = bytes.fromhex(hex_string)[:count]
-    write_memory(family, pass_obj["debug_probe_params"], address, data)
+    mem_space = MemorySpace.from_label(space)
+    write_memory(family, pass_obj["debug_probe_params"], address, data, mem_space)
     click.echo("The memory has been written successfully.")
 
 
 def write_memory(
-    family: FamilyRevision, debug_probe_params: DebugProbeParams, address: int, data: bytes
+    family: FamilyRevision,
+    debug_probe_params: DebugProbeParams,
+    address: int,
+    data: bytes,
+    space: MemorySpace = MemorySpace.DATA,
 ) -> None:
     """Writes memory from a file or a hex-data.
 
@@ -1584,6 +1697,7 @@ def write_memory(
     :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
     :param address: Starting address.
     :param data: Data to write into memory.
+    :param space: Memory space selector (DATA or PROGRAM). Relevant for DSC targets only.
     :raises SPSDKAppError: Raised if any error occurred.
     """
     debug_probe_params.set_family(family)
@@ -1595,7 +1709,7 @@ def write_memory(
     ) as debug_probe:
         debug_probe.connect_safe()
         try:
-            debug_probe.mem_block_write(addr=address, data=data)
+            debug_probe.mem_block_write(addr=address, data=data, space=space)
         except SPSDKError as exc:
             raise SPSDKAppError(f"Failed to write memory: {str(exc)}") from exc
 
@@ -1623,6 +1737,8 @@ def test_connection_command(pass_obj: dict, family: FamilyRevision, destination:
     )
     access_str = colorama.Fore.GREEN if ahb_access_granted else colorama.Fore.RED + "NOT "
     click.echo(f"The test connection ends {access_str}successfully.{colorama.Fore.RESET}")
+    if not ahb_access_granted:
+        raise SPSDKAppError("The test connection was not successful.")
 
 
 def test_connection(
@@ -1633,7 +1749,7 @@ def test_connection(
     :param family: Device family
     :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
     :param destination: Test destination [cpu_mem, debug_port].
-    :raises SPSDKAppError: Raised if any error occurred.
+    :return: True when requested connectivity check passed, False otherwise.
     """
     debug_probe_params.set_family(family)
     try:
@@ -1654,8 +1770,9 @@ def test_connection(
                 except SPSDKError:
                     return False
             raise SPSDKAppError(f"Unsupported test connection destination: {destination}")
-    except Exception as e:
-        raise SPSDKAppError(f"Testing AHB access failed: {e}") from e
+    except Exception as exc:
+        logger.debug(f"Testing AHB access failed: {exc}")
+        return False
 
 
 @main.group("tool", cls=CommandsTreeGroup)
@@ -1729,7 +1846,23 @@ def get_uuid_command(pass_obj: dict, family: FamilyRevision) -> None:
     """Get the UUID from target if possible.
 
     Some devices need to call 'start' command prior the get-uuid!
-    Also there could be issue with repeating of this command without hard reset of device 'reset -h'.
+    Also there could be issue with repeating of this command without hard reset of device 'reset -h'.\n
+    If there is a fail to retrieve UUID from device: \n
+    Advice: the DAT prerequisites may not be satisfied. Verify before retrying:\n
+    1) Use the correct target family (-f); specify probe interface/serial number
+    if multiple probes are connected.\n
+    2) Ensure the DAT feature is active in the device configuration and
+    security state.\n
+    For older devices may use CMPA SECURE/UNSECURE
+    settings; MPU and lifecycle-based devices usually must be at least
+    OEM_CLOSED. See the reference manual.\n
+    3) Power-cycle or hard-reset target to a clean ROM state, then retry.\n
+    4) Close other debug sessions/tools that may hold the probe or alter target
+    state.\n
+    5) Confirm signed firmware is loaded and running; the device must not be
+    in ISP mode or Serial Downloader mode (for MPUs).\n
+    The get-uuid relies on the DAT procedure. If it fails, always check the reference manual
+    for this device and verify all required DAT prerequisites before retrying.\n
     """
     uuid = get_uuid(family, pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"])
     if uuid:
@@ -1742,7 +1875,7 @@ def get_uuid(
     family: FamilyRevision,
     debug_probe_params: DebugProbeParams,
     debug_mailbox_params: DebugMailboxParams,
-) -> Optional[bytes]:
+) -> bytes | None:
     """Get the UUID from target if possible.
 
     Some devices need to call 'start' command prior the get-uuid!
@@ -1787,8 +1920,26 @@ def get_uuid(
             # convert list[int] to bytes
             dac_data_bytes = struct.pack(f"<{len(dac_data)}I", *dac_data)
             dac = DebugAuthenticationChallenge.parse(dac_data_bytes, family=family)
-    except Exception as e:
-        raise SPSDKAppError(f"Getting UUID from target failed: {e}") from e
+    except SPSDKError as exc:
+        logger.warning(
+            f"Failed to retrieve UUID from '{family.name}' device: {exc}\n"
+            "Advice: the DAT prerequisites may not be satisfied. Verify before retrying:\n"
+            "  1) Use the correct target family (-f); specify probe interface/serial number "
+            "if multiple probes are connected.\n"
+            "  2) Ensure the DAT feature is active in the device configuration and "
+            "security state.\n"
+            f"     For '{family.name}': older devices may use CMPA SECURE/UNSECURE "
+            "settings; MPU and lifecycle-based devices usually must be at least "
+            "OEM_CLOSED. See the reference manual.\n"
+            "  3) Power-cycle or hard-reset target to a clean ROM state, then retry.\n"
+            "  4) Close other debug sessions/tools that may hold the probe or alter target "
+            "state.\n"
+            "  5) Confirm signed firmware is loaded and running; the device must not be "
+            "in ISP mode or Serial Downloader mode (for MPUs).\n"
+            "The get-uuid relies on the DAT procedure. If it fails, always check the reference manual "
+            "for this device and verify all required DAT prerequisites before retrying.\n"
+        )
+        return None
 
     if dac.uuid == bytes(16):
         logger.warning("The valid UUID is not included in DAC.")
@@ -1919,8 +2070,38 @@ def sda_auth(
         debug_probe_params=debug_probe_params.debug_probe_user_params,
         print_func=click.echo,
     ) as debug_probe:
-        sda = SdaAuthentication(debug_probe=debug_probe, family=family)
+        if not isinstance(debug_probe, DebugProbeCoreSightOnly):
+            raise SPSDKAppError(
+                "Selected debug probe doesn't support CoreSight operations required by SDA authentication."
+            )
+        sda = SdaAuthentication(
+            debug_probe=cast(DebugProbeCoreSightOnly, debug_probe), family=family
+        )
         sda.authenticate(adkp, auth_type)
+
+
+@tool_group.command(name="list-probes", no_args_is_help=False)
+def list_probes_command() -> None:
+    """List all connected debug probes in the system."""
+    list_probes()
+
+
+def list_probes() -> None:
+    """List all connected debug probes in the system.
+
+    This function scans all available debug probe interfaces and displays
+    information about all connected probes including interface type, hardware ID,
+    description, and supported architecture.
+    """
+    # Get all connected probes without any filters
+    debug_probes = get_connected_probes(interface=None, hardware_id=None, options=None)
+
+    if len(debug_probes) == 0:
+        click.echo("No debug probes found in the system.")
+        return
+
+    # The DebugProbes class __str__ method creates a formatted table
+    click.echo(str(debug_probes))
 
 
 @catch_spsdk_error

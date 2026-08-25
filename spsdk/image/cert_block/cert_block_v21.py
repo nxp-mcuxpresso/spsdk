@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2026 NXP
 #
@@ -16,8 +15,9 @@ Vx, and AHAB certificate blocks with their respective headers and structures.
 import logging
 import os
 import re
+from collections.abc import Sequence
 from struct import calcsize, pack, unpack_from
-from typing import Any, Optional, Sequence, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -77,9 +77,9 @@ class CertificateBlockHeader(BaseClass):
 
         :return: Binary representation of the certificate block header.
         """
-        major_format_version, minor_format_version = [
+        major_format_version, minor_format_version = (
             int(v) for v in self.format_version.split(".")
-        ]
+        )
 
         return pack(
             self.FORMAT,
@@ -264,9 +264,9 @@ class CertificateBlockHeaderV2_2(CertificateBlockHeader):
 
         :return: Binary representation of the certificate block header.
         """
-        major_format_version, minor_format_version = [
+        major_format_version, minor_format_version = (
             int(v) for v in self.format_version.split(".")
-        ]
+        )
 
         return pack(
             self.FORMAT,
@@ -380,7 +380,7 @@ class RootKeyRecord(BaseClass):
     def __init__(
         self,
         ca_flag: bool,
-        root_certs: Optional[Union[Sequence[PublicKeyEcc], Sequence[bytes]]] = None,
+        root_certs: Sequence[PublicKeyEcc] | Sequence[bytes] | None = None,
         used_root_cert: int = 0,
     ) -> None:
         """Initialize Root Key Record for certificate block.
@@ -520,7 +520,7 @@ class RootKeyRecord(BaseClass):
         :raises SPSDKError: Invalid length of exported data.
         :return: Binary representation of the root key record.
         """
-        data = bytes()
+        data = b""
         data += pack("<L", self.flags)
         data += self._rkht.export()
         data += self.root_public_key
@@ -876,11 +876,11 @@ class IskCertificate(BaseClass):
     def __init__(
         self,
         constraints: int = 0,
-        signature_provider: Optional[SignatureProvider] = None,
-        isk_cert: Optional[Union[PublicKeyEcc, bytes]] = None,
-        user_data: Optional[bytes] = None,
+        signature_provider: SignatureProvider | None = None,
+        isk_cert: PublicKeyEcc | bytes | None = None,
+        user_data: bytes | None = None,
         offset_present: bool = True,
-        family: Optional[FamilyRevision] = None,
+        family: FamilyRevision | None = None,
     ) -> None:
         """Initialize ISK certificate block.
 
@@ -900,7 +900,7 @@ class IskCertificate(BaseClass):
         self.constraints = constraints
         self.signature_provider = signature_provider
         self.isk_cert = convert_to_ecc_key(isk_cert) if isk_cert else None
-        self.user_data = user_data or bytes()
+        self.user_data = user_data or b""
         if family:
             db = get_db(family=family)
             isk_data_limit = db.get_int(DatabaseManager.CERT_BLOCK, "isk_data_limit")
@@ -911,11 +911,11 @@ class IskCertificate(BaseClass):
             isk_data_alignment = db.get_int(DatabaseManager.CERT_BLOCK, "isk_data_alignment")
             if len(self.user_data) % isk_data_alignment:
                 raise SPSDKError(f"ISK user data is not aligned to {isk_data_alignment} B.")
-        self.signature = bytes()
+        self.signature = b""
         self.coordinate_length = (
             self.signature_provider.signature_length // 2 if self.signature_provider else 0
         )
-        self.isk_public_key_data = self.isk_cert.export() if self.isk_cert else bytes()
+        self.isk_public_key_data = self.isk_cert.export() if self.isk_cert else b""
 
         self._calculate_flags()
 
@@ -1435,14 +1435,14 @@ class CertBlockV21(CertBlock):
     def __init__(
         self,
         family: FamilyRevision,
-        root_certs: Optional[Union[Sequence[PublicKeyEcc], Sequence[bytes]]] = None,
+        root_certs: Sequence[PublicKeyEcc] | Sequence[bytes] | None = None,
         ca_flag: bool = False,
         version: str = "2.1",
         used_root_cert: int = 0,
         constraints: int = 0,
-        signature_provider: Optional[SignatureProvider] = None,
-        isk_cert: Optional[Union[PublicKeyEcc, bytes]] = None,
-        user_data: Optional[bytes] = None,
+        signature_provider: SignatureProvider | None = None,
+        isk_cert: PublicKeyEcc | bytes | None = None,
+        user_data: bytes | None = None,
     ) -> None:
         """Initialize Certificate block with specified configuration.
 
@@ -1569,7 +1569,7 @@ class CertBlockV21(CertBlock):
         """
         key_record_data = self.root_key_record.export()
         self.header.cert_block_size = self.header.SIZE + len(key_record_data)
-        isk_cert_data = bytes()
+        isk_cert_data = b""
         if self.isk_certificate:
             self.isk_certificate.create_isk_signature(key_record_data)
             isk_cert_data = self.isk_certificate.export()
@@ -1729,7 +1729,7 @@ class CertBlockV21(CertBlock):
         cfg["signer"] = "N/A"
         cfg["signingCertificatePrivateKeyFile"] = "N/A"
         for i in range(self.root_key_record.number_of_certificates):
-            key: Optional[PublicKeyEcc] = None
+            key: PublicKeyEcc | None = None
             if i == self.root_key_record.used_root_cert:
                 key = convert_to_ecc_key(self.root_key_record.root_public_key)
             else:

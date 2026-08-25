@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2025 NXP
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK SB3.1 commands validation framework.
 
 This module provides a comprehensive validation system for SB3.1 secure boot file commands,
@@ -12,7 +12,7 @@ constraints to ensure proper command structure and dependencies.
 """
 
 import logging
-from typing import Any, Optional, Type
+from typing import Any
 
 from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb31.commands import CFG_NAME_TO_CLASS, BaseCmd
@@ -106,7 +106,7 @@ class ValidationResult:
     and error handling.
     """
 
-    def __init__(self, rule: "BaseRuleValidator", result: ResultType, reason: Optional[str] = None):
+    def __init__(self, rule: "BaseRuleValidator", result: ResultType, reason: str | None = None):
         """Initialize validation result with rule, result type and optional reason.
 
         :param rule: The rule validator instance that produced this result.
@@ -182,7 +182,7 @@ class BaseRuleValidator:
         """
         raise NotImplementedError("Subclasses must implement validate()")
 
-    def get_command_class(self, command_name: str) -> Optional[type[BaseCmd]]:
+    def get_command_class(self, command_name: str) -> type[BaseCmd] | None:
         """Get command class by name.
 
         Retrieves the command class associated with the specified command name from the
@@ -234,8 +234,8 @@ class MustFollowValidator(BaseRuleValidator):
         :param commands: List of commands to validate for proper sequencing
         :return: ValidationResult indicating success, failure, or warnings with details
         """
-        command_name: Optional[str] = self.rule.get("command")
-        following_command: Optional[str] = self.rule.get("following_cmd")
+        command_name: str | None = self.rule.get("command")
+        following_command: str | None = self.rule.get("following_cmd")
 
         if not command_name or not following_command:
             return ValidationResult(
@@ -359,8 +359,8 @@ class MustAppearAfterValidator(BaseRuleValidator):
         :return: ValidationResult with PASSED if ordering is correct, FAILED if target appears
                  before source, or WARNING if validation rule is incomplete or contains unknown commands
         """
-        source_command: Optional[str] = self.rule.get("command")
-        target_command: Optional[str] = self.rule.get("target_command")
+        source_command: str | None = self.rule.get("command")
+        target_command: str | None = self.rule.get("target_command")
 
         if not source_command or not target_command:
             return ValidationResult(
@@ -402,7 +402,7 @@ class MustAppearAfterValidator(BaseRuleValidator):
         return ValidationResult(self, ResultType.PASSED)
 
 
-COMMAND_VALIDATORS_MAP: dict[str, Type[BaseRuleValidator]] = {
+COMMAND_VALIDATORS_MAP: dict[str, type[BaseRuleValidator]] = {
     "must_follow": MustFollowValidator,
     "max_occurrences": MaxOccurrencesValidator,
     "must_appear_after": MustAppearAfterValidator,

@@ -71,6 +71,18 @@ signed_message:
       format: number
       template_value: 0
 
+    cert_version:
+      type: [number, string]
+      title: Container certificate version
+      description:
+        Certificate version stored in the container header (byte 14). This field is only
+        applicable to V2 signed message containers (e.g. i.MX943). In V2 format, the
+        cert_version and cert_permission fields are removed from the message header and
+        cert_version is placed here instead.
+      format: number
+      template_value: 0x00
+      skip_in_template: True
+
     check_all_signatures:
       type: string
       title: Check all signatures

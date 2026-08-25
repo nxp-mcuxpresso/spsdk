@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -14,8 +13,9 @@ the SPSDK ecosystem.
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from types import ModuleType, TracebackType
-from typing import Any, Optional, Sequence, Type, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -69,7 +69,7 @@ class SpsdkMultipleDevicesFoundError(SPSDKError):
         self,
         interface: str,
         scan_params: str,
-        interfaces: Optional[Sequence["ProtocolBase"]] = None,
+        interfaces: Sequence["ProtocolBase"] | None = None,
     ) -> None:
         """Initialize the SpsdkNoDeviceFoundError exception.
 
@@ -140,9 +140,9 @@ class ProtocolBase(ABC):
 
     def __exit__(
         self,
-        exception_type: Optional[Type[Exception]] = None,
-        exception_value: Optional[Exception] = None,
-        traceback: Optional[TracebackType] = None,
+        exception_type: type[Exception] | None = None,
+        exception_value: Exception | None = None,
+        traceback: TracebackType | None = None,
     ) -> None:
         """Close the protocol interface and clean up resources.
 
@@ -232,7 +232,7 @@ class ProtocolBase(ABC):
         """
 
     @abstractmethod
-    def read(self, length: Optional[int] = None) -> Union[CmdResponseBase, bytes]:
+    def read(self, length: int | None = None) -> CmdResponseBase | bytes:
         """Read data from device.
 
         :param length: Number of bytes to read. If None, reads all available data.
@@ -240,7 +240,7 @@ class ProtocolBase(ABC):
         """
 
     @classmethod
-    def _get_interface_classes(cls) -> list[Type[Self]]:
+    def _get_interface_classes(cls) -> list[type[Self]]:
         """Get list of all available interface classes.
 
         This method loads all plugins and returns a filtered list of subclasses that have
@@ -256,7 +256,7 @@ class ProtocolBase(ABC):
         ]
 
     @classmethod
-    def get_interface_class(cls, identifier: str) -> Type[Self]:
+    def get_interface_class(cls, identifier: str) -> type[Self]:
         """Get interface class by identifier.
 
         Retrieves a specific interface class from the available interface classes
@@ -290,8 +290,8 @@ class ProtocolBase(ABC):
     @classmethod
     def _get_subclasses(
         cls,
-        base_class: Type,
-    ) -> list[Type[Self]]:
+        base_class: type,
+    ) -> list[type[Self]]:
         """Get all subclasses of a base class recursively.
 
         This method traverses the inheritance hierarchy to find all direct and indirect

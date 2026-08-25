@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -10,7 +9,7 @@
 import struct
 from copy import deepcopy
 from enum import IntEnum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from typing_extensions import Self
 
@@ -171,7 +170,7 @@ class KeyInfo(FeatureBaseClass):
         smr_flags: HseSmrFlags,
         key_bit_len: HseKeyBits,
         key_counter: int = 0,
-        specific_data: Optional[Dict[str, Any]] = None,
+        specific_data: dict[str, Any] | None = None,
     ) -> None:
         """Initialize the key information structure.
 
@@ -305,7 +304,7 @@ class KeyInfo(FeatureBaseClass):
             block_mode_mask = HseAesBlockModeMask(self.specific[0])
             self.specific_data["aesBlockModeMask"] = block_mode_mask
 
-    def get_key_usage_flags(self) -> List[HseKeyFlags]:
+    def get_key_usage_flags(self) -> list[HseKeyFlags]:
         """Get the key usage flags.
 
         :return: List of key usage flag descriptions
@@ -316,7 +315,7 @@ class KeyInfo(FeatureBaseClass):
                 flags.append(flag)
         return flags
 
-    def get_key_access_flags(self) -> List[HseKeyFlags]:
+    def get_key_access_flags(self) -> list[HseKeyFlags]:
         """Get the key access flags.
 
         :return: List of key access flag descriptions

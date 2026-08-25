@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -15,7 +14,7 @@ classes for image description, command handling, and complete image assembly.
 import logging
 from datetime import datetime
 from struct import calcsize, pack, unpack, unpack_from
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from typing_extensions import Self
 
@@ -28,10 +27,11 @@ from spsdk.image.mbi.utils import get_ahab_supported_hashes, get_mbi_ahab_valida
 from spsdk.sbfile.sb31.images import SecureBinary31Commands
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.abstract_features import FeatureBaseClass
+from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
-from spsdk.utils.misc import align, align_block, load_hex_string
+from spsdk.utils.misc import BinaryPattern, align, align_block, load_hex_string
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
@@ -78,9 +78,9 @@ class SecureBinary4Descr(BaseClass):
 
     def __init__(
         self,
-        description: Optional[str] = None,
-        timestamp: Optional[int] = None,
-        hash_type: Optional[EnumHashAlgorithm] = None,  # left here for backward compatibility
+        description: str | None = None,
+        timestamp: int | None = None,
+        hash_type: EnumHashAlgorithm | None = None,  # left here for backward compatibility
     ) -> None:
         """Initialize the SecureBinary V4.0 Header.
 
@@ -104,7 +104,7 @@ class SecureBinary4Descr(BaseClass):
         self.max_block_size = 0
         self.oem_share_block = bytes(64)
 
-    def _adjust_description(self, description: Optional[str] = None) -> bytes:
+    def _adjust_description(self, description: str | None = None) -> bytes:
         """Format the description to fit fixed-length field.
 
         Adjusts the description to fit the fixed-length field by truncating if too long or
@@ -136,7 +136,7 @@ class SecureBinary4Descr(BaseClass):
 
         :return: Formatted string with header information.
         """
-        info = str()
+        info = ""
         info += f" Magic:                       {self.MAGIC.decode('ascii')}\n"
         info += f" Version:                     {self.FORMAT_VERSION}\n"
         info += f" Block count:                 {self.block_count}\n"
@@ -172,9 +172,9 @@ class SecureBinary4Descr(BaseClass):
 
         :return: Binary representation of the header as bytes.
         """
-        major_format_version, minor_format_version = [
+        major_format_version, minor_format_version = (
             int(v) for v in self.FORMAT_VERSION.split(".")
-        ]
+        )
         return pack(
             self.MANIFEST_FORMAT,
             self.MAGIC,
@@ -281,7 +281,7 @@ class SecureBinary4Commands(SecureBinary31Commands):
         offset: int,
         block_size: int,
         block_hash: bytes,
-        hash_type: Optional[EnumHashAlgorithm] = EnumHashAlgorithm.SHA384,
+        hash_type: EnumHashAlgorithm | None = EnumHashAlgorithm.SHA384,
     ) -> tuple[int, int, bytes, bytes]:
         """Parse the block header from the input data and verify its integrity.
 
@@ -382,8 +382,8 @@ class SecureBinary4(FeatureBaseClass):
         family: FamilyRevision,
         container: AHABContainerV2,
         sb_commands: SecureBinary4Commands,
-        description: Optional[str] = None,
-        reference_value: Optional[bytes] = None,
+        description: str | None = None,
+        reference_value: bytes | None = None,
     ) -> None:
         """Initialize Secure Binary v4.0 data container.
 
@@ -733,6 +733,76 @@ class SecureBinary4(FeatureBaseClass):
 
         return ret
 
+    def image_info(self) -> BinaryImage:
+        """Get SB4.0 image information as a structured binary image object.
+
+        Creates a hierarchical BinaryImage structure containing the complete SB4.0
+        file layout, including the AHAB container, SB descriptor, optional reference
+        value image, and command blocks with proper offsets and metadata.
+
+        :return: Binary image object with complete SB4.0 image structure and layout.
+        """
+        exported = self.export()
+        ret = BinaryImage(
+            name="SB4.0 Image",
+            size=len(exported),
+            offset=0,
+            description=f"SB4.0 Image for {self.family}",
+            pattern=BinaryPattern("zeros"),
+        )
+
+        # AHAB Container
+        ahab_data = align_block(self.container.export(), alignment=self.SB4_BLOCK_ALIGNMENT)
+        ahab_image = BinaryImage(
+            name="AHAB Container",
+            size=len(ahab_data),
+            offset=0,
+            description=f"AHAB Container v2 (header length: {self.container.header_length()} B)",
+        )
+        ret.add_image(ahab_image)
+
+        # SB Descriptor
+        sb_descr_offset = len(ahab_data)
+        sb_descr_data = self.sb_descriptor.export()
+        sb_descr_image = BinaryImage(
+            name="SB4.0 Descriptor",
+            size=len(sb_descr_data),
+            offset=sb_descr_offset,
+            description=(
+                f"Blocks: {self.sb_descriptor.block_count}, "
+                f"Description: {self.sb_descriptor.original_description}"
+            ),
+        )
+        ret.add_image(sb_descr_image)
+
+        current_offset = sb_descr_offset + len(sb_descr_data)
+
+        # Reference Value Image (optional)
+        if len(self.container.image_array) > 1:
+            ref_data = self.container.image_array[1].image
+            ref_offset = align(current_offset, alignment=self.SB4_BLOCK_ALIGNMENT)
+            ref_image = BinaryImage(
+                name="Reference Value",
+                size=len(ref_data),
+                offset=ref_offset,
+                description="Reference value image for secure boot",
+            )
+            ret.add_image(ref_image)
+            current_offset = ref_offset + len(ref_data)
+
+        # SB Commands Block
+        commands_offset = align(current_offset, alignment=self.SB4_BLOCK_ALIGNMENT)
+        commands_size = len(exported) - commands_offset
+        commands_image = BinaryImage(
+            name="SB4.0 Commands",
+            size=commands_size,
+            offset=commands_offset,
+            description=f"Encrypted command blocks (hash: {self.sb_descriptor.hash_type.label})",
+        )
+        ret.add_image(commands_image)
+
+        return ret
+
     def export(self) -> bytes:
         """Generate binary output of SB4.0 file.
 
@@ -741,7 +811,7 @@ class SecureBinary4(FeatureBaseClass):
 
         :return: Content of SB4.0 file in bytes
         """
-        final_data = bytes()
+        final_data = b""
 
         sb3_commands_data = self.sb_commands.export()
         # HEADER OF SB 4.0 FILE
@@ -805,8 +875,8 @@ class SecureBinary4(FeatureBaseClass):
     def parse(
         cls,
         data: bytes,
-        family: Optional[FamilyRevision] = None,
-        pck: Optional[str] = None,
+        family: FamilyRevision | None = None,
+        pck: str | None = None,
         kdk_access_rights: int = 0,
     ) -> Self:
         """Deserialize object from bytes array.

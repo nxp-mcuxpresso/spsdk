@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -12,8 +11,8 @@ which are used to write specific values to memory addresses during secure boot o
 The module includes command operations enumeration and the main WriteData command class.
 """
 
+from collections.abc import Iterable, Iterator
 from struct import pack, unpack_from
-from typing import Iterable, Iterator, Optional
 
 from typing_extensions import Self
 
@@ -75,7 +74,7 @@ class CmdWriteData(CmdBase):
         self,
         numbytes: int = 4,
         ops: WriteDataOpsEnum = WriteDataOpsEnum.WRITE_VALUE,
-        data: Optional[Iterable[tuple[int, int]]] = None,
+        data: Iterable[tuple[int, int]] | None = None,
     ) -> None:
         """Initialize Write Data command.
 

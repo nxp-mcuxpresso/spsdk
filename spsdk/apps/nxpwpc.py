@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -28,7 +27,7 @@ from spsdk.apps.utils.common_cli_options import (
 from spsdk.apps.utils.utils import catch_spsdk_error
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import load_binary, write_file
+from spsdk.utils.misc import get_printable_path, load_binary, write_file
 from spsdk.wpc.wpc import WPC, ConfigCheckScope, WPCCertChain
 
 
@@ -160,7 +159,9 @@ def get_template(service_type: str, target_type: str, family: FamilyRevision, ou
         target=WPC.TARGETS[target_type],
     )
     write_file(template, output)
-    click.echo(f"The WPC template for {family} has been saved into {output} YAML file")
+    click.echo(
+        f"The WPC template for {family} has been saved into {get_printable_path(output)} YAML file"
+    )
 
 
 @catch_spsdk_error

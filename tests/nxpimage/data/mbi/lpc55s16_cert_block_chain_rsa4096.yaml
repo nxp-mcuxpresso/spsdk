@@ -1,0 +1,15 @@
+# Copyright 2024-2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# =========================================  Certification Block V1 template  ==========================================
+# lpc55s16 cert block config referencing RSA4096 chain certificate (for warning test)
+# Keys and certificates are generated dynamically by the test.
+
+family: lpc55s16
+imageBuildNumber: 0
+signer: type=file;file_path=keys_and_certs/lpc55s16_chain_rsa4096.pem
+rootCertificate0File: keys_and_certs/lpc55s16_root_rsa4096.der
+mainRootCertId: 0
+chainCertificate0File0: keys_and_certs/lpc55s16_chain_rsa4096.der
+containerOutputFile: cert_block.bin

@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.10", "3.13"]
+        python-version: ["3.10", "3.14"]
 
     name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
     steps:
@@ -37,11 +37,11 @@ jobs:
 
       - name:  Install OS Dependencies
         run:   |
+          # libudev-dev is required to build pymboot-rs (spsdk[rblhost]) from
+          # source on Linux, as its serialport/hidapi crates link against libudev.
+          # Needed on Python versions with no pre-built pymboot-rs wheel.
           if [ "$RUNNER_OS" == "Linux" ]; then
-            sudo apt-get update && sudo apt install -y libpcsclite-dev swig
-          fi
-          if [ "$RUNNER_OS" == "macOS" ]; then
-            brew install pcsc-lite swig
+            sudo apt-get update && sudo apt install -y libudev-dev
           fi
         shell: bash
 

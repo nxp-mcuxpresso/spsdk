@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -11,7 +10,6 @@ from pathlib import Path
 
 import pytest
 
-from spsdk.crypto.dilithium import IS_DILITHIUM_SUPPORTED
 from spsdk.crypto.keys import EccCurve, PrivateKeyEcc
 from spsdk.dice.gen_alias import (
     generate_fmc,
@@ -208,7 +206,6 @@ def test_generate_fmc_include_both_tables(tmp_path: Path) -> None:
     assert (tmp_path / "out.bin").exists()
 
 
-@pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="spsdk-pqc not installed")
 def test_generate_fmc_mldsa(tmp_path: Path) -> None:
     config = Config(
         {
@@ -222,7 +219,6 @@ def test_generate_fmc_mldsa(tmp_path: Path) -> None:
     assert (tmp_path / "out.bin").exists()
 
 
-@pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="spsdk-pqc not installed")
 def test_generate_fmc_mldsa_with_outputs(tmp_path: Path) -> None:
     config = Config(
         {

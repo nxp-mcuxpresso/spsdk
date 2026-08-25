@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -13,8 +12,8 @@ context. It includes feature enumerations and command classes for unlocking
 specific hardware capabilities.
 """
 
+from collections.abc import Iterator
 from struct import pack, unpack_from
-from typing import Iterator, Optional, Type, Union
 
 from typing_extensions import Self
 
@@ -76,7 +75,7 @@ class CmdUnlockBase(CmdBase):
             self._header.length += 8
 
     @classmethod
-    def get_unlock_class(cls, engine: EngineEnum) -> Type["CmdUnlockBase"]:
+    def get_unlock_class(cls, engine: EngineEnum) -> type["CmdUnlockBase"]:
         """Get unlock class based on the engine type.
 
         Factory method that returns the appropriate unlock command class for the specified
@@ -86,7 +85,7 @@ class CmdUnlockBase(CmdBase):
         :raises SPSDKKeyError: Unknown or unsupported unlock engine type.
         :return: Unlock command class corresponding to the engine type.
         """
-        unlock_classes: dict[EngineEnum, Type["CmdUnlockBase"]] = {
+        unlock_classes: dict[EngineEnum, type["CmdUnlockBase"]] = {
             EngineEnum.CAAM: CmdUnlockCAAM,
             EngineEnum.SNVS: CmdUnlockSNVS,
             EngineEnum.OCOTP: CmdUnlockOCOTP,
@@ -205,7 +204,7 @@ class CmdUnlockBase(CmdBase):
             raw_data += pack(">Q", self.uid)
         return raw_data
 
-    def get_unlock_features_config(self) -> Optional[str]:
+    def get_unlock_features_config(self) -> str | None:
         """Get unlock features as human-readable configuration string.
 
         Converts the internal features bitmask into a comma-separated list of feature labels
@@ -242,7 +241,7 @@ class CmdUnlock(CmdUnlockBase):
     CMD_IDENTIFIER = CmdName.UNLOCK
 
     @classmethod
-    def load_from_config(cls, config: Config, cmd_index: Optional[int] = None) -> Self:
+    def load_from_config(cls, config: Config, cmd_index: int | None = None) -> Self:
         """Load configuration into the unlock command.
 
         Creates an unlock command instance from the provided HAB image configuration by parsing
@@ -378,7 +377,7 @@ class CmdUnlockOCOTP(CmdUnlock):
 
     CMD_IDENTIFIER = CmdName.UNLOCK
 
-    def __init__(self, features: Union[int, UnlockOCOTPFeaturesEnum] = 0, uid: int = 0):
+    def __init__(self, features: int | UnlockOCOTPFeaturesEnum = 0, uid: int = 0):
         """Initialize OCOTP unlock command.
 
         Creates a new unlock command instance with specified features and unique identifier
@@ -479,7 +478,7 @@ class CmdUnlockCAAM(CmdUnlock):
 
     CMD_IDENTIFIER = CmdName.UNLOCK
 
-    def __init__(self, features: Union[int, UnlockCAAMFeaturesEnum] = 0):
+    def __init__(self, features: int | UnlockCAAMFeaturesEnum = 0):
         """Initialize CAAM unlock command.
 
         Creates a new unlock command instance for CAAM engine with specified features.
@@ -559,7 +558,7 @@ class CmdUnlockSNVS(CmdUnlock):
 
     CMD_IDENTIFIER = CmdName.UNLOCK
 
-    def __init__(self, features: Union[int, UnlockSNVSFeaturesEnum] = 0) -> None:
+    def __init__(self, features: int | UnlockSNVSFeaturesEnum = 0) -> None:
         """Initialize SNVS unlock command.
 
         :param features: Mask of unlock features, either as integer or UnlockSNVSFeaturesEnum value.

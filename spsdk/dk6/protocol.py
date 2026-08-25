@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -13,7 +12,6 @@ including ISP mode handling and low-level command/response processing.
 
 import struct
 import time
-from typing import Union
 
 from spsdk import get_logger
 from spsdk.dk6.commands import (
@@ -127,7 +125,7 @@ class DK6Protocol:
 
         return response
 
-    def mem_get_info(self, memory_id: Union[MemoryId, int] = MemoryId.FLASH) -> MemGetInfoResponse:
+    def mem_get_info(self, memory_id: MemoryId | int = MemoryId.FLASH) -> MemGetInfoResponse:
         """Get memory information for the specified memory ID.
 
         Retrieves detailed memory information such as size, length, and other properties

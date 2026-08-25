@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,7 +14,6 @@ comparison utilities used across SPSDK image processing components.
 
 import io
 from io import SEEK_CUR
-from typing import Optional, Union
 
 from spsdk.exceptions import SPSDKError
 from spsdk.image.exceptions import SPSDKNotEnoughBytesException, SPSDKStreamReadFailed
@@ -58,9 +56,9 @@ def modulus_fmt(modulus: bytes, tab: int = 4, length: int = 15, sep: str = ":") 
 
 
 def read_raw_data(
-    stream: Union[io.BufferedReader, io.BytesIO],
+    stream: io.BufferedReader | io.BytesIO,
     length: int,
-    index: Optional[int] = None,
+    index: int | None = None,
     no_seek: bool = False,
 ) -> bytes:
     """Read raw data from a stream at specified position.

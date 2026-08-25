@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -20,7 +19,7 @@ import platform
 import re
 import sys
 from datetime import datetime
-from typing import Optional, TextIO
+from typing import TextIO
 
 import colorama
 
@@ -113,10 +112,10 @@ class ColoredFormatter(logging.Formatter):
 
 
 def install(
-    level: Optional[int] = None,
+    level: int | None = None,
     stream: TextIO = sys.stderr,
-    colored: Optional[bool] = None,
-    logger: Optional[logging.Logger] = None,
+    colored: bool | None = None,
+    logger: logging.Logger | None = None,
     create_debug_logger: bool = True,
 ) -> None:
     """Install SPSDK log handler for colored output.
@@ -155,25 +154,41 @@ def install(
         color = colored
         # enforce color if specified in constructor
 
-    # Create and configure console handler
-    handler = logging.StreamHandler(stream)
-    handler.setLevel(level)  # Only show messages at specified level and above in console
-    handler.setFormatter(ColoredFormatter(color))
-
-    # Add the handler to the target logger
-    target_logger.addHandler(handler)
+    formatter = ColoredFormatter(color)
+    # Reuse existing SPSDK console handler to avoid duplicate log lines when install() is called
+    # repeatedly (for example from nested Click decorators and command callbacks).
+    console_handler = next(
+        (
+            h
+            for h in target_logger.handlers
+            if isinstance(h, logging.StreamHandler)
+            and not isinstance(h, logging.handlers.RotatingFileHandler)
+            and getattr(h, "_spsdk_console_handler", False)
+        ),
+        None,
+    )
+    if console_handler:
+        console_handler.setLevel(level)
+        console_handler.setFormatter(formatter)
+        console_handler.setStream(stream)
+    else:
+        handler = logging.StreamHandler(stream)
+        handler.setLevel(level)  # Only show messages at specified level and above in console
+        handler.setFormatter(formatter)
+        setattr(handler, "_spsdk_console_handler", True)
+        target_logger.addHandler(handler)
     target_logger.propagate = True
 
     # Create and configure debug file logger if requested
     if create_debug_logger and not SPSDK_DEBUG_LOGGING_DISABLED:
         try:
-            if target_logger.hasHandlers():
-                for h in target_logger.handlers:
-                    if (
-                        isinstance(h, logging.handlers.RotatingFileHandler)
-                        and h.baseFilename == SPSDK_DEBUG_LOG_FILE
-                    ):
-                        return  # Prevent multiple debug file handlers
+            debug_handler_exists = any(
+                isinstance(h, logging.handlers.RotatingFileHandler)
+                and h.baseFilename == SPSDK_DEBUG_LOG_FILE
+                for h in target_logger.handlers
+            )
+            if debug_handler_exists:
+                return
             # Create debug log directory if it doesn't exist
             os.makedirs(os.path.dirname(SPSDK_DEBUG_LOG_FILE), exist_ok=True)
             # Create and configure a rotating file handler

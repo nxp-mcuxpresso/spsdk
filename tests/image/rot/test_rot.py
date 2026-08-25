@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -13,7 +12,6 @@ class instantiation across different MCU families.
 """
 
 import os
-from typing import List, Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -26,7 +24,7 @@ from spsdk.image.cert_block.rot import Rot, RotBase, RotCertBlockv1, RotCertBloc
 from spsdk.utils.family import FamilyRevision
 
 
-def load_keys(tests_root_dir: str, key_type: str, nr_keys: int = 4) -> List[PublicKey]:
+def load_keys(tests_root_dir: str, key_type: str, nr_keys: int = 4) -> list[PublicKey]:
     """Load cryptographic keys from test data directory.
 
     Loads a specified number of public keys of a given type from the test data
@@ -47,7 +45,7 @@ def load_keys(tests_root_dir: str, key_type: str, nr_keys: int = 4) -> List[Publ
     return keys
 
 
-def load_certs(tests_root_dir: str, cert_type: str, nr_certs: int = 4) -> List[Certificate]:
+def load_certs(tests_root_dir: str, cert_type: str, nr_certs: int = 4) -> list[Certificate]:
     """Load certificates from test data directory.
 
     Loads a specified number of self-signed certificates of a given type from the test data
@@ -70,7 +68,7 @@ def load_certs(tests_root_dir: str, cert_type: str, nr_certs: int = 4) -> List[C
 
 # Fixtures for test data
 @pytest.fixture
-def rsa2048_keys(tests_root_dir: str) -> List[PublicKey]:
+def rsa2048_keys(tests_root_dir: str) -> list[PublicKey]:
     """Create test RSA 2048-bit keys for testing purposes.
 
     Loads a set of RSA 2048-bit public keys from the test data directory
@@ -84,7 +82,7 @@ def rsa2048_keys(tests_root_dir: str) -> List[PublicKey]:
 
 
 @pytest.fixture
-def ecc256_keys(tests_root_dir: str) -> List[PublicKey]:
+def ecc256_keys(tests_root_dir: str) -> list[PublicKey]:
     """Create test ECC256 keys for testing purposes.
 
     Loads a set of ECC256 public keys from the test data directory for use in
@@ -98,7 +96,7 @@ def ecc256_keys(tests_root_dir: str) -> List[PublicKey]:
 
 
 @pytest.fixture
-def rsa2048_crts(tests_root_dir: str) -> List[Certificate]:
+def rsa2048_crts(tests_root_dir: str) -> list[Certificate]:
     """Create test RSA 2048-bit certificates for testing purposes.
 
     This function loads a set of 4 RSA 2048-bit certificates from the test data
@@ -264,7 +262,7 @@ def test_get_rot_class_invalid() -> None:
 def test_rot_cert_block_with_real_keys(
     rot_type: str,
     key_fixture: str,
-    hash_algorithm: Optional[EnumHashAlgorithm],
+    hash_algorithm: EnumHashAlgorithm | None,
     expected_hash: str,
     request: pytest.FixtureRequest,
 ) -> None:

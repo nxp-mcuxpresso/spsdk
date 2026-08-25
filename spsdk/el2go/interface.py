@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
@@ -15,9 +14,10 @@ for different boot modes and connection protocols.
 import logging
 import os
 from abc import abstractmethod
+from collections.abc import Callable
 from functools import wraps
 from types import TracebackType
-from typing import Any, Callable, Optional, Type, TypeVar, Union
+from typing import Any, TypeVar
 
 import click
 from hexdump import hexdump
@@ -148,8 +148,8 @@ class EL2GOInterfaceHandler:
 
     def __init__(
         self,
-        device: Union[McuBoot, UbootSerial, UbootFastboot],
-        family: Optional[FamilyRevision] = None,
+        device: McuBoot | UbootSerial | UbootFastboot,
+        family: FamilyRevision | None = None,
         print_func: Callable[[str], None] = click.echo,
     ) -> None:
         """Initialize EL2GO interface with device communication and configuration.
@@ -167,13 +167,13 @@ class EL2GOInterfaceHandler:
     def get_el2go_interface_handler(
         cls,
         interface_params: InterfaceConfig,
-        family: Optional[FamilyRevision] = None,
-        interface: Optional[str] = "mboot",
-        fb_addr: Optional[int] = None,
-        fb_size: Optional[int] = None,
-        usb_path: Optional[str] = None,
-        usb_serial: Optional[str] = None,
-        uboot_prompt: Optional[str] = None,
+        family: FamilyRevision | None = None,
+        interface: str | None = "mboot",
+        fb_addr: int | None = None,
+        fb_size: int | None = None,
+        usb_path: str | None = None,
+        usb_serial: str | None = None,
+        uboot_prompt: str | None = None,
     ) -> "EL2GOInterfaceHandler":
         """Get EL2GO interface handler based on the configuration.
 
@@ -304,7 +304,7 @@ class EL2GOInterfaceHandler:
         self.write_memory(address=address, data=data)
 
     @abstractmethod
-    def prepare(self, loader: Optional[str]) -> None:
+    def prepare(self, loader: str | None) -> None:
         """Optional preparation step for the EL2GO interface.
 
         This method allows for any necessary setup or initialization before
@@ -371,7 +371,7 @@ class EL2GOInterfaceHandler:
         self,
         client: EL2GOTPClient,
         secure_objects: bytes,
-        workspace: Optional[str] = None,
+        workspace: str | None = None,
         clean: bool = False,
     ) -> None:
         """Write secure objects to the device memory.
@@ -390,7 +390,7 @@ class EL2GOInterfaceHandler:
         self,
         client: EL2GOTPClient,
         secure_objects: bytes,
-        workspace: Optional[str] = None,
+        workspace: str | None = None,
         clean: bool = False,
     ) -> None:
         """Write secure objects to the device memory.
@@ -425,7 +425,7 @@ class EL2GOInterfaceHandler:
         self,
         client: EL2GOTPClient,
         dry_run: bool = False,
-    ) -> Optional[bytes]:
+    ) -> bytes | None:
         """Run provisioning using Batch mode.
 
         This method executes the batch provisioning process using the provided EL2GO TP client.
@@ -446,9 +446,9 @@ class EL2GOInterfaceHandler:
 
     def __exit__(
         self,
-        exception_type: Optional[Type[BaseException]] = None,
-        exception_value: Optional[BaseException] = None,
-        traceback: Optional[TracebackType] = None,
+        exception_type: type[BaseException] | None = None,
+        exception_value: BaseException | None = None,
+        traceback: TracebackType | None = None,
     ) -> None:
         """Close function of El2Go handler.
 
@@ -470,7 +470,7 @@ class El2GoInterfaceHandlerMboot(EL2GOInterfaceHandler):
     UUID extraction, memory operations, and secure object management on NXP MCUs.
     """
 
-    def __init__(self, device: McuBoot, family: Optional[FamilyRevision] = None) -> None:
+    def __init__(self, device: McuBoot, family: FamilyRevision | None = None) -> None:
         """Initialize EL2GO interface with MCU boot device.
 
         :param device: MCU boot device instance for communication.
@@ -586,7 +586,7 @@ class El2GoInterfaceHandlerMboot(EL2GOInterfaceHandler):
         self,
         client: EL2GOTPClient,
         secure_objects: bytes,
-        workspace: Optional[str] = None,
+        workspace: str | None = None,
         clean: bool = False,
     ) -> None:
         """Write secure objects to device memory using the specified EL2GO client configuration.
@@ -653,7 +653,7 @@ class El2GoInterfaceHandlerMboot(EL2GOInterfaceHandler):
         self,
         client: EL2GOTPClient,
         secure_objects: bytes,
-        workspace: Optional[str] = None,
+        workspace: str | None = None,
         clean: bool = False,
     ) -> None:
         """Write secure objects to the device memory for production environment.
@@ -695,7 +695,7 @@ class El2GoInterfaceHandlerMboot(EL2GOInterfaceHandler):
         logger.error(f"Send command {command} is not implemented for mboot")
         raise SPSDKError("Send command is not supported")
 
-    def prepare(self, loader: Optional[str]) -> None:
+    def prepare(self, loader: str | None) -> None:
         """Prepare device for provisioning.
 
         This method should be implemented by subclasses to perform device-specific
@@ -781,7 +781,7 @@ class El2GoInterfaceHandlerMboot(EL2GOInterfaceHandler):
         self,
         client: EL2GOTPClient,
         dry_run: bool = False,
-    ) -> Optional[bytes]:
+    ) -> bytes | None:
         """Run provisioning using Batch mode.
 
         This method executes the EL2GO Trust Provisioning process in batch mode using the MCUBoot
@@ -844,7 +844,7 @@ class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
     UUID_FUSE_READ_RESPONSE_START = "Word 0x00000000: "
 
     def __init__(
-        self, device: Union[UbootSerial, UbootFastboot], family: Optional[FamilyRevision] = None
+        self, device: UbootSerial | UbootFastboot, family: FamilyRevision | None = None
     ) -> None:
         """Initialize EL2GO interface with UBoot device.
 
@@ -871,7 +871,7 @@ class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
         logger.error("No version available for U-Boot interface")
         return "N/A"
 
-    def prepare(self, loader: Optional[str]) -> None:
+    def prepare(self, loader: str | None) -> None:
         """Prepare device for provisioning by establishing connection and loading bootloader if needed.
 
         This method handles device preparation for EL2GO provisioning. For UbootFastboot devices,
@@ -994,7 +994,7 @@ class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
         self,
         client: EL2GOTPClient,
         secure_objects: bytes,
-        workspace: Optional[str] = None,
+        workspace: str | None = None,
         clean: bool = False,
     ) -> None:
         """Write secure objects to the target device.
@@ -1015,7 +1015,7 @@ class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
         self,
         client: EL2GOTPClient,
         secure_objects: bytes,
-        workspace: Optional[str] = None,
+        workspace: str | None = None,
         clean: bool = False,
     ) -> None:
         """Write secure objects to the device memory for production environment.
@@ -1036,7 +1036,7 @@ class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
         self,
         client: EL2GOTPClient,
         secure_objects: bytes,
-        workspace: Optional[str] = None,
+        workspace: str | None = None,
         clean: bool = False,
     ) -> None:
         """Write secure objects to the device memory using U-Boot interface.
@@ -1142,7 +1142,7 @@ class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
         self,
         client: EL2GOTPClient,
         dry_run: bool = False,
-    ) -> Optional[bytes]:
+    ) -> bytes | None:
         """Run provisioning using Batch mode.
 
         The method executes batch provisioning which is equivalent to regular provisioning

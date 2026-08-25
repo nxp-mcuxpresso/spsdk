@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -12,7 +11,7 @@ including packet transmission, CRC calculation, and response parsing utilities.
 """
 
 import struct
-from typing import Any, Optional, Union
+from typing import Any
 
 from spsdk import get_logger
 from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
@@ -138,7 +137,7 @@ class Uart:
         )
         return parse_cmd_response(data, frame_type)
 
-    def write(self, frame_type: CommandTag, packet: Union[CmdPacket, bytes, None]) -> None:
+    def write(self, frame_type: CommandTag, packet: CmdPacket | bytes | None) -> None:
         """Write data to the device.
 
         Data might be in form of 'CmdPacket' or bytes. The method automatically converts
@@ -209,7 +208,7 @@ class Uart:
         self._write(frame)
 
     @staticmethod
-    def create_frame(data: Optional[bytes], frame_type: Union[int, CommandTag]) -> bytes:
+    def create_frame(data: bytes | None, frame_type: int | CommandTag) -> bytes:
         """Encapsulate data into frame for UART communication.
 
         Creates a properly formatted frame with start byte, length, frame type,
@@ -243,7 +242,7 @@ class Uart:
         return frame
 
     @staticmethod
-    def calc_frame_crc(data: Optional[bytes], frame_type: Union[int, CommandTag]) -> int:
+    def calc_frame_crc(data: bytes | None, frame_type: int | CommandTag) -> int:
         """Calculate the CRC of a frame.
 
         The method constructs frame data with header information and calculates CRC checksum

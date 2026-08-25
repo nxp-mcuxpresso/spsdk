@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -12,7 +11,6 @@ for SPSDK applications using the libusbsio library.
 """
 
 import logging
-from typing import Optional
 
 import libusbsio
 from typing_extensions import Self
@@ -39,14 +37,14 @@ class UsbDevice(DeviceBase):
 
     def __init__(
         self,
-        vid: Optional[int] = None,
-        pid: Optional[int] = None,
-        path: Optional[bytes] = None,
-        serial_number: Optional[str] = None,
-        vendor_name: Optional[str] = None,
-        product_name: Optional[str] = None,
-        interface_number: Optional[int] = None,
-        timeout: Optional[int] = None,
+        vid: int | None = None,
+        pid: int | None = None,
+        path: bytes | None = None,
+        serial_number: str | None = None,
+        vendor_name: str | None = None,
+        product_name: str | None = None,
+        interface_number: int | None = None,
+        timeout: int | None = None,
     ) -> None:
         """Initialize the USB interface object.
 
@@ -135,7 +133,7 @@ class UsbDevice(DeviceBase):
             except Exception as error:
                 raise SPSDKConnectionError(f"Unable to close device '{str(self)}'") from error
 
-    def read(self, length: int, timeout: Optional[int] = None) -> bytes:
+    def read(self, length: int, timeout: int | None = None) -> bytes:
         """Read data on the IN endpoint associated to the HID interface.
 
         :param length: Number of bytes to read from the device.
@@ -157,7 +155,7 @@ class UsbDevice(DeviceBase):
             raise SPSDKTimeoutError()
         return data
 
-    def write(self, data: bytes, timeout: Optional[int] = None) -> None:
+    def write(self, data: bytes, timeout: int | None = None) -> None:
         """Send data to device.
 
         Writes the provided data bytes to the connected USB device using the specified timeout.
@@ -224,9 +222,9 @@ class UsbDevice(DeviceBase):
     @classmethod
     def scan(
         cls,
-        device_id: Optional[str] = None,
-        usb_devices_filter: Optional[dict[str, list[UsbId]]] = None,
-        timeout: Optional[int] = None,
+        device_id: str | None = None,
+        usb_devices_filter: dict[str, list[UsbId]] | None = None,
+        timeout: int | None = None,
     ) -> list[Self]:
         """Scan connected USB devices.
 
@@ -246,7 +244,7 @@ class UsbDevice(DeviceBase):
 
     @classmethod
     def enumerate(
-        cls, usb_device_filter: USBDeviceFilter, timeout: Optional[int] = None
+        cls, usb_device_filter: USBDeviceFilter, timeout: int | None = None
     ) -> list[Self]:
         """Enumerate all connected USB devices matching the specified filter criteria.
 

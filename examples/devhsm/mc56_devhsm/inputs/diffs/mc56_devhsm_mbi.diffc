@@ -1,0 +1,15 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/templates/mwct20d2_xip_signed.yaml
+user_cfg: inputs/configs/mbi_xip.yaml
+custom_command: "%! nxpimage -v mbi get-templates -f mwct20d2 -o workspace/templates --force"
+
+comments:
+  signer: "Add path to your private key file for signing"
+  certBlock: "Add path to binary certificate block"
+  bca: "Not used"
+  fcf: "Not used"
+  addCertHash: "We have to add hash of the certificate to the MBI, because it is not yet programmed to IFR"

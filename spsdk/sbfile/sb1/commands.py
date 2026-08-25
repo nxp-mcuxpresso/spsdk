@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,7 +11,7 @@ commands within the SPSDK framework. It includes command parsing capabilities an
 integrates with the SB2 command infrastructure for unified command processing.
 """
 
-from typing import Mapping, Type
+from collections.abc import Mapping
 
 from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb2.commands import (
@@ -31,7 +30,7 @@ from spsdk.sbfile.sb2.commands import (
 )
 
 # mapping of V1.x command to the implementation class
-_CMDV1_TO_CLASS: Mapping[EnumCmdTag, Type[CmdBaseClass]] = {
+_CMDV1_TO_CLASS: Mapping[EnumCmdTag, type[CmdBaseClass]] = {
     EnumCmdTag.NOP: CmdNop,
     EnumCmdTag.TAG: CmdTag,
     EnumCmdTag.LOAD: CmdLoad,

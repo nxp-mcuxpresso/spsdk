@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -14,7 +13,6 @@ headers used in SB1 file format processing.
 
 from datetime import datetime
 from struct import calcsize, pack, unpack_from
-from typing import Optional
 
 from typing_extensions import Self
 
@@ -87,7 +85,7 @@ class SecureBootHeaderV1(BaseClass):
         flags: int = 0,
         drive_tag: int = 0,
         digest: bytes = b"\0" * 20,
-        timestamp: Optional[datetime] = None,
+        timestamp: datetime | None = None,
     ) -> None:
         """Initialize SecureBootHeaderV1.
 
@@ -204,7 +202,7 @@ class SecureBootHeaderV1(BaseClass):
 
     def export(
         self,
-        padding8: Optional[bytes] = None,
+        padding8: bytes | None = None,
     ) -> bytes:
         """Export header to binary format.
 
@@ -215,7 +213,7 @@ class SecureBootHeaderV1(BaseClass):
             Should only be specified for regression testing to ensure reproducible results.
         :return: Binary representation of the header with digest prepended.
         """
-        major_version, minor_version = [int(v) for v in self.version.split(".")]
+        major_version, minor_version = (int(v) for v in self.version.split("."))
         product_version_words = [swap16(n) for n in self.product_version.nums]
         component_version_words = [swap16(n) for n in self.component_version.nums]
         signature2 = random_bytes(4)
@@ -569,6 +567,6 @@ class BootSectionHeaderV1(CmdTag):
         :param data: Raw bytes data to be parsed into header object.
         :return: Parsed BootSectionHeaderV1 instance.
         """
-        cmd_tag = super(BootSectionHeaderV1, cls).parse(data)
+        cmd_tag = super().parse(data)
         assert isinstance(cmd_tag, BootSectionHeaderV1)
         return cmd_tag

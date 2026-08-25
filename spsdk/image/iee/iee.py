@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -16,7 +15,7 @@ import logging
 import os
 from copy import deepcopy
 from struct import pack
-from typing import Any, Optional, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -251,10 +250,10 @@ class IeeKeyBlob:
         attributes: IeeKeyBlobAttribute,
         start_addr: int,
         end_addr: int,
-        key1: Optional[bytes] = None,
-        key2: Optional[bytes] = None,
+        key1: bytes | None = None,
+        key2: bytes | None = None,
         page_offset: int = 0,
-        crc: Optional[bytes] = None,
+        crc: bytes | None = None,
     ):
         """Initialize IEE keyblob with encryption parameters and memory region.
 
@@ -323,7 +322,7 @@ class IeeKeyBlob:
 
         :return: Key blob exported into binary form with proper alignment and CRC.
         """
-        result = bytes()
+        result = b""
         result += pack("<II", self.HEADER_TAG, self.KEYBLOB_VERSION)
         result += self.attributes.export()
         result += pack("<I", self.page_offset)
@@ -371,7 +370,7 @@ class IeeKeyBlob:
             <= self.end_addr.
         :return: Encrypted data as bytes.
         """
-        encrypted_data = bytes()
+        encrypted_data = b""
         current_start = base_address
         key1 = reverse_bytes_in_longs(self.key1)
         key2 = reverse_bytes_in_longs(self.key2)
@@ -400,7 +399,7 @@ class IeeKeyBlob:
         :param data: Data to be encrypted (e.g. plain image); base_address + len(data) must be <= self.end_addr
         :return: Encrypted data as bytes
         """
-        encrypted_data = bytes()
+        encrypted_data = b""
         key = reverse_bytes_in_longs(self.key1)
         nonce = reverse_bytes_in_longs(self.key2)
 
@@ -485,10 +484,10 @@ class Iee(FeatureBaseClass):
         self,
         family: FamilyRevision,
         keyblob_address: int,
-        ibkek1: Optional[Union[bytes, str]] = None,
-        ibkek2: Optional[Union[bytes, str]] = None,
-        key_blobs: Optional[list[IeeKeyBlob]] = None,
-        binaries: Optional[BinaryImage] = None,
+        ibkek1: bytes | str | None = None,
+        ibkek2: bytes | str | None = None,
+        key_blobs: list[IeeKeyBlob] | None = None,
+        binaries: BinaryImage | None = None,
         iee_export_filepath: str = "iee_full_image",
         keyblob_export_filepath: str = "iee_keyblob",
         generate_readme: bool = True,
@@ -621,7 +620,7 @@ class Iee(FeatureBaseClass):
 
         :return: Binary key blobs joined together and aligned to IEE_KEY_BLOBS_SIZE.
         """
-        result = bytes()
+        result = b""
         for key_blob in self._key_blobs:
             result += key_blob.plain_data()
 
@@ -630,8 +629,8 @@ class Iee(FeatureBaseClass):
 
     def encrypt_key_blobs(
         self,
-        ibkek1: Union[bytes, str],
-        ibkek2: Union[bytes, str],
+        ibkek1: bytes | str,
+        ibkek2: bytes | str,
         keyblob_address: int,
     ) -> bytes:
         """Encrypt keyblobs and export them as binary.
@@ -755,7 +754,7 @@ class Iee(FeatureBaseClass):
         """
         raise NotImplementedError
 
-    def export_image(self) -> Optional[BinaryImage]:
+    def export_image(self) -> BinaryImage | None:
         """Export encrypted image.
 
         This method processes all binary images and their segments, encrypting each binary
@@ -887,8 +886,8 @@ class Iee(FeatureBaseClass):
         :return: Initialized IEE object with configured key blobs and encryption settings.
         """
         family = FamilyRevision.load_from_config(config)
-        ibkek1: Optional[bytes] = None
-        ibkek2: Optional[bytes] = None
+        ibkek1: bytes | None = None
+        ibkek2: bytes | None = None
         try:
             ibkek1 = config.load_symmetric_key("ibkek1", expected_size=32)
             ibkek2 = config.load_symmetric_key("ibkek2", expected_size=32)

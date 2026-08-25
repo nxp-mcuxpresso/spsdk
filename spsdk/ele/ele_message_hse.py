@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -16,7 +15,7 @@ import math
 from abc import abstractmethod
 from dataclasses import dataclass
 from struct import calcsize, pack
-from typing import Optional, Type, Union, cast
+from typing import cast
 
 from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.keys import (
@@ -65,7 +64,7 @@ class EleMessageHse(EleMessage):
 
     CMD_HEADER_FORMAT: str = LITTLE_ENDIAN + UINT32 + UINT8 + UINT8 + UINT8 + UINT8
     CMD_DESCRIPTOR_FORMAT: str
-    MSG_IDS = cast(Type[MessageIDs], HseMessageIDs)
+    MSG_IDS = cast(type[MessageIDs], HseMessageIDs)
 
     class ServiceVersion(SpsdkEnum):
         """HSE service version enumeration.
@@ -133,7 +132,7 @@ class EleMessageHse(EleMessage):
 
         :return: Command data address as 4-byte little-endian bytes.
         """
-        ret = bytes()
+        ret = b""
         cmd_addr = self.command_data_address
         for _ in range(self.mu_channel.tag):
             ret += cmd_addr.to_bytes(4, byteorder=Endianness.LITTLE.value)
@@ -198,7 +197,7 @@ class EleMessageHse(EleMessage):
 
         :return: Complete command data as bytes.
         """
-        ret = bytes()
+        ret = b""
         for _ in range(self.mu_channel.tag):
             ret += self._get_dummy_command().export_command()
         ret += self.export_command()
@@ -349,7 +348,7 @@ class EleMessageHseGetAttr(EleMessageHseAttr):
         :param srv_version: Service version for the HSE message, defaults to VERSION_0.
         """
         super().__init__(attr_id, srv_version, mu_channel)
-        self.attr_value: Optional[HseAttributeHandler] = None
+        self.attr_value: HseAttributeHandler | None = None
         self.response_data_size = self.attr_handler_cls.get_size()
 
     def get_srv_descriptor(self) -> bytes:
@@ -403,7 +402,7 @@ class EleMessageHseSetAttr(EleMessageHseAttr):
     def __init__(
         self,
         attr_id: HseAttributeId,
-        value_addr: Optional[int] = None,
+        value_addr: int | None = None,
         srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
         mu_channel: MuChannel = MuChannel.CHANNEL_0,
     ) -> None:
@@ -479,8 +478,8 @@ class EleMessageHseBootDataImageSign(EleMessageHse):
             raise SPSDKValueError(f"Invalid tag length: {tag_len}. Must be 16 or 28.")
         self.tag_len = tag_len
         self.response_data_size = tag_len
-        self.initial_vector: Optional[bytes] = None
-        self.gmac_value: bytes = bytes()
+        self.initial_vector: bytes | None = None
+        self.gmac_value: bytes = b""
 
     def get_srv_descriptor(self) -> bytes:
         """Get service descriptor for HSE message.
@@ -538,7 +537,7 @@ class EleMessageHseBootDataImageSign(EleMessageHse):
 
         :return: Complete signature bytes containing optional initial vector followed by GMAC value.
         """
-        ret = bytes()
+        ret = b""
         if self.initial_vector:
             ret += self.initial_vector
         ret += self.gmac_value
@@ -713,7 +712,7 @@ class EleMessageHseGetKeyInfo(EleMessageHse):
         """
         super().__init__(srv_version, mu_channel)
         self.key_handle = key_handle
-        self.key_info: Optional[KeyInfo] = None
+        self.key_info: KeyInfo | None = None
         self.response_data_size = KeyInfo.get_size()
 
     def get_srv_descriptor(self) -> bytes:
@@ -816,12 +815,12 @@ class EleMessageHseSmrEntryInstall(EleMessageHse):
         self,
         access_mode: HseAccessMode,
         entry_index: int,
-        smr_entry_addr: Optional[int] = None,
-        smr_data_addr: Optional[int] = None,
-        smr_data_length: Optional[int] = None,
+        smr_entry_addr: int | None = None,
+        smr_data_addr: int | None = None,
+        smr_data_length: int | None = None,
         auth_tag_addrs: tuple[int, int] = (0, 0),
         auth_tag_lengths: tuple[int, int] = (0, 0),
-        cipher_params: Optional[HseSmrCipherParams] = None,
+        cipher_params: HseSmrCipherParams | None = None,
         srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
         mu_channel: MuChannel = MuChannel.CHANNEL_1,
     ):
@@ -1107,9 +1106,9 @@ class EleMessageHseImportKey(EleMessageHse):
         self,
         key_handle: KeyHandle,
         payload: "KeyImportPayload",
-        cipher_key_handle: Optional[KeyHandle] = None,
-        cipher_scheme: Optional[HseCipherSchemeBase] = None,
-        key_container: Optional[KeyContainer] = None,
+        cipher_key_handle: KeyHandle | None = None,
+        cipher_scheme: HseCipherSchemeBase | None = None,
+        key_container: KeyContainer | None = None,
         srv_version: EleMessageHse.ServiceVersion = EleMessageHse.ServiceVersion.VERSION_0,
         mu_channel: MuChannel = MuChannel.CHANNEL_1,
     ):
@@ -1204,7 +1203,7 @@ class KeyImportPayload:
     SUB_FEATURE = "key_import"
 
     def __init__(
-        self, key_info: KeyInfo, key: Union[PrivateKey, PublicKey, bytes], address: int = 0
+        self, key_info: KeyInfo, key: PrivateKey | PublicKey | bytes, address: int = 0
     ) -> None:
         """Initialize the key import structure.
 
@@ -1223,7 +1222,7 @@ class KeyImportPayload:
         return self.address
 
     @property
-    def key_lengths(self) -> list[Optional[int]]:
+    def key_lengths(self) -> list[int | None]:
         """Get the lengths of each key component.
 
         :return: List of lengths for each key component, None for missing components.
@@ -1232,7 +1231,7 @@ class KeyImportPayload:
         return key_lengths
 
     @property
-    def key_offsets(self) -> list[Optional[int]]:
+    def key_offsets(self) -> list[int | None]:
         """Calculate the offsets of each key component in the payload.
 
         The offsets are calculated relative to the start of the payload, with the key_info structure
@@ -1240,7 +1239,7 @@ class KeyImportPayload:
 
         :return: List of offsets for each key component, None for missing components.
         """
-        offsets: list[Optional[int]] = []
+        offsets: list[int | None] = []
         current_offset = self.key_info.size
 
         for length in self.key_lengths:
@@ -1289,8 +1288,8 @@ class KeyImportPayload:
 
     @staticmethod
     def convert_key(
-        key: Union["PrivateKey", "PublicKey", bytes], key_type: Optional[KeyType] = None
-    ) -> list[Optional[bytes]]:
+        key: PrivateKey | PublicKey | bytes, key_type: KeyType | None = None
+    ) -> list[bytes | None]:
         """Convert an SPSDK key to HSE key format.
 
         HSE key format consists of up to three chunks:
@@ -1306,7 +1305,7 @@ class KeyImportPayload:
         :return: List of up to three byte arrays representing the key components
         """
         # Initialize the three key parts
-        key_parts: list[Optional[bytes]] = [None, None, None]
+        key_parts: list[bytes | None] = [None, None, None]
 
         # Handle raw bytes (for symmetric keys like AES)
         if isinstance(key, bytes):

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023,2025 NXP
+# Copyright 2021-2023,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,7 @@ The tests cover BD file parsing, lexical analysis, statement parsing, expression
 evaluation, keystore operations, section handling, and error conditions.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 
@@ -423,7 +422,7 @@ def test_source_def_attr_list(input_text: str, throws_exception: bool) -> None:
         ),
     ],
 )
-def test_extern(input_text: str, throws_exception: bool, extern: Optional[list[str]]) -> None:
+def test_extern(input_text: str, throws_exception: bool, extern: list[str] | None) -> None:
     """Test that BD parser handles extern() function calls correctly.
 
     Validates that the parser properly stops execution when extern() function

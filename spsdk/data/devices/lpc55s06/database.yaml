@@ -134,6 +134,9 @@ features:
           field020-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
         field024: # DCFG_CC_SOCU_NS_DFLT
           field024-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+      monotonic_counters:
+        - field008  # S_FW_Version
+        - field00C  # NS_FW_Version
     cmpa: # CMPA description
       address: 0x3_E400
       size: 512

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2021-2026 NXP
 #
@@ -15,7 +14,7 @@ import logging
 import os
 from datetime import datetime
 from struct import calcsize, pack, unpack, unpack_from
-from typing import Any, Optional, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -69,9 +68,9 @@ class SecureBinary31Header(BaseClass):
         self,
         firmware_version: int,
         hash_type: EnumHashAlgorithm,
-        cert_block: Optional[CertBlockV21] = None,
-        description: Optional[str] = None,
-        timestamp: Optional[int] = None,
+        cert_block: CertBlockV21 | None = None,
+        description: str | None = None,
+        timestamp: int | None = None,
         is_nxp_container: bool = False,
         flags: int = 0,
     ) -> None:
@@ -99,9 +98,9 @@ class SecureBinary31Header(BaseClass):
 
         # Add fields for the complete Block 0 representation
         self.next_block_hash: bytes = bytes(get_hash_length(self.hash_type))
-        self.cert_block: Optional[CertBlockV21] = cert_block
+        self.cert_block: CertBlockV21 | None = cert_block
 
-    def _adjust_description(self, description: Optional[str] = None) -> bytes:
+    def _adjust_description(self, description: str | None = None) -> bytes:
         """Format the description to fixed-length byte array.
 
         Converts string description to ASCII bytes and pads or truncates to DESCRIPTION_LENGTH.
@@ -159,7 +158,7 @@ class SecureBinary31Header(BaseClass):
 
         :return: Formatted string with detailed SB v31 image information.
         """
-        info = str()
+        info = ""
         info += f" Magic:                       {self.MAGIC.decode('ascii')}\n"
         info += f" Version:                     {self.FORMAT_VERSION}\n"
         info += f" Flags:                       0x{self.flags:04X}\n"
@@ -209,9 +208,9 @@ class SecureBinary31Header(BaseClass):
 
         :return: Packed binary representation of the SB 3.1 header.
         """
-        major_format_version, minor_format_version = [
+        major_format_version, minor_format_version = (
             int(v) for v in self.FORMAT_VERSION.split(".")
-        ]
+        )
         return pack(
             self.HEADER_FORMAT,
             self.MAGIC,
@@ -386,7 +385,7 @@ class SecureBinary31Commands(BaseClass):
         self,
         family: FamilyRevision,
         hash_type: EnumHashAlgorithm,
-        timestamp: Optional[int] = None,
+        timestamp: int | None = None,
         encryption_provider: EncryptionProvider = NoEncryption(),
     ) -> None:
         """Initialize container for SB3.1 commands.
@@ -438,7 +437,7 @@ class SecureBinary31Commands(BaseClass):
         """
         return self.encryption_provider.is_encrypted
 
-    def add_command(self, command: Union[BaseCmd, list[BaseCmd]]) -> None:
+    def add_command(self, command: BaseCmd | list[BaseCmd]) -> None:
         """Add Secure Binary command to the image.
 
         The method accepts either a single command or a list of commands and adds them
@@ -471,7 +470,7 @@ class SecureBinary31Commands(BaseClass):
         self.commands = commands.copy()
 
     @classmethod
-    def load_pck(cls, pck_src: str, search_paths: Optional[list[str]] = None) -> bytes:
+    def load_pck(cls, pck_src: str, search_paths: list[str] | None = None) -> bytes:
         """Load Part Common Key from source.
 
         The method tries to load PCK with different supported sizes and returns the first
@@ -497,7 +496,7 @@ class SecureBinary31Commands(BaseClass):
         cls,
         config: Config,
         hash_type: EnumHashAlgorithm = EnumHashAlgorithm.SHA256,
-        timestamp: Optional[int] = None,
+        timestamp: int | None = None,
         load_just_commands: bool = False,
     ) -> Self:
         """Load SecureBinary commands from configuration.
@@ -688,7 +687,7 @@ class SecureBinary31Commands(BaseClass):
 
         :return: Formatted string with commands information.
         """
-        info = str()
+        info = ""
         info += "COMMANDS:\n"
         info += f"Number of commands: {len(self.commands)}\n"
         for command in self.commands:
@@ -741,13 +740,13 @@ class SecureBinary31Commands(BaseClass):
     def parse(
         cls,
         data: bytes,
-        family: Optional[FamilyRevision] = None,
+        family: FamilyRevision | None = None,
         block_size: int = 256,
-        pck: Optional[str] = None,
-        block1_hash: Optional[bytes] = None,
-        hash_type: Optional[EnumHashAlgorithm] = None,
+        pck: str | None = None,
+        block1_hash: bytes | None = None,
+        hash_type: EnumHashAlgorithm | None = None,
         kdk_access_rights: int = 0,
-        timestamp: Optional[int] = None,
+        timestamp: int | None = None,
     ) -> Self:
         """Parse binary data into SecureBinary31Commands.
 
@@ -927,11 +926,11 @@ class SecureBinary31(FeatureBaseClass):
         cert_block: CertBlockV21,
         firmware_version: int,
         sb_commands: SecureBinary31Commands,
-        description: Optional[str] = None,
+        description: str | None = None,
         is_nxp_container: bool = False,
         flags: int = 0,
-        signature_provider: Optional[SignatureProvider] = None,
-        signature: Optional[bytes] = None,
+        signature_provider: SignatureProvider | None = None,
+        signature: bytes | None = None,
     ) -> None:
         """Constructor for Secure Binary v3.1 data container.
 
@@ -1272,8 +1271,8 @@ class SecureBinary31(FeatureBaseClass):
     def parse(
         cls,
         data: bytes,
-        family: Optional[FamilyRevision] = None,
-        pck: Optional[str] = None,
+        family: FamilyRevision | None = None,
+        pck: str | None = None,
         kdk_access_rights: int = 0,
     ) -> Self:
         """Parse SecureBinary31 object from binary data.

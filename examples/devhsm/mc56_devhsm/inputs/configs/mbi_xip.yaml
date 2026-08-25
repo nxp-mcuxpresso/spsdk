@@ -1,0 +1,77 @@
+# Copyright 2024-2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ============================  mbi Configuration template for mwct20d2, Revision: latest.  ============================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mwct20d2
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <b1, latest>
+revision: latest
+# ======================================================================================================================
+#                                                  == Basic Settings ==                                                 
+# ======================================================================================================================
+# --------------------------------------===== Application target [Required] =====---------------------------------------
+# Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+# Possible options: <xip>
+outputImageExecutionTarget: xip
+# -------------------------------===== Type of boot image authentication [Required] =====-------------------------------
+# Description: Specification of final master boot image authentication.
+# Possible options: <signed, plain>
+outputImageAuthenticationType: signed
+# ---------------------------------------===== Output Image name [Required] =====---------------------------------------
+# Description: The path for result binary file.
+masterBootOutputFile: ../../workspace/mb_xip_signed.bin
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image to by modified to Master Boot Image.
+inputImageFile: ../blinky_oem_open.bin
+# -------------------------------------===== Generate only header [Optional] =====--------------------------------------
+# Description: Build only the boot headers (Vector table, BCA, FCB) 0x0..0x800 binary without the application. This is
+# needed for device HSM provisioning file in case the user set ROP2, ROP3.
+justHeader: false
+# ======================================================================================================================
+#                                   == BCA Configuration (Boot Configuration Array) ==                                  
+#               Boot Configuration Area settings. Default values are always loaded from application first.              
+#                                       BCA can be provided in one of three ways:                                       
+#            1. As a nested dictionary under the 'bca' key - copy values directly from the BCA.YAML template            
+#                 2. As a path to a YAML file containing BCA configuration - use 'bca: path/to/bca.yaml'                
+#                             3. As a path to a binary BCA file - use 'bca: path/to/bca.bin'                            
+#                                                                                                                       
+# If any BCA configuration is provided, it will update the application values accordingly. The binary option completely 
+#        replaces the BCA content, while the YAML and dictionary options selectively update BCA register values.        
+# ======================================================================================================================
+# bca: path/to/bca.yaml
+# ======================================================================================================================
+#                                  == FCF Configuration (Flash Configuration Field) ==                                  
+#              Flash Configuration Field settings. Default values are always loaded from application first.             
+#                                       FCF can be provided in one of three ways:                                       
+#            1. As a nested dictionary under the 'fcf' key - copy values directly from the FCF.YAML template            
+#                 2. As a path to a YAML file containing FCF configuration - use 'fcf: path/to/fcf.yaml'                
+#                             3. As a path to a binary FCF file - use 'fcf: path/to/fcf.bin'                            
+#                                                                                                                       
+# If any FCF configuration is provided, it will update the application values accordingly. The binary option completely 
+#        replaces the FCF content, while the YAML and dictionary options selectively update FCF register values.        
+# ======================================================================================================================
+# fcf: path/to/fcf.yaml
+# ======================================================================================================================
+#                                               == Certificate Block vX ==                                              
+# ======================================================================================================================
+# ---------------------------------===== Certificate Block binary file [Required] =====---------------------------------
+# Description: Path to certificate block.
+certBlock: ../../workspace/cert_block.bin
+# --------------===== True to append SHA256 hash [0:127] at the end of certificate block [Optional] =====---------------
+# Description: Not mandatory if the hash is written in OTP
+addCertHash: true
+# ======================================================================================================================
+#                                              == Image Signing Settings ==                                             
+# ======================================================================================================================
+# -------------------------------------===== Signer configuration [Required] =====--------------------------------------
+# Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>' or path to a
+# private key.
+signer: ../ec_pk_secp256r1_sign_cert.pem

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2026 NXP
 #
@@ -14,11 +13,19 @@ algorithms and sizes, ECDSA signature handling, and password-protected keys.
 """
 
 import os
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Type
+from typing import Any, cast
+from unittest.mock import patch
 
 import pytest
+from cryptography.hazmat.primitives.asymmetric.mldsa import (
+    MLDSA44PrivateKey,
+    MLDSA65PrivateKey,
+    MLDSA87PrivateKey,
+)
 
+from spsdk.crypto import keys as keys_module
 from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.dilithium import IS_DILITHIUM_SUPPORTED
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
@@ -60,6 +67,42 @@ from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError, SPSDKValueErr
 from spsdk.utils.misc import write_file
 
 KEYS_DIR = os.path.join(os.path.dirname(__file__), "..", "_data", "keys")
+
+
+def _is_supported_curve(ec_name: str) -> bool:
+    """Return whether the current cryptography backend supports the EC curve."""
+    try:
+        PrivateKeyEcc._get_ec_curve_object(ec_name)  # type: ignore[arg-type]
+        return True
+    except SPSDKValueError:
+        return False
+
+
+SUPPORTED_EC_CURVES = [
+    ec_name
+    for ec_name in [
+        "secp192r1",
+        "secp224r1",
+        "secp256r1",
+        "secp384r1",
+        "secp521r1",
+        "secp256k1",
+        "sect163k1",
+        "sect233k1",
+        "sect283k1",
+        "sect409k1",
+        "sect571k1",
+        "sect163r2",
+        "sect233r1",
+        "sect283r1",
+        "sect409r1",
+        "sect571r1",
+        "brainpoolP256r1",
+        "brainpoolP384r1",
+        "brainpoolP512r1",
+    ]
+    if _is_supported_curve(ec_name)
+]
 
 
 def test_rsa_sign(data_dir: str) -> None:
@@ -233,27 +276,7 @@ def test_keys_generation_4096(tmpdir: Any) -> None:
 
 @pytest.mark.parametrize(
     "ec_name",
-    [
-        "secp192r1",
-        "secp224r1",
-        "secp256r1",
-        "secp384r1",
-        "secp521r1",
-        "secp256k1",
-        "sect163k1",
-        "sect233k1",
-        "sect283k1",
-        "sect409k1",
-        "sect571k1",
-        "sect163r2",
-        "sect233r1",
-        "sect283r1",
-        "sect409r1",
-        "sect571r1",
-        "brainpoolP256r1",
-        "brainpoolP384r1",
-        "brainpoolP512r1",
-    ],
+    SUPPORTED_EC_CURVES,
 )
 def test_keys_generation_ec(tmpdir: Any, ec_name: str) -> None:
     """Test elliptic curve key generation and file operations.
@@ -265,7 +288,12 @@ def test_keys_generation_ec(tmpdir: Any, ec_name: str) -> None:
     :param tmpdir: Temporary directory path for saving key files.
     :param ec_name: Name of the elliptic curve to use for key generation.
     """
-    priv_key = PrivateKeyEcc.generate_key(curve_name=ec_name)  # type: ignore
+    try:
+        priv_key = PrivateKeyEcc.generate_key(curve_name=ec_name)  # type: ignore
+    except SPSDKValueError as exc:
+        if "is not supported" in str(exc):
+            pytest.skip(f"Curve {ec_name} is not supported by current cryptography backend.")
+        raise
     pub_key = priv_key.get_public_key()
     priv_key.save(os.path.join(tmpdir, f"key_{ec_name}.pem"))
     pub_key.save(os.path.join(tmpdir, f"key_{ec_name}.pub"))
@@ -441,7 +469,7 @@ def test_recreate_from_data(curve: EccCurve, coordinate_size: int) -> None:
         pytest.param(lambda: random_bytes(16).hex(), bytes, id="hex_string"),
     ],
 )
-def test_load_key_formats(tmpdir: str, key_data: Callable, key_type: Type) -> None:
+def test_load_key_formats(tmpdir: str, key_data: Callable, key_type: type) -> None:
     """Test load_key function with different key types and formats.
 
     This test verifies that load_key can correctly load various key types from files:
@@ -1028,18 +1056,27 @@ def test_dilithium_public_key_parse() -> None:
     assert isinstance(key, PublicKeyDilithium)
 
 
-@pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="spsdk-pqc not installed")
 def test_mldsa_private_key_parse() -> None:
     """Test loading ML-DSA private key via PrivateKey.parse() covers line 531."""
-    pem_data = open(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65.pem"), "rb").read()
+    pem_data = open(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65_native.pem"), "rb").read()
     key = PrivateKey.parse(data=pem_data)
     assert isinstance(key, PrivateKeyMLDSA)
 
 
 @pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="spsdk-pqc not installed")
+def test_mldsa_private_key_parse_legacy_expanded() -> None:
+    """Test loading legacy expanded-secret ML-DSA private key via compatibility mode."""
+    pem_data = open(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65.pem"), "rb").read()
+    with patch.object(keys_module.logger, "info") as info_mock:
+        key = PrivateKey.parse(data=pem_data)
+    assert isinstance(key, PrivateKeyMLDSA)
+    info_mock.assert_called_once()
+    assert "Legacy ML-DSA private key detected" in info_mock.call_args.args[0]
+
+
 def test_mldsa_public_key_parse() -> None:
     """Test loading ML-DSA public key via PublicKey.parse() covers lines 704->714."""
-    pub_data = open(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65.pub"), "rb").read()
+    pub_data = open(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65_native.pub"), "rb").read()
     key = PublicKey.parse(data=pub_data)
     assert isinstance(key, PublicKeyMLDSA)
 
@@ -1060,6 +1097,16 @@ def test_private_key_parse_invalid_data_raises() -> None:
         PrivateKey.parse(data=b"\x00" * 32)
 
 
+@pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="spsdk-pqc not installed")
+def test_private_key_parse_public_key_input_does_not_log_mldsa_warning() -> None:
+    """Test that invalid private-key input does not emit legacy ML-DSA warning."""
+    pub_data = open(os.path.join(KEYS_DIR, "ecc256", "srk0_ecc256.pub"), "rb").read()
+    with patch.object(keys_module.logger, "warning") as warning_mock:
+        with pytest.raises(SPSDKError):
+            PrivateKey.parse(data=pub_data)
+    warning_mock.assert_not_called()
+
+
 @pytest.mark.skipif(not IS_OSCCA_SUPPORTED, reason="gmssl (SM2) not installed")
 def test_sm2_private_key_create() -> None:
     """Test PrivateKey.create() dispatches to PrivateKeySM2 for SM2 key (lines 555->558)."""
@@ -1077,10 +1124,9 @@ def test_dilithium_private_key_create() -> None:
     assert isinstance(created, PrivateKeyDilithium)
 
 
-@pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="spsdk-pqc not installed")
 def test_mldsa_private_key_create() -> None:
     """Test PrivateKey.create() dispatches for ML-DSA key (lines 562->565)."""
-    mldsa_key = PrivateKeyMLDSA.load(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65.pem"))
+    mldsa_key = PrivateKeyMLDSA.load(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65_native.pem"))
     created = PrivateKey.create(mldsa_key.key)
     assert isinstance(created, PrivateKeyMLDSA)
 
@@ -1101,12 +1147,110 @@ def test_dilithium_public_key_create() -> None:
     assert isinstance(created, PublicKeyDilithium)
 
 
-@pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="spsdk-pqc not installed")
 def test_mldsa_public_key_create() -> None:
     """Test PublicKey.create() dispatches for ML-DSA public key (lines 769->772)."""
-    mldsa_pub = PublicKeyMLDSA.load(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65.pub"))
+    mldsa_pub = PublicKeyMLDSA.load(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65_native.pub"))
     created = PublicKey.create(mldsa_pub.key)
     assert isinstance(created, PublicKeyMLDSA)
+
+
+def test_mldsa_public_key_parse_legacy_oid() -> None:
+    """Test built-in conversion of a legacy ML-DSA public key OID to native cryptography."""
+    from base64 import b64encode
+
+    from pyasn1.codec.der.encoder import encode as asn1_encode
+    from pyasn1.type import univ as asn1_univ
+
+    from spsdk.crypto._legacy_mldsa_asn1 import LegacyKeyInfo, LegacyPublicKeyEnvelope
+
+    public_key = PrivateKeyMLDSA.generate_key(level=3).get_public_key()
+    raw_public = public_key.export(encoding=SPSDKEncoding.NXP)
+
+    key_info = LegacyKeyInfo()
+    key_info.setComponentByName("algorithm", asn1_univ.ObjectIdentifier("1.3.6.1.4.1.2.267.12.6.5"))
+
+    legacy_public = LegacyPublicKeyEnvelope()
+    legacy_public.setComponentByName("info", key_info)
+    legacy_public.setComponentByName("puk", asn1_univ.BitString(hexValue=raw_public.hex()))
+
+    legacy_der = asn1_encode(legacy_public)
+    legacy_pem = (
+        b"-----BEGIN ML-DSA-65 PUBLIC KEY-----\n"
+        + b64encode(legacy_der)
+        + b"\n-----END ML-DSA-65 PUBLIC KEY-----\n"
+    )
+
+    parsed = PublicKeyMLDSA.parse(legacy_pem)
+
+    assert parsed.export(encoding=SPSDKEncoding.NXP) == raw_public
+
+
+def test_mldsa_private_key_export_nxp() -> None:
+    """Test ML-DSA private key export in NXP format."""
+    private_key = PrivateKeyMLDSA.load(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65_native.pem"))
+    public_key = private_key.get_public_key()
+
+    exported = private_key.export(encoding=SPSDKEncoding.NXP)
+
+    assert exported.endswith(public_key.export(encoding=SPSDKEncoding.NXP))
+    assert len(exported) > len(public_key.public_numbers)
+
+
+def test_mldsa_public_key_export_nxp() -> None:
+    """Test ML-DSA public key export in NXP format."""
+    public_key = PublicKeyMLDSA.load(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65_native.pub"))
+
+    exported = public_key.export(encoding=SPSDKEncoding.NXP)
+
+    assert exported == public_key.public_numbers
+
+
+def test_mldsa_private_key_parse_legacy_seed() -> None:
+    """Test built-in conversion of a seed-based legacy ML-DSA private key."""
+    from base64 import b64encode
+
+    from pyasn1.codec.der.encoder import encode as asn1_encode
+    from pyasn1.type import univ as asn1_univ
+
+    from spsdk.crypto._legacy_mldsa_asn1 import (
+        LegacyKeyInfo,
+        LegacyPrivateKeyEnvelope,
+        LegacyPrivateKeyWithSeed,
+    )
+
+    private_key = PrivateKeyMLDSA.generate_key(level=3)
+    native_private_key = cast(
+        MLDSA44PrivateKey | MLDSA65PrivateKey | MLDSA87PrivateKey, private_key.key
+    )
+    seed = native_private_key.private_bytes_raw()
+    raw_private = private_key.export(encoding=SPSDKEncoding.NXP)
+
+    key_info = LegacyKeyInfo()
+    key_info.setComponentByName("algorithm", asn1_univ.ObjectIdentifier("1.3.6.1.4.1.2.267.12.6.5"))
+
+    private_with_seed = LegacyPrivateKeyWithSeed()
+    private_with_seed.setComponentByName("seed", seed)
+    private_with_seed.setComponentByName("prk", raw_private)
+
+    legacy_private = LegacyPrivateKeyEnvelope()
+    legacy_private.setComponentByName("version", 0)
+    legacy_private.setComponentByName("info", key_info)
+    prk_data = legacy_private.getComponentByName("prkData")
+    prk_data.setComponentByName("prkSeed", private_with_seed)
+    legacy_private.setComponentByName("prkData", prk_data)
+
+    legacy_der = asn1_encode(legacy_private)
+    legacy_pem = (
+        b"-----BEGIN ML-DSA-65 PRIVATE KEY-----\n"
+        + b64encode(legacy_der)
+        + b"\n-----END ML-DSA-65 PRIVATE KEY-----\n"
+    )
+
+    with patch.object(keys_module.logger, "warning") as warning_mock:
+        parsed = PrivateKeyMLDSA.parse(legacy_pem)
+
+    assert parsed.get_public_key() == private_key.get_public_key()
+    warning_mock.assert_not_called()
 
 
 @pytest.mark.skipif(not IS_LMS_SUPPORTED, reason="spsdk-pqc with LMS support not installed")
@@ -1118,7 +1262,6 @@ def test_lms_private_key_parse() -> None:
     assert isinstance(key, PrivateKeyLMS)
 
 
-@pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="spsdk-pqc not installed")
 def test_otps_format_public_key_parse() -> None:
     """Test PublicKey.parse() with OTPS-format MLDSA key covers line 718.
 
@@ -1131,7 +1274,7 @@ def test_otps_format_public_key_parse() -> None:
 
     from spsdk.crypto._otps_puk import AlgorithmIdentifier, SubjectPublicKeyInfo
 
-    priv = PrivateKeyMLDSA.load(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65.pem"))
+    priv = PrivateKeyMLDSA.load(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65_native.pem"))
     raw_key = priv.get_public_key().export()
 
     # Wrap the key in a SEQUENCE inside a BitString (the OTPS non-standard format)

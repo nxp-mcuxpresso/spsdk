@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -17,8 +16,9 @@ import logging
 import os
 import re
 import sys
+from collections.abc import Callable, Iterator
 from functools import wraps
-from typing import Any, Callable, Iterator, Optional, Union
+from typing import Any
 
 import click
 import hexdump
@@ -26,7 +26,8 @@ import hexdump
 from spsdk import SPSDK_DEBUG_LOG_FILE, SPSDK_DEBUG_LOGGING_DISABLED
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.config import Config
-from spsdk.utils.misc import get_abs_path, get_printable_path, write_file
+from spsdk.utils.family import FamilyRevision
+from spsdk.utils.misc import get_abs_path, get_printable_path, value_to_int, write_file
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 WARNING_MSG = """
@@ -48,7 +49,7 @@ class SPSDKAppError(SPSDKError):
 
     fmt = "{description}"
 
-    def __init__(self, desc: Optional[str] = None, error_code: int = 1) -> None:
+    def __init__(self, desc: str | None = None, error_code: int = 1) -> None:
         """Initialize the AppError.
 
         :param desc: Description to print out on command line, defaults to None
@@ -83,8 +84,8 @@ class INT(click.ParamType):
     def convert(
         self,
         value: str,
-        param: Optional[click.Parameter] = None,
-        ctx: Optional[click.Context] = None,
+        param: click.Parameter | None = None,
+        ctx: click.Context | None = None,
     ) -> int:
         """Perform the conversion str -> int.
 
@@ -186,11 +187,9 @@ def catch_spsdk_error(function: Callable) -> Callable:
             sys.exit(2)
         except UnicodeEncodeError as encode_exc:
             logger.warning(
-                (
-                    "Your terminal (Jupyter notebook) doesn't render UTF-8 symbols correctly.\n"
-                    "Please add the following environment variable and restart any opened shells.\n"
-                    "PYTHONIOENCODING=utf8"
-                )
+                "Your terminal (Jupyter notebook) doesn't render UTF-8 symbols correctly.\n"
+                "Please add the following environment variable and restart any opened shells.\n"
+                "PYTHONIOENCODING=utf8"
             )
             logger.debug(str(encode_exc), exc_info=True)
             sys.exit(2)
@@ -291,7 +290,7 @@ def filepath_from_config(
 
 @contextlib.contextmanager
 def progress_bar(
-    suppress: bool = False, **progress_bar_params: Union[str, int]
+    suppress: bool = False, **progress_bar_params: str | int
 ) -> Iterator[Callable[[int, int], None]]:
     """Creates a progress bar and return callback function for updating the progress bar.
 
@@ -329,7 +328,7 @@ def print_verifier_to_console(v: Verifier, problems: bool = False) -> None:
     click.echo("Overall  result: " + VerifierResult.draw(v.result))
 
 
-def print_files(files: list[str], title: Optional[str] = None) -> None:
+def print_files(files: list[str], title: str | None = None) -> None:
     """Print list of files to console."""
     if title:
         click.echo(title)
@@ -361,3 +360,61 @@ def make_table_from_items(
                 row.append(f"{items[item_idx]:<{column_width - column_padding}}")
         rows.append((column_padding * " ").join(row))
     return rows
+
+
+def resolve_lifecycle(family: FamilyRevision, lifecycle: str) -> tuple[int, str]:
+    """Resolve a CLI ``--lifecycle`` value to its 32-bit encoded form.
+
+    Accepts either a string integer literal (supports ``0x``/``0b``/``0o`` prefixes
+    and underscore separators) or a symbolic lifecycle name (e.g. ``IN_FIELD1``,
+    ``DEVELOP``), including any deprecated aliases declared in the device's
+    lifecycle register (such as ``ROP_LEVEL1``). Name matching is case-insensitive
+    and delegated to :meth:`RegsBitField.get_enum_constant`, which emits a
+    deprecation warning when a deprecated alias is used.
+
+    The source of the symbolic names is device-specific and resolved from the
+    database (``dat/program_lifecycle``), which maps to a PFR area class and the
+    register whose first bitfield enumerates the lifecycle names. Devices that do
+    not define this mapping accept integer values only.
+
+    :param family: Target device family used to look up the symbolic names.
+    :param lifecycle: Raw value as provided on the command line.
+    :return: Tuple ``(value, pretty)`` where ``value`` is the 32-bit encoded
+        lifecycle and ``pretty`` is a display string for user-facing output.
+    :raises SPSDKAppError: When the value is neither a valid integer nor a known
+        symbolic name for the target device.
+    """
+    # Lazy import: spsdk.pfr.pfr pulls in the full PFR machinery which is only
+    # needed for this lifecycle resolution helper, not for every CLI app.
+    from spsdk.pfr.pfr import get_ifr_pfr_class  # pylint: disable=import-outside-toplevel
+    from spsdk.utils.database import DatabaseManager  # pylint: disable=import-outside-toplevel
+    from spsdk.utils.family import get_db  # pylint: disable=import-outside-toplevel
+
+    try:
+        value = value_to_int(lifecycle)
+    except SPSDKError:
+        pass
+    else:
+        return value, f"({hex(value)})"
+
+    lc_source = get_db(family).get_dict(DatabaseManager.DAT, "program_lifecycle", default={})
+    if not lc_source:
+        raise SPSDKAppError(
+            f"Device {family.name} does not define symbolic lifecycle names; "
+            f"provide {lifecycle!r} as an integer value."
+        )
+
+    try:
+        area_cls = get_ifr_pfr_class(lc_source["pfr_area"], family)
+        bitfield = area_cls(family).registers.find_reg(lc_source["register"]).get_bitfields()[0]
+        value = bitfield.get_enum_constant(lifecycle)
+    except SPSDKError as exc:
+        raise SPSDKAppError(
+            f"Cannot resolve lifecycle {lifecycle!r} for device {family.name}: {exc}"
+        ) from exc
+
+    canonical = next(
+        (e.name for e in bitfield.get_enums() if e.get_value_int() == value),
+        None,
+    )
+    return value, f"{canonical} ({hex(value)})" if canonical else f"({hex(value)})"

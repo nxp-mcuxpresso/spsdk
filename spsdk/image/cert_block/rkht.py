@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -15,7 +14,7 @@ RKHTv1 and RKHTv21 with their specific formats and validation requirements.
 import logging
 import math
 from abc import abstractmethod
-from typing import Optional, Sequence, Type, Union
+from collections.abc import Sequence
 
 from typing_extensions import Self
 
@@ -56,9 +55,9 @@ class RKHT:
     @classmethod
     def from_keys(
         cls,
-        keys: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
-        password: Optional[str] = None,
-        search_paths: Optional[list[str]] = None,
+        keys: Sequence[str | bytes | bytearray | PublicKey | PrivateKey | Certificate],
+        password: str | None = None,
+        search_paths: list[str] | None = None,
     ) -> Self:
         """Create RKHT from list of keys.
 
@@ -147,7 +146,7 @@ class RKHT:
     @staticmethod
     def _calc_key_hash(
         public_key: PublicKey,
-        algorithm: Optional[EnumHashAlgorithm] = None,
+        algorithm: EnumHashAlgorithm | None = None,
     ) -> bytes:
         """Calculate a hash out of public key's exponent and modulus in RSA case, X/Y in EC.
 
@@ -180,7 +179,7 @@ class RKHT:
         return get_hash(n2_bytes + n1_bytes, algorithm=algorithm)
 
     @staticmethod
-    def get_class(family: FamilyRevision) -> Type["RKHT"]:
+    def get_class(family: FamilyRevision) -> type["RKHT"]:
         """Get RKHT class for given family.
 
         Retrieves the appropriate RKHT (Root Key Hash Table) class implementation
@@ -204,9 +203,9 @@ class RKHT:
 
     @staticmethod
     def convert_key(
-        key: Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate],
-        password: Optional[str] = None,
-        search_paths: Optional[list[str]] = None,
+        key: str | bytes | bytearray | PublicKey | PrivateKey | Certificate,
+        password: str | None = None,
+        search_paths: list[str] | None = None,
     ) -> PublicKey:
         """Convert various key formats into a PublicKey object.
 
@@ -390,9 +389,9 @@ class RKHTv21(RKHT):
 
         :return: Concatenated root key hashes as bytes, empty if RKH list has one or fewer items.
         """
-        hash_table = bytes()
+        hash_table = b""
         if len(self.rkh_list) > 1:
-            hash_table = bytes().join(self.rkh_list)
+            hash_table = b"".join(self.rkh_list)
         return hash_table
 
     @classmethod
@@ -431,7 +430,7 @@ class RKHTv21(RKHT):
         """
         if not self.rkh_list:
             logger.debug("RKHT has no records.")
-            return bytes()
+            return b""
         if len(self.rkh_list) == 1:
             rotkh = self.rkh_list[0]
         else:

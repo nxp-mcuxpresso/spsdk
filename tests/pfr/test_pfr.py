@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -92,7 +91,7 @@ def test_supported_devices() -> None:
     """
     cfpa_devices = CFPA.get_supported_families()
     assert isinstance(cfpa_devices, list)
-    cfpa_device_names = list(set(family.name for family in cfpa_devices))
+    cfpa_device_names = list({family.name for family in cfpa_devices})
     cfpa_device_names.sort()
     cfpa_device_names_raw = list(
         DatabaseManager().quick_info.devices.get_devices_with_feature("pfr", "cfpa").keys()
@@ -690,7 +689,13 @@ def test_mcxc151_cmpa_pswd_config_uses_grouped_password() -> None:
     for grouped_reg_name, sub_reg_names in expected_grouped_regs.items():
         grouped_reg = cmpa_pswd.registers.find_reg(grouped_reg_name)
         assert grouped_reg.has_group_registers()
-        assert grouped_reg.reverse_subregs_order
+        if grouped_reg_name == "IMG_MISR_SEED":
+            # MISR seed uses group-level byte reversal so the grouped hex string
+            # matches the on-flash byte order consumed by the MISR image.
+            assert grouped_reg.reverse
+            assert not grouped_reg.reverse_subregs_order
+        else:
+            assert grouped_reg.reverse_subregs_order
         assert [sub_reg.name for sub_reg in grouped_reg.sub_regs] == sub_reg_names
         assert grouped_reg_name in settings
         assert all(sub_reg_name not in settings for sub_reg_name in sub_reg_names)
@@ -722,7 +727,10 @@ def test_mcxc151_cmpa_pswd_load_legacy_password_registers() -> None:
     settings = cmpa_pswd.get_config()["settings"]
 
     assert settings["DBG_AUTH_PASSWORD"] == "112233445566778899AABBCCDDEEFF00"
-    assert settings["IMG_MISR_SEED"] == "0F1E2D3C4B5A69788796A5B4C3D2E1F0"
+    # IMG_MISR_SEED uses group-level byte reversal: the grouped hex string equals the
+    # on-flash byte order (each 32-bit word stored little-endian), matching the seed
+    # bytes the MISR image consumes via bytes.fromhex(misrSeed).
+    assert settings["IMG_MISR_SEED"] == "3C2D1E0F78695A4BB4A59687F0E1D2C3"
     assert "DBG_AUTH_PASSWORD2" not in settings
     assert "IMG_MISR_SEED0" not in settings
     assert (

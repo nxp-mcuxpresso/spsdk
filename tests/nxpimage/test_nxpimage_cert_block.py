@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -152,9 +151,9 @@ def test_nxpimage_mcxn556s_cert_block_vs_ahab_get_template(
     assert os.path.isfile(ahab_template)
 
     # Load and compare the templates (they should be functionally equivalent)
-    with open(cert_block_template, "r", encoding="utf-8") as f:
+    with open(cert_block_template, encoding="utf-8") as f:
         cert_block_config = yaml.safe_load(f)
-    with open(ahab_template, "r", encoding="utf-8") as f:
+    with open(ahab_template, encoding="utf-8") as f:
         ahab_config = yaml.safe_load(f)
 
     # Key fields should be present in both templates
@@ -368,9 +367,9 @@ def test_nxpimage_mcxn556s_cert_block_vs_ahab_parse(
         assert os.path.isfile(ahab_config_file)
 
         # Load and compare key configuration elements
-        with open(cert_block_config_file, "r", encoding="utf-8") as f:
+        with open(cert_block_config_file, encoding="utf-8") as f:
             cert_block_config = yaml.safe_load(f)
-        with open(ahab_config_file, "r", encoding="utf-8") as f:
+        with open(ahab_config_file, encoding="utf-8") as f:
             ahab_config = yaml.safe_load(f)
 
         # Key fields should match
@@ -480,10 +479,58 @@ def test_nxpimage_mcxn556s_cert_block_ahab_equivalence_basic(
         assert os.path.isfile(ahab_template)
 
         # Both should contain family specification
-        with open(cert_block_template, "r", encoding="utf-8") as f:
+        with open(cert_block_template, encoding="utf-8") as f:
             cb_content = f.read()
-        with open(ahab_template, "r", encoding="utf-8") as f:
+        with open(ahab_template, encoding="utf-8") as f:
             ahab_content = f.read()
 
         assert "mcxn556s" in cb_content
         assert "mcxn556s" in ahab_content
+
+
+def test_certblock_binary_rot_config_rsa4096_chain_lpc55s16(
+    cli_runner: CliRunner, nxpimage_data_dir: Any, tmpdir: str
+) -> None:
+    """Test that a binary cert block with an RSA4096 chain cert is parsed for ROTKH extraction.
+
+    Regression test: ``pfr export --rot-config <cert_block.bin>`` (and any other caller of
+    ``get_keys_or_rotkh_from_certblock_config``) used to crash with a misleading
+    "cert block and MBI both failed: Unsupported MBI type" error for lpc55s16 cert blocks
+    that use RSA4096 chain certificates. The root cause was that the binary cert block was
+    parsed without forwarding the target family, so the family defaulted to ``Unknown`` and
+    the device-database lookup raised ``SPSDKErrorMissingDevice``. This test builds such a
+    cert block and verifies the ROTKH is extracted successfully with the family forwarded.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param nxpimage_data_dir: Directory containing nxpimage test data files.
+    :param tmpdir: Temporary directory for generated config and binary files.
+    """
+    from spsdk.image.cert_block.cert_blocks import get_keys_or_rotkh_from_certblock_config
+    from spsdk.utils.family import FamilyRevision
+
+    mbi_data_dir = os.path.join(nxpimage_data_dir, "mbi")
+    keys_dir = os.path.join(mbi_data_dir, "keys_and_certs")
+
+    cert_block_src = os.path.join(mbi_data_dir, "lpc55s16_cert_block_chain_rsa4096.yaml")
+    with open(cert_block_src) as f:
+        cert_block_cfg = yaml.safe_load(f)
+
+    cert_block_bin = os.path.join(tmpdir, "cert_block.bin")
+    cert_block_cfg["signer"] = (
+        f"type=file;file_path={os.path.join(keys_dir, 'lpc55s16_chain_rsa4096.pem')}"
+    )
+    cert_block_cfg["rootCertificate0File"] = os.path.join(keys_dir, "lpc55s16_root_rsa4096.der")
+    cert_block_cfg["chainCertificate0File0"] = os.path.join(keys_dir, "lpc55s16_chain_rsa4096.der")
+    cert_block_cfg["containerOutputFile"] = cert_block_bin
+
+    cert_block_tmp = os.path.join(tmpdir, "lpc55s16_cert_block_chain_rsa4096.yaml")
+    with open(cert_block_tmp, "w") as f:
+        yaml.dump(cert_block_cfg, f)
+
+    cli_runner.invoke(nxpimage.main, ["cert-block", "export", "-c", cert_block_tmp])
+    assert os.path.isfile(cert_block_bin)
+
+    # The fixed code forwards the family to parse(); without it this raised
+    # SPSDKErrorMissingDevice and surfaced as the misleading MBI parsing error.
+    _, rotkh = get_keys_or_rotkh_from_certblock_config(cert_block_bin, FamilyRevision("lpc55s16"))
+    assert rotkh is not None and len(rotkh) == 32

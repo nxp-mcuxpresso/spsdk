@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -19,7 +18,6 @@ import logging
 import os
 import shutil
 from itertools import zip_longest
-from typing import Optional, Type, Union
 from unittest.mock import patch
 
 import pytest
@@ -593,7 +591,7 @@ def test_nxpcrypto_cert_generate(
     data_dir: str,
     tmpdir: str,
     key_type: str,
-    password: Optional[str],
+    password: str | None,
     encoding: str,
 ) -> None:
     """Test certificate generation workflow using nxpcrypto CLI commands.
@@ -683,7 +681,7 @@ def run_signature(
     data_dir: str,
     tmpdir: str,
     key_type: str,
-    algorithm: Optional[EnumHashAlgorithm],
+    algorithm: EnumHashAlgorithm | None,
 ) -> None:
     """Run signature creation and verification test.
 
@@ -731,7 +729,7 @@ def test_nxpcrypto_create_signature_algorithm_mandatory(
     data_dir: str,
     tmpdir: str,
     key_type: str,
-    algorithms: list[Optional[EnumHashAlgorithm]],
+    algorithms: list[EnumHashAlgorithm | None],
 ) -> None:
     """Test nxpcrypto signature algorithm creation with mandatory parameters.
 
@@ -764,7 +762,7 @@ def test_nxpcrypto_create_signature_algorithm_optional(
     data_dir: str,
     tmpdir: str,
     key_type: str,
-    algorithms: list[Optional[EnumHashAlgorithm]],
+    algorithms: list[EnumHashAlgorithm | None],
 ) -> None:
     """Test nxpcrypto signature creation with optional algorithm parameter.
 
@@ -1047,7 +1045,7 @@ def test_nxpcrypto_create_signature_regions_rsa_invalid(
     data_dir: str,
     tmpdir: str,
     regions: list[str],
-    exception: Optional[Type[Exception]],
+    exception: type[Exception] | None,
 ) -> None:
     """Test RSA signature creation with invalid region parameters.
 
@@ -1428,7 +1426,7 @@ CRC_TEST_VECTORS = [
     "alg,ref_crc",
     CRC_TEST_VECTORS,
 )
-def test_nxpcrypto_crc_calculate(alg: Union[CrcAlg, str], ref_crc: int) -> None:
+def test_nxpcrypto_crc_calculate(alg: CrcAlg | str, ref_crc: int) -> None:
     """Test CRC calculation functionality with specified algorithm and reference value.
 
     Validates that the CRC calculation using the provided algorithm produces
@@ -1447,7 +1445,7 @@ def test_nxpcrypto_crc_calculate(alg: Union[CrcAlg, str], ref_crc: int) -> None:
     "alg,ref_crc",
     CRC_TEST_VECTORS,
 )
-def test_nxpcrypto_crc_verify(alg: Union[CrcAlg, str], ref_crc: int) -> None:
+def test_nxpcrypto_crc_verify(alg: CrcAlg | str, ref_crc: int) -> None:
     """Test CRC verification functionality with given algorithm and reference value.
 
     Verifies that the CRC calculation using the specified algorithm matches
@@ -1472,9 +1470,7 @@ def test_nxpcrypto_crc_verify(alg: Union[CrcAlg, str], ref_crc: int) -> None:
         ("invalid", SPSDKKeyError),
     ],
 )
-def test_nxpcrypto_crc_from_alg(
-    alg: Union[CrcAlg, str], exception: Optional[Type[Exception]]
-) -> None:
+def test_nxpcrypto_crc_from_alg(alg: CrcAlg | str, exception: type[Exception] | None) -> None:
     """Test CRC object creation from algorithm specification.
 
     This test function verifies that the from_crc_algorithm function correctly
@@ -1577,10 +1573,24 @@ def test_incorrect_cert_format(cli_runner: CliRunner, data_dir: str) -> None:
     assert "ECDSA" in str(result.exception)
 
 
-@pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed")
 @pytest.mark.parametrize(
     "key_type",
-    ["dil3", "dil5", "mldsa65", "mldsa87"],
+    [
+        pytest.param(
+            "dil3",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
+            ),
+        ),
+        pytest.param(
+            "dil5",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
+            ),
+        ),
+        "mldsa65",
+        "mldsa87",
+    ],
 )
 @pytest.mark.parametrize(
     "encoding",
@@ -1670,7 +1680,6 @@ def test_nxpcrypto_ahab_pqc_tree(
         assert derived_public_key == public_key, f"Public key {idx} does not match the private key"
 
 
-@pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed")
 def test_nxpcrypto_ahab_pqc_tree_with_password(
     cli_runner: CliRunner,
     tmpdir: str,
@@ -1705,7 +1714,6 @@ def test_nxpcrypto_ahab_pqc_tree_with_password(
         assert private_key is not None, f"Failed to load password-protected key {idx}"
 
 
-@pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed")
 def test_nxpcrypto_ahab_pqc_tree_invalid_key_type(
     cli_runner: CliRunner,
     tmpdir: str,
@@ -1724,10 +1732,17 @@ def test_nxpcrypto_ahab_pqc_tree_invalid_key_type(
     assert result.exit_code != 0, "Command should fail with invalid key type"
 
 
-@pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed")
 @pytest.mark.parametrize(
     "key_type",
-    ["dil5", "mldsa65"],
+    [
+        pytest.param(
+            "dil5",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
+            ),
+        ),
+        "mldsa65",
+    ],
 )
 def test_nxpcrypto_ahab_pqc_key_signature(
     cli_runner: CliRunner,
@@ -1790,7 +1805,7 @@ def test_nxpcrypto_ahab_pqc_tree_no_support(
     :param tmpdir: Temporary directory path for test output files.
     """
     tree_path = f"{tmpdir}/pqc_tree_no_support"
-    cmd = f"pki-tree ahab-pqc -k mldsa65 -o {tree_path} -e pem -n 2"
+    cmd = f"pki-tree ahab-pqc -k dil5 -o {tree_path} -e pem -n 2"
     result = run_nxpcrypto(cli_runner, cmd, tmpdir, expected_code=1)
     assert result.exit_code != 0, "Command should fail when PQC support is not installed"
 

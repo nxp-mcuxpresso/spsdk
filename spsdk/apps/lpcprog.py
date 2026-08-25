@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,6 @@ sector management, and device communication through ISP protocol.
 """
 
 import sys
-from typing import Optional
 
 import click
 
@@ -39,7 +37,7 @@ from spsdk.lpcprog.interface import LPCProgInterface
 from spsdk.lpcprog.protocol import LPCProgProtocol
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.interfaces.device.serial_device import SerialDevice
-from spsdk.utils.misc import load_binary
+from spsdk.utils.misc import get_printable_path, load_binary
 
 
 @click.group(name="lpcprog", cls=CommandsTreeGroup)
@@ -93,7 +91,7 @@ def main(
 @main.command(no_args_is_help=True)
 @click.pass_context
 def read_memory(
-    ctx: click.Context, address: int, length: int, raw: bool, binary: Optional[str]
+    ctx: click.Context, address: int, length: int, raw: bool, binary: str | None
 ) -> None:
     """This command is used to read data from RAM or flash memory.
 
@@ -106,7 +104,7 @@ def read_memory(
     if not binary:
         click.echo(format_raw_data(read_data, use_hexdump=not raw))
     else:
-        click.echo(f"Data read from memory has been saved to {binary}")
+        click.echo(f"Data read from memory has been saved to {get_printable_path(binary)}")
 
 
 @click.argument("end", type=INT(), required=True)
@@ -257,7 +255,7 @@ def program_flash(
     ctx: click.Context,
     binary: str,
     sector: int = 0,
-    page: Optional[int] = None,
+    page: int | None = None,
     verify: bool = True,
     erase: bool = True,
 ) -> None:

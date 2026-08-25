@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -26,6 +25,7 @@ from spsdk.apps.nxpimage_apps.nxpimage_fcf import fcf_group
 from spsdk.apps.nxpimage_apps.nxpimage_hab import hab_group
 from spsdk.apps.nxpimage_apps.nxpimage_hse import hse_group
 from spsdk.apps.nxpimage_apps.nxpimage_iee import iee_group
+from spsdk.apps.nxpimage_apps.nxpimage_iped import iped_group
 from spsdk.apps.nxpimage_apps.nxpimage_lpcprog import lpcprog_group
 from spsdk.apps.nxpimage_apps.nxpimage_mbi import mbi_group
 from spsdk.apps.nxpimage_apps.nxpimage_otfad import otfad_group
@@ -63,6 +63,7 @@ main.add_command(lpcprog_group)
 main.add_command(bootable_image_group)
 main.add_command(nxpimage_utils_group)
 main.add_command(iee_group)
+main.add_command(iped_group)
 main.add_command(bee_group)
 main.add_command(tz_group)
 main.add_command(signed_msg_group)

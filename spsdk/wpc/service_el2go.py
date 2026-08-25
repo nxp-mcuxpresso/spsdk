@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,7 +15,7 @@ import base64
 import json
 import logging
 import uuid
-from typing import Any, Optional
+from typing import Any
 
 import requests
 from typing_extensions import Self
@@ -39,7 +38,7 @@ class EL2GoWPCError(SPSDKWPCError):
     error information for debugging and error handling.
     """
 
-    def __init__(self, response: requests.Response, desc: Optional[str] = None) -> None:
+    def __init__(self, response: requests.Response, desc: str | None = None) -> None:
         """Initialize the EL2GO WPC error.
 
         :param response: Response from the EL2GO service.

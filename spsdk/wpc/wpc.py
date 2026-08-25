@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -19,7 +18,7 @@ import struct
 from abc import abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional, Type
+from typing import Any
 
 from pyasn1.codec.der.encoder import encode
 from pyasn1.type import univ
@@ -272,10 +271,10 @@ class WPCCertChain:
 
     def save(
         self,
-        chain_path: Optional[str] = None,
-        root_hash_path: Optional[str] = None,
-        manufacturer_path: Optional[str] = None,
-        product_unit_path: Optional[str] = None,
+        chain_path: str | None = None,
+        root_hash_path: str | None = None,
+        manufacturer_path: str | None = None,
+        product_unit_path: str | None = None,
     ) -> None:
         """Save WPC Certificate Chain into file(s).
 
@@ -334,10 +333,8 @@ class BaseWPCClass(FeatureBaseClassComm):
         if not inspect.isabstract(cls) and hasattr(cls, cls.legacy_identifier_name):
             identifier = getattr(cls, cls.legacy_identifier_name)
             logger.warning(
-                (
-                    f"Class {cls.__name__} uses legacy identifier '{cls.legacy_identifier_name} = \"{identifier}\"', "
-                    f"please use 'identifier = \"{identifier}\"' instead"
-                )
+                f"Class {cls.__name__} uses legacy identifier '{cls.legacy_identifier_name} = \"{identifier}\"', "
+                f"please use 'identifier = \"{identifier}\"' instead"
             )
             setattr(cls, "identifier", identifier)
 
@@ -379,7 +376,7 @@ class BaseWPCClass(FeatureBaseClassComm):
         raise SPSDKNotImplementedError()
 
     @classmethod
-    def get_providers(cls) -> dict[str, Type[Self]]:
+    def get_providers(cls) -> dict[str, type[Self]]:
         """Get available WPC Service/Target Providers.
 
         This method dynamically loads and registers WPC (Wireless Power Consortium) service and target
@@ -551,8 +548,8 @@ class WPC(FeatureBaseClassComm):
     def __init__(
         self,
         family: FamilyRevision,
-        service: Optional[WPCCertificateService] = None,
-        target: Optional[WPCTarget] = None,
+        service: WPCCertificateService | None = None,
+        target: WPCTarget | None = None,
     ) -> None:
         """Initialize WPC target.
 
@@ -593,8 +590,8 @@ class WPC(FeatureBaseClassComm):
     def get_validation_schemas(
         cls,
         family: FamilyRevision,
-        service: Optional[Type[WPCCertificateService]] = None,
-        target: Optional[Type[WPCTarget]] = None,
+        service: type[WPCCertificateService] | None = None,
+        target: type[WPCTarget] | None = None,
     ) -> list[dict[str, Any]]:
         """Create the list of validation schemas for WPC configuration.
 
@@ -672,8 +669,8 @@ class WPC(FeatureBaseClassComm):
     def get_config_template(
         cls,
         family: FamilyRevision,
-        service: Optional[Type[WPCCertificateService]] = None,
-        target: Optional[Type[WPCTarget]] = None,
+        service: type[WPCCertificateService] | None = None,
+        target: type[WPCTarget] | None = None,
     ) -> str:
         """Get WPC configuration template for specified family and components.
 

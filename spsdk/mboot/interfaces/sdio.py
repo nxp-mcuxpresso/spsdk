@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2025 NXP
+# Copyright 2022-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +13,6 @@ for communicating with NXP MCUs using the MBoot protocol through SDIO connection
 import logging
 import struct
 from sys import platform
-from typing import Optional, Union
 
 from typing_extensions import Self
 
@@ -75,7 +73,7 @@ class MbootSdioInterface(MbootSerialProtocol):
     def scan(
         cls,
         device_path: str,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> list[Self]:
         """Scan connected SDIO devices.
 
@@ -95,7 +93,7 @@ class MbootSdioInterface(MbootSerialProtocol):
         """
         self.device.open()
 
-    def read(self, length: Optional[int] = None) -> Union[CmdResponse, bytes]:
+    def read(self, length: int | None = None) -> CmdResponse | bytes:
         """Read data from SDIO interface.
 
         Reads data frame from the SDIO device, validates CRC, and returns either
@@ -126,7 +124,7 @@ class MbootSdioInterface(MbootSerialProtocol):
             return parse_cmd_response(data)
         return data
 
-    def _read_frame_header(self, expected_frame_type: Optional[FPType] = None) -> tuple[int, int]:
+    def _read_frame_header(self, expected_frame_type: FPType | None = None) -> tuple[int, int]:
         """Read frame header and frame type from SDIO interface.
 
         The method reads 2 bytes from the SDIO interface and parses them to extract
@@ -142,7 +140,7 @@ class MbootSdioInterface(MbootSerialProtocol):
         return self._parse_frame_header(data, FPType.ACK)
 
     def _parse_frame_header(
-        self, frame: bytes, expected_frame_type: Optional[FPType] = None
+        self, frame: bytes, expected_frame_type: FPType | None = None
     ) -> tuple[int, int]:
         """Parse frame header and extract frame type from SDIO frame.
 

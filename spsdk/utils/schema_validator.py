@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 # Copyright 2021-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -21,7 +20,8 @@ import logging
 import os
 import tempfile
 from collections import OrderedDict
-from typing import Any, Callable, Optional, Union
+from collections.abc import Callable
+from typing import Any
 
 import fastjsonschema
 from deepmerge import Merger, always_merger
@@ -64,13 +64,52 @@ _VALIDATOR_CACHE_SUBDIR = "schema_validators"
 _VALIDATION_RESULT_CACHE_SUBDIR = "validation_results"
 
 
-def _get_disk_validator_cache_dir() -> Optional[str]:
+# Flag to ensure orphaned validator cleanup runs at most once per process.
+_orphan_cleanup_done = False
+
+
+def _cleanup_orphaned_validators(cache_dir: str) -> None:
+    """Remove compiled validator ``.pyc`` files that have no matching ``.hmac`` signature.
+
+    Orphaned files can accumulate when the HMAC-verification feature is added on
+    top of a pre-existing cache, or when an interrupted save leaves a ``.pyc``
+    without its ``.hmac`` counterpart.  Such files are never loaded by
+    :func:`_load_disk_validator` but still consume disk space.
+
+    :param cache_dir: Path to the ``schema_validators`` cache directory.
+    """
+    global _orphan_cleanup_done  # noqa: PLW0603  # pylint: disable=global-statement
+    if _orphan_cleanup_done:
+        return
+    _orphan_cleanup_done = True
+    try:
+        removed = 0
+        for name in os.listdir(cache_dir):
+            if not name.endswith(".pyc"):
+                continue
+            hmac_name = name[:-4] + ".hmac"
+            if not os.path.isfile(os.path.join(cache_dir, hmac_name)):
+                try:
+                    os.remove(os.path.join(cache_dir, name))
+                    removed += 1
+                except OSError:
+                    pass
+        if removed:
+            logger.debug(f"Removed {removed} orphaned compiled validator(s) from {cache_dir}")
+    except OSError:
+        pass
+
+
+def _get_disk_validator_cache_dir() -> str | None:
     """Return the directory used for persisting compiled fastjsonschema validators.
 
     Returns ``None`` when the SPSDK cache is disabled or the directory cannot be
     created, in which case disk caching is silently skipped.
     The directory is created with owner-only permissions (0o700) to prevent
     other users from injecting malicious cached code.
+
+    On the first call, also cleans up orphaned ``.pyc`` files that have no
+    matching ``.hmac`` signature (see :func:`_cleanup_orphaned_validators`).
 
     :return: Absolute path to the cache directory, or None if caching is disabled.
     """
@@ -79,12 +118,13 @@ def _get_disk_validator_cache_dir() -> Optional[str]:
     try:
         cache_dir = os.path.join(SPSDK_PLATFORM_DIRS.user_cache_dir, _VALIDATOR_CACHE_SUBDIR)
         os.makedirs(cache_dir, mode=0o700, exist_ok=True)
+        _cleanup_orphaned_validators(cache_dir)
         return cache_dir
     except OSError:  # pragma: no cover
         return None
 
 
-def _get_disk_validation_result_dir() -> Optional[str]:
+def _get_disk_validation_result_dir() -> str | None:
     """Return the directory used for persisting successful validation results.
 
     Returns ``None`` when the SPSDK cache is disabled or the directory cannot be
@@ -169,12 +209,13 @@ def _get_cache_hmac_key() -> bytes:
     return hashlib.pbkdf2_hmac("sha256", identity, salt, iterations=1)
 
 
-def _load_disk_validator(schema_hash: str, formats: dict[str, Callable]) -> Optional[Callable]:
+def _load_disk_validator(schema_hash: str, formats: dict[str, Callable]) -> Callable | None:
     """Try to load a previously compiled validator from the disk cache.
 
-    Reads cached bytecode and verifies its HMAC-SHA256 integrity using a
-    per-installation secret key before deserializing. This prevents loading
-    tampered cache files while maintaining fast load times.
+    Reads a single cache file whose first 32 bytes are the HMAC-SHA256 signature
+    and whose remaining bytes are the marshalled bytecode. Using a single file
+    avoids the TOCTOU race condition that arises when the signature and bytecode
+    are stored in separate files written by concurrent workers.
 
     :param schema_hash: MD5 hex digest that uniquely identifies the schema.
     :param formats: Custom format validators to bind into the loaded validator.
@@ -186,23 +227,31 @@ def _load_disk_validator(schema_hash: str, formats: dict[str, Callable]) -> Opti
     if cache_dir is None:
         return None
     cache_path = os.path.join(cache_dir, f"{schema_hash}.pyc")
+    # Remove stale separate .hmac sidecar files left by older versions.
     hmac_path = os.path.join(cache_dir, f"{schema_hash}.hmac")
-    if not os.path.isfile(cache_path) or not os.path.isfile(hmac_path):
+    if os.path.isfile(hmac_path):
+        try:
+            os.remove(hmac_path)
+        except OSError:
+            pass
+    if not os.path.isfile(cache_path):
         return None
     try:
         with open(cache_path, "rb") as fh:
-            bytecode = fh.read()
-        with open(hmac_path, "rb") as fh:
-            stored_hmac = fh.read()
+            data = fh.read()
+        _HMAC_SIZE = 32
+        if len(data) <= _HMAC_SIZE:
+            os.remove(cache_path)
+            return None
+        stored_hmac, bytecode = data[:_HMAC_SIZE], data[_HMAC_SIZE:]
         # Verify integrity before deserializing
         expected_hmac = hmac.new(_get_cache_hmac_key(), bytecode, hashlib.sha256).digest()
         if not hmac.compare_digest(stored_hmac, expected_hmac):
             logger.warning(f"Cache integrity check failed for {schema_hash}, regenerating")
-            for p in (cache_path, hmac_path):
-                try:
-                    os.remove(p)
-                except OSError:
-                    pass
+            try:
+                os.remove(cache_path)
+            except OSError:
+                pass
             return None
         code_obj = marshal.loads(bytecode)
         module_ns: dict[str, Any] = {}
@@ -214,17 +263,16 @@ def _load_disk_validator(schema_hash: str, formats: dict[str, Callable]) -> Opti
             return None
         return functools.partial(validate_fn, custom_formats=formats)
     except Exception:  # pragma: no cover
-        for path in (cache_path, hmac_path):
-            try:
-                os.remove(path)
-            except OSError:
-                pass
+        try:
+            os.remove(cache_path)
+        except OSError:
+            pass
         return None
 
 
 def _save_disk_validator(
     schema_hash: str, schema: dict[str, Any], formats: dict[str, Callable]
-) -> Optional[Callable]:
+) -> Callable | None:
     """Compile a schema with fastjsonschema, persist bytecode to disk, and return the validator.
 
     Uses an atomic write (temp file + rename) to avoid partially-written cache files.
@@ -250,27 +298,18 @@ def _save_disk_validator(
 
     if cache_dir is not None:
         cache_path = os.path.join(cache_dir, f"{schema_hash}.pyc")
-        hmac_path = os.path.join(cache_dir, f"{schema_hash}.hmac")
         try:
             bytecode = marshal.dumps(code_obj)
             sig = hmac.new(_get_cache_hmac_key(), bytecode, hashlib.sha256).digest()
-            # Write bytecode atomically
+            # Write HMAC (32 bytes) followed by bytecode as a single atomic file.
+            # A single rename guarantees both the signature and bytecode are
+            # always consistent, eliminating the race condition that arises when
+            # they live in separate files.
             fd, tmp_path = tempfile.mkstemp(dir=cache_dir, suffix=".pyc")
             try:
                 with os.fdopen(fd, "wb") as fh:
-                    fh.write(bytecode)
+                    fh.write(sig + bytecode)
                 os.replace(tmp_path, cache_path)
-            except Exception:  # pragma: no cover
-                try:
-                    os.remove(tmp_path)
-                except OSError:
-                    pass
-            # Write HMAC atomically
-            fd, tmp_path = tempfile.mkstemp(dir=cache_dir, suffix=".hmac")
-            try:
-                with os.fdopen(fd, "wb") as fh:
-                    fh.write(sig)
-                os.replace(tmp_path, hmac_path)
             except Exception:  # pragma: no cover
                 try:
                     os.remove(tmp_path)
@@ -291,8 +330,8 @@ def _save_disk_validator(
 def _compute_check_config_keys(
     schema: dict[str, Any],
     config: dict[str, Any],
-    search_paths: Optional[list[str]],
-) -> tuple[Optional[str], Optional[str]]:
+    search_paths: list[str] | None,
+) -> tuple[str | None, str | None]:
     """Compute cache keys for the compiled validator and validation result caches.
 
     Returns a ``(validator_key, validation_key)`` tuple.  Both are ``None`` when
@@ -318,7 +357,7 @@ def _compute_check_config_keys(
         return None, None
 
 
-def _is_validation_cached(validation_key: Optional[str]) -> bool:
+def _is_validation_cached(validation_key: str | None) -> bool:
     """Return ``True`` if this (schema, paths, config) combination has already passed validation.
 
     Checks the in-memory set first, then the disk marker file.  Populates the in-memory
@@ -337,7 +376,7 @@ def _is_validation_cached(validation_key: Optional[str]) -> bool:
     return False
 
 
-def _record_validation_passed(validation_key: Optional[str]) -> None:
+def _record_validation_passed(validation_key: str | None) -> None:
     """Record a successful validation result in both in-memory and disk caches.
 
     :param validation_key: Key from :func:`_compute_check_config_keys`, or ``None`` to skip.
@@ -534,7 +573,7 @@ def _is_config_string(param: Any) -> bool:
 
 def _print_validation_fail_reason(
     exc: fastjsonschema.JsonSchemaValueException,
-    extra_formatters: Optional[dict[str, Callable[[str], bool]]] = None,
+    extra_formatters: dict[str, Callable[[str], bool]] | None = None,
 ) -> str:
     """Format JSON schema validation failure into human-readable error message.
 
@@ -549,7 +588,7 @@ def _print_validation_fail_reason(
 
     def process_one_of_rule(
         exception: fastjsonschema.JsonSchemaValueException,
-        extra_formatters: Optional[dict[str, Callable[[str], bool]]],
+        extra_formatters: dict[str, Callable[[str], bool]] | None,
     ) -> str:
         """Process oneOf JSON schema validation rule and generate error message.
 
@@ -582,7 +621,7 @@ def _print_validation_fail_reason(
 
     def process_nested_rule(
         exception: fastjsonschema.JsonSchemaValueException,
-        extra_formatters: Optional[dict[str, Callable[[str], bool]]],
+        extra_formatters: dict[str, Callable[[str], bool]] | None,
     ) -> str:
         """Process nested JSON schema validation rule and generate detailed error message.
 
@@ -755,7 +794,7 @@ def _check_config_debug(
 
 
 def _get_validator(
-    validator_key: Optional[str],
+    validator_key: str | None,
     schema: dict[str, Any],
     formats: dict[str, Callable],
 ) -> Callable:
@@ -779,7 +818,7 @@ def _get_validator(
         return _compiled_validators[validator_key]
 
     schema_hash = validator_key.split(":")[0] if validator_key else None
-    validator: Optional[Callable] = None
+    validator: Callable | None = None
 
     if schema_hash is not None:
         validator = _load_disk_validator(schema_hash, formats)
@@ -799,8 +838,8 @@ def _get_validator(
 def check_config(
     config: dict[str, Any],
     schemas: list[dict[str, Any]],
-    extra_formatters: Optional[dict[str, Callable[[str], bool]]] = None,
-    search_paths: Optional[list[str]] = None,
+    extra_formatters: dict[str, Callable[[str], bool]] | None = None,
+    search_paths: list[str] | None = None,
     check_unknown_props: bool = False,
 ) -> None:
     """Check the configuration by provided list of validation schemas.
@@ -893,7 +932,7 @@ class CommentedConfig:
         self,
         main_title: str,
         schemas: list[dict[str, Any]],
-        note: Optional[str] = None,
+        note: str | None = None,
     ):
         """Initialize configuration template generator.
 
@@ -922,7 +961,7 @@ class CommentedConfig:
         """
         return self.MAX_LINE_LENGTH - max(SPSDK_YML_INDENT * (self.indent - 1), 0)
 
-    def _get_title_block(self, title: str, description: Optional[str] = None) -> str:
+    def _get_title_block(self, title: str, description: str | None = None) -> str:
         """Get unified title block for display formatting.
 
         Creates an ASCII art formatted block with centered title and optional description,
@@ -957,7 +996,7 @@ class CommentedConfig:
         """
         schema_kws = ["allOf", "anyOf", "oneOf", "if", "then", "else"]
 
-        def _find_required(d_in: dict[str, Any]) -> Optional[list[str]]:
+        def _find_required(d_in: dict[str, Any]) -> list[str] | None:
             if "required" in d_in:
                 return d_in["required"]
             for d_v in d_in.values():
@@ -967,7 +1006,7 @@ class CommentedConfig:
                         return ret
             return None
 
-        def _find_required_in_schema_kws(schema_node: Union[list, dict[str, Any]]) -> list[str]:
+        def _find_required_in_schema_kws(schema_node: list | dict[str, Any]) -> list[str]:
             all_props: list[str] = []
             if isinstance(schema_node, dict):
                 for k, v in schema_node.items():
@@ -1018,7 +1057,7 @@ class CommentedConfig:
         """
         schema_kws = ["allOf", "anyOf", "oneOf", "if", "then", "else"]
 
-        def _find_required(d_in: dict[str, Any]) -> Optional[list[str]]:
+        def _find_required(d_in: dict[str, Any]) -> list[str] | None:
             """Find required fields in a dictionary structure.
 
             Recursively searches through a dictionary to locate the first occurrence of a 'required' key
@@ -1037,7 +1076,7 @@ class CommentedConfig:
                         return ret
             return None
 
-        def _find_required_in_schema_kws(schema_node: Union[list, dict[str, Any]]) -> list[str]:
+        def _find_required_in_schema_kws(schema_node: list | dict[str, Any]) -> list[str]:
             """Find all required properties in structure composed of nested properties.
 
             Recursively traverses a schema structure (dictionary or list) to extract all property names
@@ -1079,7 +1118,7 @@ class CommentedConfig:
     def _create_object_block(
         self,
         block: dict[str, dict[str, Any]],
-        custom_value: Optional[Union[dict[str, Any], list[Any]]] = None,
+        custom_value: dict[str, Any] | list[Any] | None = None,
     ) -> CMap:
         """Create object block with data from schema definition.
 
@@ -1107,9 +1146,12 @@ class CommentedConfig:
         all_statuses = self._get_all_property_statuses(block)
         for key in self._get_schema_block_keys(block):
             # Skip the record in case that custom value key is defined,
-            # but it has None value as a mark to not use this record
-            value = custom_value.get(key, None) if custom_value else None  # type: ignore
-            if custom_value and value is None:
+            # but it has None value as a mark to not use this record.
+            # Use 'is not None' rather than truthiness so an explicitly provided
+            # empty dict/list does not fall through to template defaults (which
+            # would also emit alias keys flagged 'skip_in_template').
+            value = custom_value.get(key, None) if custom_value is not None else None  # type: ignore
+            if custom_value is not None and value is None:
                 continue
 
             val_p: dict = block["properties"][key]
@@ -1134,7 +1176,7 @@ class CommentedConfig:
         return cfg_m
 
     def _create_array_block(
-        self, block: dict[str, dict[str, Any]], custom_value: Optional[list[Any]]
+        self, block: dict[str, dict[str, Any]], custom_value: list[Any] | None
     ) -> CSeq:
         """Create array block configuration from schema definition.
 
@@ -1218,7 +1260,7 @@ class CommentedConfig:
     def _handle_one_of_block(
         self,
         block: dict[str, Any],
-        custom_value: Optional[Union[dict[str, Any], list[Any]]] = None,
+        custom_value: dict[str, Any] | list[Any] | None = None,
     ) -> CMap:
         """Handle oneOf schema block and generate configuration map.
 
@@ -1298,7 +1340,7 @@ class CommentedConfig:
 
     def _get_schema_value(
         self, block: dict[str, Any], custom_value: Any
-    ) -> Union[CMap, CSeq, str, int, float, list]:
+    ) -> CMap | CSeq | str | int | float | list:
         """Get schema value from configuration block with optional custom data.
 
         Processes a configuration block according to its schema type (object, array, or oneOf)
@@ -1327,7 +1369,7 @@ class CommentedConfig:
                 else block.get("template_value", "Unknown")
             )
 
-        ret: Optional[Union[CMap, CSeq, str, int, float]] = None
+        ret: CMap | CSeq | str | int | float | None = None
         if "oneOf" in block and "properties" not in block:
             ret = self._handle_one_of_block(block["oneOf"], custom_value)
             if not ret:
@@ -1354,10 +1396,10 @@ class CommentedConfig:
 
     def _add_comment(
         self,
-        cfg: Union[CMap, CSeq],
+        cfg: CMap | CSeq,
         schema: dict[str, Any],
-        key: Union[str, int],
-        value: Optional[Union[CMap, CSeq, str, int, float, list]],
+        key: str | int,
+        value: CMap | CSeq | str | int | float | list | None,
         required: str,
     ) -> None:
         """Add comment block to configuration based on JSON schema.
@@ -1429,9 +1471,7 @@ class CommentedConfig:
             )
         ]
 
-    def _update_before_comment(
-        self, cfg: Union[CMap, CSeq], key: Union[str, int], comment: str
-    ) -> None:
+    def _update_before_comment(self, cfg: CMap | CSeq, key: str | int, comment: str) -> None:
         """Update comment to add new comment before current one.
 
         The method manipulates YAML comment structure by inserting new comment lines
@@ -1466,7 +1506,7 @@ class CommentedConfig:
         for c in new_lines:
             comments[1].insert(0, comment_token(c, start_mark))
 
-    def export(self, config: Optional[dict[str, Any]] = None) -> CMap:
+    def export(self, config: dict[str, Any] | None = None) -> CMap:
         """Export configuration template into CommentedMap.
 
         This method processes the schema configuration by merging multiple schemas,

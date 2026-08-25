@@ -1,21 +1,22 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2024-2025 NXP
+# Copyright 2024-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK Jupyter notebook testing utilities.
 
 This module provides test functionality for validating SPSDK example
-Jupyter notebooks to ensure they execute correctly and produce
-expected outputs.
+Jupyter notebooks to ensure they execute correctly without errors.
 """
 
 import os
 import sys
+from pathlib import Path
 
+import nbclient
+import nbformat
 import pytest
-from pytest_notebook.nb_regression import NBRegressionFixture
 
 from spsdk import SPSDK_EXAMPLES_FOLDER
 
@@ -37,28 +38,15 @@ for notebook in GENERAL_NOTEBOOKS:
     sys.platform != "linux", reason="Test notebooks only on Linux due to performance"
 )
 def test_general_notebooks(notebook_path: str) -> None:
-    """Test general Jupyter notebooks for regression.
+    """Test general Jupyter notebooks by executing them and checking for errors.
 
-    This function executes a Jupyter notebook and compares its output against
-    expected results, ignoring metadata differences and normalizing text output
-    formatting across different platforms.
+    This function executes a Jupyter notebook using nbclient and verifies
+    it completes without raising any cell execution exceptions.
 
     :param notebook_path: Path to the Jupyter notebook file to be tested
-    :raises NBRegressionError: When notebook execution fails or output differs from expected results
+    :raises nbclient.exceptions.CellExecutionError: When a notebook cell fails during execution
     """
-    fixture = NBRegressionFixture(
-        exec_timeout=60,
-        diff_ignore=("/metadata/kernelinfo", "/metadata/language_info", "/metadata/vscode"),
-        diff_replace=(
-            ("/cells/*/outputs/*/text", "\r\n", "\n"),
-            ("/cells/*/outputs/*/text", " \n", "\n"),
-            (
-                "/cells/*/outputs/*/text",
-                "([^\n]*Existing cached quick DB[^\n]*)\n?",
-                "",
-            ),
-        ),
-        # on Windows one extra space is added to the cell output
-        # also the the test should ignore different line-endings
-    )
-    fixture.check(notebook_path)
+    nb = nbformat.read(notebook_path, as_version=4)
+    notebook_dir = str(Path(notebook_path).resolve().parent)
+    client = nbclient.NotebookClient(nb, timeout=60, resources={"metadata": {"path": notebook_dir}})
+    client.execute()

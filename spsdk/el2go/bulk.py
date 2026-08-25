@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2024-2026 NXP
 #
@@ -15,7 +14,6 @@ import logging
 import math
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Optional
 
 from typing_extensions import Self
 
@@ -35,8 +33,8 @@ class JobInfo:
     job_id: str
     device_count: int
     created_at: datetime = datetime.now(timezone.utc)
-    updated_at: Optional[datetime] = None
-    status: Optional[str] = None
+    updated_at: datetime | None = None
+    status: str | None = None
     percentage: int = 0
     downloaded: int = 0
 
@@ -67,7 +65,7 @@ class JobInfo:
             downloaded=int(info[6]),
         )
 
-    def calc_wait_time(self, time_per_device: float = 5.0) -> Optional[float]:
+    def calc_wait_time(self, time_per_device: float = 5.0) -> float | None:
         """Calculate remaining time for the job to finish.
 
         The method estimates completion time based on current progress percentage and elapsed time.
@@ -135,7 +133,7 @@ class ServiceDB(LocalSecureObjectsDB):
         super()._setup_db()
         with self:
             cursor = self._sanitize_cursor()
-            cursor.execute("""
+            create_jobs_table = """
                 CREATE TABLE IF NOT EXISTS jobs (
                     job_id TEXT PRIMARY KEY,
                     device_count INTEGER NOT NULL,
@@ -145,7 +143,8 @@ class ServiceDB(LocalSecureObjectsDB):
                     percentage INTEGER NULL DEFAULT 0,
                     downloaded INTEGER NULL DEFAULT 0
                 );
-                """)
+                """
+            cursor.execute(create_jobs_table)
             cursor.connection.commit()
 
     def insert_job(self, job_id: str, device_count: int) -> None:

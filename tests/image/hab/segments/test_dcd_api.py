@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2023,2025 NXP
+# Copyright 2019-2023,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -90,7 +89,7 @@ def test_txt_parser_from_cfg_tools(data_dir: str, ref_dcd_obj: SegDCD) -> None:
     :param data_dir: Directory path containing the test data files
     :param ref_dcd_obj: Reference SegDCD object to compare against
     """
-    with open(os.path.join(data_dir, "dcd.txt"), "r") as f:
+    with open(os.path.join(data_dir, "dcd.txt")) as f:
         dcd_data = f.read()
     dcd_obj = SegDCD.parse_txt(dcd_data)
     # compare with reference DCD
@@ -131,7 +130,7 @@ def test_txt_export_from_cfg_tools(data_dir: str, ref_dcd_obj: SegDCD) -> None:
     :raises FileNotFoundError: When reference DCD text file is not found
     :raises OSError: When file operations fail
     """
-    with open(os.path.join(data_dir, "dcd.txt"), "r") as f:
+    with open(os.path.join(data_dir, "dcd.txt")) as f:
         dcd_obj = f.read()
     dcd_bin_exported = SegDCD.export_txt(ref_dcd_obj)
     # compare with reference DCD

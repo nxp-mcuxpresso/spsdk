@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2020-2026 NXP
 #
@@ -12,7 +11,7 @@ to support Buspal communication protocols including I2C and SPI modes for
 NXP MCU interactions.
 """
 
-from typing import Optional, Type  # pylint: disable=unused-import  # Type is necessary for Mypy
+from typing import Type  # pylint: disable=unused-import  # Type is necessary for Mypy
 
 from spsdk import get_logger
 from spsdk.exceptions import SPSDKError
@@ -54,7 +53,7 @@ class SerialBuspalProxy(SerialProxy):
             raise SPSDKError(f"Target {target} not supported")
         return super().init_proxy(data)
 
-    def __init__(self, port: str, timeout: int, baudrate: int, write_timeout: Optional[int] = None):
+    def __init__(self, port: str, timeout: int, baudrate: int, write_timeout: int | None = None):
         """Initialize serial BusPal proxy connection.
 
         Basic initialization for serial.Serial class. The __init__ signature must accommodate

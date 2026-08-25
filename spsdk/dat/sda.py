@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2026 NXP
 #
@@ -35,12 +34,13 @@ This module supports both authentication modes:
 
 import functools
 import struct
-from typing import Any, Callable, no_type_check
+from collections.abc import Callable
+from typing import Any, no_type_check
 
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.symmetric import aes_ecb_encrypt
 from spsdk.dat.debug_mailbox import logger
-from spsdk.debuggers.debug_probe import DebugProbe, DebugProbeCoreSightOnly
+from spsdk.debuggers.debug_probe_arm import DebugProbeCoreSightOnly
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db, get_families
@@ -134,7 +134,7 @@ class SdaAuthentication:
     DBGENCTRL_GDBGEN = 0x00000010  # Bit 4: Global Debug Enable
     DBGENCTRL_CDBGEN = 0x10000000  # Bit 28: Core Debug Enable
 
-    def __init__(self, family: FamilyRevision, debug_probe: DebugProbe):
+    def __init__(self, family: FamilyRevision, debug_probe: DebugProbeCoreSightOnly):
         """Initialize SDA Authentication.
 
         :param family: Device family and revision.
@@ -143,7 +143,7 @@ class SdaAuthentication:
         """
         self.family = family
         self._db = get_db(family)
-        self.debug_probe: DebugProbe = debug_probe
+        self.debug_probe: DebugProbeCoreSightOnly = debug_probe
         # -1 means auto-discover via get_sda_ap decorator on first register access
         self.sda_ap_index = self._db.get_int(self.FEATURE, "sda_ap_index", -1)
 
@@ -587,11 +587,10 @@ class SdaAuthentication:
         :return: Register value (32-bit).
         :raises SPSDKError: If read fails.
         """
-        self.debug_probe.connect()
-        full_addr = self.debug_probe.get_coresight_ap_address(
+        full_addr = DebugProbeCoreSightOnly.get_coresight_ap_address(
             access_port=self.sda_ap_index, address=addr
         )
-        return self.debug_probe.coresight_reg_read_safe(addr=full_addr)
+        return self.debug_probe.mem_reg_read(addr=full_addr)
 
     @get_sda_ap
     def _write_reg(self, addr: int, data: int) -> None:
@@ -601,8 +600,7 @@ class SdaAuthentication:
         :param data: Data value (32-bit).
         :raises SPSDKError: If write fails.
         """
-        self.debug_probe.connect()
-        full_addr = self.debug_probe.get_coresight_ap_address(
+        full_addr = DebugProbeCoreSightOnly.get_coresight_ap_address(
             access_port=self.sda_ap_index, address=addr
         )
-        self.debug_probe.coresight_reg_write_safe(addr=full_addr, data=data)
+        self.debug_probe.mem_reg_write(addr=full_addr, data=data)

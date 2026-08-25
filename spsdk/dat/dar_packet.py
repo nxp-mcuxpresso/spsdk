@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2025 NXP
+# Copyright 2020-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,7 +14,7 @@ curves, as well as EdgeLock Enclave V2 authentication responses.
 
 import logging
 from struct import pack
-from typing import Any, Optional, Type
+from typing import Any
 
 from typing_extensions import Self
 
@@ -57,7 +56,7 @@ class DebugAuthenticateResponse(FeatureBaseClass):
         debug_credential: DebugCredentialCertificate,
         auth_beacon: int,
         dac: DebugAuthenticationChallenge,
-        sign_provider: Optional[SignatureProvider],
+        sign_provider: SignatureProvider | None,
     ) -> None:
         """Initialize the DebugAuthenticateResponse object.
 
@@ -167,7 +166,7 @@ class DebugAuthenticateResponse(FeatureBaseClass):
     def load_from_config(
         cls,
         config: Config,
-        dac: Optional[DebugAuthenticationChallenge] = None,
+        dac: DebugAuthenticationChallenge | None = None,
     ) -> Self:
         """Create Debug Authentication Response object from configuration.
 
@@ -240,7 +239,7 @@ class DebugAuthenticateResponse(FeatureBaseClass):
         return cls._get_class_from_cfg(config).get_validation_schemas(family)
 
     @classmethod
-    def _get_class_from_cfg(cls, config: Config) -> Type[Self]:
+    def _get_class_from_cfg(cls, config: Config) -> type[Self]:
         """Get DAR class based on input configuration.
 
         This method determines the appropriate Debug Authentication Response (DAR) class
@@ -266,7 +265,7 @@ class DebugAuthenticateResponse(FeatureBaseClass):
         return cls._get_class(family=family, protocol_version=dc.version)
 
     @classmethod
-    def _get_class(cls, family: FamilyRevision, protocol_version: ProtocolVersion) -> Type[Self]:
+    def _get_class(cls, family: FamilyRevision, protocol_version: ProtocolVersion) -> type[Self]:
         """Get the right Debug Authentication Response class by the protocol version.
 
         The method determines the appropriate DAR class based on the chip family's
@@ -568,7 +567,7 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
     def load_from_config(
         cls,
         config: Config,
-        dac: Optional[DebugAuthenticationChallenge] = None,
+        dac: DebugAuthenticationChallenge | None = None,
     ) -> Self:
         """Load debug authentication response from configuration.
 

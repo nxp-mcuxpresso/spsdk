@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2022-2026 NXP
 #
@@ -9,9 +8,9 @@
 
 This module provides functionality for automatically generating schema documentation
 for various SPSDK components and file formats. It extracts JSON schemas from SPSDK
-modules and converts them into formatted documentation tables and files.
-The module supports schema generation for MBI, Secure Boot (SB21/SB31/SB40),
-AHAB, HAB, OTFAD, IEE, BEE, FCB, XMCD, and bootable image configurations.
+    modules and converts them into formatted documentation tables and files.
+    The module supports schema generation for MBI, Secure Boot (SB21/SB31/SB40),
+    AHAB, HAB, OTFAD, IEE, IPED, BEE, FCB, XMCD, and bootable image configurations.
 """
 
 # Script for the automated generation of schemas documentation for nxpimage
@@ -30,6 +29,7 @@ from spsdk.image.bee import Bee
 from spsdk.image.bootable_image.bimg import BootableImage
 from spsdk.image.hab.hab_image import HabImage
 from spsdk.image.iee.iee import Iee
+from spsdk.image.iped.iped import Iped
 from spsdk.image.mbi.mbi import MasterBootImage
 from spsdk.image.otfad.otfad import Otfad
 from spsdk.sbfile.sb2.sb_21_helper import SB21Helper
@@ -50,6 +50,7 @@ AHAB_SCHEMAS_FILE = os.path.join(DOC_DIR, "ahab_schemas.inc")
 HAB_SCHEMAS_FILE = os.path.join(DOC_DIR, "hab_schemas.inc")
 OTFAD_SCHEMAS_FILE = os.path.join(DOC_DIR, "otfad_schemas.inc")
 IEE_SCHEMAS_FILE = os.path.join(DOC_DIR, "iee_schemas.inc")
+IPED_SCHEMAS_FILE = os.path.join(DOC_DIR, "iped_schemas.inc")
 BEE_SCHEMAS_FILE = os.path.join(DOC_DIR, "bee_schemas.inc")
 # FCB_SCHEMAS_FILE = os.path.join(DOC_DIR, "fcb_schemas.inc")
 # XMCD_SCHEMAS_FILE = os.path.join(DOC_DIR, "xmcd_schemas.inc")
@@ -67,6 +68,7 @@ schema_files = [
     HAB_SCHEMAS_FILE,
     OTFAD_SCHEMAS_FILE,
     IEE_SCHEMAS_FILE,
+    IPED_SCHEMAS_FILE,
     BEE_SCHEMAS_FILE,
     # FCB_SCHEMAS_FILE,
     # XMCD_SCHEMAS_FILE,
@@ -187,28 +189,26 @@ def append_schema(
 
         if subtitle:
             f.write(f"### {subtitle}\n")
-        f.write(f"""\n<details>
-<summary>{title} JSON schema</summary>
-
-<a href="../{html_file}" target="_blank">Open it in full page</a>
-
-<iframe title="JSON schema" width="100%" height="1000" src="../{html_file}" frameborder="0" allowfullscreen></iframe>
-
-</details>
-""")
+        json_schema_details = (
+            "\n<details>\n"
+            f"<summary>{title} JSON schema</summary>\n\n"
+            f'<a href="../{html_file}" target="_blank">Open it in full page</a>\n\n'
+            f'<iframe title="JSON schema" width="100%" height="1000" src="../{html_file}" '
+            'frameborder="0" allowfullscreen></iframe>\n\n'
+            "</details>\n"
+        )
+        f.write(json_schema_details)
         f.write("\n")
         f.write("\n")
-        f.write(f"""<details>
-<summary>{title} YAML configuration template</summary>
-
-```yaml\n
-{template}
-\n```
-\n
-
-</details>
-\n
-""")
+        yaml_template_details = (
+            "<details>\n"
+            f"<summary>{title} YAML configuration template</summary>\n\n"
+            "```yaml\n\n"
+            f"{template}\n\n"
+            "```\n\n\n"
+            "</details>\n\n"
+        )
+        f.write(yaml_template_details)
 
     with open(os.path.join(HTML_SCHEMAS_PATH, html_file), "w", encoding="utf-8") as f:
         f.write(parsed)
@@ -554,6 +554,29 @@ def get_iee_doc() -> None:
         append_schema(parsed_schema, template, IEE_SCHEMAS_FILE, title=schema["title"])
 
 
+def get_iped_doc() -> None:
+    """Generate documentation for IPED table/keyblob configurations.
+
+    This method generates validation schema documentation for IPED configurations
+    across all supported device families. It removes any existing schema file,
+    retrieves validation schemas for each family, processes them into a readable
+    format, and appends the documentation to the IPED schemas file.
+
+    :raises OSError: If there are file system issues when removing or writing files.
+    :raises SPSDKError: If schema generation or parsing fails for any family.
+    """
+    if os.path.exists(IPED_SCHEMAS_FILE):
+        os.remove(IPED_SCHEMAS_FILE)
+    families = get_docs_families(DatabaseManager.IPED)
+    for fam in families:
+        validation_schemas = Iped.get_validation_schemas(fam)
+        schema = get_schema(validation_schemas)
+        schema["title"] = f"IPED for {fam}"
+        parsed_schema = parse_schema(schema)
+        template = get_template([schema], f"IPED template for {fam}")
+        append_schema(parsed_schema, template, IPED_SCHEMAS_FILE, title=schema["title"])
+
+
 def get_bee_doc() -> None:
     """Generate documentation for BEE (Bus Encryption Engine) configurations.
 
@@ -756,7 +779,7 @@ def main() -> None:
 
     This function orchestrates the generation of various schema documentation
     files for different SPSDK components including MBI, Secure Binary (SB40, SB31, SB21),
-    AHAB, HAB, OTFAD, IEE, BEE, FCB, and XMCD. Each component's documentation
+    AHAB, HAB, OTFAD, IEE, IPED, BEE, FCB, and XMCD. Each component's documentation
     is generated by calling its respective generation function.
     """
     print("Running generate schemas script")
@@ -771,6 +794,7 @@ def main() -> None:
     get_hab_doc()
     get_otfad_doc()
     get_iee_doc()
+    get_iped_doc()
     get_bee_doc()
     # get_bootable_image()
     # get_bootable_image_table()

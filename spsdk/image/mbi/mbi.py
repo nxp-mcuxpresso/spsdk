@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2026 NXP
 #
@@ -16,8 +15,9 @@ template generation utilities.
 
 import logging
 import re
+from collections.abc import Callable
 from inspect import isclass
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any
 
 from typing_extensions import Self
 
@@ -57,7 +57,10 @@ def mbi_generate_config_templates(family: FamilyRevision) -> dict[str, str]:
     # 1: Generate all configuration for MBI
     try:
         mbi_classes = MasterBootImage.get_mbi_classes(family)
-    except SPSDKValueError:
+    except SPSDKValueError as exc:
+        logger.error(
+            f"Cannot generate MBI configuration templates for family: {family}, exc: {exc}"
+        )
         return ret
 
     for key, mbi in mbi_classes.items():
@@ -87,9 +90,9 @@ class MasterBootImage(FeatureBaseClass):
     IMAGE_AUTHENTICATIONS = "plain"
     IMAGE_ALIGNMENT: int
 
-    app: Optional[bytes]
-    app_table: Optional[mbi_mixin.MultipleImageTable]
-    cert_block: Optional[Union[CertBlockV1, CertBlockV21, CertBlockVx]]
+    app: bytes | None
+    app_table: mbi_mixin.MultipleImageTable | None
+    cert_block: CertBlockV1 | CertBlockV21 | CertBlockVx | None
     collect_data: Callable[[], BinaryImage]
     encrypt: Callable[[BinaryImage, bool], BinaryImage]
     post_encrypt: Callable[[BinaryImage, bool], BinaryImage]
@@ -109,7 +112,7 @@ class MasterBootImage(FeatureBaseClass):
     ]
 
     @classmethod
-    def get_mbi_classes(cls, family: FamilyRevision) -> dict[str, tuple[Type[Self], str, str]]:
+    def get_mbi_classes(cls, family: FamilyRevision) -> dict[str, tuple[type[Self], str, str]]:
         """Get all Master Boot Image supported classes for chip family.
 
         The method retrieves MBI classes for all supported target and authentication combinations
@@ -121,7 +124,7 @@ class MasterBootImage(FeatureBaseClass):
             and target and authentication type.
         """
         db = get_db(family)
-        ret: dict[str, tuple[Type[Self], str, str]] = {}
+        ret: dict[str, tuple[type[Self], str, str]] = {}
 
         images: dict[str, dict[str, str]] = db.get_dict(DatabaseManager.MBI, "images")
 
@@ -139,7 +142,7 @@ class MasterBootImage(FeatureBaseClass):
         return ret
 
     @classmethod
-    def get_mbi_class(cls, config: dict[str, Any]) -> Type[Self]:
+    def get_mbi_class(cls, config: dict[str, Any]) -> type[Self]:
         """Get Master Boot Image class based on configuration.
 
         This method validates the configuration and determines the appropriate MBI class
@@ -191,7 +194,7 @@ class MasterBootImage(FeatureBaseClass):
         return cls.create_mbi_class(cls_name, family)
 
     @classmethod
-    def create_mbi_class(cls, name: str, family: FamilyRevision) -> Type[Self]:
+    def create_mbi_class(cls, name: str, family: FamilyRevision) -> type[Self]:
         """Create Master Boot Image class dynamically.
 
         This method creates a new MBI class by combining the base MasterBootImage class
@@ -218,12 +221,10 @@ class MasterBootImage(FeatureBaseClass):
             "IMAGE_AUTHENTICATIONS": authentication,
         }
         # Get all objects to be mixed together
-        base_classes: list[Union[Type[MasterBootImage], Type[mbi_mixin.Mbi_Mixin]]] = [
-            MasterBootImage
-        ]
+        base_classes: list[type[MasterBootImage] | type[mbi_mixin.Mbi_Mixin]] = [MasterBootImage]
         mixins = mbi_mixin.get_all_mbi_mixins()
         for mixin in class_descr["mixins"]:
-            mixin_cls: Type[mbi_mixin.Mbi_Mixin] = mixins[mixin]
+            mixin_cls: type[mbi_mixin.Mbi_Mixin] = mixins[mixin]
             if isclass(mixin_cls) and issubclass(mixin_cls, mbi_mixin.Mbi_Mixin):
                 for member, init_value in mixin_cls.NEEDED_MEMBERS.items():
                     if member not in members:
@@ -275,7 +276,7 @@ class MasterBootImage(FeatureBaseClass):
         return auth, target
 
     @classmethod
-    def _get_mixins(cls) -> list[Type[mbi_mixin.Mbi_Mixin]]:
+    def _get_mixins(cls) -> list[type[mbi_mixin.Mbi_Mixin]]:
         """Get the list of Mbi Mixin classes.
 
         This method filters the base classes to return only those that are subclasses of Mbi_Mixin.
@@ -297,10 +298,19 @@ class MasterBootImage(FeatureBaseClass):
         """
         img_type = get_db(family).get_int(DatabaseManager.MBI, ["fixed_image_type"], -1)
         if img_type < 0:
-            ivt_class_name = get_db(family).get_str(
-                DatabaseManager.MBI, ["ivt_type"], "Mbi_MixinIvt"
-            )
-            return mbi_mixin.get_all_mbi_mixins()[ivt_class_name].get_image_type(data)
+            db = get_db(family)
+            ivt_class_name = db.get_str(DatabaseManager.MBI, ["ivt_type"], "Mbi_MixinIvt")
+            ivt_cls = mbi_mixin.get_all_mbi_mixins()[ivt_class_name]
+            # Use DB-driven IVT flags offset if available
+            if db.check_key(DatabaseManager.MBI, "ivt_offsets"):
+                flags_offset = db.get_int(
+                    DatabaseManager.MBI,
+                    ["ivt_offsets", "image_flags"],
+                    ivt_cls.IVT_IMAGE_FLAGS_OFFSET,
+                )
+                flags = int.from_bytes(data[flags_offset : flags_offset + 4], "little")
+                return flags & ivt_cls.IVT_IMAGE_FLAGS_IMAGE_TYPE_MASK
+            return ivt_cls.get_image_type(data)
         return img_type
 
     @classmethod
@@ -345,7 +355,7 @@ class MasterBootImage(FeatureBaseClass):
         """
         # Check if all needed class instance members are available (validation of class due to mixin problems)
         self.family = family
-        self.dek: Optional[str] = None
+        self.dek: str | None = None
         self.parsed_elements: dict[str, Any] = {}
         for k_arg, v_arg in kwargs.items():
             setattr(self, k_arg, v_arg)
@@ -402,7 +412,7 @@ class MasterBootImage(FeatureBaseClass):
         return ret
 
     @property
-    def rkth(self) -> Optional[bytes]:
+    def rkth(self) -> bytes | None:
         """Get Root Key Table Hash from certificate block if present.
 
         The method extracts the Root Key Table Hash from the certificate block
@@ -496,7 +506,7 @@ class MasterBootImage(FeatureBaseClass):
         cls,
         data: bytes,
         family: FamilyRevision = FamilyRevision("Unknown"),
-        dek: Optional[str] = None,
+        dek: str | None = None,
     ) -> Self:
         """Parse the final image to individual fields.
 
@@ -675,6 +685,8 @@ class MasterBootImage(FeatureBaseClass):
         verifier = self.verify()
         if verifier.has_errors:
             raise SPSDKError(verifier.draw(results=[VerifierResult.ERROR], colorize=False))
+        if verifier.has_warnings:
+            logger.warning(verifier.draw(results=[VerifierResult.WARNING], colorize=False))
 
     def verify(self) -> Verifier:
         """Verify the image.

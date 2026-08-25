@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-# Copyright 2023,2025 NXP
+# Copyright 2023,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +12,6 @@ MCUs over serial interfaces.
 """
 
 import logging
-from typing import Optional
 
 from spsdk.exceptions import SPSDKAttributeError
 from spsdk.sdp.commands import CmdResponse, CommandTag
@@ -85,7 +83,7 @@ class SDPSerialProtocol(SDPProtocolBase):
 
         self._send_frame(data)
 
-    def read(self, length: Optional[int] = None) -> CmdResponse:
+    def read(self, length: int | None = None) -> CmdResponse:
         """Read data from device.
 
         Reads HAB (High Assurance Boot) information from the connected device

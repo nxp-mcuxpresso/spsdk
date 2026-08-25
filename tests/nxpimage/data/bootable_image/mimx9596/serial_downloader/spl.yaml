@@ -86,7 +86,7 @@ containers:
         -
           # -----------------------------------------===== SPL [Required] =====-----------------------------------------
           # Description: SPL firmware
-          spl: inputs/u-boot-spl.bin-imx95-15x15-lpddr4x-evk-sd
+          spl: inputs/u-boot-spl.bin
         -
           # --------------------------------------===== V2X Dummy [Required] =====--------------------------------------
           # Description: If Present, V2X dummy image will be added to Image Array Entry (no data record)

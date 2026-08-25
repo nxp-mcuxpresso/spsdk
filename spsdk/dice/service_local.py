@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
-# Copyright 2023-2025 NXP
+# Copyright 2023-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,8 +15,8 @@ import contextlib
 import logging
 import secrets
 import sqlite3
+from collections.abc import Iterator
 from datetime import date, datetime, time
-from typing import Iterator, Optional
 
 from spsdk.crypto.keys import PublicKeyEcc
 from spsdk.dice.exceptions import SPSDKDICEError, SPSDKDICEVerificationError
@@ -195,7 +194,7 @@ class LocalDICEVerificationService(DICEVerificationService):
             message=f"FW Version, RTF, and HAD {'updated' if found else 'registered'} successfully.",
         )
 
-    def get_challenge(self, pre_set: Optional[str] = None) -> bytes:
+    def get_challenge(self, pre_set: str | None = None) -> bytes:
         """Get challenge vector from the service.
 
         Generates a unique challenge for DICE attestation and stores it in the database
@@ -231,9 +230,7 @@ class LocalDICEVerificationService(DICEVerificationService):
             "Could not generate unique challenge. Consider pruning attestation_records data."
         )
 
-    def _verify_challenge(
-        self, response: DICEResponse, attestation_record: Optional[tuple]
-    ) -> None:
+    def _verify_challenge(self, response: DICEResponse, attestation_record: tuple | None) -> None:
         """Verify challenge from DICE response against stored attestation record.
 
         The method validates that the challenge exists in the attestation record and hasn't
@@ -364,9 +361,7 @@ class LocalDICEVerificationService(DICEVerificationService):
                     ),
                 )
 
-    def _verify_had(
-        self, response: DICEResponse, cursor: sqlite3.Cursor
-    ) -> Optional[tuple[str, str]]:
+    def _verify_had(self, response: DICEResponse, cursor: sqlite3.Cursor) -> tuple[str, str] | None:
         """Verify Hardware Attestation Data (HAD) against stored value.
 
         Retrieves the expected HAD value from database for the given version and compares

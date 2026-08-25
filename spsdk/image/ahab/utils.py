@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -15,7 +14,6 @@ block management.
 import logging
 import struct
 from copy import deepcopy
-from typing import Optional
 
 from spsdk.apps.utils.utils import SPSDKError
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
@@ -102,7 +100,7 @@ def ahab_update_keyblob(
     keyblob: str,
     container_id: int,
     image_id: int = 0,
-    mem_type: Optional[str] = None,
+    mem_type: str | None = None,
 ) -> None:
     """Update keyblob in AHAB image.
 
@@ -207,8 +205,8 @@ def ahab_re_sign(
     container_id: int,
     image_id: int,
     sign_provider_0: SignatureProvider,
-    sign_provider_1: Optional[SignatureProvider] = None,
-    mem_type: Optional[str] = None,
+    sign_provider_1: SignatureProvider | None = None,
+    mem_type: str | None = None,
 ) -> None:
     """Re-sign the AHAB container in AHAB image.
 

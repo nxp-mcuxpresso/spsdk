@@ -1,0 +1,32 @@
+# Copyright 2023-2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+---
+# =====================================  Certification Block for MC56xx template  ======================================
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mwct20d2
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <b1, latest>
+revision: latest
+# ======================================================================================================================
+#                                             == ISK Certificate Settings ==
+# ======================================================================================================================
+selfSigned: true
+# ---------------------------------===== ISK public key [Conditionally required] =====----------------------------------
+# Description: Path to ISK public key.
+iskPublicKey: ../ec_secp256r1_sign_cert.pem
+# -----------------------===== Main root Certification Private Key [Conditionally required] =====-----------------------
+# Description: Path to Main root Certification Private Key.
+signer: ../ec_pk_secp256r1_sign_cert.pem
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# --------------------------------------===== cert block filename [Required] =====--------------------------------------
+# Description: Generated cert block filename.
+containerOutputFile: ../../workspace/cert_block.bin

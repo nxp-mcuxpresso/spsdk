@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2023-2026 NXP
 #
@@ -13,7 +12,7 @@ focusing on command option validation, template handling, and option conflict de
 
 import logging
 from collections import defaultdict
-from typing import Callable, Generator, Iterator, Optional, Union
+from collections.abc import Callable, Generator, Iterator
 
 import click
 
@@ -21,10 +20,10 @@ from spsdk.apps.spsdk_apps import main as spsdk_main
 
 
 def gather(
-    group: Union[click.Group, click.Command],
+    group: click.Group | click.Command,
     func: Callable,
     command_name: str = "",
-    excluded_commands: Optional[list[str]] = None,
+    excluded_commands: list[str] | None = None,
 ) -> Iterator[bool]:
     """Recursively gather and process Click commands from a command group.
 

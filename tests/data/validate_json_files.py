@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
-#!/usr/bin/env python3
-## Copyright 2025 NXP
+#!/usr/bin/env python
+# Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """JSON Schema Validator for SPSDK test data files.
 
 This module provides validation functionality for JSON files in the SPSDK repository
@@ -16,7 +16,7 @@ import glob
 import json
 import os
 import sys
-from typing import Any, Optional, Union
+from typing import Any
 
 import jsonschema
 from jsonschema import validate
@@ -39,7 +39,7 @@ class JsonSchemaValidator:
     schemas to ensure configuration integrity across the SPSDK ecosystem.
     """
 
-    def __init__(self, root_dir: str = ".", schemas_dir: Optional[str] = None) -> None:
+    def __init__(self, root_dir: str = ".", schemas_dir: str | None = None) -> None:
         """Initialize the validator with the root directory to search and schemas directory.
 
         Args:
@@ -62,11 +62,11 @@ class JsonSchemaValidator:
 
         # Load schemas
         try:
-            with open(self.fuses_schema_path, "r", encoding="utf-8") as f:
+            with open(self.fuses_schema_path, encoding="utf-8") as f:
                 self.fuses_schema = json.load(f)
-            with open(self.register_schema_path, "r", encoding="utf-8") as f:
+            with open(self.register_schema_path, encoding="utf-8") as f:
                 self.register_schema = json.load(f)
-            with open(self.trustzone_schema_path, "r", encoding="utf-8") as f:
+            with open(self.trustzone_schema_path, encoding="utf-8") as f:
                 self.trustzone_schema = json.load(f)
         except FileNotFoundError as e:
             print(f"Error: Schema file not found: {e}")
@@ -78,7 +78,7 @@ class JsonSchemaValidator:
         # Create a registry for schema references
         self.registry = self._create_schema_registry()
 
-    def _create_schema_registry(self) -> Union[dict[str, Any], "referencing.Registry"]:
+    def _create_schema_registry(self) -> "dict[str, Any] | referencing.Registry":
         """Create a registry for schema references using the referencing library.
 
         Loads all JSON schema files from the schemas directory and creates either a
@@ -95,11 +95,11 @@ class JsonSchemaValidator:
         for schema_file in glob.glob(os.path.join(self.schemas_dir, "*.json")):
             schema_name = os.path.basename(schema_file)
             try:
-                with open(schema_file, "r", encoding="utf-8") as f:
+                with open(schema_file, encoding="utf-8") as f:
                     schema_data = json.load(f)
                     # Store the schema with its localschema URI
                     schema_store[f"localschema:{schema_name}"] = schema_data
-            except (json.JSONDecodeError, IOError) as e:
+            except (json.JSONDecodeError, OSError) as e:
                 print(f"Warning: Could not load schema file {schema_file}: {e}")
 
         # Check if we have the referencing library
@@ -127,7 +127,7 @@ class JsonSchemaValidator:
         return schema_store
 
     def find_json_files(
-        self, search_dir: Optional[str] = None
+        self, search_dir: str | None = None
     ) -> tuple[list[str], list[str], list[str]]:
         """Find all JSON files in the repository or specified directory.
 
@@ -167,9 +167,7 @@ class JsonSchemaValidator:
 
         return fuses_files, trustzone_files, other_files
 
-    def validate_json_file(
-        self, file_path: str, schema: dict[str, Any]
-    ) -> tuple[bool, Optional[str]]:
+    def validate_json_file(self, file_path: str, schema: dict[str, Any]) -> tuple[bool, str | None]:
         """Validate a JSON file against a schema.
 
         The method supports both modern referencing library and legacy RefResolver
@@ -182,7 +180,7 @@ class JsonSchemaValidator:
         :return: Tuple containing validation result (True if valid, False otherwise) and error message (None if valid).
         """
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 json_data = json.load(f)
 
             # Check if we're using the referencing library
@@ -213,8 +211,8 @@ class JsonSchemaValidator:
             return False, f"Unexpected error: {str(e)}"
 
     def validate_all(
-        self, search_dir: Optional[str] = None
-    ) -> dict[str, dict[str, Union[bool, Optional[str]]]]:
+        self, search_dir: str | None = None
+    ) -> dict[str, dict[str, bool | str | None]]:
         """Validate all JSON files against their respective schemas.
 
         Searches for JSON files in the specified directory and validates them against
@@ -226,7 +224,7 @@ class JsonSchemaValidator:
         :return: Dictionary with file paths as keys and validation results as values.
                  Each result contains 'valid' (bool) and 'error' (str or None) keys.
         """
-        results: dict[str, dict[str, Union[bool, Optional[str]]]] = {}
+        results: dict[str, dict[str, bool | str | None]] = {}
         fuses_files, trustzone_files, other_files = self.find_json_files(search_dir)
 
         print(f"Found {len(fuses_files)} fuses*.json files")

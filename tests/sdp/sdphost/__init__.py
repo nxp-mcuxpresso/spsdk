@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2020,2025 NXP
+# Copyright 2019-2020,2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 """SPSDK SDP Host test package.
 
 This package contains test modules for the Serial Download Protocol (SDP) host

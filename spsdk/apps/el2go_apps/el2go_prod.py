@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -14,7 +13,6 @@ database operations in production environments.
 """
 
 import time
-from typing import Optional
 
 import click
 from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
@@ -33,7 +31,7 @@ from spsdk.el2go.database import LocalProductBasedBatchDB, ProdDBStats, RemotePr
 from spsdk.el2go.interface import EL2GOInterfaceHandler
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import load_binary, write_file
+from spsdk.utils.misc import get_printable_path, load_binary, write_file
 
 
 @click.group(name="prod", cls=CommandsTreeGroup)
@@ -73,7 +71,7 @@ def prod_get_secure_objects_command(
 
 
 def prod_get_secure_objects(
-    config: Config, devices: Optional[int], batch_id: Optional[str], output: str
+    config: Config, devices: int | None, batch_id: str | None, output: str
 ) -> None:
     """Retrieve secure objects for EdgeLock 2GO product-based provisioning."""
     client = EL2GOTPClient.load_from_config(config)
@@ -212,11 +210,11 @@ def prod_provision_device_command(
 def prod_provision_device(
     interface: EL2GOInterfaceHandler,
     config: Config,
-    database: Optional[str] = None,
-    remote_database: Optional[str] = None,
-    secure_objects_file: Optional[str] = None,
-    output: Optional[str] = None,
-    workspace: Optional[str] = None,
+    database: str | None = None,
+    remote_database: str | None = None,
+    secure_objects_file: str | None = None,
+    output: str | None = None,
+    workspace: str | None = None,
     clean: bool = False,
     dry_run: bool = False,
 ) -> None:
@@ -310,7 +308,7 @@ def prod_prepare_device(
     remote_database: str,
     secure_objects_file: str,
     check_fw: bool = False,
-    workspace: Optional[str] = None,
+    workspace: str | None = None,
     clean: bool = False,
 ) -> None:
     """Prepare device for EdgeLock 2GO provisioning process.
@@ -370,7 +368,7 @@ def prod_run_provisioning(
 
     if output:
         write_file(data=report, path=output, mode="wb")
-        click.echo(f"Provisioning report saved to {output}")
+        click.echo(f"Provisioning report saved to {get_printable_path(output)}")
 
 
 @prod_group.command(name="validate-reports", no_args_is_help=True)
@@ -411,9 +409,7 @@ def prod_db_stats_command(database: str, remote_database: str) -> None:
     click.echo(stats)
 
 
-def prod_db_stats(
-    database: Optional[str] = None, remote_database: Optional[str] = None
-) -> ProdDBStats:
+def prod_db_stats(database: str | None = None, remote_database: str | None = None) -> ProdDBStats:
     """Get database statistics for provisioning records and reports."""
     stats = None
     if database:
@@ -432,9 +428,9 @@ def prod_db_stats(
 
 def _store_report(
     report: bytes,
-    database: Optional[str] = None,
-    remote_database: Optional[str] = None,
-    output_file: Optional[str] = None,
+    database: str | None = None,
+    remote_database: str | None = None,
+    output_file: str | None = None,
 ) -> None:
     """Store provisioning report to local or remote database."""
     if database:
@@ -450,13 +446,13 @@ def _store_report(
 
     if output_file:
         write_file(report, output_file, "wb")
-        click.echo(f"Saved report to file: {output_file}")
+        click.echo(f"Saved report to file: {get_printable_path(output_file)}")
 
 
 def _retrieve_secure_objects(
-    database: Optional[str] = None,
-    remote_database: Optional[str] = None,
-    secure_objects_file: Optional[str] = None,
+    database: str | None = None,
+    remote_database: str | None = None,
+    secure_objects_file: str | None = None,
 ) -> bytes:
     if database:
         db = LocalProductBasedBatchDB(file_path=database)

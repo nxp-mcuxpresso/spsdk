@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2025-2026 NXP
 #
@@ -13,7 +12,8 @@ SPSDK framework.
 """
 
 import logging
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from typing_extensions import Self
 
@@ -58,13 +58,13 @@ class DevHsmSBc(DevHsm):
         self,
         mboot: McuBoot,
         family: FamilyRevision,
-        oem_share_input: Optional[bytes] = None,
-        sbc: Optional[SecureBinaryC] = None,
-        workspace: Optional[str] = None,
-        initial_reset: Optional[bool] = False,
-        final_reset: Optional[bool] = True,
-        buffer_address: Optional[int] = None,
-        info_print: Optional[Callable] = None,
+        oem_share_input: bytes | None = None,
+        sbc: SecureBinaryC | None = None,
+        workspace: str | None = None,
+        initial_reset: bool | None = False,
+        final_reset: bool | None = True,
+        buffer_address: int | None = None,
+        info_print: Callable | None = None,
     ) -> None:
         """Initialization of device HSM class. It's designed to create provisioned sbc file.
 
@@ -99,7 +99,7 @@ class DevHsmSBc(DevHsm):
         # store input of OEM_SHARE_INPUT to workspace in case that is generated randomly
         self.store_temp_res("OEM_SHARE_INPUT.bin", self.oem_share_input)
 
-        self.final_sb = bytes()
+        self.final_sb = b""
 
         self.key_size = self.database.get_int(
             DatabaseManager.DEVHSM,
@@ -232,7 +232,7 @@ class DevHsmSBc(DevHsm):
 
         # 10: Merge all parts together
         self.info_print(" 10: Composing final SBc file.")
-        self.final_sb = bytes()
+        self.final_sb = b""
         self.final_sb += sbc_header_to_be_signed
         self.final_sb += cb_header_exported
         self.final_sb += header_signature
@@ -284,7 +284,7 @@ class DevHsmSBc(DevHsm):
         return self.final_sb
 
     def oem_set_master_share(
-        self, oem_seed: Optional[bytes] = None, enc_oem_share: Optional[bytes] = None
+        self, oem_seed: bytes | None = None, enc_oem_share: bytes | None = None
     ) -> bytes:
         """Set OEM Master share on the device.
 
@@ -331,7 +331,7 @@ class DevHsmSBc(DevHsm):
             )
         self.store_temp_res("ENC_OEM_SHARE.bin", oem_enc_share)
 
-        return oem_enc_share, bytes(), bytes()
+        return oem_enc_share, b"", b""
 
     def sign_data_blob(self, data_to_sign: bytes, key: bytes) -> bytes:
         """Get HSM encryption sign for data blob.
@@ -433,7 +433,7 @@ class DevHsmSBc(DevHsm):
 
     @classmethod
     def load_from_config(
-        cls, config: Config, mboot: Optional[McuBoot] = None, info_print: Optional[Callable] = None
+        cls, config: Config, mboot: McuBoot | None = None, info_print: Callable | None = None
     ) -> Self:
         """Load the class from configuration.
 
@@ -470,7 +470,7 @@ class DevHsmSBc(DevHsm):
         )
 
     def generate_key(
-        self, key_type: TrustProvOemKeyType, address: int, key_name: Optional[str] = None
+        self, key_type: TrustProvOemKeyType, address: int, key_name: str | None = None
     ) -> bytes:
         """Generate on device key of provided type.
 

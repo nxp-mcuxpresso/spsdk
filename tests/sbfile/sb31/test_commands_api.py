@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 #
 # Copyright 2019-2026 NXP
 #
@@ -15,7 +14,6 @@ configuration management.
 
 import os
 from struct import pack
-from typing import Optional
 
 import pytest
 
@@ -770,7 +768,7 @@ def test_invalid_base_cmd() -> None:
         ),
     ],
 )
-def test_load_program_ifr_cmd(config: dict, value: Optional[bytes], raise_error: bool) -> None:
+def test_load_program_ifr_cmd(config: dict, value: bytes | None, raise_error: bool) -> None:
     """Test loading program IFR command from configuration.
 
     This test verifies that the CmdProgIfr.load_from_config method correctly
@@ -1299,7 +1297,7 @@ def test_cmd_load_compression_empty_data() -> None:
     Validates that the command handles empty data correctly without attempting
     compression.
     """
-    original_data = bytes()
+    original_data = b""
     cmd = CmdLoad(address=0xD000, data=original_data, memory_id=13, compress=True)
 
     # Empty data shouldn't be compressed
