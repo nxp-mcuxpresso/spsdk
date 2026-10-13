@@ -25,6 +25,8 @@ from spsdk.utils.misc import LITTLE_ENDIAN, UINT8, UINT16
 from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
 
+UNKNOWN_FAMILY = FamilyRevision("unknown")
+
 
 class MuMask(SpsdkEnum):
     """Enumeration of HSE MU (Message Unit) masks.
@@ -380,7 +382,7 @@ class KeyCatalogCfg(FeatureBaseClass):
         return nvm_catalog + ram_catalog
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse the raw key catalog data into structured fields.
 
         The input data should contain both NVM and RAM catalogs concatenated together.

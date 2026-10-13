@@ -397,6 +397,15 @@ def test_supported_devices_latest(  # pylint: disable=redefined-outer-name
     assert dev_list == devices
 
 
+@pytest.mark.parametrize("feature", [DatabaseManager.DAT, DatabaseManager.SHADOW_REGS])
+def test_dat_or_shadow_regs_devices_support_debug_probe(feature: str) -> None:
+    """Test that DAT and shadow registers capable devices also support debug probe."""
+    feature_families = set(get_families(feature))
+    debug_probe_families = set(get_families(DatabaseManager.DEBUG_PROBE))
+
+    assert not feature_families - debug_probe_families
+
+
 @pytest.mark.parametrize(
     "device,rom_protocol,rom_usbid,flashloader_protocol,flashloader_usbid",
     [
@@ -734,7 +743,11 @@ def test_restricted_data_devices() -> None:
     assert os.path.normpath(restricted_data) == os.path.normpath(
         os.path.join(SPSDK_RESTRICTED_DATA_FOLDER, "data")
     )
-    for device in os.listdir(os.path.join(restricted_data, "devices")):
+    devices_dir = os.path.join(restricted_data, "devices")
+    for device in os.listdir(devices_dir):
+        # Skip non-directory entries (e.g. .gitkeep placeholder kept to track the folder in git)
+        if not os.path.isdir(os.path.join(devices_dir, device)):
+            continue
         assert db.devices.get(device)
 
 
@@ -1222,6 +1235,91 @@ def test_mem_map_get_table() -> None:
     assert "sram" in table.lower() or "Block" in table
 
 
+def _mem_map_for_find() -> MemMap:
+    """Build a MemMap with two distinct blocks for find/get tests."""
+    return MemMap.load(
+        {
+            MemBlock.create_name("sram", core="cm7", instance=0, secure_access=True): {
+                "start_int": 0x20000000,
+                "size_int": 0x1000,
+                "external": False,
+            },
+            MemBlock.create_name("flexspi", instance=1): {
+                "start_int": 0x60000000,
+                "size_int": 0x2000,
+                "external": True,
+            },
+        }
+    )
+
+
+def test_mem_map_get_memory_first_try() -> None:
+    """MemMap.get_memory returns the block on the first (exact) match."""
+    blk = _mem_map_for_find().get_memory("sram", core="cm7", instance=0, secure=True)
+    assert blk.block_name == "sram"
+
+
+def test_mem_map_get_memory_second_try() -> None:
+    """MemMap.get_memory falls back to a non-secure block when secure is None."""
+    mem_map = MemMap.load(
+        {MemBlock.create_name("sram", secure_access=False): {"start_int": 0, "size_int": 0x100}}
+    )
+    assert mem_map.get_memory("sram").block_name == "sram"
+
+
+def test_mem_map_get_memory_not_found() -> None:
+    """MemMap.get_memory raises when no block matches."""
+    with pytest.raises(SPSDKError):
+        _mem_map_for_find().get_memory("nonexistent")
+
+
+def test_find_memory_blocks_no_filter() -> None:
+    """find_memory_blocks returns all blocks when no filter is provided."""
+    assert len(_mem_map_for_find().find_memory_blocks()) == 2
+
+
+def test_find_memory_blocks_by_block_name() -> None:
+    """find_memory_blocks filters by block name."""
+    res = _mem_map_for_find().find_memory_blocks(block_name="sram")
+    assert len(res) == 1 and res[0].block_name == "sram"
+
+
+def test_find_memory_blocks_by_core() -> None:
+    """find_memory_blocks filters by core."""
+    res = _mem_map_for_find().find_memory_blocks(core="cm7")
+    assert len(res) == 1 and res[0].core == "cm7"
+
+
+def test_find_memory_blocks_by_instance() -> None:
+    """find_memory_blocks filters by instance."""
+    res = _mem_map_for_find().find_memory_blocks(instance=1)
+    assert len(res) == 1 and res[0].instance == 1
+
+
+def test_find_memory_blocks_by_secure_access() -> None:
+    """find_memory_blocks filters by secure access."""
+    res = _mem_map_for_find().find_memory_blocks(secure_access=True)
+    assert len(res) == 1 and res[0].security_access is True
+
+
+def test_find_memory_blocks_by_external() -> None:
+    """find_memory_blocks filters by external flag."""
+    res = _mem_map_for_find().find_memory_blocks(external=True)
+    assert len(res) == 1 and res[0].external is True
+
+
+def test_find_memory_blocks_by_name_regex() -> None:
+    """find_memory_blocks filters by a name regex."""
+    res = _mem_map_for_find().find_memory_blocks(name_regex="flexspi")
+    assert len(res) == 1 and res[0].block_name == "flexspi"
+
+
+def test_find_memory_blocks_by_address_range() -> None:
+    """find_memory_blocks filters by base address range."""
+    res = _mem_map_for_find().find_memory_blocks(base_address_range=(0x20000000, 0x20001000))
+    assert len(res) == 1 and res[0].base_address == 0x20000000
+
+
 # IspCfg
 
 
@@ -1362,7 +1460,7 @@ def test_device_lt() -> None:
     db = DatabaseManager().db
     dev_a = db.devices.get("lpc55s69")
     dev_b = db.devices.get("mcxn947")
-    assert (dev_a < dev_b) == ("lpc55s69" < "mcxn947")
+    assert (dev_a < dev_b) == (dev_a.name < dev_b.name)
 
 
 def test_device_get_features() -> None:
@@ -1381,7 +1479,7 @@ def test_devices_get_empty_name() -> None:
 
 def test_devices_get_nonexistent_device() -> None:
     """Line 1423: Devices.get raises for totally unknown device."""
-    with pytest.raises(Exception):
+    with pytest.raises(SPSDKErrorMissingDevice):
         DatabaseManager().db.devices.get("completely_nonexistent_device_xyz_123")
 
 

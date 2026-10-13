@@ -43,6 +43,8 @@ from spsdk.utils.misc import Endianness, load_binary, load_text, use_working_dir
 from tests.cli_runner import CliRunner
 from tests.misc import GetPassMock
 
+logger = logging.getLogger(__name__)
+
 if IS_DILITHIUM_SUPPORTED:
     from spsdk_pqc.wrapper import DILITHIUM_LEVEL, KEY_INFO
 
@@ -62,7 +64,7 @@ def run_nxpcrypto(cli_runner: CliRunner, cmd: str, cwd: str, expected_code: int 
     :return: Click Result object containing command execution details.
     """
     with use_working_directory(cwd):
-        logging.debug(f"Running {cmd}")
+        logger.debug(f"Running {cmd}")
         result = cli_runner.invoke(nxpcrypto.main, cmd.split(), expected_code=expected_code)
     return result
 

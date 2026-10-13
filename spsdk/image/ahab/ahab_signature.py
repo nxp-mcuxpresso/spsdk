@@ -13,6 +13,7 @@ for secure image signing operations.
 
 import logging
 from struct import pack, unpack
+from typing import ClassVar
 
 from typing_extensions import Self
 
@@ -55,7 +56,7 @@ class ContainerSignature(HeaderContainer):
     TAG = AHABTags.SIGNATURE.tag
     VERSION = 0x00
 
-    DIFF_ATTRIBUTES_VALUES = ["_signature_data"]
+    DIFF_ATTRIBUTES_VALUES: ClassVar[list[str]] = ["_signature_data"]
 
     def __init__(
         self,
@@ -85,15 +86,14 @@ class ContainerSignature(HeaderContainer):
         :param other: Object to compare with this ContainerSignature instance.
         :return: True if objects are equal, False otherwise.
         """
-        if isinstance(other, ContainerSignature):
-            if (
+        return bool(
+            isinstance(other, ContainerSignature)
+            and (
                 super().__eq__(other)
                 and self._signature_data == other._signature_data
                 and self.signature_type == other.signature_type
-            ):
-                return True
-
-        return False
+            )
+        )
 
     def __len__(self) -> int:
         """Get the total length of the AHAB signature block.
@@ -304,6 +304,7 @@ class ContainerSignature(HeaderContainer):
         cls,
         config: Config,
         srk_table: SRKTable | None = None,
+        used_srk_id: int = 0,
     ) -> Self:
         """Create ContainerSignature object from configuration options.
 
@@ -314,15 +315,22 @@ class ContainerSignature(HeaderContainer):
         :param config: Array of AHAB containers configuration dictionaries.
         :param srk_table: SRK table, used to determine length of the signature if the
             signature_provider or private key is not used.
-        :return: Container signature object.
+        :param used_srk_id: Index of the SRK record used for signing.
+        :return: ContainerSignature object.
         :raises SPSDKValueError: When srk_table is not defined but needed.
         """
         signature_provider = None
         signature_data = None
+        srk_record = None
+        source_key = None
+        if srk_table:
+            try:
+                srk_record = srk_table.srk_records[used_srk_id]
+                source_key = srk_table.get_source_keys()[used_srk_id]
+            except IndexError as exc:
+                raise SPSDKValueError(f"The SRK ID({used_srk_id}) is out of range.") from exc
         hash_alg = (
-            EnumHashAlgorithm.from_label(srk_table.srk_records[0].hash_algorithm.label)
-            if srk_table
-            else None
+            EnumHashAlgorithm.from_label(srk_record.hash_algorithm.label) if srk_record else None
         )
         if "signer" in config:
             signature_provider = get_signature_provider(config, pss_padding=True, hash_alg=hash_alg)
@@ -332,7 +340,8 @@ class ContainerSignature(HeaderContainer):
                     "In case that private key neither signature provider is used, "
                     "the srk table must be defined to recognize the length of signature."
                 )
-            signature_data = cls.get_dummy_signature(srk_table.get_source_keys()[0].signature_size)
+            assert source_key is not None
+            signature_data = cls.get_dummy_signature(source_key.signature_size)
             logger.warning(
                 "The AHAB configuration has not defined signing resources. "
                 "Instead of signature, the place holder will be used. "

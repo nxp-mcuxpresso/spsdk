@@ -65,12 +65,14 @@ with existing plugins and third-party code.
 
 from abc import ABC, abstractmethod
 from time import sleep
+from types import TracebackType
 
 import colorama
 import prettytable
+from typing_extensions import Self
 
 from spsdk import get_logger
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKKeyError
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -136,6 +138,14 @@ class MemorySpace(SpsdkEnum):
     PROGRAM = (1, "program", "Program memory bus (P: space, DSC only) — 16-bit word access only")
 
 
+class DebugProbeProtocol(SpsdkEnum):
+    """Debug probe physical protocol selector."""
+
+    SWD = (0, "swd", "Serial Wire Debug protocol")
+    JTAG = (1, "jtag", "JTAG protocol")
+    ONCE = (2, "once", "On-Chip Emulation protocol")
+
+
 class DebugProbe(ABC):
     """Abstract base class for SPSDK debug probe interfaces.
 
@@ -155,6 +165,7 @@ class DebugProbe(ABC):
 
     ARCHITECTURE = "abstract"
     NAME = "abstract"
+    SUPPORTED_PROTOCOLS: tuple[DebugProbeProtocol, ...] = ()
 
     RESET_TIME = 0.1
     AFTER_RESET_TIME = 0.05
@@ -170,13 +181,46 @@ class DebugProbe(ABC):
         """
         self.hardware_id = hardware_id
         self.options = dict(options or {})
+        self.protocol = self.get_requested_protocol(self.options, default_protocol=True)
         self.family = None
         family = self.options.pop("family", None)
         revision = self.options.pop("revision", "latest")
         if family:
             self.family = FamilyRevision(family, revision)
 
-    def __enter__(self) -> "DebugProbe":
+    @classmethod
+    def get_requested_protocol(
+        cls, options: dict | None = None, default_protocol: bool = False
+    ) -> DebugProbeProtocol | None:
+        """Get generic debug probe protocol option.
+
+        :param options: Optional debug probe options.
+        :param default_protocol: Return first supported protocol if protocol is not specified.
+        :return: Debug probe protocol or None if it was not specified.
+        :raises SPSDKDebugProbeError: Invalid debug probe protocol has been specified.
+        """
+        if not options:
+            return (
+                cls.SUPPORTED_PROTOCOLS[0] if default_protocol and cls.SUPPORTED_PROTOCOLS else None
+            )
+        protocol = options.pop("protocol", None)
+        if protocol is None and options.get("use_jtag") is not None:
+            protocol = DebugProbeProtocol.JTAG.label
+        if protocol is None:
+            return (
+                cls.SUPPORTED_PROTOCOLS[0] if default_protocol and cls.SUPPORTED_PROTOCOLS else None
+            )
+        if isinstance(protocol, DebugProbeProtocol):
+            return protocol
+        try:
+            return DebugProbeProtocol.from_label(str(protocol))
+        except SPSDKKeyError as exc:
+            raise SPSDKDebugProbeError(
+                f"Unsupported debug probe protocol '{protocol}'. "
+                f"Supported protocols: {', '.join(DebugProbeProtocol.labels())}."
+            ) from exc
+
+    def __enter__(self) -> Self:
         """Enter context manager - open the debug probe.
 
         This method is called when entering a 'with' statement block.
@@ -197,7 +241,7 @@ class DebugProbe(ABC):
         self,
         exc_type: type[BaseException] | None,
         exc_val: BaseException | None,
-        exc_tb: object | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         """Exit context manager - close the debug probe.
 
@@ -517,16 +561,17 @@ class DebugProbes(list[ProbeDescription]):
 
         :return: Formatted table string with colored probe information.
         """
-        header = ["#", "Interface", "Id", "Description", "Architecture"]
+        header = ["#", "Interface", "Id", "Description", "Architecture", "Protocols"]
         table = prettytable.PrettyTable(header)
         table.align = "l"
         table.header = True
         table.border = True
         table.hrules = prettytable.HRuleStyle.HEADER
         table.vrules = prettytable.VRuleStyle.NONE
-        i = 0
-        for probe in self:
+        for i, probe in enumerate(self):
             hardware_id = probe.hardware_id or "Not available"
+            protocols = getattr(probe.probe, "SUPPORTED_PROTOCOLS", ())
+            protocol_labels = [protocol.label for protocol in protocols]
             table.add_row(
                 [
                     colorama.Fore.YELLOW + str(i),
@@ -534,9 +579,9 @@ class DebugProbes(list[ProbeDescription]):
                     colorama.Fore.CYAN + hardware_id,
                     colorama.Fore.GREEN + probe.description,
                     colorama.Fore.CYAN + probe.probe.ARCHITECTURE,
+                    colorama.Fore.CYAN + ", ".join(protocol_labels or ["Not specified"]),
                 ]
             )
-            i += 1
         return table.get_string() + colorama.Style.RESET_ALL
 
 
@@ -557,8 +602,9 @@ from spsdk.debuggers.debug_probe_dsc import (  # noqa: E402  # pylint: disable=w
 
 __all__ = [
     "DebugProbe",
-    "DebugProbeDsc",
     "DebugProbeCoreSightOnly",
+    "DebugProbeDsc",
+    "DebugProbeProtocol",
     "DebugProbes",
     "MemorySpace",
     "ProbeDescription",

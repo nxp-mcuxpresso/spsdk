@@ -419,11 +419,7 @@ def get_mcxa1_3_families() -> list[str]:
     :return: List of MCXA1x and MCXA3x family device names supported for CMPA operations.
     """
     all_families = get_mcxa_families()
-    mcxa_families = [
-        family
-        for family in all_families
-        if family.startswith("mcxa1") or family.startswith("mcxa3")
-    ]
+    mcxa_families = [family for family in all_families if family.startswith(("mcxa1", "mcxa3"))]
     return mcxa_families
 
 
@@ -944,7 +940,7 @@ def test_mcxc151_cmpa_cfg_crc_register_hidden() -> None:
 
         # Verify it's marked as reserved (hidden from templates)
         assert crc_reg.reserved is True
-    except Exception:
+    except Exception:  # noqa: BLE001
         # If register is not found or reserved attribute doesn't exist,
         # verify it's not in the config output
         config = cmpa_cfg.get_config(diff=True)

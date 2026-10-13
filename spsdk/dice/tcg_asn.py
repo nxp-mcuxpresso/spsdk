@@ -17,8 +17,8 @@ from datetime import datetime, timezone
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
-from pyasn1.codec.der.decoder import decode as decode
-from pyasn1.codec.der.encoder import encode as encode
+from pyasn1.codec.der.decoder import decode
+from pyasn1.codec.der.encoder import encode
 from pyasn1.type import char, namedtype, namedval, tag, univ, useful
 
 from spsdk.crypto.keys import (

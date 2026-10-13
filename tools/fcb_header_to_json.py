@@ -14,6 +14,7 @@ import logging
 import re
 import sys
 from copy import deepcopy
+from typing import ClassVar
 
 import click
 
@@ -60,7 +61,7 @@ class StructMember:
     :cvar STANDARD_TYPES_SIZES: Mapping of standard C types to their byte sizes.
     """
 
-    STANDARD_TYPES_SIZES = {
+    STANDARD_TYPES_SIZES: ClassVar[dict[str, int]] = {
         "uint8_t": 1,
         "int8_t": 1,
         "uint16_t": 2,

@@ -16,8 +16,10 @@ https://android.googlesource.com/platform/system/core/+/master/libsparse/sparse_
 
 import logging
 import struct
+from contextlib import ExitStack
 from dataclasses import dataclass, field
 from enum import IntEnum
+from pathlib import Path
 from typing import BinaryIO
 
 import colorama
@@ -607,9 +609,8 @@ class SparseImage:
             offset += consumed
 
         # Validate CRC if requested
-        if validate_crc:
-            if not sparse_image.validate_crc():
-                raise SPSDKError("CRC validation failed for sparse image")
+        if validate_crc and not sparse_image.validate_crc():
+            raise SPSDKError("CRC validation failed for sparse image")
 
         return sparse_image
 
@@ -767,6 +768,7 @@ class SparseImageReader:
         :raises SPSDKError: Invalid sparse image file.
         """
         self.file_path = file_path
+        self._context_manager = ExitStack()
         self.file_handle: BinaryIO | None = None
         self.header: SparseImageHeader | None = None
         self.chunk_index: list[ChunkIndexEntry] = []
@@ -781,7 +783,9 @@ class SparseImageReader:
         :raises SPSDKError: Cannot open file or invalid header.
         """
         try:
-            self.file_handle = open(self.file_path, "rb")
+            self.file_handle = self._context_manager.enter_context(
+                Path(self.file_path).open("rb")  # noqa: SIM115
+            )
         except Exception as e:
             raise SPSDKError(f"Cannot open sparse image file {self.file_path}: {e}") from e
 
@@ -789,9 +793,8 @@ class SparseImageReader:
         header_data = self.file_handle.read(SparseImageHeader.HEADER_SIZE)
         self.header = SparseImageHeader.parse(header_data)
 
-        if validate_header:
-            if self.header.magic != SparseImageHeader.MAGIC:
-                raise SPSDKError("Invalid sparse image magic number")
+        if validate_header and self.header.magic != SparseImageHeader.MAGIC:
+            raise SPSDKError("Invalid sparse image magic number")
 
         # Build chunk index for efficient random access
         self._build_chunk_index()
@@ -1017,11 +1020,14 @@ class SparseImageReader:
                 )
 
         # Close the file handle temporarily to reopen in read-write mode
-        self.file_handle.close()
+        self._context_manager.close()
+        self._context_manager = ExitStack()
 
         try:
             # Reopen file in read-write mode
-            self.file_handle = open(self.file_path, "r+b")
+            self.file_handle = self._context_manager.enter_context(
+                Path(self.file_path).open("r+b")  # noqa: SIM115
+            )
 
             # Perform modifications
             bytes_written = 0
@@ -1051,13 +1057,19 @@ class SparseImageReader:
 
         except Exception as e:
             # Reopen in read-only mode on error
-            self.file_handle.close()
-            self.file_handle = open(self.file_path, "rb")
+            self._context_manager.close()
+            self._context_manager = ExitStack()
+            self.file_handle = self._context_manager.enter_context(
+                Path(self.file_path).open("rb")  # noqa: SIM115
+            )
             raise SPSDKError(f"Failed to modify sparse image: {e}") from e
 
         # Reopen in read-only mode after successful modification
-        self.file_handle.close()
-        self.file_handle = open(self.file_path, "rb")
+        self._context_manager.close()
+        self._context_manager = ExitStack()
+        self.file_handle = self._context_manager.enter_context(
+            Path(self.file_path).open("rb")  # noqa: SIM115
+        )
 
     def _find_affected_chunks(self, offset: int, size: int) -> list[tuple[int, int, int]]:
         """Find all chunks affected by a modification operation.
@@ -1177,7 +1189,7 @@ class SparseImageReader:
     def close(self) -> None:
         """Close the sparse image file."""
         if self.file_handle:
-            self.file_handle.close()
+            self._context_manager.close()
             self.file_handle = None
 
     def get_total_size(self) -> int:

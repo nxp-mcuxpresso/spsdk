@@ -42,6 +42,9 @@ info:
           pid: 0x0022
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe: {}
+
   # ======== Blhost section ========
   blhost: {}
 

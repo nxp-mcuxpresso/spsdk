@@ -124,3 +124,94 @@ def test_cr_entry_get_template(cli_runner: CliRunner, tmp_path: Path) -> None:
     import os
 
     assert os.path.isfile(outfile)
+
+
+def _get_option_choices(option_name: str) -> list[str]:
+    """Get the choices of an option of the create-auth-tag command."""
+    import click
+
+    from spsdk.apps.nxpimage_apps.nxpimage_hse import smr_entry_create_auth_tag
+
+    for param in smr_entry_create_auth_tag.params:
+        if param.name == option_name:
+            assert isinstance(param.type, click.Choice)
+            return list(param.type.choices)
+    raise AssertionError(f"Option {option_name} not found")
+
+
+def test_create_auth_tag_hash_algorithms_match_smr_entry() -> None:
+    """Test create-auth-tag hash algorithms match the SMR entry supported set."""
+    from spsdk.image.hse.common import HashAlgo
+
+    cli_choices = {choice.upper() for choice in _get_option_choices("hash_algorithm")}
+    smr_hash_algorithms = {
+        algo.label for algo in HashAlgo if algo not in (HashAlgo.NULL, HashAlgo.RESERVED1)
+    }
+    assert cli_choices == smr_hash_algorithms
+
+
+def test_create_auth_tag_auth_scheme_excludes_xcbc_mac() -> None:
+    """Test create-auth-tag auth scheme option excludes the unimplemented XCBC_MAC."""
+    choices = {choice.upper() for choice in _get_option_choices("auth_scheme")}
+    assert "XCBC_MAC" not in choices
+    assert "ECDSA" in choices
+    assert "CMAC" in choices
+
+
+def test_create_auth_tag_rejects_xcbc_mac(
+    cli_runner: CliRunner, tmp_path: Path, tests_root_dir: str
+) -> None:
+    """Test create-auth-tag rejects the unimplemented XCBC_MAC scheme."""
+    import os
+
+    binary = tmp_path / "data.bin"
+    binary.write_bytes(bytes(32))
+    key = os.path.join(tests_root_dir, "_data", "keys", "ecc256", "srk0_ecc256.pem")
+    outfile = str(tmp_path / "tag.bin")
+    result = cli_runner.invoke(
+        hse_group,
+        [
+            "smr-entry",
+            "create-auth-tag",
+            "-b",
+            str(binary),
+            "-k",
+            key,
+            "-o",
+            outfile,
+            "-a",
+            "xcbc_mac",
+        ],
+        expected_code=2,
+    )
+    assert "xcbc_mac" in result.output.lower()
+
+
+def test_create_auth_tag_ecc_with_hash(
+    cli_runner: CliRunner, tmp_path: Path, tests_root_dir: str
+) -> None:
+    """Test create-auth-tag generates a tag using an ECC key and hash algorithm."""
+    import os
+
+    binary = tmp_path / "data.bin"
+    binary.write_bytes(bytes(64))
+    key = os.path.join(tests_root_dir, "_data", "keys", "ecc256", "srk0_ecc256.pem")
+    outfile = str(tmp_path / "tag.bin")
+    result = cli_runner.invoke(
+        hse_group,
+        [
+            "smr-entry",
+            "create-auth-tag",
+            "-b",
+            str(binary),
+            "-k",
+            key,
+            "-o",
+            outfile,
+            "-h",
+            "sha256",
+        ],
+    )
+    assert result.exit_code == 0
+    assert os.path.isfile(outfile)
+    assert os.path.getsize(outfile) > 0

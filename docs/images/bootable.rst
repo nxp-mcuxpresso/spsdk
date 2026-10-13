@@ -21,6 +21,9 @@ table or to an IPED YAML configuration. When a YAML configuration is used, boota
 export creates the IPED table during image assembly and places it in the same offset used by
 other keyblob-style decryption tables. See :doc:`flash` for IPED flag meanings and template
 details.
+If ``post_export`` is set in the bootable-image configuration, SPSDK also exports IPED
+artifacts from that YAML (for example ``iped_table.bin``, ``encrypted_blob.bin``,
+and ``iped_image.bin`` when ``data_blobs`` are configured).
 
 Generating Templates
 ====================

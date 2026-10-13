@@ -32,6 +32,7 @@ from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_
 from spsdk.utils.misc import write_file
 
 logger = logging.getLogger(__name__)
+UNKNOWN_FAMILY = FamilyRevision("Unknown")
 
 
 class FaModeImage(FeatureBaseClass):
@@ -192,7 +193,7 @@ class FaModeImage(FeatureBaseClass):
             "template_value"
         ] = "famode.bin"
 
-        for cfg_to_remove in famode_cfg_defaults.keys():
+        for cfg_to_remove in famode_cfg_defaults:
             try:
                 sch = find_schema(cfg_to_remove, schemas)
             except SPSDKError:
@@ -239,9 +240,7 @@ class FaModeImage(FeatureBaseClass):
                 "IMAGE_AUTHENTICATIONS": "nxp_signed" if "nxp" in cls_name else "signed",
             }
             # Get all objects to be mixed together
-            base_classes: list[type[MasterBootImage] | type[mbi_mixin.Mbi_Mixin]] = [
-                MasterBootImage
-            ]
+            base_classes: list[type[MasterBootImage | mbi_mixin.Mbi_Mixin]] = [MasterBootImage]
             for mixin in class_descr["mixins"]:
                 mixin_cls: type[mbi_mixin.Mbi_Mixin] = vars(mbi_mixin)[mixin]
                 if isclass(mixin_cls) and issubclass(mixin_cls, mbi_mixin.Mbi_Mixin):
@@ -253,7 +252,7 @@ class FaModeImage(FeatureBaseClass):
             return type(cls_name, tuple(base_classes), members)
 
         db = get_db(family)
-        ret: dict[str, type["MasterBootImage"]] = {}
+        ret: dict[str, type[MasterBootImage]] = {}
 
         images: list[str] = db.get_list(DatabaseManager.DAT, "famode_cert")
         mbi_classes = db.get_dict(DatabaseManager.MBI, "mbi_classes")
@@ -359,13 +358,13 @@ class FaModeImage(FeatureBaseClass):
         db = get_db(self.family)
         if db.check_key(DatabaseManager.DAT, "famode_cfg_defaults"):
             defaults = db.get_dict(DatabaseManager.DAT, "famode_cfg_defaults")
-            for k in defaults.keys():
+            for k in defaults:
                 if k in cfg:
                     cfg.pop(k)
         return cfg
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse FAMode image object from bytes array.
 
         Creates a FAMode image by parsing the provided byte data into a Master Boot Image

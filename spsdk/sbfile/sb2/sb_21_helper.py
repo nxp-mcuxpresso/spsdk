@@ -189,11 +189,10 @@ class SB21Helper:
             return CmdLoad(
                 address=address, data=data, mem_id=mem_id, zero_filling=self.zero_filling
             )
-        if cmd_args.get("pattern"):
+        if cmd_args.get("pattern") and mem_id == prog_mem_id:
             # if the memory ID is fuse or IFR change load command to program command
             # pattern in this case represents 32b int data word 1
-            if mem_id == prog_mem_id:
-                return self._prog(cmd_args)
+            return self._prog(cmd_args)
 
         raise SPSDKError(f"Unsupported LOAD command args: {cmd_args}")
 
@@ -348,7 +347,7 @@ class SB21Helper:
         try:
             valid_keyblob = self._validate_keyblob(keyblobs, keyblob_id)
         except SPSDKError as exc:
-            raise SPSDKError(f"Invalid key blob {str(exc)}") from exc
+            raise SPSDKError(f"Invalid key blob {exc!s}") from exc
 
         if valid_keyblob is None:
             raise SPSDKError(f"Missing keyblob {keyblob_id} for encryption.")
@@ -408,7 +407,7 @@ class SB21Helper:
         try:
             valid_keyblob = self._validate_keyblob(keyblobs, keyblob_id)
         except SPSDKError as exc:
-            raise SPSDKError(f" Key blob validation failed: {str(exc)}") from exc
+            raise SPSDKError(f" Key blob validation failed: {exc!s}") from exc
         if valid_keyblob is None:
             raise SPSDKError(f"Missing keyblob {keyblob_id} for given keywrap")
 
@@ -420,7 +419,7 @@ class SB21Helper:
         blob = KeyBlob(start_addr=start_addr, end_addr=end_addr, key=key, counter_iv=counter)
 
         encoded_keyblob = blob.export(kek=otfad_key)
-        logger.info(f"Creating wrapped keyblob: \n{str(blob)}")
+        logger.info(f"Creating wrapped keyblob: \n{blob!s}")
 
         return CmdLoad(address=address, data=encoded_keyblob)
 

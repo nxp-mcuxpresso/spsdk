@@ -171,6 +171,11 @@ info:
         hid_pack_size: 1020
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe:
+    protocols: [swd, jtag]
+    test_address: 0x2048_0000
+
   # ======== Fuses description section ========
   fuses:
     tool: nxpele
@@ -245,7 +250,6 @@ features:
     auth_beacon_length: 4 # The length in bytes of authentication beacon
     clear_iee_config_on_ele: True # Flag to enable configuration for clear IEE configuration with ELE
     sub_features: ["ele_pqc"]
-    test_address: 0x2048_0000
     dmbox_ap_ix: 0
     dac_rot_type: not_available # The Dac packet doesn't contains the ROT hash
 
@@ -314,8 +318,7 @@ features:
     oei_ddr_core_id: cortex-m33
     oei_ddr_image_type: oei
     oei_ddr_image_size_alignment: 0x400
-    oei_ddr_qb_data_mandatory: True
-    # oei_ddr_gap_after_image: 0x10000
+    oei_ddr_qb_data_dummy: True
 
     oei_tcm_load_address: 0x1ffc0000
     oei_tcm_entry_point: 0x1ffc0001
@@ -350,6 +353,14 @@ features:
     spl_core_id: cortex-a55
     spl_meta_data_start_cpu_id: 2
     spl_ddr_image_size_alignment: 0x400
+
+    v2x_dummy_load_address: 0x8b000000
+    v2x_dummy_image_type: v2x_dummy
+    v2x_dummy_core_id: cortex-m33
+
+    fcb_copy_load_address: 0x204D7000
+    fcb_copy_image_type: dek_validation_fcb_chk
+    fcb_copy_core_id: cortex-m33
 
     atf_load_address: 0x8a200000
     atf_core_id: cortex-a55
@@ -388,7 +399,9 @@ features:
         cortex_m7_app,
         cortex_m7_2_app,
         cortex_m33_2_app,
+        v2x_dummy,
         spl,
+        fcb_copy,
         atf,
         uboot,
         tee,
@@ -438,6 +451,90 @@ features:
         segments:
           primary_image_container_set: 0x00
           secondary_image_container_set: -1 # Just behind previous segment
+
+    # Template definitions for bootable image generation
+    templates:
+      imx_boot_flash_all:
+        description: "Complete imx-bootloader image"
+        mem_type: serial_downloader
+        configs:
+          - name: spl
+            type: spl
+            containers:
+              - name: nxp_container
+                path: "mx94a1-ahab-container.img"
+              - name: spl_container
+                images:
+                  [
+                    oei_ddr,
+                    system_manager,
+                    cortex_m33_2_app,
+                    cortex_m7_app,
+                    cortex_m7_2_app,
+                    v2x_dummy,
+                    spl,
+                  ]
+          - name: uboot
+            type: uboot
+            containers:
+              - name: uboot_container
+                images: [atf, uboot, tee]
+
+    boards:
+      imx943-15x15-lpddr4-evk:
+        lpddr_imem: lpddr4x_imem_v202409.bin
+        lpddr_dmem: lpddr4x_dmem_v202409.bin
+        lpddr_imem_qb: lpddr4x_imem_qb_v202409.bin
+        lpddr_dmem_qb: lpddr4x_dmem_qb_v202409.bin
+        oei_ddr: oei-m33-ddr.bin
+        system_manager: m33_image-mx94evk.bin
+        cortex_m33_2_app: imx943evk_cm33_core1_TCM_power_mode_switch.bin
+        cortex_m7_app: imx943evk_cm7_core0_TCM_power_mode_switch.bin
+        cortex_m7_2_app: imx943evk_cm7_core1_TCM_power_mode_switch.bin
+        spl: u-boot-spl.bin
+        spl_alt:
+          - u-boot-spl.bin-imx943-15x15-lpddr4-evk-sd
+        atf: bl31-imx94.bin
+        uboot: u-boot.bin
+        uboot_alt:
+          - u-boot-imx943-15x15-lpddr4-evk.bin-sd
+        tee: tee.bin
+      imx943-19x19-lpddr4-evk:
+        lpddr_imem: lpddr4x_imem_v202409.bin
+        lpddr_dmem: lpddr4x_dmem_v202409.bin
+        lpddr_imem_qb: lpddr4x_imem_qb_v202409.bin
+        lpddr_dmem_qb: lpddr4x_dmem_qb_v202409.bin
+        oei_ddr: oei-m33-ddr.bin
+        system_manager: m33_image-mx94evk.bin
+        cortex_m33_2_app: imx943evk_cm33_core1_TCM_power_mode_switch.bin
+        cortex_m7_app: imx943evk_cm7_core0_TCM_power_mode_switch.bin
+        cortex_m7_2_app: imx943evk_cm7_core1_TCM_power_mode_switch.bin
+        spl: u-boot-spl.bin
+        spl_alt:
+          - u-boot-spl.bin-imx943-19x19-lpddr4-evk-sd
+        atf: bl31-imx94.bin
+        uboot: u-boot.bin
+        uboot_alt:
+          - u-boot-imx943-19x19-lpddr4-evk.bin-sd
+        tee: tee.bin
+      imx943-19x19-lpddr5-evk:
+        lpddr_imem: lpddr5_imem_v202409.bin
+        lpddr_dmem: lpddr5_dmem_v202409.bin
+        lpddr_imem_qb: lpddr5_imem_qb_v202409.bin
+        lpddr_dmem_qb: lpddr5_dmem_qb_v202409.bin
+        oei_ddr: oei-m33-ddr.bin
+        system_manager: m33_image-mx94evk.bin
+        cortex_m33_2_app: imx943evk_cm33_core1_TCM_power_mode_switch.bin
+        cortex_m7_app: imx943evk_cm7_core0_TCM_power_mode_switch.bin
+        cortex_m7_2_app: imx943evk_cm7_core1_TCM_power_mode_switch.bin
+        spl: u-boot-spl.bin
+        spl_alt:
+          - u-boot-spl.bin-imx943-19x19-lpddr5-evk-sd
+        atf: bl31-imx94.bin
+        uboot: u-boot.bin
+        uboot_alt:
+          - u-boot-imx943-19x19-lpddr5-evk.bin-sd
+        tee: tee.bin
 
   # # ======== OTFAD section ========
   # otfad:
@@ -492,6 +589,14 @@ features:
 
   # ======== nxpuuu ==========
   nxpuuu: {}
+
+  # ======== EL2GO TP section ========
+  el2go_tp:
+    el2go_interface: uboot_fastboot
+    el2go_name: IMX9
+    prov_method: oem_app
+    validation_method: max_count=16;max_total_size=16384
+    uuid_fuse_index: "6 0 4"
 
   # ===== TLV =====
   tlv_blob: {}

@@ -237,7 +237,7 @@ def test_nxpimage_sb40_signature_validation(
         if not os.path.exists(config_path):
             pytest.skip(f"Config file {config_file} not found")
 
-        ref_binary, new_binary, new_config = process_config_file(config_path, tmpdir)
+        _, _, new_config = process_config_file(config_path, tmpdir)
 
         # Export SB4
         cmd = f"sb40 export -c {new_config}"

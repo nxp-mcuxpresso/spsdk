@@ -29,6 +29,8 @@ from spsdk.el2go.api_utils import (
 from spsdk.el2go.client import EL2GOApiResponse
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.config import Config
+from spsdk.utils.database import DatabaseManager
+from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import use_working_directory
 
 # ---------------------------------------------------------------------------
@@ -104,6 +106,58 @@ def test_dispatch_method_enum() -> None:
 def test_el2go_domain_enum() -> None:
     assert EL2GODomain.MATTER == "MATTER"
     assert EL2GODomain.RTP == "RTP"
+
+
+def test_mimx943_el2go_tp_database_support() -> None:
+    """Test i.MX943 EL2GO TP database configuration."""
+    family = FamilyRevision("mimx943")
+
+    db = get_db(family=family)
+
+    assert family in EL2GOTPClient.get_supported_families()
+    assert db.get_str(DatabaseManager.EL2GO_TP, "el2go_interface") == "uboot_fastboot"
+    assert db.get_str(DatabaseManager.EL2GO_TP, "el2go_name") == "IMX9"
+    assert db.get_str(DatabaseManager.EL2GO_TP, "prov_method") == ProvisioningMethod.OEM_APP
+    assert db.get_str(DatabaseManager.EL2GO_TP, "validation_method") == (
+        "max_count=16;max_total_size=16384"
+    )
+    assert db.get_str(DatabaseManager.EL2GO_TP, "uuid_fuse_index") == "6 0 4"
+
+
+@pytest.mark.parametrize("family_name", ["mimx95294", "mimx9596"])
+def test_mx95_el2go_tp_database_support(family_name: str) -> None:
+    """Test i.MX95 EL2GO TP database configuration."""
+    family = FamilyRevision(family_name)
+    db = get_db(family=family)
+
+    assert family in EL2GOTPClient.get_supported_families()
+    assert db.get_str(DatabaseManager.EL2GO_TP, "el2go_interface") == "uboot_fastboot"
+    assert db.get_str(DatabaseManager.EL2GO_TP, "el2go_name") == "IMX9"
+    assert db.get_str(DatabaseManager.EL2GO_TP, "prov_method") == ProvisioningMethod.OEM_APP
+    assert db.get_str(DatabaseManager.EL2GO_TP, "validation_method") == (
+        "max_count=16;max_total_size=16384"
+    )
+    assert db.get_str(DatabaseManager.EL2GO_TP, "uuid_fuse_index") == "6 0 4"
+
+
+def test_mimx943_el2go_template() -> None:
+    """Test i.MX943 EL2GO template generation."""
+    template = EL2GOTPClient.get_config_template(family=FamilyRevision("mimx943"))
+
+    assert "family: mimx943" in template
+
+    assert "imx_bootloader_path:" in template
+    assert "secure_objects_address:" in template
+
+
+@pytest.mark.parametrize("family_name", ["mimx95294", "mimx9596"])
+def test_mx95_el2go_template(family_name: str) -> None:
+    """Test i.MX95 EL2GO template generation."""
+    template = EL2GOTPClient.get_config_template(family=FamilyRevision(family_name))
+
+    assert f"family: {family_name}" in template
+    assert "imx_bootloader_path:" in template
+    assert "secure_objects_address:" in template
 
 
 # ---------------------------------------------------------------------------
@@ -372,9 +426,11 @@ def test_get_generation_status_failed_raises(tmpdir: Any) -> None:
         status_code=200,
         json_body={"content": [{"provisioningState": "GENERATION_FAILED"}]},
     )
-    with patch.object(client, "_handle_el2go_request", return_value=mock_response):
-        with pytest.raises(SPSDKError):
-            client.get_generation_status("some-device")
+    with (
+        patch.object(client, "_handle_el2go_request", return_value=mock_response),
+        pytest.raises(SPSDKError),
+    ):
+        client.get_generation_status("some-device")
 
 
 # ---------------------------------------------------------------------------

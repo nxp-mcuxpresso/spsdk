@@ -15,7 +15,7 @@ CRC validation, and multiple image table management.
 import logging
 import struct
 from collections.abc import Sequence
-from typing import TypeVar
+from typing import ClassVar, TypeVar
 
 from typing_extensions import Self
 
@@ -267,7 +267,7 @@ class MasterBootImageManifestDigest(MasterBootImageManifest):
 
     DIGEST_PRESENT_FLAG = 0x8000_0000
     HASH_TYPE_MASK = 0x0F
-    SUPPORTED_ALGORITHMS = [
+    SUPPORTED_ALGORITHMS: ClassVar[list[EnumHashAlgorithm]] = [
         EnumHashAlgorithm.SHA256,
         EnumHashAlgorithm.SHA384,
         EnumHashAlgorithm.SHA512,

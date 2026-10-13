@@ -14,7 +14,7 @@ across NXP MCU portfolio.
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, ClassVar
 
 from typing_extensions import Self
 
@@ -115,10 +115,10 @@ class MemoryConfig(FeatureBaseClass):
 
     FEATURE = DatabaseManager.MEMCFG
     # Supported peripherals and their region numbers
-    PERIPHERALS: list[str] = list(
+    PERIPHERALS: ClassVar[list[str]] = list(
         DatabaseManager().db.get_defaults(DatabaseManager.MEMCFG)["peripherals"].keys()
     )
-    SUPPORTS_FCB_CREATION = [9]
+    SUPPORTS_FCB_CREATION: ClassVar[list[int]] = [9]
 
     def __init__(
         self,
@@ -722,9 +722,9 @@ class MemoryConfig(FeatureBaseClass):
                     interface=interface.name,
                 )
                 validated_interfaces.append(interface)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(
-                    f"Failed to validate option words for {memory.name} with {interface.name}: {str(e)}"
+                    f"Failed to validate option words for {memory.name} with {interface.name}: {e!s}"
                 )
         return validated_interfaces
 

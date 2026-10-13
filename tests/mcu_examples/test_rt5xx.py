@@ -420,11 +420,11 @@ def create_cert_block(data_dir: str) -> CertBlockV1:
     """
     # load certificates
     cert_path = os.path.join(data_dir, "keys_certs")
-    cert_list = list()
+    cert_list = []
     for cert_index in range(4):
         cert_list.append(
             Certificate.load(
-                os.path.join(cert_path, f"root_k{str(cert_index)}_signed_cert0_noca.der.cert")
+                os.path.join(cert_path, f"root_k{cert_index!s}_signed_cert0_noca.der.cert")
             )
         )
     # create certification block

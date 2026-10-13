@@ -73,15 +73,15 @@ def test_00_019_download_secure_objects(
             }
         ]
 
-    with patch(
-        "spsdk.el2go.api_utils.EL2GOTPClient.get_generation_status", return_value=gen_status
-    ):
-        with patch(
+    with (
+        patch("spsdk.el2go.api_utils.EL2GOTPClient.get_generation_status", return_value=gen_status),
+        patch(
             "spsdk.el2go.api_utils.EL2GOTPClient.download_provisionings",
             return_value=download_prov_dict,
-        ):
-            data = client.download_secure_objects(device_id=device_id)
-            assert data == expected_output
+        ),
+    ):
+        data = client.download_secure_objects(device_id=device_id)
+        assert data == expected_output
 
 
 @pytest.mark.parametrize(
@@ -130,19 +130,21 @@ def test_00_020_download_secure_objects_gen_trig(
             }
         ]
 
-    with patch(
-        "spsdk.el2go.api_utils.EL2GOTPClient.get_generation_status",
-        side_effect=[
-            GenStatus.GENERATION_TRIGGERED.value[0],
-            GenStatus.GENERATION_COMPLETED.value[0],
-        ],
-    ):
-        with patch(
+    with (
+        patch(
+            "spsdk.el2go.api_utils.EL2GOTPClient.get_generation_status",
+            side_effect=[
+                GenStatus.GENERATION_TRIGGERED.value[0],
+                GenStatus.GENERATION_COMPLETED.value[0],
+            ],
+        ),
+        patch(
             "spsdk.el2go.api_utils.EL2GOTPClient.download_provisionings",
             return_value=download_prov_dict,
-        ):
-            data = client.download_secure_objects(device_id=device_id)
-            assert data == expected_output
+        ),
+    ):
+        data = client.download_secure_objects(device_id=device_id)
+        assert data == expected_output
 
 
 @pytest.mark.parametrize(

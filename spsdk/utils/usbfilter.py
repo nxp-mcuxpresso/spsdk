@@ -13,7 +13,7 @@ device filters based on various USB properties and NXP-specific device identific
 
 import platform
 import re
-from typing import Any
+from typing import Any, ClassVar
 
 from spsdk.utils.database import UsbId
 from spsdk.utils.misc import get_hash
@@ -106,10 +106,7 @@ class USBDeviceFilter:
         if serial_number and self.usb_id.casefold() == serial_number.casefold():
             return True
 
-        if device_name and self.usb_id.casefold() == device_name.casefold():
-            return True
-
-        return False
+        return bool(device_name and self.usb_id.casefold() == device_name.casefold())
 
     def _is_path(self, usb_path: str) -> bool:
         """Check if USB path matches the internal USB ID.
@@ -126,10 +123,7 @@ class USBDeviceFilter:
         # behavior
         # the provided usb string id fully matches the instance ID
         usb_id = self.usb_id or ""
-        if usb_id.casefold() in usb_path.casefold() and len(usb_id) > 0:
-            return True
-
-        return False
+        return usb_id.casefold() in usb_path.casefold() and len(usb_id) > 0
 
     def _is_vid_or_pid(self, vid: int | None, pid: int | None) -> bool:
         """Check if USB ID matches given vendor ID or product ID.
@@ -151,9 +145,8 @@ class USBDeviceFilter:
             if self.search_by_pid and pid:
                 if int(usb_id, 0) == pid:
                     return True
-            elif vid:
-                if int(usb_id, 0) == vid:
-                    return True
+            elif vid and int(usb_id, 0) == vid:
+                return True
 
         return False
 
@@ -233,7 +226,7 @@ class NXPUSBDeviceFilter(USBDeviceFilter):
     :cvar NXP_VIDS: List of official NXP vendor IDs for device identification.
     """
 
-    NXP_VIDS = [0x1FC9, 0x15A2, 0x0471, 0x0D28]
+    NXP_VIDS: ClassVar[list[int]] = [0x1FC9, 0x15A2, 0x0471, 0x0D28]
 
     def __init__(
         self,

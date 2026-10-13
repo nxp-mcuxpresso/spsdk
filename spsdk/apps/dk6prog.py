@@ -24,7 +24,6 @@ from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import CommandsTreeGroup, spsdk_apps_common_options
 from spsdk.apps.utils.utils import (
     INT,
-    WARNING_MSG,
     catch_spsdk_error,
     parse_file_and_size,
     parse_hex_data,
@@ -201,12 +200,8 @@ def main(
     log_level: int,
     no_isp: bool,
 ) -> int:
-    """Tool for reading and programming flash memory of DK6 target devices.
-
-    This is an experimental utility. Use with caution!
-    """
+    """Tool for reading and programming flash memory of DK6 target devices."""
     spsdk_logger.install(level=log_level)
-    click.echo(WARNING_MSG)
     backend = backend or get_default_backend()
     interface = DriverInterface(backend)
     if device_id is not None:

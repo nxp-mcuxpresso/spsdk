@@ -145,7 +145,7 @@ class TLV(FeatureBaseClass):
         command = config.get_dict("command")
         if len(command) != 1:
             raise SPSDKError(f"Invalid config field command: {command}")
-        msg_cls = cls.get_tlv_class(list(command.keys())[0])
+        msg_cls = cls.get_tlv_class(next(iter(command.keys())))
         return msg_cls._load_from_config(config, family)
 
     @classmethod
@@ -453,7 +453,7 @@ class KeyImportTLV(TLV):
 
         TAG = 0x00
         TYPECLASS = TypeClass.APPLICATION
-        NATURE = [TypeNature.PRIMITIVE]
+        NATURE: list[TypeNature] = [TypeNature.PRIMITIVE]  # noqa: RUF012
 
     class KiMagic(Ki):
         """TLV record representing a magic header in AHAB images.
@@ -817,7 +817,7 @@ class KeyImportTLV(TLV):
         command = config.get_config("command")
         if len(command) != 1:
             raise SPSDKError(f"Invalid config field command: {command}")
-        command_name = list(command.keys())[0]
+        command_name = next(iter(command.keys()))
         if TLVTypes.from_label(command_name) != cls.NAME:
             raise SPSDKError("Invalid configuration for Key Import Request command.")
 

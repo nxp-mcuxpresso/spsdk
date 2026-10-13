@@ -19,7 +19,7 @@ from typing import Any
 import pytest
 from test_nxpimage_sb31 import process_config_file
 
-import spsdk.apps.nxpimage as nxpimage
+from spsdk.apps import nxpimage
 from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb2.images import BootImageV21
 from spsdk.utils.misc import load_configuration, use_working_directory
@@ -149,8 +149,7 @@ def test_nxpimage_sb21(
             "-h",
             hash_of_hashes_output_path,
         ]
-        for entry in external:
-            cmd.append(entry)
+        cmd.extend(external)
         cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.isfile(out_file_path_new)
 
@@ -326,8 +325,7 @@ def test_nxpimage_relative_path_sb21(
         "-h",
         hash_of_hashes_output_path,
     ]
-    for entry in external:
-        cmd.append(entry)
+    cmd.extend(external)
     cli_runner.invoke(nxpimage.main, cmd)
     assert os.path.isfile(out_file_path_new)
 
@@ -481,8 +479,7 @@ def test_nxpimage_sb21_convert(
             "-f",
             family,
         ]
-        for entry in external:
-            cmd.append(entry)
+        cmd.extend(external)
         cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.isfile(out_file_path_new)
 

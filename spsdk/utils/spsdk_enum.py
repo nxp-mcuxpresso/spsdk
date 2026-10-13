@@ -48,7 +48,7 @@ class SpsdkEnum(SpsdkEnumMember, Enum):
     introspection and validation.
     """
 
-    def __eq__(self, __value: object) -> bool:
+    def __eq__(self, __value: object, /) -> bool:
         """Check equality of enum value with another object.
 
         Compares the enum instance with another object by checking if the object

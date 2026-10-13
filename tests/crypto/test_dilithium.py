@@ -14,7 +14,7 @@ functionality.
 import pytest
 
 pytest.importorskip("spsdk_pqc")
-from spsdk.crypto.keys import PrivateKeyDilithium  # noqa: E402
+from spsdk.crypto.keys import PrivateKeyDilithium
 
 
 @pytest.mark.parametrize("level", PrivateKeyDilithium.SUPPORTED_LEVELS)

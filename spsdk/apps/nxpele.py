@@ -186,7 +186,7 @@ def batch(ctx: click.Context, command_file: str) -> None:
     COMMAND_FILE    - path to nxpele command file
     """
     with open(command_file, encoding="utf-8") as f:
-        for line in f.readlines():
+        for line in f:
             tokes = shlex.split(line, comments=True)
             if len(tokes) < 1:
                 continue
@@ -302,7 +302,7 @@ def ele_reset(ele_handler: EleMessageHandler) -> None:
             ele_handler.send_message(reset)
             click.echo("ELE Reset ends successfully")
         except (McuBootCommandError, SPSDKError) as exc:
-            logger.debug(f"Reset by ELE failed: {str(exc)}")
+            logger.debug(f"Reset by ELE failed: {exc!s}")
             click.echo("ELE reset failed", err=True, color=True)
 
 
@@ -546,9 +546,8 @@ def ele_dump_debug_buffer(
         if not dump_debug.has_more_logs_available():
             break
 
-        if not dump_all:
-            if not click.confirm("More logs available. Continue dumping?"):
-                break
+        if not dump_all and not click.confirm("More logs available. Continue dumping?"):
+            break
 
         iteration += 1
 
@@ -2155,7 +2154,7 @@ def ele_export_nxp_prod_ka_puk(
 
         return public_key
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         click.echo(f"Error during NXP Production Key Agreement Public Key export: {e}")
         return b""
 
@@ -2168,7 +2167,7 @@ def ele_export_nxp_prod_ka_puk(
                 try:
                     click.echo("Cleaning up: Closing keystore...")
                     ele_keystore_close(ele_handler, keystore_handle)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     click.echo(f"Warning: Failed to close keystore: {e}")
 
             # Close session if it was opened
@@ -2176,7 +2175,7 @@ def ele_export_nxp_prod_ka_puk(
                 try:
                     click.echo("Cleaning up: Closing session...")
                     ele_session_close(ele_handler, session_handle)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     click.echo(f"Warning: Failed to close session: {e}")
 
 

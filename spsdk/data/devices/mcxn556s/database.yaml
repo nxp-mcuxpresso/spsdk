@@ -82,7 +82,7 @@ features:
     ele_cnt_version: 2 # DAT container is based on New AHAB container version 2
     sub_features: ["ele_pqc", "ssf_cert"]
     dac_rot_type: ecc_pqc_sha521_truncated # The Dac packet is using truncated SHA512 hash and in case of 2 signatures
-    test_address: 0x2002_8000
+    ahab: *ahab_common_config
     dmbox_ap_ix: 2
     command_delays: # Additional standard command delays per individual DM commands [seconds]
       ERASE_FLASH: 0.5
@@ -93,7 +93,10 @@ features:
       ecdsa_puk_size: 0x60 # Size for ECDSA PUK (96 bytes)
       hybrid_puk_address: 0x3002_2100 # Address for Hybrid PUK
       hybrid_puk_size: 0xA80 # Size for Hybrid PUK (2688 bytes)
-    ahab: *ahab_common_config
+
+  # ======== Debug probe access section ========
+  debug_probe:
+    test_address: 0x2002_8000
 
   # ======== Fuses description section ========
   fuses:

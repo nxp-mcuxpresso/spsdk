@@ -14,8 +14,10 @@ EdgeLock Enclave specific implementations for secure debug access control.
 
 import abc
 import logging
-from struct import calcsize, pack, unpack, unpack_from
-from typing import Any, TypeAlias
+from struct import calcsize
+from struct import error as StructError
+from struct import pack, unpack, unpack_from
+from typing import Any, ClassVar, TypeAlias
 
 from typing_extensions import Self
 
@@ -34,8 +36,10 @@ from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
 from spsdk.utils.misc import load_binary, value_to_int
+from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
+UNKNOWN_FAMILY = FamilyRevision("Unknown")
 
 
 class DebugCredentialCertificate(FeatureBaseClass):
@@ -52,6 +56,42 @@ class DebugCredentialCertificate(FeatureBaseClass):
 
     FEATURE = DatabaseManager.DAT
     ROT_META_CLASS = RotMeta
+
+    @staticmethod
+    def PRE_VALIDATION_CFG_HOOK(config: Config) -> Config:
+        """Normalize DAT configuration before schema validation.
+
+        For DAT implementations based on ELE, ``cc_vu`` and/or ``cc_beacon`` may be
+        unsupported at runtime. Some schema paths still require these keys, so when they
+        are missing we inject safe defaults and emit a warning to keep template/export
+        flows user-friendly.
+
+        :param config: Input configuration loaded from user YAML/JSON.
+        :return: Normalized configuration object used for schema validation.
+        """
+        cfg = Config(config)
+        try:
+            family = FamilyRevision.load_from_config(cfg)
+        except SPSDKError:
+            return cfg
+
+        db = get_db(family)
+        based_on_ele = db.get_bool(DatabaseManager.DAT, "based_on_ele", False)
+        use_beacon = db.get_bool(DatabaseManager.DAT, "used_beacons_on_ele", False)
+
+        if based_on_ele and "cc_vu" not in cfg:
+            logger.debug(
+                f"The 'cc_vu' field is not used for DAT on {family}; missing value was auto-filled to 0.",
+            )
+            cfg["cc_vu"] = 0
+
+        if based_on_ele and not use_beacon and "cc_beacon" not in cfg:
+            logger.debug(
+                f"The 'cc_beacon' field is not used for DAT on {family}; missing value was auto-filled to 0.",
+            )
+            cfg["cc_beacon"] = 0
+
+        return cfg
 
     def __init__(
         self,
@@ -210,6 +250,49 @@ class DebugCredentialCertificate(FeatureBaseClass):
         v = vars(self).copy()
         del v["signature_provider"]
         return v
+
+    def _verify_keys(self) -> Verifier:
+        """Verify consistency of the debug credential keys.
+
+        The base implementation performs no key-specific checks. Subclasses override
+        this method to validate that the Root of Trust and DCK keys are compatible
+        (for example that they use the same ECC curve size).
+
+        :return: Verifier object with the key verification results.
+        """
+        return Verifier(name="Keys", important=False)
+
+    def verify(self) -> Verifier:
+        """Verify the debug credential integrity.
+
+        Validates the common debug credential fields (SOCC, UUID, credential constraints)
+        and delegates key-specific verification to the :meth:`_verify_keys` hook.
+
+        :return: Verifier object containing the verification results.
+        """
+        ret = Verifier(name=repr(self), description="Debug Credential Certificate verification")
+        socc = self.socc
+        db_socc = get_db(self.family).get_int(DatabaseManager.DAT, "socc", 0xFFFFFFFF)
+        ret.add_record_bit_range("SOCC", socc)
+        if socc == 0xFFFFFFFF or db_socc == 0xFFFFFFFF:
+            ret.add_record(
+                "SOCC matches family",
+                VerifierResult.ERROR,
+                f"Invalid SOCC 0x{socc:08X} (family SOCC 0x{db_socc:08X}); "
+                "the 0xFFFFFFFF value never occurs in a valid debug credential.",
+            )
+        else:
+            ret.add_record(
+                "SOCC matches family",
+                socc == db_socc,
+                f"debug credential SOCC 0x{socc:08X}, family SOCC 0x{db_socc:08X}",
+            )
+        ret.add_record_bytes("UUID", self.uuid, min_length=16, max_length=16)
+        ret.add_record_bit_range("Credential constraint SOCU", self.cc_socu)
+        ret.add_record_bit_range("Credential constraint VU", self.cc_vu)
+        ret.add_record_bit_range("Credential beacon", self.cc_beacon, bit_range=16)
+        ret.add_child(self._verify_keys())
+        return ret
 
     @staticmethod
     def dat_based_on_ele(family: FamilyRevision) -> bool:
@@ -383,6 +466,38 @@ class DebugCredentialCertificate(FeatureBaseClass):
                     f"Unable to create cert block from file: {rot_config_file}"
                 ) from exc
 
+    @classmethod
+    def load_from_config_or_binary(
+        cls,
+        path: str,
+        family: FamilyRevision,
+    ) -> Self:
+        """Load a debug credential from a binary file or a YAML configuration file.
+
+        The method first tries to interpret the given file as a YAML debug credential
+        configuration file. When successful, the debug credential is built and signed
+        according to the configuration. Otherwise the file is treated as an already
+        prepared binary debug credential signed by SRK.
+
+        :param path: Path to the debug credential binary or YAML configuration file.
+        :param family: Target MCU family and revision information.
+        :return: Parsed debug credential object, signed when loaded from configuration.
+        """
+        try:
+            config = Config.create_from_file(path)
+        except SPSDKError:
+            logger.debug(
+                "Debug credential file is not a configuration file, parsing it as a binary."
+            )
+            return cls.parse(load_binary(path), family=family)
+
+        logger.info("Loading debug credential from a configuration file.")
+        klass = cls._get_class_from_cfg(config)
+        klass.pre_check_config(config)
+        dc = klass.load_from_config(config)
+        dc.sign()
+        return dc
+
     def get_config(self, data_path: str = "./") -> Config:
         """Get configuration for debug credential.
 
@@ -392,7 +507,7 @@ class DebugCredentialCertificate(FeatureBaseClass):
         raise SPSDKNotImplementedError
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse the debug credential from raw binary data.
 
         The method first attempts to parse as EdgeLock Enclave V2 format, and if that fails,
@@ -416,6 +531,56 @@ class DebugCredentialCertificate(FeatureBaseClass):
             version=ProtocolVersion.from_version(ver[0], ver[1]),
         )
         return klass.parse(data, family)  # type: ignore
+
+    @classmethod
+    def pre_parse_verify(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Verifier:
+        """Pre-parse verify of the Debug Credential binary.
+
+        Performs a set of base-rule checks that explain why the binary cannot be parsed,
+        without running the full parse. This gives the user a clear reason for a parsing
+        failure (for example a truncated binary or a mix of different key sizes).
+
+        :param data: Binary data with the Debug Credential to pre-parse.
+        :param family: Target MCU family revision.
+        :return: Verifier object containing validation results of the pre-parsed binary data.
+        """
+        ret = Verifier("Pre-parsed Debug Credential")
+        header_size = calcsize("<2H")
+        if len(data) < header_size:
+            ret.add_record(
+                "Minimal length",
+                VerifierResult.ERROR,
+                f"Binary is too short ({len(data)} bytes), "
+                f"at least {header_size} bytes are needed for the version header",
+            )
+            return ret
+        ret.add_record("Minimal length", VerifierResult.SUCCEEDED, f"{len(data)} bytes")
+        try:
+            version = ProtocolVersion.from_version(*unpack_from("<2H", data))
+            ret.add_record("Protocol version", VerifierResult.SUCCEEDED, str(version))
+        except SPSDKError as exc:
+            ret.add_record("Protocol version", VerifierResult.ERROR, str(exc))
+            return ret
+        try:
+            klass = cls._get_class(family=family, version=version)
+        except SPSDKError:
+            # Family not known - fall back to the current class so a concrete
+            # subclass still runs its own pre-parse checks.
+            klass = cls
+        klass._pre_parse_verify_body(data, version, ret)
+        return ret
+
+    @classmethod
+    def _pre_parse_verify_body(cls, data: bytes, version: ProtocolVersion, ret: Verifier) -> None:
+        """Add debug-credential-type specific pre-parse checks.
+
+        The base implementation performs no type-specific checks. Subclasses override this
+        hook to validate binary layout rules specific to their key type.
+
+        :param data: Binary data with the Debug Credential to pre-parse.
+        :param version: Parsed protocol version of the debug credential.
+        :param ret: Verifier object to add the verification records into.
+        """
 
     @classmethod
     def get_validation_schemas_from_cfg(cls, config: Config) -> list[dict[str, Any]]:
@@ -498,6 +663,33 @@ class DebugCredentialCertificateRsa(DebugCredentialCertificate):
         """
         return self.rot_meta.calculate_hash()
 
+    def _verify_keys(self) -> Verifier:
+        """Verify that the Root of Trust and DCK keys are consistent RSA keys.
+
+        :return: Verifier object with the key verification results.
+        """
+        ret = Verifier(name="Keys")
+        if not isinstance(self.rot_pub, PublicKeyRsa) or not isinstance(self.dck_pub, PublicKeyRsa):
+            ret.add_record(
+                "Keys type", VerifierResult.ERROR, "Both RoT and DCK keys must be RSA keys."
+            )
+            return ret
+        ret.add_record("RoT key", VerifierResult.SUCCEEDED, f"RSA {self.rot_pub.key_size} bits")
+        ret.add_record("DCK key", VerifierResult.SUCCEEDED, f"RSA {self.dck_pub.key_size} bits")
+        if self.rot_pub.key_size != self.dck_pub.key_size:
+            ret.add_record(
+                "Keys size match",
+                VerifierResult.ERROR,
+                "All keys in the debug credential must use the same RSA key size. "
+                f"The RoT key size is {self.rot_pub.key_size} bits "
+                f"but the DCK key size is {self.dck_pub.key_size} bits.",
+            )
+        else:
+            ret.add_record(
+                "Keys size match", VerifierResult.SUCCEEDED, f"{self.rot_pub.key_size} bits"
+            )
+        return ret
+
     def export_rot_pub(self) -> bytes:
         """Export RoT public key as bytes.
 
@@ -579,7 +771,7 @@ class DebugCredentialCertificateRsa(DebugCredentialCertificate):
         return data
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse the debug credential from raw binary data.
 
         The method extracts and validates all components of a debug credential including
@@ -651,7 +843,7 @@ class DebugCredentialCertificateRsa(DebugCredentialCertificate):
         )
         return data
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check object equality.
 
         Compare this DebugCredentialCertificateRsa instance with another object to determine if they
@@ -675,7 +867,7 @@ class DebugCredentialCertificateEcc(DebugCredentialCertificate):
     :cvar ROT_META_CLASS: Root of Trust metadata class for ECC operations.
     """
 
-    COORDINATE_SIZE = {0: 32, 1: 48, 2: 66}
+    COORDINATE_SIZE: ClassVar[dict[int, int]] = {0: 32, 1: 48, 2: 66}
     ROT_META_CLASS: TypeAlias = RotMetaEcc
 
     @property
@@ -740,6 +932,33 @@ class DebugCredentialCertificateEcc(DebugCredentialCertificate):
         :return: Binary representing the DCK key.
         """
         return self.dck_pub.export()
+
+    def _verify_keys(self) -> Verifier:
+        """Verify that the Root of Trust and DCK keys use the same ECC curve size.
+
+        :return: Verifier object with the key verification results.
+        """
+        ret = Verifier(name="Keys")
+        if not isinstance(self.rot_pub, PublicKeyEcc) or not isinstance(self.dck_pub, PublicKeyEcc):
+            ret.add_record(
+                "Keys type", VerifierResult.ERROR, "Both RoT and DCK keys must be ECC keys."
+            )
+            return ret
+        ret.add_record("RoT key", VerifierResult.SUCCEEDED, f"ECC {self.rot_pub.key_size} bits")
+        ret.add_record("DCK key", VerifierResult.SUCCEEDED, f"ECC {self.dck_pub.key_size} bits")
+        if self.rot_pub.coordinate_size != self.dck_pub.coordinate_size:
+            ret.add_record(
+                "Keys size match",
+                VerifierResult.ERROR,
+                "All keys in the debug credential must use the same ECC curve size. "
+                f"The RoT key size is {self.rot_pub.key_size} bits "
+                f"but the DCK key size is {self.dck_pub.key_size} bits.",
+            )
+        else:
+            ret.add_record(
+                "Keys size match", VerifierResult.SUCCEEDED, f"{self.rot_pub.key_size} bits"
+            )
+        return ret
 
     def get_data_format(self, include_signature: bool = True) -> str:
         """Get the format of exported binary data.
@@ -825,7 +1044,7 @@ class DebugCredentialCertificateEcc(DebugCredentialCertificate):
         )
         return data
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check object equality.
 
         Compare this DebugCredentialCertificateEcc instance with another object to determine if they
@@ -838,7 +1057,55 @@ class DebugCredentialCertificateEcc(DebugCredentialCertificate):
         return isinstance(other, DebugCredentialCertificateEcc) and self._vars() == other._vars()
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
+    def _pre_parse_verify_body(cls, data: bytes, version: ProtocolVersion, ret: Verifier) -> None:
+        """Add ECC specific pre-parse checks.
+
+        Validates that the binary is long enough for the header and that the trailing
+        block (RoT public key + DCK public key + signature) has exactly the size expected
+        for the ECC key size derived from the protocol version. A size mismatch typically
+        means the debug credential was created with a mix of different key sizes.
+
+        :param data: Binary data with the Debug Credential to pre-parse.
+        :param version: Parsed protocol version of the debug credential.
+        :param ret: Verifier object to add the verification records into.
+        """
+        format_head = "<" + "2H" + "L" + "16s" + "L" + "L" + "L"
+        head_size = calcsize(format_head)
+        if len(data) < head_size:
+            ret.add_record(
+                "Header length",
+                VerifierResult.ERROR,
+                f"Binary is too short ({len(data)} bytes) for the {head_size}-byte DC header",
+            )
+            return
+        try:
+            rot_meta_cls = RotMetaEcc._get_subclass(hash_size=cls.COORDINATE_SIZE[version.minor])
+            rot_meta = rot_meta_cls.parse(data[head_size:])
+        except (SPSDKError, KeyError) as exc:
+            ret.add_record("RoT meta", VerifierResult.ERROR, f"Cannot parse RoT meta: {exc}")
+            return
+        ret.add_record("RoT meta", VerifierResult.SUCCEEDED, f"{len(rot_meta)} bytes")
+        hash_size = rot_meta.HASH_SIZE
+        expected_tail = 3 * hash_size * 2
+        actual_tail = len(data) - head_size - len(rot_meta)
+        if actual_tail == expected_tail:
+            ret.add_record(
+                "Keys and signature block size",
+                VerifierResult.SUCCEEDED,
+                f"{actual_tail} bytes for {hash_size * 8}-bit ECC keys",
+            )
+        else:
+            ret.add_record(
+                "Keys and signature block size",
+                VerifierResult.ERROR,
+                f"Expected {expected_tail} bytes (RoT key + DCK + signature) for "
+                f"{hash_size * 8}-bit ECC keys, but found {actual_tail} bytes. "
+                "This usually means the debug credential was created with a mix of "
+                "different key sizes.",
+            )
+
+    @classmethod
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse the debug credential from binary data.
 
         This method deserializes binary data into a DebugCredential object by unpacking
@@ -847,6 +1114,7 @@ class DebugCredentialCertificateEcc(DebugCredentialCertificate):
 
         :param data: Raw binary data containing the debug credential structure.
         :param family: Target MCU family revision for validation purposes.
+        :raises SPSDKError: When the binary data does not match the expected ECC key size.
         :raises SPSDKValueError: When SOCC from binary data doesn't match family SOCC.
         :return: Parsed DebugCredential object with all fields populated.
         """
@@ -874,9 +1142,16 @@ class DebugCredentialCertificateEcc(DebugCredentialCertificate):
         format_tail = (
             f"<{rot_meta.HASH_SIZE * 2}s{rot_meta.HASH_SIZE * 2}s{rot_meta.HASH_SIZE * 2}s"
         )
-        rot_pub, dck_pub, signature = unpack_from(
-            format_tail, data, calcsize(format_head) + len(rot_meta)
-        )
+        try:
+            rot_pub, dck_pub, signature = unpack_from(
+                format_tail, data, calcsize(format_head) + len(rot_meta)
+            )
+        except StructError as exc:
+            ver = cls.pre_parse_verify(data, family)
+            raise SPSDKError(
+                "Cannot parse the debug credential certificate. "
+                "See the pre-parse verification for the reason:\n" + ver.draw()
+            ) from exc
 
         ret = cls(
             family=family,
@@ -928,6 +1203,51 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialCertificateEcc):
         :return: Root Of Trust Keys Hash (RoTKH) as bytes.
         """
         return self.rot_meta.calculate_hash()
+
+    def _verify_keys(self) -> Verifier:
+        """Verify the debug credential keys for EdgeLock Enclave.
+
+        The Root of Trust keys are stored in an SRK table (validated separately) that may
+        contain keys of different sizes. The debug credential itself, however, encodes the
+        DCK public key and the signature using the size of the selected SRK (RoT) key, so
+        the used RoT key and the DCK must share the same size.
+
+        :return: Verifier object with the key verification results.
+        """
+        ret = Verifier(name="Keys")
+        if isinstance(self.rot_pub, (PublicKeyEcc, PublicKeyRsa)):
+            key_type = "ECC" if isinstance(self.rot_pub, PublicKeyEcc) else "RSA"
+            srk_index = (
+                f" (SRK #{self.rot_meta.flags.used_root_cert})"
+                if isinstance(self.rot_meta, RotMetaEdgeLockEnclave)
+                else ""
+            )
+            ret.add_record(
+                "RoT key",
+                VerifierResult.SUCCEEDED,
+                f"{key_type} {self.rot_pub.key_size} bits{srk_index}",
+            )
+        if isinstance(self.dck_pub, (PublicKeyEcc, PublicKeyRsa)):
+            key_type = "ECC" if isinstance(self.dck_pub, PublicKeyEcc) else "RSA"
+            ret.add_record(
+                "DCK key", VerifierResult.SUCCEEDED, f"{key_type} {self.dck_pub.key_size} bits"
+            )
+        if isinstance(self.rot_pub, (PublicKeyEcc, PublicKeyRsa)) and isinstance(
+            self.dck_pub, (PublicKeyEcc, PublicKeyRsa)
+        ):
+            if self.rot_pub.key_size != self.dck_pub.key_size:
+                ret.add_record(
+                    "Keys size match",
+                    VerifierResult.ERROR,
+                    "The used RoT key and the DCK must use the same key size. "
+                    f"The RoT key size is {self.rot_pub.key_size} bits "
+                    f"but the DCK key size is {self.dck_pub.key_size} bits.",
+                )
+            else:
+                ret.add_record(
+                    "Keys size match", VerifierResult.SUCCEEDED, f"{self.rot_pub.key_size} bits"
+                )
+        return ret
 
     def get_data_format(self, include_signature: bool = True) -> str:
         """Get the format of exported binary data.
@@ -1008,7 +1328,7 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialCertificateEcc):
         )
         return data
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check object equality.
 
         Compare this DebugCredentialEdgeLockEnclave instance with another object to determine if they
@@ -1021,7 +1341,50 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialCertificateEcc):
         return isinstance(other, DebugCredentialEdgeLockEnclave) and self._vars() == other._vars()
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
+    def _pre_parse_verify_body(cls, data: bytes, version: ProtocolVersion, ret: Verifier) -> None:
+        """Add EdgeLock Enclave specific pre-parse checks.
+
+        Validates that the binary is long enough for the header, the RoT meta (SRK table)
+        and the trailing block (DCK public key + signature). A size mismatch typically means
+        the debug credential is truncated or was created with a mix of different key sizes.
+
+        :param data: Binary data with the Debug Credential to pre-parse.
+        :param version: Parsed protocol version of the debug credential.
+        :param ret: Verifier object to add the verification records into.
+        """
+        format_head = "<" + "2H" + "L" + "16s" + "L" + "L" + "L"
+        head_size = calcsize(format_head)
+        if len(data) < head_size:
+            ret.add_record(
+                "Header length",
+                VerifierResult.ERROR,
+                f"Binary is too short ({len(data)} bytes) for the {head_size}-byte DC header",
+            )
+            return
+        try:
+            rot_meta = RotMetaEdgeLockEnclave.parse(data[head_size:])
+            rot_pub = rot_meta.srk_table.get_source_keys()[rot_meta.flags.used_root_cert]
+        except (SPSDKError, IndexError) as exc:
+            ret.add_record("RoT meta", VerifierResult.ERROR, f"Cannot parse RoT meta: {exc}")
+            return
+        ret.add_record("RoT meta", VerifierResult.SUCCEEDED, f"{len(rot_meta)} bytes")
+        expected_tail = len(rot_pub.export()) + rot_pub.signature_size
+        actual_tail = len(data) - head_size - len(rot_meta)
+        if actual_tail == expected_tail:
+            ret.add_record(
+                "DCK and signature block size", VerifierResult.SUCCEEDED, f"{actual_tail} bytes"
+            )
+        else:
+            ret.add_record(
+                "DCK and signature block size",
+                VerifierResult.ERROR,
+                f"Expected {expected_tail} bytes (DCK public key + signature) but found "
+                f"{actual_tail} bytes. This usually means the debug credential is truncated "
+                "or was created with a mix of different key sizes.",
+            )
+
+    @classmethod
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse the debug credential from binary data.
 
         The method parses binary data containing a debug credential structure,
@@ -1031,6 +1394,7 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialCertificateEcc):
         :param data: Raw binary data containing the debug credential structure.
         :param family: Target MCU family revision for validation.
         :raises SPSDKValueError: When SOCC from binary data doesn't match family SOCC.
+        :raises SPSDKError: When the debug credential certificate cannot be parsed.
         :return: Parsed DebugCredential object with all components initialized.
         """
         format_head = (
@@ -1055,7 +1419,16 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialCertificateEcc):
         rot_meta = RotMetaEdgeLockEnclave.parse(data[calcsize(format_head) :])
         rot_pub = rot_meta.srk_table.get_source_keys()[rot_meta.flags.used_root_cert]
         format_tail = f"<{len(rot_pub.export())}s{rot_pub.signature_size}s"
-        dck_pub, signature = unpack_from(format_tail, data, calcsize(format_head) + len(rot_meta))
+        try:
+            dck_pub, signature = unpack_from(
+                format_tail, data, calcsize(format_head) + len(rot_meta)
+            )
+        except StructError as exc:
+            ver = cls.pre_parse_verify(data, family)
+            raise SPSDKError(
+                "Cannot parse the debug credential certificate. "
+                "See the pre-parse verification for the reason:\n" + ver.draw()
+            ) from exc
 
         ret = cls(
             family=family,
@@ -1136,6 +1509,21 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
         if not isinstance(value, DebugCredentialEdgeLockEnclaveV2):
             return False
         return self.certificate == value.certificate
+
+    def verify(self) -> Verifier:
+        """Verify the debug credential integrity.
+
+        Extends the common debug credential verification with the ELE v2 specific
+        members stored in the permission data (SOCC, SOCU, beacon) and validates the
+        underlying AHAB certificate.
+
+        :return: Verifier object containing the verification results.
+        """
+        ret = super().verify()
+        ret.add_record_bit_range("SOCU", self.socu)
+        ret.add_record_bit_range("Beacon", self.beacon, bit_range=16)
+        ret.add_child(self.certificate.verify(), prefix_name="Certificate: ")
+        return ret
 
     def __str__(self) -> str:
         """Get string representation of DebugCredential.
@@ -1297,6 +1685,7 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
             ret[1]["properties"].pop("fuse_version")
             ret.insert(3, schema["ahab_certificate_vendor_usage"])
         if clear_iee_config:
+            ret = [item for item in ret if "permission_data_ext" not in item.get("properties", {})]
             ret.insert(1, schema["iee_clear_regions"])
 
         ret.insert(1, schema["ele_socu"])
@@ -1380,7 +1769,7 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
         return config
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse the debug credential from raw binary data.
 
         This method creates a DebugCredential object by parsing the provided binary data

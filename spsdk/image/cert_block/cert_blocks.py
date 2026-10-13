@@ -14,6 +14,7 @@ Vx, and AHAB certificate blocks with their respective headers and structures.
 
 import logging
 import os
+import traceback
 from collections.abc import Iterable
 from typing import Any
 
@@ -35,6 +36,8 @@ from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import find_file, load_binary, load_configuration, value_to_int
 
 logger = logging.getLogger(__name__)
+
+UNKNOWN_FAMILY = FamilyRevision("Unknown")
 
 
 class CertBlock(FeatureBaseClass):
@@ -192,7 +195,7 @@ class CertBlock(FeatureBaseClass):
         return cert_id
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse Certification block from binary file.
 
         :param data: Binary data of certification block
@@ -227,8 +230,9 @@ def convert_to_ecc_key(key: PublicKeyEcc | bytes) -> PublicKeyEcc:
         if not isinstance(pub_key, PublicKeyEcc):
             raise SPSDKError("Not ECC key")
         return pub_key
-    except Exception:
-        pass
+    except Exception as exc:  # noqa: BLE001
+        logger.debug(f"Failed to extract ECC public key from data: {exc}")
+        logger.debug(traceback.format_exc())
     # Just recreate public key from the parsed data
     return PublicKeyEcc.parse(key)
 

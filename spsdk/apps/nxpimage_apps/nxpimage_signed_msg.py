@@ -60,7 +60,7 @@ def signed_msg_export(config: Config, assets: str | None) -> None:
     signed_msg_output_file_path = config.get_output_file_name("output")
     write_file(signed_msg_data, signed_msg_output_file_path, mode="wb")
 
-    logger.info(f"Created Signed message Image:\n{str(signed_message.image_info())}")
+    logger.info(f"Created Signed message Image:\n{signed_message.image_info()!s}")
     logger.info(f"Created Signed message Image memory map:\n{signed_message.image_info().draw()}")
 
     if not (
@@ -109,7 +109,7 @@ def signed_msg_parse(family: FamilyRevision, binary: str, output: str) -> None:
     try:
         signed_message = SignedMessage.parse(data, family=family)
     except SPSDKError as exc:
-        click.echo(f"Signed message parsing failed: {binary} ,({str(exc)})")
+        click.echo(f"Signed message parsing failed: {binary} ,({exc!s})")
         return
 
     logger.info(f"Parsed Signed message image memory map: {signed_message.image_info().draw()}")
@@ -244,7 +244,7 @@ def tlv_export(config: Config) -> None:
     write_file(tlv_data, tlv_output_file_path, mode="wb")
 
     logger.info(f"TLV blob size: {len(tlv_data)} bytes")
-    logger.info(f"TLV details:\n{str(tlv)}")
+    logger.info(f"TLV details:\n{tlv!s}")
 
     click.echo(f"Success. (TLV blob: {get_printable_path(tlv_output_file_path)} created.)")
 
@@ -306,7 +306,7 @@ def tlv_parse(family: FamilyRevision, binary: str, tlv_type: str, output: str) -
         # Parse the TLV data using the class method
         tlv_instance = tlv_class.parse(data)
         logger.info(f"TLV blob size: {len(data)} bytes")
-        logger.info(f"TLV details:\n{str(tlv_instance)}")
+        logger.info(f"TLV details:\n{tlv_instance!s}")
 
         write_file(tlv_instance.get_config_yaml(output), os.path.join(output, "parsed_config.yaml"))
 
@@ -316,8 +316,8 @@ def tlv_parse(family: FamilyRevision, binary: str, tlv_type: str, output: str) -
         )
 
     except SPSDKError as exc:
-        click.echo(f"TLV blob parsing failed: {binary} ,({str(exc)})")
-        raise SPSDKAppError(f"TLV parsing failed: {str(exc)}") from exc
+        click.echo(f"TLV blob parsing failed: {binary} ,({exc!s})")
+        raise SPSDKAppError(f"TLV parsing failed: {exc!s}") from exc
 
 
 @tlv_group.command(name="verify", no_args_is_help=True)
@@ -368,11 +368,11 @@ def tlv_verify(family: FamilyRevision, binary: str, tlv_type: str, problems: boo
 
         if not problems:
             click.echo(f"TLV blob size: {len(data)} bytes")
-            click.echo(f"TLV blob details:\n{str(tlv_instance)}")
+            click.echo(f"TLV blob details:\n{tlv_instance!s}")
 
         print_verifier_to_console(verifier)
         click.echo("TLV blob verification passed successfully.")
 
     except SPSDKError as exc:
-        click.echo(f"TLV blob verification failed: {binary} ,({str(exc)})")
-        raise SPSDKAppError(f"TLV verification failed: {str(exc)}") from exc
+        click.echo(f"TLV blob verification failed: {binary} ,({exc!s})")
+        raise SPSDKAppError(f"TLV verification failed: {exc!s}") from exc

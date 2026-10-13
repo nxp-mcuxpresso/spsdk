@@ -22,7 +22,7 @@ import yaml
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.misc import use_working_directory
-from spsdk.utils.schema_validator import CommentedConfig, check_config
+from spsdk.utils.schema_validator import CommentedConfig, PropertyRequired, check_config
 
 # schema for testing commented YAML configuration
 _TEST_CONFIG_SCHEMA = {
@@ -296,6 +296,25 @@ def test_config_template() -> None:
     assert _is_yaml_comment(my_yml_template, "[Required]", "arr")
     assert _is_yaml_comment(my_yml_template, "[Required]", "itm1")
     assert _is_yaml_comment(my_yml_template, "[Required]", "itm2")
+
+
+def test_config_template_array_level_template_value() -> None:
+    """Test array-level template_value is used when item-level template is missing."""
+    schema = {
+        "type": "object",
+        "properties": {
+            "arr": {
+                "type": "array",
+                "items": {"type": "number"},
+                "template_value": [1, 2, 3],
+            }
+        },
+        "required": ["arr"],
+    }
+
+    yaml_template = CommentedConfig("Array level template", [schema]).get_template()
+    config = yaml.safe_load(yaml_template)
+    assert config["arr"] == [1, 2, 3]
 
 
 def test_config() -> None:
@@ -635,3 +654,151 @@ def test_hex_value_format(test_input: str, should_pass: bool) -> None:
     else:
         with pytest.raises(SPSDKError):
             check_config(config, [schema])
+
+
+def test_get_property_optional_required_direct() -> None:
+    """Test a property listed in the top-level 'required' array is REQUIRED."""
+    block = {"required": ["a"], "properties": {"a": {}, "b": {}}}
+    assert CommentedConfig.get_property_optional_required("a", block) == PropertyRequired.REQUIRED
+
+
+def test_get_property_optional_required_optional() -> None:
+    """Test a property not required anywhere is OPTIONAL."""
+    block: dict = {"properties": {"a": {}, "b": {}}}
+    assert CommentedConfig.get_property_optional_required("b", block) == PropertyRequired.OPTIONAL
+
+
+def test_get_property_optional_required_nested_dict() -> None:
+    """Test a property required inside a nested dict is CONDITIONALLY_REQUIRED."""
+    block = {
+        "properties": {"a": {}},
+        "definitions": {"variant": {"required": ["a"]}},
+    }
+    assert (
+        CommentedConfig.get_property_optional_required("a", block)
+        == PropertyRequired.CONDITIONALLY_REQUIRED
+    )
+
+
+def test_get_property_optional_required_schema_keywords() -> None:
+    """Test a property required inside schema keyword blocks is CONDITIONALLY_REQUIRED."""
+    block = {
+        "properties": {"a": {}, "b": {}},
+        "oneOf": [{"required": ["a"]}, {"required": ["b"]}],
+    }
+    assert (
+        CommentedConfig.get_property_optional_required("a", block)
+        == PropertyRequired.CONDITIONALLY_REQUIRED
+    )
+
+
+def test_get_property_optional_required_if_then_else() -> None:
+    """Test if/then/else required entries resolve to CONDITIONALLY_REQUIRED."""
+    block = {
+        "properties": {"a": {}, "trigger": {}},
+        "if": {"properties": {"trigger": {"const": True}}},
+        "then": {"required": ["a"]},
+    }
+    assert (
+        CommentedConfig.get_property_optional_required("a", block)
+        == PropertyRequired.CONDITIONALLY_REQUIRED
+    )
+
+
+def test_get_all_property_statuses_mixed() -> None:
+    """Test batch status computation classifies required/conditional/optional in one pass."""
+    block = {
+        "required": ["a"],
+        "properties": {"a": {}, "b": {}, "c": {}},
+        "oneOf": [{"required": ["b"]}],
+    }
+    statuses = CommentedConfig._get_all_property_statuses(block)
+    assert statuses["a"] == PropertyRequired.REQUIRED
+    assert statuses["b"] == PropertyRequired.CONDITIONALLY_REQUIRED
+    assert statuses["c"] == PropertyRequired.OPTIONAL
+
+
+def test_get_all_property_statuses_nested_dict() -> None:
+    """Test batch status computation finds requirements nested inside dict values."""
+    block = {
+        "properties": {"a": {}},
+        "definitions": {"variant": {"required": ["a"]}},
+    }
+    statuses = CommentedConfig._get_all_property_statuses(block)
+    assert statuses["a"] == PropertyRequired.CONDITIONALLY_REQUIRED
+
+
+def test_check_matching_oneof_option_object_match() -> None:
+    """Test a dict value matches an object option whose properties cover all keys."""
+    one_of = {"type": "object", "properties": {"a": {}, "b": {}}}
+    assert CommentedConfig._check_matching_oneof_option(one_of, {"a": 1}) is True
+
+
+def test_check_matching_oneof_option_object_keys_not_covered() -> None:
+    """Test a dict value with keys outside the option's properties does not match."""
+    one_of = {"type": "object", "properties": {"a": {}}}
+    assert CommentedConfig._check_matching_oneof_option(one_of, {"z": 1}) is False
+
+
+def test_check_matching_oneof_option_object_missing_properties() -> None:
+    """Test an object option without a properties definition raises SPSDKError."""
+    with pytest.raises(SPSDKError, match="Properties must be defined"):
+        CommentedConfig._check_matching_oneof_option({"type": "object"}, {"a": 1})
+
+
+def test_check_matching_oneof_option_string_match() -> None:
+    """Test a string value matches a string-typed option."""
+    assert CommentedConfig._check_matching_oneof_option({"type": "string"}, "hello") is True
+
+
+def test_check_matching_oneof_option_int_match() -> None:
+    """Test an int value matches a number-typed option."""
+    assert CommentedConfig._check_matching_oneof_option({"type": "number"}, 5) is True
+
+
+def test_check_matching_oneof_option_type_list() -> None:
+    """Test option matching works when the option type is a list of allowed types."""
+    one_of = {"type": ["string", "number"]}
+    assert CommentedConfig._check_matching_oneof_option(one_of, "x") is True
+
+
+def test_check_matching_oneof_option_falsy_value() -> None:
+    """Test a falsy custom value never matches and returns False."""
+    assert CommentedConfig._check_matching_oneof_option({"type": "string"}, "") is False
+
+
+def test_check_matching_oneof_option_type_mismatch() -> None:
+    """Test a value whose type does not match the option returns False."""
+    assert CommentedConfig._check_matching_oneof_option({"type": "string"}, 5) is False
+
+
+def test_create_object_block_wrong_type() -> None:
+    """Test creating an object block from a non-object schema raises SPSDKError."""
+    cfg = CommentedConfig("title", [])
+    block: dict = {"type": "array"}
+    with pytest.raises(SPSDKError, match="block type is not 'object'"):
+        cfg._create_object_block(block)
+
+
+def test_create_object_block_missing_properties() -> None:
+    """Test creating an object block without properties raises SPSDKError."""
+    cfg = CommentedConfig("title", [])
+    block: dict = {"type": "object"}
+    with pytest.raises(SPSDKError, match="Block doesn't contain properties"):
+        cfg._create_object_block(block)
+
+
+def test_create_array_block_wrong_type() -> None:
+    """Test creating an array block from a non-array schema raises SPSDKError."""
+    cfg = CommentedConfig("title", [])
+    block: dict = {"type": "object"}
+    with pytest.raises(SPSDKError, match="block type is not 'array'"):
+        cfg._create_array_block(block, None)
+
+
+def test_create_array_block_missing_items() -> None:
+    """Test creating an array block without items raises SPSDKError."""
+    cfg = CommentedConfig("title", [])
+    block: dict = {"type": "array"}
+    with pytest.raises(SPSDKError, match="Block doesn't contain items"):
+        cfg._create_array_block(block, None)

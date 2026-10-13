@@ -190,7 +190,7 @@ class DevHsmSBx(DevHsm):
 
         # 4: Export unencrypted SBx data blocks
         self.info_print(" 4: Created unencrypted SBx data")
-        logger.info(f"\n SBx data: \n{str(self.sbx)}\n")
+        logger.info(f"\n SBx data: \n{self.sbx!s}\n")
         # 4.1: Get sbx file data part individual chunks
         data_cmd_blocks = self.sbx.sb_commands.get_cmd_blocks_to_export()
         # 4.2: Get sbx header without signature

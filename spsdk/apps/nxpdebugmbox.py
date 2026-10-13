@@ -25,7 +25,11 @@ from typing import cast
 
 import click
 import colorama
-from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
+from click_option_group import (
+    MutuallyExclusiveOptionGroup,
+    RequiredMutuallyExclusiveOptionGroup,
+    optgroup,
+)
 
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
@@ -33,6 +37,8 @@ from spsdk.apps.utils.common_cli_options import (
     hex_value_option,
     spsdk_apps_common_options,
     spsdk_config_option,
+    spsdk_debug_artifacts_option,
+    spsdk_debug_probe_protocol_option,
     spsdk_family_option,
     spsdk_output_option,
 )
@@ -56,7 +62,7 @@ from spsdk.dat.debug_mailbox import DebugMailbox
 from spsdk.dat.famode_image import FaModeImage
 from spsdk.dat.rot_meta import RotMetaEcc, RotMetaRSA
 from spsdk.dat.sda import DebugAuthMode, SdaAuthentication
-from spsdk.debuggers.debug_probe import MemorySpace
+from spsdk.debuggers.debug_probe import DebugProbe, MemorySpace
 from spsdk.debuggers.debug_probe_arm import DebugProbeCoreSightOnly
 from spsdk.debuggers.utils import (
     PROBES,
@@ -70,6 +76,7 @@ from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db, get_families
 from spsdk.utils.misc import align_block, get_printable_path, load_binary, write_file
+from spsdk.utils.verifier import VerifierResult
 
 logger = logging.getLogger(__name__)
 
@@ -218,6 +225,7 @@ def _open_debugmbox(
     multiple=True,
     help=get_debug_probe_options_help(),
 )
+@spsdk_debug_probe_protocol_option
 @click.option(
     "--operation-timeout",
     type=INT(),
@@ -234,6 +242,7 @@ def main(
     timing: float,
     serial_no: str,
     debug_probe_option: list[str],
+    debug_probe_protocol: str | None,
     no_reset: bool,
     operation_timeout: int,
 ) -> int:
@@ -252,6 +261,8 @@ def main(
 
         par_splitted = par.split("=")
         probe_user_params[par_splitted[0]] = par_splitted[1]
+    if debug_probe_protocol:
+        probe_user_params["protocol"] = debug_probe_protocol
 
     debug_params = DebugProbeParams(
         interface=interface, serial_no=serial_no, debug_probe_user_params=probe_user_params
@@ -681,6 +692,74 @@ def write_to_flash(
         raise SPSDKAppError(f"Write words to flash failed: {e}") from e
 
 
+@cmd_group.command(name="read-from-flash", no_args_is_help=True)
+@click.option("-a", "--address", type=INT(), required=True, help="Starting address")
+@click.option(
+    "-c",
+    "--count",
+    type=INT(),
+    required=True,
+    help="Number of bytes to read (rounded up to a multiple of 16 bytes).",
+)
+@spsdk_output_option(
+    required=False,
+    help="Path to store the read data as a binary file. If omitted, data is printed as a hex dump.",
+)
+@click.pass_obj
+def read_from_flash_command(pass_obj: dict, address: int, count: int, output: str | None) -> None:
+    """Read data from flash."""
+    read_from_flash(
+        pass_obj["family"],
+        pass_obj["debug_probe_params"],
+        pass_obj["debug_mailbox_params"],
+        address,
+        count,
+        output,
+    )
+
+
+def read_from_flash(
+    family: FamilyRevision,
+    debug_probe_params: DebugProbeParams,
+    debug_mailbox_params: DebugMailboxParams,
+    address: int,
+    count: int,
+    output: str | None = None,
+) -> None:
+    """Read data from flash.
+
+    :param family: Device family
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debug mailbox.
+    :param address: Flash start address
+    :param count: Number of bytes to read
+    :param output: Optional path to store the read data as a binary file
+    :raises SPSDKAppError: Raised if any error occurred or the family does not support the command.
+    """
+    if count <= 0:
+        raise SPSDKAppError("The count must be a positive number.")
+    if "read-from-flash" not in get_db(family).get_list(
+        DatabaseManager.DAT, "non_standard_commands", []
+    ):
+        raise SPSDKAppError(f"The 'read-from-flash' command is not supported by {family}.")
+    phrase_count = (count + 15) // 16  # round up to whole 16-byte phrases
+    try:
+        with _open_debugmbox(family, debug_probe_params, debug_mailbox_params) as mail_box:
+            data = bytearray()
+            for i in range(phrase_count):
+                response = dm_commands.ReadFromFlash(dm=mail_box).run([address + 16 * i])
+                data += struct.pack("<4I", *response)
+    except Exception as e:
+        raise SPSDKAppError(f"Read words from flash failed: {e}") from e
+
+    data = data[:count]
+    if output:
+        write_file(bytes(data), output, mode="wb")
+        click.echo(f"Read data stored to {get_printable_path(output)}")
+    else:
+        click.echo(format_raw_data(bytes(data), use_hexdump=True))
+
+
 @cmd_group.command(name="get-dac", no_args_is_help=True)
 @spsdk_output_option()
 @click.option(
@@ -762,10 +841,10 @@ def get_dac(
             dac_data_bytes = struct.pack(f"<{len(dac_data)}I", *dac_data)
             dac = DebugAuthenticationChallenge.parse(dac_data_bytes, family=family)
 
-            logger.info(f"DAC: \n{str(dac)}")
+            logger.info(f"DAC: \n{dac!s}")
             return dac_data_bytes
     except SPSDKError as exc:
-        raise SPSDKAppError(f"Get Debug Authentication challenge failed: {str(exc)}") from exc
+        raise SPSDKAppError(f"Get Debug Authentication challenge failed: {exc!s}") from exc
 
 
 @cmd_group.command(name="send-dar", no_args_is_help=True)
@@ -833,7 +912,7 @@ def send_dar(
                 ).run(dar_data_words)
             logger.debug(f"DAR response: {dar_response}")
     except SPSDKError as exc:
-        raise SPSDKAppError(f"The send Debug Authentication Response failed: {str(exc)}") from exc
+        raise SPSDKAppError(f"The send Debug Authentication Response failed: {exc!s}") from exc
 
 
 @cmd_group.command(name="set-bricked-mode", no_args_is_help=False)
@@ -1026,14 +1105,18 @@ def dat_group() -> None:
     is_flag=True,
     help="When used, exit debug mailbox command is not executed after debug authentication.",
 )
+@spsdk_debug_artifacts_option()
 @click.pass_obj
-def auth_command(pass_obj: dict, config: Config, no_exit: bool) -> None:
+def auth_command(
+    pass_obj: dict, config: Config, no_exit: bool, debug_artifacts: str | None
+) -> None:
     """Perform the Debug Authentication."""
     auth(
         pass_obj["debug_probe_params"],
         pass_obj["debug_mailbox_params"],
         config=config,
         no_exit=no_exit,
+        debug_artifacts=debug_artifacts,
     )
 
 
@@ -1042,6 +1125,7 @@ def auth(
     debug_mailbox_params: DebugMailboxParams,
     config: Config,
     no_exit: bool,
+    debug_artifacts: str | None = None,
 ) -> None:
     """Perform the Debug Authentication.
 
@@ -1049,6 +1133,7 @@ def auth(
     :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debug mailbox.
     :param config: Configuration of DAT.
     :param no_exit: When true, exit debug mailbox command is not executed after debug authentication.
+    :param debug_artifacts: Optional path to a directory where the DAR binary is stored for analysis.
     :raises SPSDKAppError: Raised if any error occurred.
     :raises KeyboardInterrupt: Internal use to cancel checking of result.
     """
@@ -1077,7 +1162,7 @@ def auth(
             dac_data_bytes = struct.pack(f"<{len(dac_data)}I", *dac_data)
             dac = DebugAuthenticationChallenge.parse(dac_data_bytes, family=family)
 
-            logger.info(f"DAC: \n{str(dac)}")
+            logger.info(f"DAC: \n{dac!s}")
 
             dar_class = DebugAuthenticateResponse._get_class(family, dac.version)
             dar = dar_class.load_from_config(config=config, dac=dac)
@@ -1086,8 +1171,14 @@ def auth(
                 raise SPSDKAppError(f"DAR verify failed:\n {verifier.draw()}")
 
             logger.info(f"\n{verifier.draw()}")
-            logger.info(f"DAR:\n{str(dar)}")
+            logger.info(f"DAR:\n{dar!s}")
             dar_data = align_block(dar.export(), alignment=4)
+            if debug_artifacts:
+                dar_bin_path = os.path.join(debug_artifacts, "dar.bin")
+                write_file(dar_data, dar_bin_path, mode="wb")
+                logger.info(
+                    f"The DAR binary has been stored to: {get_printable_path(dar_bin_path)}"
+                )
             # convert bytes to list[int]
             dar_data_words = list(struct.unpack(f"<{len(dar_data) // 4}I", dar_data))
             if nxp_keys:
@@ -1115,7 +1206,7 @@ def auth(
                         )
                 if get_db(family).get_bool(DatabaseManager.DAT, "reset_after_auth", False):
                     logger.info("Performing reset recovery and AHB access test.")
-                    mail_box.debug_probe.reset()
+                    perform_reset(mail_box.debug_probe, family)
 
                 # Do test of access to AHB bus with retry logic
                 sleep(0.2)
@@ -1140,10 +1231,7 @@ def auth(
                                 click.echo(".", nl=attempt == max_attempts - 1)
                                 if attempt < max_attempts - 1:  # Don't sleep on last attempt
                                     sleep(retry_delay)
-                        except KeyboardInterrupt as exc:
-                            # Re-raise to be caught by outer try-catch
-                            raise exc
-                        except Exception as e:
+                        except Exception as e:  # noqa: BLE001
                             logger.debug(f"AHB access test attempt {attempt + 1} failed: {e}")
                             click.echo(".", nl=attempt == max_attempts - 1)
                             if attempt < max_attempts - 1:  # Don't sleep on last attempt
@@ -1216,7 +1304,7 @@ def nxp_ssf_insert_duk(
             return struct.pack(f"<{len(seed_response)}I", *seed_response)
     except SPSDKError as exc:
         raise SPSDKAppError(
-            f"The create NXP PUF AC code store area as part of Self sign flow (SSF) failed: {str(exc)}"
+            f"The create NXP PUF AC code store area as part of Self sign flow (SSF) failed: {exc!s}"
         ) from exc
 
 
@@ -1373,7 +1461,7 @@ def nxp_ssf_insert_cert(
 
     except SPSDKError as exc:
         raise SPSDKAppError(
-            f"The create self-signed certificate as part of Self sign flow (SSF) failed: {str(exc)}"
+            f"The create self-signed certificate as part of Self sign flow (SSF) failed: {exc!s}"
         ) from exc
 
 
@@ -1456,7 +1544,7 @@ def password_auth(
         with _open_debugmbox(family, debug_probe_params, debug_mailbox_params) as mail_box:
             mail_box.write_debug_password(password)
     except SPSDKError as e:
-        raise SPSDKAppError(f"Password authentication failed: {str(e)}") from e
+        raise SPSDKAppError(f"Password authentication failed: {e!s}") from e
 
 
 @dat_group.command("get-template", no_args_is_help=True)
@@ -1532,10 +1620,11 @@ def dc_export(
             f"Creating {'RSA' if dc.version.is_rsa() else 'ECC'} debug credential object..."
         )
         dc.sign()
+        dc.verify().validate()
         data = dc.export()
         if dc.srk_count:
             click.echo(f"RKTH: {dc.calculate_hash().hex()}")
-        logger.debug(f"Debug credential file details:\n {str(dc)}")
+        logger.debug(f"Debug credential file details:\n {dc!s}")
         logger.info(f"Saving the debug credential to a file: {output}")
         write_file(data, output, mode="wb")
 
@@ -1568,13 +1657,55 @@ def dc_get_template(family: FamilyRevision, output: str) -> None:
     write_file(klass.get_config_template(family), output)
 
 
+@dc_group.command(name="verify", no_args_is_help=True)
+@spsdk_family_option(DebugCredentialCertificate.get_supported_families())
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, readable=True, resolve_path=True),
+    required=True,
+    help="Path to binary Debug Credential file to verify.",
+)
+@click.option(
+    "-p",
+    "--problems",
+    is_flag=True,
+    default=False,
+    help="Show just problems (warnings and errors).",
+)
+def dc_verify_command(family: FamilyRevision, binary: str, problems: bool) -> None:
+    """Verify the Debug Credential binary file."""
+    dc_verify(family, binary, problems)
+
+
+def dc_verify(family: FamilyRevision, binary: str, problems: bool) -> None:
+    """Verify the Debug Credential binary file.
+
+    :param family: Device family.
+    :param binary: Path to the binary Debug Credential file.
+    :param problems: Show just warnings and errors when True.
+    :raises SPSDKAppError: Raised if parsing fails or the verification found errors.
+    """
+    data = load_binary(binary)
+    try:
+        dc = DebugCredentialCertificate.parse(data, family)
+    except SPSDKError as e:
+        raise SPSDKAppError(f"Parsing of the Debug Credential file failed:\n{e}") from e
+    ver = dc.verify()
+    results = [VerifierResult.WARNING, VerifierResult.ERROR] if problems else None
+    click.echo(ver.draw(results))
+    click.echo("Summary table of verifier results:\n" + ver.get_summary_table())
+    if ver.has_errors:
+        raise SPSDKAppError("Debug Credential verification failed.")
+
+
 @main.group("mem-tool", cls=CommandsTreeGroup)
 def mem_group() -> None:
     """Group of commands for working with target memory over debug probe."""
 
 
 @mem_group.command(name="read-memory", no_args_is_help=True)
-@spsdk_family_option(get_families())  # All supported families by SPSDK
+@spsdk_family_option(get_families(DatabaseManager.DEBUG_PROBE))
 @click.option("-a", "--address", type=INT(), required=True, help="Starting address")
 @click.option("-c", "--count", type=INT(), required=True, help="Number of bytes to read")
 @click.option(
@@ -1647,7 +1778,7 @@ def read_memory(
 
 
 @mem_group.command(name="write-memory", no_args_is_help=True)
-@spsdk_family_option(get_families())  # Get all supported families by SPSDK
+@spsdk_family_option(get_families(DatabaseManager.DEBUG_PROBE))
 @click.option("-a", "--address", type=INT(), required=True, help="Starting address")
 @optgroup("Data Source", cls=RequiredMutuallyExclusiveOptionGroup)
 @optgroup.option(
@@ -1711,11 +1842,11 @@ def write_memory(
         try:
             debug_probe.mem_block_write(addr=address, data=data, space=space)
         except SPSDKError as exc:
-            raise SPSDKAppError(f"Failed to write memory: {str(exc)}") from exc
+            raise SPSDKAppError(f"Failed to write memory: {exc!s}") from exc
 
 
 @mem_group.command(name="test-connection", no_args_is_help=False)
-@spsdk_family_option(get_families())
+@spsdk_family_option(get_families(DatabaseManager.DEBUG_PROBE))
 @click.option(
     "-d",
     "--destination",
@@ -1770,7 +1901,7 @@ def test_connection(
                 except SPSDKError:
                     return False
             raise SPSDKAppError(f"Unsupported test connection destination: {destination}")
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.debug(f"Testing AHB access failed: {exc}")
         return False
 
@@ -1781,30 +1912,101 @@ def tool_group() -> None:
 
 
 @tool_group.command(name="reset", no_args_is_help=False)
-@spsdk_family_option(get_families())
-@click.option(
+@spsdk_family_option(get_families(DatabaseManager.DEBUG_PROBE))
+@optgroup("Reset Type", cls=MutuallyExclusiveOptionGroup)
+@optgroup.option(
     "-h",
     "--hard-reset",
     is_flag=True,
     default=False,
-    help="When used, the hardware reset is used instead of debug mailbox reset.",
+    help="When used, the hardware reset is used instead of the database-configured reset.",
+)
+@optgroup.option(
+    "-n",
+    "--nvic-reset",
+    is_flag=True,
+    default=False,
+    help="When used, the NVIC system reset (AIRCR SYSRESETREQ) is used instead of debug mailbox reset.",
 )
 @click.pass_obj
-def reset_command(pass_obj: dict, family: FamilyRevision, hard_reset: bool) -> None:
-    """Reset MCU by DebugMailBox.
+def reset_command(
+    pass_obj: dict, family: FamilyRevision, hard_reset: bool, nvic_reset: bool
+) -> None:
+    """Reset MCU by debug probe.
 
-    The reset command implemented in NXPDEBUGMBOX has two modes (option -h):
+    The reset command implemented in NXPDEBUGMBOX has three modes:
 
-    Reset by RESET REQUEST of debug mailbox that causes the reset of MCU by SYSRESET_REQ.
-    The chip is reset, but the ROM code returns back the chip into debug mailbox handler
-    (without -h/--hard-reset option).
+    Reset by the method configured in the debug_probe database feature.
 
     Reset by external reset signal. This reset is done by asserting external reset signal over
     debug probe. After this reset type the chip behavior is same as after standard reset button on the board.
     (with -h/--hard-reset option)
+
+    Reset by NVIC system reset. This reset writes the AIRCR register with SYSRESETREQ.
+    Useful for devices where hardware reset signal is not available.
+    (with -n/--nvic-reset option)
     """
-    reset(family, pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"], hard_reset)
-    click.echo("Reset MCU by Debug Mailbox succeeded.")
+    reset(
+        family,
+        pass_obj["debug_probe_params"],
+        pass_obj["debug_mailbox_params"],
+        hard_reset,
+        nvic_reset,
+    )
+    click.echo("Reset MCU by debug probe succeeded.")
+
+
+def perform_reset(
+    debug_probe: DebugProbe,
+    family: FamilyRevision,
+    nvic: bool | None = None,
+) -> None:
+    """Perform reset on the target using the appropriate method.
+
+    The method is determined by explicit ``nvic`` argument when provided,
+    otherwise by the device database ``reset_type`` setting in the debug_probe section.
+    NVIC reset writes the AIRCR register
+    (0xE000ED0C) with SYSRESETREQ, which is needed for devices where hardware
+    reset is not available or not desired.
+
+    :param debug_probe: Open debug probe instance.
+    :param family: Device family revision.
+    :param nvic: Reset mode selector:
+        - True: force NVIC reset.
+        - False: force hardware reset.
+        - None: use debug_probe reset_type from device database.
+    """
+    db = get_db(family)
+    debug_probe_feature = DatabaseManager.DEBUG_PROBE in db.features
+    if nvic is None:
+        reset_type = (
+            db.get_str(DatabaseManager.DEBUG_PROBE, "reset_type", "hw_reset")
+            if debug_probe_feature
+            else db.get_str(DatabaseManager.DAT, "reset_type", "hw_reset")
+        )
+        use_nvic_reset = reset_type == "nvic_reset"
+    else:
+        use_nvic_reset = nvic
+
+    if use_nvic_reset:
+        nvic_cfg = (
+            db.get_dict(DatabaseManager.DEBUG_PROBE, "nvic_reset", {})
+            if debug_probe_feature
+            else {}
+        )
+        if not nvic_cfg:
+            nvic_cfg = db.get_dict(DatabaseManager.DAT, "nvic_reset", {})
+        if not nvic_cfg:
+            nvic_cfg = db.get_dict(DatabaseManager.SHADOW_REGS, "nvic_reset", {})
+        address = nvic_cfg.get("address")
+        value = nvic_cfg.get("value")
+        if not address or not value:
+            raise SPSDKError(f"The NVIC reset configuration is missing for device {family}")
+        logger.debug(f"Performing NVIC reset: address={hex(address)}, value={hex(value)}")
+        debug_probe.mem_reg_write(addr=address, data=value)
+    else:
+        logger.debug("Performing HW reset")
+        debug_probe.reset()
 
 
 def reset(
@@ -1812,31 +2014,33 @@ def reset(
     debug_probe_params: DebugProbeParams,
     debug_mailbox_params: DebugMailboxParams,
     hard_reset: bool,
+    nvic_reset: bool = False,
 ) -> None:
-    """Reset MCU by DebugMailBox.
+    """Reset MCU by debug probe.
 
     :param family: Device family
     :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
     :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
-    :param hard_reset: If true, use the hardware reset instead of debug mailbox reset.
+    :param hard_reset: If true, force hardware reset instead of database-configured reset.
+    :param nvic_reset: If true, use NVIC system reset via AIRCR register write.
     :raises SPSDKAppError: Raised if any error occurred.
     """
     try:
         debug_probe_params.set_family(family)
-        if hard_reset:
+        if hard_reset or nvic_reset:
             with open_debug_probe(
                 interface=debug_probe_params.interface,
                 serial_no=debug_probe_params.serial_no,
                 debug_probe_params=debug_probe_params.debug_probe_user_params,
                 print_func=click.echo,
             ) as debug_probe:
-                debug_probe.reset()
+                perform_reset(debug_probe, family, nvic=not hard_reset)
         else:
             debug_mailbox_params.reset = True
             with _open_debugmbox(family, debug_probe_params, debug_mailbox_params):
                 pass
     except Exception as e:
-        raise SPSDKAppError(f"Reset MCU by Debug Mailbox failed: {e}") from e
+        raise SPSDKAppError(f"Reset MCU by debug probe failed: {e}") from e
 
 
 @tool_group.command(name="get-uuid", no_args_is_help=False)
@@ -1943,7 +2147,7 @@ def get_uuid(
 
     if dac.uuid == bytes(16):
         logger.warning("The valid UUID is not included in DAC.")
-        logger.info(f"DAC info:\n {str(dac)}")
+        logger.info(f"DAC info:\n {dac!s}")
         return None
 
     logger.info(f"Got DAC from SOCC:'0x{dac.socc:08X}' to retrieve UUID.")
@@ -1951,7 +2155,7 @@ def get_uuid(
 
 
 @tool_group.command(name="halt", no_args_is_help=False)
-@spsdk_family_option(get_families())  # Get all supported families by SPSDK
+@spsdk_family_option(get_families(DatabaseManager.DEBUG_PROBE))
 @click.pass_obj
 def debug_halt_command(pass_obj: dict, family: FamilyRevision) -> None:
     """Halt CPU execution."""
@@ -1959,7 +2163,7 @@ def debug_halt_command(pass_obj: dict, family: FamilyRevision) -> None:
         debug_halt(family, pass_obj["debug_probe_params"])
         click.echo("The CPU execution has been halted.")
     except SPSDKError as exc:
-        raise SPSDKAppError(f"Halt of CPU execution failed. ({str(exc)})") from exc
+        raise SPSDKAppError(f"Halt of CPU execution failed. ({exc!s})") from exc
 
 
 def debug_halt(family: FamilyRevision, debug_probe_params: DebugProbeParams) -> None:
@@ -1980,7 +2184,7 @@ def debug_halt(family: FamilyRevision, debug_probe_params: DebugProbeParams) -> 
 
 
 @tool_group.command(name="resume", no_args_is_help=False)
-@spsdk_family_option(get_families())  # Get all supported families by SPSDK
+@spsdk_family_option(get_families(DatabaseManager.DEBUG_PROBE))
 @click.pass_obj
 def debug_resume_command(pass_obj: dict, family: FamilyRevision) -> None:
     """Resume CPU execution."""
@@ -1988,7 +2192,7 @@ def debug_resume_command(pass_obj: dict, family: FamilyRevision) -> None:
         debug_resume(family, pass_obj["debug_probe_params"])
         click.echo("The CPU execution has been resumed.")
     except SPSDKError as exc:
-        raise SPSDKAppError(f"Resume of CPU execution failed. ({str(exc)})") from exc
+        raise SPSDKAppError(f"Resume of CPU execution failed. ({exc!s})") from exc
 
 
 def debug_resume(family: FamilyRevision, debug_probe_params: DebugProbeParams) -> None:
@@ -2081,20 +2285,30 @@ def sda_auth(
 
 
 @tool_group.command(name="list-probes", no_args_is_help=False)
-def list_probes_command() -> None:
+@spsdk_family_option(get_families(DatabaseManager.DEBUG_PROBE))
+@click.pass_obj
+def list_probes_command(pass_obj: dict, family: FamilyRevision) -> None:
     """List all connected debug probes in the system."""
-    list_probes()
+    list_probes(family, pass_obj["debug_probe_params"])
 
 
-def list_probes() -> None:
+def list_probes(family: FamilyRevision, debug_probe_params: DebugProbeParams) -> None:
     """List all connected debug probes in the system.
 
     This function scans all available debug probe interfaces and displays
     information about all connected probes including interface type, hardware ID,
     description, and supported architecture.
+
+    :param family: Device family used to filter probe architecture.
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
     """
-    # Get all connected probes without any filters
-    debug_probes = get_connected_probes(interface=None, hardware_id=None, options=None)
+    debug_probe_params.set_family(family)
+    debug_probes = get_connected_probes(
+        interface=debug_probe_params.interface,
+        hardware_id=debug_probe_params.serial_no,
+        options=debug_probe_params.debug_probe_user_params,
+        architecture=get_db(family).device.info.architecture,
+    )
 
     if len(debug_probes) == 0:
         click.echo("No debug probes found in the system.")

@@ -515,7 +515,7 @@ def convert_file(config: str, cfg_type: str | None = None) -> str | None:
     try:
         configuration = load_configuration(config)
     except SPSDKError as exc:
-        click.echo(colorama.Fore.RED + f"Cannot load input file: {str(exc)}" + colorama.Fore.RESET)
+        click.echo(colorama.Fore.RED + f"Cannot load input file: {exc!s}" + colorama.Fore.RESET)
         return None
 
     tool_name = ""
@@ -609,14 +609,13 @@ def main(
                     os.path.splitext(file.replace(source_base_path, output_folder))[0] + ".yaml"
                 )
 
-                if out_path == file:
-                    if out == load_text(file):
-                        click.echo(
-                            colorama.Fore.YELLOW
-                            + "Skipping writing converted file, due no changes."
-                            + colorama.Fore.RESET
-                        )
-                        continue
+                if out_path == file and out == load_text(file):
+                    click.echo(
+                        colorama.Fore.YELLOW
+                        + "Skipping writing converted file, due no changes."
+                        + colorama.Fore.RESET
+                    )
+                    continue
 
                 if rename:
                     click.echo(

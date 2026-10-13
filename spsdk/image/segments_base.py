@@ -77,10 +77,12 @@ class SegmentBase(FeatureBaseClass):
         """
         if family:
             return [
-                MemoryType.from_label(mem_type)
-                for mem_type in cls.get_memory_types_config(family).keys()
+                MemoryType.from_label(mem_type) for mem_type in cls.get_memory_types_config(family)
             ]
-        return [
-            MemoryType.from_label(memory)
-            for memory in DatabaseManager().quick_info.features_data.get_mem_types(cls.FEATURE)
-        ]
+        return sorted(
+            (
+                MemoryType.from_label(memory)
+                for memory in DatabaseManager().quick_info.features_data.get_mem_types(cls.FEATURE)
+            ),
+            key=lambda memory_type: memory_type.tag,
+        )

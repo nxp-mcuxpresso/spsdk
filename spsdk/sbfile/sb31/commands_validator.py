@@ -128,16 +128,16 @@ class ValidationResult:
         """
         if self.result == ResultType.FAILED:
             raise SPSDKValidationError(
-                f"Validation rule '{str(self.rule)}' failed.{self.reason or ''}"
+                f"Validation rule '{self.rule!s}' failed.{self.reason or ''}"
             )
         if self.result == ResultType.WARNING:
             logger.warning(
-                f"Validation rule '{str(self.rule)}' finished with warning.{self.reason or ''}"
+                f"Validation rule '{self.rule!s}' finished with warning.{self.reason or ''}"
             )
         if self.result == ResultType.SKIPPED:
-            logger.info(f"Validation rule '{str(self.rule)}' was skipped.{self.reason or ''}")
+            logger.info(f"Validation rule '{self.rule!s}' was skipped.{self.reason or ''}")
         if self.result == ResultType.PASSED:
-            logger.info(f"Validation rule '{str(self.rule)}' passed.{self.reason or ''}")
+            logger.info(f"Validation rule '{self.rule!s}' passed.{self.reason or ''}")
 
 
 class BaseRuleValidator:
@@ -170,7 +170,7 @@ class BaseRuleValidator:
         if not self.rule:
             return f"{validator_name}: No rule specified"
 
-        formatted_items = [f"{k}={repr(v)}" for k, v in self.rule.items()]
+        formatted_items = [f"{k}={v!r}" for k, v in self.rule.items()]
         return f"<{validator_name}: {', '.join(formatted_items)}>"
 
     def validate(self, commands: list[BaseCmd]) -> ValidationResult:
@@ -263,17 +263,16 @@ class MustFollowValidator(BaseRuleValidator):
         command_tags = self.get_command_tags(commands)
 
         for idx, cmd_tag in enumerate(command_tags):
-            if cmd_tag == command_class.CMD_TAG:
-                # last command is not allowed
-                if (
-                    idx + 1 == len(command_tags)
-                    or command_tags[idx + 1] != following_command_class.CMD_TAG
-                ):
-                    return ValidationResult(
-                        self,
-                        ResultType.FAILED,
-                        f"{following_command} command must follow {command_name} command according to device rules",
-                    )
+            # last command is not allowed
+            if cmd_tag == command_class.CMD_TAG and (
+                idx + 1 == len(command_tags)
+                or command_tags[idx + 1] != following_command_class.CMD_TAG
+            ):
+                return ValidationResult(
+                    self,
+                    ResultType.FAILED,
+                    f"{following_command} command must follow {command_name} command according to device rules",
+                )
 
         return ValidationResult(self, ResultType.PASSED)
 

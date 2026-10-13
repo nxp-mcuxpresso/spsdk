@@ -463,7 +463,7 @@ class Verifier:
                 value_enum = enum.from_attr(value)
             except SPSDKError:
                 self.add_record(
-                    name, VerifierResult.ERROR, f"{value} not fit to known enumeration {str(enum)}"
+                    name, VerifierResult.ERROR, f"{value} not fit to known enumeration {enum!s}"
                 )
                 return
 

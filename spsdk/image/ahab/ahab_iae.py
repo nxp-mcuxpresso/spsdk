@@ -70,6 +70,32 @@ def load_binary_data_from_file(file_path: str) -> bytes:
     return image.export()
 
 
+def load_gap_fill_binary(config: Config, gap_after_image: int) -> tuple[str | None, bytes]:
+    """Load optional binary data used to prefill ``gap_after_image``.
+
+    :param config: Image entry configuration.
+    :param gap_after_image: Reserved gap size in bytes.
+    :raises SPSDKValueError: If file is used without a gap or if the file does not fit.
+    :return: Tuple with resolved input file path and file content.
+    """
+    if "gap_after_image_file" not in config:
+        return None, b""
+
+    if gap_after_image <= 0:
+        raise SPSDKValueError(
+            "The 'gap_after_image_file' option requires a non-zero 'gap_after_image'."
+        )
+
+    gap_file = config.get_input_file_name("gap_after_image_file")
+    gap_binary = load_binary_data_from_file(gap_file)
+    if len(gap_binary) > gap_after_image:
+        raise SPSDKValueError(
+            f"The 'gap_after_image_file' size ({len(gap_binary)} B) exceeds "
+            f"'gap_after_image' ({gap_after_image} B)."
+        )
+    return gap_file, gap_binary
+
+
 class ImageArrayEntry(Container):
     """AHAB Image Array Entry representation.
 
@@ -141,9 +167,7 @@ class ImageArrayEntry(Container):
     METADATA_SM_FLAGS_OFFSET = 24
     METADATA_SM_FLAGS_SIZE = 8
 
-    FLAGS_HASH_ALGORITHM_TYPE: type[AHABSignHashAlgorithm | AHABSignHashAlgorithm] = (
-        AHABSignHashAlgorithm
-    )
+    FLAGS_HASH_ALGORITHM_TYPE: type[AHABSignHashAlgorithm] = AHABSignHashAlgorithm
 
     def __init__(
         self,
@@ -159,6 +183,8 @@ class ImageArrayEntry(Container):
         already_encrypted_image: bool = False,
         image_name: str | None = None,
         gap_after_image: int = 0,
+        gap_after_image_binary: bytes | None = None,
+        gap_after_image_file: str | None = None,
         image_size_alignment: int = 1,
         iae_header_position: int | None = None,
         align_next_to: int = 0,
@@ -189,6 +215,8 @@ class ImageArrayEntry(Container):
         :param image_name: Optional name/identifier for the image, defaults to None
         :param gap_after_image: Size of gap (in bytes) to add after the image in container,
             defaults to 0
+        :param gap_after_image_binary: Optional binary data written at the beginning of the gap.
+        :param gap_after_image_file: Optional source file path for the gap prefill data.
         :param image_size_alignment: Optional override for standard image size alignment,
             defaults to None
         :param iae_header_position: Optional explicit position index for this entry in the
@@ -223,6 +251,8 @@ class ImageArrayEntry(Container):
             else bytes(self.IV_LEN)
         )
         self.gap_after_image = gap_after_image
+        self.gap_after_image_binary = gap_after_image_binary or b""
+        self.gap_after_image_file = gap_after_image_file
         self.iae_header_position: int | None = iae_header_position
         self.align_next_to: int = align_next_to
 
@@ -254,21 +284,16 @@ class ImageArrayEntry(Container):
         :param other: Object to compare with this ImageArrayEntry instance.
         :return: True if objects are equal, False otherwise.
         """
-        if isinstance(other, type(self)):
-            if (
-                self._image_offset  # pylint: disable=too-many-boolean-expressions
-                == other._image_offset
-                and self.image_size == other.image_size
-                and self.load_address == other.load_address
-                and self.entry_point == other.entry_point
-                and self.flags == other.flags
-                and self.image_meta_data == other.image_meta_data
-                and self.image_hash == other.image_hash
-                and self.image_iv == other.image_iv
-            ):
-                return True
-
-        return False
+        return isinstance(other, type(self)) and (  # pylint: disable=too-many-boolean-expressions
+            self._image_offset == other._image_offset
+            and self.image_size == other.image_size
+            and self.load_address == other.load_address
+            and self.entry_point == other.entry_point
+            and self.flags == other.flags
+            and self.image_meta_data == other.image_meta_data
+            and self.image_hash == other.image_hash
+            and self.image_iv == other.image_iv
+        )
 
     def __repr__(self) -> str:
         """Get string representation of the object.
@@ -1036,6 +1061,9 @@ class ImageArrayEntry(Container):
             image_offset = config.get_int("image_offset", 0)
 
         gap_after_image = config.get_int("gap_after_image", 0)
+        gap_after_image_file, gap_after_image_binary = load_gap_fill_binary(
+            config=config, gap_after_image=gap_after_image
+        )
 
         return cls(
             chip_config=chip_config,
@@ -1047,6 +1075,8 @@ class ImageArrayEntry(Container):
             image_meta_data=meta_data,
             image_iv=None,  # IV data are updated by UpdateFields function
             gap_after_image=gap_after_image,
+            gap_after_image_binary=gap_after_image_binary,
+            gap_after_image_file=gap_after_image_file,
             image_size_alignment=image_size_alignment,
         )
 
@@ -1396,6 +1426,9 @@ class ImageArrayEntryTemplates:
             boot_flags=boot_flags,
         )
         gap_after_image = cls._load_int(database, "gap_after_image", config=config, default=0)
+        gap_after_image_file, gap_after_image_binary = load_gap_fill_binary(
+            config=config, gap_after_image=gap_after_image
+        )
         try:
             image_size_alignment = cls._load_int(database, "image_size_alignment", config=config)
         except SPSDKError:
@@ -1411,6 +1444,8 @@ class ImageArrayEntryTemplates:
             image_meta_data=meta_data,
             image_name=cls.IMAGE_NAME,
             gap_after_image=gap_after_image,
+            gap_after_image_binary=gap_after_image_binary,
+            gap_after_image_file=gap_after_image_file,
             image_size_alignment=image_size_alignment,
         )
 
@@ -1854,26 +1889,34 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
         # Add separate QuickBoot data entry if needed
         if quick_boot:
             db = get_db(chip_config.base.family)
-            qb_data_binary = None
+            qb_data_binary: bytes | None = None
+            qb_data_gap_binary = b""
+            qb_data_gap_file: str | None = None
             qb_data_mandatory = db.get_bool(
                 DatabaseManager.AHAB, f"{cls.KEY}_qb_data_mandatory", False
             )
             qb_data_dummy = db.get_bool(DatabaseManager.AHAB, f"{cls.KEY}_qb_data_dummy", False)
             qb_data = config.get("qb_data")
 
-            # Handle mandatory QB data (use blank if not provided)
-            if qb_data_mandatory and qb_data is None:
+            if qb_data_dummy:
+                qb_data_binary = b""
+                if qb_data:
+                    qb_data_gap_file = config.get_input_file_name("qb_data")
+                    qb_data_gap_binary = load_binary_data_from_file(qb_data_gap_file)
+                    if len(qb_data_gap_binary) > cls.QB_DATA_SIZE:
+                        raise SPSDKValueError(
+                            f"The QuickBoot data size ({len(qb_data_gap_binary)} B) exceeds "
+                            f"the reserved area ({cls.QB_DATA_SIZE} B)."
+                        )
+            elif qb_data_mandatory and qb_data is None:
                 logger.debug(
                     "Quick boot data are mandatory, but not provided, using 64k blank data"
                 )
                 # In case QB data are not provided add 64k blank data
                 qb_data_binary = bytes(cls.QB_DATA_SIZE)
-            elif qb_data_dummy and qb_data is None:
-                qb_data_binary = b""
-
             elif qb_data:
-                qb_data = config.get_input_file_name("qb_data")
-                qb_data_binary = load_binary_data_from_file(qb_data)
+                qb_data_file = config.get_input_file_name("qb_data")
+                qb_data_binary = load_binary_data_from_file(qb_data_file)
 
             # Create separate QB data entry
             if qb_data_binary is not None:
@@ -1894,7 +1937,9 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
                     flags=flags,
                     image_meta_data=meta_data,
                     image_name=cls.IMAGE_NAME,
-                    gap_after_image=gap_after_image,
+                    gap_after_image=cls.QB_DATA_SIZE if qb_data_dummy else gap_after_image,
+                    gap_after_image_binary=qb_data_gap_binary,
+                    gap_after_image_file=qb_data_gap_file,
                     image_size_alignment=cls.QB_DATA_SIZE,
                 )
                 if qb_data_dummy:
@@ -1904,7 +1949,8 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
                     #     [1] OEI DDR image  – real binary, hash present
                     #   Binary data region (list / offset-walk order):
                     #     OEI DDR data       – at base offset
-                    #     QB data dummy      – zero-size, after gap
+                    #     QB data dummy      – zero-size, followed by a 64 KiB reserved gap
+                    #                           optionally prefilled by QuickBoot data
                     #
                     # The list stays [OEI, dummy] so offset assignment gives:
                     #   OEI → base offset; dummy → base + OEI_size + gap
@@ -1912,7 +1958,6 @@ class IaeOEIDDR(ImageArrayEntryTemplates):
                     # the dummy appears first and OEI second in the signed IAE table.
                     ret[0].iae_header_position = 1  # OEI: second in header
                     qb_iae.iae_header_position = 0  # dummy: first in header
-                    qb_iae.gap_after_image = cls.QB_DATA_SIZE
                     ret.append(qb_iae)  # list order: [OEI, dummy] → correct data offsets
                 else:
                     ret.append(qb_iae)

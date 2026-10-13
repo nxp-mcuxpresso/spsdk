@@ -27,6 +27,7 @@ from spsdk.utils.misc import Endianness, swap_bytes
 from spsdk.utils.registers import Registers, RegistersPreValidationHook
 
 logger = logging.getLogger(__name__)
+UNKNOWN_FAMILY = FamilyRevision("Unknown")
 
 
 class FCB(SegmentBase):
@@ -90,7 +91,7 @@ class FCB(SegmentBase):
         cls,
         binary: bytes,
         offset: int = 0,
-        family: FamilyRevision = FamilyRevision("Unknown"),
+        family: FamilyRevision = UNKNOWN_FAMILY,
         mem_type: MemoryType = MemoryType.FLEXSPI_NOR,
     ) -> Self:
         """Parse binary block into FCB object.
@@ -139,7 +140,7 @@ class FCB(SegmentBase):
             fcb_settings = config.get_config("fcb_settings")
             fcb.registers.load_from_config(fcb_settings)
         except (SPSDKError, AttributeError) as exc:
-            raise SPSDKValueError(f"Cannot load FCB configuration: {str(exc)}") from exc
+            raise SPSDKValueError(f"Cannot load FCB configuration: {exc!s}") from exc
         return fcb
 
     def get_config(self, data_path: str = "./") -> Config:

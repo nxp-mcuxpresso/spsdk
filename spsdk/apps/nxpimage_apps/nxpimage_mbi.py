@@ -64,7 +64,18 @@ def mbi_export(config: Config) -> None:
     mbi_output_file_path = config.get_output_file_name("masterBootOutputFile")
     logger.info(mbi_data.draw())
 
-    write_file(mbi_data.export(), mbi_output_file_path, mode="wb")
+    output_format = config.get("output_format", "bin").upper()
+    if output_format in ("ELF", "ELF_PATCH"):
+        source_elf = (
+            config.get_input_file_name("inputImageFile") if output_format == "ELF_PATCH" else None
+        )
+        mbi_data.save_binary_image(
+            mbi_output_file_path,
+            file_format=output_format,
+            source_elf_file=source_elf,
+        )
+    else:
+        mbi_data.save_binary_image(mbi_output_file_path, file_format=output_format)
 
     click.echo(f"Success. (Master Boot Image: {get_printable_path(mbi_output_file_path)} created.)")
 
@@ -106,7 +117,7 @@ def mbi_parse(family: FamilyRevision, binary: str, dek: str, output: str) -> Non
     yaml_data = CommentedConfig(
         main_title=(
             f"Master Boot Image ({mbi.__class__.__name__}) recreated configuration from :"
-            f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}."
+            f"{datetime.datetime.now(datetime.timezone.utc).strftime('%d/%m/%Y %H:%M:%S')}."
         ),
         schemas=mbi.get_validation_schemas(family),
     ).get_config(cfg)
@@ -159,7 +170,7 @@ def mbi_verify(family: FamilyRevision, binary: str, dek: str, problems: bool) ->
     try:
         mbi_classes = MasterBootImage.get_mbi_classes(family)
     except Exception as exc:
-        click.echo(f"Failed to get MBI classes for {family}: {str(exc)}", err=True)
+        click.echo(f"Failed to get MBI classes for {family}: {exc!s}", err=True)
         raise SPSDKAppError("Failed to determine MBI image types") from exc
 
     # Try parsing with each MBI class configuration
@@ -172,8 +183,8 @@ def mbi_verify(family: FamilyRevision, binary: str, dek: str, problems: bool) ->
                 valid_image = mbi_image
                 logger.info(f"Valid MBI image found: {target} / {authentication}")
                 break
-        except Exception as exc:
-            logger.debug(f"Failed to parse as {mbi_key}: {str(exc)}")
+        except Exception as exc:  # noqa: BLE001
+            logger.debug(f"Failed to parse as {mbi_key}: {exc!s}")
             continue
 
     if not valid_image:

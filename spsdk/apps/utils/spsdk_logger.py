@@ -18,8 +18,8 @@ import os
 import platform
 import re
 import sys
-from datetime import datetime
-from typing import TextIO
+from datetime import datetime, timezone
+from typing import ClassVar, TextIO
 
 import colorama
 
@@ -33,6 +33,8 @@ from spsdk.utils.misc import find_file, load_configuration
 
 colorama.just_fix_windows_console()
 
+module_logger = logging.getLogger(__name__)
+
 try:
     logging_config_file = find_file(
         "logging.yaml", search_paths=["../../", os.path.expanduser("~/.spsdk")]
@@ -40,9 +42,9 @@ try:
     config_data = load_configuration(logging_config_file)
     logging.config.dictConfig(config_data)
     print(f"Logging config loaded from {logging_config_file}")
-except Exception:
+except Exception as exc:
     # no logging config file found
-    pass
+    module_logger.debug(f"Logging configuration file was not loaded: {exc}", exc_info=True)
 
 
 class ColoredFormatter(logging.Formatter):
@@ -59,7 +61,7 @@ class ColoredFormatter(logging.Formatter):
     FORMAT = logging.BASIC_FORMAT
     FORMAT_DEBUG = FORMAT + " (%(relativeCreated)dms since start, %(filename)s:%(lineno)d)"
 
-    COLORED_FORMATS = {
+    COLORED_FORMATS: ClassVar[dict[int, str]] = {
         SPSDK_LOG_LEVEL_TRACE: colorama.Fore.CYAN + FORMAT_DEBUG + colorama.Fore.RESET,
         logging.DEBUG: colorama.Fore.BLUE + FORMAT_DEBUG + colorama.Fore.RESET,
         logging.INFO: colorama.Fore.WHITE
@@ -75,7 +77,7 @@ class ColoredFormatter(logging.Formatter):
         + colorama.Fore.RESET
         + colorama.Style.RESET_ALL,
     }
-    FORMATS = {
+    FORMATS: ClassVar[dict[int, str]] = {
         SPSDK_LOG_LEVEL_TRACE: FORMAT_DEBUG,
         logging.DEBUG: FORMAT_DEBUG,
         logging.INFO: FORMAT,
@@ -105,10 +107,18 @@ class ColoredFormatter(logging.Formatter):
         if not self.colored:
             try:
                 record.msg = re.sub(r"\\x1b\[\d{1,3}m", "", record.msg)
-            except Exception:
+            except Exception as exc:
                 # Just ignore all exceptions on this "remove color" operation
-                pass
+                module_logger.debug(
+                    f"Failed to remove color escape sequences: {exc}", exc_info=True
+                )
         return formatter.format(record)
+
+
+class _SPSDKConsoleHandler(logging.StreamHandler):
+    """Console handler installed by SPSDK logging utilities."""
+
+    _spsdk_console_handler = True
 
 
 def install(
@@ -158,13 +168,7 @@ def install(
     # Reuse existing SPSDK console handler to avoid duplicate log lines when install() is called
     # repeatedly (for example from nested Click decorators and command callbacks).
     console_handler = next(
-        (
-            h
-            for h in target_logger.handlers
-            if isinstance(h, logging.StreamHandler)
-            and not isinstance(h, logging.handlers.RotatingFileHandler)
-            and getattr(h, "_spsdk_console_handler", False)
-        ),
+        (h for h in target_logger.handlers if isinstance(h, _SPSDKConsoleHandler)),
         None,
     )
     if console_handler:
@@ -172,10 +176,9 @@ def install(
         console_handler.setFormatter(formatter)
         console_handler.setStream(stream)
     else:
-        handler = logging.StreamHandler(stream)
+        handler = _SPSDKConsoleHandler(stream)
         handler.setLevel(level)  # Only show messages at specified level and above in console
         handler.setFormatter(formatter)
-        setattr(handler, "_spsdk_console_handler", True)
         target_logger.addHandler(handler)
     target_logger.propagate = True
 
@@ -205,9 +208,7 @@ def install(
             target_logger.addHandler(debug_handler)
 
             # Log debug session header information
-            starter = (
-                f"* SPSDK DEBUG LOGGING STARTED {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} *"
-            )
+            starter = f"* SPSDK DEBUG LOGGING STARTED {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} *"
             padding = len(starter) - 2
             target_logger.debug("*" * len(starter))
             target_logger.debug(starter)
@@ -217,6 +218,6 @@ def install(
             target_logger.debug(f"* OS version: {platform.platform()}".ljust(padding) + " *")
             target_logger.debug(f"* Last command: {sys.argv}".ljust(padding) + " *")
             target_logger.debug("*" * len(starter))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             # If debug logging fails, log a warning but don't crash the application
-            target_logger.warning(f"Failed to initialize debug logging: {str(e)}")
+            target_logger.warning(f"Failed to initialize debug logging: {e!s}")

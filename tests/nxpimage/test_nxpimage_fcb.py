@@ -21,6 +21,7 @@ from spsdk.apps import nxpimage
 from spsdk.exceptions import SPSDKError
 from spsdk.image.fcb.fcb import FCB
 from spsdk.image.mem_type import MemoryType
+from spsdk.image.xmcd.xmcd import XMCD, ConfigurationBlockType
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import use_working_directory
 from tests.cli_runner import CliRunner
@@ -139,6 +140,7 @@ def test_nxpimage_fcb_parse_cli(
         ("rw612", ["flexspi_nor"]),
         ("mcxn947", ["flexspi_nor"]),
         ("lpc5536", ["flexspi_nor"]),
+        ("mimxrt2662", ["xspi_nor"]),
         ("mimxrt798s", ["xspi_nor"]),
     ],
 )
@@ -229,3 +231,50 @@ def test_default_memory_type(
     if mem_type:
         cmd += f" -m {mem_type}"
     cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=0 if is_valid else -1)
+
+
+@pytest.mark.parametrize("family", ["mimxrt2660", "mimxrt2661", "mimxrt2662", "mimxrt2663"])
+def test_mimxrt266x_fcb_layout(family: str) -> None:
+    """Test that RT266x families expose the XSPI NOR FCB with the expected ROM layout size.
+
+    :param family: Target MCU family name from the RT266x group.
+    """
+    fcb = FCB(family=FamilyRevision(family), mem_type=MemoryType.XSPI_NOR)
+    assert fcb.size == 0x260
+
+
+@pytest.mark.parametrize("family", ["mimxrt2660", "mimxrt2661", "mimxrt2662", "mimxrt2663"])
+def test_mimxrt266x_fcb_export_parse(family: str) -> None:
+    """Test RT266x XSPI NOR FCB export and parse round-trip.
+
+    :param family: Target MCU family name from the RT266x group.
+    """
+    family_rev = FamilyRevision(family)
+    fcb = FCB(family=family_rev, mem_type=MemoryType.XSPI_NOR)
+    data = fcb.export()
+    assert len(data) == 0x260
+
+    parsed = FCB.parse(data, family=family_rev, mem_type=MemoryType.XSPI_NOR)
+    assert parsed.export() == data
+
+    reloaded = FCB.load_from_config(fcb.get_config())
+    assert reloaded.export() == data
+
+
+@pytest.mark.parametrize("family", ["mimxrt2660", "mimxrt2661", "mimxrt2662", "mimxrt2663"])
+def test_mimxrt266x_xmcd_supported(family: str) -> None:
+    """Test that RT266x families expose the XSPI RAM XMCD support.
+
+    :param family: Target MCU family name from the RT266x group.
+    """
+    supported = [str(fam.name) for fam in XMCD.get_supported_families()]
+    assert family in supported
+
+    xmcd = XMCD(
+        family=FamilyRevision(family),
+        mem_type=MemoryType.XSPI_RAM,
+        config_type=ConfigurationBlockType.SIMPLIFIED,
+    )
+    data = xmcd.export()
+    assert data
+    assert XMCD.parse(data, family=FamilyRevision(family)).export() == data

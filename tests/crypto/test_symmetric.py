@@ -330,7 +330,7 @@ try:
         _LMS_AVAILABLE = True
     else:
         _LMS_AVAILABLE = False
-except Exception:
+except Exception:  # noqa: BLE001
     _LMS_AVAILABLE = False
 
 

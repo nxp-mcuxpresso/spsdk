@@ -17,7 +17,7 @@ import math
 import os
 import shlex
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import click
 
@@ -746,7 +746,7 @@ def bulk_so_download(
                 wt_filtered = [time for time in wait_times if time is not None]
                 wait_time = min(wt_filtered) if wt_filtered else 0.0
                 wait_time_delta = timedelta(seconds=math.ceil(wait_time))
-                next_check = datetime.now() + wait_time_delta
+                next_check = datetime.now(timezone.utc) + wait_time_delta
                 click.echo(
                     f"Next Jobs status check in {wait_time_delta} ({wait_time_delta.total_seconds():.0f} seconds) "
                     f"at {next_check.strftime('%H:%M:%S')}"

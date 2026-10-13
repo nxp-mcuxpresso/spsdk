@@ -38,6 +38,10 @@ info:
           pid: 0x0020
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe:
+    protocols: [jtag]
+
   # ======== Blhost section ========
   blhost: {}
 
@@ -95,6 +99,7 @@ features:
     socc: 0x0A # SOCC identification
     dac_rot_type: not_available # The Dac packet doesn't contains the ROT hash
     dmbox_ap_ix: 3
+    reset_type: hw_reset # possible options: [hw_reset, nvic_reset]
 
   # ======== MBI section ========
   mbi:
@@ -178,9 +183,6 @@ features:
       address: 0x5003B498
       value: 0xA7C56B9E
     reset_type: nvic_reset # possible options: [hw_reset, nvic_reset]
-    nvic_reset:
-      address: 0xE000ED0C
-      value: 0x05FA0004
     possible_verification: False # RW61x doesn't allow verify writing of shadow registers
 
   # ======== FCB section ========

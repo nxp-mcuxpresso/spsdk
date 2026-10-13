@@ -60,7 +60,7 @@ def test_install_key_cmd_equality() -> None:
 
     Verifies that SecCmdInstallKey objects properly implement equality comparison
     by testing against different object types and configurations. Tests include
-    comparison with non-matching object types, self-comparison, and comparison
+    comparison with non-matching object types, equivalent instances, and comparison
     with objects having different configuration flags.
     """
     cmd = SecCmdInstallKey()
@@ -68,7 +68,7 @@ def test_install_key_cmd_equality() -> None:
     cmd_other = SecCmdInstallKey(flags=InstallKeyFlagsEnum.CID)
 
     assert cmd != nop
-    assert cmd == cmd
+    assert cmd == SecCmdInstallKey()
     assert cmd != cmd_other
 
 

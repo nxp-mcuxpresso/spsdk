@@ -23,6 +23,9 @@ info:
       external: false
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe: {}
+
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x2000_2000

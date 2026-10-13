@@ -15,7 +15,7 @@ to production environments.
 import abc
 import logging
 import os
-from typing import Any, cast
+from typing import Any, ClassVar, cast
 
 from cryptography.hazmat.primitives.hashes import HashAlgorithm
 
@@ -57,7 +57,7 @@ class SignatureProvider(ServiceProvider):
 
     # Subclasses override the following signature provider type
     identifier = "INVALID"
-    reserved_keys = ["type", "identifier", "search_paths"]
+    reserved_keys: ClassVar[list[str]] = ["type", "identifier", "search_paths"]
     legacy_identifier_name = "sp_type"
     plugin_identifier = "spsdk.sp"
 
@@ -225,7 +225,7 @@ class PlainFileSP(SignatureProvider):
                 hash_alg_name = EnumHashAlgorithm.SM3
             else:
                 raise SPSDKError(
-                    f"Unsupported private key by signature provider: {str(self.private_key)}"
+                    f"Unsupported private key by signature provider: {self.private_key!s}"
                 )
         return get_hash_algorithm(hash_alg_name)
 
@@ -330,7 +330,7 @@ class HttpProxySP(HTTPClientBase, SignatureProvider):
     """
 
     identifier = "proxy"
-    reserved_keys = ["type", "search_paths", "data"]
+    reserved_keys: ClassVar[list[str]] = ["type", "search_paths", "data"]
     api_version = "2.0"
 
     def __init__(

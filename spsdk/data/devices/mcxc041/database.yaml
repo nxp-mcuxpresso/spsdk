@@ -32,6 +32,9 @@ info:
       protocol: mboot
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe: {}
+
   # ======== Blhost section ========
   blhost: {}
 

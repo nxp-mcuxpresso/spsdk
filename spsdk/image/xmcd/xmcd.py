@@ -12,7 +12,6 @@ different configuration block types and CRC validation.
 """
 
 import logging
-from copy import deepcopy
 from typing import Any
 
 from typing_extensions import Self
@@ -32,6 +31,7 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier
 
 logger = logging.getLogger(__name__)
+UNKNOWN_FAMILY = FamilyRevision("Unknown")
 
 
 class ConfigurationBlockType(SpsdkEnum):
@@ -132,7 +132,7 @@ class XMCDHeader:
         :return: List of supported memory types for the family.
         """
         mem_types = get_db(self.family).get_dict(DatabaseManager.XMCD, "mem_types", default={})
-        return [MemoryType.from_label(mem_type) for mem_type in mem_types.keys()]
+        return [MemoryType.from_label(mem_type) for mem_type in mem_types]
 
     @property
     def config_type(self) -> ConfigurationBlockType:
@@ -166,7 +166,7 @@ class XMCDHeader:
         :return: Size of the configuration data blob in bytes, or 0 if no config data exists.
         """
         config_blob_size = self.xmcd_size - self.size
-        return config_blob_size if config_blob_size > 0 else 0
+        return max(0, config_blob_size)
 
     def __repr__(self) -> str:
         """Return string representation of XMCD Header.
@@ -316,13 +316,17 @@ class XMCD(SegmentBase):
     def registers(self) -> Registers:
         """Get configuration block registers with conditional option handling.
 
-        Creates a deep copy of the internal registers and conditionally removes the
+        Creates a lightweight copy of the internal registers and conditionally removes the
         configOption1 register based on the optionSize bitfield value in configOption0.
         If optionSize is 0, configOption1 is removed from the register set.
 
-        :return: Deep copy of registers with conditional configOption1 removal.
+        The copy shares the underlying register objects with the internal registers (the
+        register values are treated as read-only here), so only the cheap container-level
+        structures are duplicated instead of performing an expensive deep copy.
+
+        :return: Copy of registers with conditional configOption1 removal.
         """
-        regs = deepcopy(self._registers)
+        regs = self._registers.create_shallow_copy()
         try:
             # The existence of configOption1 is determined by optionSize value
             if regs.find_reg("configOption0").find_bitfield("optionSize").get_value() == 0:
@@ -387,9 +391,7 @@ class XMCD(SegmentBase):
         return ret
 
     @classmethod
-    def parse(
-        cls, binary: bytes, offset: int = 0, family: FamilyRevision = FamilyRevision("Unknown")
-    ) -> Self:
+    def parse(cls, binary: bytes, offset: int = 0, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse binary block into XMCD object.
 
         This method creates an XMCD instance by parsing the provided binary data, starting from the

@@ -72,7 +72,7 @@ class MemIdEnum(SpsdkEnum):
         if isinstance(key, int):
             new_value = cls.from_tag(key)
             if new_value:
-                return [k for k, v in LEGACY_MEM_ID.items() if v == new_value.label][0]
+                return next(k for k, v in LEGACY_MEM_ID.items() if v == new_value.label)
 
         return None
 

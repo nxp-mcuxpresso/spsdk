@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 #
-#!/usr/bin/env python
 #
 # Copyright 2022-2026 NXP
 #

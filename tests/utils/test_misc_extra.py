@@ -124,7 +124,8 @@ def test_write_file_no_overwrite_increments_counter(tmpdir: Any) -> None:
     write_file("second", path, overwrite=False)
     path_1 = os.path.join(str(tmpdir), "file_1.txt")
     assert os.path.exists(path_1)
-    assert open(path_1, encoding="utf-8").read() == "second"
+    with open(path_1, encoding="utf-8") as f:
+        assert f.read() == "second"
 
 
 def test_write_file_no_overwrite_multiple_existing(tmpdir: Any) -> None:
@@ -503,6 +504,12 @@ def test_load_hex_string_int_source() -> None:
     assert result == bytes([0xDE, 0xAD, 0xBE, 0xEF])
 
 
+def test_load_hex_string_zero_int_source() -> None:
+    """Test load_hex_string handles zero integer input as valid key material."""
+    result = load_hex_string(0, 4)
+    assert result == bytes([0x00, 0x00, 0x00, 0x00])
+
+
 def test_load_hex_string_hex_str_without_prefix() -> None:
     """Test load_hex_string accepts hex string without 0x prefix."""
     result = load_hex_string("AABBCCDD", 4)
@@ -578,6 +585,21 @@ def test_load_configuration_binary_file_raises(tmpdir: Any) -> None:
     binary_path = os.path.join(str(tmpdir), "config.yaml")
     write_file(bytes([0x80, 0x81, 0xFF, 0xFE]), binary_path, mode="wb")
     with pytest.raises(SPSDKNotTextFileError, match="not a text file"):
+        from spsdk.utils.misc import load_configuration
+
+        load_configuration(binary_path)
+
+
+def test_load_configuration_null_byte_binary_file_raises(tmpdir: Any) -> None:
+    """Test load_configuration treats null-byte content as binary, not YAML/JSON.
+
+    :param tmpdir: Pytest tmpdir fixture.
+    """
+    from spsdk.exceptions import SPSDKNotTextFileError
+
+    binary_path = os.path.join(str(tmpdir), "config.yaml")
+    write_file(b"\x00\x00\x00\x00not-a-config", binary_path, mode="wb")
+    with pytest.raises(SPSDKNotTextFileError, match="binary content detected"):
         from spsdk.utils.misc import load_configuration
 
         load_configuration(binary_path)

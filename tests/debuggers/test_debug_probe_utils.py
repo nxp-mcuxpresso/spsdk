@@ -70,6 +70,29 @@ def test_debugprobes_architecture_filter() -> None:
     assert len(probe_list) == 1
 
 
+def test_debugprobes_protocol_filter(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test protocol-based filtering in get_connected_probes."""
+    probe_list = get_connected_probes(
+        "virtual", DebugProbeVirtual.UNIQUE_SERIAL, {"protocol": DP.DebugProbeProtocol.SWD.label}
+    )
+    assert len(probe_list) == 1
+
+    probe_list = get_connected_probes(
+        "virtual", DebugProbeVirtual.UNIQUE_SERIAL, {"protocol": DP.DebugProbeProtocol.JTAG.label}
+    )
+    assert len(probe_list) == 0
+
+    monkeypatch.setattr(
+        DebugProbeVirtual,
+        "SUPPORTED_PROTOCOLS",
+        (DP.DebugProbeProtocol.SWD, DP.DebugProbeProtocol.JTAG),
+    )
+    probe_list = get_connected_probes(
+        "virtual", DebugProbeVirtual.UNIQUE_SERIAL, {"protocol": DP.DebugProbeProtocol.JTAG.label}
+    )
+    assert len(probe_list) == 1
+
+
 def test_debugprobes_get_probe() -> None:
     """Test debug probe utilities get_probe functionality.
 
@@ -134,6 +157,27 @@ def test_debugprobes_select_from_multiple_probes_non_interactive() -> None:
     )
     with pytest.raises(SPSDKMultipleProbesError):
         select_probe(probe_list)
+
+
+def test_debugprobes_string_contains_supported_protocols(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test debug probe table shows supported protocols."""
+    probe_list = DebugProbes()
+    probe_list.append(ProbeDescription("virtual", "ABCDE12345", "Virtual Probe", DebugProbeVirtual))
+
+    probe_table = str(probe_list)
+
+    assert "Protocols" in probe_table
+    assert "swd" in probe_table
+    assert "jtag" not in probe_table
+
+    monkeypatch.setattr(
+        DebugProbeVirtual,
+        "SUPPORTED_PROTOCOLS",
+        (DP.DebugProbeProtocol.SWD, DP.DebugProbeProtocol.JTAG),
+    )
+    probe_table = str(probe_list)
+
+    assert "swd, jtag" in probe_table
 
 
 def test_debugprobes_select_from_multiple_probes_interactive() -> None:

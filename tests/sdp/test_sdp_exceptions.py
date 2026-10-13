@@ -28,7 +28,7 @@ def raise_and_catch(raising_exc: Exception, catching_exc: type[Exception]) -> bo
         raise raising_exc
     except catching_exc:
         return True
-    except Exception:
+    except Exception:  # noqa: BLE001
         return False
 
 

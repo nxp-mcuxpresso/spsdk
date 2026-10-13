@@ -564,28 +564,30 @@ def validate_access_rights_consistency(data: dict) -> dict:
             register_is_readable = is_readable_access(reg_access)
 
             # If register is not readable, check bitfields for readable access
-            if not register_is_readable:
-                if "bitfields" in register and isinstance(register["bitfields"], list):
-                    for bitfield in register["bitfields"]:
-                        if not isinstance(bitfield, dict):
-                            continue
+            if (
+                not register_is_readable
+                and "bitfields" in register
+                and isinstance(register["bitfields"], list)
+            ):
+                for bitfield in register["bitfields"]:
+                    if not isinstance(bitfield, dict):
+                        continue
 
-                        # Skip bitfields that only have width (unnamed/reserved)
-                        if set(bitfield.keys()) == {"width"}:
-                            continue
+                    # Skip bitfields that only have width (unnamed/reserved)
+                    if set(bitfield.keys()) == {"width"}:
+                        continue
 
-                        bf_name = bitfield.get("name", "unnamed")
-                        bf_access = bitfield.get("access")
+                    bf_name = bitfield.get("name", "unnamed")
+                    bf_access = bitfield.get("access")
 
-                        # If bitfield has explicit access, check it
-                        if bf_access is not None:
-                            if is_readable_access(bf_access):
-                                bf_key = f"{reg_name}.{bf_name}"
-                                errors[f"access_mismatch_{bf_key}"] = (
-                                    f"Register '{reg_name}' has non-readable access '{reg_access}' "
-                                    f"but bitfield '{bf_name}' has readable access '{bf_access}'"
-                                )
-                        # If bitfield doesn't specify access, it inherits from register (correct behavior)
+                    # If bitfield has explicit access, check it
+                    if bf_access is not None and is_readable_access(bf_access):
+                        bf_key = f"{reg_name}.{bf_name}"
+                        errors[f"access_mismatch_{bf_key}"] = (
+                            f"Register '{reg_name}' has non-readable access '{reg_access}' "
+                            f"but bitfield '{bf_name}' has readable access '{bf_access}'"
+                        )
+                    # If bitfield doesn't specify access, it inherits from register (correct behavior)
 
     return errors
 
@@ -640,28 +642,30 @@ def validate_write_access_rights_consistency(data: dict) -> dict:
             register_is_writable = is_writable_access(reg_access)
 
             # If register is not writable, check bitfields for writable access
-            if not register_is_writable:
-                if "bitfields" in register and isinstance(register["bitfields"], list):
-                    for bitfield in register["bitfields"]:
-                        if not isinstance(bitfield, dict):
-                            continue
+            if (
+                not register_is_writable
+                and "bitfields" in register
+                and isinstance(register["bitfields"], list)
+            ):
+                for bitfield in register["bitfields"]:
+                    if not isinstance(bitfield, dict):
+                        continue
 
-                        # Skip bitfields that only have width (unnamed/reserved)
-                        if set(bitfield.keys()) == {"width"}:
-                            continue
+                    # Skip bitfields that only have width (unnamed/reserved)
+                    if set(bitfield.keys()) == {"width"}:
+                        continue
 
-                        bf_name = bitfield.get("name", "unnamed")
-                        bf_access = bitfield.get("access")
+                    bf_name = bitfield.get("name", "unnamed")
+                    bf_access = bitfield.get("access")
 
-                        # If bitfield has explicit access, check it
-                        if bf_access is not None:
-                            if is_writable_access(bf_access):
-                                bf_key = f"{reg_name}.{bf_name}"
-                                errors[f"write_access_mismatch_{bf_key}"] = (
-                                    f"Register '{reg_name}' has non-writable access '{reg_access}' "
-                                    f"but bitfield '{bf_name}' has writable access '{bf_access}'"
-                                )
-                        # If bitfield doesn't specify access, it inherits from register (correct behavior)
+                    # If bitfield has explicit access, check it
+                    if bf_access is not None and is_writable_access(bf_access):
+                        bf_key = f"{reg_name}.{bf_name}"
+                        errors[f"write_access_mismatch_{bf_key}"] = (
+                            f"Register '{reg_name}' has non-writable access '{reg_access}' "
+                            f"but bitfield '{bf_name}' has writable access '{bf_access}'"
+                        )
+                    # If bitfield doesn't specify access, it inherits from register (correct behavior)
 
     return errors
 
@@ -813,10 +817,7 @@ def validate_lock_functional_consistency(data: dict) -> dict:
                         lock_type.lower() == "write_lock"
                         and isinstance(bf_name, str)
                         and bf_name.lower().endswith("_wr")
-                    ):
-                        # Acceptable for write lock scenarios
-                        pass
-                    elif (
+                    ) or (
                         lock_type.lower() == "read_lock"
                         and isinstance(bf_name, str)
                         and bf_name.lower().endswith("_rd")
@@ -868,9 +869,13 @@ def validate_lock_functional_consistency(data: dict) -> dict:
                     read_lock_value = lock_info["read_lock_int"]
 
                     # Solve exceptions found on HW
-                    if cpu_name.upper() in ["MIMXRT1189", "MIMXRT1181", "MIMXRT1182", "MIMXRT1187"]:
-                        if re.match("OTFAD[1-9]_KEY.*", reg_name):
-                            continue
+                    if cpu_name.upper() in [
+                        "MIMXRT1189",
+                        "MIMXRT1181",
+                        "MIMXRT1182",
+                        "MIMXRT1187",
+                    ] and re.match("OTFAD[1-9]_KEY.*", reg_name):
+                        continue
 
                     # Check if read_lock is active (not "0")
                     if read_lock_value not in ["0", "0x0", "0x00"]:
@@ -1017,21 +1022,24 @@ def validate_calculated_reserved_default_value(data: dict) -> dict:
                     has_calculated_bitfield = True
 
                 # Check if this bitfield is reserved or not writable
-                if _is_reserved_bitfield_with_minimal_keys(bitfield):
-                    has_reserved_or_not_writable_bitfield = True
-                elif is_bitfield_not_writable(bitfield):
+                if _is_reserved_bitfield_with_minimal_keys(bitfield) or is_bitfield_not_writable(
+                    bitfield
+                ):
                     has_reserved_or_not_writable_bitfield = True
                 elif reg_access in ["RO", "none"]:
                     # If register is not writable, all bitfields inherit this
                     has_reserved_or_not_writable_bitfield = True
 
             # Apply the rule
-            if has_calculated_bitfield and has_reserved_or_not_writable_bitfield:
-                if not has_default_value(register):
-                    errors[f"calculated_reserved_no_default_{reg_name}"] = (
-                        f"Register '{reg_name}' has calculated bitfield(s) and reserved/non-writable bitfield(s) "
-                        f"but no default value is specified"
-                    )
+            if (
+                has_calculated_bitfield
+                and has_reserved_or_not_writable_bitfield
+                and not has_default_value(register)
+            ):
+                errors[f"calculated_reserved_no_default_{reg_name}"] = (
+                    f"Register '{reg_name}' has calculated bitfield(s) and reserved/non-writable bitfield(s) "
+                    f"but no default value is specified"
+                )
 
     return errors
 
@@ -1065,9 +1073,7 @@ def validate_lock_bitfield_naming(data: dict) -> dict:
             return False
 
         # Check if it's a lock bit
-        is_lock_bit = (
-            bf_name.endswith("_LOCK") or bf_name.endswith("_LOCKS") or bf_name.endswith("_RLOCK")
-        )
+        is_lock_bit = bf_name.endswith(("_LOCK", "_LOCKS", "_RLOCK"))
 
         if not is_lock_bit:
             return False
@@ -1086,12 +1092,8 @@ def validate_lock_bitfield_naming(data: dict) -> dict:
         if bf_name.endswith("_KEY_SEL_LOCK"):
             return False
 
-        # If it's in exceptions, it's not subject to lock rules
-        if bf_name in exceptions:
-            return False
-
         # It's a lock bit and not an exception, so rules apply
-        return True
+        return bf_name not in exceptions
 
     for group in data["groups"]:
         if not isinstance(group, dict) or "registers" not in group:
@@ -1308,7 +1310,7 @@ def validate_enum_default_value_match(data: dict) -> dict:
             value_str = value_str[1:]
         else:
             sign = 1
-        if value_str.startswith("0x") or value_str.startswith("0X"):
+        if value_str.startswith(("0x", "0X")):
             try:
                 return sign * int(value_str, 16)
             except ValueError:
@@ -1562,9 +1564,7 @@ def validate_id_naming_patterns(data: dict) -> dict:
             dec_part = reg_id.replace("Reserved", "")
             try:
                 if offset_int:
-                    expected_offset = (
-                        int(offset_int, 16) if offset_int.startswith("0x") else int(offset_int, 16)
-                    )
+                    expected_offset = int(offset_int, 16)
                     actual_offset = int(dec_part, 10)
                     if expected_offset != actual_offset:
                         return (
@@ -1586,11 +1586,7 @@ def validate_id_naming_patterns(data: dict) -> dict:
                     dec_part = reg_id.replace(prefix, "")
                     try:
                         if offset_int:
-                            expected_offset = (
-                                int(offset_int, 16)
-                                if offset_int.startswith("0x")
-                                else int(offset_int, 16)
-                            )
+                            expected_offset = int(offset_int, 16)
                             actual_offset = int(dec_part, 10)
                             if expected_offset != actual_offset:
                                 return (
@@ -1868,6 +1864,7 @@ def test_data_files(test_path: str) -> None:
         validate_calculated_reserved_default_value,
         validate_lock_bitfield_naming,
         validate_calculated_register_constraints,
+        # validate_duplicate_register_calculation,
         validate_reserved_register_constraints,
         validate_enum_default_value_match,
         validate_id_naming_patterns,
@@ -1897,9 +1894,8 @@ def test_data_files(test_path: str) -> None:
             # Use fnmatch for glob-style pattern matching
             from fnmatch import fnmatch
 
-            if fnmatch(file_name, pattern):
-                if test_func_name in ignored_tests:
-                    return True
+            if fnmatch(file_name, pattern) and test_func_name in ignored_tests:
+                return True
         return False
 
     # Final error log: {file_name: {test_name: {identifier: error_description}}}
@@ -1913,7 +1909,7 @@ def test_data_files(test_path: str) -> None:
         except json.JSONDecodeError as e:
 
             final_error_log[str(json_file)] = {
-                "json_parsing": {"file": f"JSON parsing error - {str(e)}"}
+                "json_parsing": {"file": f"JSON parsing error - {e!s}"}
             }
             continue
         except Exception as exc:
@@ -1932,7 +1928,7 @@ def test_data_files(test_path: str) -> None:
                 if test_result:  # If dict is not empty (has errors)
                     file_errors[test_func.__name__] = test_result
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 # Handle test function exceptions
                 file_errors[test_func.__name__] = {"test_execution": f"Test execution error: {e}"}
 

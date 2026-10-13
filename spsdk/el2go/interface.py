@@ -900,7 +900,7 @@ class El2GoInterfaceHandlerUboot(EL2GOInterfaceHandler):
                     logger.info("Fastboot connection established successfully")
                     self.uboot_started = True
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.info(
                     f"Fastboot not available with quick timeout ({e}), attempting SDPS boot"
                 )

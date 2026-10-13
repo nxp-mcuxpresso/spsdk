@@ -17,6 +17,8 @@ from typing import Any
 
 import pytest
 
+logger = logging.getLogger(__name__)
+
 
 @pytest.fixture(scope="module")
 def nxpimage_data_dir(request: Any) -> str:
@@ -28,11 +30,11 @@ def nxpimage_data_dir(request: Any) -> str:
     :param request: Pytest request object containing test file information.
     :return: Absolute path to the nxpimage test data directory.
     """
-    logging.debug("data_dir is overloaded for module to nxpimage")
-    logging.debug(f"request path {request.fspath}")
+    logger.debug("data_dir is overloaded for module to nxpimage")
+    logger.debug(f"request path {request.fspath}")
     path = os.path.dirname(request.fspath)
     path, _ = os.path.split(path)
 
     data_path = os.path.join(path, "nxpimage", "data")
-    logging.debug(f"data_dir: {data_path}")
+    logger.debug(f"data_dir: {data_path}")
     return data_path

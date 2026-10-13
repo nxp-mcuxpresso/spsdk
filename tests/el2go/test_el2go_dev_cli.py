@@ -52,7 +52,10 @@ def test_el2go_dev_get_template(cli_runner: CliRunner, tmp_path: Path) -> None:
     assert os.path.isfile(outfile)
 
 
-@pytest.mark.parametrize("family", ["k32w148", "kw45b41z8", "mcxw716a"])
+@pytest.mark.parametrize(
+    "family",
+    ["k32w148", "kw45b41z8", "mcxw716a", "mimx943", "mimx95294", "mimx9596"],
+)
 def test_el2go_dev_get_template_families(
     cli_runner: CliRunner, tmp_path: Path, family: str
 ) -> None:

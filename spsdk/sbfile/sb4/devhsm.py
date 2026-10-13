@@ -422,7 +422,7 @@ class DevHsmSB4(DevHsm):
 
         logger.debug(
             " 3.9: The template SB4 header + descriptor: "
-            f"\n{ahab}, \n{str(sb4_descriptor)} \n Length:{len(sb4_header_exported)}"
+            f"\n{ahab}, \n{sb4_descriptor!s} \n Length:{len(sb4_header_exported)}"
         )
 
         # 4: Call hsm_enc_blk to encrypt all the data chunks from step 5. Use FW encryption key from step 3.
@@ -437,9 +437,7 @@ class DevHsmSB4(DevHsm):
         # 4.2: Update the SB4 pre-prepared header by current data
         self.info_print(" 4.2: Updating SB4 header by valid values.")
         sb4_descriptor.update(sb4_data)
-        logger.debug(
-            f" 4.2: The SB4 header has been updated by valid values:\n{str(sb4_descriptor)}."
-        )
+        logger.debug(f" 4.2: The SB4 header has been updated by valid values:\n{sb4_descriptor!s}.")
 
         # 4.3: Compose manifest that will be signed
         self.info_print(" 4.3: Preparing SB4 manifest to sign.")

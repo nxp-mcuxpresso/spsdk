@@ -22,7 +22,9 @@ from unittest.mock import patch
 
 import pytest
 
-from spsdk.apps.nxpele import main
+from spsdk.apps.nxpele import main, safe_main
+from spsdk.ele.ele_comm import SPSDKEleMessageError
+from spsdk.ele.ele_constants import ResponseIndication, ResponseStatus
 from tests.cli_runner import CliRunner
 
 # Family available in nxpele (see `nxpele --help`)
@@ -196,3 +198,36 @@ def test_nxpele_missing_family_fails(cli_runner: CliRunner) -> None:
 def test_nxpele_invalid_family_fails(cli_runner: CliRunner) -> None:
     """Test that an invalid family value causes a non-zero exit code."""
     cli_runner.invoke(main, ["-f", "not_a_real_family", "get-families"], expected_code=2)
+
+
+def test_nxpele_ele_failure_exits_with_indication() -> None:
+    """An ELE message failure must exit with the returned response indication as exit code."""
+    indication = ResponseIndication.ELE_BAD_SIGNATURE_FAILURE_IND.tag
+
+    def _raise_ele_error() -> None:
+        raise SPSDKEleMessageError(
+            "ELE Message failed.",
+            status=ResponseStatus.ELE_FAILURE_IND.tag,
+            indication=indication,
+        )
+
+    with patch("spsdk.apps.nxpele.main", _raise_ele_error), pytest.raises(SystemExit) as exc_info:
+        safe_main()
+
+    assert exc_info.value.code == indication
+
+
+def test_nxpele_ele_failure_unknown_indication_exits_with_one() -> None:
+    """An unknown ELE indication (0) must fall back to a generic non-zero exit code."""
+
+    def _raise_ele_error() -> None:
+        raise SPSDKEleMessageError(
+            "ELE Message failed.",
+            status=ResponseStatus.ELE_FAILURE_IND.tag,
+            indication=0,
+        )
+
+    with patch("spsdk.apps.nxpele.main", _raise_ele_error), pytest.raises(SystemExit) as exc_info:
+        safe_main()
+
+    assert exc_info.value.code == 1

@@ -6,6 +6,8 @@
 
 """Tests for spsdk/dice/utils.py covering key utility functions."""
 
+import logging
+
 import pytest
 from cryptography.hazmat.primitives.asymmetric import ec
 
@@ -18,6 +20,8 @@ from spsdk.dice.utils import (
     serialize_ecc_key,
 )
 from spsdk.utils.family import FamilyRevision
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # get_supported_devices
@@ -141,7 +145,7 @@ def test_get_x509_name_with_full_der() -> None:
 
     priv = ec.generate_private_key(ec.SECP256R1())
     pub_ecc = PublicKeyEcc(priv.public_key())
-    name, key_hash = get_x509_name("Test", pub_ecc, use_full_der_for_serial=True)
+    _, key_hash = get_x509_name("Test", pub_ecc, use_full_der_for_serial=True)
     assert isinstance(key_hash, bytes)
     assert len(key_hash) == 20
 
@@ -163,7 +167,8 @@ def dice_family() -> FamilyRevision:
             db = get_db(family)
             db.get_str("dice", "reg_spec")
             return family
-        except Exception:
+        except Exception:  # noqa: BLE001
+            logger.debug("Skipping DICE family without DICE register specs")
             continue
     pytest.skip("No DICE-supported family with register specs found")
 

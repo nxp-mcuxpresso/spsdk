@@ -521,28 +521,294 @@ class PrinceCipher:
         return b"".join(o.to_bytes(8, "big") for o in o_data_list)
 
 
+def _sbox_from_int(value: int) -> list[int]:
+    """Convert a 64-bit packed S-box value into 16 nibbles."""
+    return [int(nibble, 16) for nibble in f"{value:016x}"]
+
+
+class PrinceV2Cipher(PrinceCipher):
+    """Pure-Python configurable PRINCE V2 device model.
+
+    This model implements the PRINCE V2 whitening/key schedule and device-specific S-boxes used
+    by newer IPED implementations. It keeps the same interface as :class:`PrinceCipher`.
+
+    :param sbox_t0: Packed 64-bit T0 S-box.
+    :param sbox_t1: Packed 64-bit T1 S-box used by the address pre-round.
+    :param inverse_sbox_t0: Packed 64-bit inverse T0 S-box.
+    :param inverse_sbox_t1: Packed 64-bit inverse T1 S-box.
+    :param duplicate_address: Duplicate the 32-bit address into both halves before encryption.
+    """
+
+    def __init__(
+        self,
+        key: int | bytes,
+        address: int | bytes,
+        iv: int | bytes,
+        sbox_t0: int,
+        sbox_t1: int,
+        inverse_sbox_t0: int,
+        inverse_sbox_t1: int,
+        duplicate_address: bool = False,
+        use_gcm: bool = False,
+        aad: int | bytes | None = None,
+        tag: int | bytes = 0,
+        double_encrypt: bool = False,
+    ) -> None:
+        """Initialize configurable PRINCE V2 cipher."""
+        super().__init__(
+            key=key,
+            address=address,
+            iv=iv,
+            use_gcm=use_gcm,
+            aad=aad,
+            tag=tag,
+            double_encrypt=double_encrypt,
+        )
+        self.sbox_t0 = _sbox_from_int(sbox_t0)
+        self.sbox_t1 = _sbox_from_int(sbox_t1)
+        self.inverse_sbox_t0 = _sbox_from_int(inverse_sbox_t0)
+        self.inverse_sbox_t1 = _sbox_from_int(inverse_sbox_t1)
+        self.duplicate_address = duplicate_address
+
+    @staticmethod
+    def _substitute(value: int, sbox: list[int]) -> int:
+        """Apply a nibble S-box to a 64-bit value."""
+        return sum(sbox[(value >> (index * 4)) & 0xF] << (index * 4) for index in range(16))
+
+    @staticmethod
+    def _round_constant(round_index: int, configuration: int, round_count: int) -> int:
+        """Get a PRINCE V2 round constant."""
+        constants = [
+            0x0000000000000000,
+            0x13198A2E03707344,
+            0xA4093822299F31D0,
+            0x082EFA98EC4E6C89,
+            0x452821E638D01377,
+            0xBE5466CF34E90C6C,
+        ] + [0] * 16
+        if configuration == 0:
+            for index in range(6):
+                constants[11 - index] = constants[index] ^ (_ALPHA if index % 2 else _BETA)
+            return constants[round_index + 6 - round_count // 2]
+
+        constants[6] = 0x9216D5D98979FB1B
+        constants[7] = 0xD1310BA698DFB5AC
+        if round_count > 10:
+            constants[8] = 0x2FFD72DBD01ADFB7
+        if round_count > 14:
+            constants[9] = 0xB8E1AFED6A267E96
+        if round_count > 18:
+            constants[10] = 0xBA7C9045F12C7F99
+
+        constant_count = 10 - ((11 - round_count // 2) // 2)
+        for index in range(constant_count + 1):
+            destination = round_count - round_count // 2 - index + 10
+            use_alpha = (constant_count % 2 == 0) == (index % 2 == 0)
+            constants[destination] = constants[index] ^ (_ALPHA if use_alpha else _BETA)
+        return constants[round_index + ((11 - round_count // 2) // 2)]
+
+    def _round(self, value: int, round_index: int, key: int, sbox: list[int]) -> int:
+        """Execute one PRINCE V2 forward round."""
+        return (
+            _m_layer(self._substitute(value, sbox)) ^ key ^ self._round_constant(round_index, 0, 12)
+        ) & _MASK64
+
+    def _prince_v2_core(
+        self,
+        core_input: int,
+        key0: int,
+        decrypt: bool,
+        key1: int,
+        round_count: int,
+        configuration: int,
+    ) -> int:
+        """Execute the PRINCE V2 core."""
+        effective_rounds = round_count * (configuration + 1) - 2 if configuration else round_count
+        state = core_input ^ self._round_constant(0, configuration, effective_rounds)
+
+        for round_index in range(1, effective_rounds // 2):
+            key = (
+                (key0 if round_index % 2 else key1)
+                if effective_rounds % 4
+                else (key1 if round_index % 2 else key0)
+            )
+            state = (
+                _m_layer(self._substitute(state, self.sbox_t0))
+                ^ key
+                ^ self._round_constant(round_index, configuration, effective_rounds)
+            ) & _MASK64
+
+        middle = self._substitute(state, self.sbox_t0) ^ key0
+        middle = _m_prime_layer(middle)
+        if decrypt:
+            key0 ^= _ALPHA ^ _BETA
+            key1 ^= _ALPHA ^ _BETA
+        state = self._substitute(middle ^ key1 ^ _BETA, self.inverse_sbox_t0)
+
+        for round_index in range(effective_rounds // 2 + 2, effective_rounds + 1):
+            key = (
+                (key0 if round_index % 2 else key1)
+                if effective_rounds % 4
+                else (key1 if round_index % 2 else key0)
+            )
+            state = self._substitute(
+                _m_inv_layer(
+                    state
+                    ^ key
+                    ^ self._round_constant(round_index - 2, configuration, effective_rounds)
+                ),
+                self.inverse_sbox_t0,
+            )
+
+        final_key = key0 if effective_rounds % 4 else key1
+        return (
+            state
+            ^ final_key
+            ^ self._round_constant(effective_rounds - 1, configuration, effective_rounds)
+        ) & _MASK64
+
+    def _prince_v2(self, value: int, decrypt: bool = False) -> int:
+        """Encrypt or decrypt one block with PRINCE V2."""
+        effective_rounds = 22 if self.double_encrypt else 12
+        key0 = self.key1 ^ _BETA if decrypt else self.key0
+        key1 = self.key0 ^ _ALPHA if decrypt else self.key1
+        whitening_key = key1 if effective_rounds % 4 else key0
+        return self._prince_v2_core(
+            value ^ whitening_key,
+            key0,
+            decrypt,
+            key1,
+            round_count=12,
+            configuration=self.double_encrypt,
+        )
+
+    def _map_address(self, address: int) -> int:
+        """Map a logical address to the device model input."""
+        if not self.duplicate_address:
+            return address
+        address &= 0xFFFFFFFF
+        return (address << 32) | address
+
+    def _ctr_block(self, data: int, address: int, mode: int) -> int:
+        """Encrypt one CTR/GCM data block."""
+        expanded_address = self._map_address(address) ^ mode
+        prince_input = self._round(expanded_address, 1, self.iv, self.sbox_t1)
+        return self._prince_v2(prince_input) ^ data
+
+    def _transaction(self, decrypt: bool, data: bytes, address: int | None = None) -> bytes:
+        """Execute a PRINCE V2 encryption/decryption transaction."""
+        address = address if address is not None else self.next_address
+        block_count = (len(data) + self.BLOCK_SIZE - 1) // self.BLOCK_SIZE
+        padded_size = block_count * self.BLOCK_SIZE
+        data = data.ljust(padded_size, b"\x00")
+
+        if self.is_gcm():
+            return self._gcm_v2_transaction(
+                decrypt=decrypt,
+                data=data,
+                address=address,
+                block_count=block_count,
+                padded_size=padded_size,
+            )
+
+        result = bytearray()
+        for index in range(block_count):
+            block = int.from_bytes(data[8 * index : 8 * (index + 1)], "big")
+            result.extend(self._ctr_block(block, address + 8 * index, mode=1).to_bytes(8, "big"))
+        self.next_address = address + padded_size
+        return bytes(result)
+
+    def _gcm_v2_transaction(
+        self,
+        decrypt: bool,
+        data: bytes,
+        address: int,
+        block_count: int,
+        padded_size: int,
+    ) -> bytes:
+        """Execute a PRINCE V2 GCM transaction."""
+        hash_key = self._prince_v2(0)
+        counter_input = 0x616C62616C756365
+        counter0 = self._prince_v2(self._round(counter_input, 1, self.iv, self.sbox_t1))
+        authentication_tag = counter0 ^ _ghash_mul(hash_key, self.aad)
+
+        result = bytearray()
+        for index in range(block_count):
+            block = int.from_bytes(data[8 * index : 8 * (index + 1)], "big")
+            encrypted = self._ctr_block(block, address + 8 * index, mode=2)
+            result.extend(encrypted.to_bytes(8, "big"))
+            previous_tag = authentication_tag ^ counter0
+            authenticated_data = block if decrypt else encrypted
+            authentication_tag = counter0 ^ _ghash_mul(hash_key, authenticated_data ^ previous_tag)
+
+        length_block = (64 << 33) | (block_count * 64)
+        previous_tag = authentication_tag ^ counter0
+        self.tag = counter0 ^ _ghash_mul(hash_key, length_block ^ previous_tag)
+        self.next_address = address + padded_size
+        return bytes(result)
+
+
 def _get_native_backend() -> type | None:
     """Try to import the native C++ PRINCE backend (spsdk-iped package).
 
-    Performs a known-answer test to verify the library produces correct results
-    on the current platform.
+    Performs reference-vector checks (CTR and GCM) to verify the library
+    produces expected results on the current platform.
 
     :return: The native IPED class or None if not available/broken.
     """
     try:
-        from spsdk_iped import (  # type: ignore[import-not-found] # pylint: disable=import-outside-toplevel,import-error # noqa: E501
+        from spsdk_iped import (  # type: ignore[import-not-found] # pylint: disable=import-outside-toplevel,import-error
             IPED,
         )
 
-        # Known-answer test: CTR encrypt 8 zero bytes with key=0, iv=0, addr=0
-        # Result must match the Python backend's output
-        result = IPED(key=0, address=0, iv=0).encrypt(b"\x00" * 8)
-        expected = _ctr_prince_mem_enc(0, 0, 0, 0, 0, 0, 12, 5).to_bytes(8, "big")
-        if result != expected:
-            logger.warning("Native PRINCE backend failed verification, using pure-Python")
+        ctr_plain = (0x0CF16D721BCADFCB).to_bytes(8, "big")
+        ctr_expected = (0xCEDB66D149075929).to_bytes(8, "big")
+        ctr_backend = IPED(
+            key=0x01,
+            address=0x80003000,
+            iv=0x79EAFAB3A72412A1,
+            double_encrypt=True,
+            use_gcm=False,
+        )
+        if ctr_backend.encrypt(ctr_plain) != ctr_expected:
+            logger.warning("Native PRINCE backend failed CTR reference-vector verification")
             return None
+
+        gcm_plain = b"".join(
+            block.to_bytes(8, "big")
+            for block in [
+                0x8A64EC141794252F,
+                0xDE143CBCDE2BBEBC,
+                0xB30C0C6618836731,
+                0xE218FAC40858B510,
+            ]
+        )
+        gcm_expected = b"".join(
+            block.to_bytes(8, "big")
+            for block in [
+                0x6FD8089AD7A48DF6,
+                0xC90DBE898F02BA55,
+                0xF5F7A65030D0693B,
+                0xAD103E34E80016FC,
+            ]
+        )
+        gcm_backend = IPED(
+            key=0x9DC81A3B3AEF4775297C23529ACCCE35,
+            address=0x80003000,
+            iv=0xC5FFB28BBB2F7876,
+            aad=0x0D11BB1AA784324F,
+            use_gcm=True,
+        )
+        if gcm_backend.encrypt(gcm_plain) != gcm_expected:
+            logger.warning("Native PRINCE backend failed GCM reference-vector verification")
+            return None
+        if int(gcm_backend.tag) != 0xE38CA1F93131FC30:
+            logger.warning("Native PRINCE backend failed GCM reference-tag verification")
+            return None
+
         return IPED
-    except Exception:  # pylint: disable=broad-except
+    except Exception as exc:  # pylint: disable=broad-except  # noqa: BLE001
+        logger.debug(f"Native PRINCE backend verification failed: {exc}")
         return None
 
 

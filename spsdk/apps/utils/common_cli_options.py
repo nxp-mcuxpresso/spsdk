@@ -29,6 +29,7 @@ from spsdk import __version__ as spsdk_version
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.interface_helper import load_interface_config
 from spsdk.apps.utils.utils import INT, SPSDKAppError, make_table_from_items
+from spsdk.debuggers.debug_probe import DebugProbeProtocol
 from spsdk.el2go.interface import EL2GOInterfaceHandler
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.mboot.interfaces.uart import MbootUARTInterface
@@ -45,12 +46,18 @@ FC = TypeVar("FC", bound=Callable[..., Any] | click.Command)
 logger = logging.getLogger(__name__)
 
 
-class FamilyChoice(click.Choice):
+class FamilyChoice(click.Choice):  # pylint: disable=duplicate-bases
     """SPSDK Click Choice parameter type for device family selection.
 
     This class extends Click's Choice type to provide enhanced family selection
     functionality with customized help text formatting and predecessor device
     support for SPSDK command-line interfaces.
+
+    The 'duplicate-bases' suppression works around an astroid limitation. The click.Choice
+    base class is declared as 'Choice(ParamType[ValueT], Generic[ValueT])' while ParamType
+    itself is generic, so astroid fails to linearize its MRO and reports false positives on
+    every subclass ('duplicate-bases' here and 'no-member' on inherited members). Python
+    resolves such an MRO without any issue.
 
     :cvar MAX_FAMILIES_TO_PRINT: Maximum number of families to display in help text before truncation.
     """
@@ -70,7 +77,7 @@ class FamilyChoice(click.Choice):
             [x.name for x in choices]
         )
         self.all_families = choices
-        super().__init__(choices=sorted(list({x.name for x in choices})), case_sensitive=False)
+        super().__init__(choices=sorted({x.name for x in choices}), case_sensitive=False)
 
     def to_info_dict(self) -> dict[str, Any]:  # type: ignore[override]
         """Prepare base Click choice metadata enriched with SPSDK-specific predecessor aliases."""
@@ -135,7 +142,9 @@ class FamilyChoice(click.Choice):
             return normed_choices[normed_value]
 
         choices_str = ", ".join(map(repr, self.choices))
-        self.fail(
+        # See the class docstring: astroid cannot resolve members inherited through the
+        # generic click.Choice base class, so 'fail' is reported as a false positive.
+        self.fail(  # pylint: disable=no-member
             ngettext(
                 "{value!r} is not {choice}.",
                 "{value!r} is not one of {choices}.",
@@ -509,6 +518,21 @@ def spsdk_apps_common_options(options: FC) -> FC:
     return options
 
 
+def spsdk_debug_probe_protocol_option(options: FC) -> FC:
+    """Click decorator handling debug probe protocol selection.
+
+    Provides: `debug_probe_protocol: str | None`.
+
+    :return: Click decorator.
+    """
+    return click.option(
+        "-dp",
+        "--debug-probe-protocol",
+        type=click.Choice(DebugProbeProtocol.labels(), case_sensitive=False),
+        help="Debug probe protocol selection for probes supporting multiple protocols.",
+    )(options)
+
+
 def spsdk_family_option(
     families: list[FamilyRevision],
     required: bool = True,
@@ -630,7 +654,7 @@ def spsdk_config_option(
                 # Pre-validation hook allows transforming config before validation
                 # (e.g., converting register names to uppercase to match schema)
                 if hasattr(klass, "PRE_VALIDATION_CFG_HOOK"):
-                    hook: Callable = getattr(klass, "PRE_VALIDATION_CFG_HOOK")
+                    hook: Callable = klass.PRE_VALIDATION_CFG_HOOK
                     cfg_to_check = hook(cfg)
                     if not isinstance(cfg_to_check, Config):
                         raise SPSDKValueError("PRE_VALIDATION_CFG_HOOK must return a Config object")
@@ -756,14 +780,19 @@ def spsdk_output_option(
     ) -> str:
         if ctx.resilient_parsing:
             return value
-        if force and value and os.path.exists(value) and not ctx.params["force"]:
-            if (directory and len(os.listdir(value))) or not directory:
-                output_type = "directory" if directory else "file"
-                click.echo(
-                    f"Output {output_type} already exists. "
-                    "Please use --force is you want to overwrite existing files."
-                )
-                ctx.abort()
+        if (
+            force
+            and value
+            and os.path.exists(value)
+            and not ctx.params["force"]
+            and ((directory and len(os.listdir(value))) or not directory)
+        ):
+            output_type = "directory" if directory else "file"
+            click.echo(
+                f"Output {output_type} already exists. "
+                "Please use --force is you want to overwrite existing files."
+            )
+            ctx.abort()
         if "force" in ctx.params:
             del ctx.params["force"]
         if required and directory:
@@ -789,6 +818,50 @@ def spsdk_output_option(
         )(func)
 
         return func
+
+    return decorator
+
+
+def spsdk_debug_artifacts_option(
+    help: str | None = None,  # pylint: disable=redefined-builtin
+) -> Callable:
+    """Click decorator handling the debug artifacts directory.
+
+    Provides: `debug_artifacts: str | None` a full path to a directory where optional
+    debug artifacts (e.g. DAC and signed DAR binaries) are stored for debug and analysis purposes.
+    If a path is provided and the directory does not exist, it is created. When the option
+    is not used, the value is ``None`` and no debug artifacts are stored.
+
+    :param help: Customized help message, defaults to None
+    :return: Click decorator
+    """
+
+    def callback(
+        ctx: click.Context,
+        param: click.Parameter,  # pylint: disable=unused-argument  # click's callback signature
+        value: str | None,
+    ) -> str | None:
+        if ctx.resilient_parsing:
+            return value
+        if value:
+            os.makedirs(value, exist_ok=True)
+        return value
+
+    def decorator(func: Callable[[FC], FC]) -> Callable[[FC], FC]:
+        return click.option(
+            "-da",
+            "--debug-artifacts",
+            type=click.Path(resolve_path=True, file_okay=False, dir_okay=True),
+            required=False,
+            default=None,
+            help=help
+            or (
+                "Path to a directory where optional debug artifacts (e.g. DAC and signed DAR binaries) "
+                "will be stored for debug and analysis purposes. The directory is created if it "
+                "does not exist."
+            ),
+            callback=callback,
+        )(func)
 
     return decorator
 
@@ -1158,6 +1231,11 @@ class GetFamiliesCommand(click.Command):
     device grouping and revision details.
     """
 
+    #: Generic message shown when a feature/command has no supported families in the active database.
+    NO_SUPPORTED_FAMILIES_MESSAGE = (
+        "This feature or command is not currently supported by any device in the active database."
+    )
+
     def __init__(self) -> None:
         """Constructor of get families command."""
         super().__init__(
@@ -1189,13 +1267,26 @@ class GetFamiliesCommand(click.Command):
                 )
             self.cmd_family_params[cmd_name] = family_param
             choice = cast(click.Choice, self.params[0].type)
-            choice.choices = tuple([*choice.choices, cmd_name])
+            choice.choices = (*choice.choices, cmd_name)
 
     def handle_families_info(self, cmd_name: str | None = None) -> None:
         """Show the supported families."""
 
+        def print_not_supported() -> None:
+            click.echo(
+                colorama.Fore.YELLOW + self.NO_SUPPORTED_FAMILIES_MESSAGE + colorama.Fore.RESET
+            )
+
+        def has_supported_families(family_param: click.Parameter) -> bool:
+            return isinstance(family_param.type, (FamilyChoice, click.Choice)) and bool(
+                family_param.type.choices
+            )
+
         def print_families(family_param: click.Parameter) -> None:
             if isinstance(family_param.type, (FamilyChoice, click.Choice)):
+                if not family_param.type.choices:
+                    print_not_supported()
+                    return
                 click.echo(colorama.Fore.GREEN + "Supported families:" + colorama.Fore.RESET)
                 sorted_choices = DatabaseManager().quick_info.split_devices_to_groups(
                     list(family_param.type.choices)
@@ -1240,6 +1331,15 @@ class GetFamiliesCommand(click.Command):
         if self.group_family_param:
             click.echo("Shown families for this group of commands:")
             print_families(self.group_family_param)
+            return
+
+        # No group-level family option; if none of the sub-commands support any family
+        # in the active database, show the generic unsupported message instead of
+        # prompting for a command that has nothing to show.
+        if self.cmd_family_params and not any(
+            has_supported_families(param) for param in self.cmd_family_params.values()
+        ):
+            print_not_supported()
             return
         click.echo(
             f"Missing option '-c'/'--cmd-name' with this possible options: [{', '.join(self.cmd_family_params.keys())}]"

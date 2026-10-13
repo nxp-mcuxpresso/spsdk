@@ -13,7 +13,7 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_family_option,
     spsdk_output_option,
 )
-from spsdk.apps.utils.utils import print_files
+from spsdk.apps.utils.utils import SPSDKAppError, print_files, print_verifier_to_console
 from spsdk.image.iped.iped import Iped
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
@@ -79,3 +79,38 @@ def iped_get_template(family: FamilyRevision, output: str) -> None:
     """Create template of IPED table configuration in YAML format."""
     click.echo(f"Creating {get_printable_path(output)} template file.")
     write_file(Iped.get_config_template(family), output)
+
+
+@iped_group.command(name="verify", no_args_is_help=True)
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, readable=True, resolve_path=True),
+    required=True,
+    help="Path to binary IPED table/keyblob to verify.",
+)
+@spsdk_family_option(families=Iped.get_supported_families())
+@click.option(
+    "-p",
+    "--problems",
+    is_flag=True,
+    default=False,
+    help="Show just problems in table.",
+)
+def iped_verify_command(binary: str, family: FamilyRevision, problems: bool) -> None:
+    """Verify IPED table/keyblob."""
+    iped_verify(binary, family, problems)
+
+
+def iped_verify(binary: str, family: FamilyRevision, problems: bool) -> None:
+    """Verify IPED table/keyblob.
+
+    :param binary: Path to binary IPED table/keyblob.
+    :param family: Target family.
+    :param problems: Show just problems in table.
+    """
+    iped = Iped.parse(load_binary(binary), family=family)
+    ver = iped.verify()
+    print_verifier_to_console(ver, problems=problems)
+    if ver.has_errors:
+        raise SPSDKAppError("Verify failed")

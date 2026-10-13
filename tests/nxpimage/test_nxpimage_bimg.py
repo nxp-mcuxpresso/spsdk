@@ -14,13 +14,14 @@ verification, and memory type detection functionality.
 import filecmp
 import logging
 import os
+import shutil
 from typing import Any
 
 import pytest
 import yaml
 
 from spsdk.apps import nxpimage
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image.ahab.ahab_data import AhabTargetMemory
 from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.bootable_image.bimg import BootableImage
@@ -483,8 +484,8 @@ def test_get_segment(data_dir: str) -> None:
         BootableImageSegment.IMAGE_VERSION: 1536,
         BootableImageSegment.MBI: 4096,
     }
-    for segment in segments:
-        assert bimg.get_segment(segment).full_image_offset == segments[segment]
+    for segment, offset in segments.items():
+        assert bimg.get_segment(segment).full_image_offset == offset
 
 
 def test_image_info(data_dir: str) -> None:
@@ -674,6 +675,97 @@ def test_nxpimage_bimg_segments_index_is_updated(data_dir: str) -> None:
         assert bimg.get_segment_offset(segment) == segments[segment.NAME]
 
 
+ELF_MAGIC = b"\x7fELF"
+
+
+def test_nxpimage_bimg_export_elf(cli_runner: CliRunner, tmpdir: Any, data_dir: str) -> None:
+    """Test Bootable Image export produces a valid ELF when output_format is 'elf'.
+
+    Copies an existing xip_plain config to tmpdir, injects ``output_format: elf``,
+    and verifies that the output starts with the ELF magic bytes.
+
+    :param cli_runner: CLI test runner.
+    :param tmpdir: Temporary directory for output.
+    :param data_dir: Base test data directory.
+    """
+    src_dir = os.path.join(data_dir, "bootable_image", "mimxrt595s", "flexspi_nor", "xip_plain")
+    work_dir = os.path.join(str(tmpdir), "bimg_elf")
+    shutil.copytree(src_dir, work_dir)
+
+    config_path = os.path.join(work_dir, "config.yaml")
+    with open(config_path, "a", encoding="utf-8") as f:
+        f.write("\noutput_format: elf\n")
+
+    out_file = os.path.join(str(tmpdir), "bimg_out.elf")
+    cmd = [
+        "bootable-image",
+        "export",
+        "-c",
+        config_path,
+        "-o",
+        out_file,
+    ]
+    with use_working_directory(work_dir):
+        cli_runner.invoke(nxpimage.main, cmd)
+
+    assert os.path.isfile(out_file)
+    with open(out_file, "rb") as f:
+        assert f.read(4) == ELF_MAGIC
+
+
+def test_nxpimage_bimg_export_elf_patch_fallback(
+    cli_runner: CliRunner, tmpdir: Any, data_dir: str
+) -> None:
+    """Test Bootable Image ELF_PATCH falls back to plain ELF when mbi is a BIN.
+
+    Uses a config where ``mbi: mbi.bin`` (binary, not ELF). The ``_find_bimg_source_elf``
+    helper returns None (BIN is not ELF) so ``_save_elf`` falls back to minimal ELF.
+
+    :param cli_runner: CLI test runner.
+    :param tmpdir: Temporary directory for output.
+    :param data_dir: Base test data directory.
+    """
+    src_dir = os.path.join(data_dir, "bootable_image", "mimxrt595s", "flexspi_nor", "xip_plain")
+    work_dir = os.path.join(str(tmpdir), "bimg_elf_patch_fallback")
+    shutil.copytree(src_dir, work_dir)
+
+    config_path = os.path.join(work_dir, "config.yaml")
+    with open(config_path, "a", encoding="utf-8") as f:
+        f.write("\noutput_format: elf_patch\n")
+
+    out_file = os.path.join(str(tmpdir), "bimg_patch.elf")
+    cmd = [
+        "bootable-image",
+        "export",
+        "-c",
+        config_path,
+        "-o",
+        out_file,
+    ]
+    with use_working_directory(work_dir):
+        cli_runner.invoke(nxpimage.main, cmd)
+
+    assert os.path.isfile(out_file)
+    with open(out_file, "rb") as f:
+        assert f.read(4) == ELF_MAGIC
+
+
+def test_find_bimg_source_elf_returns_none_for_bin(data_dir: str) -> None:
+    """Test _find_bimg_source_elf returns None when mbi points to a BIN (not ELF).
+
+    :param data_dir: Base test data directory.
+    """
+    from spsdk.apps.nxpimage_apps.nxpimage_bimg import _find_bimg_source_elf
+    from spsdk.utils.config import Config
+
+    config_dir = os.path.join(data_dir, "bootable_image", "mimxrt595s", "flexspi_nor", "xip_plain")
+    with use_working_directory(config_dir):
+        config = Config.create_from_file(os.path.join(config_dir, "config.yaml"))
+        result = _find_bimg_source_elf(config)
+    # mbi.bin is a prebuilt binary, not an ELF → helper returns None
+    assert result is None
+
+
 @pytest.mark.parametrize(
     "family,mem_type,configuration",
     [
@@ -838,6 +930,56 @@ def test_nxpimage_bimg_merge_post_export(
         # assert that the output directory is created and is not empty
         assert os.path.exists(os.path.join(tmpdir, "output"))
         assert len(os.listdir(os.path.join(tmpdir, "output"))) == 4
+
+
+def test_nxpimage_bimg_post_export_relative_path(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str
+) -> None:
+    """Test that a relative post_export path is resolved against the config directory.
+
+    Regression test for SPSDK-6940: a relative ``post_export`` path must be resolved
+    relative to the configuration file location, not the current working directory.
+
+    :param cli_runner: CLI test runner for invoking nxpimage commands.
+    :param tmpdir: Temporary directory path for test files.
+    :param data_dir: Base directory containing test data files.
+    """
+    # The configuration file lives in tmpdir and references its inputs via absolute paths.
+    # The relative post_export path must resolve next to the config file (tmpdir), not CWD.
+    ahab_cfg = os.path.join(data_dir, "ahab", "ctcm_cm33_signed_sb_mx93.yaml").replace("\\", "/")
+    config_content = (
+        "family: mimx9352\n"
+        "revision: a0\n"
+        "memory_type: serial_downloader\n"
+        "init_offset: 0\n"
+        "post_export: post_export_out\n"
+        f"primary_image_container_set: {ahab_cfg}\n"
+        f"secondary_image_container_set: {ahab_cfg}\n"
+    )
+    config_file_path = os.path.join(tmpdir, "bootable_image.yaml")
+    with open(config_file_path, "w", encoding="utf-8") as f:
+        f.write(config_content)
+
+    out_file = os.path.join(tmpdir, "bimg_mimx9352_merged.bin")
+    cmd = [
+        "bootable-image",
+        "export",
+        "-c",
+        config_file_path,
+        "-o",
+        out_file,
+    ]
+    # Run from data_dir so that a CWD-based resolution would land in the wrong place.
+    with use_working_directory(data_dir):
+        cli_runner.invoke(nxpimage.main, cmd)
+
+    assert os.path.isfile(out_file)
+    # post_export must be resolved relative to the config directory (tmpdir), not CWD.
+    expected_dir = os.path.join(tmpdir, "post_export_out")
+    assert os.path.isdir(expected_dir)
+    assert os.listdir(expected_dir)
+    # And it must NOT have been created relative to the current working directory.
+    assert not os.path.exists(os.path.join(data_dir, "post_export_out"))
 
 
 def test_nxpimage_bimg_merge_custom_offset(
@@ -1172,6 +1314,16 @@ def test_verifier_add_record_range_malformed_input() -> None:
             ["imx_boot_flash_all"],
             ["imx95-15x15-lpddr4x-evk", "imx95-19x19-lpddr5-evk", "imx95-19x19-verdin"],
         ),
+        (
+            "mimx943",
+            ["emmc_boot", "flexspi_nor", "serial_downloader", "emmc", "sd", "recovery_spi"],
+            ["imx_boot_flash_all"],
+            [
+                "imx943-15x15-lpddr4-evk",
+                "imx943-19x19-lpddr4-evk",
+                "imx943-19x19-lpddr5-evk",
+            ],
+        ),
     ],
 )
 def test_nxpimage_bimg_get_all_templates(
@@ -1257,6 +1409,9 @@ def test_nxpimage_bimg_get_all_templates(
         ("mimx9596", "imx_boot_flash_all", "imx95-15x15-lpddr4x-evk"),
         ("mimx9596", "imx_boot_flash_all", "imx95-19x19-lpddr5-evk"),
         ("mimx9596", "imx_boot_flash_all", "imx95-19x19-verdin"),
+        ("mimx943", "imx_boot_flash_all", "imx943-15x15-lpddr4-evk"),
+        ("mimx943", "imx_boot_flash_all", "imx943-19x19-lpddr4-evk"),
+        ("mimx943", "imx_boot_flash_all", "imx943-19x19-lpddr5-evk"),
     ],
 )
 def test_nxpimage_bimg_get_specific_template_with_board(
@@ -1313,6 +1468,7 @@ def test_nxpimage_bimg_get_specific_template_with_board(
     [
         ("mimx9352", "imx93-11x11-lpddr4x-evk", ["imx_boot_flash_singleboot"]),
         ("mimx9596", "imx95-19x19-lpddr5-evk", ["imx_boot_flash_all"]),
+        ("mimx943", "imx943-19x19-lpddr5-evk", ["imx_boot_flash_all"]),
     ],
 )
 def test_nxpimage_bimg_get_all_templates_specific_board(
@@ -1360,7 +1516,7 @@ def test_nxpimage_bimg_get_all_templates_specific_board(
 
 @pytest.mark.parametrize(
     "family",
-    ["mimx9352", "mimx9596"],
+    ["mimx9352", "mimx943", "mimx9596"],
 )
 def test_nxpimage_bimg_get_templates_directory_structure(
     cli_runner: CliRunner,
@@ -1421,9 +1577,54 @@ def test_nxpimage_bimg_get_templates_directory_structure(
             assert len(yaml_files) > 0, f"No container configs found in {board_path}"
 
 
+@pytest.mark.parametrize(
+    "family,board,expected_filenames",
+    [
+        (
+            "mimx9596",
+            "imx95-19x19-lpddr5-evk",
+            [
+                "lpddr5_imem_qb_v202409.bin",
+                "lpddr5_dmem_qb_v202409.bin",
+                "lpddr5_imem_v202409.bin",
+                "lpddr5_dmem_v202409.bin",
+                "oei-m33-ddr.bin",
+                "m33_image-mx95evk.bin",
+                "imx95-19x19-evk_m7_TCM_power_mode_switch.bin",
+                "u-boot-spl.bin",
+                "bl31-imx95.bin",
+                "u-boot.bin",
+                "tee.bin",
+            ],
+        ),
+        (
+            "mimx943",
+            "imx943-19x19-lpddr5-evk",
+            [
+                "lpddr5_imem_qb_v202409.bin",
+                "lpddr5_dmem_qb_v202409.bin",
+                "lpddr5_imem_v202409.bin",
+                "lpddr5_dmem_v202409.bin",
+                "oei-m33-ddr.bin",
+                "qb_data.bin",
+                "m33_image-mx94evk.bin",
+                "imx943evk_cm33_core1_TCM_power_mode_switch.bin",
+                "imx943evk_cm7_core0_TCM_power_mode_switch.bin",
+                "imx943evk_cm7_core1_TCM_power_mode_switch.bin",
+                "u-boot-spl.bin",
+                "bl31-imx94.bin",
+                "u-boot.bin",
+                "tee.bin",
+            ],
+        ),
+    ],
+)
 def test_nxpimage_bimg_get_templates_verify_board_filenames(
     cli_runner: CliRunner,
     tmpdir: str,
+    family: str,
+    board: str,
+    expected_filenames: list[str],
 ) -> None:
     """Test that board-specific filenames are correctly applied in templates.
 
@@ -1432,10 +1633,11 @@ def test_nxpimage_bimg_get_templates_verify_board_filenames(
 
     :param cli_runner: CLI test runner for invoking commands.
     :param tmpdir: Temporary directory for output files.
+    :param family: Target MCU family name.
+    :param board: Board name for filename overrides.
+    :param expected_filenames: Filenames expected in generated container configurations.
     """
-    family = "mimx9596"
     template = "imx_boot_flash_all"
-    board = "imx95-19x19-lpddr5-evk"
 
     cmd = f"bootable-image get-templates -f {family} --output {tmpdir} -t {template} -b {board}"
     result = cli_runner.invoke(nxpimage.main, cmd.split())
@@ -1445,22 +1647,6 @@ def test_nxpimage_bimg_get_templates_verify_board_filenames(
     # Load the generated container configs and verify board-specific filenames
     yaml_files = [
         f for f in os.listdir(tmpdir) if f.endswith(".yaml") and f != "bootable_image.yaml"
-    ]
-
-    # Expected board-specific filenames from database (with inputs/ prefix)
-    # Use os.path.join or normalize paths for cross-platform compatibility
-    expected_filenames = [
-        "lpddr5_imem_qb_v202409.bin",
-        "lpddr5_dmem_qb_v202409.bin",
-        "lpddr5_imem_v202409.bin",
-        "lpddr5_dmem_v202409.bin",
-        "oei-m33-ddr.bin",
-        "m33_image-mx95evk.bin",
-        "imx95-19x19-evk_m7_TCM_power_mode_switch.bin",
-        "u-boot-spl.bin",
-        "bl31-imx95.bin",
-        "u-boot.bin",
-        "tee.bin",
     ]
 
     # Check that board-specific filenames are present in configs
@@ -1474,7 +1660,7 @@ def test_nxpimage_bimg_get_templates_verify_board_filenames(
             for container in config["containers"]:
                 if "container" in container and "images" in container["container"]:
                     for image in container["container"]["images"]:
-                        for _, value in image.items():
+                        for value in image.values():
                             if isinstance(value, str):
                                 # Normalize path separators and check if it contains inputs directory
                                 normalized_value = value.replace("\\", "/")
@@ -1489,6 +1675,107 @@ def test_nxpimage_bimg_get_templates_verify_board_filenames(
     # Verify that found filenames match expected ones
     for filename in found_filenames:
         assert filename in expected_filenames, f"Unexpected filename: {filename}"
+
+
+def test_nxpimage_bimg_mx943_ahab_template_images() -> None:
+    """Test that the mx943 AHAB template exposes A1-specific boot images."""
+    template = AHABImage.get_config_template(FamilyRevision("mimx943", "a1"))
+
+    assert "v2x_dummy:" in template
+    assert "fcb_copy:" in template
+
+
+@pytest.mark.parametrize("family", ["mimx94245", "mimx94145"])
+def test_nxpimage_bimg_mx943_part_aliases(family: str) -> None:
+    """Test i.MX94 orderable part aliases inherit the mx943 bootloader template.
+
+    :param family: Orderable i.MX94 part alias.
+    """
+    assert BootableImage.get_supported_templates(FamilyRevision(family)) == ["imx_boot_flash_all"]
+
+
+def test_nxpimage_bimg_imx943_a1_dummy_entries(data_dir: str) -> None:
+    """Test i.MX943 A1 DDR and V2X dummy entries and their ordering.
+
+    :param data_dir: Base directory containing bootable-image test data.
+    """
+    config_dir = os.path.join(data_dir, "bootable_image", "mimx943", "serial_downloader")
+    with use_working_directory(config_dir):
+        ahab = AHABImage.load_from_config(Config.create_from_file("spl.yaml"))
+        ahab.update_fields()
+
+    image_array = ahab.ahab_containers[1].image_array
+    assert len(image_array) == 8
+
+    ddr_dummy = next(image for image in image_array if image.flags_image_type_name == "oei_ddr")
+    oei_ddr = next(image for image in image_array if image.flags_image_type_name == "oei")
+    v2x_dummy_index = next(
+        index
+        for index, image in enumerate(image_array)
+        if image.flags_image_type_name == "v2x_dummy"
+    )
+    spl_index = next(
+        index for index, image in enumerate(image_array) if image.flags_core_id_name == "cortex-a55"
+    )
+    v2x_dummy = image_array[v2x_dummy_index]
+
+    assert ddr_dummy.image_size == 0
+    assert ddr_dummy.gap_after_image == 0x10000
+    assert ddr_dummy.iae_header_position == 0
+    assert oei_ddr.iae_header_position == 1
+    assert v2x_dummy.load_address == 0x8B000000
+    assert v2x_dummy.entry_point == 0x8B000000
+    assert v2x_dummy.image_size == 0
+    assert v2x_dummy_index < spl_index
+
+
+def test_nxpimage_bimg_imx943_a1_qb_data_uses_dummy_gap(tmpdir: str, data_dir: str) -> None:
+    """Test i.MX943 QuickBoot data pre-fills the DDR dummy reserved gap.
+
+    :param tmpdir: Temporary directory for the QuickBoot data file.
+    :param data_dir: Base directory containing bootable-image test data.
+    """
+    config_dir = os.path.join(data_dir, "bootable_image", "mimx943", "serial_downloader")
+    qb_data = bytes(range(32))
+    qb_data_file = os.path.join(tmpdir, "qb_data.bin")
+    write_file(qb_data, qb_data_file, mode="wb")
+
+    with use_working_directory(config_dir):
+        config = Config.create_from_file("spl.yaml")
+        config["containers"][1]["container"]["images"][0]["qb_data"] = qb_data_file
+        ahab = AHABImage.load_from_config(config)
+        ahab.update_fields()
+        exported = ahab.export()
+
+    ddr_dummy = next(
+        image
+        for image in ahab.ahab_containers[1].image_array
+        if image.flags_image_type_name == "oei_ddr"
+    )
+    gap_start = ddr_dummy.image_offset + ddr_dummy.image_size
+
+    assert ddr_dummy.image_size == 0
+    assert ddr_dummy.gap_after_image == 0x10000
+    assert os.path.normpath(ddr_dummy.gap_after_image_file or "") == os.path.normpath(qb_data_file)
+    assert exported[gap_start : gap_start + len(qb_data)] == qb_data
+    assert exported[gap_start + len(qb_data) : gap_start + 0x10000] == bytes(0x10000 - len(qb_data))
+
+
+def test_nxpimage_bimg_imx943_a1_qb_data_rejects_oversize(tmpdir: str, data_dir: str) -> None:
+    """Test i.MX943 rejects QuickBoot data larger than the reserved dummy gap.
+
+    :param tmpdir: Temporary directory for the QuickBoot data file.
+    :param data_dir: Base directory containing bootable-image test data.
+    """
+    config_dir = os.path.join(data_dir, "bootable_image", "mimx943", "serial_downloader")
+    qb_data_file = os.path.join(tmpdir, "qb_data_oversize.bin")
+    write_file(bytes(0x10001), qb_data_file, mode="wb")
+
+    with use_working_directory(config_dir):
+        config = Config.create_from_file("spl.yaml")
+        config["containers"][1]["container"]["images"][0]["qb_data"] = qb_data_file
+        with pytest.raises(SPSDKValueError, match="reserved area"):
+            AHABImage.load_from_config(config)
 
 
 @pytest.mark.parametrize(
@@ -1578,6 +1865,59 @@ def test_nxpimage_bimg_imx95_bootloader_export_with_binary_spl_and_uboot(
 
     assert os.path.isfile(out_file), f"Output file not created: {out_file}"
     assert os.path.getsize(out_file) > 0, "Output file is empty"
+
+
+def test_nxpimage_bimg_imx95_spl_gap_after_image_file_prefills_gap(
+    tmpdir: str, data_dir: str
+) -> None:
+    """Test AHAB SPL export can prefill gap_after_image from a file."""
+    config_dir = os.path.join(data_dir, "bootable_image", "mimx9596", "serial_downloader")
+    gap_payload = bytes(range(32))
+    gap_file = os.path.join(tmpdir, "gap-payload.bin")
+    write_file(gap_payload, gap_file, mode="wb")
+
+    with use_working_directory(config_dir):
+        ahab_config = Config.create_from_file(os.path.join(config_dir, "spl.yaml"))
+        images = ahab_config["containers"][1]["container"]["images"]
+        images[0].pop("lpddr_imem_qb", None)
+        images[0].pop("lpddr_dmem_qb", None)
+        images[0]["gap_after_image"] = 0x80
+        images[0]["gap_after_image_file"] = gap_file
+
+        ahab = AHABImage.load_from_config(ahab_config)
+        ahab.update_fields()
+        exported = ahab.export()
+
+    spl_container = ahab.ahab_containers[1]
+    assert len(spl_container.image_array) == 5
+
+    oei_ddr = spl_container.image_array[0]
+    system_manager = spl_container.image_array[1]
+    gap_start = oei_ddr.image_offset + oei_ddr.image_size
+
+    assert exported[gap_start : gap_start + len(gap_payload)] == gap_payload
+    assert exported[gap_start + len(gap_payload) : gap_start + 0x80] == b"\x00" * (0x80 - 32)
+    assert system_manager.image_offset >= gap_start + 0x80
+
+
+def test_nxpimage_bimg_imx95_spl_gap_after_image_file_rejects_oversize(
+    tmpdir: str, data_dir: str
+) -> None:
+    """Test AHAB SPL export rejects a gap payload larger than gap_after_image."""
+    config_dir = os.path.join(data_dir, "bootable_image", "mimx9596", "serial_downloader")
+    gap_file = os.path.join(tmpdir, "gap-payload-oversize.bin")
+    write_file(bytes(range(32)), gap_file, mode="wb")
+
+    with use_working_directory(config_dir):
+        ahab_config = Config.create_from_file(os.path.join(config_dir, "spl.yaml"))
+        images = ahab_config["containers"][1]["container"]["images"]
+        images[0].pop("lpddr_imem_qb", None)
+        images[0].pop("lpddr_dmem_qb", None)
+        images[0]["gap_after_image"] = 0x10
+        images[0]["gap_after_image_file"] = gap_file
+
+        with pytest.raises(SPSDKValueError, match="gap_after_image"):
+            AHABImage.load_from_config(ahab_config)
 
 
 @pytest.mark.parametrize(
@@ -1816,3 +2156,65 @@ def test_nxpimage_bimg_cross_validate_family(
     else:
         # Should not raise
         segment._cross_validate_family(bimg_config, sub_config, "primary_image_container_set")
+
+
+ELF_MAGIC = b"\x7fELF"
+
+
+def test_nxpimage_bimg_export_elf_patch_with_elf_input(
+    cli_runner: CliRunner, tmpdir: Any, data_dir: str
+) -> None:
+    """Test Bootable Image ELF_PATCH with an actual ELF via the 'application' key.
+
+    Adds ``application: keil.elf`` to the xip_plain config so that
+    ``_find_bimg_source_elf`` resolves the source ELF via the top-level
+    ``application`` key (highest-priority strategy).  With a valid ELF source
+    the exporter must take the real ELF_PATCH code path and the output must be
+    at least as large as keil.elf itself.
+
+    :param cli_runner: CLI test runner.
+    :param tmpdir: Temporary directory for output.
+    :param data_dir: Base test data directory.
+    """
+    keil_elf = os.path.join(data_dir, "utils", "binary", "convert", "keil.elf")
+    src_dir = os.path.join(data_dir, "bootable_image", "mimxrt595s", "flexspi_nor", "xip_plain")
+    work_dir = os.path.join(str(tmpdir), "bimg_elf_patch_elf_input")
+    shutil.copytree(src_dir, work_dir)
+
+    config_path = os.path.join(work_dir, "config.yaml")
+    with open(config_path, "a", encoding="utf-8") as f:
+        f.write(f"\napplication: {keil_elf.replace(chr(92), '/')}\n")
+        f.write("\noutput_format: elf_patch\n")
+
+    out_file = os.path.join(str(tmpdir), "bimg_elf_patch.elf")
+    with use_working_directory(work_dir):
+        cli_runner.invoke(
+            nxpimage.main,
+            ["bootable-image", "export", "-c", config_path, "-o", out_file],
+        )
+
+    assert os.path.isfile(out_file)
+    with open(out_file, "rb") as f:
+        assert f.read(4) == ELF_MAGIC
+    # Real patch preserves the source ELF and appends container data → output ≥ source size
+    assert os.path.getsize(out_file) >= os.path.getsize(keil_elf)
+
+
+@pytest.mark.parametrize("family", ["mimxrt2660", "mimxrt2661", "mimxrt2662", "mimxrt2663"])
+def test_mimxrt266x_xspi_nand_layout(family: str) -> None:
+    """Test that RT266x families expose the XSPI NAND bootable image layout.
+
+    The xspi_nand memory type was only wired into the memcfg feature during the
+    RT2660 integration, so bootable image support for it was unreachable.
+
+    :param family: Target MCU family name from the RT266x group.
+    """
+    family_rev = FamilyRevision(family)
+    assert MemoryType.XSPI_NAND in BootableImage.get_supported_memory_types(family_rev)
+
+    bimg = BootableImage(family=family_rev, mem_type=MemoryType.XSPI_NAND)
+    offsets = {seg.NAME: seg.full_image_offset for seg in bimg._segments}
+    assert offsets == {
+        BootableImageSegment.XMCD: 0x0,
+        BootableImageSegment.AHAB_CONTAINER: 0x400,
+    }

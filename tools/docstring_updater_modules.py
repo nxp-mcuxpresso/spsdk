@@ -193,7 +193,7 @@ class ModuleDocstringUpdater:
                 constants=constants,
             )
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOGGER.error(f"Error analyzing module {file_path}: {e}")
             return None
 
@@ -326,7 +326,7 @@ class ModuleDocstringUpdater:
             LOGGER.error(f"No response from Cody for module: {module_info.file_path.name}")
             return None
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOGGER.error(
                 f"Error getting module docstring from Cody for {module_info.file_path.name}: {e}"
             )
@@ -413,10 +413,9 @@ class ModuleDocstringUpdater:
             for i, line in enumerate(lines):
                 stripped = line.strip()
                 if (
-                    stripped.startswith("#!")
-                    or stripped.startswith("# -*- coding:")
-                    or stripped.startswith("# Copyright")
-                    or stripped.startswith("# SPDX-License-Identifier")
+                    stripped.startswith(
+                        ("#!", "# -*- coding:", "# Copyright", "# SPDX-License-Identifier")
+                    )
                     or (
                         stripped.startswith("#")
                         and any(
@@ -458,7 +457,7 @@ class ModuleDocstringUpdater:
                 # Look for the start of existing docstring
                 for i in range(insert_line, min(insert_line + 20, len(lines))):
                     line = lines[i].strip()
-                    if line.startswith('"""') or line.startswith("'''"):
+                    if line.startswith(('"""', "'''")):
                         remove_start = i
                         quote_count = line.count('"""') + line.count("'''")
 
@@ -500,7 +499,7 @@ class ModuleDocstringUpdater:
 
             return True
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOGGER.error(f"Error updating module docstring in {module_info.file_path}: {e}")
             return False
 
@@ -557,7 +556,7 @@ class ModuleDocstringUpdater:
         for file_path in python_files:
             try:
                 self.process_file(file_path)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 LOGGER.error(f"Error processing file {file_path}: {e}")
                 continue
 
@@ -621,7 +620,7 @@ python docstring_updater_modules.py single_file.py --dry-run
         except KeyboardInterrupt:
             LOGGER.info("Process interrupted by user")
             sys.exit(1)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOGGER.error(f"Unexpected error: {e}")
             sys.exit(1)
 
@@ -634,7 +633,7 @@ python docstring_updater_modules.py single_file.py --dry-run
         except KeyboardInterrupt:
             LOGGER.info("Process interrupted by user")
             sys.exit(1)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOGGER.error(f"Unexpected error: {e}")
             sys.exit(1)
     else:

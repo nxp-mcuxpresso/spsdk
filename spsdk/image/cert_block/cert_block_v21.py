@@ -35,6 +35,7 @@ from spsdk.utils.misc import load_binary, value_to_int, write_file
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
+UNKNOWN_FAMILY = FamilyRevision("Unknown")
 
 ########################################################################################################################
 # Certificate Block Class for SB 3.1
@@ -222,11 +223,11 @@ class CertificateBlockHeader(BaseClass):
                     else "Header export/parse roundtrip FAILED"
                 ),
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ver.add_record(
                 name="Export/Parse consistency",
                 result=VerifierResult.ERROR,
-                value=f"Export/parse failed: {str(e)}",
+                value=f"Export/parse failed: {e!s}",
             )
 
         return ver
@@ -356,11 +357,11 @@ class CertificateBlockHeaderV2_2(CertificateBlockHeader):
                     else "Header V2.2 export/parse roundtrip FAILED"
                 ),
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ver.add_record(
                 name="Export/Parse consistency V2.2",
                 result=VerifierResult.ERROR,
-                value=f"Export/parse failed: {str(e)}",
+                value=f"Export/parse failed: {e!s}",
             )
 
         return ver
@@ -456,7 +457,7 @@ class RootKeyRecord(BaseClass):
         if self._rkht.rkh_list:
             info += f"CTRK Hash table: {self._rkht.export().hex()}\n"
         if self.root_public_key:
-            info += f"Root public key: {str(convert_to_ecc_key(self.root_public_key))}\n"
+            info += f"Root public key: {convert_to_ecc_key(self.root_public_key)!s}\n"
 
         return info
 
@@ -775,11 +776,11 @@ class RootKeyRecord(BaseClass):
                 result=expected_size > 0,
                 value=f"Expected size: {expected_size} bytes",
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ver.add_record(
                 name="Expected size calculation",
                 result=VerifierResult.ERROR,
-                value=f"Failed to calculate expected size: {str(e)}",
+                value=f"Failed to calculate expected size: {e!s}",
             )
 
     def _verify_export_parse_roundtrip(self, ver: Verifier) -> None:
@@ -819,11 +820,11 @@ class RootKeyRecord(BaseClass):
                     else "Export/parse roundtrip FAILED"
                 ),
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ver.add_record(
                 name="Export/Parse consistency",
                 result=VerifierResult.ERROR,
-                value=f"Export/parse failed: {str(e)}",
+                value=f"Export/parse failed: {e!s}",
             )
 
     def verify(self) -> Verifier:
@@ -991,7 +992,7 @@ class IskCertificate(BaseClass):
         else:
             info += "User data:       Not included\n"
         info += f"Type:            {isk_type}\n"
-        info += f"Public Key:      {str(self.isk_cert)}\n"
+        info += f"Public Key:      {self.isk_cert!s}\n"
         return info
 
     def _calculate_flags(self) -> None:
@@ -1310,11 +1311,11 @@ class IskCertificate(BaseClass):
                 result=expected_size > 0,
                 value=f"Expected size: {expected_size} bytes",
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ver.add_record(
                 name="Expected size calculation",
                 result=VerifierResult.ERROR,
-                value=f"Failed to calculate expected size: {str(e)}",
+                value=f"Failed to calculate expected size: {e!s}",
             )
 
     def _verify_export_parse_roundtrip(self, ver: Verifier) -> None:
@@ -1357,11 +1358,11 @@ class IskCertificate(BaseClass):
                     else "Export/parse roundtrip FAILED"
                 ),
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ver.add_record(
                 name="Export/Parse consistency",
                 result=VerifierResult.ERROR,
-                value=f"Export/parse failed: {str(e)}",
+                value=f"Export/parse failed: {e!s}",
             )
 
     def verify(self) -> Verifier:
@@ -1552,10 +1553,10 @@ class CertBlockV21(CertBlock):
 
         :return: Formatted string containing certificate block information.
         """
-        msg = f"HEADER:\n{str(self.header)}\n"
-        msg += f"ROOT KEY RECORD:\n{str(self.root_key_record)}\n"
+        msg = f"HEADER:\n{self.header!s}\n"
+        msg += f"ROOT KEY RECORD:\n{self.root_key_record!s}\n"
         if self.isk_certificate:
-            msg += f"ISK Certificate:\n{str(self.isk_certificate)}\n"
+            msg += f"ISK Certificate:\n{self.isk_certificate!s}\n"
         return msg
 
     def export(self) -> bytes:
@@ -1578,7 +1579,7 @@ class CertBlockV21(CertBlock):
         return header_data + key_record_data + isk_cert_data
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse CertBlockV21 from binary data.
 
         The method parses binary data to create a Certificate Block V2.1 instance,
@@ -1711,9 +1712,12 @@ class CertBlockV21(CertBlock):
         :raises SPSDKError: Invalid configuration of certification block class members.
         """
         self.header.parse(self.header.export())
-        if self.isk_certificate and not self.isk_certificate.signature:
-            if not isinstance(self.isk_certificate.signature_provider, SignatureProvider):
-                raise SPSDKError("Invalid ISK certificate.")
+        if (
+            self.isk_certificate
+            and not self.isk_certificate.signature
+            and not isinstance(self.isk_certificate.signature_provider, SignatureProvider)
+        ):
+            raise SPSDKError("Invalid ISK certificate.")
 
     def get_config(self, data_path: str = "./") -> Config:
         """Create configuration dictionary of the Certification block Image.
@@ -1823,11 +1827,11 @@ class CertBlockV21(CertBlock):
                 result=expected_size > 0,
                 value=f"Expected size: {expected_size} bytes",
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ver.add_record(
                 name="Expected size calculation",
                 result=VerifierResult.ERROR,
-                value=f"Failed to calculate expected size: {str(e)}",
+                value=f"Failed to calculate expected size: {e!s}",
             )
 
         # Verify signature size
@@ -1838,11 +1842,11 @@ class CertBlockV21(CertBlock):
                 result=sig_size > 0,
                 value=f"Signature size: {sig_size} bytes",
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ver.add_record(
                 name="Signature size calculation",
                 result=VerifierResult.ERROR,
-                value=f"Failed to calculate signature size: {str(e)}",
+                value=f"Failed to calculate signature size: {e!s}",
             )
 
         # Verify RKTH
@@ -1854,11 +1858,11 @@ class CertBlockV21(CertBlock):
                 value=f"{rkth.hex().upper()}",
                 important=False,
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ver.add_record(
                 name="RKTH calculation",
                 result=VerifierResult.ERROR,
-                value=f"Failed to calculate RKTH: {str(e)}",
+                value=f"Failed to calculate RKTH: {e!s}",
             )
 
         # Verify export/parse round-trip
@@ -1893,11 +1897,11 @@ class CertBlockV21(CertBlock):
                     else "Export/parse roundtrip FAILED"
                 ),
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ver.add_record(
                 name="Export/Parse consistency",
                 result=VerifierResult.ERROR,
-                value=f"Export/parse failed: {str(e)}",
+                value=f"Export/parse failed: {e!s}",
             )
 
         return ver

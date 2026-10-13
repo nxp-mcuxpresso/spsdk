@@ -79,6 +79,7 @@ class MbootCANInterface(MbootSerialProtocol):
                 can_interface._ping()
                 can_interface.close()
                 interfaces.append(can_interface)
-            except Exception:
+            except Exception as exc:  # noqa: BLE001
+                logger.debug(f"CAN interface probe failed: {exc}")
                 can_interface.close()
         return interfaces

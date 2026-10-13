@@ -24,6 +24,8 @@ from spsdk.utils.config import Config
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 from tests.cli_runner import CliRunner
 
+logger = logging.getLogger(__name__)
+
 
 def test_command_line_interface(cli_runner: CliRunner) -> None:
     """Test the CLI main command help functionality.
@@ -97,7 +99,7 @@ def test_generate_all(
         f"{test_data_dir}/{name}_{type}.yaml",
         "--ignore",  # Omit PFRC tests
     ]
-    logging.debug(cmd)
+    logger.debug(cmd)
     cli_runner.invoke(cli.main, cmd)
     new_data = load_binary(f"{tmpdir}/{name}_{type}.bin")
     expected = load_binary(f"{test_data_dir}/{name}_{type}.bin")
@@ -224,10 +226,14 @@ def test_generate_cmpa(cli_runner: CliRunner, data_dir: str, tmpdir: str) -> Non
         "--secret-file",
         f"{data_dir}/selfsign_privatekey_rsa2048.pem",
     ]
-    logging.debug(cmd)
+    logger.debug(cmd)
     cli_runner.invoke(cli.main, cmd)
-    new_data = open(f"{tmpdir}/pnd.bin", "rb").read()
-    expected = open(f"{data_dir}/CMPA_96MHz.bin", "rb").read()
+    with (
+        open(f"{tmpdir}/pnd.bin", "rb") as new_file,
+        open(f"{data_dir}/CMPA_96MHz.bin", "rb") as expected_file,
+    ):
+        new_data = new_file.read()
+        expected = expected_file.read()
     assert new_data == expected
 
 
@@ -307,8 +313,12 @@ def test_generate_cmpa_raw(cli_runner: CliRunner, data_dir: str, tmpdir: str) ->
         f"{data_dir}/cmpa_mcxn9xx_raw.yaml",
     ]
     cli_runner.invoke(cli.main, cmd)
-    new_data = open(f"{tmpdir}/cmpa_raw.bin", "rb").read()
-    expected = open(f"{data_dir}/cmpa_mcxn9xx_raw.bin", "rb").read()
+    with (
+        open(f"{tmpdir}/cmpa_raw.bin", "rb") as new_file,
+        open(f"{data_dir}/cmpa_mcxn9xx_raw.bin", "rb") as expected_file,
+    ):
+        new_data = new_file.read()
+        expected = expected_file.read()
     assert new_data == expected
 
 
@@ -335,7 +345,7 @@ def test_parse(cli_runner: CliRunner, data_dir: str, tmpdir: str) -> None:
         f"{tmpdir}/config.yml",
     ]
 
-    logging.debug(cmd)
+    logger.debug(cmd)
     cli_runner.invoke(cli.main, cmd)
     new_cfg = Config.create_from_file(f"{tmpdir}/config.yml")
     expected_cfg = Config.create_from_file(f"{data_dir}/cmpa_96mhz_rotkh.yml")
@@ -394,11 +404,7 @@ def test_parse(cli_runner: CliRunner, data_dir: str, tmpdir: str) -> None:
         ("mcxa346", "cmpa"),
         ("mcxa355", "cmpa"),
         ("mcxa356", "cmpa"),
-        ("mcxa365", "cmpa"),
-        ("mcxa366", "cmpa"),
         ("mcxl253", "cmpa"),
-        ("mcxl254", "cmpa"),
-        ("mcxl255", "cmpa"),
         ("mcxn947", "cfpa"),
         ("mcxn947", "cmpa"),
         ("nhs52s04", "cfpa"),
@@ -428,7 +434,7 @@ def test_user_config(cli_runner: CliRunner, tmpdir: str, family: str, type: str)
         "--output",
         f"{tmpdir}/pfr.yml",
     ]
-    logging.debug(cmd)
+    logger.debug(cmd)
     cli_runner.invoke(cli.main, cmd)
     pfr_config = Config.create_from_file(f"{tmpdir}/pfr.yml")
     assert pfr_config
@@ -482,7 +488,7 @@ def test_pfrc_integration_1(
     cmd = f"export --config {cmpa_config_path} --output {output_bin}"
     if ignore:
         cmd += " --ignore"
-    logging.debug(cmd)
+    logger.debug(cmd)
     cli_runner.invoke(cli.main, cmd.split(), expected_code=0 if test_pass else 1)
 
 
@@ -515,7 +521,7 @@ def test_generate_cmpa_certblock_lpc55s3x(
     cmd = f"export --config cmpa_lpc55s3x.json -e {secret} -o {new}"
 
     with use_working_directory(data_dir):
-        logging.debug(cmd)
+        logger.debug(cmd)
         cli_runner.invoke(cli.main, cmd.split())
         assert filecmp.cmp(org, new)
 
@@ -554,7 +560,7 @@ def test_update_field_and_add_data(
     output = os.path.join(tmpdir, f"{config}.bin")
     with use_working_directory(work_dir):
         cmd = ["export", "--config", config_file, "--output", output]
-        logging.debug(cmd)
+        logger.debug(cmd)
         cli_runner.invoke(cli.main, cmd)
         assert filecmp.cmp(ref_file, output)
 
@@ -604,7 +610,7 @@ def test_parse_add_data(
             "--output",
             output,
         ]
-        logging.debug(cmd)
+        logger.debug(cmd)
         cli_runner.invoke(cli.main, cmd)
         output_config = load_configuration(output)
         if add_data:

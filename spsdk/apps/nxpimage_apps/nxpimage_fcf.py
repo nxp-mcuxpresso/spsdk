@@ -64,7 +64,7 @@ def fcf_export(config: Config, output: str) -> None:
     fcf_data = fcf_image.export()
     write_file(fcf_data, output, mode="wb")
 
-    logger.info(f"Created FCF Image:\n{str(fcf_image.registers.image_info())}")
+    logger.info(f"Created FCF Image:\n{fcf_image.registers.image_info()!s}")
     click.echo(f"Success. (FCF: {get_printable_path(output)} created.)")
 
 

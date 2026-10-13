@@ -190,13 +190,11 @@ def test_rule_1_1(
     :param cfpa_pin_bitfields: List of tuples containing CFPA bitfield names and values.
     """
     cmpa_config_template = os.path.join(data_dir, "cmpa_lpc55s3x_default.yaml")
-    cmpa_config, cmpa_ind, cmpa_bsi = ruamel.yaml.util.load_yaml_guess_indent(
-        open(cmpa_config_template)
-    )
+    with open(cmpa_config_template) as f:
+        cmpa_config, cmpa_ind, cmpa_bsi = ruamel.yaml.util.load_yaml_guess_indent(f)
     cfpa_config_template = os.path.join(data_dir, "cfpa_lpc55s3x_default.yaml")
-    cfpa_config, cfpa_ind, cfpa_bsi = ruamel.yaml.util.load_yaml_guess_indent(
-        open(cfpa_config_template)
-    )
+    with open(cfpa_config_template) as f:
+        cfpa_config, cfpa_ind, cfpa_bsi = ruamel.yaml.util.load_yaml_guess_indent(f)
 
     for bitfield in cmpa_pin_bitfields:
         cmpa_config["settings"]["DCFG_CC_SOCU_PIN"]["bitfields"][bitfield[0]] = bitfield[1]
@@ -255,13 +253,11 @@ def test_rule_1_2(
     :param cfpa_dflt_bitfields: List of tuples containing CFPA bitfield names and values to set.
     """
     cmpa_config_template = os.path.join(data_dir, "cmpa_lpc55s3x_default.yaml")
-    cmpa_config, cmpa_ind, cmpa_bsi = ruamel.yaml.util.load_yaml_guess_indent(
-        open(cmpa_config_template)
-    )
+    with open(cmpa_config_template) as f:
+        cmpa_config, cmpa_ind, cmpa_bsi = ruamel.yaml.util.load_yaml_guess_indent(f)
     cfpa_config_template = os.path.join(data_dir, "cfpa_lpc55s3x_default.yaml")
-    cfpa_config, cfpa_ind, cfpa_bsi = ruamel.yaml.util.load_yaml_guess_indent(
-        open(cfpa_config_template)
-    )
+    with open(cfpa_config_template) as f:
+        cfpa_config, cfpa_ind, cfpa_bsi = ruamel.yaml.util.load_yaml_guess_indent(f)
 
     for bitfield in cmpa_dflt_bitfields:
         cmpa_config["settings"]["DCFG_CC_SOCU_DFLT"]["bitfields"][bitfield[0]] = bitfield[1]
@@ -333,7 +329,8 @@ def test_cmpa_inverse_bits_rules(
     :param dflt_bitfields: List of tuples containing DFLT bitfield names and values to inject.
     """
     cmpa_config_template = os.path.join(data_dir, "cmpa_lpc55s3x_default_full.yaml")
-    config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(open(cmpa_config_template))
+    with open(cmpa_config_template) as f:
+        config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(f)
     cmpa_config_path = os.path.join(tmp_path, "output.yaml")
     with open(cmpa_config_path, "w") as fp:
         yaml = ruamel.yaml.YAML()
@@ -396,7 +393,8 @@ def test_cfpa_inverse_bits_rules(
     :param dflt_bitfields: List of tuples containing DFLT bitfield names and values to inject.
     """
     cfpa_config_template = os.path.join(data_dir, "cfpa_lpc55s3x_default_full.yaml")
-    config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(open(cfpa_config_template))
+    with open(cfpa_config_template) as f:
+        config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(f)
     cfpa_config_path = os.path.join(tmp_path, "output.yaml")
     with open(cfpa_config_path, "w") as fp:
         yaml = ruamel.yaml.YAML()
@@ -456,7 +454,8 @@ def test_cmpa_invalid_pin_dflt_configuration_rules(
     :param dflt_bitfield: Name of the default bitfield to modify.
     """
     cmpa_config_template = os.path.join(data_dir, "cmpa_lpc55s3x_default.yaml")
-    config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(open(cmpa_config_template))
+    with open(cmpa_config_template) as f:
+        config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(f)
     config["settings"]["DCFG_CC_SOCU_PIN"]["bitfields"][pin_bitfield] = pin_value
     config["settings"]["DCFG_CC_SOCU_DFLT"]["bitfields"][dflt_bitfield] = dflt_value
     cmpa_config_path = os.path.join(tmp_path, "output.yaml")
@@ -511,7 +510,8 @@ def test_cfpa_invalid_pin_dflt_configuration_rules(
     :param dflt_bitfield: Name of the default bitfield to modify in the configuration.
     """
     cfpa_config_template = os.path.join(data_dir, "cfpa_lpc55s3x_default.yaml")
-    config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(open(cfpa_config_template))
+    with open(cfpa_config_template) as f:
+        config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(f)
     config["settings"]["DCFG_CC_SOCU_NS_PIN"]["bitfields"][pin_bitfield] = pin_value
     config["settings"]["DCFG_CC_SOCU_NS_DFLT"]["bitfields"][dflt_bitfield] = dflt_value
     cfpa_config_path = os.path.join(tmp_path, "output.yaml")
@@ -554,7 +554,8 @@ def test_cmpa_prog_in_progress_rule(
     :param cmpa_prog_in_progress_value: Value to set for CMPA_PROG_IN_PROGRESS field
     """
     cfpa_config_template = os.path.join(data_dir, "cfpa_lpc55s3x_default.yaml")
-    config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(open(cfpa_config_template))
+    with open(cfpa_config_template) as f:
+        config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(f)
     config["settings"]["CMPA_PROG_IN_PROGRESS"]["value"] = cmpa_prog_in_progress_value
     cfpa_config_path = os.path.join(tmp_path, "output.yaml")
     with open(cfpa_config_path, "w") as fp:
@@ -597,7 +598,8 @@ def test_vendor_usage_rule(
     :param inverse_value: Value to inject into INVERSE_VALUE bitfield
     """
     cfpa_config_template = os.path.join(data_dir, "cfpa_lpc55s3x_default_full.yaml")
-    config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(open(cfpa_config_template))
+    with open(cfpa_config_template) as f:
+        config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(f)
 
     cfpa_config_path = os.path.join(tmp_path, "output.yaml")
     with open(cfpa_config_path, "w") as fp:

@@ -34,7 +34,7 @@ from spsdk.exceptions import (
     SPSDKValueError,
 )
 from spsdk.image.ahab.ahab_abstract_interfaces import Container
-from spsdk.image.ahab.ahab_container import AHABContainerBase
+from spsdk.image.ahab.ahab_container import AHABContainerBase, AHABContainerV2
 from spsdk.image.ahab.ahab_data import (
     CONTAINER_ALIGNMENT,
     RESERVED,
@@ -189,7 +189,7 @@ class Message(Container):
         self.family = family
         self.cert_ver = cert_ver
         self.permissions = permissions
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(datetime.timezone.utc)
         self.issue_date = issue_date or (now.month << 12 | now.year)
         self.cmd = cmd
         self.unique_id_len = unique_id_len
@@ -349,11 +349,13 @@ class Message(Container):
         command = config.get_dict("command")
         if len(command) != 1:
             raise SPSDKError(f"Invalid config field command: {command}")
-        msg_cls = cls.get_message_class(list(command.keys())[0])
+        msg_cls = cls.get_message_class(next(iter(command.keys())))
         return msg_cls._load_from_config(config, family, cls)
 
     @classmethod
-    def load_from_config_generic(cls, config: Config) -> tuple[int, int, int | None, bytes, int]:
+    def load_from_config_generic(
+        cls, config: Config, unique_id_len: int | None = None
+    ) -> tuple[int, int, int | None, bytes, int]:
         """Load configuration data into message components.
 
         Converts the general configuration options from container configurations
@@ -362,6 +364,8 @@ class Message(Container):
 
         :param config: Message configuration dictionaries containing cert_version,
             cert_permission, issue_date, uuid, and flags fields.
+        :param unique_id_len: Optional UUID length in bytes. If not specified,
+            class default is used.
         :return: Tuple containing certificate version, permission, issue date
             (or None if not specified), UUID bytes, and flags.
         """
@@ -373,7 +377,8 @@ class Message(Container):
         else:
             issue_date = None
 
-        uuid = bytes.fromhex(config.get("uuid", bytes(cls.UNIQUE_ID_LEN).hex()))
+        uuid_len = unique_id_len if unique_id_len is not None else cls.UNIQUE_ID_LEN
+        uuid = bytes.fromhex(config.get("uuid", bytes(uuid_len).hex()))
         flags = config.get_int("flags", 0)
         return (cert_ver, permission, issue_date, uuid, flags)
 
@@ -604,11 +609,13 @@ class MessageReturnLifeCycle(Message):
         command = config.get_config("command")
         if len(command) != 1:
             raise SPSDKError(f"Invalid config field command: {command}")
-        command_name = list(command.keys())[0]
+        command_name = next(iter(command.keys()))
         if MessageCommands.from_label(command_name) != MessageReturnLifeCycle.TAG:
             raise SPSDKError("Invalid configuration for Return Life Cycle Request command.")
 
-        cert_ver, permission, issue_date, uuid, header_flags = cls.load_from_config_generic(config)
+        cert_ver, permission, issue_date, uuid, header_flags = cls.load_from_config_generic(
+            config, unique_id_len=base_cls.UNIQUE_ID_LEN
+        )
 
         life_cycle = command.get_int("RETURN_LIFECYCLE_UPDATE_REQ")
 
@@ -787,11 +794,13 @@ class MessageWriteSecureFuse(Message):
         command = config.get_config("command")
         if len(command) != 1:
             raise SPSDKError(f"Invalid config field command: {command}")
-        command_name = list(command.keys())[0]
+        command_name = next(iter(command.keys()))
         if MessageCommands.from_label(command_name) != MessageWriteSecureFuse.TAG:
             raise SPSDKError("Invalid configuration for Write secure fuse Request command.")
 
-        cert_ver, permission, issue_date, uuid, header_flags = cls.load_from_config_generic(config)
+        cert_ver, permission, issue_date, uuid, header_flags = cls.load_from_config_generic(
+            config, unique_id_len=base_cls.UNIQUE_ID_LEN
+        )
 
         secure_fuse = command.get_config("WRITE_SEC_FUSE_REQ")
         fuse_id = secure_fuse.get_int("id")
@@ -1000,11 +1009,13 @@ class MessageKeyStoreReprovisioningEnable(Message):
         command = config.get_config("command")
         if len(command) != 1:
             raise SPSDKError(f"Invalid config field command: {command}")
-        command_name = list(command.keys())[0]
+        command_name = next(iter(command.keys()))
         if MessageCommands.from_label(command_name) != cls.TAG:
             raise SPSDKError("Invalid configuration for Write secure fuse Request command.")
 
-        cert_ver, permission, issue_date, uuid, header_flags = cls.load_from_config_generic(config)
+        cert_ver, permission, issue_date, uuid, header_flags = cls.load_from_config_generic(
+            config, unique_id_len=base_cls.UNIQUE_ID_LEN
+        )
 
         keystore_repr_en = command.get_config("KEYSTORE_REPROVISIONING_ENABLE_REQ")
         monotonic_counter = keystore_repr_en.get_int("monotonic_counter", 0)
@@ -1266,7 +1277,7 @@ class MessageKeyExchange(Message):
             logger.info(f"Derived OEM_Import_CMAC_SK: {self._oem_import_cmac_sk.hex()}")
 
         except Exception as exc:
-            raise SPSDKError(f"ECDH key derivation failed: {str(exc)}") from exc
+            raise SPSDKError(f"ECDH key derivation failed: {exc!s}") from exc
 
     @property
     def shared_secret(self) -> bytes | None:
@@ -1505,11 +1516,13 @@ class MessageKeyExchange(Message):
         command = config.get_config("command")
         if len(command) != 1:
             raise SPSDKError(f"Invalid config field command: {command}")
-        command_name = list(command.keys())[0]
+        command_name = next(iter(command.keys()))
         if MessageCommands.from_label(command_name) != MessageKeyExchange.TAG:
             raise SPSDKError("Invalid configuration for Key Exchange Request command.")
 
-        cert_ver, permission, issue_date, uuid, header_flags = cls.load_from_config_generic(config)
+        cert_ver, permission, issue_date, uuid, header_flags = cls.load_from_config_generic(
+            config, unique_id_len=base_cls.UNIQUE_ID_LEN
+        )
 
         key_exchange = command.get_config("KEY_EXCHANGE_REQ")
 
@@ -1852,11 +1865,13 @@ class MessageDat(Message):
         command = config.get_config("command")
         if len(command) != 1:
             raise SPSDKError(f"Invalid config field command: {command}")
-        command_name = list(command.keys())[0]
+        command_name = next(iter(command.keys()))
         if MessageCommands.from_label(command_name) != MessageDat.TAG:
             raise SPSDKError("Invalid configuration for DAT Request command.")
 
-        cert_ver, permission, issue_date, uuid, header_flags = cls.load_from_config_generic(config)
+        cert_ver, permission, issue_date, uuid, header_flags = cls.load_from_config_generic(
+            config, unique_id_len=base_cls.UNIQUE_ID_LEN
+        )
 
         dat_cfg = command.get_config("DAT_AUTHENTICATION_REQ")
         challenge_vector = dat_cfg.load_symmetric_key(
@@ -2023,11 +2038,11 @@ class SignedMessageContainer(AHABContainerBase):
         :param other: Object to compare with this signed message instance.
         :return: True if objects are equal, False otherwise.
         """
-        if isinstance(other, type(self)):
-            if super().__eq__(other) and self.message == other.message:
-                return True
-
-        return False
+        return bool(
+            isinstance(other, type(self))
+            and super().__eq__(other)
+            and self.message == other.message
+        )
 
     def __repr__(self) -> str:
         """Return string representation of the Signed Message object.
@@ -2051,8 +2066,8 @@ class SignedMessageContainer(AHABContainerBase):
             f"  Flags:              {hex(self.flags)}\n"
             f"  Fuse version:       {hex(self.fuse_version)}\n"
             f"  SW version:         {hex(self.sw_version)}\n"
-            f"  Signature Block:\n{str(self.signature_block)}\n"
-            f"  Message:\n{str(self.message)}\n"
+            f"  Signature Block:\n{self.signature_block!s}\n"
+            f"  Message:\n{self.message!s}\n"
             f"  Encryption IV:      {self.encrypt_iv.hex() if self.encrypt_iv else 'Not Available'}"
         )
 
@@ -2321,6 +2336,38 @@ class SignedMessageContainerV2(SignedMessageContainer):
     VERSION = 0x02
     SIGNATURE_BLOCK: TypeAlias = SignatureBlockV2
     MESSAGE_TYPE: TypeAlias = MessageV2
+    FLAGS_CHECK_ALL_SIGNATURES_OFFSET = AHABContainerV2.FLAGS_CHECK_ALL_SIGNATURES_OFFSET
+    FLAGS_CHECK_ALL_SIGNATURES_SIZE = AHABContainerV2.FLAGS_CHECK_ALL_SIGNATURES_SIZE
+    FlagsCheckAllSignatures = AHABContainerV2.FlagsCheckAllSignatures
+
+    @property
+    def flag_check_all_signatures(self) -> AHABContainerV2.FlagsCheckAllSignatures:
+        """Get check-all-signatures flag as enumeration."""
+        check_all = (self.flags >> self.FLAGS_CHECK_ALL_SIGNATURES_OFFSET) & (
+            (1 << self.FLAGS_CHECK_ALL_SIGNATURES_SIZE) - 1
+        )
+        return AHABContainerV2.FlagsCheckAllSignatures.from_tag(check_all)
+
+    def _create_flags_config(self) -> Config:
+        """Create configuration of the signed message container flags."""
+        cfg = super()._create_flags_config()
+        cfg["check_all_signatures"] = self.flag_check_all_signatures.label
+        return cfg
+
+    def _load_from_config_flags(self, config: Config) -> None:
+        """Load signed message container flags from configuration."""
+        super()._load_from_config_flags(config)
+        if "check_all_signatures" in config:
+            cas_mask = (
+                (1 << self.FLAGS_CHECK_ALL_SIGNATURES_SIZE) - 1
+            ) << self.FLAGS_CHECK_ALL_SIGNATURES_OFFSET
+            cas_value = (
+                AHABContainerV2.FlagsCheckAllSignatures.from_attr(
+                    config.get("check_all_signatures")
+                ).tag
+                << self.FLAGS_CHECK_ALL_SIGNATURES_OFFSET
+            )
+            self.flags = (self.flags & ~cas_mask) | cas_value
 
     @classmethod
     def format(cls) -> str:
@@ -2550,6 +2597,7 @@ class SignedMessageContainerV2(SignedMessageContainer):
             # Expose it at container level and remove from message-level schema.
             sch["signed_message"]["properties"]["cert_version"]["skip_in_template"] = False
             msg_props = sch["signed_message"]["properties"]["message"]["properties"]
+            msg_props["uuid"]["template_value"] = "00000000000000000000000000000000"
             msg_props.pop("cert_version", None)
             msg_props.pop("cert_permission", None)
         return [sch_family, sch["signed_message"]]
@@ -2583,9 +2631,7 @@ class SignedMessage(FeatureBaseClass):
         """
         self.chip_config = create_chip_config(family=family)
         self.signed_msg_container = signed_msg_container
-        self._container_type: (
-            type[SignedMessageContainer] | type[SignedMessageContainerV2] | None
-        ) = None
+        self._container_type: type[SignedMessageContainer | SignedMessageContainerV2] | None = None
         self.db = get_db(family)
 
     @property

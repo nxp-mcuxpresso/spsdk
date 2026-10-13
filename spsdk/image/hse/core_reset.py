@@ -26,6 +26,8 @@ from spsdk.utils.misc import LITTLE_ENDIAN, UINT8, UINT16, UINT32, value_to_int
 from spsdk.utils.spsdk_enum import SpsdkEnum, SpsdkIntFlag
 from spsdk.utils.verifier import Verifier
 
+UNKNOWN_FAMILY = FamilyRevision("unknown")
+
 
 class HseCrSanction(SpsdkEnum):
     """HSE Core Reset sanction enumeration.
@@ -320,7 +322,7 @@ class CoreResetEntry(FeatureBaseClass):
         )
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse Core Reset Entry from binary data.
 
         Creates a Core Reset entry instance from binary data representation,

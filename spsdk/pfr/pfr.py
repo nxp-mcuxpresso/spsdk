@@ -18,7 +18,7 @@ from abc import abstractmethod
 from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import Any, ClassVar, cast
 
 from typing_extensions import Self
 
@@ -366,7 +366,7 @@ class AbstractBaseConfigArea(FeatureBaseClass):
         """
 
     @abstractmethod
-    def __eq__(self, obj: Any) -> bool:
+    def __eq__(self, obj: object) -> bool:
         """Compare if two PFR objects have the same settings.
 
         :param obj: Object to compare with this instance.
@@ -617,7 +617,7 @@ class BaseConfigArea(AbstractBaseConfigArea):
                 logger.debug(f"Hiding register {reg} - computed using method: {fields}")
             elif isinstance(fields, dict):
                 # Bitfield-level computed fields
-                for bitfield in fields.keys():
+                for bitfield in fields:
                     reg_obj.get_bitfield(bitfield).reserved = True
                     logger.debug(f"Hiding bitfield: {bitfield} in {reg}")
         return registers
@@ -966,6 +966,65 @@ class BaseConfigArea(AbstractBaseConfigArea):
 
         return ret
 
+    @classmethod
+    def merge_binary(
+        cls,
+        main_data: bytes,
+        device_data: bytes,
+        register_names: list[str],
+        family: FamilyRevision,
+    ) -> bytes:
+        """Merge selected registers from a device PFR binary into a main PFR binary.
+
+        Performs a byte-exact splice: every byte of ``main_data`` is preserved except the
+        byte ranges occupied by the registers listed in ``register_names``, which are copied
+        verbatim from ``device_data``. No values are recomputed (CRC, seal and ROTKH fields
+        are left untouched), which makes the operation safe for a manufacturing flow where
+        the main PFR image is already finalized and only device-unique fields (e.g. the
+        Secure Installer erase-token registers) must be taken from the device.
+
+        :param main_data: Binary of the finalized (user) PFR page.
+        :param device_data: Binary of the PFR page read back from the device.
+        :param register_names: Names of the registers whose bytes are copied from
+            ``device_data`` into ``main_data``.
+        :param family: The MCU family and revision the binaries belong to.
+        :raises SPSDKPfrError: If no registers are given, a register name is unknown, a
+            register range exceeds the page, or either binary is shorter than the page size.
+        :return: The merged PFR binary, the same length as ``main_data``.
+        """
+        if not register_names:
+            raise SPSDKPfrError("At least one register must be specified for merge")
+
+        obj = cls(family)
+        region_size = obj.registers_size
+
+        for label, data in (("main", main_data), ("device", device_data)):
+            if len(data) < region_size:
+                raise SPSDKPfrError(
+                    f"The {label} binary is too short ({len(data)} bytes); "
+                    f"expected at least {region_size} bytes for {family}."
+                )
+
+        result = bytearray(main_data)
+        for name in register_names:
+            try:
+                reg = obj.registers.find_reg(name, include_group_regs=True)
+            except SPSDKRegsErrorRegisterNotFound as exc:
+                raise SPSDKPfrError(
+                    f"Register '{name}' does not exist in {obj.SUB_FEATURE.upper()} "
+                    f"for {family}."
+                ) from exc
+            offset = reg.offset
+            length = reg.width // 8
+            if offset + length > region_size:
+                raise SPSDKPfrError(
+                    f"Register '{name}' range (offset {offset:#x}, {length} bytes) "
+                    f"exceeds the {obj.SUB_FEATURE.upper()} page size ({region_size} bytes)."
+                )
+            result[offset : offset + length] = device_data[offset : offset + length]
+
+        return bytes(result)
+
     @property
     def monotonic_counter_names(self) -> list[str]:
         """Return the list of monotonic counter register names for this sub-feature.
@@ -1039,7 +1098,7 @@ class BaseConfigArea(AbstractBaseConfigArea):
                 reg.set_value(current_value)
                 logger.debug(f"  {reg.name}: retain → {current_value:#010x}")
             else:  # MONOTONIC_INCREMENT
-                new_value = current_value + 1
+                new_value = 1 if current_value == self.MONOTONIC_RETAIN else current_value + 1
                 reg.set_value(new_value)
                 logger.debug(f"  {reg.name}: increment {current_value:#010x} → {new_value:#010x}")
 
@@ -1146,7 +1205,7 @@ class BaseConfigArea(AbstractBaseConfigArea):
                 f"Failed to read {self.SUB_FEATURE.upper()} region from device"
             ) from exc
 
-    def __eq__(self, obj: Any) -> bool:
+    def __eq__(self, obj: object) -> bool:
         """Compare if two PFR objects have the same settings.
 
         This method performs equality comparison by checking if the other object
@@ -1359,7 +1418,7 @@ class MultiRegionBaseConfigArea(AbstractBaseConfigArea):
     :cvar REGIONS: List of region identifiers to be managed by this configuration area.
     """
 
-    REGIONS: list[str] = []
+    REGIONS: ClassVar[list[str]] = []
 
     def __init__(self, family: FamilyRevision) -> None:
         """Initialize MultiRegionBaseConfigArea.
@@ -1496,7 +1555,7 @@ class MultiRegionBaseConfigArea(AbstractBaseConfigArea):
 
                 except SPSDKRegsError as exc:
                     raise SPSDKError(
-                        f"Failed to parse {settings_name} configuration: {str(exc)}"
+                        f"Failed to parse {settings_name} configuration: {exc!s}"
                     ) from exc
 
                 except (SPSDKError, TypeError) as exc:
@@ -2254,7 +2313,7 @@ class MultiRegionBaseConfigArea(AbstractBaseConfigArea):
         cmpa_temp = CMPA.parse(cmpa_data, self.family)
         return self._extract_split_offset_from_cmpa(cmpa_temp)
 
-    def __eq__(self, obj: Any) -> bool:
+    def __eq__(self, obj: object) -> bool:
         """Compare if two PFR objects have the same settings.
 
         The comparison checks if both objects are of the same class, have the same family,
@@ -2311,7 +2370,7 @@ class UPDATE_CFPA(MultiRegionBaseConfigArea):
     SUB_FEATURE = "update_cfpa"
     BINARY_SIZE_DEFAULT = 512
     DESCRIPTION = "UPDATE and CFPA combined configuration area"
-    REGIONS = ["update", "cfpa"]
+    REGIONS: ClassVar[list[str]] = ["update", "cfpa"]
 
     def __init__(self, family: FamilyRevision) -> None:
         """Initialize UPDATE CFPA regions.
@@ -2352,7 +2411,7 @@ class UPDATE_CFPA_CMPA(MultiRegionBaseConfigArea):
     SUB_FEATURE = "update_cfpa_cmpa"
     BINARY_SIZE_DEFAULT = 1024
     DESCRIPTION = "UPDATE, CFPA and CMPA combined configuration area"
-    REGIONS = ["update", "cfpa", "cmpa"]
+    REGIONS: ClassVar[list[str]] = ["update", "cfpa", "cmpa"]
 
     def __init__(self, family: FamilyRevision) -> None:
         """Initialize UPDATE CFPA regions.

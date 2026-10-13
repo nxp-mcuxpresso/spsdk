@@ -25,6 +25,8 @@ from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import size_fmt
 
+UNKNOWN_FAMILY = FamilyRevision("unknown")
+
 
 class SegBDT(PaddingSegment):
     """Boot Data Table segment for HAB image processing.
@@ -196,7 +198,7 @@ class HabSegmentBDT(HabSegmentBase):
         return ret_cfg
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse BDT segment block from image binary.
 
         The method extracts the Boot Data Table (BDT) segment from HAB container

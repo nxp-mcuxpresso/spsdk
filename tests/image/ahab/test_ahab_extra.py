@@ -8,6 +8,7 @@
 
 import pytest
 
+from spsdk.exceptions import SPSDKVerificationError
 from spsdk.image.ahab.ahab_data import (
     AhabChipContainerConfig,
     AHABSignHashAlgorithm,
@@ -76,15 +77,15 @@ def test_iae_str_contains_sections(basic_iae: ImageArrayEntry) -> None:
 def test_iae_equality(chip_config: AhabChipContainerConfig, simple_image: bytes) -> None:
     """Two IAEs with the same parameters should be equal."""
     flags = ImageArrayEntry.create_flags(0, 0, AHABSignHashAlgorithm.SHA256)
-    kwargs = dict(
-        chip_config=chip_config,
-        image=simple_image,
-        image_offset=0x400,
-        load_address=0x8000,
-        entry_point=0x8000,
-        flags=flags,
-        image_meta_data=0,
-    )
+    kwargs = {
+        "chip_config": chip_config,
+        "image": simple_image,
+        "image_offset": 0x400,
+        "load_address": 0x8000,
+        "entry_point": 0x8000,
+        "flags": flags,
+        "image_meta_data": 0,
+    }
     iae1 = ImageArrayEntry(**kwargs)  # type: ignore[arg-type]
     iae1.update_fields()
     iae2 = ImageArrayEntry(**kwargs)  # type: ignore[arg-type]
@@ -239,7 +240,7 @@ def test_iae_export_parse_round_trip(
 
 def test_iae_parse_invalid_length(chip_config: AhabChipContainerConfig) -> None:
     """parse with too-short data should raise a verification error."""
-    with pytest.raises(Exception):
+    with pytest.raises(SPSDKVerificationError):
         ImageArrayEntry.parse(b"\x00" * 4, chip_config)
 
 

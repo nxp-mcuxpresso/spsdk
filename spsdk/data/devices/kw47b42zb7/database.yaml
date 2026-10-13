@@ -50,6 +50,9 @@ info:
       interfaces: ["uart", "can", "spi", "i2c"]
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe: {}
+
   # ======== Fuses description section ========
   fuses: {}
 

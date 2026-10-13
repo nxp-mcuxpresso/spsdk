@@ -96,6 +96,12 @@ info:
           pid: 0x014E
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe:
+    protocols: [swd, jtag]
+    test_address: 0x2048_0000
+    mem_ap_index: 3
+
   # ======== Fuses description section ========
   fuses:
     tool: nxpele
@@ -149,7 +155,6 @@ features:
     based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
     dat_is_using_sha256_always: True
     dmbox_ap_ix: 0
-    test_address: 0x2048_0000
 
   # ======== AHAB section ========
   ahab:

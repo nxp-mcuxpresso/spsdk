@@ -59,8 +59,7 @@ class DefaultValueNormalizer:
                 continue
 
             # Find fuses*.json files
-            for file_path in glob.glob(os.path.join(root, "fuses*.json")):
-                fuses_files.append(file_path)
+            fuses_files.extend(glob.glob(os.path.join(root, "fuses*.json")))
 
             # Find other *.json files (excluding schema files)
             for file_path in glob.glob(os.path.join(root, "*.json")):
@@ -549,7 +548,7 @@ class DefaultValueNormalizer:
                 width = bitfield.get("width")
                 if width is not None:
                     # Create a new dictionary with only the width
-                    keys_to_remove = [key for key in bitfield.keys() if key != "width"]
+                    keys_to_remove = [key for key in bitfield if key != "width"]
 
                     # Only modify and print if there are keys to remove
                     if keys_to_remove:
@@ -603,7 +602,7 @@ class DefaultValueNormalizer:
             print(f"   Removed 'no_yaml_comments' from register '{register_name}'")
 
         # Check if register has bitfields
-        if "bitfields" in register and register["bitfields"]:
+        if register.get("bitfields"):
             # Process each bitfield
             for bitfield in register["bitfields"]:
                 if "no_yaml_comments" in bitfield:
@@ -640,7 +639,7 @@ class DefaultValueNormalizer:
             print(f"   Removed 'config_processor' from register '{register_name}'")
 
         # Check if register has bitfields
-        if "bitfields" in register and register["bitfields"]:
+        if register.get("bitfields"):
             # Process each bitfield
             for bitfield in register["bitfields"]:
                 if "config_processor" in bitfield:
@@ -678,7 +677,7 @@ class DefaultValueNormalizer:
             print(f"   Replaced doublequote in 'name' for register '{register_name}'")
 
         # Check if register has bitfields
-        if "bitfields" in register and register["bitfields"]:
+        if register.get("bitfields"):
             # Process each bitfield
             for bitfield in register["bitfields"]:
                 if "name" in bitfield and double_space in bitfield.get("name"):
@@ -752,7 +751,7 @@ class DefaultValueNormalizer:
         except json.JSONDecodeError as e:
             print(f"❌ Error parsing {file_path}: {e}")
             return False
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"❌ Unexpected error processing {file_path}: {e}")
             return False
 

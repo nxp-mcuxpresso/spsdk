@@ -1,0 +1,179 @@
+{
+    "cpu": "sc668343",
+    "groups": [
+        {
+            "group": {
+                "name": "Password Header",
+                "description": "Password header"
+            },
+            "registers": [
+                {
+                    "id": "field000",
+                    "name": "PASSWORD_HEADER",
+                    "description": "Password header",
+                    "offset_int": "0",
+                    "default_value_int": "0x50570000",
+                    "bitfields": [
+                        {
+                            "width": 16
+                        },
+                        {
+                            "width": 16,
+                            "id": "field000-bits16-31",
+                            "name": "PASSWORD_Region_Header_marker",
+                            "description": "Password Region Header marker should be set to 0x5057"
+                        }
+                    ]
+                },
+                {
+                    "id": "Reserved00004",
+                    "name": "Reserved 0x00004",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0004",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved00008",
+                    "name": "Reserved 0x00008",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0008",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "Reserved0000C",
+                    "name": "Reserved 0x0000C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x000C",
+                    "is_reserved": true,
+                    "default_value_int": "0"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Auth Password",
+                "description": "Debug authentication password"
+            },
+            "registers": [
+                {
+                    "id": "field010",
+                    "name": "DBG_AUTH_PASSWORD0",
+                    "description": "DBG auth password[31:0]",
+                    "offset_int": "0x0010",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field014",
+                    "name": "DBG_AUTH_PASSWORD1",
+                    "description": "DBG auth password[63:32]",
+                    "offset_int": "0x0014",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field018",
+                    "name": "DBG_AUTH_PASSWORD2",
+                    "description": "DBG auth password[95:64]",
+                    "offset_int": "0x0018",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field01C",
+                    "name": "DBG_AUTH_PASSWORD3",
+                    "description": "DBG auth password[127:96]",
+                    "offset_int": "0x001C",
+                    "default_value_int": "0"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "MISR Seed",
+                "description": "Image MISR seed"
+            },
+            "registers": [
+                {
+                    "id": "field020",
+                    "name": "IMG_MISR_SEED0",
+                    "description": "MISR seed[31:0]",
+                    "offset_int": "0x0020",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field024",
+                    "name": "IMG_MISR_SEED1",
+                    "description": "MISR seed[63:32]",
+                    "offset_int": "0x0024",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field028",
+                    "name": "IMG_MISR_SEED2",
+                    "description": "MISR seed[95:64]",
+                    "offset_int": "0x0028",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field02C",
+                    "name": "IMG_MISR_SEED3",
+                    "description": "MISR seed[127:96]",
+                    "offset_int": "0x002C",
+                    "default_value_int": "0"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Erase Password",
+                "description": "Flash erase password"
+            },
+            "registers": [
+                {
+                    "id": "field030",
+                    "name": "ERASE_PASSWORD0",
+                    "description": "Erase token[31:0]",
+                    "offset_int": "0x0030",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field034",
+                    "name": "ERASE_PASSWORD1",
+                    "description": "Erase token[63:32]",
+                    "offset_int": "0x0034",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field038",
+                    "name": "ERASE_PASSWORD2",
+                    "description": "Erase token[95:64]",
+                    "offset_int": "0x0038",
+                    "default_value_int": "0"
+                },
+                {
+                    "id": "field03C",
+                    "name": "ERASE_PASSWORD3",
+                    "description": "Erase token[127:96]",
+                    "offset_int": "0x003C",
+                    "default_value_int": "0"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "CRC32",
+                "description": "CRC32 integrity check"
+            },
+            "registers": [
+                {
+                    "id": "field040",
+                    "name": "PASSWORD_AREA_CRC32",
+                    "description": "Password area CRC32 for address range (0x800 - 0x83F)",
+                    "offset_int": "0x0040",
+                    "access": "RO",
+                    "default_value_int": "0"
+                }
+            ]
+        }
+    ]
+}

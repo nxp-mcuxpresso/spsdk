@@ -61,7 +61,6 @@ class VirtualDevice(DeviceBase):
         :raises SPSDKConnectionError: If the connection cannot be established.
         :raises SPSDKError: If there's an error during the opening process.
         """
-        pass
 
     def close(self) -> None:
         """Close the SDP connection.
@@ -69,7 +68,6 @@ class VirtualDevice(DeviceBase):
         This method properly closes the SDP (Serial Download Protocol) connection
         and releases any associated resources.
         """
-        pass
 
     def read(self, length: int, timeout: int | None = None) -> bytes:
         """Read data from the mock SDP interface.
@@ -93,7 +91,6 @@ class VirtualDevice(DeviceBase):
         :param data: The byte data to be written to the SDP interface.
         :param timeout: Optional timeout value in seconds for the write operation.
         """
-        pass
 
     def __str__(self) -> str:
         """Get string representation of the VirtualDevice.

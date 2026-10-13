@@ -11,7 +11,7 @@ info:
   use_in_doc: True # Include this MCU in generated documentation
   purpose: Wireless Connectivity MCUs
   # Web page of MCU representative
-  web: https://www.nxp.com
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-w-series-microcontrollers:MCX-W-SERIES
   memory_map:
     # Memory map basic info
     internal-flash_ns:
@@ -39,6 +39,9 @@ info:
           pid: 0x0021
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe: {}
+
   # ======== Blhost section ========
   blhost: {}
 

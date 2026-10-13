@@ -550,7 +550,13 @@ sb3_commands:
                 type: object
                 title: Reset
                 description: Resets the target
-                properties: {}
+                properties:
+                  param:
+                    type: [string, number]
+                    title: Reset parameter
+                    description: |
+                      Optional parameter (as 32-bit integer) to be passed with reset command Example: 0xEB2F0001 or 0xEB010000
+                    template_value: 0
 
           - type: object
             required: [checkLifecycle]
@@ -576,7 +582,7 @@ sb3_commands:
                         NXP_FA,
                         IN_FIELD_LOCKED,
                         NXP_DEV,
-                        BRICKED
+                        BRICKED,
                       ]
                     template_value: IN_FIELD
                 required: [lifecycle]

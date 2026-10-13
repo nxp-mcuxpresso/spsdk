@@ -81,20 +81,20 @@ def cmac_endpoint(key_id: int) -> tuple[Response, int]:
     # Validate data is a hex string
     try:
         data = bytes.fromhex(data_hex)
-    except Exception:
+    except Exception:  # noqa: BLE001
         return jsonify({"error": "Invalid hex string in 'data' field"}), 400
 
     # Load the key
     try:
         key = load_key(key_id=key_id)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return jsonify({"error": f"Key {key_id} couldn't be loaded: {e}"}), 404
 
     # Calculate CMAC
     try:
         cmac_result = calculate_cmac(data, key)
         return jsonify({"data": cmac_result}), 200
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return jsonify({"error": str(e)}), 500
 
 

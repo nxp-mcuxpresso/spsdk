@@ -14,7 +14,7 @@ capabilities for NXP MCU secure provisioning.
 import logging
 import os
 from collections.abc import Iterator
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from typing_extensions import Self
@@ -103,8 +103,8 @@ class SBV2xAdvancedParams:
         self._nonce: bytes = nonce if nonce else SBV2xAdvancedParams._create_nonce()
         self._padding: bytes = padding if padding else random_bytes(8)
         if timestamp is None:
-            timestamp = datetime.now()
-        self._timestamp = datetime.fromtimestamp(int(timestamp.timestamp()))
+            timestamp = datetime.now(timezone.utc)
+        self._timestamp = datetime.fromtimestamp(int(timestamp.timestamp()), timezone.utc)
         if len(self._dek) != 32 and len(self._mac) != 32:
             raise SPSDKError("Invalid dek or mac")
         if len(self._nonce) != 16:
@@ -206,7 +206,7 @@ class BootImageV20(BaseClass):
         product_version: str = "1.0.0",
         component_version: str = "1.0.0",
         build_number: int = 0,
-        advanced_params: SBV2xAdvancedParams = SBV2xAdvancedParams(),
+        advanced_params: SBV2xAdvancedParams | None = None,
     ) -> None:
         """Initialize Secure Binary Image V2.0.
 
@@ -222,6 +222,7 @@ class BootImageV20(BaseClass):
         :param advanced_params: Advanced parameters for encryption of the SB file, use for tests only
         :raises SPSDKError: Invalid dek or mac
         """
+        advanced_params = advanced_params if advanced_params is not None else SBV2xAdvancedParams()
         self._kek = kek
         # Set Flags value
         self._signed = signed
@@ -322,9 +323,8 @@ class BootImageV20(BaseClass):
         :param value: Certificate block to be assigned; None to remove previously assigned block
         :raises SPSDKError: When certificate block is used when SB file is not signed
         """
-        if value is not None:
-            if not self.signed:
-                raise SPSDKError("Certificate block cannot be used unless SB file is signed")
+        if value is not None and not self.signed:
+            raise SPSDKError("Certificate block cannot be used unless SB file is signed")
         self._cert_section = CertSectionV2(value) if value else None
 
     @property
@@ -496,7 +496,7 @@ class BootImageV20(BaseClass):
             raise SPSDKError("Section is not instance of BootSectionV2 class")
         duplicate_uid = find_first(self._boot_sections, lambda bs: bs.uid == section.uid)
         if duplicate_uid is not None:
-            raise SPSDKError(f"Boot section with duplicate UID: {str(section.uid)}")
+            raise SPSDKError(f"Boot section with duplicate UID: {section.uid!s}")
         self._boot_sections.append(section)
 
     def export(self, padding: bytes | None = None) -> bytes:
@@ -666,7 +666,7 @@ class BootImageV21(BaseClass):
         product_version: str = "1.0.0",
         component_version: str = "1.0.0",
         build_number: int = 0,
-        advanced_params: SBV2xAdvancedParams = SBV2xAdvancedParams(),
+        advanced_params: SBV2xAdvancedParams | None = None,
         flags: int = FLAGS_SHA_PRESENT_BIT | FLAGS_ENCRYPTED_SIGNED_BIT,
     ) -> None:
         """Initialize Secure Binary Image V2.1.
@@ -682,6 +682,7 @@ class BootImageV21(BaseClass):
         :param advanced_params: Advanced encryption parameters including DEK, MAC, nonce, and timestamp.
         :param flags: Image flags controlling SHA presence and encryption/signing behavior.
         """
+        advanced_params = advanced_params if advanced_params is not None else SBV2xAdvancedParams()
         self._kek = kek
         self.signature_provider: SignatureProvider | None = (
             None  # this should be assigned for export, not needed for parsing
@@ -1131,7 +1132,7 @@ class BootImageV21(BaseClass):
             ] = [
                 command
                 for command in list_of_commands
-                if list(command["properties"].keys())[0] in supported_commands
+                if next(iter(command["properties"].keys())) in supported_commands
             ]
 
         return schemas
@@ -1241,7 +1242,7 @@ class BootImageV21(BaseClass):
         # Test params
         timestamp = config.get("timestamp")
         if timestamp:  # re-format it
-            timestamp = datetime.fromtimestamp(value_to_int(timestamp))
+            timestamp = datetime.fromtimestamp(value_to_int(timestamp), timezone.utc)
         dek = config.get("dek")
         dek = value_to_bytes("0x" + dek, byte_cnt=32) if dek else None
         mac = config.get("mac")
@@ -1250,7 +1251,7 @@ class BootImageV21(BaseClass):
         nonce = value_to_bytes("0x" + nonce, byte_cnt=16) if nonce else None
         zero_padding = bytes(8) if value_to_bool(config.get("zeroPadding", False)) else None
         advanced_params = SBV2xAdvancedParams(dek, mac, nonce, timestamp, zero_padding)
-        logger.debug(f"Loading advanced parameters for SB 2.1 {str(advanced_params)}")
+        logger.debug(f"Loading advanced parameters for SB 2.1 {advanced_params!s}")
         return advanced_params
 
     @classmethod

@@ -963,7 +963,7 @@ class TPDataContainer(BaseElement):
         try:
             return cls.parse(data)
         except Exception as e:
-            raise SPSDKError(f"Error loading container from {path}: {str(e)}") from e
+            raise SPSDKError(f"Error loading container from {path}: {e!s}") from e
 
 
 #: Mapping between entry type and its corresponding DataEntry class

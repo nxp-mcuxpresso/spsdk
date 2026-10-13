@@ -40,6 +40,22 @@ def test_config_basic2() -> None:
     assert 1 == cfg.get("test")
 
 
+def test_config_clone_preserves_metadata() -> None:
+    """Test Config-to-Config initialization keeps metadata and search paths copy."""
+    source = Config({"test": 1})
+    source.config_dir = "/tmp/source"
+    source.config_name = "source.yaml"
+    source.search_paths = ["/tmp/source", "/tmp/common"]
+
+    cfg = Config(source)
+
+    assert cfg["test"] == 1
+    assert cfg.config_dir == source.config_dir
+    assert cfg.config_name == source.config_name
+    assert cfg.search_paths == source.search_paths
+    assert cfg.search_paths is not source.search_paths
+
+
 def test_config_nested_get() -> None:
     """Test nested key path get functionalities for Config class.
 

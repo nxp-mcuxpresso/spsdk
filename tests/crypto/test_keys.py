@@ -53,6 +53,7 @@ from spsdk.crypto.keys import (
     SPSDKWrongKeyPassphrase,
     _crypto_load_private_key,
     get_ecc_curve,
+    get_mldsa_nist_level,
     get_supported_keys_generators,
     load_key,
 )
@@ -126,7 +127,7 @@ def test_rsa_sign(data_dir: str) -> None:
         b";O\xa2eT\xcf\xdffd0?\xbd\xf6\xe2\xb6m\x0b\xe34V5Z\xca\x831\xae\x7f\x94C\x0e<?fI\xf1\xedS\xe8K\xd9"
         b"\xd0S\xf0\xf6\xf5e\xb6\xb1Z\x85\x1e!"
     )
-    data = bytes([v % 256 for v in range(0, 512)])
+    data = bytes([v % 256 for v in range(512)])
     # specify key using SPSDK_Key class
     calc_signature = private_key.sign(data)
     assert len(calc_signature) == 256
@@ -154,7 +155,7 @@ def test_rsa_verify(data_dir: str) -> None:
         b";O\xa2eT\xcf\xdffd0?\xbd\xf6\xe2\xb6m\x0b\xe34V5Z\xca\x831\xae\x7f\x94C\x0e<?fI\xf1\xedS\xe8K\xd9"
         b"\xd0S\xf0\xf6\xf5e\xb6\xb1Z\x85\x1e!"
     )
-    data = bytes([v % 256 for v in range(0, 512)])
+    data = bytes([v % 256 for v in range(512)])
     assert private_key.get_public_key().verify_signature(signature, data)
 
 
@@ -354,9 +355,9 @@ def test_ecdsa_signature_get_encoding(ec_curve: EccCurve) -> None:
     """
     priv_key = PrivateKeyEcc.generate_key(curve_name=ec_curve)
     signature = priv_key.sign(b"", der_format=True)
-    ECDSASignature.get_encoding(signature) == SPSDKEncoding.DER
+    assert ECDSASignature.get_encoding(signature) == SPSDKEncoding.DER
     signature = priv_key.sign(b"")
-    ECDSASignature.get_encoding(signature) == SPSDKEncoding.NXP
+    assert ECDSASignature.get_encoding(signature) == SPSDKEncoding.NXP
 
 
 def test_ecdsa_signature_get_encoding_rsa() -> None:
@@ -906,6 +907,18 @@ def test_get_ecc_curve_invalid() -> None:
         get_ecc_curve(1000)
 
 
+@pytest.mark.parametrize(("key_length", "nist_level"), [(44, 2), (65, 3), (87, 5)])
+def test_get_mldsa_nist_level(key_length: int, nist_level: int) -> None:
+    """Test conversion of an ML-DSA parameter-set length to its NIST level."""
+    assert get_mldsa_nist_level(key_length) == nist_level
+
+
+def test_get_mldsa_nist_level_invalid() -> None:
+    """Test conversion rejects an unsupported ML-DSA parameter-set length."""
+    with pytest.raises(SPSDKValueError, match="Unsupported ML-DSA key length: 42"):
+        get_mldsa_nist_level(42)
+
+
 def test_get_supported_keys_generators_basic() -> None:
     """Test get_supported_keys_generators with basic=True returns only RSA and ECC."""
     generators = get_supported_keys_generators(basic=True)
@@ -1027,7 +1040,8 @@ def test_public_key_create_invalid_type() -> None:
 @pytest.mark.skipif(not IS_OSCCA_SUPPORTED, reason="gmssl (SM2) not installed")
 def test_sm2_private_key_parse() -> None:
     """Test loading SM2 private key via PrivateKey.parse() covers the SM2 branch (line 528)."""
-    pem_data = open(os.path.join(CRYPTO_DATA_DIR, "openssl_sm2_private.pem"), "rb").read()
+    with open(os.path.join(CRYPTO_DATA_DIR, "openssl_sm2_private.pem"), "rb") as f:
+        pem_data = f.read()
     key = PrivateKey.parse(data=pem_data)
     assert isinstance(key, PrivateKeySM2)
 
@@ -1035,7 +1049,8 @@ def test_sm2_private_key_parse() -> None:
 @pytest.mark.skipif(not IS_OSCCA_SUPPORTED, reason="gmssl (SM2) not installed")
 def test_sm2_public_key_parse() -> None:
     """Test loading SM2 public key via PublicKey.parse() covers SM2 public parse path."""
-    pem_data = open(os.path.join(CRYPTO_DATA_DIR, "openssl_sm2_public.pem"), "rb").read()
+    with open(os.path.join(CRYPTO_DATA_DIR, "openssl_sm2_public.pem"), "rb") as f:
+        pem_data = f.read()
     key = PublicKey.parse(data=pem_data)
     assert isinstance(key, PublicKeySM2)
 
@@ -1043,7 +1058,8 @@ def test_sm2_public_key_parse() -> None:
 @pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="spsdk-pqc not installed")
 def test_dilithium_private_key_parse() -> None:
     """Test loading Dilithium private key via PrivateKey.parse() covers line 529."""
-    pem_data = open(os.path.join(KEYS_DIR, "dil3", "srk0_dil3.pem"), "rb").read()
+    with open(os.path.join(KEYS_DIR, "dil3", "srk0_dil3.pem"), "rb") as f:
+        pem_data = f.read()
     key = PrivateKey.parse(data=pem_data)
     assert isinstance(key, PrivateKeyDilithium)
 
@@ -1051,22 +1067,37 @@ def test_dilithium_private_key_parse() -> None:
 @pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="spsdk-pqc not installed")
 def test_dilithium_public_key_parse() -> None:
     """Test loading Dilithium public key via PublicKey.parse() covers lines 694->704."""
-    pub_data = open(os.path.join(KEYS_DIR, "dil3", "srk0_dil3.pub"), "rb").read()
+    with open(os.path.join(KEYS_DIR, "dil3", "srk0_dil3.pub"), "rb") as f:
+        pub_data = f.read()
     key = PublicKey.parse(data=pub_data)
     assert isinstance(key, PublicKeyDilithium)
 
 
 def test_mldsa_private_key_parse() -> None:
     """Test loading ML-DSA private key via PrivateKey.parse() covers line 531."""
-    pem_data = open(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65_native.pem"), "rb").read()
+    with open(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65_native.pem"), "rb") as f:
+        pem_data = f.read()
     key = PrivateKey.parse(data=pem_data)
     assert isinstance(key, PrivateKeyMLDSA)
+
+
+@pytest.mark.parametrize("level", [2, 3, 5])
+def test_mldsa_private_key_parse_native_nxp(level: int) -> None:
+    """Test loading native raw ML-DSA private key via PrivateKey.parse()."""
+    private_key = PrivateKeyMLDSA.generate_key(level=level)
+    nxp_data = private_key.export(encoding=SPSDKEncoding.NXP)
+
+    key = PrivateKey.parse(data=nxp_data)
+
+    assert isinstance(key, PrivateKeyMLDSA)
+    assert key == private_key
 
 
 @pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="spsdk-pqc not installed")
 def test_mldsa_private_key_parse_legacy_expanded() -> None:
     """Test loading legacy expanded-secret ML-DSA private key via compatibility mode."""
-    pem_data = open(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65.pem"), "rb").read()
+    with open(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65.pem"), "rb") as f:
+        pem_data = f.read()
     with patch.object(keys_module.logger, "info") as info_mock:
         key = PrivateKey.parse(data=pem_data)
     assert isinstance(key, PrivateKeyMLDSA)
@@ -1076,7 +1107,8 @@ def test_mldsa_private_key_parse_legacy_expanded() -> None:
 
 def test_mldsa_public_key_parse() -> None:
     """Test loading ML-DSA public key via PublicKey.parse() covers lines 704->714."""
-    pub_data = open(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65_native.pub"), "rb").read()
+    with open(os.path.join(KEYS_DIR, "mldsa65", "srk0_mldsa65_native.pub"), "rb") as f:
+        pub_data = f.read()
     key = PublicKey.parse(data=pub_data)
     assert isinstance(key, PublicKeyMLDSA)
 
@@ -1100,17 +1132,18 @@ def test_private_key_parse_invalid_data_raises() -> None:
 @pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="spsdk-pqc not installed")
 def test_private_key_parse_public_key_input_does_not_log_mldsa_warning() -> None:
     """Test that invalid private-key input does not emit legacy ML-DSA warning."""
-    pub_data = open(os.path.join(KEYS_DIR, "ecc256", "srk0_ecc256.pub"), "rb").read()
-    with patch.object(keys_module.logger, "warning") as warning_mock:
-        with pytest.raises(SPSDKError):
-            PrivateKey.parse(data=pub_data)
+    with open(os.path.join(KEYS_DIR, "ecc256", "srk0_ecc256.pub"), "rb") as f:
+        pub_data = f.read()
+    with patch.object(keys_module.logger, "warning") as warning_mock, pytest.raises(SPSDKError):
+        PrivateKey.parse(data=pub_data)
     warning_mock.assert_not_called()
 
 
 @pytest.mark.skipif(not IS_OSCCA_SUPPORTED, reason="gmssl (SM2) not installed")
 def test_sm2_private_key_create() -> None:
     """Test PrivateKey.create() dispatches to PrivateKeySM2 for SM2 key (lines 555->558)."""
-    open(os.path.join(CRYPTO_DATA_DIR, "openssl_sm2_private.pem"), "rb").read()
+    with open(os.path.join(CRYPTO_DATA_DIR, "openssl_sm2_private.pem"), "rb") as f:
+        f.read()
     sm2_key = PrivateKeySM2.load(os.path.join(CRYPTO_DATA_DIR, "openssl_sm2_private.pem"))
     created = PrivateKey.create(sm2_key.key)
     assert isinstance(created, PrivateKeySM2)

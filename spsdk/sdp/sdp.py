@@ -15,6 +15,8 @@ operations through various interfaces.
 import math
 from typing import Any
 
+from typing_extensions import Self
+
 from spsdk import get_logger
 from spsdk.sdp.commands import CmdPacket, CommandTag, ResponseValue
 from spsdk.sdp.error_codes import StatusCode
@@ -79,7 +81,7 @@ class SDP:
         self._cmd_status = 0
         self._interface = interface
 
-    def __enter__(self) -> "SDP":
+    def __enter__(self) -> Self:
         """Enter the runtime context of the SDP object.
 
         This method is used as part of the context manager protocol to initialize
@@ -90,7 +92,7 @@ class SDP:
         self.open()
         return self
 
-    def __exit__(self, *args: Any, **kwargs: Any) -> None:
+    def __exit__(self, *args: object, **kwargs: Any) -> None:
         """Context manager exit method for SDP interface.
 
         Properly closes the SDP connection and cleans up resources when exiting
@@ -108,7 +110,7 @@ class SDP:
 
         :raises SPSDKConnectionError: If the connection to the device fails.
         """
-        logger.info(f"Connect: {str(self._interface)}")
+        logger.info(f"Connect: {self._interface!s}")
         self._interface.open()
 
     def close(self) -> None:
@@ -133,7 +135,7 @@ class SDP:
             logger.info("RX-CMD: Device Disconnected")
             raise SdpConnectionError("Device Disconnected !")
 
-        logger.trace(f"TX-PACKET: {str(cmd_packet)}")
+        logger.trace(f"TX-PACKET: {cmd_packet!s}")
         self._status_code = StatusCode.SUCCESS
 
         try:
@@ -144,7 +146,7 @@ class SDP:
             logger.info("RX-CMD: Timeout Error")
             raise SdpConnectionError("Timeout Error") from exc
 
-        logger.info(f"RX-PACKET: {str(response)}")
+        logger.info(f"RX-PACKET: {response!s}")
         if response.hab:
             if response.value not in [ResponseValue.UNLOCKED.tag, ResponseValue.LOCKED.tag]:
                 return False
@@ -166,7 +168,7 @@ class SDP:
         """
         try:
             response = self._interface.read()
-            logger.info(f"RX-PACKET: {str(response)}")
+            logger.info(f"RX-PACKET: {response!s}")
         except Exception as exc:
             logger.info("RX-CMD: Timeout Error")
             raise SdpConnectionError("Timeout Error") from exc
@@ -197,7 +199,7 @@ class SDP:
             if not response.hab:
                 data += response.raw_data
             else:
-                logger.trace(f"RX-DATA: {str(response)}")
+                logger.trace(f"RX-DATA: {response!s}")
                 self._hab_status = response.value
                 if response.value == ResponseValue.LOCKED:
                     self._status_code = StatusCode.HAB_IS_LOCKED
@@ -221,7 +223,7 @@ class SDP:
             logger.info("TX-DATA: Device Disconnected")
             raise SdpConnectionError("Device Disconnected !")
 
-        logger.trace(f"TX-PACKET: {str(cmd_packet)}")
+        logger.trace(f"TX-PACKET: {cmd_packet!s}")
         self._status_code = StatusCode.SUCCESS
         ret_val = True
 
@@ -234,14 +236,14 @@ class SDP:
 
             # Read HAB state (locked / unlocked)
             hab_response = self._interface.read()
-            logger.trace(f"RX-DATA: {str(hab_response)}")
+            logger.trace(f"RX-DATA: {hab_response!s}")
             self._hab_status = hab_response.value
             if hab_response.value != ResponseValue.UNLOCKED:
                 self._hab_status = StatusCode.HAB_IS_LOCKED.tag
 
             # Read Command Status
             cmd_response = self._interface.read()
-            logger.trace(f"RX-DATA: {str(cmd_response)}")
+            logger.trace(f"RX-DATA: {cmd_response!s}")
             self._cmd_status = cmd_response.value
             if (
                 cmd_packet.tag == CommandTag.WRITE_DCD

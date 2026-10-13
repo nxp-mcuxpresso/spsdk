@@ -14,6 +14,7 @@ serialization, parsing, validation, and header management across different conta
 import textwrap
 from dataclasses import dataclass
 from struct import calcsize, unpack
+from typing import ClassVar
 
 import colorama
 from typing_extensions import Self
@@ -178,8 +179,8 @@ class HeaderContainer(Container):
     TAG: int | list[int] = 0x00
     VERSION: int | list[int] = 0x00
 
-    DIFF_ATTRIBUTES_VALUES: list[str] = []
-    DIFF_ATTRIBUTES_OBJECTS: list[str] = []
+    DIFF_ATTRIBUTES_VALUES: ClassVar[list[str]] = []
+    DIFF_ATTRIBUTES_OBJECTS: ClassVar[list[str]] = []
 
     def __init__(self, tag: int, length: int, version: int):
         """Initialize container with header values.
@@ -201,15 +202,14 @@ class HeaderContainer(Container):
         :param other: Object to compare with this header container.
         :return: True if objects are equal, False otherwise.
         """
-        if isinstance(other, (HeaderContainer, HeaderContainerInverted)):
-            if (
+        return bool(
+            isinstance(other, (HeaderContainer, HeaderContainerInverted))
+            and (
                 self.tag == other.tag
                 and self.length == other.length
                 and self.version == other.version
-            ):
-                return True
-
-        return False
+            )
+        )
 
     @classmethod
     def format(cls) -> str:
@@ -359,19 +359,20 @@ class HeaderContainer(Container):
         """
         ret = Verifier(f"Container({cls.__name__}) header")
         ret.add_child(cls._check_fixed_input_length(binary))
-        if not ret.has_errors:
-            data_len = len(binary)
-            tag, length, version = cls.parse_head(binary[: HeaderContainer.fixed_length()])
-            ret.add_child(cls._verify_header(tag, length, version))
+        if ret.has_errors:
+            return ret
 
-        if not ret.has_errors:
-            if not ignore_length and data_len < length:
-                ret.add_record(
-                    "Binary length",
-                    VerifierResult.ERROR,
-                    f"Parsing error of {cls.__name__} data!\n"
-                    f"At least {length} bytes expected, got {data_len} bytes!",
-                )
+        data_len = len(binary)
+        tag, length, version = cls.parse_head(binary[: HeaderContainer.fixed_length()])
+        ret.add_child(cls._verify_header(tag, length, version))
+
+        if not ret.has_errors and not ignore_length and data_len < length:
+            ret.add_record(
+                "Binary length",
+                VerifierResult.ERROR,
+                f"Parsing error of {cls.__name__} data!\n"
+                f"At least {length} bytes expected, got {data_len} bytes!",
+            )
         return ret
 
     def diff(self, other: object) -> dict[str, dict]:

@@ -12,7 +12,7 @@ including timestamp handling, version management, and block size definitions.
 
 from collections.abc import Sequence
 from datetime import datetime, timezone
-from typing import Any, TypeAlias
+from typing import TypeAlias
 
 from spsdk.exceptions import SPSDKError
 from spsdk.utils import misc
@@ -217,7 +217,7 @@ class BcdVersion3:
         """
         return self.__class__.__name__ + ": " + self.__str__()
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check equality with another BcdVersion3 object.
 
         Compares major, minor, and service version components to determine if two
@@ -275,4 +275,4 @@ def unpack_timestamp(value: int) -> datetime:
     if value < 0 or value > 0xFFFFFFFFFFFFFFFF:
         raise SPSDKError("Incorrect result of conversion")
     start = int(datetime(2000, 1, 1, 0, 0, 0, 0, tzinfo=timezone.utc).timestamp() * 1000000)
-    return datetime.fromtimestamp((start + value) / 1000000)
+    return datetime.fromtimestamp((start + value) / 1000000, timezone.utc)

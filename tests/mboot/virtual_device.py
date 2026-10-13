@@ -14,7 +14,7 @@ commands used in NXP MCU bootloader testing.
 
 import logging
 from struct import pack
-from typing import Any
+from typing import Any, ClassVar
 
 from typing_extensions import Self
 
@@ -33,6 +33,8 @@ from spsdk.mboot.memories import ExtMemId
 from spsdk.utils.interfaces.commands import CmdResponseBase
 from spsdk.utils.interfaces.device.base import DeviceBase
 from tests.mboot.device_config import DevConfig
+
+logger = logging.getLogger(__name__)
 
 
 ########################################################################################################################
@@ -567,7 +569,7 @@ class VirtualDevice(DeviceBase):
     :cvar CMD: Command mapping dictionary linking CommandTag values to their handler functions.
     """
 
-    CMD = {
+    CMD: ClassVar[dict[CommandTag, Any]] = {
         CommandTag.NO_COMMAND: cmd_no_command,
         CommandTag.FLASH_ERASE_ALL: cmd_flash_erase_all,
         CommandTag.FLASH_ERASE_REGION: cmd_flash_erase_region,
@@ -659,7 +661,7 @@ class VirtualDevice(DeviceBase):
         """
         if self._dev_conf.valid_cmd(self._cmd_tag):
             method = self.CMD[CommandTag.from_tag(self._cmd_tag)]
-            assert method
+            assert method is not None
             cmd, raw_data = method(
                 *self._cmd_params,
                 index=self._response_index,
@@ -672,7 +674,7 @@ class VirtualDevice(DeviceBase):
             cmd, raw_data = pack_response(
                 ResponseTag.GENERIC, StatusCode.UNKNOWN_COMMAND.tag, self._cmd_tag
             )
-        logging.debug(  # pylint: disable=logging-not-lazy
+        logger.debug(  # pylint: disable=logging-not-lazy
             f"RAW-IN [{len(raw_data)}]: " + ", ".join(f"{b:02X}" for b in raw_data)
         )
         return parse_cmd_response(raw_data) if cmd else raw_data  # type: ignore
@@ -685,7 +687,7 @@ class VirtualDevice(DeviceBase):
         :param data: Raw bytes to be written to the device.
         :param timeout: Optional timeout value in seconds for the write operation.
         """
-        logging.debug(  # pylint: disable=logging-not-lazy
+        logger.debug(  # pylint: disable=logging-not-lazy
             f"RAW-OUT[{len(data)}]: " + ", ".join(f"{b:02X}" for b in data)
         )
 

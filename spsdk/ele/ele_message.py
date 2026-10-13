@@ -16,6 +16,7 @@ operations, and system control functions.
 
 import logging
 from struct import pack, unpack
+from typing import ClassVar
 
 from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
 from spsdk.ele.ele_constants import (
@@ -34,7 +35,7 @@ from spsdk.ele.ele_constants import (
     ResponseStatus,
     SocId,
 )
-from spsdk.exceptions import SPSDKParsingError, SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKValueError
 from spsdk.image.ahab.signed_msg import SignedMessage
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import LITTLE_ENDIAN, UINT8, UINT16, UINT32, Endianness, align, align_block
@@ -373,16 +374,15 @@ class EleMessage:
         :return: True if objects are equal EleMessage instances with matching attributes,
                  False otherwise.
         """
-        if isinstance(other, EleMessage):
-            if (
+        return bool(
+            isinstance(other, EleMessage)
+            and (
                 self.TAG == other.TAG
                 and self.command == other.command
                 and self.VERSION == other.VERSION
                 and self.command_words_count == other.command_words_count
-            ):
-                return True
-
-        return False
+            )
+        )
 
     @staticmethod
     def get_msg_crc(payload: bytes) -> bytes:
@@ -1198,7 +1198,22 @@ class EleMessageReadCommonFuse(EleMessage):
 
     CMD = MessageIDs.READ_COMMON_FUSE.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 1
-    RESPONSE_PAYLOAD_WORDS_COUNT = 1
+    # Newer ELE FW revisions return a 4-word response (2 payload words) while
+    # older revisions still return 3 words. Keep exact validation per command.
+    RESPONSE_PAYLOAD_WORDS_COUNT = 2
+    VALID_RESPONSE_WORDS_COUNTS: ClassVar[tuple[int, ...]] = (3, 4)
+    FUSE_READ_STATUS_WORDS_COUNT = 4
+    FUSE_READ_STATUS_DESCRIPTIONS: ClassVar[dict[int, tuple[str, bool]]] = {
+        8: ("Single bit Fuse Check Value error (not corrected)", True),
+        9: ("Multiple bit Fuse Check Value error (not corrected)", True),
+        10: ("Single bit Redundancy error (corrected)", False),
+        11: ("Multiple bit Redundancy error (corrected)", False),
+        12: ("Single bit ECC error (corrected)", False),
+        13: ("Multiple bit ECC error (not corrected)", True),
+        17: ("Fuse not programmed (not an error)", False),
+        18: ("Fuse has no ECB (not an error)", False),
+        19: ("Fuse access error (read protected or non-existent)", True),
+    }
 
     def __init__(self, index: int) -> None:
         """Initialize ELE message for reading common fuse.
@@ -1210,6 +1225,8 @@ class EleMessageReadCommonFuse(EleMessage):
         super().__init__()
         self.index = index
         self.fuse_value = 0
+        self.fuse_read_status = 0
+        self.fuse_read_status_available = False
 
     def export(self) -> bytes:
         """Export message to bytes array representation.
@@ -1227,23 +1244,94 @@ class EleMessageReadCommonFuse(EleMessage):
         """Decode response from target and extract fuse value.
 
         The method parses the response bytes and extracts the fuse value from bytes 8-12
-        using little-endian byte order.
+        using little-endian byte order. For the newer 4-word response, it also extracts
+        the fuse read status from bytes 12-16.
 
         :param response: Response data bytes from the target device.
         :raises SPSDKParsingError: Response parsing detected an error.
+        :raises SPSDKError: Fuse read status contains uncorrected/access error bits.
         """
+        response_words_count = self._get_response_words_count(response)
+        if response_words_count not in self.VALID_RESPONSE_WORDS_COUNTS:
+            valid_sizes = ", ".join(str(size) for size in self.VALID_RESPONSE_WORDS_COUNTS)
+            raise SPSDKParsingError(
+                f"Message SIZE in response is invalid: {hex(response_words_count)}. "
+                f"Expected one of: {valid_sizes}"
+            )
+        if len(response) < response_words_count * 4:
+            raise SPSDKParsingError(
+                f"Message response is too short: {len(response)} bytes, "
+                f"expected at least {response_words_count * 4} bytes"
+            )
+
         super().decode_response(response)
         self.fuse_value = int.from_bytes(response[8:12], Endianness.LITTLE.value)
+        self.fuse_read_status_available = response_words_count == self.FUSE_READ_STATUS_WORDS_COUNT
+        self.fuse_read_status = (
+            int.from_bytes(response[12:16], Endianness.LITTLE.value)
+            if self.fuse_read_status_available
+            else 0
+        )
+
+        if self.fuse_read_status_errors:
+            raise SPSDKError(
+                "READ_COMMON_FUSE returned fuse read status error(s):\n"
+                f"{self.fuse_read_status_info()}"
+            )
+
+    @staticmethod
+    def _get_response_words_count(response: bytes) -> int:
+        """Get response word count from the response header.
+
+        :param response: Response data bytes from the target device.
+        :raises SPSDKParsingError: Response header is too short.
+        :return: Response word count from the response header.
+        """
+        if len(response) < 4:
+            raise SPSDKParsingError("Message response is too short to contain header.")
+        _, response_words_count, _, _ = unpack(EleMessage.HEADER_FORMAT, response[:4])
+        return response_words_count
+
+    @property
+    def fuse_read_status_errors(self) -> list[str]:
+        """Get active fuse read status errors.
+
+        :return: List of active fuse read status descriptions marked as errors.
+        """
+        return [
+            description
+            for bit, (description, is_error) in self.FUSE_READ_STATUS_DESCRIPTIONS.items()
+            if is_error and self.fuse_read_status & (1 << bit)
+        ]
+
+    def fuse_read_status_info(self) -> str:
+        """Get formatted fuse read status information.
+
+        :return: Formatted fuse read status bit descriptions.
+        """
+        lines = [f"Fuse read status: 0x{self.fuse_read_status:08X}"]
+        for bit, (description, _) in sorted(self.FUSE_READ_STATUS_DESCRIPTIONS.items()):
+            if self.fuse_read_status & (1 << bit):
+                lines.append(f"   Bit {bit}: {description}")
+
+        known_status_bits = sum(1 << bit for bit in self.FUSE_READ_STATUS_DESCRIPTIONS)
+        reserved_status_bits = self.fuse_read_status & ~known_status_bits
+        if reserved_status_bits:
+            lines.append(f"   Reserved bits set: 0x{reserved_status_bits:08X}")
+        return "\n".join(lines)
 
     def response_info(self) -> str:
         """Get response information for fuse read operation.
 
-        Formats the fuse ID and its value into a human-readable string representation
-        for display purposes.
+        Formats the fuse ID, value, and optional fuse read status into a human-readable
+        string representation for display purposes.
 
         :return: Formatted string containing fuse ID and value in hexadecimal format.
         """
-        return f"Fuse ID_{self.index}: 0x{self.fuse_value:08X}\n"
+        ret = f"Fuse ID_{self.index}: 0x{self.fuse_value:08X}\n"
+        if self.fuse_read_status_available and self.fuse_read_status:
+            ret += f"{self.fuse_read_status_info()}\n"
+        return ret
 
 
 class EleMessageReadShadowFuse(EleMessageReadCommonFuse):
@@ -1257,6 +1345,8 @@ class EleMessageReadShadowFuse(EleMessageReadCommonFuse):
     """
 
     CMD = MessageIDs.READ_SHADOW_FUSE.tag
+    RESPONSE_PAYLOAD_WORDS_COUNT = 1
+    VALID_RESPONSE_WORDS_COUNTS: ClassVar[tuple[int, ...]] = (3,)
 
     def export(self) -> bytes:
         """Export message to bytes array.
@@ -1286,6 +1376,9 @@ class EleMessageGetInfo(EleMessage):
     CMD = MessageIDs.GET_INFO_REQ.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 3
     MAX_RESPONSE_DATA_SIZE = 256
+    BASIC_INFO_SIZE = 160
+    OEM_PQC_SRKH_OFFSET = 160
+    OEM_PQC_SRKH_SIZE = 64
 
     # Available attributes for retrieval
     AVAILABLE_ATTRIBUTES = (
@@ -1304,6 +1397,7 @@ class EleMessageGetInfo(EleMessage):
         "imem_state",
         "csal_state",
         "trng_state",
+        "oem_srk_revoke",
         "oem_pqc_srkh",
     )
 
@@ -1330,6 +1424,7 @@ class EleMessageGetInfo(EleMessage):
         self.info_imem_state = 0
         self.info_csal_state = 0
         self.info_trng_state = 0
+        self.info_oem_srk_revoke = 0
         self.info_oem_pqc_srkh = b""
 
     def export(self) -> bytes:
@@ -1381,15 +1476,20 @@ class EleMessageGetInfo(EleMessage):
         self.info_sha256_fw = response_data[60:92]
         # Words 23-38: OEM SRKH (512 bits / 64 bytes)
         self.info_oem_srkh = response_data[92:156]
-        # Word 39: Reserved(31-16), IMEM state (23-16), CSAL state(15-8), TRNG state(7-0)
+        # Word 39: Reserved(31-24), OEM SRK revoke/IMEM state (23-16), CSAL state(15-8),
+        # TRNG state(7-0)
         word39 = unpack(LITTLE_ENDIAN + UINT32, response_data[156:160])[0]
         self.info_trng_state = word39 & 0xFF
         self.info_csal_state = (word39 >> 8) & 0xFF
         self.info_imem_state = (word39 >> 16) & 0xFF
-        # Reserved bits 31-16 can be stored if needed
+        self.info_oem_srk_revoke = self.info_imem_state
+        # Parse optional fields from actual valid payload length reported by FW.
+        valid_data_length = min(max(self.info_length, self.BASIC_INFO_SIZE), len(response_data))
         # Words 40-55: OEM PQC SRKH (512 bits / 64 bytes)
-        if len(response_data) > 160:
-            self.info_oem_pqc_srkh = response_data[160:224]
+        if valid_data_length >= self.OEM_PQC_SRKH_OFFSET + self.OEM_PQC_SRKH_SIZE:
+            self.info_oem_pqc_srkh = response_data[
+                self.OEM_PQC_SRKH_OFFSET : self.OEM_PQC_SRKH_OFFSET + self.OEM_PQC_SRKH_SIZE
+            ]
         else:
             self.info_oem_pqc_srkh = b""
 
@@ -1442,6 +1542,7 @@ class EleMessageGetInfo(EleMessage):
                 f"{EleTrngState.get_description(v, str(v))}"
                 f" - 0x{v:02X}"
             ),
+            "oem_srk_revoke": lambda v: f"OEM SRK revoke:      0x{v:02X}",
             "oem_pqc_srkh": self._format_oem_pqc_srkh,
         }
 
@@ -1511,6 +1612,8 @@ class EleMessageGetInfo(EleMessage):
                 f"{EleImemState.get_description(self.info_imem_state, str(self.info_imem_state))}"
                 f" - 0x{self.info_imem_state:02X}\n"
             )
+        elif self.info_version >= 0x04:
+            ret += f"  OEM SRK revoke:     0x{self.info_oem_srk_revoke:02X}\n"
         ret += (
             f"  CSAL state:         "
             f"{EleCsalState.get_description(self.info_csal_state, str(self.info_csal_state))}"
@@ -1522,9 +1625,8 @@ class EleMessageGetInfo(EleMessage):
             f" - 0x{self.info_trng_state:02X}\n"
         )
 
-        if self.info_version >= 0x03:
-            if self.info_oem_pqc_srkh:
-                ret += f"  OEM PQC SRKH:       {self.info_oem_pqc_srkh.hex()}\n"
+        if self.info_version >= 0x03 and self.info_oem_pqc_srkh:
+            ret += f"  OEM PQC SRKH:       {self.info_oem_pqc_srkh.hex()}\n"
 
         return ret
 
@@ -1546,7 +1648,7 @@ class EleMessageDeriveKey(EleMessage):
     COMMAND_PAYLOAD_WORDS_COUNT = 6
     MAX_RESPONSE_DATA_SIZE = 32
     _MAX_COMMAND_DATA_SIZE = 65536
-    SUPPORTED_KEY_SIZES = [16, 32]
+    SUPPORTED_KEY_SIZES: ClassVar[list[int]] = [16, 32]
 
     def __init__(self, key_size: int, context: bytes | None) -> None:
         """Initialize ELE message for key derivation.
@@ -1711,7 +1813,7 @@ class EleMessageGenerateKeyBlob(EleMessage):
 
     KEYBLOB_NAME = "Unknown"
     # List of supported algorithms and theirs key sizes
-    SUPPORTED_ALGORITHMS: dict[SpsdkEnum, list[int]] = {}
+    SUPPORTED_ALGORITHMS: ClassVar[dict[SpsdkEnum, list[int]]] = {}
 
     KEYBLOB_TAG = 0x81
     KEYBLOB_VERSION = 0x00
@@ -1802,7 +1904,7 @@ class EleMessageGenerateKeyBlob(EleMessage):
 
         :return: List of supported algorithm names.
         """
-        return list(x.label for x in cls.SUPPORTED_ALGORITHMS)
+        return [x.label for x in cls.SUPPORTED_ALGORITHMS]
 
     @classmethod
     def get_supported_key_sizes(cls) -> str:
@@ -1852,7 +1954,7 @@ class EleMessageGenerateKeyBlobDek(EleMessageGenerateKeyBlob):
 
     KEYBLOB_NAME = "DEK"
     # List of supported algorithms and theirs key sizes
-    SUPPORTED_ALGORITHMS = {
+    SUPPORTED_ALGORITHMS: ClassVar[dict[SpsdkEnum, list[int]]] = {
         KeyBlobEncryptionAlgorithm.AES_CBC: [128, 192, 256],
         KeyBlobEncryptionAlgorithm.SM4_CBC: [128],
     }
@@ -1895,7 +1997,9 @@ class EleMessageGenerateKeyBLobOtfad(EleMessageGenerateKeyBlob):
 
     KEYBLOB_NAME = "OTFAD"
     # List of supported algorithms and theirs key sizes
-    SUPPORTED_ALGORITHMS = {KeyBlobEncryptionAlgorithm.AES_CTR: [128]}
+    SUPPORTED_ALGORITHMS: ClassVar[dict[SpsdkEnum, list[int]]] = {
+        KeyBlobEncryptionAlgorithm.AES_CTR: [128]
+    }
 
     def __init__(
         self,
@@ -2057,7 +2161,7 @@ class EleMessageGenerateKeyBlobIee(EleMessageGenerateKeyBlob):
 
     KEYBLOB_NAME = "IEE"
     # List of supported algorithms and theirs key sizes
-    SUPPORTED_ALGORITHMS = {
+    SUPPORTED_ALGORITHMS: ClassVar[dict[SpsdkEnum, list[int]]] = {
         KeyBlobEncryptionAlgorithm.AES_XTS: [256, 512],
         KeyBlobEncryptionAlgorithm.AES_CTR: [128, 256],
     }
@@ -2921,7 +3025,7 @@ class EleMessagePublicKeyExport(EleMessage):
     CMD = 0x32  # Public key export command ID
     VERSION = 0x07  # Version for HSM API
     COMMAND_PAYLOAD_WORDS_COUNT = 6  # Key store handle, key ID, addresses, size, CRC
-    RESPONSE_PAYLOAD_WORDS_COUNT = 2  # Response indicator + output size
+    RESPONSE_PAYLOAD_WORDS_COUNT = 1  # Output size
     MAX_RESPONSE_DATA_SIZE = 1024  # Maximum public key size
 
     def __init__(self, key_store_handle: int, key_id: int, output_buffer_size: int = 64) -> None:

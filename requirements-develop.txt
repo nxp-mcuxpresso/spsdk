@@ -15,6 +15,7 @@ mypy<2
 black<27,>=24.3.0
 nxp_codecheck<1,>=0.3.13
 spsdk-pylint-plugins<1,>=0.2.0
+pylint<4.1 # 4.1 (astroid 4.3) reports new abstract-method (W0223) findings
 # pip dependency should be moved to codecheck
 pip>=26.0
 # cli executables

@@ -1158,7 +1158,7 @@ def test_create_auth_tag_rsa(
     auth_scheme = SmrAuthenticationTag.get_auth_scheme(explicit_scheme, rsa2048_key)
     auth_tag = SmrAuthenticationTag.create_auth_tag(data, rsa2048_key, explicit_scheme)
     assert rsa2048_key.get_public_key().verify_signature(
-        auth_tag, data, pss_padding=True if auth_scheme == AuthSchemeEnum.RSASSA_PSS else False
+        auth_tag, data, pss_padding=auth_scheme == AuthSchemeEnum.RSASSA_PSS
     )
 
 
@@ -1177,3 +1177,40 @@ def test_create_auth_tag_ecc(
     assert auth_scheme == AuthSchemeEnum.ECDSA
     auth_tag = SmrAuthenticationTag.create_auth_tag(data, ecc256_key, explicit_scheme)
     assert ecc256_key.get_public_key().verify_signature(auth_tag, data)
+
+
+def test_get_supported_auth_schemes() -> None:
+    """Test that only implemented auth schemes are reported as supported."""
+    supported = SmrAuthenticationTag.get_supported_auth_schemes()
+
+    # These schemes have a tag creation implementation
+    assert AuthSchemeEnum.ECDSA in supported
+    assert AuthSchemeEnum.RSASSA_PKCS1_V15 in supported
+    assert AuthSchemeEnum.RSASSA_PSS in supported
+    assert AuthSchemeEnum.CMAC in supported
+    assert AuthSchemeEnum.HMAC in supported
+    assert AuthSchemeEnum.GMAC in supported
+
+    # XCBC_MAC is a valid SMR entry scheme but SPSDK cannot create its tag
+    assert AuthSchemeEnum.XCBC_MAC not in supported
+
+
+def test_unsupported_auth_scheme_raises() -> None:
+    """Test that requesting an unsupported scheme raises an error."""
+    with pytest.raises(SPSDKError):
+        SmrAuthenticationTag.create_auth_tag(b"data", bytes(16), AuthSchemeEnum.XCBC_MAC)
+
+
+@pytest.mark.parametrize("family_name", ["mcxe31b"])
+def test_smr_template_hash_algorithms_are_database_driven(family_name: str) -> None:
+    """Test the SMR template hash algorithm options are driven by the database."""
+    family = FamilyRevision(family_name)
+    expected = [algo.label for algo in HashAlgo.get_available_hash_algorithms(family)]
+
+    schemas = SmrEntry.get_validation_schemas(family)
+    smr_schema = schemas[1]
+    for scheme in smr_schema["properties"]["authScheme"]["oneOf"]:
+        scheme_name = next(iter(scheme["properties"]))
+        scheme_props = scheme["properties"][scheme_name]["properties"]
+        if "hashAlgo" in scheme_props:
+            assert scheme_props["hashAlgo"]["enum"] == expected

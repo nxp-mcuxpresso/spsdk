@@ -65,7 +65,7 @@ def bca_export(config: Config, output: str) -> None:
     bca_data = bca_image.export()
     write_file(bca_data, output, mode="wb")
 
-    logger.info(f"Created BCA Image:\n{str(bca_image.registers.image_info())}")
+    logger.info(f"Created BCA Image:\n{bca_image.registers.image_info()!s}")
     click.echo(f"Success. (BCA: {get_printable_path(output)} created.)")
 
 

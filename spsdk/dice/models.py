@@ -253,9 +253,7 @@ class DICEResponse:
             raise SPSDKDICEError("DICE Response must be signed before signature verification!")
         if not self.verify_ca_signature(ca_puk=ca_puk):
             return False
-        if not self.verify_die_signature():
-            return False
-        return True
+        return self.verify_die_signature()
 
     def verify_die_signature(self) -> bool:
         """Verify CSR DIE signatures.

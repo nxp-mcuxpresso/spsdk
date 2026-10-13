@@ -20,6 +20,10 @@ info:
         - vid: 0x1FC9
           pid: 0x0129
 features:
+  # ======== Debug probe access section ========
+  debug_probe:
+    protocols: [swd, jtag]
+
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x8380_0000 # comm buffer in DDR

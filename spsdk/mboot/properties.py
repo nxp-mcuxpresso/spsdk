@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 ########################################################################################################################
 # McuBoot helper functions
 ########################################################################################################################
-def size_fmt(value: int | float, kibibyte: bool = True) -> str:
+def size_fmt(value: float, kibibyte: bool = True) -> str:
     """Convert size value into human-readable string format.
 
     Converts a numeric size value (in bytes) into a formatted string with appropriate
@@ -508,7 +508,7 @@ class PropertyValueBase:
     of their property values.
     """
 
-    __slots__ = ("prop", "name", "desc")
+    __slots__ = ("desc", "name", "prop")
 
     def __init__(self, prop: PropertyTag, name: str | None = None, desc: str | None = None) -> None:
         """Initialize the base of property.
@@ -559,8 +559,8 @@ class IntValue(PropertyValueBase):
     """
 
     __slots__ = (
-        "value",
         "_fmt",
+        "value",
     )
 
     def __init__(self, prop: PropertyTag, raw_values: list[int], str_format: str = "dec") -> None:
@@ -600,7 +600,7 @@ class IntListValue(PropertyValueBase):
     and delimiter options for the integer list elements.
     """
 
-    __slots__ = ("value", "_fmt", "delimiter")
+    __slots__ = ("_fmt", "delimiter", "value")
 
     def __init__(
         self,
@@ -642,11 +642,11 @@ class BoolValue(PropertyValueBase):
     """
 
     __slots__ = (
-        "value",
-        "_true_values",
+        "_false_string",
         "_false_values",
         "_true_string",
-        "_false_string",
+        "_true_values",
+        "value",
     )
 
     def __init__(
@@ -710,7 +710,7 @@ class EnumValue(PropertyValueBase):
     of the property value with fallback handling for unknown values.
     """
 
-    __slots__ = ("value", "enum", "_na_msg")
+    __slots__ = ("_na_msg", "enum", "value")
 
     def __init__(
         self,
@@ -1052,13 +1052,13 @@ class ExternalMemoryAttributesValue(PropertyValueBase):
     """
 
     __slots__ = (
-        "value",
+        "block_size",
         "mem_id",
-        "start_address",
-        "total_size",
         "page_size",
         "sector_size",
-        "block_size",
+        "start_address",
+        "total_size",
+        "value",
     )
 
     def __init__(self, prop: PropertyTag, raw_values: list[int], mem_id: int = 0) -> None:
@@ -1155,11 +1155,9 @@ class FuseLockRegister:
         self.msg = ""
         self.bitfields: list[FuseLock] = []
 
-        shift = 0
-        for _ in range(start, 32):
+        for shift, _ in enumerate(range(start, 32)):
             locked = (value >> shift) & 1
             self.bitfields.append(FuseLock(index + shift, bool(locked)))
-            shift += 1
 
     def __str__(self) -> str:
         """Get stringified property representation.
@@ -1239,7 +1237,7 @@ class SHEFlashPartition(PropertyValueBase):
     configuration for CSEc (Cryptographic Services Engine compact) operations.
     """
 
-    __slots__ = ("max_keys", "flash_size")
+    __slots__ = ("flash_size", "max_keys")
 
     def __init__(self, prop: PropertyTag, raw_values: list[int]) -> None:
         """Initialize the SHE Flash Partition property object.
@@ -1286,7 +1284,7 @@ class SHEBootMode(PropertyValueBase):
     serial, parallel, and undefined boot modes.
     """
 
-    __slots__ = ("size", "mode")
+    __slots__ = ("mode", "size")
 
     def __init__(self, prop: PropertyTag, raw_values: list[int]) -> None:
         """Initialize the SHE Boot Mode property object.
@@ -1508,7 +1506,7 @@ def get_property_tag_label(
         try:
             prop = PropertyTag.from_index(mboot_property, family)
             return mboot_property, prop.label
-        except SPSDKKeyError:
+        except SPSDKError:
             logger.warning(f"Unknown property id: {mboot_property} ({hex(mboot_property)})")
             return mboot_property, "Unknown"
 

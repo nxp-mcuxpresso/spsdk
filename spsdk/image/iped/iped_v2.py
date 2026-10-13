@@ -3,26 +3,32 @@
 # Copyright 2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+# cSpell: words BHBBB
 
-"""SPSDK IPED V2 register-image table creator.
+"""SPSDK IPED V2 table creator.
 
-The module serializes IPED XSPI register-image tables used by boot ROM/ELE handoff
-on devices with XSPI IPED hardware. The binary format is a direct dump of XSPI IPED hardware
-registers (16 contexts with IV, START, END, AAD fields plus IPEDCTRL/IPEDCTXCTRL).
-IPED/PRINCE data encryption uses a built-in pure-Python PRINCE cipher implementation.
-When the optional C++ ``iped-offline-tool`` package is installed, it is preferred
-for ~100-150x better performance on large data sets.
+The module serializes family-specific IPED configuration formats used by boot ROM/ELE handoff:
+XSPI register images and tagged ROM/Sentinel configuration blobs. IPED/PRINCE data encryption
+uses SPSDK's built-in PRINCE models, with optional native acceleration for supported legacy
+models.
 """
 
+import inspect
 import logging
 import os
 from copy import deepcopy
+from dataclasses import dataclass
+from functools import lru_cache
 from struct import pack, unpack_from
 from typing import Any
 
+from cryptography.hazmat.primitives import cmac
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from typing_extensions import Self
 
-from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError
+from spsdk.image.ahab.ahab_data import KeyblobLifeCycle
+from spsdk.image.iped.prince import PrinceError, PrinceV2Cipher
 from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
@@ -33,6 +39,258 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
+
+ROM_CONFIG_HEADER_SIZE = 0x10
+ROM_CONFIG_REGION_SIZE = 0x20
+ROM_CONFIG_HEADER_TAG = 0x4C
+ROM_CONFIG_REGION_TAG = 0x43
+
+
+def _uses_rom_config_blob(family: FamilyRevision | None) -> bool:
+    """Return whether the family uses a ROM/Sentinel tagged IPED configuration blob."""
+    if family is None:
+        return False
+    return get_db(family).get_bool(DatabaseManager.IPED, "rom_config_blob", False)
+
+
+def _uses_prince_v2_model(family: FamilyRevision | None) -> bool:
+    """Return whether the family uses the configurable Python PRINCE V2 model."""
+    if family is None:
+        return False
+    return get_db(family).get_bool(DatabaseManager.IPED, "prince_v2_model", False)
+
+
+def _get_default_backend_device(family: FamilyRevision) -> str:
+    """Get the default device identifier for the family-specific encryption model."""
+    configured_device = get_db(family).get_str(DatabaseManager.IPED, "backend_device", "")
+    return configured_device or family.name.lower()
+
+
+def _get_default_backend_instance(family: FamilyRevision) -> str:
+    """Get the default instance identifier for the family-specific encryption model."""
+    return get_db(family).get_str(DatabaseManager.IPED, "backend_instance", "xspi0")
+
+
+def _get_derivation_lifecycles(family: FamilyRevision) -> list[str]:
+    """Get supported derivation lifecycles from device database."""
+    return [
+        str(label).lower()
+        for label in get_db(family).get_list(DatabaseManager.IPED, "derivation_lifecycles", [])
+    ]
+
+
+def _get_derivation_instance_map(family: FamilyRevision) -> dict[str, int]:
+    """Get derivation instance constants from device database."""
+    db_map = get_db(family).get_dict(DatabaseManager.IPED, "derivation_instance_map", {})
+    return {str(name).lower(): value_to_int(value) for name, value in db_map.items()}
+
+
+def _load_word_list(config: Config, key: str, expected_count: int) -> list[int]:
+    """Load a fixed-size list of 32-bit words from configuration.
+
+    :param config: Source configuration.
+    :param key: Configuration key.
+    :param expected_count: Expected number of 32-bit words.
+    :raises SPSDKValueError: If count or value widths are invalid.
+    :return: Parsed list of 32-bit words.
+    """
+    raw_value = config.get(key)
+    if isinstance(raw_value, list):
+        values = config.get_list(key)
+        if len(values) != expected_count:
+            raise SPSDKValueError(f"IPED {key} must contain exactly {expected_count} 32-bit words.")
+        words = [value_to_int(value) for value in values]
+    else:
+        key_bytes = config.load_symmetric_key(
+            key=key, expected_size=expected_count * 4, name=f"IPED {key}"
+        )
+        words = [
+            int.from_bytes(key_bytes[offset : offset + 4], "little")
+            for offset in range(0, len(key_bytes), 4)
+        ]
+    for index, word in enumerate(words):
+        _check_u32(word, f"{key}[{index}]")
+    return words
+
+
+def _words_to_bytes_le(words: list[int]) -> bytes:
+    """Convert list of 32-bit words into little-endian bytes."""
+    return b"".join(word.to_bytes(4, "little") for word in words)
+
+
+def _derive_master_key(
+    product_string: str,
+    cust_mk_sk: bytes,
+    lifecycle: str,
+    supported_lifecycles: list[str],
+    srkh_classic: bytes,
+    srkh_pqc: bytes,
+) -> bytes:
+    """Derive external memory master key from fuse material.
+
+    :param product_string: Product string used by AHAB offline keyblob derivation.
+    :param cust_mk_sk: 256-bit CUST_MK_SK key value.
+    :param lifecycle: Device lifecycle label.
+    :param supported_lifecycles: Supported lifecycle labels from device database.
+    :param srkh_classic: 512-bit classical SRKH bytes.
+    :param srkh_pqc: 512-bit PQC SRKH bytes.
+    :raises SPSDKValueError: If lifecycle is unsupported.
+    :return: 32-byte derived external memory master key.
+    """
+    lifecycle_l = lifecycle.lower()
+    try:
+        lifecycle_state = KeyblobLifeCycle.from_label(lifecycle_l)
+    except SPSDKKeyError as exc:
+        raise SPSDKValueError(
+            f"Unsupported lifecycle '{lifecycle}'. " f"Use one of: {supported_lifecycles}"
+        ) from exc
+    if lifecycle_state.label.lower() not in supported_lifecycles:
+        raise SPSDKValueError(
+            f"Unsupported lifecycle '{lifecycle}'. " f"Use one of: {supported_lifecycles}"
+        )
+
+    derivation_data = b"\x64"
+    derivation_data += product_string.encode("ascii")
+    derivation_data += srkh_classic
+    derivation_data += srkh_pqc
+    derivation_data += lifecycle_state.tag.to_bytes(4, "little")
+    derivation_data += bytes(12)
+    derivation_data += (0x100).to_bytes(4, "big")
+
+    mac = b""
+    for index in range(1, 3):
+        cmac_ctx = cmac.CMAC(algorithms.AES(cust_mk_sk))
+        cmac_ctx.update(derivation_data + index.to_bytes(4, "big"))
+        mac += cmac_ctx.finalize()
+    return mac
+
+
+def _derive_iped_key(
+    master_key: bytes, label: int, instance: str, mode: int, instance_map: dict[str, int]
+) -> bytes:
+    """Derive one IPED key (IV or MEM key).
+
+    :param master_key: 32-byte derived external memory master key.
+    :param label: Derivation label (0x65 for IV key, 0x66 for MEM key).
+    :param instance: XSPI instance (`xspi0` or `xspi1`).
+    :param mode: IPED mode tag value.
+    :param instance_map: Instance constants from device database.
+    :raises SPSDKValueError: If instance is unsupported.
+    :return: 16-byte derived key.
+    """
+    instance_l = instance.lower()
+    if instance_l not in instance_map:
+        raise SPSDKValueError(
+            f"Unsupported instance '{instance}'. " f"Use one of: {sorted(instance_map.keys())}"
+        )
+
+    derivation_data = label.to_bytes(1, "little")
+    derivation_data += instance_map[instance_l].to_bytes(4, "little")
+    derivation_data += mode.to_bytes(1, "little")
+    derivation_data += bytes(18)
+    derivation_data += (0x80).to_bytes(4, "big")
+    derivation_data += (0x01).to_bytes(4, "big")
+
+    cmac_ctx = cmac.CMAC(algorithms.AES(master_key))
+    cmac_ctx.update(derivation_data)
+    return cmac_ctx.finalize()
+
+
+def _generate_iv(iv_key: bytes, fw_version: int, nonce: int) -> list[int]:
+    """Generate 64-bit IV from derived IV key, FW version, and nonce.
+
+    :param iv_key: 16-byte IV derivation key.
+    :param fw_version: 32-bit firmware version.
+    :param nonce: 64-bit nonce value.
+    :return: Two 32-bit IV words in big-endian word order.
+    """
+    plaintext = nonce.to_bytes(8, "little")
+    plaintext += fw_version.to_bytes(4, "little")
+    plaintext += bytes(4)
+    encryptor = Cipher(algorithms.AES(iv_key), modes.ECB()).encryptor()
+    ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+    iv_msb = int.from_bytes(ciphertext[0:4], "big")
+    iv_lsb = int.from_bytes(ciphertext[4:8], "big")
+    return [iv_msb, iv_lsb]
+
+
+@dataclass(frozen=True)
+class _KeyDerivationContext:
+    """Prepared key-derivation context for IPED table generation."""
+
+    device: str
+    instance: str
+    fw_version: int
+    mem_enc_key: bytes
+    master_key: bytes
+    instance_map: dict[str, int]
+
+
+def _load_key_derivation_context(
+    config: Config, family: FamilyRevision
+) -> _KeyDerivationContext | None:
+    """Load optional key derivation settings from configuration.
+
+    Supports both top-level fields and nested ``key_derivation`` object.
+
+    :param config: IPED V2 configuration.
+    :param family: Target family.
+    :raises SPSDKValueError: If derivation settings are partially configured or invalid.
+    :return: Parsed derivation context, or ``None`` when derivation is not requested.
+    """
+    derivation_config = (
+        config.get_config("key_derivation") if "key_derivation" in config else config
+    )
+    required_fields = ("cust_mk_sk", "srkh", "pqc_srkh", "lifecycle")
+    present_fields = [field for field in required_fields if field in derivation_config]
+    if not present_fields:
+        return None
+    missing_fields = [field for field in required_fields if field not in derivation_config]
+    if missing_fields:
+        raise SPSDKValueError(
+            "Key derivation is partially configured. Missing fields: " + ", ".join(missing_fields)
+        )
+
+    default_device = _get_default_backend_device(family)
+    if "device" in config:
+        default_device = config.get_str("device").lower()
+    device = derivation_config.get_str("device", default_device).lower()
+
+    default_instance = _get_default_backend_instance(family)
+    if "instance" in config:
+        default_instance = config.get_str("instance").lower()
+    instance = derivation_config.get_str("instance", default_instance).lower()
+
+    default_fw_version = config.get_int("fw_version", 0)
+    fw_version = derivation_config.get_int("fw_version", default_fw_version)
+    _check_u32(fw_version, "fw_version")
+
+    cust_mk_sk = _words_to_bytes_le(_load_word_list(derivation_config, "cust_mk_sk", 8))
+    srkh = _words_to_bytes_le(_load_word_list(derivation_config, "srkh", 16))
+    pqc_srkh = _words_to_bytes_le(_load_word_list(derivation_config, "pqc_srkh", 16))
+    lifecycle = derivation_config.get_str("lifecycle")
+    supported_lifecycles = _get_derivation_lifecycles(family)
+    if not supported_lifecycles:
+        raise SPSDKValueError("Missing IPED derivation lifecycles in device database.")
+    instance_map = _get_derivation_instance_map(family)
+    if not instance_map:
+        raise SPSDKValueError("Missing IPED derivation instance map in device database.")
+
+    product_string = get_db(family).get_str(DatabaseManager.AHAB, "offline_keyblob_constant")
+    if not product_string:
+        raise SPSDKValueError("Missing offline keyblob product string.")
+    master_key = _derive_master_key(
+        product_string, cust_mk_sk, lifecycle, supported_lifecycles, srkh, pqc_srkh
+    )
+    mem_enc_key = _derive_iped_key(master_key, 0x66, instance, IpedMode.CTR.tag, instance_map)
+    return _KeyDerivationContext(
+        device=device,
+        instance=instance,
+        fw_version=fw_version,
+        mem_enc_key=mem_enc_key,
+        master_key=master_key,
+        instance_map=instance_map,
+    )
 
 
 class IpedMode(SpsdkEnum):
@@ -115,25 +373,77 @@ def _load_iped_key(config: Config) -> bytes | None:
     return config.load_symmetric_key("key", expected_size=16, name="IPED encryption key")
 
 
+@lru_cache(maxsize=1)
 def _load_iped_backend() -> tuple[type[Any], type[Exception]]:
     """Load IPED encryption backend.
 
-    Uses the built-in pure-Python PRINCE implementation as the primary backend.
-    If the optional C++ ``iped-offline-tool`` package is installed, it is preferred
-    for significantly better performance (~100-150x faster).
+    Uses SPSDK pure-Python ``PrinceCipher`` by default and prefers optional native
+    ``spsdk-iped`` when available and verified against reference vectors.
 
     :return: Tuple with backend class and backend exception type.
     """
+    from spsdk.image.iped.prince import PrinceCipher
+
     try:
-        from iped.iped import IPED as OfflineIped
-        from iped.iped import IPEDError as OfflineIpedError
-
-        logger.debug("Using C++ iped-offline-tool backend (high performance)")
-        return OfflineIped, OfflineIpedError
+        from spsdk_iped import (
+            IPED as NativeIped,  # type: ignore[import-not-found] # pylint: disable=import-outside-toplevel,import-error
+        )
+        from spsdk_iped import (
+            IPEDError as NativeIpedError,  # type: ignore[import-not-found] # pylint: disable=import-outside-toplevel,import-error
+        )
     except ImportError:
-        from spsdk.image.iped.prince import PrinceCipher, PrinceError
+        logger.debug("Using SPSDK Python PRINCE backend (native spsdk-iped not installed)")
+        return PrinceCipher, PrinceError
 
-        logger.debug("Using built-in Python PRINCE backend (C++ backend not available)")
+    ctr_plain = (0x0CF16D721BCADFCB).to_bytes(8, "big")
+    ctr_expected = (0xCEDB66D149075929).to_bytes(8, "big")
+    gcm_plain = b"".join(
+        block.to_bytes(8, "big")
+        for block in [
+            0x8A64EC141794252F,
+            0xDE143CBCDE2BBEBC,
+            0xB30C0C6618836731,
+            0xE218FAC40858B510,
+        ]
+    )
+    gcm_expected = b"".join(
+        block.to_bytes(8, "big")
+        for block in [
+            0x6FD8089AD7A48DF6,
+            0xC90DBE898F02BA55,
+            0xF5F7A65030D0693B,
+            0xAD103E34E80016FC,
+        ]
+    )
+    try:
+        ctr_backend = NativeIped(
+            key=0x01,
+            address=0x80003000,
+            iv=0x79EAFAB3A72412A1,
+            double_encrypt=True,
+            use_gcm=False,
+        )
+        if ctr_backend.encrypt(ctr_plain) != ctr_expected:
+            raise SPSDKError("CTR reference vector mismatch")
+
+        gcm_backend = NativeIped(
+            key=0x9DC81A3B3AEF4775297C23529ACCCE35,
+            address=0x80003000,
+            iv=0xC5FFB28BBB2F7876,
+            aad=0x0D11BB1AA784324F,
+            use_gcm=True,
+        )
+        if gcm_backend.encrypt(gcm_plain) != gcm_expected:
+            raise SPSDKError("GCM reference vector mismatch")
+        if int(gcm_backend.tag) != 0xE38CA1F93131FC30:
+            raise SPSDKError("GCM reference tag mismatch")
+
+        logger.debug("Using native C++ PRINCE backend (spsdk-iped)")
+        return NativeIped, NativeIpedError
+    except (AttributeError, TypeError, ValueError, SPSDKError, NativeIpedError) as exc:
+        logger.warning(
+            f"Native spsdk-iped backend verification failed, using Python backend: {exc}"
+        )
         return PrinceCipher, PrinceError
 
 
@@ -146,6 +456,8 @@ class IpedContext:
     FREEZE_MASK = 0x3
     KEY_SIZE = 16
     ENCRYPTION_BLOCK_SIZE = 8
+    GCM_BLOCKS_PER_TAG = 4
+    GCM_CHUNK_SIZE = ENCRYPTION_BLOCK_SIZE * GCM_BLOCKS_PER_TAG
 
     def __init__(
         self,
@@ -154,6 +466,8 @@ class IpedContext:
         mode: IpedMode = IpedMode.CTR,
         iv: list[int] | None = None,
         aad: list[int] | None = None,
+        nonce: int | None = None,
+        region_id: int | None = None,
         freeze: int = 0,
         address_alignment: int = ADDRESS_ALIGNMENT,
         key: bytes | None = None,
@@ -165,6 +479,8 @@ class IpedContext:
         :param mode: IPED context mode.
         :param iv: Two 32-bit IV words.
         :param aad: Two 32-bit AAD words.
+        :param nonce: Optional 64-bit nonce used by ROM key derivation.
+        :param region_id: Optional hardware context identifier.
         :param freeze: Two-bit context freeze value.
         :param address_alignment: Required region address alignment.
         :param key: Optional 128-bit effective IPED encryption key for data blobs.
@@ -175,6 +491,8 @@ class IpedContext:
         self.mode = mode
         self.iv = iv[:] if iv else [0, 0]
         self.aad = aad[:] if aad else [0, 0]
+        self.nonce = value_to_int(nonce) if nonce is not None else None
+        self.region_id = value_to_int(region_id) if region_id is not None else None
         self.freeze = value_to_int(freeze)
         self.address_alignment = value_to_int(address_alignment)
         self.key = key
@@ -202,6 +520,12 @@ class IpedContext:
         if self.freeze & ~self.FREEZE_MASK:
             raise SPSDKValueError(
                 f"IPED context freeze value exceeds mask {hex(self.FREEZE_MASK)}."
+            )
+        if self.nonce is not None and (self.nonce < 0 or self.nonce > 0xFFFFFFFFFFFFFFFF):
+            raise SPSDKValueError("IPED context nonce must fit into 64 bits.")
+        if self.region_id is not None and not 0 <= self.region_id < IpedV2.CONTEXT_COUNT:
+            raise SPSDKValueError(
+                f"IPED region_id must be between 0 and {IpedV2.CONTEXT_COUNT - 1}."
             )
         for field_name, words in (("iv", self.iv), ("aad", self.aad)):
             if len(words) != 2:
@@ -245,38 +569,265 @@ class IpedContext:
         """
         return self.start_address <= start_address and end_address <= self.end_address
 
-    def encrypt_data(self, data: bytes, address: int, double_encryption: bool) -> bytes:
+    def encrypted_data_size(self, data_size: int, interleaved_gcm_tags: bool = False) -> int:
+        """Calculate encrypted output size for the given plaintext size.
+
+        :param data_size: Plaintext size in bytes.
+        :param interleaved_gcm_tags: Include per-chunk GCM tag expansion in output size.
+        :return: Resulting encrypted size in bytes.
+        """
+        if self.mode == IpedMode.GCM and interleaved_gcm_tags:
+            aligned_size = (
+                (data_size + self.GCM_CHUNK_SIZE - 1) // self.GCM_CHUNK_SIZE
+            ) * self.GCM_CHUNK_SIZE
+            tag_count = aligned_size // self.GCM_CHUNK_SIZE
+            return aligned_size + tag_count * self.ENCRYPTION_BLOCK_SIZE
+        return (
+            (data_size + self.ENCRYPTION_BLOCK_SIZE - 1) // self.ENCRYPTION_BLOCK_SIZE
+        ) * self.ENCRYPTION_BLOCK_SIZE
+
+    @staticmethod
+    def _get_backend_capabilities(backend_cls: type[Any]) -> tuple[set[str], bool]:
+        """Inspect backend constructor capabilities.
+
+        :param backend_cls: Backend class to inspect.
+        :return: Tuple of supported parameter names and kwargs support flag.
+        """
+        try:
+            signature = inspect.signature(backend_cls)
+            parameters = signature.parameters
+            params = set(parameters.keys())
+            supports_kwargs = any(
+                parameter.kind == inspect.Parameter.VAR_KEYWORD for parameter in parameters.values()
+            )
+            return params, supports_kwargs
+        except (TypeError, ValueError):
+            return {"key", "address", "iv", "use_gcm", "aad", "double_encrypt"}, False
+
+    @staticmethod
+    def _supports_backend_arg(params: set[str], supports_kwargs: bool, arg_name: str) -> bool:
+        """Return whether backend supports a constructor argument.
+
+        :param params: Explicitly supported constructor parameters.
+        :param supports_kwargs: True if backend accepts arbitrary kwargs.
+        :param arg_name: Argument name to check.
+        :return: True if argument is accepted.
+        """
+        return supports_kwargs or arg_name in params
+
+    @classmethod
+    def _validate_backend_mode_support(
+        cls, mode: IpedMode, params: set[str], supports_kwargs: bool
+    ) -> None:
+        """Validate that backend supports required mode controls.
+
+        :param mode: Requested IPED mode.
+        :param params: Explicitly supported constructor parameters.
+        :param supports_kwargs: True if backend accepts arbitrary kwargs.
+        :raises SPSDKError: If selected mode is not supported.
+        """
+        supports_mode = cls._supports_backend_arg(params, supports_kwargs, "mode")
+        supports_gcm_switch = cls._supports_backend_arg(params, supports_kwargs, "use_gcm")
+
+        if mode == IpedMode.XEX and not supports_mode:
+            raise SPSDKError(
+                "IPED XEX data encryption requires a backend with explicit mode support."
+            )
+        if mode == IpedMode.GCM and not supports_mode and not supports_gcm_switch:
+            raise SPSDKError("IPED GCM data encryption is not supported by the active backend.")
+
+    @classmethod
+    def _build_backend_kwargs(
+        cls,
+        key: bytes,
+        address: int,
+        iv: int,
+        mode: IpedMode,
+        aad: int,
+        double_encryption: bool,
+        device: str | None,
+        instance: str | None,
+        context_nr: int | None,
+        params: set[str],
+        supports_kwargs: bool,
+    ) -> dict[str, Any]:
+        """Build backend constructor keyword arguments.
+
+        :return: Keyword arguments compatible with backend constructor.
+        """
+        kwargs: dict[str, Any] = {
+            "key": key,
+            "address": address,
+            "iv": iv,
+            "double_encrypt": double_encryption,
+        }
+        optional_args: dict[str, Any] = {
+            "mode": mode.tag,
+            "use_gcm": mode == IpedMode.GCM,
+            "aad": aad,
+            "device": device,
+            "instance": instance,
+        }
+        for arg_name, arg_value in optional_args.items():
+            if cls._supports_backend_arg(params, supports_kwargs, arg_name):
+                kwargs[arg_name] = arg_value
+        if context_nr is not None and cls._supports_backend_arg(
+            params, supports_kwargs, "context_nr"
+        ):
+            kwargs["context_nr"] = context_nr
+        return kwargs
+
+    @classmethod
+    def _create_backend(
+        cls,
+        backend_cls: type[Any],
+        key: bytes,
+        address: int,
+        iv: int,
+        mode: IpedMode,
+        aad: int,
+        double_encryption: bool,
+        family: FamilyRevision | None,
+        device: str | None,
+        instance: str | None,
+        context_nr: int | None,
+    ) -> Any:
+        """Create IPED backend instance while handling backend API differences."""
+        if _uses_prince_v2_model(family):
+            if family is None or instance is None or context_nr is None:
+                raise SPSDKError("PRINCE V2 model requires family, instance, and context number.")
+            model = get_db(family).get_dict(DatabaseManager.IPED, ["prince_v2_models", instance])
+            context_keys = model.get("context_keys")
+            context_ivs = model.get("context_ivs")
+            if not isinstance(context_keys, list) or not isinstance(context_ivs, list):
+                raise SPSDKError(
+                    f"Missing PRINCE V2 context keys or IVs for instance '{instance}'."
+                )
+            if context_nr >= len(context_keys) or context_nr >= len(context_ivs):
+                raise SPSDKError(
+                    f"PRINCE V2 context {context_nr} is not available for instance '{instance}'."
+                )
+            effective_key = (
+                int.from_bytes(key, "big") ^ value_to_int(context_keys[context_nr])
+            ).to_bytes(cls.KEY_SIZE, "big")
+            effective_iv = iv ^ value_to_int(context_ivs[context_nr])
+            return PrinceV2Cipher(
+                key=effective_key,
+                address=address,
+                iv=effective_iv,
+                sbox_t0=value_to_int(model["sbox_t0"]),
+                sbox_t1=value_to_int(model["sbox_t1"]),
+                inverse_sbox_t0=value_to_int(model["inverse_sbox_t0"]),
+                inverse_sbox_t1=value_to_int(model["inverse_sbox_t1"]),
+                duplicate_address=bool(model.get("duplicate_address", False)),
+                use_gcm=mode == IpedMode.GCM,
+                aad=aad,
+                double_encrypt=double_encryption,
+            )
+
+        params, supports_kwargs = cls._get_backend_capabilities(backend_cls)
+        cls._validate_backend_mode_support(mode, params, supports_kwargs)
+        kwargs = cls._build_backend_kwargs(
+            key=key,
+            address=address,
+            iv=iv,
+            mode=mode,
+            aad=aad,
+            double_encryption=double_encryption,
+            device=device,
+            instance=instance,
+            context_nr=context_nr,
+            params=params,
+            supports_kwargs=supports_kwargs,
+        )
+        return backend_cls(**kwargs)
+
+    def encrypt_data(
+        self,
+        data: bytes,
+        address: int,
+        double_encryption: bool,
+        family: FamilyRevision | None = None,
+        device: str | None = None,
+        instance: str | None = None,
+        context_nr: int | None = None,
+        interleaved_gcm_tags: bool = False,
+    ) -> bytes:
         """Encrypt data using this IPED context.
 
         :param data: Plain data to encrypt.
         :param address: Absolute address where data will be stored.
         :param double_encryption: Enable double encryption in the IPED backend.
+        :param family: Target family.
+        :param device: Optional encryption model device identifier.
+        :param instance: Optional encryption model instance identifier.
+        :param context_nr: Optional encryption model context index.
+        :param interleaved_gcm_tags: Emit per-chunk GCM tags in output stream.
         :raises SPSDKError: If encryption cannot be performed.
-        :return: Encrypted data aligned to IPED block size.
+        :return: Encrypted data aligned to IPED block size (and GCM-tagged for GCM mode).
         """
-        data = align_block(data, self.ENCRYPTION_BLOCK_SIZE)
         if self.mode == IpedMode.BYPASS:
-            return data
+            return align_block(data, self.ENCRYPTION_BLOCK_SIZE)
         if self.mode == IpedMode.XEX:
-            raise SPSDKError("IPED XEX data encryption is not supported by iped-offline-tool.")
+            raise SPSDKError(
+                "IPED XEX data encryption is not supported by the active PRINCE backend."
+            )
         if self.key is None:
             raise SPSDKError(
                 f"IPED context {hex(self.start_address)}-{hex(self.end_address)} has no key "
                 "configured for data encryption."
             )
 
-        backend_cls, backend_error = _load_iped_backend()
+        backend_cls, backend_error = (
+            (PrinceV2Cipher, PrinceError) if _uses_prince_v2_model(family) else _load_iped_backend()
+        )
+        iv = _words_to_int(self.iv)
+        aad = _words_to_int(self.aad)
         try:
-            backend = backend_cls(
+            if self.mode == IpedMode.GCM and interleaved_gcm_tags:
+                data = align_block(data, self.GCM_CHUNK_SIZE)
+                encrypted = bytearray()
+                chunk_address = address
+                for offset in range(0, len(data), self.GCM_CHUNK_SIZE):
+                    backend = self._create_backend(
+                        backend_cls=backend_cls,
+                        key=self.key,
+                        address=chunk_address,
+                        iv=iv,
+                        mode=self.mode,
+                        aad=aad,
+                        double_encryption=double_encryption,
+                        family=family,
+                        device=device,
+                        instance=instance,
+                        context_nr=context_nr,
+                    )
+                    chunk_data = data[offset : offset + self.GCM_CHUNK_SIZE]
+                    encrypted.extend(bytes(backend.encrypt(data=chunk_data)))
+                    if not hasattr(backend, "tag"):
+                        raise SPSDKError(
+                            "Active IPED backend does not expose GCM authentication tag."
+                        )
+                    encrypted.extend(int(backend.tag).to_bytes(8, "big"))
+                    chunk_address += self.GCM_CHUNK_SIZE + self.ENCRYPTION_BLOCK_SIZE
+                return bytes(encrypted)
+
+            data = align_block(data, self.ENCRYPTION_BLOCK_SIZE)
+            backend = self._create_backend(
+                backend_cls=backend_cls,
                 key=self.key,
                 address=address,
-                iv=_words_to_int(self.iv),
-                double_encrypt=double_encryption,
-                use_gcm=self.mode == IpedMode.GCM,
-                aad=_words_to_int(self.aad),
+                iv=iv,
+                mode=self.mode,
+                aad=aad,
+                double_encryption=double_encryption,
+                family=family,
+                device=device,
+                instance=instance,
+                context_nr=context_nr,
             )
             encrypted = backend.encrypt(data=data)
-        except backend_error as exc:
+        except (backend_error, OSError, TypeError, ValueError) as exc:
             raise SPSDKError(f"IPED data encryption failed: {exc}") from exc
         return bytes(encrypted)
 
@@ -315,22 +866,36 @@ class IpedContext:
         )
 
     @classmethod
-    def load_from_config(cls, config: Config, address_alignment: int) -> Self:
+    def load_from_config(
+        cls,
+        config: Config,
+        address_alignment: int,
+        default_iv: list[int] | None = None,
+        default_key: bytes | None = None,
+    ) -> Self:
         """Load IPED context from configuration.
 
         :param config: Context configuration.
         :param address_alignment: Required region address alignment.
+        :param default_iv: Optional default IV words used when context IV is not configured.
+        :param default_key: Optional default encryption key used when key is not configured.
         :return: IPED context object.
         """
+        key = default_key if default_key is not None else _load_iped_key(config)
+        iv = default_iv[:] if default_iv is not None else _words_from_config(config, "iv")
         return cls(
             start_address=config.get_int("start_address"),
             end_address=config.get_int("end_address"),
             mode=IpedMode.from_label(config.get_str("mode", IpedMode.CTR.label)),
-            iv=_words_from_config(config, "iv"),
+            iv=iv,
             aad=_words_from_config(config, "aad"),
+            nonce=(config.get_int("nonce") if config.get("nonce") is not None else None),
+            region_id=(
+                config.get_int("region_id") if config.get("region_id") is not None else None
+            ),
             freeze=config.get_int("freeze", 0),
             address_alignment=address_alignment,
-            key=_load_iped_key(config),
+            key=key,
         )
 
     def get_config(self) -> dict[str, str | int]:
@@ -338,7 +903,7 @@ class IpedContext:
 
         :return: Configuration dictionary.
         """
-        return {
+        config: dict[str, str | int] = {
             "start_address": hex(self.start_address),
             "end_address": hex(self.end_address),
             "mode": self.mode.label,
@@ -346,14 +911,19 @@ class IpedContext:
             "aad": _words_to_hex(self.aad),
             "freeze": self.freeze,
         }
+        if self.region_id is not None:
+            config["region_id"] = self.region_id
+        if self.nonce is not None:
+            config["nonce"] = hex(self.nonce)
+        return config
 
 
 class IpedV2(FeatureBaseClass):
-    """IPED V2 register-image table creator.
+    """IPED V2 table creator.
 
-    The binary format is a direct dump of XSPI IPED hardware registers: 16 context
-    slots (IV, START|mode, END, AAD, reserved) followed by IPEDCTRL, a reserved word,
-    and two IPEDCTXCTRL words.
+    The family database selects either a direct XSPI register image or a tagged ROM/Sentinel
+    configuration blob. Register images contain 16 context slots followed by IPEDCTRL and
+    IPEDCTXCTRL words; ROM blobs contain a header and one descriptor per protected region.
 
     The boolean control flags map to IPEDCTRL bits. The IP path is the memory controller
     command interface, while the AHB path is the memory-mapped XIP bus. Enable only the
@@ -406,6 +976,9 @@ class IpedV2(FeatureBaseClass):
         keyblob_address: int = 0,
         binaries: BinaryImage | None = None,
         data_alignment: int = IpedContext.ENCRYPTION_BLOCK_SIZE,
+        device: str | None = None,
+        instance: str | None = None,
+        fw_version: int = 0,
     ) -> None:
         """Initialize IPED table.
 
@@ -434,6 +1007,9 @@ class IpedV2(FeatureBaseClass):
         :param keyblob_address: Absolute address where the IPED table/keyblob is placed.
         :param binaries: Optional plain data blobs to encrypt.
         :param data_alignment: Alignment of encrypted data blobs in the output image.
+        :param device: Optional family-specific encryption model device identifier.
+        :param instance: Optional family-specific encryption model instance identifier.
+        :param fw_version: Firmware version serialized into ROM configuration blobs.
         :raises SPSDKValueError: If the table configuration is invalid.
         """
         self.family = family
@@ -474,6 +1050,9 @@ class IpedV2(FeatureBaseClass):
         self.keyblob_address = value_to_int(keyblob_address)
         self.binaries = binaries
         self.data_alignment = value_to_int(data_alignment)
+        self.device = device.lower() if device else None
+        self.instance = instance.lower() if instance else None
+        self.fw_version = value_to_int(fw_version)
         self.validate()
 
     def __repr__(self) -> str:
@@ -563,20 +1142,45 @@ class IpedV2(FeatureBaseClass):
             )
         if len(self.context_control) != 2:
             raise SPSDKValueError("IPED context_control must contain exactly two words.")
-        if self.table_size < self.RAW_TABLE_SIZE:
+        if self.table_size < self.raw_table_size:
             raise SPSDKValueError(
-                f"IPED table_size must be at least {hex(self.RAW_TABLE_SIZE)} bytes."
+                f"IPED table_size must be at least {hex(self.raw_table_size)} bytes."
             )
         _check_u32(self.control_word, "control_word")
+        _check_u32(self.fw_version, "fw_version")
         for index, word in enumerate(self.context_control):
             _check_u32(value_to_int(word), f"context_control[{index}]")
         for context in self.contexts:
             context.validate()
+        if self.rom_config_blob:
+            region_ids = [
+                context.region_id if context.region_id is not None else index
+                for index, context in enumerate(self.contexts)
+            ]
+            if len(set(region_ids)) != len(region_ids):
+                raise SPSDKValueError("IPED ROM configuration region IDs must be unique.")
+            for context in self.contexts:
+                if context.nonce is None:
+                    raise SPSDKValueError("IPED ROM configuration requires nonce in every context.")
+                if context.mode == IpedMode.BYPASS:
+                    raise SPSDKValueError("IPED ROM configuration does not support bypass regions.")
         _check_u32(self.keyblob_address, "keyblob_address")
         if self.data_alignment <= 0:
             raise SPSDKValueError("IPED data_alignment must be positive.")
         if self.binaries is not None:
             self.binaries.validate()
+
+    @property
+    def rom_config_blob(self) -> bool:
+        """Return whether this family uses the ROM/Sentinel tagged configuration format."""
+        return _uses_rom_config_blob(self.family)
+
+    @property
+    def raw_table_size(self) -> int:
+        """Get the IPED table size without padding."""
+        if self.rom_config_blob:
+            return ROM_CONFIG_HEADER_SIZE + len(self.contexts) * ROM_CONFIG_REGION_SIZE
+        return self.RAW_TABLE_SIZE
 
     def _context_control_words(self) -> list[int]:
         """Get IPEDCTXCTRL words with freeze fields applied.
@@ -591,8 +1195,31 @@ class IpedV2(FeatureBaseClass):
     def export(self) -> bytes:
         """Export IPED table into binary form.
 
-        :return: IPED table padded to configured table size.
+        :return: Family-specific IPED table payload.
         """
+        if self.rom_config_blob:
+            data = pack(
+                "<BHBI3xB4x",
+                0,
+                self.raw_table_size,
+                ROM_CONFIG_HEADER_TAG,
+                self.fw_version,
+                len(self.contexts),
+            )
+            for index, context in enumerate(self.contexts):
+                data += pack(
+                    "<BHBBB2xIIQ8x",
+                    0,
+                    ROM_CONFIG_REGION_SIZE,
+                    ROM_CONFIG_REGION_TAG,
+                    context.region_id if context.region_id is not None else index,
+                    context.mode.tag,
+                    context.start_address,
+                    context.end_address,
+                    context.nonce if context.nonce is not None else 0,
+                )
+            return data
+
         data = b""
         for context in self.contexts:
             data += context.export()
@@ -608,25 +1235,31 @@ class IpedV2(FeatureBaseClass):
         """
         return bool(self.control_word & self.IPEDCTRL_CONFIG)
 
-    def _get_context_for_range(self, start_address: int, data_size: int) -> IpedContext:
+    @property
+    def interleaved_gcm_tags(self) -> bool:
+        """Return whether output should interleave GCM authentication tags.
+
+        Some device encryption flows use per-chunk tags in encrypted output data.
+
+        :return: True if GCM encryption should append one tag per 32-byte chunk.
+        """
+        return self.db.get_bool(self.FEATURE, "interleaved_gcm_tags", False)
+
+    def _get_context_for_range(self, start_address: int, data_size: int) -> tuple[int, IpedContext]:
         """Find IPED context that fully contains data range.
 
         :param start_address: Start address of the data.
         :param data_size: Data size in bytes.
         :raises SPSDKError: If no context fully contains the data range.
-        :return: Matching IPED context.
+        :return: Tuple containing matching context index and context.
         """
-        aligned_size = (
-            (data_size + IpedContext.ENCRYPTION_BLOCK_SIZE - 1)
-            // IpedContext.ENCRYPTION_BLOCK_SIZE
-            * IpedContext.ENCRYPTION_BLOCK_SIZE
-        )
-        end_address = start_address + aligned_size
-        for context in self.contexts:
+        for index, context in enumerate(self.contexts):
+            end_address = start_address + context.encrypted_data_size(data_size)
             if context.matches_range(start_address, end_address):
-                return context
+                return index, context
         raise SPSDKError(
-            f"No IPED context covers data range {hex(start_address)}-{hex(end_address)}."
+            f"No IPED context covers data range starting at {hex(start_address)} "
+            f"with plaintext length {hex(data_size)}."
         )
 
     def encrypt_image(self, image: bytes, base_addr: int) -> bytes:
@@ -637,12 +1270,21 @@ class IpedV2(FeatureBaseClass):
         :raises SPSDKError: If no context matches the blob range or backend encryption fails.
         :return: Encrypted data blob.
         """
-        context = self._get_context_for_range(base_addr, len(image))
+        context_index, context = self._get_context_for_range(base_addr, len(image))
         logger.debug(
             f"Encrypting IPED data range {hex(base_addr)}:"
             f"{hex(base_addr + len(image))} using {context.mode.label} context."
         )
-        return context.encrypt_data(image, base_addr, self.double_encryption)
+        return context.encrypt_data(
+            data=image,
+            address=base_addr,
+            double_encryption=self.double_encryption,
+            family=self.family,
+            device=self.device,
+            instance=self.instance,
+            context_nr=context.region_id if context.region_id is not None else context_index,
+            interleaved_gcm_tags=self.interleaved_gcm_tags,
+        )
 
     def export_image(self) -> BinaryImage | None:
         """Export encrypted data blobs.
@@ -692,7 +1334,8 @@ class IpedV2(FeatureBaseClass):
         os.makedirs(output_path, exist_ok=True)
         extension = file_extension(self.output_format)
         output_file = os.path.join(output_path, f"{self.output_name}{extension}")
-        image = BinaryImage(name=self.output_name, binary=self.export(), size=self.table_size)
+        table_data = self.export()
+        image = BinaryImage(name=self.output_name, binary=table_data, size=len(table_data))
         image.save_binary_image(output_file, file_format=self.output_format)
         generated_files = [output_file]
 
@@ -724,6 +1367,63 @@ class IpedV2(FeatureBaseClass):
         """
         if family is None:
             raise SPSDKValueError("Family must be specified to parse IPED table.")
+        if _uses_rom_config_blob(family):
+            if len(data) < ROM_CONFIG_HEADER_SIZE:
+                raise SPSDKValueError("IPED ROM configuration header is incomplete.")
+            version, blob_size, tag, fw_version, region_count = unpack_from("<BHBI3xB4x", data)
+            expected_size = ROM_CONFIG_HEADER_SIZE + region_count * ROM_CONFIG_REGION_SIZE
+            if version != 0 or tag != ROM_CONFIG_HEADER_TAG:
+                raise SPSDKValueError("Invalid IPED ROM configuration header.")
+            if blob_size != expected_size:
+                raise SPSDKValueError(
+                    f"Invalid IPED ROM configuration size {hex(blob_size)}; "
+                    f"expected {hex(expected_size)}."
+                )
+            if len(data) < blob_size:
+                raise SPSDKValueError("IPED ROM configuration data is incomplete.")
+            if any(data[blob_size:]):
+                raise SPSDKValueError("IPED ROM configuration padding must contain only zeros.")
+
+            address_alignment = get_db(family).get_int(cls.FEATURE, "address_alignment")
+            contexts = []
+            for index in range(region_count):
+                offset = ROM_CONFIG_HEADER_SIZE + index * ROM_CONFIG_REGION_SIZE
+                (
+                    region_version,
+                    region_size,
+                    region_tag,
+                    region_id,
+                    mode,
+                    start_address,
+                    end_address,
+                    nonce,
+                ) = unpack_from("<BHBBB2xIIQ8x", data, offset)
+                if (
+                    region_version != 0
+                    or region_size != ROM_CONFIG_REGION_SIZE
+                    or region_tag != ROM_CONFIG_REGION_TAG
+                ):
+                    raise SPSDKValueError(
+                        f"Invalid IPED ROM configuration region at index {index}."
+                    )
+                contexts.append(
+                    IpedContext(
+                        start_address=start_address,
+                        end_address=end_address,
+                        mode=IpedMode.from_tag(mode),
+                        nonce=nonce,
+                        region_id=region_id,
+                        address_alignment=address_alignment,
+                    )
+                )
+            return cls(
+                family=family,
+                contexts=contexts,
+                table_size=len(data),
+                device=_get_default_backend_device(family),
+                fw_version=fw_version,
+            )
+
         if len(data) < cls.RAW_TABLE_SIZE:
             raise SPSDKValueError(
                 f"IPED table must be at least {hex(cls.RAW_TABLE_SIZE)} bytes long."
@@ -780,6 +1480,7 @@ class IpedV2(FeatureBaseClass):
             sch_family["properties"], cls.get_supported_families(), family
         )
         sch_family["main_title"] = f"IPED table Configuration for {family}."
+        base_address = cls.get_default_keyblob_address(family)
         try:
             mem_block = database.device.info.memory_map.get_memory(block_name="flexspi1_ns")
             base_address = mem_block.base_address
@@ -789,6 +1490,9 @@ class IpedV2(FeatureBaseClass):
             schemas["iped"]["properties"]["contexts"]["items"]["properties"]["end_address"][
                 "template_value"
             ] = hex(base_address + 0x2000)
+            schemas["iped"]["properties"]["data_blobs"]["items"]["properties"]["address"][
+                "template_value"
+            ] = hex(base_address + 0x1000)
         except SPSDKError:
             pass
         schemas["iped"]["properties"]["table_size"]["template_value"] = hex(
@@ -797,6 +1501,28 @@ class IpedV2(FeatureBaseClass):
         schemas["iped"]["properties"]["keyblob_address"]["template_value"] = hex(
             cls.get_default_keyblob_address(family)
         )
+        if database.get_bool(cls.FEATURE, "show_derivation_template_fields", False):
+            iped_properties = schemas["iped"]["properties"]
+            for key in (
+                "instance",
+                "fw_version",
+                "lifecycle",
+                "cust_mk_sk",
+                "srkh",
+                "pqc_srkh",
+            ):
+                if key in iped_properties:
+                    iped_properties[key]["skip_in_template"] = False
+            iped_properties["instance"]["template_value"] = "xspi0"
+            iped_properties["fw_version"]["template_value"] = "0x44332211"
+            iped_properties["lifecycle"]["template_value"] = "oem_open"
+            context_properties = iped_properties["contexts"]["items"]["properties"]
+            if "nonce" in context_properties:
+                context_properties["nonce"]["skip_in_template"] = False
+            if database.get_bool(cls.FEATURE, "rom_config_blob", False):
+                context_properties["region_id"]["skip_in_template"] = False
+                for key in ("iv", "key", "aad", "freeze"):
+                    context_properties[key]["skip_in_template"] = True
         return [sch_family, schemas["iped_output"], schemas["iped"]]
 
     @staticmethod
@@ -831,11 +1557,187 @@ class IpedV2(FeatureBaseClass):
         config["output_format"] = self.output_format
         config["keyblob_address"] = hex(self.keyblob_address)
         config["data_alignment"] = self.data_alignment
+        if self.device:
+            config["device"] = self.device
+        if self.instance:
+            config["instance"] = self.instance
+        if self.rom_config_blob:
+            config["fw_version"] = hex(self.fw_version)
         config["table_size"] = hex(self.table_size)
         config["control_word"] = hex(self.control_word)
         config["context_control"] = [hex(word) for word in self.context_control]
         config["contexts"] = [context.get_config() for context in self.contexts]
         return config
+
+    @staticmethod
+    def _get_context_defaults(
+        context_config: Config,
+        derivation: _KeyDerivationContext | None,
+        rom_config_blob: bool,
+    ) -> tuple[list[int] | None, bytes | None]:
+        """Get derived IV and key defaults for one context.
+
+        :param context_config: Context configuration.
+        :param derivation: Prepared key derivation context.
+        :param rom_config_blob: Whether the family uses the ROM configuration format.
+        :raises SPSDKValueError: If a required nonce is missing or invalid.
+        :return: Tuple with optional IV words and encryption key.
+        """
+        if derivation is None:
+            return None, None
+        if not rom_config_blob and context_config.get("iv") is not None:
+            return None, derivation.mem_enc_key
+
+        nonce = context_config.get("nonce")
+        if nonce is None:
+            raise SPSDKValueError("Key derivation requires 'nonce' in every derived context.")
+        nonce_value = value_to_int(nonce)
+        if nonce_value < 0 or nonce_value > 0xFFFFFFFFFFFFFFFF:
+            raise SPSDKValueError("IPED context nonce must fit into 64 bits.")
+        mode = IpedMode.from_label(context_config.get_str("mode", IpedMode.CTR.label))
+        iv_enc_key = _derive_iped_key(
+            derivation.master_key,
+            0x65,
+            derivation.instance,
+            mode.tag,
+            derivation.instance_map,
+        )
+        if context_config.get("key") is not None or context_config.get("iv") is not None:
+            logger.warning(
+                "Ignoring explicit IPED context key/IV because fuse-based derivation "
+                "is configured."
+            )
+        return (
+            _generate_iv(iv_enc_key, derivation.fw_version, nonce_value),
+            derivation.mem_enc_key,
+        )
+
+    @classmethod
+    def _load_contexts(
+        cls,
+        config: Config,
+        address_alignment: int,
+        derivation: _KeyDerivationContext | None,
+        rom_config_blob: bool,
+    ) -> list[IpedContext]:
+        """Load all IPED contexts from configuration.
+
+        :param config: IPED configuration.
+        :param address_alignment: Required context address alignment.
+        :param derivation: Prepared key derivation context.
+        :param rom_config_blob: Whether the family uses the ROM configuration format.
+        :return: Loaded IPED contexts.
+        """
+        contexts = []
+        for context_config in config.get_list_of_configs("contexts"):
+            default_iv, default_key = cls._get_context_defaults(
+                context_config, derivation, rom_config_blob
+            )
+            contexts.append(
+                IpedContext.load_from_config(
+                    config=context_config,
+                    address_alignment=address_alignment,
+                    default_iv=default_iv,
+                    default_key=default_key,
+                )
+            )
+        return contexts
+
+    @staticmethod
+    def _load_binaries(
+        config: Config, encrypted_name: str, keyblob_address: int
+    ) -> BinaryImage | None:
+        """Load optional plain data blobs into a binary image.
+
+        :param config: IPED configuration.
+        :param encrypted_name: Name of the encrypted data image.
+        :param keyblob_address: Absolute IPED keyblob address.
+        :return: Binary image with plain data blobs, if configured.
+        """
+        if "data_blobs" not in config:
+            return None
+        data_blobs = config.get_list_of_configs("data_blobs")
+        if not data_blobs:
+            return None
+
+        start_address = min(data_blob.get_int("address") for data_blob in data_blobs)
+        binaries = BinaryImage(
+            encrypted_name,
+            offset=start_address - keyblob_address,
+            alignment=IpedContext.ENCRYPTION_BLOCK_SIZE,
+        )
+        for data_blob in data_blobs:
+            data_file_name = data_blob.get_input_file_name("data")
+            binary = BinaryImage.load_binary_image(
+                path=data_file_name,
+                name=os.path.basename(data_file_name),
+                alignment=IpedContext.ENCRYPTION_BLOCK_SIZE,
+                size=0,
+            )
+            address = data_blob.get_int("address", binary.absolute_address)
+            expected_offset = address - keyblob_address - binaries.offset
+            if binary.offset != expected_offset:
+                logger.warning(
+                    f"The data blob {data_file_name} has different offset {binary.offset}, "
+                    f"than expected {expected_offset}."
+                )
+                binary.offset = expected_offset
+            binaries.add_image(binary)
+        return binaries
+
+    @staticmethod
+    def _resolve_output_names(config: Config) -> tuple[str, str, str, str]:
+        """Resolve and validate IPED output names.
+
+        :param config: IPED configuration.
+        :raises SPSDKValueError: If explicit output names collide.
+        :return: Table name, encrypted data name, combined image name, and output format.
+        """
+        output_name = config.get_str("output_name", "iped_table")
+        output_format = config.get_str("output_format", "bin")
+        encrypted_name = config.get_str("encrypted_name", "encrypted_blob")
+        image_name = config.get_str("image_name", "iped_image")
+        if image_name == encrypted_name:
+            if "image_name" in config:
+                raise SPSDKValueError("IPED image_name and encrypted_name must be different.")
+            image_name = f"{image_name}_combined"
+            logger.warning(
+                f"IPED combined image name changed to '{image_name}' to avoid overwriting "
+                f"encrypted output '{encrypted_name}'."
+            )
+        if output_name in (encrypted_name, image_name):
+            raise SPSDKValueError(
+                "IPED output_name, encrypted_name, and image_name must be different."
+            )
+        return output_name, encrypted_name, image_name, output_format
+
+    @staticmethod
+    def _resolve_backend_identifiers(
+        config: Config,
+        family: FamilyRevision,
+        derivation: _KeyDerivationContext | None,
+    ) -> tuple[str | None, str | None]:
+        """Resolve device and instance identifiers for the encryption model.
+
+        :param config: IPED configuration.
+        :param family: Target family.
+        :param derivation: Prepared key derivation context.
+        :return: Device and instance identifiers.
+        """
+        if derivation:
+            return derivation.device, derivation.instance
+        uses_prince_v2_model = _uses_prince_v2_model(family)
+        device = (
+            config.get_str("device").lower()
+            if "device" in config
+            else (_get_default_backend_device(family) if uses_prince_v2_model else None)
+        )
+        instance = (
+            config.get_str("instance").lower()
+            if "instance" in config
+            else (_get_default_backend_instance(family) if uses_prince_v2_model else None)
+        )
+        return device, instance
 
     @classmethod
     def load_from_config(cls, config: Config) -> Self:
@@ -847,42 +1749,17 @@ class IpedV2(FeatureBaseClass):
         family = FamilyRevision.load_from_config(config)
         database = get_db(family)
         address_alignment = database.get_int(cls.FEATURE, "address_alignment")
-        contexts = [
-            IpedContext.load_from_config(context_config, address_alignment)
-            for context_config in config.get_list_of_configs("contexts")
-        ]
+        derivation = _load_key_derivation_context(config, family)
+        rom_config_blob = _uses_rom_config_blob(family)
+        output_name, encrypted_name, image_name, output_format = cls._resolve_output_names(config)
+        contexts = cls._load_contexts(config, address_alignment, derivation, rom_config_blob)
         context_control = None
         if config.get("context_control") is not None:
             context_control = [value_to_int(word) for word in config.get_list("context_control")]
 
         keyblob_address = config.get_int("keyblob_address", cls.get_default_keyblob_address(family))
-        binaries = None
-        if "data_blobs" in config:
-            data_blobs = config.get_list_of_configs("data_blobs")
-            if data_blobs:
-                start_address = min([data_blob.get_int("address") for data_blob in data_blobs])
-                binaries = BinaryImage(
-                    config.get_str("encrypted_name", "encrypted_blob"),
-                    offset=start_address - keyblob_address,
-                    alignment=IpedContext.ENCRYPTION_BLOCK_SIZE,
-                )
-                for data_blob in data_blobs:
-                    data_file_name = data_blob.get_input_file_name("data")
-                    binary = BinaryImage.load_binary_image(
-                        path=data_file_name,
-                        name=os.path.basename(data_file_name),
-                        alignment=IpedContext.ENCRYPTION_BLOCK_SIZE,
-                        size=0,
-                    )
-                    address = data_blob.get_int("address", binary.absolute_address)
-                    expected_offset = address - keyblob_address - binaries.offset
-                    if binary.offset != expected_offset:
-                        logger.warning(
-                            f"The data blob {data_file_name} has different offset {binary.offset}, "
-                            f"than expected {expected_offset}."
-                        )
-                        binary.offset = expected_offset
-                    binaries.add_image(binary)
+        binaries = cls._load_binaries(config, encrypted_name, keyblob_address)
+        device, instance = cls._resolve_backend_identifiers(config, family, derivation)
 
         return cls(
             family=family,
@@ -905,13 +1782,16 @@ class IpedV2(FeatureBaseClass):
             ip_xex_write_enable=config.get_bool("ip_xex_write_enable", False),
             ahb_xex_write_enable=config.get_bool("ahb_xex_write_enable", False),
             ahb_xex_read_enable=config.get_bool("ahb_xex_read_enable", False),
-            output_name=config.get_str("output_name", "iped_table"),
-            encrypted_name=config.get_str("encrypted_name", "encrypted_blob"),
-            image_name=config.get_str("image_name", "iped_image"),
-            output_format=config.get_str("output_format", "bin"),
+            output_name=output_name,
+            encrypted_name=encrypted_name,
+            image_name=image_name,
+            output_format=output_format,
             keyblob_address=keyblob_address,
             binaries=binaries,
             data_alignment=config.get_int("data_alignment", IpedContext.ENCRYPTION_BLOCK_SIZE),
+            device=device,
+            instance=instance,
+            fw_version=(derivation.fw_version if derivation else config.get_int("fw_version", 0)),
         )
 
     def verify(self) -> Verifier:
@@ -926,7 +1806,7 @@ class IpedV2(FeatureBaseClass):
         except SPSDKError as exc:
             ret.add_record("Configuration", VerifierResult.ERROR, str(exc))
         ret.add_record_range("Contexts", len(self.contexts), min_val=self.min_contexts)
-        ret.add_record_range("Table size", self.table_size, min_val=self.RAW_TABLE_SIZE)
+        ret.add_record_range("Table size", self.table_size, min_val=self.raw_table_size)
         ret.add_record(
             "Data blobs", VerifierResult.SUCCEEDED, "Configured" if self.binaries else "None"
         )

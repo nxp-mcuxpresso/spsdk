@@ -12,14 +12,16 @@ and error handling scenarios.
 
 import os
 from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 from yaml import safe_load
 
-from spsdk.exceptions import SPSDKError, SPSDKKeyError
+from spsdk.exceptions import SPSDKAttributeError, SPSDKError, SPSDKKeyError
 from spsdk.fuses.fuse_registers import FuseRegister
 from spsdk.fuses.fuses import (
     BlhostFuseOperator,
+    BlhostFuseOperatorLegacy,
     FuseOperator,
     Fuses,
     NxpeleFuseOperator,
@@ -110,7 +112,7 @@ def test_fuses_operator(mock_test_database: Any, data_dir: str) -> None:
     """
     fuses = Fuses(family=FamilyRevision("dev2"))
     with pytest.raises(SPSDKError):
-        fuses.fuse_operator
+        _ = fuses.fuse_operator
     with pytest.raises(SPSDKError):
         from spsdk.mboot.mcuboot import McuBoot
 
@@ -375,3 +377,66 @@ def test_fuses_load_config(mock_test_database: Any, data_dir: str) -> None:
     reg = fuses.registers.find_reg("LOCK0")
     assert reg.get_value() == 0x1
     assert len([f for f in fuses if f.loaded_from_config]) == 3
+
+
+def test_blhost_get_fuse_write_cmd_variants() -> None:
+    """Test BlhostFuseOperator.get_fuse_write_cmd renders verify and lock options."""
+    assert (
+        BlhostFuseOperator.get_fuse_write_cmd(10, 0x20, lock=False, verify=False)
+        == "efuse-program-once 10 0x20 --no-verify"
+    )
+    assert (
+        BlhostFuseOperator.get_fuse_write_cmd(10, 0x20, lock=True, verify=True)
+        == "efuse-program-once 10 0x20 --verify lock"
+    )
+
+
+def test_get_fuse_script_missing_otp_index_raises(data_dir: str) -> None:
+    """Test get_fuse_script raises when a fuse has no OTP index.
+
+    :param data_dir: Directory path containing test data files.
+    :raises SPSDKAttributeError: When the OTP index is not defined for a fuse.
+    """
+    full_config = load_configuration(os.path.join(data_dir, "fuses.json"))
+    fuse_cfg = get_reg_from_cfg(full_config, "BOOT_CFG", "SDHC_CFGF1")
+    fuse = FuseRegister.create_from_spec(fuse_cfg)
+    fuse.otp_index = None
+    for operator in (BlhostFuseOperator, BlhostFuseOperatorLegacy):
+        with pytest.raises(SPSDKAttributeError):
+            operator.get_fuse_script(FamilyRevision("mimxrt798s"), fuses=[fuse])
+
+
+def test_blhost_read_fuse_success_and_failure() -> None:
+    """Test BlhostFuseOperator.read_fuse returns a value or raises on failure.
+
+    :raises SPSDKFuseOperationFailure: When the underlying read returns None.
+    """
+    mboot = MagicMock()
+    mboot.is_opened = False
+    mboot.efuse_read_once.return_value = 0x1234
+    operator = BlhostFuseOperator(mboot)
+    assert operator.read_fuse(5, 32) == 0x1234
+    mboot.open.assert_called_once()
+    mboot.close.assert_called_once()
+
+    mboot.efuse_read_once.return_value = None
+    with pytest.raises(SPSDKFuseOperationFailure):
+        operator.read_fuse(5, 32)
+
+
+def test_blhost_write_fuse_success_failure_and_lock() -> None:
+    """Test BlhostFuseOperator.write_fuse handles lock, success and failure paths.
+
+    :raises SPSDKFuseOperationFailure: When the underlying program returns a falsy value.
+    """
+    mboot = MagicMock()
+    mboot.is_opened = True
+    mboot.efuse_program_once.return_value = True
+    operator = BlhostFuseOperator(mboot)
+    operator.write_fuse(7, 0x55, 32, lock=True)
+    # Lock sets bit 24 in the index.
+    mboot.efuse_program_once.assert_called_once_with(7 | (1 << 24), 0x55)
+
+    mboot.efuse_program_once.return_value = False
+    with pytest.raises(SPSDKFuseOperationFailure):
+        operator.write_fuse(7, 0x55, 32)

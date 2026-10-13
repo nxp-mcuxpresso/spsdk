@@ -12,17 +12,18 @@ components used in secure boot processes.
 """
 
 import copy
+import os
 from typing import Any, cast
 
 import pytest
 
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.ele.ele_message import KeyBlobEncryptionAlgorithm
-from spsdk.exceptions import SPSDKLengthError, SPSDKVerificationError
+from spsdk.exceptions import SPSDKLengthError, SPSDKValueError, SPSDKVerificationError
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer
 from spsdk.image.ahab.ahab_blob import AhabBlob
 from spsdk.image.ahab.ahab_certificate import AhabCertificate
-from spsdk.image.ahab.ahab_container import AHABContainer
+from spsdk.image.ahab.ahab_container import AHABContainer, AHABContainerV2
 from spsdk.image.ahab.ahab_data import (
     AhabChipContainerConfig,
     AHABSignAlgorithm,
@@ -34,8 +35,10 @@ from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.ahab.ahab_sign_block import SignatureBlock
 from spsdk.image.ahab.ahab_signature import ContainerSignature
 from spsdk.image.ahab.ahab_srk import SRKRecord, SRKTable
+from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision
+from spsdk.utils.misc import write_file
 
 
 @pytest.fixture
@@ -265,6 +268,59 @@ def ahab_image(request: Any) -> AHABImage:
     )
 
 
+def test_image_array_entry_load_from_config_with_gap_after_image_file(tmp_path: Any) -> None:
+    """Test ImageArrayEntry loads optional gap_after_image_file payload."""
+    image_path = tmp_path / "image.bin"
+    gap_path = tmp_path / "gap.bin"
+    write_file(bytes.fromhex("AA55AA55"), str(image_path), mode="wb")
+    write_file(bytes.fromhex("11223344"), str(gap_path), mode="wb")
+
+    cfg = Config(
+        {
+            "image_path": str(image_path),
+            "core_id": "cortex-m33",
+            "gap_after_image": 16,
+            "gap_after_image_file": str(gap_path),
+        }
+    )
+    chip_config = AhabChipContainerConfig(
+        base=create_chip_config(family=FamilyRevision("mimxrt1189"))
+    )
+
+    image_entry = ImageArrayEntry.load_from_config(chip_config, cfg)
+
+    assert image_entry.gap_after_image == 16
+    assert os.path.normpath(image_entry.gap_after_image_file or "") == os.path.normpath(
+        str(gap_path)
+    )
+    assert image_entry.gap_after_image_binary == bytes.fromhex("11223344")
+
+
+def test_image_array_entry_load_from_config_rejects_oversized_gap_after_image_file(
+    tmp_path: Any,
+) -> None:
+    """Test ImageArrayEntry rejects gap_after_image_file larger than reserved gap."""
+    image_path = tmp_path / "image.bin"
+    gap_path = tmp_path / "gap.bin"
+    write_file(bytes.fromhex("AA55AA55"), str(image_path), mode="wb")
+    write_file(bytes(range(8)), str(gap_path), mode="wb")
+
+    cfg = Config(
+        {
+            "image_path": str(image_path),
+            "core_id": "cortex-m33",
+            "gap_after_image": 4,
+            "gap_after_image_file": str(gap_path),
+        }
+    )
+    chip_config = AhabChipContainerConfig(
+        base=create_chip_config(family=FamilyRevision("mimxrt1189"))
+    )
+
+    with pytest.raises(SPSDKValueError, match="gap_after_image"):
+        ImageArrayEntry.load_from_config(chip_config, cfg)
+
+
 def test_container_head_compare(container_head: HeaderContainer) -> None:
     """Test HeaderContainer class equality comparison functionality.
 
@@ -385,7 +441,7 @@ def test_container_head_check_head() -> None:
         :cvar VERSION: Version number for test header container format.
         """
 
-        TAG = [0x01, 0x06]
+        TAG: list[int] = [0x01, 0x06]  # noqa: RUF012
         VERSION = 0x03
 
     TestHeadContainer2(tag=0x01, length=0x05, version=0x03).check_container_head(
@@ -486,3 +542,33 @@ def test_mimx943_revisions_use_expected_ahab_v2_algorithms() -> None:
     }
     assert v2_hash_labels.issubset(a0_hash_labels)
     assert v2_hash_labels.issubset(a1_hash_labels)
+
+
+@pytest.mark.parametrize(
+    "target_memory",
+    ["serial_downloader", "standard", "nor", "nand_4k"],
+)
+def test_rt2660_start_recommended_image_address(target_memory: str) -> None:
+    """Test that RT2660 uses the database defined first image offset for all target memories."""
+    ahab = AHABImage(FamilyRevision("mimxrt2662"), target_memory=target_memory)
+    ahab.ahab_containers.append(AHABContainerV2(chip_config=ahab.chip_config))
+
+    assert ahab.start_recommended_image_address == 0x9000
+
+
+@pytest.mark.parametrize(
+    "target_memory,expected_offset",
+    [
+        ("serial_downloader", AHABContainerV2.START_IMAGE_ADDRESS),
+        ("standard", AHABContainerV2.START_IMAGE_ADDRESS),
+        ("nor", AHABContainerV2.START_IMAGE_ADDRESS),
+        ("nand_4k", AHABContainerV2.START_IMAGE_ADDRESS_NAND),
+    ],
+)
+def test_start_recommended_image_address_default(target_memory: str, expected_offset: int) -> None:
+    """Test that families without database record keep the container class default offset."""
+    ahab = AHABImage(FamilyRevision("mimx943"), target_memory=target_memory)
+    ahab.ahab_containers.append(AHABContainerV2(chip_config=ahab.chip_config))
+
+    assert ahab.chip_config.start_image_address == 0
+    assert ahab.start_recommended_image_address == expected_offset

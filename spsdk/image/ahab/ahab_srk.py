@@ -17,7 +17,7 @@ import math
 import os
 from collections.abc import Sequence
 from struct import pack, unpack
-from typing import TypeAlias, TypedDict, TypeVar, cast
+from typing import ClassVar, TypeAlias, TypedDict, TypeVar, cast
 
 from typing_extensions import Self
 
@@ -73,6 +73,23 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
+_EXPECTED_PUBLIC_KEY_TYPE_ATTR = "_expected_public_key_type"
+_EXPECTED_PUBLIC_KEY_TYPES_ATTR = "_expected_public_key_types"
+
+
+def _clone_config_with_expected_public_key_type(
+    config: Config, expected_public_key_type: type[PublicKey] | None
+) -> Config:
+    """Clone config and attach an internal public-key type hint for ambiguous raw key formats."""
+    cloned = Config(config)
+    if expected_public_key_type is not None:
+        setattr(cloned, _EXPECTED_PUBLIC_KEY_TYPE_ATTR, expected_public_key_type)
+    return cloned
+
+
+def _get_expected_public_key_type(config: Config) -> type[PublicKey] | None:
+    """Get an internal public-key type hint from config."""
+    return cast(type[PublicKey] | None, getattr(config, _EXPECTED_PUBLIC_KEY_TYPE_ATTR, None))
 
 
 K = TypeVar("K")
@@ -135,15 +152,19 @@ class SRKRecordBase(HeaderContainerInverted):
 
     TAG = AHABTags.SRK_RECORD.tag
     VERSION = AHABSignAlgorithm.tags()
-    ECC_KEY_TYPE = {EccCurve.SECP521R1: 0x3, EccCurve.SECP384R1: 0x2, EccCurve.SECP256R1: 0x1}
-    RSA_KEY_TYPE = {2048: 0x5, 3072: 0x6, 4096: 0x7}
+    ECC_KEY_TYPE: ClassVar[dict[EccCurve, int]] = {
+        EccCurve.SECP521R1: 0x3,
+        EccCurve.SECP384R1: 0x2,
+        EccCurve.SECP256R1: 0x1,
+    }
+    RSA_KEY_TYPE: ClassVar[dict[int, int]] = {2048: 0x5, 3072: 0x6, 4096: 0x7}
     SM2_KEY_TYPE = 0x8
-    DILITHIUM_KEY_TYPE = {3: 0x9, 5: 0xA}
-    MLDSA_KEY_TYPE = {65: 0x9, 87: 0xA}
-    LMS_KEY_TYPE = {32: 0xB, 24: 0xC}
+    DILITHIUM_KEY_TYPE: ClassVar[dict[int, int]] = {3: 0x9, 5: 0xA}
+    MLDSA_KEY_TYPE: ClassVar[dict[int, int]] = {65: 0x9, 87: 0xA}
+    LMS_KEY_TYPE: ClassVar[dict[int, int]] = {32: 0xB, 24: 0xC}
 
     # Dictionary of key sizes for different algorithms.
-    KEY_SIZES = {
+    KEY_SIZES: ClassVar[dict[int, tuple[int, int]]] = {
         0x1: (32, 32),  # PRIME256V1: (32, 32) bytes for X and Y coordinates
         0x2: (48, 48),  # SEC384R1: (48, 48) bytes for X and Y coordinates
         0x3: (66, 66),  # SEC521R1: (66, 66) bytes for X and Y coordinates
@@ -158,7 +179,13 @@ class SRKRecordBase(HeaderContainerInverted):
     }
 
     FLAGS_CA_MASK = 0x80
-    DIFF_ATTRIBUTES_VALUES = ["version", "hash_algorithm", "key_size", "srk_flags", "crypto_params"]
+    DIFF_ATTRIBUTES_VALUES: ClassVar[list[str]] = [
+        "version",
+        "hash_algorithm",
+        "key_size",
+        "srk_flags",
+        "crypto_params",
+    ]
 
     def __init__(
         self,
@@ -327,17 +354,13 @@ class SRKRecordBase(HeaderContainerInverted):
         :param other: Object to compare with this SRK instance.
         :return: True if objects are equal, False otherwise.
         """
-        if isinstance(other, type(self)):
-            if (
-                super().__eq__(other)  # pylint: disable=too-many-boolean-expressions
-                and self.hash_algorithm == other.hash_algorithm
-                and self.key_size == other.key_size
-                and self.srk_flags == other.srk_flags
-                and self.crypto_params == other.crypto_params
-            ):
-                return True
-
-        return False
+        return isinstance(other, type(self)) and (  # pylint: disable=too-many-boolean-expressions
+            super().__eq__(other)
+            and self.hash_algorithm == other.hash_algorithm
+            and self.key_size == other.key_size
+            and self.srk_flags == other.srk_flags
+            and self.crypto_params == other.crypto_params
+        )
 
     def __len__(self) -> int:
         """Get the total length of the SRK table including crypto parameters.
@@ -777,15 +800,14 @@ class SRKRecord(SRKRecordBase):
         :param other: Object to compare with this AHAB SRK object.
         :return: True if objects are equal, False otherwise.
         """
-        if isinstance(other, type(self)):
-            if (
+        return bool(
+            isinstance(other, type(self))
+            and (
                 super().__eq__(other)
                 and self.crypto_param1 == other.crypto_param1
                 and self.crypto_param2 == other.crypto_param2
-            ):
-                return True
-
-        return False
+            )
+        )
 
     def __str__(self) -> str:
         """Get string representation of the AHAB SRK object.
@@ -944,7 +966,7 @@ class SRKRecordV2(SRKRecordBase):
     """
 
     CRYPTO_PARAMS_LEN = 64
-    DIFF_ATTRIBUTES_OBJECTS = ["srk_data"]
+    DIFF_ATTRIBUTES_OBJECTS: ClassVar[list[str]] = ["srk_data"]
 
     def __init__(
         self,
@@ -992,11 +1014,11 @@ class SRKRecordV2(SRKRecordBase):
         :param other: Object to compare with this AHAB SRK instance.
         :return: True if objects are equal, False otherwise.
         """
-        if isinstance(other, type(self)):
-            if super().__eq__(other) and self.crypto_params == other.crypto_params:
-                return True
-
-        return False
+        return bool(
+            isinstance(other, type(self))
+            and super().__eq__(other)
+            and self.crypto_params == other.crypto_params
+        )
 
     def __str__(self) -> str:
         """Return string representation of the SRK table entry.
@@ -1489,18 +1511,22 @@ class SRKRecordV2(SRKRecordBase):
         ):
             return PublicKeySM2.recreate(self.srk_data.data)
 
-        if IS_DILITHIUM_SUPPORTED:
-            if "DILITHIUM" in sig_enum.labels() and self.signing_algorithm == sig_enum.from_label(
-                "DILITHIUM"
-            ):
-                return PublicKeyDilithium.parse(self.srk_data.data)
+        if (
+            IS_DILITHIUM_SUPPORTED
+            and "DILITHIUM" in sig_enum.labels()
+            and self.signing_algorithm == sig_enum.from_label("DILITHIUM")
+        ):
+            return PublicKeyDilithium.parse(self.srk_data.data)
         if "ML-DSA" in sig_enum.labels() and self.signing_algorithm == sig_enum.from_label(
             "ML-DSA"
         ):
             return PublicKeyMLDSA.parse(self.srk_data.data)
-        if IS_LMS_SUPPORTED:
-            if "LMS" in sig_enum.labels() and self.signing_algorithm == sig_enum.from_label("LMS"):
-                return PublicKeyLMS.parse(self.srk_data.data)
+        if (
+            IS_LMS_SUPPORTED
+            and "LMS" in sig_enum.labels()
+            and self.signing_algorithm == sig_enum.from_label("LMS")
+        ):
+            return PublicKeyLMS.parse(self.srk_data.data)
 
         # Build and raise detailed error message
         raise SPSDKUnsupportedOperation(self._build_unsupported_algorithm_error(sig_enum))
@@ -1571,7 +1597,7 @@ class SRKData(HeaderContainer):
 
     TAG = AHABTags.SRK_DATA.tag
     VERSION = 0
-    DIFF_ATTRIBUTES_VALUES = ["srk_id", "data"]
+    DIFF_ATTRIBUTES_VALUES: ClassVar[list[str]] = ["srk_id", "data"]
 
     def __init__(self, srk_id: int, src_key: PublicKey | None = None, data: bytes = b""):
         """Initialize AHAB SRK Data object.
@@ -1822,7 +1848,7 @@ class SRKTable(HeaderContainerInverted):
     SRK_HASH_ALGORITHM = EnumHashAlgorithm.SHA256
     SRK_RECORDS_CNT = 4
     SRK_RECORD = SRKRecord
-    DIFF_ATTRIBUTES_OBJECTS = ["srk_records"]
+    DIFF_ATTRIBUTES_OBJECTS: ClassVar[list[str]] = ["srk_records"]
 
     def __init__(self, srk_records: Sequence[SRKRecordBase] | None = None) -> None:
         """Initialize SRK Table with optional SRK records.
@@ -1906,11 +1932,11 @@ class SRKTable(HeaderContainerInverted):
         :param other: Object to compare with this SRK Table.
         :return: True if objects are equal, False otherwise.
         """
-        if isinstance(other, SRKTable):
-            if super().__eq__(other) and self.srk_records == other.srk_records:
-                return True
-
-        return False
+        return bool(
+            isinstance(other, SRKTable)
+            and super().__eq__(other)
+            and self.srk_records == other.srk_records
+        )
 
     def __bool__(self) -> bool:
         """Check if SRK table contains any records.
@@ -1931,6 +1957,16 @@ class SRKTable(HeaderContainerInverted):
         for record in self.srk_records:
             records_len += len(record)
         return super().__len__() + records_len
+
+    @property
+    def allow_key_mix(self) -> bool:
+        """Return whether mixed SRK key types are allowed for this table."""
+        if self._chip_config:
+            return self._chip_config.allow_key_mix
+        for record in self.srk_records:
+            if record.chip_config:
+                return record.chip_config.allow_key_mix
+        return False
 
     @property
     def srk_count(self) -> int:
@@ -2001,7 +2037,7 @@ class SRKTable(HeaderContainerInverted):
         Performs comprehensive validation of the SRK (Super Root Key) table including header
         verification, record count validation, individual SRK record verification, and
         consistency checks across all records to ensure they have matching algorithms,
-        key sizes, and flags.
+        key sizes, and flags unless the chip configuration allows mixed key types.
 
         :return: Verifier object containing detailed verification results and any errors found.
         """
@@ -2033,19 +2069,28 @@ class SRKTable(HeaderContainerInverted):
         for i, srk_rec in enumerate(self.srk_records):
             ret.add_child(srk_rec.verify(f"SRK record[{i}]"))
 
-        # Check if all SRK records has same type
-        srk_records_info = [
-            (x.version, x.hash_algorithm.tag, x.key_size, x.length, x.srk_flags)
-            for x in self.srk_records
-        ]
+        srk_records_info = {
+            "Signing algorithm": [record.version for record in self.srk_records],
+            "Hash algorithm": [record.hash_algorithm.tag for record in self.srk_records],
+            "Key Size": [record.key_size for record in self.srk_records],
+            "Length": [record.length for record in self.srk_records],
+            "Flags": [record.srk_flags for record in self.srk_records],
+        }
+        if self.allow_key_mix:
+            ret.add_record(
+                "Key mix",
+                VerifierResult.SUCCEEDED,
+                "Mixed SRK key types are allowed for this device",
+            )
+            del srk_records_info["Signing algorithm"]
+            del srk_records_info["Hash algorithm"]
+            del srk_records_info["Key Size"]
 
-        messages = ["Signing algorithm", "Hash algorithm", "Key Size", "Length", "Flags"]
-        for i in range(len(srk_records_info[0])):
-            values = [record[i] for record in srk_records_info]
+        for message, values in srk_records_info.items():
             if len(set(values)) == 1:
-                ret.add_record(messages[i], VerifierResult.SUCCEEDED, "Is same in all SRK records")
+                ret.add_record(message, VerifierResult.SUCCEEDED, "Is same in all SRK records")
             else:
-                ret.add_record(messages[i], VerifierResult.ERROR, "Is not same in all SRK records")
+                ret.add_record(message, VerifierResult.ERROR, "Is not same in all SRK records")
 
         ret.add_record_bytes("SRK Hash", self.compute_srk_hash())
 
@@ -2082,6 +2127,7 @@ class SRKTable(HeaderContainerInverted):
             srk_records.append(srk_record)
 
         srk_table = cls(srk_records=srk_records)
+        srk_table._chip_config = chip_config
         srk_table.length = container_length
         srk_table._parsed_header = HeaderContainerData.parse(binary=data, inverted=True)
         return srk_table
@@ -2177,7 +2223,9 @@ class SRKTable(HeaderContainerInverted):
         for srk_key in srk_list:
             assert isinstance(srk_key, str)
             srk_key_path = find_file(srk_key, search_paths=config.search_paths)
-            pub_key = extract_public_key(srk_key_path)
+            pub_key = extract_public_key(
+                srk_key_path, expected_public_key_type=_get_expected_public_key_type(config)
+            )
             if hasattr(pub_key, "ca"):
                 flags |= cls.SRK_RECORD.FLAGS_CA_MASK
             srk_table.add_record(
@@ -2257,7 +2305,9 @@ class SRKTableV2(SRKTable):
         for ix, srk_key in enumerate(srk_list):
             assert isinstance(srk_key, str)
             srk_key_path = find_file(srk_key, search_paths=config.search_paths)
-            pub_key = extract_public_key(srk_key_path)
+            pub_key = extract_public_key(
+                srk_key_path, expected_public_key_type=_get_expected_public_key_type(config)
+            )
             if hasattr(pub_key, "ca"):
                 flags |= cls.SRK_RECORD.FLAGS_CA_MASK
             srk_table.add_record(
@@ -2339,7 +2389,7 @@ class SRKTableArray(HeaderContainer):
     VERSION = 0x00
     SRK_TABLE_MIN_CNT = 1
     SRK_TABLE_MAX_CNT = 2
-    DIFF_ATTRIBUTES_OBJECTS = ["_srk_tables"]
+    DIFF_ATTRIBUTES_OBJECTS: ClassVar[list[str]] = ["_srk_tables"]
 
     def __init__(
         self, chip_config: AhabChipContainerConfig, srk_tables: list[SRKTableV2] | None = None
@@ -2394,11 +2444,11 @@ class SRKTableArray(HeaderContainer):
         :param other: Object to compare with this SRK Table array.
         :return: True if objects are equal, False otherwise.
         """
-        if isinstance(other, SRKTableArray):
-            if super().__eq__(other) and self._srk_tables == other._srk_tables:
-                return True
-
-        return False
+        return bool(
+            isinstance(other, SRKTableArray)
+            and super().__eq__(other)
+            and self._srk_tables == other._srk_tables
+        )
 
     def __bool__(self) -> bool:
         """Check if the SRK (Super Root Key) table has any entries.
@@ -2544,7 +2594,7 @@ class SRKTableArray(HeaderContainer):
         srk_tables: list[SRKTableV2] = []
         for i in range(tables_cnt):
             # Check the SRK table header
-            srk_tables.append(SRKTableV2.parse(data[header_offset:]))
+            srk_tables.append(SRKTableV2.parse(data[header_offset:], chip_config.base))
             header_offset += len(srk_tables[i])
             srk_data = SRKData.parse(data[header_offset:])
             srk_record = cast(SRKRecordV2, srk_tables[i].srk_records[srk_data.srk_id])
@@ -2621,14 +2671,35 @@ class SRKTableArray(HeaderContainer):
         :return: SRK Table array object.
         """
         srk_table_array: list[SRKTableV2] = []
+        expected_public_key_types = cast(
+            Sequence[type[PublicKey] | None],
+            getattr(config, _EXPECTED_PUBLIC_KEY_TYPES_ATTR, []),
+        )
 
         # Pass chip_config.base to SRKTableV2
-        srk_table_array.append(SRKTableV2.load_from_config(config, chip_config=chip_config.base))
+        srk_table_array.append(
+            SRKTableV2.load_from_config(
+                _clone_config_with_expected_public_key_type(
+                    config,
+                    expected_public_key_types[0] if len(expected_public_key_types) > 0 else None,
+                ),
+                chip_config=chip_config.base,
+            )
+        )
 
         if "srk_table_#2" in config:
+            sub_config = config.get_config("srk_table_#2")
             srk_table_array.append(
                 SRKTableV2.load_from_config(
-                    config.get_config("srk_table_#2"), chip_config=chip_config.base
+                    _clone_config_with_expected_public_key_type(
+                        sub_config,
+                        (
+                            expected_public_key_types[1]
+                            if len(expected_public_key_types) > 1
+                            else None
+                        ),
+                    ),
+                    chip_config=chip_config.base,
                 )
             )
 

@@ -30,22 +30,19 @@ from spsdk.sbfile.sb31.commands import (
 from spsdk.sbfile.sb31.constants import EnumCmdTag
 
 __all__ = [
-    # commands3
-    "CmdErase",
-    "CmdLoad",
-    "CmdExecute",
     "CmdCall",
-    "CmdProgFuses",
-    "CmdProgIfr",
+    "CmdConfigureMemory",
+    "CmdCopy",
+    "CmdErase",
+    "CmdExecute",
+    "CmdFillMemory",
+    "CmdLoad",
     "CmdLoadCmac",
     "CmdLoadHashLocking",
-    "CmdCopy",
-    "CmdFillMemory",
     "CmdLoadKeyBlob",
-    "CmdConfigureMemory",
+    "CmdProgFuses",
+    "CmdProgIfr",
     "CmdSectionHeader",
-    # constants
     "EnumCmdTag",
-    # methods
     "parse_command",
 ]

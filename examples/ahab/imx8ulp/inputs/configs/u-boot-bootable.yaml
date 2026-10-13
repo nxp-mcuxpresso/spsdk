@@ -20,6 +20,7 @@ revision: latest
 # Description: Specify type of memory used by bootable image description.
 # Possible options: <serial_downloader, flexspi_nor>
 memory_type: serial_downloader
+output: ../../outputs/flash.bin
 
 # ======================================================================================================================
 #                                      == Primary executable Segment definition ==

@@ -13,7 +13,7 @@ DCD (Device Configuration Data) segment functionality in SPSDK.
 
 import pytest
 
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKSyntaxError
 from spsdk.image.hab.commands.cmd_check_data import CheckDataOpsEnum, CmdCheckData
 from spsdk.image.hab.commands.cmd_nop import CmdNop
 from spsdk.image.hab.segments.seg_dcd import SegDCD
@@ -104,11 +104,11 @@ def test_segDCD_clear() -> None:
 def test_segDCD_eq() -> None:
     """Test equality comparison for SegDCD instances.
 
-    Verifies that a SegDCD object is equal to itself, ensuring the equality
+    Verifies that a SegDCD object is equal to an equivalent instance, ensuring the equality
     operator works correctly for DCD segment objects.
     """
     dcd_seg = SegDCD()
-    assert dcd_seg == dcd_seg
+    assert dcd_seg == SegDCD()
 
 
 def test_segDCD_invalid_append_pop() -> None:
@@ -124,3 +124,59 @@ def test_segDCD_invalid_append_pop() -> None:
         dcd_seg.append(cmd=5)  # type: ignore
     with pytest.raises(SPSDKError, match="Can not pop item from dcd segment"):
         dcd_seg.pop(index=100)  # type: ignore
+
+
+def test_segDCD_setitem_invalid() -> None:
+    """Test that assigning a command with an unsupported tag raises SPSDKError."""
+    dcd_seg = SegDCD(0x40)
+    dcd_seg.append(CmdNop())
+
+    class _FakeCmd:
+        tag = 0x99  # not among the supported DCD command tags
+
+    with pytest.raises(SPSDKError, match="Invalid command"):
+        dcd_seg[0] = _FakeCmd()  # type: ignore[assignment]
+
+
+def test_segDCD_str_lists_commands() -> None:
+    """Test that str(SegDCD) renders every contained command on its own line."""
+    dcd_seg = SegDCD(0x40)
+    dcd_seg.append(
+        CmdCheckData(ops=CheckDataOpsEnum.ALL_CLEAR, address=0x307900C4, mask=0x00000001)
+    )
+    dcd_seg.append(CmdNop())
+    text = str(dcd_seg)
+    assert "Check Data" in text
+    assert "No Operation" in text
+    assert text.count("\n") >= 2
+
+
+def test_segDCD_size_space_enabled_disabled() -> None:
+    """Test size and space return 0 when disabled and non-zero when enabled."""
+    disabled = SegDCD(0x40, enabled=False)
+    disabled.append(CmdNop())
+    assert disabled.size == 0
+    assert disabled.space == 0
+
+    enabled = SegDCD(0x40, enabled=True)
+    enabled.append(CmdNop())
+    assert enabled.size > 0
+    assert enabled.space >= enabled.size
+
+
+def test_segDCD_parse_txt_nop_flushes_write() -> None:
+    """Test a Nop after a write command flushes the cached write and appends the Nop."""
+    dcd_seg = SegDCD.parse_txt("WriteValue 4 0x30000000 0x1\nNop\n")
+    assert len(dcd_seg) == 2
+
+
+def test_segDCD_parse_txt_write_not_enough_args() -> None:
+    """Test a write command with too few arguments raises SPSDKError."""
+    with pytest.raises(SPSDKError, match="not enough arguments"):
+        SegDCD.parse_txt("WriteValue 4 0x30000000\n")
+
+
+def test_segDCD_parse_txt_check_not_enough_args() -> None:
+    """Test a check command with too few arguments raises SPSDKSyntaxError."""
+    with pytest.raises(SPSDKSyntaxError, match="not enough arguments"):
+        SegDCD.parse_txt("CheckAllClear 4 0x30000000\n")

@@ -15,6 +15,8 @@ import logging
 from collections.abc import Callable
 from types import TracebackType
 
+from typing_extensions import Self
+
 from spsdk.dk6.commands import (
     GetChipIdResponse,
     MemGetInfoResponse,
@@ -231,7 +233,7 @@ class DK6Device:
         except SPSDKError as exc:
             logger.debug(f"Device cannot be closed: {exc}")
 
-    def __enter__(self) -> "DK6Device":
+    def __enter__(self) -> Self:
         """Enter the runtime context of the DK6Device.
 
         This method is part of the context manager protocol, allowing the DK6Device

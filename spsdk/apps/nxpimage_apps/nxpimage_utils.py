@@ -91,7 +91,7 @@ def binary_create(size: int, pattern: str, output_format: str, output: str) -> N
 
     image.save_binary_image(output, file_format=output_format)
 
-    logger.info(f"Created file:\n{str(image)}")
+    logger.info(f"Created file:\n{image!s}")
     logger.info(f"Created file graph:\n{image.draw()}")
     click.echo(f"Success. (Created binary file: {get_printable_path(output)} )")
 
@@ -144,7 +144,7 @@ def binary_export(
     # Export data and save in the requested format
     image.save_binary_image(output, file_format=output_format)
 
-    logger.info(f"Merged Image:\n{str(image)}")
+    logger.info(f"Merged Image:\n{image!s}")
     logger.info(f"Merged Image:\n{image.draw()}")
     click.echo(
         f"Success. (Merged image: {get_printable_path(output)} created in {output_format} format.)"
@@ -526,7 +526,7 @@ def binary_info(input_file: str, no_color: bool = False, details: bool = False) 
         click.echo(info_output)
 
     except SPSDKError as e:
-        raise SPSDKAppError(f"Failed to load or process binary file: {str(e)}") from e
+        raise SPSDKAppError(f"Failed to load or process binary file: {e!s}") from e
 
 
 def _show_srec_details(input_file: str, no_color: bool) -> None:
@@ -556,8 +556,8 @@ def _show_srec_details(input_file: str, no_color: bool) -> None:
 
         click.echo("")
 
-    except Exception as e:
-        click.echo(f"Error parsing SREC details: {str(e)}\n")
+    except Exception as e:  # noqa: BLE001
+        click.echo(f"Error parsing SREC details: {e!s}\n")
 
 
 def _show_hex_details(input_file: str, no_color: bool) -> None:
@@ -587,8 +587,8 @@ def _show_hex_details(input_file: str, no_color: bool) -> None:
 
         click.echo("")
 
-    except Exception as e:
-        click.echo(f"Error parsing Intel HEX details: {str(e)}\n")
+    except Exception as e:  # noqa: BLE001
+        click.echo(f"Error parsing Intel HEX details: {e!s}\n")
 
 
 def _show_sparse_details(input_file: str, no_color: bool = False) -> None:
@@ -608,8 +608,8 @@ def _show_sparse_details(input_file: str, no_color: bool = False) -> None:
         info = sparse.get_info(no_color=no_color)
         click.echo(info)
 
-    except Exception as e:
-        click.echo(f"Error parsing SPARSE details: {str(e)}\n")
+    except Exception as e:  # noqa: BLE001
+        click.echo(f"Error parsing SPARSE details: {e!s}\n")
 
 
 @nxpimage_utils_group.group(name="convert", cls=CommandsTreeGroup)

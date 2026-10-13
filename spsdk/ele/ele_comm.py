@@ -21,6 +21,7 @@ from abc import abstractmethod
 from types import TracebackType
 
 from spsdk.apps.utils.interface_helper import load_interface_config
+from spsdk.apps.utils.utils import SPSDKAppError
 from spsdk.ele.ele_constants import ResponseStatus
 from spsdk.ele.ele_message import EleMessage
 from spsdk.exceptions import SPSDKError, SPSDKLengthError
@@ -33,6 +34,30 @@ from spsdk.utils.misc import value_to_bytes
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
+
+
+class SPSDKEleMessageError(SPSDKAppError):
+    """EdgeLock Enclave message failure exception.
+
+    This exception is raised when an ELE message returns a non-success response status.
+    It carries the ELE response status, indication and abort codes and uses the returned
+    indication as the application exit code. This way any ELE-based CLI application (for
+    example nxpele or nxpfuses) exits with the specific failure reason through the shared
+    ``catch_spsdk_error`` handler, without any per-application handling.
+    """
+
+    def __init__(self, desc: str, status: int, indication: int, abort_code: int = 0) -> None:
+        """Initialize the ELE message error.
+
+        :param desc: Description of the failure to print on the command line.
+        :param status: ELE response status code.
+        :param indication: ELE response indication code, used as the application exit code.
+        :param abort_code: ELE response abort code, defaults to 0.
+        """
+        super().__init__(desc, error_code=indication)
+        self.status = status
+        self.indication = indication
+        self.abort_code = abort_code
 
 
 class _ChipResetDetected(Exception):
@@ -278,8 +303,8 @@ class EleMessageHandlerMBoot(EleMessageHandler):
         handles command data and response data.
 
         :param msg: EdgeLock Enclave message to be sent
-        :raises SPSDKError: If the device is not an instance of McuBoot, or if ELE communication fails,
-            or if the ELE message fails
+        :raises SPSDKError: If the device is not an instance of McuBoot, or if ELE communication fails
+        :raises SPSDKEleMessageError: If the ELE message returns a non-success response status
         :raises SPSDKLengthError: If invalid read back length is detected for response or response data
         """
         if not isinstance(self.device, McuBoot):
@@ -292,7 +317,11 @@ class EleMessageHandlerMBoot(EleMessageHandler):
             # 1.1. Prepare command data in target memory if required
             if msg.has_command_data:
                 self.device.write_memory(msg.command_data_address, msg.command_data)
+        except SPSDKError as exc:
+            # A failed write means the target does not respond at all - always an error.
+            raise SPSDKError(f"ELE Communication failed with mBoot: {exc!s}") from exc
 
+        try:
             # 2. Execute ELE message on target
             self.device.ele_message(
                 msg.command_address,
@@ -305,7 +334,14 @@ class EleMessageHandlerMBoot(EleMessageHandler):
             # 3. Read back the response
             response = self.device.read_memory(msg.response_address, 4 * msg.response_words_count)
         except SPSDKError as exc:
-            raise SPSDKError(f"ELE Communication failed with mBoot: {str(exc)}") from exc
+            # A missing response is expected when the command resets the chip before answering.
+            if msg.COULD_RESET_CHIP:
+                logger.info(
+                    f"Chip reset detected during ELE command - expected behavior"
+                    f" for {type(msg).__name__}."
+                )
+                return
+            raise SPSDKError(f"ELE Communication failed with mBoot: {exc!s}") from exc
 
         if not response or len(response) < 4 * msg.response_header_words_count:
             raise SPSDKLengthError("ELE Message - Invalid response read-back operation.")
@@ -314,7 +350,12 @@ class EleMessageHandlerMBoot(EleMessageHandler):
 
         # 4.1 Check the response status
         if msg.status != ResponseStatus.ELE_SUCCESS_IND:
-            raise SPSDKError(f"ELE Message failed. \n{msg.info()}")
+            raise SPSDKEleMessageError(
+                f"ELE Message failed. \n{msg.info()}",
+                status=msg.status,
+                indication=msg.indication,
+                abort_code=msg.abort_code,
+            )
 
         # 4.2 Read back the response data from target memory if required
         if msg.has_response_data:
@@ -323,7 +364,7 @@ class EleMessageHandlerMBoot(EleMessageHandler):
                     msg.response_data_address, msg.response_data_size
                 )
             except SPSDKError as exc:
-                raise SPSDKError(f"ELE Communication failed with mBoot: {str(exc)}") from exc
+                raise SPSDKError(f"ELE Communication failed with mBoot: {exc!s}") from exc
 
             if not response_data or len(response_data) != msg.response_data_size:
                 raise SPSDKLengthError("ELE Message - Invalid response data read-back operation.")
@@ -430,15 +471,15 @@ class EleMessageHandlerUBoot(EleMessageHandler):
                 try:
                     msg.abort_code, msg.status, msg.indication = self.extract_error_values(exc_str)
                     ele_error = True
-                except Exception:  # noqa: BLE001
-                    pass
+                except Exception as error_exc:
+                    logger.debug(f"Failed to extract ELE error values: {error_exc}", exc_info=True)
             if msg.COULD_RESET_CHIP and not ele_error:
                 logger.info(
                     f"Chip reset detected during ELE command - expected behavior"
                     f" for {type(msg).__name__}."
                 )
                 raise _ChipResetDetected() from exc
-            raise SPSDKError(f"ELE Communication failed with UBoot: {str(exc)}") from exc
+            raise SPSDKError(f"ELE Communication failed with UBoot: {exc!s}") from exc
 
         return output, ele_error
 
@@ -451,7 +492,7 @@ class EleMessageHandlerUBoot(EleMessageHandler):
         :raises SPSDKError: If no valid response line found.
         """
         lines = output.splitlines()
-        response_lines = [line for line in lines if line.startswith("06") or line.startswith("07")]
+        response_lines = [line for line in lines if line.startswith(("06", "07"))]
         if not response_lines:
             raise SPSDKError("No valid response line found in output")
         stripped_line = re.sub(r"(u-boot)?=> ", "", response_lines[0])
@@ -474,7 +515,7 @@ class EleMessageHandlerUBoot(EleMessageHandler):
                 msg.response_data_address, msg.response_data_size
             )
         except SPSDKError as exc:
-            raise SPSDKError(f"ELE Communication failed with mBoot: {str(exc)}") from exc
+            raise SPSDKError(f"ELE Communication failed with mBoot: {exc!s}") from exc
 
         if not response_data or len(response_data) != msg.response_data_size:
             raise SPSDKLengthError("ELE Message - Invalid response data read-back operation.")
@@ -492,7 +533,8 @@ class EleMessageHandlerUBoot(EleMessageHandler):
         6. Reads back the response data from target memory if required.
 
         :param msg: EdgeLock Enclave message to be sent.
-        :raises SPSDKError: If an invalid response status is detected or if communication fails.
+        :raises SPSDKError: If the device is not a U-Boot instance or if communication fails.
+        :raises SPSDKEleMessageError: If the ELE message returns a non-success response status.
         :raises SPSDKLengthError: If an invalid read back length is detected.
         """
         if not isinstance(self.device, UbootSerial) and not isinstance(self.device, UbootFastboot):
@@ -507,7 +549,12 @@ class EleMessageHandlerUBoot(EleMessageHandler):
             return
 
         if ele_error:
-            raise SPSDKError(f"ELE Message failed. \n{msg.info()}")
+            raise SPSDKEleMessageError(
+                f"ELE Message failed. \n{msg.info()}",
+                status=msg.status,
+                indication=msg.indication,
+                abort_code=msg.abort_code,
+            )
 
         if msg.response_words_count == 0:
             return
@@ -519,7 +566,12 @@ class EleMessageHandlerUBoot(EleMessageHandler):
         msg.decode_response(response)
 
         if msg.status != ResponseStatus.ELE_SUCCESS_IND:
-            raise SPSDKError(f"ELE Message failed. \n{msg.info()}")
+            raise SPSDKEleMessageError(
+                f"ELE Message failed. \n{msg.info()}",
+                status=msg.status,
+                indication=msg.indication,
+                abort_code=msg.abort_code,
+            )
 
         self._read_response_data(msg)
         logger.info(f"Sent message information:\n{msg.info()}")
