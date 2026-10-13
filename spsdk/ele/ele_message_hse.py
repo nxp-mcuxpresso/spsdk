@@ -594,11 +594,12 @@ class EleMessageHseFirmwareUpdate(EleMessageHse):
         self.stream_length = stream_length
 
         # Validate stream_length based on access mode
-        if access_mode in [self.HseAccessMode.START, self.HseAccessMode.UPDATE]:
-            if stream_length < 64 or stream_length % 64 != 0:
-                raise SPSDKValueError(
-                    f"Stream length must be at least 64 bytes and multiple of 64 bytes for {access_mode.label} mode"
-                )
+        if access_mode in [self.HseAccessMode.START, self.HseAccessMode.UPDATE] and (
+            stream_length < 64 or stream_length % 64 != 0
+        ):
+            raise SPSDKValueError(
+                f"Stream length must be at least 64 bytes and multiple of 64 bytes for {access_mode.label} mode"
+            )
 
         # No response data expected for this command
         self.response_data_size = 0
@@ -1184,7 +1185,7 @@ class EleMessageHseImportKey(EleMessageHse):
         :return: String representation of the key import result.
         """
         if self.status == ResponseStatus.ELE_SUCCESS_IND.tag:
-            return f"Key import successful for key handle {str(self.key_handle)}"
+            return f"Key import successful for key handle {self.key_handle!s}"
         return f"Key import failed for key handle {self.key_handle}"
 
 

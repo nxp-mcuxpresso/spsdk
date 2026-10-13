@@ -24,4 +24,3 @@ class CustomPlugin:
 
         This constructor sets up a new instance of the Custom Plugin for testing purposes.
         """
-        pass

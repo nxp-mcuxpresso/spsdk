@@ -106,6 +106,9 @@ class RKHT:
         :return: Hash algorithm enum value.
         """
         if isinstance(key, PublicKeyEcc):
+            if key.key_size == 521:
+                # Special case for P-521 curve, which uses SHA-512
+                return EnumHashAlgorithm.SHA512
             return EnumHashAlgorithm.from_label(f"sha{key.key_size}")
 
         if isinstance(key, PublicKeyRsa):
@@ -126,6 +129,9 @@ class RKHT:
         """
         if not len(self.rkh_list) > 0:
             raise SPSDKError("Unknown hash algorithm name. No root key hashes.")
+        if self.hash_algorithm_size == 521:
+            # Special case for P-521 curve, which uses SHA-512
+            return EnumHashAlgorithm.SHA512
         return EnumHashAlgorithm.from_label(f"sha{self.hash_algorithm_size}")
 
     @property
@@ -228,7 +234,9 @@ class RKHT:
 
         if isinstance(key, Certificate):
             if key.ca:
-                setattr(key, "ca", True)
+                public_key = key.get_public_key()
+                public_key.ca = True  # type: ignore[attr-defined]
+                return public_key
             return key.get_public_key()
 
         if isinstance(key, str):

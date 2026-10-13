@@ -58,8 +58,8 @@ def test_plugin_from_file_path(  # pylint: disable=redefined-outer-name
     pm = PluginsManager()
     pm.load_from_source_file(plugin_path)
     assert len(pm.plugins) == 1
-    assert list(pm.plugins.keys())[0] == "custom_plugin"
-    klass = getattr(sys.modules["custom_plugin"], "CustomPlugin")
+    assert next(iter(pm.plugins.keys())) == "custom_plugin"
+    klass = sys.modules["custom_plugin"].CustomPlugin
     assert klass is not None
     instance = klass()
     assert instance is not None

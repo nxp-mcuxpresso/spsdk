@@ -598,7 +598,6 @@ def test_nxpimage_binary_create_sizes(cli_runner: CliRunner, tmpdir: str) -> Non
         ("distinct_segments.s19", False, ["output.bin"]),
         ("distinct_segments.s19", True, ["output_0x0.bin", "output_0x12.bin", "output_0x24.bin"]),
         ("evkmimxrt595_hello_world_s.s19", True, ["output.bin"]),
-        ("evkmimxrt595_hello_world_s.s19", True, ["output.bin"]),
         ("two_segments_offset.srec", True, ["output_0x100.bin", "output_0x400.bin"]),
     ],
 )

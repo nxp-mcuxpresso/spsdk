@@ -17,6 +17,8 @@ from spsdk import __version__ as spsdk_version
 from spsdk.apps import spsdk_apps
 from tests.cli_runner import CliRunner
 
+logger = logging.getLogger(__name__)
+
 
 def run_version(cli_runner: CliRunner, command_group: Any) -> None:
     """Test version command functionality using CLI runner.
@@ -55,5 +57,5 @@ def test_spsdk_apps_subcommands_help(cli_runner: CliRunner) -> None:
     for name, command in spsdk_apps.main.commands.items():
         if name in ["utils", "get-families"]:
             continue
-        logging.debug(f"running help for {name}")
+        logger.debug(f"running help for {name}")
         run_version(cli_runner, command)

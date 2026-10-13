@@ -241,6 +241,7 @@ a_nxpdice = analyze(["spsdk/apps/nxpdice.py"])
 a_nxpfuses = analyze(["spsdk/apps/nxpfuses.py"])
 a_nxpuuu = analyze(["spsdk/apps/nxpuuu.py"])
 a_nxpshe = analyze(["spsdk/apps/nxpshe.py"])
+a_spsdk_apps = analyze(["spsdk/apps/spsdk_apps.py"])
 
 # merge the dependencies together so the (first) blhost contains all required dependencies from all tools
 MERGE(
@@ -264,6 +265,7 @@ MERGE(
     (a_nxpfuses, "nxpfuses", "nxpfuses"),
     (a_nxpuuu, "nxpuuu", "nxpuuu"),
     (a_nxpshe, "nxpshe", "nxpshe"),
+    (a_spsdk_apps, "spsdk", "spsdk"),
 )
 
 
@@ -289,6 +291,7 @@ exe_nxpdice = executable(a_nxpdice, "nxpdice", "tools/pyinstaller/nxpdice_versio
 exe_nxpfuses = executable(a_nxpfuses, "nxpfuses", "tools/pyinstaller/nxpfuses_version_info.txt")
 exe_nxpuuu = executable(a_nxpuuu, "nxpuuu", "tools/pyinstaller/nxpuuu_version_info.txt")
 exe_nxpshe = executable(a_nxpshe, "nxpshe", "tools/pyinstaller/nxpshe_version_info.txt")
+exe_spsdk = executable(a_spsdk_apps, "spsdk", "tools/pyinstaller/spsdk_version_info.txt")
 # fmt: on
 # collect all bundles together
 coll_apps = COLLECT(
@@ -312,6 +315,7 @@ coll_apps = COLLECT(
     exe_dk6prog,
     exe_lpcprog,
     exe_sdpshost,
+    exe_spsdk,
     a_blhost.binaries,
     a_blhost.zipfiles,
     a_blhost.datas,
@@ -366,6 +370,9 @@ coll_apps = COLLECT(
     a_nxpshe.datas,
     a_nxpshe.binaries,
     a_nxpshe.zipfiles,
+    a_spsdk_apps.datas,
+    a_spsdk_apps.binaries,
+    a_spsdk_apps.zipfiles,
     strip=False,
     upx=True,
     upx_exclude=[],

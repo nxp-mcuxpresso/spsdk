@@ -29,6 +29,7 @@ from spsdk.crypto.keys import (
     IS_OSCCA_SUPPORTED,
     ECDSASignature,
     PrivateKeyEcc,
+    PrivateKeyMLDSA,
     PrivateKeyRsa,
     PrivateKeySM2,
     PublicKeyEcc,
@@ -125,6 +126,18 @@ def test_get_signature(tmpdir: str, key_type: str) -> None:
         assert ECDSASignature.get_encoding(signature) == SPSDKEncoding.NXP
     else:
         assert private_key.signature_size == len(signature)
+
+
+def test_get_signature_mldsa_native_nxp(tmpdir: str) -> None:
+    """Test signature provider loading of native raw ML-DSA private key."""
+    private_key = PrivateKeyMLDSA.generate_key(level=5)
+    private_key_path = os.path.join(tmpdir, "mldsa87_nxp.bin")
+    write_file(private_key.export(encoding=SPSDKEncoding.NXP), private_key_path, mode="wb")
+
+    provider = get_signature_provider_from_config_str(private_key_path, pss_padding=True)
+
+    assert provider.verify_public_key(private_key.get_public_key())
+    assert len(provider.sign(b"")) == private_key.signature_size
 
 
 @pytest.mark.skipif(
@@ -396,9 +409,8 @@ def test_proxy_sp_sign_metadata() -> None:
                 == b"\xbf|\xbe\t\xd7\x1a\x1b\xcc7:\xb9\xa7d\x91\x7fs\nn\xd9Q\xff\xa1\xa79\x9bz\xbd\x8f\x8f\xd7<\xb4"
             )
 
-    with pytest.raises(AttributeError):
-        with patch("requests.sessions.Session.send", my_thing):
-            sp.sign(data=b"\x12\x34\x56")
+    with pytest.raises(AttributeError), patch("requests.sessions.Session.send", my_thing):
+        sp.sign(data=b"\x12\x34\x56")
 
 
 def test_proxy_sp_verify_metadata() -> None:
@@ -438,9 +450,8 @@ def test_proxy_sp_verify_metadata() -> None:
             puk2 = PublicKeyEcc.parse(body["data"].encode("utf-8"))
             assert puk == puk2
 
-    with pytest.raises(AttributeError):
-        with patch("requests.sessions.Session.send", my_thing):
-            sp.verify_public_key(public_key=puk)
+    with pytest.raises(AttributeError), patch("requests.sessions.Session.send", my_thing):
+        sp.verify_public_key(public_key=puk)
 
 
 def test_proxy_sp_signature_length_metadata() -> None:
@@ -469,9 +480,8 @@ def test_proxy_sp_signature_length_metadata() -> None:
         assert "spsdk-version" in request.headers
         assert "spsdk-api-version" in request.headers
 
-    with pytest.raises(AttributeError):
-        with patch("requests.sessions.Session.send", my_thing):
-            sp.signature_length
+    with pytest.raises(AttributeError), patch("requests.sessions.Session.send", my_thing):
+        _ = sp.signature_length
 
 
 def test_proxy_sp_hash_alg_parameter() -> None:

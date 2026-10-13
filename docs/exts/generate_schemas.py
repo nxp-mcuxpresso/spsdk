@@ -18,7 +18,7 @@ import copy
 import json
 import os
 import tempfile
-from typing import Any, Optional, Type
+from typing import Any
 
 from json_schema_for_humans.generate import generate_from_schema
 from json_schema_for_humans.generation_configuration import GenerationConfiguration
@@ -94,7 +94,7 @@ def clean_files() -> None:
     print("Existing schemas files have been removed")
 
 
-def get_docs_families(feature: str, sub_feature: Optional[str] = None) -> list[FamilyRevision]:
+def get_docs_families(feature: str, sub_feature: str | None = None) -> list[FamilyRevision]:
     """Get list of families for documentation purposes.
 
     Retrieves families that support the specified feature and are marked for use in documentation.
@@ -156,9 +156,9 @@ def append_schema(
     parsed: str,
     template: str,
     file: str,
-    note: Optional[str] = None,
+    note: str | None = None,
     title: str = "Title",
-    subtitle: Optional[str] = None,
+    subtitle: str | None = None,
 ) -> None:
     """Append schema and template to the markdown document.
 
@@ -265,7 +265,7 @@ def get_mbi_note(mbi_cls: Any) -> str:
     return note
 
 
-def get_all_mbi_classes() -> list[tuple[Type["MasterBootImage"], FamilyRevision]]:
+def get_all_mbi_classes() -> list[tuple[type["MasterBootImage"], FamilyRevision]]:
     """Get all Master Boot Image supported classes.
 
     This method retrieves all supported MBI classes across all families in the SPSDK,
@@ -352,7 +352,7 @@ def get_sb31_table() -> None:
 
     for command in commands:
         properties = command["properties"]
-        command_name = list(properties.keys())[0]
+        command_name = next(iter(properties.keys()))
         description = properties[command_name]["description"]
         vals = [command_name, description]
 
@@ -423,7 +423,7 @@ def get_sb40_table() -> None:
 
     for command in commands:
         properties = command["properties"]
-        command_name = list(properties.keys())[0]
+        command_name = next(iter(properties.keys()))
         description = properties[command_name]["description"]
         vals = [command_name, description]
 

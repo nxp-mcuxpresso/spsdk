@@ -77,7 +77,7 @@ class MbootUARTInterface(MbootSerialProtocol):
                 interface._ping()
                 interface.close()
                 interfaces.append(interface)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(  # pylint: disable=logging-fstring-interpolation
                     f"UART ping failed on port '{device}' at {baudrate} baud: {e}"
                 )

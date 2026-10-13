@@ -30,6 +30,7 @@ from spsdk.utils.misc import align
 from spsdk.utils.verifier import Verifier
 
 logger = logging.getLogger(__name__)
+UNKNOWN_FAMILY = FamilyRevision("unknown")
 
 
 class SegIVT(PaddingSegment):
@@ -317,7 +318,7 @@ class HabSegmentIvt(HabSegmentBase):
         return ret_cfg
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse IVT segment from binary data.
 
         :param data: Binary data containing the IVT segment to parse.

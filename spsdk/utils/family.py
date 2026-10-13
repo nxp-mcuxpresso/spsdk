@@ -158,7 +158,7 @@ def update_validation_schema_family(
     """
     family_sch = sch["family"]
     # remove duplicate device names as the list may contain devices with multiple revisions
-    device_names = sorted(set(x.name for x in devices))
+    device_names = sorted({x.name for x in devices})
     family_sch["enum"] = device_names + sorted(
         DatabaseManager().quick_info.devices.get_predecessors(device_names).keys()
     )

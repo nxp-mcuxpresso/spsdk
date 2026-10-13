@@ -44,15 +44,24 @@ class GenStatus(list, Enum):  # type: ignore
     human-readable descriptions for each state.
     """
 
-    GENERATION_TRIGGERED = ["GENERATION_TRIGGERED", "Creation of Secure Objects was started"]
-    GENERATION_COMPLETED = ["GENERATION_COMPLETED", "Creation of Secure Objects is completed"]
-    GENERATION_FAILED = ["GENERATION_FAILED", "Creation of Secure Objects failed"]
-    PROVISIONING_COMPLETED = [
+    GENERATION_TRIGGERED = [  # noqa: RUF012
+        "GENERATION_TRIGGERED",
+        "Creation of Secure Objects was started",
+    ]
+    GENERATION_COMPLETED = [  # noqa: RUF012
+        "GENERATION_COMPLETED",
+        "Creation of Secure Objects is completed",
+    ]
+    GENERATION_FAILED = ["GENERATION_FAILED", "Creation of Secure Objects failed"]  # noqa: RUF012
+    PROVISIONING_COMPLETED = [  # noqa: RUF012
         "PROVISIONING_COMPLETED",
         "Secure Objects were provisioned successfully",
     ]
-    PROVISIONING_FAILED = ["PROVISIONING_FAILED", "Provisioning of Secure Objects failed"]
-    GENERATION_ON_CONNECTION = [
+    PROVISIONING_FAILED = [  # noqa: RUF012
+        "PROVISIONING_FAILED",
+        "Provisioning of Secure Objects failed",
+    ]
+    GENERATION_ON_CONNECTION = [  # noqa: RUF012
         "GENERATION_ON_CONNECTION",
         "Secure Object generation is triggered when a device request it",
     ]
@@ -66,18 +75,27 @@ class JobStatus(list, Enum):  # type: ignore
     descriptions for job state tracking.
     """
 
-    JOB_TRIGGERED = ["JOB_TRIGGERED", "Job creation started"]
-    JOB_PROCESSING = ["JOB_PROCESSING", "Job is being processed"]
-    JOB_COMPLETED = ["JOB_COMPLETED", "Job completed successfully"]
-    JOB_COMPLETED_SUCCESSFULLY = ["JOB_COMPLETED_SUCCESSFULLY", "Job completed successfully"]
-    JOB_COMPLETED_PARTIALLY = ["JOB_COMPLETED_PARTIALLY", "Job completed with partial success"]
-    JOB_FAILED = ["JOB_FAILED", "Job failed"]
-    JOB_COMPLETED_NO_PROVISIONINGS = [
+    JOB_TRIGGERED = ["JOB_TRIGGERED", "Job creation started"]  # noqa: RUF012
+    JOB_PROCESSING = ["JOB_PROCESSING", "Job is being processed"]  # noqa: RUF012
+    JOB_COMPLETED = ["JOB_COMPLETED", "Job completed successfully"]  # noqa: RUF012
+    JOB_COMPLETED_SUCCESSFULLY = [  # noqa: RUF012
+        "JOB_COMPLETED_SUCCESSFULLY",
+        "Job completed successfully",
+    ]
+    JOB_COMPLETED_PARTIALLY = [  # noqa: RUF012
+        "JOB_COMPLETED_PARTIALLY",
+        "Job completed with partial success",
+    ]
+    JOB_FAILED = ["JOB_FAILED", "Job failed"]  # noqa: RUF012
+    JOB_COMPLETED_NO_PROVISIONINGS = [  # noqa: RUF012
         "JOB_COMPLETED_NO_PROVISIONINGS",
         "Job completed with no provisionings",
     ]
     # observed in the wild
-    COMPLETED_SUCCESSFULLY = ["COMPLETED_SUCCESSFULLY", "Provisioning completed successfully"]
+    COMPLETED_SUCCESSFULLY = [  # noqa: RUF012
+        "COMPLETED_SUCCESSFULLY",
+        "Provisioning completed successfully",
+    ]
 
 
 OK_STATES = [
@@ -1099,16 +1117,13 @@ def _get_ignored_otp_indexes(family: FamilyRevision) -> list[int]:
     :param family: Family and revision specification for database lookup.
     :return: List of OTP indexes to be ignored.
     """
-    result: list[int] = []
     db = get_db(family=family)
     ignored_otp = db.get_list(DatabaseManager.EL2GO_TP, "ignored_otp", default=[])
     ignored_otp_ranges = db.get_list(DatabaseManager.EL2GO_TP, "ignored_otp_ranges", default=[])
-    for idx in ignored_otp:
-        result.append(idx)
+    result = list(ignored_otp)
     # get pairwise elements from list (0, 1), (2, 3)...
     for start, end in zip(ignored_otp_ranges[0::2], ignored_otp_ranges[1::2]):
-        for idx in range(start, end + 1):
-            result.append(idx)
+        result.extend(range(start, end + 1))
     return result
 
 
@@ -1124,7 +1139,6 @@ def _should_ignore_register(reg: FuseRegister, ignore_list: list[int]) -> bool:
     """
     if reg.otp_index and reg.otp_index in ignore_list:
         return True
-    if reg.has_group_registers():
-        if any(sub.otp_index in ignore_list for sub in reg.sub_regs):
-            return True
-    return False
+    return bool(
+        reg.has_group_registers() and any(sub.otp_index in ignore_list for sub in reg.sub_regs)
+    )

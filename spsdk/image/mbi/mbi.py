@@ -17,7 +17,7 @@ import logging
 import re
 from collections.abc import Callable
 from inspect import isclass
-from typing import Any
+from typing import Any, ClassVar
 
 from typing_extensions import Self
 
@@ -37,6 +37,7 @@ from spsdk.utils.misc import align, get_key_by_val, write_file
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
+UNKNOWN_FAMILY = FamilyRevision("Unknown")
 
 DEBUG_TRACE_ENABLE = False
 
@@ -100,7 +101,7 @@ class MasterBootImage(FeatureBaseClass):
     finalize: Callable[[BinaryImage, bool], BinaryImage]
     disassemble_image: Callable[[bytes], None]
 
-    IMAGE_TYPES = [
+    IMAGE_TYPES: ClassVar[list[str]] = [
         "xip",
         "load-to-ram",
         "Internal flash (XIP)",
@@ -128,9 +129,8 @@ class MasterBootImage(FeatureBaseClass):
 
         images: dict[str, dict[str, str]] = db.get_dict(DatabaseManager.MBI, "images")
 
-        for target in images.keys():
-            for authentication in images[target]:
-                cls_name = images[target][authentication]
+        for target, authentications in images.items():
+            for authentication, cls_name in authentications.items():
                 template_key = f"{family.name}_{target}_{authentication}"
 
                 ret[template_key] = (
@@ -221,7 +221,7 @@ class MasterBootImage(FeatureBaseClass):
             "IMAGE_AUTHENTICATIONS": authentication,
         }
         # Get all objects to be mixed together
-        base_classes: list[type[MasterBootImage] | type[mbi_mixin.Mbi_Mixin]] = [MasterBootImage]
+        base_classes: list[type[MasterBootImage | mbi_mixin.Mbi_Mixin]] = [MasterBootImage]
         mixins = mbi_mixin.get_all_mbi_mixins()
         for mixin in class_descr["mixins"]:
             mixin_cls: type[mbi_mixin.Mbi_Mixin] = mixins[mixin]
@@ -505,7 +505,7 @@ class MasterBootImage(FeatureBaseClass):
     def parse(
         cls,
         data: bytes,
-        family: FamilyRevision = FamilyRevision("Unknown"),
+        family: FamilyRevision = UNKNOWN_FAMILY,
         dek: str | None = None,
     ) -> Self:
         """Parse the final image to individual fields.
@@ -656,12 +656,12 @@ class MasterBootImage(FeatureBaseClass):
         images: dict[str, dict[str, str]] = get_db(family).get_dict(DatabaseManager.MBI, "images")
 
         schema_image_type["properties"]["outputImageExecutionTarget"]["enum_template"] = [
-            MAP_IMAGE_TARGETS["targets"][target][0] for target in images.keys()
+            MAP_IMAGE_TARGETS["targets"][target][0] for target in images
         ]
 
         authentication_types = []
-        for target in images.keys():
-            for authentication in images[target]:
+        for authentications in images.values():
+            for authentication in authentications:
                 authentication_types.append(MAP_AUTHENTICATIONS[authentication][0])
         schema_image_type["properties"]["outputImageAuthenticationType"]["enum_template"] = list(
             set(authentication_types)

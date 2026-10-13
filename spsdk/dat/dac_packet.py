@@ -20,6 +20,7 @@ from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db
 
 logger = logging.getLogger(__name__)
+UNKNOWN_FAMILY = FamilyRevision("Unknown")
 
 
 class DebugAuthenticationChallenge:
@@ -149,7 +150,7 @@ class DebugAuthenticationChallenge:
         return 32
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse raw bytes into a DebugAuthenticationChallenge object.
 
         The method unpacks binary data according to the DAC packet format, handling

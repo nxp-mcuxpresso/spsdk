@@ -11,7 +11,7 @@ including IVT (Image Vector Table), Application Boot Header, and signature handl
 
 import logging
 import struct
-from typing import Any
+from typing import Any, ClassVar
 
 from typing_extensions import Self
 
@@ -30,6 +30,7 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
+UNKNOWN_FAMILY = FamilyRevision("Unknown")
 
 
 class BootConfig:
@@ -281,7 +282,7 @@ class Ivt:
         )
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse binary data into HSE IVT object.
 
         The method unpacks binary data using the class format and validates the IVT marker
@@ -395,8 +396,8 @@ class Mbi_MixinHseIvt(Mbi_Mixin):
     """
 
     IVT_IMAGE_NAME = "HSE Image Vector Table"
-    VALIDATION_SCHEMAS: list[str] = ["hse_ivt"]
-    NEEDED_MEMBERS: dict[str, Any] = {"ivt": None}
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["hse_ivt"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"ivt": None}
 
     ivt: Ivt
 
@@ -594,7 +595,7 @@ class AppBootHeader:
         return len(self.export())
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse binary data into HSE Application Boot Header object.
 
         This method deserializes binary data according to the HSE Application Boot Header format,
@@ -637,8 +638,8 @@ class Mbi_MixinHseAppBootHeader(Mbi_Mixin):
     """
 
     APP_BOOT_HEADER_IMAGE_NAME = "Boot Header"
-    VALIDATION_SCHEMAS: list[str] = ["hse_app_boot_header"]
-    NEEDED_MEMBERS: dict[str, Any] = {"hse_app_boot_header": None}
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["hse_app_boot_header"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"hse_app_boot_header": None}
     ivt: Ivt
     hse_app_boot_header: AppBootHeader
     app: bytes
@@ -722,7 +723,7 @@ class Mbi_ExportMixinHseSignature(Mbi_Mixin):
     :cvar SIGNATURE_SIZE: Total signature size combining IV and GMAC.
     """
 
-    VALIDATION_SCHEMAS: list[str] = ["hse_signature"]
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["hse_signature"]
     GMAC_SIZE: int = 16
     IV_SIZE: int = 12
     SIGNATURE_SIZE = IV_SIZE + GMAC_SIZE
@@ -947,8 +948,8 @@ class Mbi_MixinHseLifecycle(Mbi_Mixin):
         IN_FIELD = (0xBABA_BABA, "in_field", "In field Lifecycle")
 
     APP_BOOT_HEADER_IMAGE_NAME = "Lifecycle"
-    VALIDATION_SCHEMAS: list[str] = ["hse_lifecycle"]
-    NEEDED_MEMBERS: dict[str, Any] = {"lifecycle": None}
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["hse_lifecycle"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"lifecycle": None}
     LC_VALUE_LENGTH = 4
 
     ivt: Ivt

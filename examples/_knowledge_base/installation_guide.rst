@@ -14,6 +14,9 @@ Requirements
 .. note::
     For more information about creating of virtual environments go to `the official documentation <https://docs.python.org/3/library/venv.html>`_
 
+.. tip::
+    `uv <https://docs.astral.sh/uv/>`_ is a fast, drop-in alternative to ``pip`` and ``venv``. The platform sections below include the equivalent ``uv`` commands.
+
 .. warning::
 
     Please note that not all SPSDK dependencies might be distributed as wheels (built package format for Python). In this case please ensure that you have C compiler on your system. In some cases `rust compiler <https://rustup.rs/>`_ is also needed
@@ -30,6 +33,15 @@ To install *SPSDK* under *Windows* follow:
     venv\Scripts\activate
     python -m pip install --upgrade pip
     pip install spsdk
+    spsdk --help
+
+Alternatively, using ``uv``:
+
+.. code-block:: bat
+
+    uv venv
+    .venv\Scripts\activate
+    uv pip install spsdk
     spsdk --help
 
 *SPSDK* help for command-line applications should be displayed.
@@ -50,6 +62,15 @@ To install *SPSDK* under *Linux* follow:
     source venv/bin/activate
     python -m pip install --upgrade pip
     pip install spsdk
+    spsdk --help
+
+Alternatively, using ``uv``:
+
+.. code-block:: bash
+
+    uv venv
+    source .venv/bin/activate
+    uv pip install spsdk
     spsdk --help
 
 *SPSDK* help for command-line applications should be displayed.
@@ -179,6 +200,15 @@ To install *SPSDK* under *macOS* follow:
     source venv/bin/activate
     python -m pip install --upgrade pip
     pip install spsdk
+    spsdk --help
+
+Alternatively, using ``uv``:
+
+.. code-block:: bash
+
+    uv venv
+    source .venv/bin/activate
+    uv pip install spsdk
     spsdk --help
 
 *SPSDK* help for command-line applications should be displayed.

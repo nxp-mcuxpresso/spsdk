@@ -446,6 +446,7 @@ class TestEleV2VerifyExtended:
         mock_dac.socc = 0
         mock_dac.uuid = bytes(16)
         mock_dac.rotid_rkth_hash = b"\x00" * 32
+        mock_dac.rotid_rkh_revocation = 0
         mock_dac.challenge = b"\x00" * 32
         mock_dc = MagicMock()
         mock_dc.version = ProtocolVersion("1.0")
@@ -456,6 +457,7 @@ class TestEleV2VerifyExtended:
         mock_sign_msg.get_srk_hash.return_value = b"\x00" * 64
         mock_sign_msg.srk_count = 1
         mock_sign_msg.export.return_value = b""
+        mock_sign_msg.signed_msg_container.flag_srk_revoke_keys = 0
         dar = DebugAuthenticateResponseEdgelockEnclaveV2(
             family=family,
             debug_credential=mock_dc,
@@ -510,3 +512,102 @@ class TestGetDataForSignatureExtended:
         )
         data = dar._get_data_for_signature()
         assert data.endswith(dac.challenge)
+
+
+# ---------------------------------------------------------------------------
+# EleV2 _verify_srk_revoke_mask
+# ---------------------------------------------------------------------------
+
+
+class TestEleV2VerifySrkRevokeMask:
+    """Tests for DebugAuthenticateResponseEdgelockEnclaveV2._verify_srk_revoke_mask."""
+
+    def _make_dar(
+        self,
+        family: FamilyRevision,
+        dac_revoke_mask: int,
+        dc_revoke_mask: int,
+        container_is_none: bool = False,
+    ) -> DebugAuthenticateResponseEdgelockEnclaveV2:
+        mock_dac = MagicMock()
+        mock_dac.version = ProtocolVersion("1.0")
+        mock_dac.socc = 0
+        mock_dac.uuid = bytes(16)
+        mock_dac.rotid_rkh_revocation = dac_revoke_mask
+        mock_dac.rotid_rkth_hash = b"\x00" * 32
+        mock_dac.challenge = b"\x00" * 32
+        mock_dc = MagicMock()
+        mock_dc.version = ProtocolVersion("1.0")
+        mock_dc.socc = 0
+        mock_dc.uuid = bytes(16)
+        mock_dc.calculate_hash.return_value = b"\x00" * 32
+        mock_sign_msg = MagicMock()
+        mock_sign_msg.get_srk_hash.return_value = b"\x00" * 64
+        mock_sign_msg.srk_count = 1
+        mock_sign_msg.export.return_value = b""
+        if container_is_none:
+            mock_sign_msg.signed_msg_container = None
+        else:
+            mock_sign_msg.signed_msg_container.flag_srk_revoke_keys = dc_revoke_mask
+        return DebugAuthenticateResponseEdgelockEnclaveV2(
+            family=family,
+            debug_credential=mock_dc,
+            auth_beacon=0,
+            dac=mock_dac,
+            sign_message=mock_sign_msg,
+        )
+
+    def test_matching_masks_succeeds(self) -> None:
+        """Both DAC and DC carry the same SRK revoke mask – result should be SUCCEEDED."""
+        family = FamilyRevision("mimx9596")
+        dar = self._make_dar(family, dac_revoke_mask=0x03, dc_revoke_mask=0x03)
+        record = dar._verify_srk_revoke_mask()
+        assert record.result == VerifierResult.SUCCEEDED
+        assert "0x03" in str(record.value)
+
+    def test_zero_masks_succeeds(self) -> None:
+        """Both DAC and DC have no revocations (zero mask) – result should be SUCCEEDED."""
+        family = FamilyRevision("mimx9596")
+        dar = self._make_dar(family, dac_revoke_mask=0, dc_revoke_mask=0)
+        record = dar._verify_srk_revoke_mask()
+        assert record.result == VerifierResult.SUCCEEDED
+
+    def test_dc_superset_succeeds(self) -> None:
+        """DC revoking MORE keys than fuses already have is valid (superset) – SUCCEEDED."""
+        family = FamilyRevision("mimx9596")
+        # fuses have bit 0 revoked; signed message also revokes bit 1 – allowed
+        dar = self._make_dar(family, dac_revoke_mask=0x01, dc_revoke_mask=0x03)
+        record = dar._verify_srk_revoke_mask()
+        assert record.result == VerifierResult.SUCCEEDED
+
+    def test_dc_missing_fuse_bit_errors(self) -> None:
+        """DC omitting a key already revoked in fuses – ELE will reject, result should be ERROR."""
+        family = FamilyRevision("mimx9596")
+        # fuses have bits 0 and 1 revoked; signed message only includes bit 1 – bit 0 is missing
+        dar = self._make_dar(family, dac_revoke_mask=0x03, dc_revoke_mask=0x02)
+        record = dar._verify_srk_revoke_mask()
+        assert record.result == VerifierResult.ERROR
+        assert "0x03" in str(record.value)
+        assert "0x02" in str(record.value)
+
+    def test_missing_container_error(self) -> None:
+        """No signed message container present – result should be ERROR."""
+        family = FamilyRevision("mimx9596")
+        dar = self._make_dar(family, dac_revoke_mask=0, dc_revoke_mask=0, container_is_none=True)
+        record = dar._verify_srk_revoke_mask()
+        assert record.result == VerifierResult.ERROR
+
+    def test_verify_includes_srk_revoke_mask_record(self) -> None:
+        """The overridden verify() must include the SRK revoke mask check."""
+        family = FamilyRevision("mimx9596")
+        dar = self._make_dar(family, dac_revoke_mask=0, dc_revoke_mask=0)
+        verifier = dar.verify()
+        record_names = [r.name for r in verifier.records]
+        assert "SRK Revoke Mask" in record_names
+
+    def test_verify_srk_revoke_mismatch_causes_error_in_verifier(self) -> None:
+        """A mask mismatch propagates as an error into the overall verifier."""
+        family = FamilyRevision("mimx9596")
+        dar = self._make_dar(family, dac_revoke_mask=0x05, dc_revoke_mask=0x00)
+        verifier = dar.verify()
+        assert verifier.has_errors

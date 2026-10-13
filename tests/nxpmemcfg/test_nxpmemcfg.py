@@ -109,7 +109,7 @@ def test_app_parse_export(
     """
     cmd = f"parse -f {family} -p {peripheral} "
     for x in ow:
-        cmd += f"-w {str(x)} "
+        cmd += f"-w {x!s} "
     cfg_file = os.path.join(tmpdir, "memcfg.yaml").replace("\\", "/")
     cmd += f"-o {cfg_file}"
     ret = cli_runner.invoke(nxpmemcfg.main, cmd)
@@ -154,7 +154,7 @@ def test_app_parse_export_all(
     for memory in memories:
         cmd = f"parse -f mimxrt1189 -p {peripheral} "
         for ow in memory.interfaces[0].option_words:
-            cmd += f"-w {str(ow)} "
+            cmd += f"-w {ow!s} "
         cfg_file = os.path.join(
             tmpdir, f"{memory.manufacturer}_{memory.name}_{memory.interfaces[0].name}.yaml"
         ).replace("\\", "/")
@@ -287,7 +287,7 @@ def test_blhost_script(
     assert ret.exit_code == 0
     ret = cli_runner.invoke(
         nxpmemcfg.main,
-        f"blhost-script -c {output_cfg}{f' -ix {str(instance)}' if instance is not None else ''} {f' --fcb {output_fcb}' if fcb else ''}{' --secure-addresses' if secure_address else ''}",
+        f"blhost-script -c {output_cfg}{f' -ix {instance!s}' if instance is not None else ''} {f' --fcb {output_fcb}' if fcb else ''}{' --secure-addresses' if secure_address else ''}",
     )
     assert ret.exit_code == 0
     for x in output_checks:
@@ -413,15 +413,14 @@ def test_get_known_peripheral_memories(
         assert len(memories) == 0
 
     # If peripheral is specified, check that all memories have that interface
-    if peripheral and len(memories) > 0:
+    if peripheral and len(memories) > 0 and family:
         # Get the memory type for this peripheral
-        if family:
-            p_db = get_db(family).get_dict(MemoryConfig.FEATURE, "peripherals")
-            if peripheral in p_db:
-                mem_type = p_db[peripheral]["mem_type"]
-                # Check that all returned memories have the correct type
-                for memory in memories:
-                    assert memory.type == mem_type
+        p_db = get_db(family).get_dict(MemoryConfig.FEATURE, "peripherals")
+        if peripheral in p_db:
+            mem_type = p_db[peripheral]["mem_type"]
+            # Check that all returned memories have the correct type
+            for memory in memories:
+                assert memory.type == mem_type
 
 
 @pytest.mark.parametrize(
@@ -453,6 +452,6 @@ def test_get_known_chip_memory(chip_name: Any, expected_interfaces: Any) -> None
         for expected_interface in expected_interfaces:
             assert expected_interface in interface_names
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         # If the chip is not in the database, this test will be skipped
-        pytest.skip(f"Chip {chip_name} not found in database: {str(e)}")
+        pytest.skip(f"Chip {chip_name} not found in database: {e!s}")

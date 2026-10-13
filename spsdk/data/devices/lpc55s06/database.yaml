@@ -40,6 +40,9 @@ info:
       interfaces: ["uart", "spi", "i2c"]
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe: {}
+
   # ======== Blhost section ========
   blhost: {}
 

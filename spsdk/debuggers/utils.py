@@ -58,8 +58,17 @@ def get_connected_probes(
     :return: Collection of connected debug probes matching the specified criteria.
     """
     probes = DebugProbes()
+    options_copy = dict(options or {})
+    requested_protocol = DebugProbe.get_requested_protocol(options_copy)
     for key, probe in PROBES.items():
         if (interface is None) or (interface.lower() == key):
+            if requested_protocol and requested_protocol not in probe.SUPPORTED_PROTOCOLS:
+                logger.debug(
+                    f"Skipping probe '{key}' (protocols "
+                    f"'{', '.join(protocol.label for protocol in probe.SUPPORTED_PROTOCOLS)}', "
+                    f"requested '{requested_protocol.label}')"
+                )
+                continue
             # Skip probes that declare a specific architecture that doesn't match
             if (
                 architecture
@@ -74,7 +83,7 @@ def get_connected_probes(
             try:
                 probes.extend(probe.get_connected_probes(hardware_id, options))
             except SPSDKDebugProbeError as exc:
-                logger.warning(f"The {key} debug probe support is not ready({str(exc)}).")
+                logger.warning(f"The {key} debug probe support is not ready({exc!s}).")
     return probes
 
 
@@ -128,20 +137,27 @@ def select_probe(
 def get_test_address(family: FamilyRevision) -> int:
     """Get AHB access test address for the device.
 
-    The address is stored in SPSDK database. In worst case that address is not found, exception is raised.
+    The address is resolved from debug-probe, DAT, and communication-buffer configuration.
+    If none is defined, a warning is logged and the generic Cortex-M SRAM address is used.
 
     :param family: Family revision specification for the target device.
     :return: Test address for AHB access verification.
-    :raises SPSDKError: The address is not stored in database.
     """
     db = get_db(family)
-    try:
-        return db.get_int(DatabaseManager.DAT, "test_address")
-    except SPSDKError:
-        try:
-            return db.get_int(DatabaseManager.COMM_BUFFER, "address")
-        except SPSDKError as exc:
-            raise SPSDKError(f"Can't get test AHB access address for {family}") from exc
+    for feature, key in (
+        (DatabaseManager.DEBUG_PROBE, "test_address"),
+        (DatabaseManager.DAT, "test_address"),
+        (DatabaseManager.COMM_BUFFER, "address"),
+    ):
+        address = db.features.get(feature, {}).get(key)
+        if address is not None:
+            return value_to_int(address)
+
+    logger.warning(
+        f"No test_address is defined for {family}; using the generic fallback 0x20000000. "
+        "Define debug_probe.test_address in the device database."
+    )
+    return 0x20000000
 
 
 def test_ahb_access(
@@ -197,7 +213,7 @@ def test_ahb_access(
             probe.debug_resume()
 
     except SPSDKError as exc:
-        logger.debug(f"Test Connection: Chip has NOT enabled AHB access. {str(exc)}")
+        logger.debug(f"Test Connection: Chip has NOT enabled AHB access. {exc!s}")
 
     return ahb_enabled
 
@@ -260,12 +276,10 @@ def open_debug_probe(
         debug_probe.open()
     except SPSDKError as exc:
         raise SPSDKDebugProbeError(
-            f"Cannot open selected probe: {selected_probe}. Maybe, it has been disconnected from system."
+            f"Cannot open selected probe: {selected_probe}. Reason: {exc}"
         ) from exc
     try:
         yield debug_probe
-    except SPSDKError as exc:
-        raise exc
     finally:
         debug_probe.close()
 

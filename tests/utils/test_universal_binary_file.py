@@ -311,9 +311,8 @@ class TestUniversalBinaryFileOpenClose:
     def test_context_manager_not_opened(self) -> None:
         """Test context manager without opening file first."""
         ubf = UniversalBinaryFile()
-        with pytest.raises(SPSDKError, match="File must be opened before entering context"):
-            with ubf:
-                pass
+        with pytest.raises(SPSDKError, match="File must be opened before entering context"), ubf:
+            pass
 
 
 class TestUniversalBinaryFileRead:
@@ -430,9 +429,11 @@ class TestUniversalBinaryFileRead:
         file_path = os.path.join(tmpdir, "test.bin")
 
         ubf = UniversalBinaryFile()
-        with ubf.open(file_path, "wb") as f:
-            with pytest.raises(SPSDKError, match="not opened for reading"):
-                f.read()
+        with (
+            ubf.open(file_path, "wb") as f,
+            pytest.raises(SPSDKError, match="not opened for reading"),
+        ):
+            f.read()
 
     def test_read_sequential(self, test_binary_file: str) -> None:
         """Test sequential reads.
@@ -574,9 +575,11 @@ class TestUniversalBinaryFileWrite:
         :param test_binary_file: Path to test binary file.
         """
         ubf = UniversalBinaryFile()
-        with ubf.open(test_binary_file, "rb") as f:
-            with pytest.raises(SPSDKError, match="not opened for writing"):
-                f.write(b"test")
+        with (
+            ubf.open(test_binary_file, "rb") as f,
+            pytest.raises(SPSDKError, match="not opened for writing"),
+        ):
+            f.write(b"test")
 
     def test_write_expand_hex_file(self, test_hex_file: str) -> None:
         """Test writing beyond current file size in HEX file.
@@ -675,9 +678,11 @@ class TestUniversalBinaryFileSeek:
         :param test_binary_file: Path to test binary file.
         """
         ubf = UniversalBinaryFile()
-        with ubf.open(test_binary_file, "rb") as f:
-            with pytest.raises(SPSDKValueError, match="Negative seek position"):
-                f.seek(-100, 0)
+        with (
+            ubf.open(test_binary_file, "rb") as f,
+            pytest.raises(SPSDKValueError, match="Negative seek position"),
+        ):
+            f.seek(-100, 0)
 
     def test_seek_invalid_whence(self, test_binary_file: str) -> None:
         """Test seek with invalid whence value.
@@ -685,9 +690,11 @@ class TestUniversalBinaryFileSeek:
         :param test_binary_file: Path to test binary file.
         """
         ubf = UniversalBinaryFile()
-        with ubf.open(test_binary_file, "rb") as f:
-            with pytest.raises(SPSDKValueError, match="Invalid whence value"):
-                f.seek(0, 99)
+        with (
+            ubf.open(test_binary_file, "rb") as f,
+            pytest.raises(SPSDKValueError, match="Invalid whence value"),
+        ):
+            f.seek(0, 99)
 
     def test_seek_without_open(self) -> None:
         """Test seeking without opening file."""

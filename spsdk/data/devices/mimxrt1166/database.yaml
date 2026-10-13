@@ -72,6 +72,11 @@ info:
           pid: 0x0073
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe:
+    protocols: [swd, jtag]
+    mem_ap_index: 0 # RT1166 has AP0 to memory access
+
   # ======== Blhost section ========
   blhost: {}
 

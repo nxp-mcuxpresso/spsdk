@@ -13,7 +13,7 @@ structure and relationships of SPSDK components for Sphinx documentation.
 
 import math
 import os
-from typing import Any, Optional
+from typing import Any
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -43,7 +43,7 @@ class ImgTable:
         table_list: list[str],
         header_text: str,
         x_count: int = 3,
-        y_count: Optional[int] = None,
+        y_count: int | None = None,
         rect_width: int = 300,
         rect_height: int = 100,
         offset: int = 10,

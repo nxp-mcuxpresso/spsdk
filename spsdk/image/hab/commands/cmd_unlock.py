@@ -85,7 +85,7 @@ class CmdUnlockBase(CmdBase):
         :raises SPSDKKeyError: Unknown or unsupported unlock engine type.
         :return: Unlock command class corresponding to the engine type.
         """
-        unlock_classes: dict[EngineEnum, type["CmdUnlockBase"]] = {
+        unlock_classes: dict[EngineEnum, type[CmdUnlockBase]] = {
             EngineEnum.CAAM: CmdUnlockCAAM,
             EngineEnum.SNVS: CmdUnlockSNVS,
             EngineEnum.OCOTP: CmdUnlockOCOTP,

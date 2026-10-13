@@ -54,7 +54,7 @@ from spsdk.apps.pfr import main as pfr_main
 from spsdk.apps.sdphost import main as sdphost_main
 from spsdk.apps.sdpshost import main as sdpshost_main
 from spsdk.apps.shadowregs import main as shadowregs_main
-from spsdk.apps.utils.common_cli_options import CommandsTreeGroup
+from spsdk.apps.utils.common_cli_options import CommandsTreeGroup, GetFamiliesCommand
 from spsdk.apps.utils.utils import catch_spsdk_error, make_table_from_items
 from spsdk.utils.database import DatabaseManager, FeaturesEnum
 from spsdk.utils.family import get_families, split_by_family_name
@@ -396,6 +396,13 @@ def families(feature: str) -> None:
     :param feature: Name of the feature.
     """
     families_dict = split_by_family_name(get_families(feature))
+    if not families_dict:
+        click.echo(
+            colorama.Fore.YELLOW
+            + GetFamiliesCommand.NO_SUPPORTED_FAMILIES_MESSAGE
+            + colorama.Fore.RESET
+        )
+        return
     families_with_rev = [
         f"{name}[{','.join(revisions)}]" for name, revisions in families_dict.items()
     ]

@@ -589,9 +589,10 @@ def get_hab_signature_provider(config: Config) -> SignatureProvider:
     :return: Configured signature provider instance for HAB operations.
     """
     signature_provider = get_signature_provider(config, "Signer")
-    if isinstance(signature_provider, PlainFileSP):
-        if isinstance(signature_provider.private_key, PrivateKeyEcc):
-            signature_provider.hash_alg = EnumHashAlgorithm.SHA256
+    if isinstance(signature_provider, PlainFileSP) and isinstance(
+        signature_provider.private_key, PrivateKeyEcc
+    ):
+        signature_provider.hash_alg = EnumHashAlgorithm.SHA256
     return signature_provider
 
 

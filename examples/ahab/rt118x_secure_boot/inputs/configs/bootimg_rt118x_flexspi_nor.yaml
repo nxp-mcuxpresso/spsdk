@@ -19,6 +19,7 @@ revision: latest
 # Description: Specify type of memory used by bootable image description.
 # Possible options: <serial_downloader, flexspi_nor, flexspi_nand, semc_nand>
 memory_type: flexspi_nor
+output: ../../workspace/bootable_img.bin
 # ----------------------------------------===== FCB block path [Optional] =====-----------------------------------------
 # Description: Flash Configuration block Image path. It could be used as pre-prepared binary form of FCB and also YAML
 # configuration file for FCB. In case that YAML configuration file is used, the Bootable image tool build the FCB

@@ -13,6 +13,7 @@ configuration validation for CFPA and CMPA regions.
 
 import logging
 from dataclasses import dataclass
+from typing import ClassVar
 
 from spsdk.pfr.exceptions import SPSDKPfrcMissingConfigError, SPSDKPfrConfigError
 from spsdk.pfr.pfr import CFPA, CMPA, SPSDKPfrError
@@ -120,7 +121,7 @@ class Pfrc:
 
         self.db = get_db(self.chip_family)
 
-    _supported_families_cache: dict[bool, list["FamilyRevision"]] = {}
+    _supported_families_cache: ClassVar[dict[bool, list["FamilyRevision"]]] = {}
 
     @staticmethod
     def get_supported_families(include_predecessors: bool = False) -> list[FamilyRevision]:

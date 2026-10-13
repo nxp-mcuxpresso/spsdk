@@ -20,7 +20,7 @@ import re
 import textwrap
 from collections.abc import Iterator
 from copy import deepcopy
-from typing import Any
+from typing import Any, ClassVar
 
 import prettytable
 from filelock import FileLock
@@ -421,7 +421,7 @@ class UsbId:
         """
         return f"[0x{self.pid:04X}:0x{self.vid:04X}]"
 
-    def __eq__(self, obj: Any) -> bool:
+    def __eq__(self, obj: object) -> bool:
         """Check equality with another object.
 
         :param obj: Object to compare with.
@@ -555,7 +555,7 @@ class Bootloader:
         ret += f"Protocol:     {self.protocol or 'Not specified'}\n"
         ret += f"Interfaces:   {self.interfaces}"
         if self.usb_ids:
-            ret += f"\nUSB ID:       {str(self.usb_ids)}"
+            ret += f"\nUSB ID:       {self.usb_ids!s}"
         return ret
 
     @classmethod
@@ -602,7 +602,7 @@ class MemBlock:
     """
 
     # List of known and accepted cores
-    BLOCK_NAMES = [
+    BLOCK_NAMES: ClassVar[list[str]] = [
         "dtcm",
         "itcm",
         "system-tcm",
@@ -623,8 +623,8 @@ class MemBlock:
         "internal-flash",
         "ifr-bank",
     ]
-    CORES = ["a55", "cm7", "cm4", "cm33", "cm0", "cm0p"]
-    SECURITY = ["s", "ns"]
+    CORES: ClassVar[list[str]] = ["a55", "cm7", "cm4", "cm33", "cm0", "cm0p"]
+    SECURITY: ClassVar[list[str]] = ["s", "ns"]
 
     def __init__(self, name: str, desc: dict[str, Any]) -> None:
         """Initialize a MemBlock instance.
@@ -986,7 +986,7 @@ class IspCfg:
     support, USB identification, and configuration management across the SPSDK framework.
     """
 
-    BOOTLOADER_TYPES = ["rom", "flashloader", "fastboot", "sdpv"]
+    BOOTLOADER_TYPES: ClassVar[list[str]] = ["rom", "flashloader", "fastboot", "sdpv"]
 
     def __init__(
         self,
@@ -1232,7 +1232,7 @@ class Device:
         latest_rev: str,
         info: DeviceInfo,
         device_alias: "Device | None" = None,
-        revisions: Revisions = Revisions(),
+        revisions: Revisions | None = None,
     ) -> None:
         """Initialize SPSDK Device instance.
 
@@ -1250,7 +1250,7 @@ class Device:
         self.db = db
         self.latest_rev = latest_rev
         self.device_alias = device_alias
-        self.revisions = revisions
+        self.revisions = revisions if revisions is not None else Revisions()
         self.info = info
 
     def get_copy(self, new_name: str | None = None) -> "Device":
@@ -1306,7 +1306,7 @@ class Device:
         :param revision: Device revision to get features for. If None, uses default revision.
         :return: List of feature names available for the specified device revision.
         """
-        return [str(k) for k in self.revisions.get(revision).features.keys()]
+        return [str(k) for k in self.revisions.get(revision).features]
 
     @staticmethod
     def _load_alias(name: str, db: "Database", dev_cfg: dict[str, Any]) -> "Device":
@@ -1407,10 +1407,10 @@ class Device:
         dev_info = DeviceInfo.load(dev_cfg["info"], db._data.defaults["info"])
 
         # Get defaults and update them by device specific data set
-        for feature_name in dev_features:
+        for feature_name, feature_data in dev_features.items():
             if feature_name not in features_defaults:
                 features_defaults[feature_name] = {}
-            deep_update(features_defaults[feature_name], dev_features[feature_name])
+            deep_update(features_defaults[feature_name], feature_data)
             dev_features[feature_name] = features_defaults[feature_name]
 
         revisions = Revisions()
@@ -1557,7 +1557,7 @@ class Devices:
                 self._load_and_append_device(dev_name=exc.dev_name)
                 self.devices.append(Device.load(name=dev_name, db=self.db))
             else:
-                raise exc
+                raise
 
     def load_devices_from_path(self, devices_path: str) -> None:
         """Load devices from SPSDK database path.
@@ -1575,7 +1575,7 @@ class Devices:
                     self._load_and_append_device(dev.name)
                 except SPSDKError as exc:
                     logger.error(
-                        f"Failed loading device '{dev.name}' into SPSDK database. Details:\n{str(exc)}"
+                        f"Failed loading device '{dev.name}' into SPSDK database. Details:\n{exc!s}"
                     )
 
 
@@ -1681,9 +1681,8 @@ class DevicesQuickInfo:
         for dev in devices.devices:
             info = DeviceQuickInfo(dev.revisions, dev.info, dev.latest_rev)
             p_name = info.info.spsdk_predecessor_name
-            if p_name:
-                if p_name not in pl:
-                    pl[p_name] = dev.name
+            if p_name and p_name not in pl:
+                pl[p_name] = dev.name
 
             dqi[dev.name] = info
 
@@ -1722,7 +1721,7 @@ class DevicesQuickInfo:
         """
         devices: dict[str, list] = {}
         for name, info in self.devices.items():
-            for revision in info.revision_features.keys():
+            for revision in info.revision_features:
                 if info.is_feature_supported(feature, sub_feature, revision):
                     if name not in devices:
                         devices[name] = []
@@ -1953,9 +1952,11 @@ class Database:
                 db_cache_file_name = self.get_cache_filename(path)
                 if os.path.exists(db_cache_file_name):
                     try:
-                        with FileLock(db_cache_file_name + ".lock", timeout=10):
-                            with open(db_cache_file_name, mode="rb") as f:
-                                loaded_db_data = _restricted_pickle_load(f)
+                        with (
+                            FileLock(db_cache_file_name + ".lock", timeout=10),
+                            open(db_cache_file_name, mode="rb") as f,
+                        ):
+                            loaded_db_data = _restricted_pickle_load(f)
                         if not isinstance(loaded_db_data, type(self)):
                             raise SPSDKError("Invalid cache file type.")
                         db_hash = self.hash_db_data(
@@ -1975,8 +1976,8 @@ class Database:
                         else:
                             logger.debug(f"Loaded database from cache: {db_cache_file_name}")
                             self.db_hash = db_hash
-                    except Exception as exc:
-                        logger.error(f"Fail during load of database cache: {str(exc)}")
+                    except Exception as exc:  # noqa: BLE001
+                        logger.error(f"Fail during load of database cache: {exc!s}")
                         if os.path.exists(db_cache_file_name):
                             os.remove(db_cache_file_name)
 
@@ -2025,7 +2026,7 @@ class Database:
                             # In case that the current database data has been updated by other parallel process
                             # Load it and merge together
                             if cached_data.db_hash != self.db_hash:
-                                for rec in cached_data.cfg_cache.keys():
+                                for rec in cached_data.cfg_cache:
                                     if rec not in self.cfg_cache:
                                         self.cfg_cache[rec] = cached_data.cfg_cache[rec]
                             self.db_hash = self.hash_db_data(
@@ -2037,9 +2038,9 @@ class Database:
                         with open(db_cache_file_name, mode="wb") as f:
                             pickle.dump(self, f, pickle.DEFAULT_PROTOCOL)
                     logger.debug(f"Created database data cache: {db_cache_file_name}")
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     self.db_hash = b""
-                    logger.debug(f"Cannot store database data cache: {str(exc)}")
+                    logger.debug(f"Cannot store database data cache: {exc!s}")
             else:
                 logger.debug("Not needed to create a new database data cache.")
 
@@ -2261,7 +2262,7 @@ class Database:
             try:
                 cfg = load_configuration(abs_path)
             except SPSDKError as exc:
-                raise SPSDKError(f"Invalid configuration file. {str(exc)}") from exc
+                raise SPSDKError(f"Invalid configuration file. {exc!s}") from exc
             self._data.cfg_cache[abs_path] = cfg
             self._data.make_cache()
 
@@ -2331,6 +2332,7 @@ class FeaturesEnum(SpsdkEnum):
     TLV_BLOB = (38, "tlv_blob", "Type-Length-Value blobs")
     HSE = (39, "hse", "Hardware Security Engine")
     IPED = (40, "iped", "Inline PRINCE Encryption/Decryption")
+    DEBUG_PROBE = (41, "debug_probe", "Debug probe access configuration")
 
 
 class DatabaseManager:
@@ -2379,7 +2381,7 @@ class DatabaseManager:
                         os.remove(candidate)
                         removed_any = True
                     except (PermissionError, OSError) as exc:
-                        logger.error(f"Cannot clear cache file '{candidate}': {str(exc)}")
+                        logger.error(f"Cannot clear cache file '{candidate}': {exc!s}")
         if not removed_any:
             logger.error(f"No SPSDK cache files found in '{current_path}', nothing to clear.")
 
@@ -2405,7 +2407,7 @@ class DatabaseManager:
         major, minor = rd_version.split(".", maxsplit=2)
         if int(major) != version.major or int(minor) != version.minor:
             logger.error(
-                f"The restricted data version does not match SPSDK current version: {rd_version} != {str(version)}"
+                f"The restricted data version does not match SPSDK current version: {rd_version} != {version!s}"
             )
             return None
         database_path = os.path.join(SPSDK_RESTRICTED_DATA_FOLDER, "data")
@@ -2453,9 +2455,11 @@ class DatabaseManager:
         db_cache_file_name = cls._get_quick_info_db_path()
         if os.path.exists(db_cache_file_name):
             try:
-                with FileLock(db_cache_file_name + ".lock", timeout=10):
-                    with open(db_cache_file_name, mode="rb") as f:
-                        loaded_db = _restricted_pickle_load(f)
+                with (
+                    FileLock(db_cache_file_name + ".lock", timeout=10),
+                    open(db_cache_file_name, mode="rb") as f,
+                ):
+                    loaded_db = _restricted_pickle_load(f)
                 assert isinstance(loaded_db, QuickDatabase)
                 if db_hash == loaded_db.db_hash:
                     logger.debug(f"Loaded database from cache: {db_cache_file_name}")
@@ -2464,19 +2468,21 @@ class DatabaseManager:
                 logger.warning(
                     f"Existing cached quick DB ({db_cache_file_name}) has invalid hash. It will be erased."
                 )
-            except Exception as exc:
-                logger.error(f"Cannot load database cache: {str(exc)}")
+            except Exception as exc:  # noqa: BLE001
+                logger.error(f"Cannot load database cache: {exc!s}")
 
         quick_info = QuickDatabase.create(cls.get_db(complete_load=True))
         quick_info.db_hash = db_hash
         try:
             os.makedirs(cache_folder, exist_ok=True)
-            with FileLock(db_cache_file_name + ".lock", timeout=10):
-                with open(db_cache_file_name, mode="wb") as f:
-                    pickle.dump(quick_info, f, pickle.DEFAULT_PROTOCOL)
+            with (
+                FileLock(db_cache_file_name + ".lock", timeout=10),
+                open(db_cache_file_name, mode="wb") as f,
+            ):
+                pickle.dump(quick_info, f, pickle.DEFAULT_PROTOCOL)
             logger.debug(f"Created quick database cache: {db_cache_file_name}")
-        except Exception as exc:
-            logger.debug(f"Cannot store database cache: {str(exc)}")
+        except Exception as exc:  # noqa: BLE001
+            logger.debug(f"Cannot store database cache: {exc!s}")
         return quick_info
 
     def __new__(cls) -> Self:
@@ -2633,6 +2639,7 @@ class DatabaseManager:
     SHE_SCEC = FeaturesEnum.SHE_SCEC.label
     TLV_BLOB = FeaturesEnum.TLV_BLOB.label
     HSE = FeaturesEnum.HSE.label
+    DEBUG_PROBE = FeaturesEnum.DEBUG_PROBE.label
 
 
 def get_schema_file(feature: str) -> dict[str, Any]:
@@ -2762,7 +2769,7 @@ def _get_device_usb_ids(db_manager: DatabaseManager, device_name: str) -> list[U
             if bootloader.usb_ids:
                 usb_ids.extend(bootloader.usb_ids)
 
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.debug(f"Could not get USB IDs for device {device_name}: {exc}")
 
     return usb_ids

@@ -99,6 +99,9 @@ features:
   dat:
     socc: 4 # SOCC identification
     dmbox_ap_ix: 2 # Typical Index of debug mailbox access port is 2
+
+  # ======== Debug probe access section ========
+  debug_probe:
     mem_ap_index: 0 # AHB-AP is AP0
 
   # ======== MBI section ========

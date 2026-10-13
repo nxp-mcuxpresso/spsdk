@@ -51,7 +51,7 @@ def test_set_cmd_eq() -> None:
     nop = CmdNop()
     cmd_other = CmdSet(itm=SetItmEnum.MID)
     assert cmd != nop
-    assert cmd == cmd
+    assert cmd == CmdSet()
     assert cmd != cmd_other
 
 

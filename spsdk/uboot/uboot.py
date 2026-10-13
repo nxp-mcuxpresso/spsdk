@@ -16,6 +16,7 @@ from types import TracebackType
 
 from hexdump import restore
 from serial import Serial, SerialException
+from typing_extensions import Self
 
 from spsdk import get_logger
 from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
@@ -126,7 +127,7 @@ class UbootSerial:
                 hexdump_str += self.LINE_FEED.join(self.read_output().splitlines())
             hexdump_str = hexdump_str.splitlines()[-2][-8:]
             crc_obtained = int("0x" + hexdump_str, base=16)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.info(f"CRC calculation failed: {e}")
             return
         logger.debug(f"CRC command:\n{crc_command}\n{crc_obtained}")
@@ -158,7 +159,7 @@ class UbootSerial:
             self._interrupt_autoboot(self.retries)
         self.is_opened = True
 
-    def __enter__(self) -> "UbootSerial":
+    def __enter__(self) -> Self:
         """Enter the runtime context for UbootSerial.
 
         This method is called when entering a 'with' statement context manager,
@@ -171,8 +172,8 @@ class UbootSerial:
 
     def __exit__(
         self,
-        exception_type: type[Exception] | None = None,
-        exception_value: Exception | None = None,
+        exception_type: type[BaseException] | None = None,
+        exception_value: BaseException | None = None,
         traceback: TracebackType | None = None,
     ) -> None:
         """Exit the context manager and close the U-Boot connection.
@@ -207,7 +208,7 @@ class UbootSerial:
             self.write(self.INTERRUPT_STRING)
             output = self.read_output()
         logger.debug(
-            f"Checking if the serial console is open by sending invalid command: {repr(output)}"
+            f"Checking if the serial console is open by sending invalid command: {output!r}"
         )
         return self.PROMPT.decode(self.ENCODING) in output
 
@@ -412,7 +413,7 @@ class UbootFastboot:
         """Destructor to ensure Fastboot is disable to possibly use serial console again."""
         self.uuu.disable_fastboot_output()
 
-    def __enter__(self) -> "UbootFastboot":
+    def __enter__(self) -> Self:
         """Enter the runtime context for UbootFastboot.
 
         Opens the connection and returns the instance for use in a with statement.
@@ -424,8 +425,8 @@ class UbootFastboot:
 
     def __exit__(
         self,
-        exception_type: type[Exception] | None = None,
-        exception_value: Exception | None = None,
+        exception_type: type[BaseException] | None = None,
+        exception_value: BaseException | None = None,
         traceback: TracebackType | None = None,
     ) -> None:
         """Clean up resources and close the U-Boot interface.
@@ -530,7 +531,7 @@ class UbootFastboot:
                 raise SPSDKIndexError("Cannot get CRC response") from e
             logger.debug(f"CRC read: {hexdump_str}")
             crc_obtained = int("0x" + hexdump_str, base=16)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.info(f"CRC calculation failed: {e}")
             return
         logger.debug(f"CRC command:\n{crc_command!r}\n{crc_obtained!r}")
@@ -579,6 +580,6 @@ class UbootFastboot:
         try:
             # Use the UUU instance to verify with short timeout
             return self.uuu.verify_fastboot_connection(timeout)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.debug(f"Connection verification failed: {e}")
             return False

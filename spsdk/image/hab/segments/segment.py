@@ -21,8 +21,10 @@ from spsdk.utils.abstract_features import VerifyBaseClass
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.spsdk_enum import SpsdkEnum
+from spsdk.utils.verifier import Verifier
 
 logger = logging.getLogger(__name__)
+UNKNOWN_FAMILY = FamilyRevision("unknown")
 
 
 class HabSegmentEnum(SpsdkEnum):
@@ -204,7 +206,7 @@ class HabSegmentBase(VerifyBaseClass):
 
     @classmethod
     @abstractmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse segment block from image binary.
 
         :param data: Binary data of image to be parsed.
@@ -244,3 +246,19 @@ class HabSegmentBase(VerifyBaseClass):
         :return: List of additional files created during export process.
         """
         return []
+
+    def verify(self) -> Verifier:
+        """Verify the HAB segment data.
+
+        Provides a default verification for HAB segments that do not implement
+        specialized checks. Subclasses may override this method to add segment
+        specific validation records.
+
+        :return: Verifier object containing the segment verification result.
+        """
+        name = (
+            self.SEGMENT_IDENTIFIER.description
+            if self.SEGMENT_IDENTIFIER
+            else self.__class__.__name__
+        )
+        return Verifier(f"HAB {name}")

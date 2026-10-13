@@ -18,6 +18,35 @@ Release Notes
 =============
 
 ------
+3.13.0
+------
+
+**New features**
+
+* `nxpdebugmbox`_:
+    - add ``cmd read-from-flash`` command to read words from flash memory through the debug mailbox on supported MCX A/L devices (mcxa255, mcxl255)
+
+------
+3.12.0
+------
+
+**New features**
+
+* `nxpdebugmbox`_:
+    - add ``dat dc verify`` command to verify a Debug Credential binary file against a family
+    - add ``--debug-artifacts`` / ``-da`` option to ``dat auth`` to store the signed DAR binary for debug and analysis purposes
+
+**Bugfixes**
+
+* `nxpdebugmbox`_:
+    - validate that all debug credential keys use the same size and report a clear reason when a debug credential binary cannot be parsed (mixed or truncated key sizes) instead of raising an unhandled error
+* `nxpimage`_:
+    - align ``hse smr-entry create-auth-tag`` hash algorithm and authentication scheme options with the SMR entry template, and remove the unsupported XCBC_MAC option
+* :ref:`nxpuuu`:
+    - restore the terminal cursor after a command finishes; the progress bar hid the cursor and never showed it again
+    - fix the ``progress_bar`` argument of ``SPSDKUUU`` being ignored, which kept the progress bar always enabled
+
+------
 3.11.0
 ------
 
@@ -296,7 +325,7 @@ Release Notes
 
 * `nxpimage`_:
     - add SPI support for RT118x
-    - add support with AHAB QB data for i.MX95 
+    - add support with AHAB QB data for i.MX95
 * `pfr`_:
     - update PFR implementation for mw30/mcxa55 devices
     - improve mcxa55 CFPA/CMPA grouping
@@ -335,7 +364,7 @@ Release Notes
     - Added support for the imx-bootloader, which simplifies bootloader creation compared to generic templates. When generating templates for a bootable image using the nxpimage bootable-image get-templates command, comprehensive templates are created, including SPL and U-Boot configurations. All required files can be copied directly to the inputs directory without modifying configuration files. Currently, i.MX95 and i.MX93 flash_all imx bootloaders are supported.
 
 * `nxpimage`_:
-    - implement SBc v2 support for MCXL20 new product introduction
+    - implement SBc v2 support for MCXL255 new product introduction
     - add support for RSA and ECC P-521 keys in TLV blob functionality
     - implement SPARSE format support
     - enable hash algorithm specification in nxpcrypto rot calculate-hash command

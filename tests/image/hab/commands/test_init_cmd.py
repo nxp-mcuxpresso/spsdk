@@ -159,7 +159,7 @@ def test_init_cmd_equality() -> None:
 
     Verifies that CmdInitialize objects correctly implement equality comparison
     by testing against different object types and configurations. Tests include
-    comparison with different command types, self-comparison, and comparison
+    comparison with different command types, equivalent instances, and comparison
     with commands having different parameters.
 
     :raises AssertionError: If equality comparisons don't behave as expected.
@@ -168,7 +168,7 @@ def test_init_cmd_equality() -> None:
     nop = CmdNop()
     cmd_other = CmdInitialize(engine=EngineEnum.OCOTP)
     assert cmd != nop
-    assert cmd == cmd
+    assert cmd == CmdInitialize()
     assert cmd != cmd_other
 
 

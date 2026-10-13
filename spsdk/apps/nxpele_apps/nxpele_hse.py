@@ -584,7 +584,7 @@ def smr_verify(
     with ele_handler:
         try:
             ele_handler.send_message(cmd)
-        except SPSDKError as e:
+        except SPSDKError:
             if options == HseSmrVerificationOptions.NO_LOAD:
                 click.echo(
                     "Hint: NO_LOAD option requires SMR to be in memory-mapped external flash (not SD/eMMC) and cannot be encrypted."
@@ -597,7 +597,7 @@ def smr_verify(
                 click.echo(
                     "Hint: PASSIVE_MEM option is only available for HSE_B with A/B Swap Configuration."
                 )
-            raise e
+            raise
     click.echo(cmd.response_info())
 
 

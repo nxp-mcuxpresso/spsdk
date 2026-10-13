@@ -33,7 +33,7 @@ from spsdk.image.xmcd.xmcd import XMCD
 from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import get_printable_path, load_binary, write_file
+from spsdk.utils.misc import find_file, get_printable_path, load_binary, write_file
 from spsdk.utils.verifier import Verifier
 
 logger = logging.getLogger(__name__)
@@ -58,24 +58,76 @@ def bootable_image_export_command(config: Config) -> None:
     bootable_image_export(config)
 
 
+def _find_bimg_source_elf(config: Config) -> str | None:
+    """Find the application ELF from Bootable Image configuration.
+
+    Strategy (in priority order):
+    1. ``application`` key in top-level config — direct path to the app image.
+    2. ``mbi`` key pointing to a YAML/JSON MBI config file — load it and look
+       for ``inputImageFile`` inside.
+
+    Returns the resolved absolute path if the file is found, otherwise None.
+    The ELF-magic check is performed by the caller (``_save_elf``).
+
+    :param config: Loaded Bootable Image YAML/JSON configuration.
+    :return: Resolved path to the application ELF file, or None if not found.
+    """
+
+    def _try_resolve(raw_path: str) -> str | None:
+        try:
+            resolved = find_file(raw_path, search_paths=config.search_paths)
+            return resolved if os.path.isfile(resolved) else None
+        except SPSDKError:
+            return None
+
+    # 1. Check top-level 'application' key (direct path to app image)
+    app_raw = config.get("application")
+    if app_raw and isinstance(app_raw, str):
+        path = _try_resolve(app_raw)
+        if path:
+            return path
+
+    # 2. Check 'mbi' key — may be a YAML MBI config containing inputImageFile
+    mbi_raw = config.get("mbi")
+    if mbi_raw and isinstance(mbi_raw, str):
+        mbi_path = _try_resolve(mbi_raw)
+        if mbi_path and mbi_path.lower().endswith((".yaml", ".yml", ".json")):
+            try:
+                mbi_cfg = Config.create_from_file(mbi_path)
+                input_raw = mbi_cfg.get("inputImageFile")
+                if input_raw and isinstance(input_raw, str):
+                    return _try_resolve(input_raw) or find_file(
+                        input_raw, search_paths=mbi_cfg.search_paths
+                    )
+            except (SPSDKError, TypeError, KeyError):
+                pass
+
+    return None
+
+
 def bootable_image_export(config: Config) -> None:
     """Export merged boot image blocks into one bootable image."""
     output = config.get_output_file_name("output")
     bimg_image = BootableImage.load_from_config(config)
     bimg_image_info = bimg_image.image_info()
 
-    bimg_image_info.save_binary_image(output, file_format=config.get_str("output_format", "bin"))
+    output_format = config.get_str("output_format", "bin")
+    source_elf: str | None = None
+    if output_format.upper() == "ELF_PATCH":
+        source_elf = _find_bimg_source_elf(config)
+        if source_elf:
+            logger.warning(f"ELF_PATCH: Auto-detected {source_elf} as source ELF file.")
 
-    logger.info(
-        f"Created Bootable Image:\n{str(bimg_image_info)}Format: {config.get_str('output_format', 'bin')}"
-    )
+    bimg_image_info.save_binary_image(output, file_format=output_format, source_elf_file=source_elf)
+
+    logger.info(f"Created Bootable Image:\n{bimg_image_info!s}Format: {output_format}")
     logger.info(f"Created Bootable Image memory map:\n{bimg_image_info.draw()}")
     if bimg_image.bootable_header_only:
         click.echo("It has been created just only bootable header due missing application info.")
     click.echo(f"Success. (Bootable Image: {get_printable_path(output)} created) ")
 
     if config.get("post_export"):
-        exported_files = bimg_image.post_export(config.get("post_export"))
+        exported_files = bimg_image.post_export(config.get_output_file_name("post_export"))
         if exported_files:
             click.echo("Performing post export")
             print_files(exported_files)
@@ -831,7 +883,7 @@ def bootable_image_info(family: FamilyRevision, mem_type: MemoryType | None, bin
     try:
         bimg_image = BootableImage.parse(data, family=family, mem_type=mem_type)
     except SPSDKError as exc:
-        raise SPSDKAppError(f"Failed to parse bootable image: {str(exc)}") from exc
+        raise SPSDKAppError(f"Failed to parse bootable image: {exc!s}") from exc
 
     info_output = bimg_image.info()
     click.echo(info_output)
@@ -859,7 +911,7 @@ def fcb_export(config: Config, output: str) -> None:
     fcb_data = fcb_image.export()
     write_file(fcb_data, output, mode="wb")
 
-    logger.info(f"Created FCB Image:\n{str(fcb_image.registers.image_info())}")
+    logger.info(f"Created FCB Image:\n{fcb_image.registers.image_info()!s}")
     logger.info(f"Created FCB Image memory map:\n{fcb_image.registers.image_info().draw()}")
     click.echo(f"Success. (FCB: {get_printable_path(output)} created.)")
 
@@ -975,7 +1027,7 @@ def xmcd_export(config: Config, output: str) -> None:
     xmcd_data = xmcd_image.export()
     write_file(xmcd_data, output, mode="wb")
 
-    logger.info(f"Created XMCD :\n{str(xmcd_image.registers.image_info())}")
+    logger.info(f"Created XMCD :\n{xmcd_image.registers.image_info()!s}")
     logger.info(f"Created XMCD memory map:\n{xmcd_image.registers.image_info().draw()}")
     click.echo(f"Success. (XMCD: {get_printable_path(output)} created.)")
 

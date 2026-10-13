@@ -464,7 +464,7 @@ def ahab_fix_signature_block_version(
         :cvar TAG: AHAB signature block tag identifier.
         """
 
-        VERSION = [0]
+        VERSION: list[int] = [0]  # noqa: RUF012
         TAG = AHABTags.SIGNATURE_BLOCK.tag
 
     logger.info("Trying to find signature blocks version 0 on every 0x10 bytes")

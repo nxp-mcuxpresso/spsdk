@@ -230,7 +230,6 @@ class CmdHeader(Header):
         :return: Header object
         :raises SPSDKError: If required header tag does not exist
         """
-        if required_tag is not None:
-            if required_tag not in CmdTag.tags():
-                raise SPSDKError("Invalid tag")
+        if required_tag is not None and required_tag not in CmdTag.tags():
+            raise SPSDKError("Invalid tag")
         return super().parse(data, required_tag)

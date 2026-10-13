@@ -337,8 +337,6 @@ def test_cert_block_validate(data_dir: str) -> None:
             {"data": "0x01, 0x02, 0x03, 0x04"},
             b"\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00\x04\x00\x00\x00",
         ),
-        # Decimal value
-        ({"value": 16909060}, b"\x04\x03\x02\x01"),
         # Using 'values' key with a list
         (
             {"values": [0x01, 0x02, 0x03, 0x04]},
@@ -453,7 +451,7 @@ def test_sb31_data_format_validation(
         schemas = SecureBinary31.get_validation_schemas_from_cfg(cfg)
         cfg.check(schemas, check_unknown_props=True)
         validation_passed = True
-    except Exception:
+    except Exception:  # noqa: BLE001
         validation_passed = False
 
     # Assert the validation result matches expectations

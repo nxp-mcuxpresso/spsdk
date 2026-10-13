@@ -1,3 +1,5 @@
+.. _debug_probe:
+
 Debuggers API
 =============
 

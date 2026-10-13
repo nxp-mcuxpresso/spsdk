@@ -15,7 +15,7 @@ import math
 from collections.abc import Iterator
 from hashlib import sha256
 from struct import pack, unpack, unpack_from
-from typing import Any
+from typing import ClassVar
 
 from typing_extensions import Self
 
@@ -88,7 +88,7 @@ class SrkItem:
     like hashing, serialization, and digest generation.
     """
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check equality of two HAB SRK objects.
 
         Compares two HAB SRK (Super Root Key) objects by checking if they are of the same
@@ -99,7 +99,7 @@ class SrkItem:
         """
         return isinstance(other, self.__class__) and vars(other) == vars(self)
 
-    def __ne__(self, obj: Any) -> bool:
+    def __ne__(self, obj: object) -> bool:
         """Check if two objects are not equal.
 
         This method implements the inequality comparison operator by negating the equality
@@ -527,7 +527,7 @@ class SrkItemEcc(SrkItem):
     :cvar ECC_KEY_TYPE: Mapping of ECC curves to their corresponding key type identifiers.
     """
 
-    ECC_KEY_TYPE = {
+    ECC_KEY_TYPE: ClassVar[dict[EccCurve, int]] = {
         EccCurve.SECP256R1: 0x4B,
         EccCurve.SECP384R1: 0x4D,
         EccCurve.SECP521R1: 0x4E,

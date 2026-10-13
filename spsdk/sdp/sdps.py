@@ -16,6 +16,8 @@ from dataclasses import dataclass
 from struct import pack
 from typing import Any
 
+from typing_extensions import Self
+
 from spsdk.exceptions import SPSDKConnectionError, SPSDKError, SPSDKValueError
 from spsdk.sdp.exceptions import SdpConnectionError
 from spsdk.sdp.interfaces import SDPDeviceTypes
@@ -150,7 +152,7 @@ class SDPS:
             raise SPSDKValueError(f"Device family is not supported {value}")
         self._family = value
 
-    def __enter__(self) -> "SDPS":
+    def __enter__(self) -> Self:
         """Enter the runtime context of the SDPS object.
 
         This method is used as part of the context manager protocol to initialize
@@ -161,7 +163,7 @@ class SDPS:
         self.open()
         return self
 
-    def __exit__(self, *args: Any, **kwargs: Any) -> None:
+    def __exit__(self, *args: object, **kwargs: Any) -> None:
         """Close the SDP connection and clean up resources.
 
         This method is called automatically when exiting a context manager (with statement)
@@ -181,7 +183,7 @@ class SDPS:
         :raises SPSDKError: If the interface fails to open or connect to the device.
         """
         if not self.is_opened:
-            logger.info(f"Connect: {str(self._interface)}")
+            logger.info(f"Connect: {self._interface!s}")
             self._interface.open()
 
     def close(self) -> None:

@@ -32,7 +32,7 @@ from spsdk.utils.abstract_features import FeatureBaseClass
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
-from spsdk.utils.misc import load_binary, value_to_int
+from spsdk.utils.misc import value_to_int
 from spsdk.utils.verifier import Verifier, VerifierRecord, VerifierResult
 
 logger = logging.getLogger(__name__)
@@ -92,8 +92,8 @@ class DebugAuthenticateResponse(FeatureBaseClass):
 
         :return: Formatted string representation of the DebugAuthenticateResponse object.
         """
-        msg = f"DAC:\n{str(self.dac)}\n"
-        msg += f"DC:\n{str(self.debug_credential)}\n"
+        msg = f"DAC:\n{self.dac!s}\n"
+        msg += f"DC:\n{self.debug_credential!s}\n"
         msg += f"Authentication Beacon: {hex(self.auth_beacon)}\n"
         return msg
 
@@ -183,8 +183,8 @@ class DebugAuthenticateResponse(FeatureBaseClass):
         family = FamilyRevision.load_from_config(config)
         auth_beacon = config.get_int("beacon", 0)
         dck = get_signature_provider(config, pss_padding=cls._use_pss_padding(family))
-        dc = DebugCredentialCertificate.parse(
-            load_binary(config.get_input_file_name("certificate")), family=family
+        dc = DebugCredentialCertificate.load_from_config_or_binary(
+            config.get_output_file_name("certificate"), family=family
         )
         return cls(
             family=family, debug_credential=dc, auth_beacon=auth_beacon, dac=dac, sign_provider=dck
@@ -258,8 +258,8 @@ class DebugAuthenticateResponse(FeatureBaseClass):
         ):
             return DebugAuthenticateResponseEdgelockEnclaveV2  # type: ignore
 
-        dc = DebugCredentialCertificate.parse(
-            load_binary(config.get_input_file_name("certificate")), family=family
+        dc = DebugCredentialCertificate.load_from_config_or_binary(
+            config.get_output_file_name("certificate"), family=family
         )
 
         return cls._get_class(family=family, protocol_version=dc.version)
@@ -421,6 +421,12 @@ class DebugAuthenticateResponse(FeatureBaseClass):
 
         # Verify ROTH / SRKs using the extracted method
         ret.records.append(self._verify_rot_hash())
+
+        # Verify CC Vendor Usage bit range – validates that the values are structurally
+        # valid 32-bit fields. DAC and DC may legitimately carry different values.
+        if not DebugCredentialCertificate.dat_based_on_ele(self.family):
+            ret.add_record_bit_range("CC Vendor Usage (DAC)", self.dac.cc_vu, 32)
+            ret.add_record_bit_range("CC Vendor Usage (DC)", self.debug_credential.cc_vu, 32)
 
         return ret
 
@@ -587,8 +593,8 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
         db = get_db(family=family)
         use_beacon = db.get_bool(DatabaseManager.DAT, "used_beacons_on_ele", False)
         auth_beacon = value_to_int(config.pop("beacon", 0)) if use_beacon else 0
-        dc = DebugCredentialEdgeLockEnclaveV2.parse(
-            load_binary(config.get_input_file_name("certificate")), family=family
+        dc = DebugCredentialEdgeLockEnclaveV2.load_from_config_or_binary(
+            config.get_output_file_name("certificate"), family=family
         )
         # add missing parts to config from DC & DAC
         config["fuse_version"] = config.get_int("fuse_version", 0)
@@ -694,6 +700,67 @@ class DebugAuthenticateResponseEdgelockEnclaveV2(DebugAuthenticateResponse):
         return VerifierRecord(
             name=ver_name, result=VerifierResult.SUCCEEDED, value=used_rotkh.hex()
         )
+
+    def _verify_srk_revoke_mask(self) -> VerifierRecord:
+        """Verify SRK revoke mask between DAC and signed message.
+
+        Compares the SRK revoke mask from the DAC (rotid_rkh_revocation field, which carries
+        the revocation state from device fuses) against the srk_revoke_mask in the signed
+        message container flags. The signed message must include all keys already revoked in
+        fuses; it may additionally revoke more keys (superset is allowed). ELE rejects a signed
+        message that drops an already-revoked key, so this check catches a misconfigured Debug
+        Credential before sending the DAR to the device.
+
+        :return: VerifierRecord containing the SRK revoke mask verification result with
+                 success or error status and corresponding values.
+        """
+        if self.sign_message.signed_msg_container is None:
+            return VerifierRecord(
+                name="SRK Revoke Mask",
+                result=VerifierResult.ERROR,
+                value="Signed message container is missing",
+            )
+
+        dac_revoke_mask = self.dac.rotid_rkh_revocation
+        dc_revoke_mask = self.sign_message.signed_msg_container.flag_srk_revoke_keys
+
+        # The signed message must have all bits that are already revoked in fuses set.
+        # It is valid for the signed message to revoke additional keys (dc_revoke_mask is
+        # a superset of dac_revoke_mask), but dropping an already-revoked key is rejected by ELE.
+        missing_bits = dac_revoke_mask & ~dc_revoke_mask
+        if missing_bits:
+            return VerifierRecord(
+                name="SRK Revoke Mask",
+                result=VerifierResult.ERROR,
+                value=(
+                    "Signed message does not include all keys already revoked in fuses. "
+                    "ELE will reject the signed message.\n"
+                    f"DAC (fuses):      0x{dac_revoke_mask:02X}\n"
+                    f"DC  (signed msg): 0x{dc_revoke_mask:02X}\n"
+                    f"Missing bits:     0x{missing_bits:02X}"
+                ),
+            )
+
+        return VerifierRecord(
+            name="SRK Revoke Mask",
+            result=VerifierResult.SUCCEEDED,
+            value=f"DAC: 0x{dac_revoke_mask:02X}, DC: 0x{dc_revoke_mask:02X}",
+        )
+
+    def verify(self) -> Verifier:
+        """Validate Debug Authentication Response for EdgeLock Enclave devices.
+
+        Extends the base class verification with ELE-specific checks. In addition to the
+        standard DAR verifications (protocol version, SOCC, UUID, RoT hash), this method
+        also validates the SRK revoke mask from the DAC against the value in the signed
+        message, ensuring the DC was constructed correctly for the target device.
+
+        :return: Verifier object containing detailed validation results including the
+                 SRK revoke mask check.
+        """
+        ret = super().verify()
+        ret.records.append(self._verify_srk_revoke_mask())
+        return ret
 
 
 _version_mapping = {

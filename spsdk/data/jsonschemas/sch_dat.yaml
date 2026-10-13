@@ -276,7 +276,9 @@ dat_classic:
     certificate:
       type: string
       title: Debug Credential Certificate file
-      description: A debug credential binary file provided by owner of Root Keys. The file could be created by 'dc' group of commands.
+      description:
+        A debug credential file provided by owner of Root Keys. It could be used as an already prepared binary file
+        (created by the 'dc' group of commands), or it is possible to use a configuration YAML file of debug credential.
       format: file
       template_value: dc.bin
     beacon:

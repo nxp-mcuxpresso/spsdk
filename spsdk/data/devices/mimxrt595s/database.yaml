@@ -50,6 +50,9 @@ info:
           pid: 0x0023
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe: {}
+
   # ======== Blhost section ========
   blhost: {}
 

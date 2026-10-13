@@ -8,6 +8,7 @@
 
 import pytest
 
+from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.exceptions import SPSDKParsingError, SPSDKValueError
 from spsdk.image.hse.common import (
     AuthScheme,
@@ -24,6 +25,7 @@ from spsdk.image.hse.common import (
     XcbcMacScheme,
 )
 from spsdk.utils.config import Config
+from spsdk.utils.family import FamilyRevision
 
 
 def test_ecdsa_scheme_init() -> None:
@@ -324,6 +326,49 @@ def test_auth_scheme_registry() -> None:
     assert AuthSchemeEnum.HMAC in schemes
     assert AuthSchemeEnum.GMAC in schemes
     assert AuthSchemeEnum.XCBC_MAC in schemes
+
+
+def test_hash_algo_get_available_hash_algorithms() -> None:
+    """Test that available hash algorithms are read from the database."""
+    family = FamilyRevision("mcxe31b")
+    algorithms = HashAlgo.get_available_hash_algorithms(family)
+
+    # NULL and RESERVED1 are never selectable hash algorithms
+    assert HashAlgo.NULL not in algorithms
+    assert HashAlgo.RESERVED1 not in algorithms
+    # The database default list must be present
+    assert HashAlgo.SHA1 in algorithms
+    assert HashAlgo.SHA256 in algorithms
+    assert HashAlgo.SHA512_224 in algorithms
+    assert HashAlgo.SHA3_512 in algorithms
+
+
+@pytest.mark.parametrize(
+    "hash_algo,expected",
+    [
+        (HashAlgo.SHA1, EnumHashAlgorithm.SHA1),
+        (HashAlgo.SHA224, EnumHashAlgorithm.SHA224),
+        (HashAlgo.SHA256, EnumHashAlgorithm.SHA256),
+        (HashAlgo.SHA384, EnumHashAlgorithm.SHA384),
+        (HashAlgo.SHA512, EnumHashAlgorithm.SHA512),
+        (HashAlgo.SHA512_224, EnumHashAlgorithm.SHA512_224),
+        (HashAlgo.SHA512_256, EnumHashAlgorithm.SHA512_256),
+        (HashAlgo.SHA3_224, EnumHashAlgorithm.SHA3_224),
+        (HashAlgo.SHA3_256, EnumHashAlgorithm.SHA3_256),
+        (HashAlgo.SHA3_384, EnumHashAlgorithm.SHA3_384),
+        (HashAlgo.SHA3_512, EnumHashAlgorithm.SHA3_512),
+    ],
+)
+def test_hash_algo_get_crypto_algorithm(hash_algo: HashAlgo, expected: EnumHashAlgorithm) -> None:
+    """Test conversion from HSE HashAlgo to crypto EnumHashAlgorithm."""
+    assert hash_algo.get_crypto_algorithm() == expected
+
+
+@pytest.mark.parametrize("hash_algo", [HashAlgo.NULL, HashAlgo.RESERVED1])
+def test_hash_algo_get_crypto_algorithm_invalid(hash_algo: HashAlgo) -> None:
+    """Test that NULL and RESERVED1 hash algorithms have no crypto equivalent."""
+    with pytest.raises(SPSDKValueError):
+        hash_algo.get_crypto_algorithm()
 
 
 def test_auth_scheme_parse_invalid_type() -> None:

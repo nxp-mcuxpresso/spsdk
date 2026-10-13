@@ -89,11 +89,6 @@ features:
     auth_beacon_length: 2 # The length in bytes of authentication beacon
 
     dmbox_ap_ix: -1 # Typical Index of debug mailbox access port is 2
-    mem_ap_ix: -1 # Typical Index of debug mailbox access port is 0
-    enable_power_domains_after_connect: False # Power up system/debug domains after probe connect
-    enable_sda_debug_paths_after_connect: False # Enable debug paths through SDA AP after connect
-    mem_ap_preserve_csw_ro_bits: False # Preserve MEM-AP CSW read-only bits during memory transfers
-    mem_ap_scan_write_before_read: False # Use write-before-read while detecting MEM-AP
     # non_standard_statuses: # dictionary of non standard return statuses from various commands
     #   2:  # Command get_crp_level
     #     0xFFFF_FFFF: ROP_LEVEL0
@@ -101,6 +96,10 @@ features:
     #     0x4939_8D8B: ROP_LEVEL2
     #     0xB0AB_B703: ROP_LEVEL3
     dac_rot_type: default # Default type is full RKTH/SRK value
+
+    # List of non-standard/optional debug mailbox commands supported by the device ROM.
+    # Standard DM commands are always available; list only extras, e.g. 'read-from-flash'.
+    non_standard_commands: []
 
     command_delays: # Additional standard command delays per individual DM commands
       ERASE_FLASH: 0.5
@@ -133,6 +132,10 @@ features:
     image_types: {}
     image_types_mapping: {}
     allow_empty_hash: False # Some chips allow empty image hash in OEM Open LC
+    allow_key_mix: False # Some chips allow mixed SRK key types in a single SRK table
+    # Recommended offset of the first data image. Zero means that the container version
+    # specific default is used (START_IMAGE_ADDRESS class constant).
+    start_image_address: 0
     # image_types: Keep it here as a template for new NPI
     #     CSF: [0x01, csf, CSF Image]
     #     SCD: [0x02, scd, SCD Image]
@@ -177,6 +180,24 @@ features:
       srkh: "__srk_hash" # SRK hash fuse
 
     metadata: scfw
+
+  # ======== Debug probe access section ========
+  debug_probe:
+    protocols: [swd] # Supported debug probe protocols: swd, jtag, once
+    reset_type: hw_reset # possible options: [hw_reset, nvic_reset]
+    # Default Cortex-M system reset sequence using SCB AIRCR register.
+    # Address 0xE000ED0C is the standard AIRCR register in System Control Block.
+    # Value 0x05FA0004 combines the required VECTKEY (0x05FA) with SYSRESETREQ bit.
+    # It is defined in common debug probe defaults because this reset mechanism is standardized
+    # across Cortex-M families and device databases only need to override it when needed.
+    nvic_reset:
+      address: 0xE000ED0C
+      value: 0x05FA0004
+    mem_ap_index: -1 # Fixed memory access port index; -1 means auto-detect
+    enable_power_domains_after_connect: False # Power up system/debug domains after probe connect
+    enable_sda_debug_paths_after_connect: False # Enable debug paths through SDA AP after connect
+    mem_ap_preserve_csw_ro_bits: False # Preserve MEM-AP CSW read-only bits during memory transfers
+    mem_ap_scan_write_before_read: False # Use write-before-read while detecting MEM-AP
 
   # ======== PFR section ========
   pfr:
@@ -240,6 +261,14 @@ features:
     max_contexts: 16
     min_contexts: 1
     address_alignment: 0x100
+    interleaved_gcm_tags: false
+    rom_config_blob: false
+    prince_v2_model: false
+    backend_device: ""
+    backend_instance: xspi0
+    show_derivation_template_fields: false
+    derivation_lifecycles: []
+    derivation_instance_map: {}
 
   # ======== Secure binary v2.1 section ========
   sb21:
@@ -532,6 +561,19 @@ features:
       - "EDDSA"
       - "RSASSA_PKCS1_V15"
       - "RSASSA_PSS"
+    # Hash algorithms supported for SMR entry authentication schemes (ECDSA, RSA, HMAC).
+    hash_algorithms:
+      - "SHA1"
+      - "SHA224"
+      - "SHA256"
+      - "SHA384"
+      - "SHA512"
+      - "SHA512_224"
+      - "SHA512_256"
+      - "SHA3_224"
+      - "SHA3_256"
+      - "SHA3_384"
+      - "SHA3_512"
     smr_regions_count: 32
     rsa_pub_exponent_max_size: 16
     supported_key_types:

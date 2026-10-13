@@ -15,7 +15,7 @@ device support, features, MBI configurations, and other documentation assets.
 import itertools
 import os
 from functools import lru_cache
-from typing import Any, Optional
+from typing import Any
 
 import nbformat
 import requests
@@ -189,7 +189,7 @@ def get_targets() -> list[str]:
     :return: List of all available target names from the device database.
     """
     targets = []
-    for _, val in MAP_IMAGE_TARGETS["targets"].items():
+    for val in MAP_IMAGE_TARGETS["targets"].values():
         targets.append(val[0])
     return targets
 
@@ -200,7 +200,7 @@ def get_authentications() -> list[str]:
     :return: List of all authentication types available in the system.
     """
     authentications = []
-    for _, val in MAP_AUTHENTICATIONS.items():
+    for val in MAP_AUTHENTICATIONS.values():
         authentications.append(val[0])
     return authentications
 
@@ -381,7 +381,7 @@ def generate_features_table(
     heading: str,
     features_mapping: dict[str, str],
     table_file: str,
-    ignored_features: Optional[list[str]] = None,
+    ignored_features: list[str] | None = None,
 ) -> None:
     """Generate table for features with device compatibility matrix.
 
@@ -507,9 +507,7 @@ def get_notebook_header(notebook_path: str) -> str:
     return os.path.basename(notebook_path)
 
 
-def get_jupyters_for_device(
-    device: str, alternative_device_name: Optional[str] = None
-) -> list[str]:
+def get_jupyters_for_device(device: str, alternative_device_name: str | None = None) -> list[str]:
     """Get list of Jupyter notebooks for the specified device.
 
     Searches through the examples directory to find all Jupyter notebook files
@@ -598,7 +596,7 @@ def generate_devices_list(output_file: str) -> None:
         "============================\n",
     ]
 
-    for category, devices in itertools.groupby(  # type: ignore
+    for category, grouped_devices in itertools.groupby(  # type: ignore
         devices, key=lambda x: DatabaseManager().quick_info.devices.devices.get(x).info.purpose  # type: ignore
     ):
         lines.append("\n")
@@ -609,8 +607,8 @@ def generate_devices_list(output_file: str) -> None:
                 "========================================================\n",
             ]
         )
-        devices = sorted(devices)
-        for device in devices:
+        sorted_devices = sorted(grouped_devices)
+        for device in sorted_devices:
 
             device_full = DatabaseManager().db.devices.get(device)
             features = get_filtered_features(device_full)

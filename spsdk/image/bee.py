@@ -86,7 +86,7 @@ class BeeBaseClass:
         """
         return calcsize(cls._struct_format())
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check equality with another object.
 
         Compares this instance with another object by checking if they are of the same class
@@ -494,14 +494,12 @@ class BeeProtectRegionBlock(BeeBaseClass):
             counter,
             _reserved_32,
         ) = unpack_from(BeeProtectRegionBlock._struct_format(), data)
-        #
         if (tagl != BeeProtectRegionBlock.TAGL) or (tagh != BeeProtectRegionBlock.TAGH):
             raise SPSDKError("Invalid tag or unsupported version")
         if version != BeeProtectRegionBlock.VERSION:
             raise SPSDKError("Unsupported version")
         if _reserved_32 != b"\x00" * 32:
             raise SPSDKError("Reserved area is non-zero")
-        #
         result = cls(BeeProtectRegionBlockAesMode.from_tag(mode), lock_options, counter[::-1])
         result._start_addr = start_addr
         result._end_addr = end_addr
@@ -554,7 +552,7 @@ class BeeProtectRegionBlock(BeeBaseClass):
                     )
                     logger.debug(
                         f"Encrypting data, start={hex(start_addr)},"
-                        f"end={hex(start_addr + len(data))} with {str(self)} using fac {str(fac)}"
+                        f"end={hex(start_addr + len(data))} with {self!s} using fac {fac!s}"
                     )
                     data = align_block_fill_random(data, 16)  # align data to 16 bytes
                     return aes_ctr_encrypt(key, data, cntr_key.value)
@@ -739,8 +737,8 @@ class BeeRegionHeader(BeeBaseClass):
         :return: Formatted string containing BEE region header information including KIB and PRDB details.
         """
         result = "BEE Region Header\n"
-        result += f"- KIB: {str(self._kib)}"
-        result += f"- PRDB: {str(self._prdb)}"
+        result += f"- KIB: {self._kib!s}"
+        result += f"- PRDB: {self._prdb!s}"
         return result
 
     def sw_key_fuses(self) -> Sequence[int]:
@@ -902,7 +900,7 @@ class Bee(FeatureBaseClass):
         :return: String representation of the BEE object with headers details.
         """
         ret = repr(self)
-        ret += f"\nHeaders: {str(self.headers)}\n"
+        ret += f"\nHeaders: {self.headers!s}\n"
 
         return ret
 
@@ -1047,7 +1045,7 @@ class Bee(FeatureBaseClass):
                 for region in header.fac_regions:
                     if region.start_addr <= start_addr < region.end_addr:
                         raise SPSDKOverlapError(
-                            f"Region start address {hex(start_addr)} is overlapping with {str(region)}"
+                            f"Region start address {hex(start_addr)} is overlapping with {region!s}"
                         )
 
     def get_config(self, data_path: str = "./") -> Config:

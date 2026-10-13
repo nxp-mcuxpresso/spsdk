@@ -12,6 +12,7 @@ and validation functionality.
 """
 
 from dataclasses import dataclass
+from typing import ClassVar
 
 from typing_extensions import Self
 
@@ -30,7 +31,7 @@ class ProtocolVersion:
     :cvar VERSIONS: List of supported protocol version strings.
     """
 
-    VERSIONS = [
+    VERSIONS: ClassVar[list[str]] = [
         "1.0",
         "1.1",
         "2.0",

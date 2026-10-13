@@ -30,6 +30,7 @@ from spsdk.utils.misc import align_block, write_file
 from spsdk.utils.verifier import Verifier
 
 logger = logging.getLogger(__name__)
+UNKNOWN_FAMILY = FamilyRevision("unknown")
 
 
 class HabSegmentApp(HabSegmentBase):
@@ -124,7 +125,7 @@ class HabSegmentApp(HabSegmentBase):
         return self.binary
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse APP segment block from image binary.
 
         The method extracts the application segment from HAB container data by first parsing

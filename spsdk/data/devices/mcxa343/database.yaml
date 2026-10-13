@@ -27,6 +27,9 @@ info:
         interfaces: ["uart", "spi", "i2c"]
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe: {}
+
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x2000_0000

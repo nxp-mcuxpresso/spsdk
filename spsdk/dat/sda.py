@@ -587,10 +587,13 @@ class SdaAuthentication:
         :return: Register value (32-bit).
         :raises SPSDKError: If read fails.
         """
+        # SDA AP on MCXE3xx is access-gated by DAPMUX before authentication and is not
+        # reachable through a MEM-AP. Use direct CoreSight AP access.
+        self.debug_probe.connect()
         full_addr = DebugProbeCoreSightOnly.get_coresight_ap_address(
             access_port=self.sda_ap_index, address=addr
         )
-        return self.debug_probe.mem_reg_read(addr=full_addr)
+        return self.debug_probe.coresight_reg_read_safe(addr=full_addr)
 
     @get_sda_ap
     def _write_reg(self, addr: int, data: int) -> None:
@@ -600,7 +603,9 @@ class SdaAuthentication:
         :param data: Data value (32-bit).
         :raises SPSDKError: If write fails.
         """
+        # See _read_reg: SDA AP requires direct CoreSight AP access.
+        self.debug_probe.connect()
         full_addr = DebugProbeCoreSightOnly.get_coresight_ap_address(
             access_port=self.sda_ap_index, address=addr
         )
-        self.debug_probe.mem_reg_write(addr=full_addr, data=data)
+        self.debug_probe.coresight_reg_write_safe(addr=full_addr, data=data)

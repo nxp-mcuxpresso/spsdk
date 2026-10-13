@@ -14,10 +14,11 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import IntEnum
 from struct import calcsize, pack, unpack
-from typing import Any
+from typing import Any, ClassVar
 
 from typing_extensions import Self
 
+from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKParsingError, SPSDKValueError
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
@@ -111,6 +112,27 @@ class HashAlgo(SpsdkEnum):
     SHA3_256 = (10, "SHA3_256", "SHA3_256 hash")
     SHA3_384 = (11, "SHA3_384", "SHA3_384 hash")
     SHA3_512 = (12, "SHA3_512", "SHA3_512 hash")
+
+    @classmethod
+    def get_available_hash_algorithms(cls, family: FamilyRevision) -> list["HashAlgo"]:
+        """Get available hash algorithms for the given family.
+
+        :param family: Target device family and revision.
+        :return: List of supported HashAlgo members for the family.
+        """
+        db = get_db(family)
+        labels = db.get_list(DatabaseManager.HSE, "hash_algorithms")
+        return [cls.from_label(label) for label in labels]
+
+    def get_crypto_algorithm(self) -> "EnumHashAlgorithm":
+        """Convert the HSE hash algorithm to the corresponding crypto hash algorithm.
+
+        :raises SPSDKValueError: If the hash algorithm has no crypto equivalent.
+        :return: Corresponding EnumHashAlgorithm member.
+        """
+        if self in (HashAlgo.NULL, HashAlgo.RESERVED1):
+            raise SPSDKValueError(f"Hash algorithm {self.label} has no crypto equivalent")
+        return EnumHashAlgorithm.from_label(self.label.lower())
 
 
 class AuthSchemeEnum(SpsdkEnum):
@@ -359,7 +381,7 @@ class AuthScheme:
     # export() always pads to this size so the hseSmrEntry_t binary layout is correct.
     AUTH_SCHEME_TOTAL_SIZE: int = 12
 
-    _registry: dict[AuthSchemeEnum, type["AuthScheme"]] = {}
+    _registry: ClassVar[dict[AuthSchemeEnum, type["AuthScheme"]]] = {}
 
     def __repr__(self) -> str:
         """Return representation of authentication scheme.
@@ -992,13 +1014,11 @@ class HseCipherSchemeBase(ABC):
     @abstractmethod
     def export(self) -> bytes:
         """Convert cipher scheme to bytes."""
-        pass
 
     @classmethod
     @abstractmethod
     def parse(self, data: bytes) -> Self:
         """Load cipher scheme from bytes."""
-        pass
 
 
 class HseAeadScheme(HseCipherSchemeBase):

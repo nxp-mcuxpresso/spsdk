@@ -50,6 +50,15 @@ class SPSDKLogger(logging.Logger):
             self._log(SPSDK_LOG_LEVEL_TRACE, message, args, **kwargs)  # type: ignore[arg-type]
 
 
+def _is_spsdk_logger_name(name: str) -> bool:
+    """Return True if logger name is inside the SPSDK logging namespace.
+
+    :param name: Logger name to check.
+    :return: True if the logger belongs to the SPSDK namespace.
+    """
+    return name == "spsdk" or name.startswith("spsdk.")
+
+
 def get_logger(name: str) -> SPSDKLogger:
     """Get a typed SPSDK logger with TRACE level support.
 
@@ -61,7 +70,7 @@ def get_logger(name: str) -> SPSDKLogger:
     :return: SPSDKLogger instance with TRACE level support.
     """
     # Ensure logger is in spsdk hierarchy
-    if not name.startswith("spsdk"):
+    if not _is_spsdk_logger_name(name):
         full_name = f"spsdk.{name}"
     else:
         full_name = name
@@ -94,8 +103,8 @@ def configure_logging(config_dict: dict) -> None:
     # Extract SPSDK logger names from config
     spsdk_logger_names = set()
     if "loggers" in config_dict:
-        for logger_name in config_dict["loggers"].keys():
-            if logger_name.startswith("spsdk") or logger_name == "spsdk":
+        for logger_name in config_dict["loggers"]:
+            if _is_spsdk_logger_name(logger_name):
                 spsdk_logger_names.add(logger_name)
 
     # Pre-create all SPSDK loggers with SPSDKLogger class before applying config
@@ -120,7 +129,7 @@ def _ensure_spsdk_loggers_are_correct_type() -> None:
 
     # Collect all spsdk loggers that need conversion
     for logger_name in list(logging_manager.loggerDict.keys()):
-        if isinstance(logger_name, str) and logger_name.startswith("spsdk"):
+        if isinstance(logger_name, str) and _is_spsdk_logger_name(logger_name):
             logger = logging_manager.loggerDict[logger_name]
 
             # Skip PlaceHolder objects and already-correct loggers
@@ -201,30 +210,30 @@ __release__ = "beta"
 
 # Public API exports
 __all__ = [
-    "SPSDK_LOG_LEVEL_TRACE",
-    "SPSDKLogger",
-    "get_logger",
-    "configure_logging",
-    "SPSDKPlatformDirs",
-    "get_spsdk_version",
-    "value_to_bool",
-    "SPSDK_VERSION_BASE",
-    "SPSDK_DATA_FOLDER",
-    "SPSDK_PLATFORM_DIRS",
-    "SPSDK_RESTRICTED_DATA_FOLDER",
+    "ROOT_DIR",
     "SPSDK_ADDONS_DATA_FOLDER",
-    "SPSDK_CACHE_FOLDER",
     "SPSDK_CACHE_DISABLED",
-    "SPSDK_INTERACTIVE_DISABLED",
+    "SPSDK_CACHE_FOLDER",
+    "SPSDK_DATA_FOLDER",
     "SPSDK_DEBUG",
     "SPSDK_DEBUG_DB",
-    "SPSDK_YML_INDENT",
-    "ROOT_DIR",
-    "SPSDK_EXAMPLES_FOLDER",
     "SPSDK_DEBUG_LOGGING_DISABLED",
     "SPSDK_DEBUG_LOG_FILE",
+    "SPSDK_EXAMPLES_FOLDER",
+    "SPSDK_INTERACTIVE_DISABLED",
+    "SPSDK_LOG_LEVEL_TRACE",
+    "SPSDK_PLATFORM_DIRS",
+    "SPSDK_RESTRICTED_DATA_FOLDER",
     "SPSDK_SCHEMA_STRICT",
     "SPSDK_SECRETS_PATH",
+    "SPSDK_VERSION_BASE",
+    "SPSDK_YML_INDENT",
+    "SPSDKLogger",
+    "SPSDKPlatformDirs",
+    "configure_logging",
+    "get_logger",
+    "get_spsdk_version",
+    "value_to_bool",
 ]
 
 

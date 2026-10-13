@@ -70,6 +70,11 @@ info:
         hid_ep1: True
         hid_pack_size: 1020
 features:
+  # ======== Debug probe access section ========
+  debug_probe:
+    protocols: [swd, jtag]
+    test_address: 0x2048_0000
+
   # ======== Fuses description section ========
   fuses:
     tool: nxpele
@@ -191,7 +196,6 @@ features:
     socc: 0x4D58005B # SOCC identification
     based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
     dat_is_using_sha256_always: True
-    test_address: 0x2048_0000
     dmbox_ap_ix: 0
 
   # ======== FCB section ========

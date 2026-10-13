@@ -14,7 +14,7 @@ import logging
 import os
 from abc import abstractmethod
 from copy import deepcopy
-from typing import Any, TypeVar, cast
+from typing import Any, cast
 
 from typing_extensions import Self
 
@@ -31,7 +31,6 @@ from spsdk.utils.misc import (
 from spsdk.utils.schema_validator import check_config
 
 logger = logging.getLogger(__name__)
-_VT = TypeVar("_VT")
 
 
 class Config(dict):
@@ -57,10 +56,19 @@ class Config(dict):
         :param args: Variable length argument list passed to parent dictionary constructor.
         :param kwargs: Arbitrary keyword arguments passed to parent dictionary constructor.
         """
+        source_cfg: Config | None = args[0] if args and isinstance(args[0], Config) else None
         super().__init__(*args, **kwargs)
-        self.config_dir = os.getcwd()
-        self.config_name = ""
-        self.search_paths: list[str] = []
+        self.config_dir: str
+        self.config_name: str
+        self.search_paths: list[str]
+        if source_cfg is not None:
+            self.config_dir = source_cfg.config_dir
+            self.config_name = source_cfg.config_name
+            self.search_paths = source_cfg.search_paths.copy()
+        else:
+            self.config_dir = os.getcwd()
+            self.config_name = ""
+            self.search_paths = []
 
     @classmethod
     def create_from_file(cls, file_path: str) -> Self:
@@ -153,7 +161,7 @@ class Config(dict):
                 raise SPSDKError("Invalid configuration key path.")
 
             if ret is None:
-                raise SPSDKKeyError(f"The {key} doesn't exists in {str(self)}")
+                raise SPSDKKeyError(f"The {key} doesn't exists in {self!s}")
 
             if len(key_path):
                 return gets(ret, key_path)
@@ -222,7 +230,7 @@ class Config(dict):
         try:
             return find_file(self[key], search_paths=self.search_paths)
         except SPSDKError as exc:
-            raise SPSDKError(f"Cannot find input file for '{key}': {str(exc)}") from exc
+            raise SPSDKError(f"Cannot find input file for '{key}': {exc!s}") from exc
 
     def get_output_file_name(self, key: str) -> str:
         """Get the absolute output file name.
@@ -264,7 +272,7 @@ class Config(dict):
         try:
             path = find_file(self[key], search_paths=self.search_paths)
         except SPSDKError as exc:
-            raise SPSDKError(f"Cannot find file for '{key}': {str(exc)}") from exc
+            raise SPSDKError(f"Cannot find file for '{key}': {exc!s}") from exc
         ret = self.create_from_file(path)
         if target_klass:
             schemas = cast(FeatureBaseClass, target_klass).get_validation_schemas_from_cfg(ret)
@@ -518,9 +526,8 @@ class PreValidationHook:
         else:
             # Process only specified keys
             for key in self.register_keys:
-                if key in result:
-                    if isinstance(result[key], dict):
-                        self.process_registers(result[key])
+                if key in result and isinstance(result[key], dict):
+                    self.process_registers(result[key])
 
         return result
 

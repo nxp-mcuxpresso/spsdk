@@ -27,8 +27,17 @@ whole_ahab_image:
     output_format:
       type: string
       title: Output file format
-      description: Output file format for AHAB image
-      enum: [bin, hex, srec, sparse]
+      description: |-
+        Format of the output file.
+        bin = raw binary (default);
+        hex = Intel HEX;
+        srec = Motorola S-record;
+        sparse = sparse binary;
+        elf = minimal flash-ready ELF with PT_LOAD segments (no debug info);
+        elf_patch = patch the input source ELF file preserving DWARF debug info and symbols
+        for direct flash+debug from IDE (requires spsdk 'elf' extension:
+        pip install spsdk[elf] or pip install spsdk[all]).
+      enum: [bin, hex, srec, sparse, elf, elf_patch]
       template_value: bin
     output_offset:
       type: [string, number]
@@ -534,6 +543,20 @@ whole_ahab_image:
                               template_value: True
 
                         - type: object
+                          template_title: FCB Copy
+                          image_identifier: fcb_copy
+                          skip_in_template: True
+                          description: Flash Configuration Block copy image container definition
+                          required: [fcb_copy]
+                          properties:
+                            fcb_copy:
+                              type: string
+                              title: FCB Copy Binary
+                              description: Flash Configuration Block binary copied into the AHAB container for verification
+                              template_value: fcb.bin
+                              format: file
+
+                        - type: object
                           template_title: General Image Entry
                           image_identifier: general_image
                           description: General Image Entry
@@ -658,9 +681,17 @@ whole_ahab_image:
                             gap_after_image:
                               type: number
                               title: Size of gap
-                              description: Size of empty gap just behind the image in AHAB container
+                              description: Size of gap just behind the image in AHAB container
                               template_value: 0
                               default: 0
+                              skip_in_template: True
+                            gap_after_image_file:
+                              type: string
+                              title: Gap payload file
+                              description: >
+                                Optional binary file written at the beginning of the reserved
+                                gap_after_image area. The file size must not exceed gap_after_image.
+                              format: file
                               skip_in_template: True
                   srk_table:
                     type: object
@@ -889,6 +920,14 @@ ahab_certificate:
       description: "Hash algorithm used for SRK records. If not specified, default algorithm based on key type will be used."
       enum: *ahab_hash_algorithms
       template_value: default
+    flag_ca_0:
+      type: boolean
+      title: CA Flag 0
+      description:
+        "CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys.
+        In AHAB CA Flag only affects the final SRKH (Super Root Key Hash) value burned into chip fuses. It is not used in the AHAB signing process itself.
+        This option exists only for compatibility with systems where fuses are already programmed. In most cases, this should remain false."
+      template_value: false
 
     public_key_1:
       type: string
@@ -907,6 +946,14 @@ ahab_certificate:
       description: "Hash algorithm used for SRK records. If not specified, default algorithm based on key type will be used."
       enum: *ahab_hash_algorithms
       template_value: default
+    flag_ca_1:
+      type: boolean
+      title: CA Flag 1
+      description:
+        "CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys.
+        In AHAB CA Flag only affects the final SRKH (Super Root Key Hash) value burned into chip fuses. It is not used in the AHAB signing process itself.
+        This option exists only for compatibility with systems where fuses are already programmed. In most cases, this should remain false."
+      template_value: false
 
 ahab_certificate_permission_data_ext:
   type: object
@@ -928,17 +975,26 @@ ahab_blob:
       type: string
       title: Lifecycle State
       description: |
-        Device lifecycle state for blob generation:
+        Device lifecycle state for blob generation using ELE-aligned labels:
         - fab: Fabrication state
-        - prov: Provisioning state
+        - nxp_prov: NXP Provisioned state
         - nxp_fr: NXP Field Return state
         - oem_open: OEM Open state
         - oem_fr: OEM Field Return state
         - oem_swc: OEM Software Closed state
-        - oem_locked: OEM Locked state
-        - oem_closed: OEM Closed state
+        - oem_clsd: OEM Closed state
+        - oem_lckd: OEM Locked state
       enum:
-        [fab, prov, nxp_fr, oem_open, oem_fr, oem_swc, oem_locked, oem_closed]
+        [
+          fab,
+          nxp_prov,
+          nxp_fr,
+          oem_open,
+          oem_fr,
+          oem_swc,
+          oem_clsd,
+          oem_lckd,
+        ]
       template_value: oem_open
     debug:
       type: boolean

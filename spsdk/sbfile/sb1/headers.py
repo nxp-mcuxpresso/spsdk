@@ -11,7 +11,7 @@ including boot flags, main boot headers, section headers, and boot section
 headers used in SB1 file format processing.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from struct import calcsize, pack, unpack_from
 
 from typing_extensions import Self
@@ -124,7 +124,9 @@ class SecureBootHeaderV1(BaseClass):
         self.section_header_size = SecBootBlckSize.to_num_blocks(BootSectionHeaderV1.SIZE)
         # Timestamp in microseconds size 1-1-2000 00:00 when the image was created.
         self.timestamp = (
-            timestamp if timestamp else datetime.fromtimestamp(int(datetime.now().timestamp()))
+            timestamp
+            if timestamp
+            else datetime.fromtimestamp(int(datetime.now(timezone.utc).timestamp()), timezone.utc)
         )
         # Product version in format #.#.#
         self.product_version: BcdVersion3 = BcdVersion3.to_version(product_version)
@@ -319,9 +321,10 @@ class SecureBootHeaderV1(BaseClass):
             raise SPSDKError("Invalid signature")
 
         # check header signature 2 for version 1.1 and greater
-        if (major_version > 1) or ((major_version == 1) and (minor_version >= 2)):
-            if signature2 != SecureBootHeaderV1._SIGNATURE2:
-                raise SPSDKError("Unexpected signature")
+        if (
+            (major_version > 1) or ((major_version == 1) and (minor_version >= 2))
+        ) and signature2 != SecureBootHeaderV1._SIGNATURE2:
+            raise SPSDKError("Unexpected signature")
 
         product_version = BcdVersion3(swap16(pv0), swap16(pv1), swap16(pv2))
         component_version = BcdVersion3(swap16(cv0), swap16(cv1), swap16(cv2))

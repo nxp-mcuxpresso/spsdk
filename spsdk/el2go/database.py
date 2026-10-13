@@ -132,8 +132,8 @@ class SecureObjectsDB(abc.ABC):
 
     def __exit__(
         self,
-        exc_type: type[Exception] | None = None,
-        exc_val: Exception | None = None,
+        exc_type: type[BaseException] | None = None,
+        exc_val: BaseException | None = None,
         exc_tb: TracebackType | None = None,
     ) -> None:
         """Exit the context manager and handle exceptions.
@@ -223,7 +223,7 @@ class LocalDB(abc.ABC):
             logger.error(f"Error opening database connection: {e}")
             raise SPSDKError(f"Could not open database connection: {e}") from e
         # unspecified error, release the lock if it was acquired
-        except BaseException:
+        except BaseException:  # noqa: BLE001
             if self.lock and self.lock.is_locked:
                 self.lock.release()
 
@@ -257,8 +257,8 @@ class LocalDB(abc.ABC):
 
     def __exit__(
         self,
-        exc_type: type[Exception] | None = None,
-        exc_val: Exception | None = None,
+        exc_type: type[BaseException] | None = None,
+        exc_val: BaseException | None = None,
         exc_tb: TracebackType | None = None,
     ) -> None:
         """Exit the database context manager and handle exceptions.

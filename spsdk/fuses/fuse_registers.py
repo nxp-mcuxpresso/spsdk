@@ -75,7 +75,7 @@ class FuseLockRegister:
     read_lock_mask: int | None
     operation_lock_mask: int | None
 
-    def __eq__(self, obj: Any) -> bool:
+    def __eq__(self, obj: object) -> bool:
         """Check equality of two fuse register objects.
 
         Compares register ID and all lock masks (write, read, operation) to determine
@@ -346,7 +346,7 @@ class FuseRegister(Register):
         """
         return hash(self.uid)
 
-    def __eq__(self, obj: Any) -> bool:
+    def __eq__(self, obj: object) -> bool:
         """Compare if two fuse register objects have the same settings.
 
         This method performs a deep comparison of two fuse register objects by checking
@@ -382,10 +382,8 @@ class FuseRegister(Register):
         output += f"Description: \n {self.description}\n"
         if self.fuse_lock_register:
             output += f"Fuse Lock Register: \n {self.fuse_lock_register}\n"
-        i = 0
-        for bitfield in self._bitfields:
+        for i, bitfield in enumerate(self._bitfields):
             output += f"Bitfield #{i}: \n" + str(bitfield)
-            i += 1
         return output
 
     @property
@@ -615,7 +613,7 @@ class FuseRegisters(_RegistersBase[FuseRegister]):
         for reg_uid, bitfields_rec in self.computed_fields.items():
             reg = self.get_reg(reg_uid)
             if reg.name in config:
-                for bitfield_uid in bitfields_rec.keys():
+                for bitfield_uid in bitfields_rec:
                     bitfield = reg.get_bitfield(bitfield_uid)
                     if not isinstance(config[reg.name], dict) or bitfield.name in config[reg.name]:
                         hook_name = bitfields_rec[bitfield_uid]

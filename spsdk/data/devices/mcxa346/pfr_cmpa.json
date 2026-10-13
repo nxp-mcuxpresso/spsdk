@@ -10,7 +10,7 @@
                 {
                     "id": "field000",
                     "name": "BOOT_CFG",
-                    "description": "Boot Configuration",
+                    "description": "Boot configuration",
                     "offset_int": "0",
                     "default_value_int": "0x59630000",
                     "bitfields": [
@@ -43,19 +43,30 @@
                                     "description": "UART ISP"
                                 },
                                 {
-                                    "name": "SPI_SLAVE",
+                                    "name": "SPI_SLAVE_ISP",
                                     "value": 2,
-                                    "description": "SPI Slave ISP"
+                                    "description": "SPI Slave ISP",
+                                    "deprecated_names": [
+                                        "SPI_SLAVE"
+                                    ]
                                 },
                                 {
-                                    "name": "I2C_SLAVE",
+                                    "name": "I2C_SLAVE_ISP",
                                     "value": 3,
-                                    "description": "I2C slave ISP"
+                                    "description": "I2C slave ISP",
+                                    "deprecated_names": [
+                                        "I2C_SLAVE"
+                                    ]
                                 },
                                 {
                                     "name": "USB0_HID",
                                     "value": 4,
                                     "description": "USB0 HID"
+                                },
+                                {
+                                    "name": "AUTO_ISP_7",
+                                    "value": 7,
+                                    "description": "Auto ISP"
                                 }
                             ]
                         },
@@ -78,19 +89,28 @@
                             "description": "Core clock",
                             "values": [
                                 {
-                                    "name": "FRO_45_MHZ",
+                                    "name": "45MHZ_FRO_@1V0",
                                     "value": 0,
-                                    "description": "45Mhz FRO @1v0"
+                                    "description": "45Mhz FRO @1v0",
+                                    "deprecated_names": [
+                                        "FRO_45_MHZ"
+                                    ]
                                 },
                                 {
-                                    "name": "FRO_90_MHZ",
+                                    "name": "90MHZ_FRO_@1V2",
                                     "value": 1,
-                                    "description": "90MHz FRO @1v2"
+                                    "description": "90MHz FRO @1v2",
+                                    "deprecated_names": [
+                                        "FRO_90_MHZ"
+                                    ]
                                 },
                                 {
-                                    "name": "FRO_180_MHZ",
+                                    "name": "180MHZ_FRO_@1V2",
                                     "value": 2,
-                                    "description": "180MHz FRO @1v2"
+                                    "description": "180MHz FRO @1v2",
+                                    "deprecated_names": [
+                                        "FRO_180_MHZ"
+                                    ]
                                 }
                             ]
                         },
@@ -109,7 +129,7 @@
                 {
                     "id": "field004",
                     "name": "FLASH_CFG",
-                    "description": "Flash Configuration",
+                    "description": "Flash configuration",
                     "offset_int": "0x0004",
                     "default_value_int": "0",
                     "bitfields": [
@@ -129,24 +149,36 @@
                             "description": "Disable ISP mode entry through pin assertion",
                             "values": [
                                 {
-                                    "name": "ALLOWED_0b00",
+                                    "name": "ISP_ENTRY_ALLOWED_0",
                                     "value": 0,
-                                    "description": "ISP entry allowed"
+                                    "description": "ISP entry allowed",
+                                    "deprecated_names": [
+                                        "ALLOWED_0b00"
+                                    ]
                                 },
                                 {
-                                    "name": "DISABLED_0b01",
+                                    "name": "ISP_ENTRY_DISABLED",
                                     "value": 1,
-                                    "description": "ISP entry disabled"
+                                    "description": "ISP entry disabled",
+                                    "deprecated_names": [
+                                        "DISABLED_0b01"
+                                    ]
                                 },
                                 {
-                                    "name": "ALLOWED_0b10",
+                                    "name": "ISP_ENTRY_ALLOWED_2",
                                     "value": 2,
-                                    "description": "ISP entry allowed"
+                                    "description": "ISP entry allowed",
+                                    "deprecated_names": [
+                                        "ALLOWED_0b10"
+                                    ]
                                 },
                                 {
-                                    "name": "ALLOWED_0b11",
+                                    "name": "ISP_ENTRY_ALLOWED_3",
                                     "value": 3,
-                                    "description": "ISP entry allowed"
+                                    "description": "ISP entry allowed",
+                                    "deprecated_names": [
+                                        "ALLOWED_0b11"
+                                    ]
                                 }
                             ]
                         },
@@ -157,52 +189,79 @@
                             "description": "Disable ISP mode entry through debug mailbox command",
                             "values": [
                                 {
-                                    "name": "ALLOWED_0b00",
+                                    "name": "ISP_ENTRY_ALLOWED_0",
                                     "value": 0,
-                                    "description": "ISP entry allowed"
+                                    "description": "ISP entry allowed",
+                                    "deprecated_names": [
+                                        "ALLOWED_0b00"
+                                    ]
                                 },
                                 {
-                                    "name": "DISABLED_0b01",
+                                    "name": "ISP_ENTRY_DISABLED",
                                     "value": 1,
-                                    "description": "ISP entry disabled"
+                                    "description": "ISP entry disabled",
+                                    "deprecated_names": [
+                                        "DISABLED_0b01"
+                                    ]
                                 },
                                 {
-                                    "name": "ALLOWED_0b10",
+                                    "name": "ISP_ENTRY_ALLOWED_2",
                                     "value": 2,
-                                    "description": "ISP entry allowed"
+                                    "description": "ISP entry allowed",
+                                    "deprecated_names": [
+                                        "ALLOWED_0b10"
+                                    ]
                                 },
                                 {
-                                    "name": "ALLOWED_0b11",
+                                    "name": "ISP_ENTRY_ALLOWED_3",
                                     "value": 3,
-                                    "description": "ISP entry allowed"
+                                    "description": "ISP entry allowed",
+                                    "deprecated_names": [
+                                        "ALLOWED_0b11"
+                                    ]
                                 }
                             ]
                         },
                         {
                             "width": 2,
                             "id": "field004-bits14-15",
-                            "name": "ISP_API_ENTRY",
+                            "name": "#VALUE!",
+                            "deprecated_names": [
+                                "ISP_API_ENTRY"
+                            ],
                             "description": "Disable ISP mode entry through ROM API call. ISP mode can be entered through ROM API invocation",
                             "values": [
                                 {
-                                    "name": "ALLOWED_0b00",
+                                    "name": "ISP_ENTRY_ALLOWED_0",
                                     "value": 0,
-                                    "description": "ISP entry allowed"
+                                    "description": "ISP entry allowed",
+                                    "deprecated_names": [
+                                        "ALLOWED_0b00"
+                                    ]
                                 },
                                 {
-                                    "name": "DISABLED_0b01",
+                                    "name": "ISP_ENTRY_DISABLED",
                                     "value": 1,
-                                    "description": "ISP entry disabled"
+                                    "description": "ISP entry disabled",
+                                    "deprecated_names": [
+                                        "DISABLED_0b01"
+                                    ]
                                 },
                                 {
-                                    "name": "ALLOWED_0b10",
+                                    "name": "ISP_ENTRY_ALLOWED_2",
                                     "value": 2,
-                                    "description": "ISP entry allowed"
+                                    "description": "ISP entry allowed",
+                                    "deprecated_names": [
+                                        "ALLOWED_0b10"
+                                    ]
                                 },
                                 {
-                                    "name": "ALLOWED_0b11",
+                                    "name": "ISP_ENTRY_ALLOWED_3",
                                     "value": 3,
-                                    "description": "ISP entry allowed"
+                                    "description": "ISP entry allowed",
+                                    "deprecated_names": [
+                                        "ALLOWED_0b11"
+                                    ]
                                 }
                             ]
                         },
@@ -256,7 +315,7 @@
                 {
                     "id": "field008",
                     "name": "BOOT_LED_STATUS",
-                    "description": "Boot LED Status",
+                    "description": "Boot LED status",
                     "offset_int": "0x0008",
                     "default_value_int": "0",
                     "bitfields": [
@@ -301,7 +360,7 @@
                 {
                     "id": "field00C",
                     "name": "BOOT_TIMERS",
-                    "description": "Boot Timers",
+                    "description": "Boot timers",
                     "offset_int": "0x000C",
                     "default_value_int": "0",
                     "bitfields": [
@@ -319,7 +378,7 @@
                 {
                     "id": "field010",
                     "name": "ISP_UART_CFG",
-                    "description": "ISP UART Configuration",
+                    "description": "ISP UART configuration",
                     "offset_int": "0x0010",
                     "default_value_int": "0",
                     "bitfields": [
@@ -374,7 +433,7 @@
                 {
                     "id": "field014",
                     "name": "ISP_I2C_CFG",
-                    "description": "ISP I2C Configuration",
+                    "description": "ISP I2C configuration",
                     "offset_int": "0x0014",
                     "default_value_int": "0",
                     "bitfields": [
@@ -433,7 +492,7 @@
                 {
                     "id": "field01C",
                     "name": "ISP_SPI_CFG0",
-                    "description": "ISP SPI Configuration 0",
+                    "description": "ISP SPI configuration0",
                     "offset_int": "0x001C",
                     "default_value_int": "0",
                     "bitfields": [
@@ -484,7 +543,7 @@
                 {
                     "id": "field020",
                     "name": "ISP_SPI_CFG1",
-                    "description": "ISP SPI Configuration 1",
+                    "description": "ISP SPI configuration1",
                     "offset_int": "0x0020",
                     "default_value_int": "0",
                     "bitfields": [
@@ -539,17 +598,30 @@
                     ]
                 },
                 {
-                    "id": "Reserved00024",
-                    "name": "Reserved 0x00024",
-                    "description": "This field is reserved for internal use",
+                    "id": "field024",
+                    "name": "ISP_USB_ID",
+                    "description": "ISP USB ID",
                     "offset_int": "0x0024",
-                    "is_reserved": true,
-                    "default_value_int": "0"
+                    "default_value_int": "0",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "id": "field024-bits0-15",
+                            "name": "USB_Vendor_ID",
+                            "description": "USB Vendor ID"
+                        },
+                        {
+                            "width": 16,
+                            "id": "field024-bits16-31",
+                            "name": "USB_Product_ID",
+                            "description": "USB Product ID"
+                        }
+                    ]
                 },
                 {
                     "id": "field028",
                     "name": "ISP_USB_CFG",
-                    "description": "ISP USB Configuration",
+                    "description": "ISP USB configuration",
                     "offset_int": "0x0028",
                     "default_value_int": "0",
                     "bitfields": [
@@ -560,7 +632,10 @@
                             "description": "Override default USB0_VBUS_DETECT ISP pin. Identifies the pin to be used as USB0_VBUS detect pin. [4:0] GPIO Pin number [7:5] GPIO port number"
                         },
                         {
-                            "width": 4
+                            "width": 4,
+                            "id": "field028-bits8-11",
+                            "name": "USBx_VBUS_FUNC_SLOT",
+                            "description": "Identifies the pin mux function slot"
                         },
                         {
                             "width": 1
@@ -621,7 +696,7 @@
                 {
                     "id": "field02C",
                     "name": "ISP_MISC_CFG",
-                    "description": "ISP MISC Configuration",
+                    "description": "ISP misc configuration",
                     "offset_int": "0x002C",
                     "default_value_int": "0",
                     "bitfields": [
@@ -674,7 +749,32 @@
                             "width": 1
                         },
                         {
-                            "width": 2
+                            "width": 2,
+                            "id": "field02C-bits22-23",
+                            "name": "ISP_USB_CUST",
+                            "description": "Use customer defined GPIO for USB VBUS detect function during ISP mode",
+                            "values": [
+                                {
+                                    "name": "DEDICATED",
+                                    "value": 0,
+                                    "description": "Use dedicated VBUS pins"
+                                },
+                                {
+                                    "name": "CUST_DEF_USB0",
+                                    "value": 1,
+                                    "description": "Customer defined GPIO for USB0_VBUS detect"
+                                },
+                                {
+                                    "name": "CUST_DEF_USB1",
+                                    "value": 2,
+                                    "description": "Customer defined GPIO for USB1_VBUS detect"
+                                },
+                                {
+                                    "name": "VDD_USB",
+                                    "value": 3,
+                                    "description": "Use VDD_USB for VBUS presence. On board regulator should generate VDD_USB voltage using 5V input fo VBUS pin on connector"
+                                }
+                            ]
                         },
                         {
                             "width": 2
@@ -686,24 +786,36 @@
                             "description": "Use customer defined SPI ISP pins",
                             "values": [
                                 {
-                                    "name": "DEFAULT_0b00",
+                                    "name": "DEFAULT_0",
                                     "value": 0,
-                                    "description": "Default ROM defined pins"
+                                    "description": "Default ROM defined pins",
+                                    "deprecated_names": [
+                                        "DEFAULT_0b00"
+                                    ]
                                 },
                                 {
-                                    "name": "CUST_DEF_0b01",
+                                    "name": "CUST_DEF",
                                     "value": 1,
-                                    "description": "Customer defined"
+                                    "description": "Customer defined",
+                                    "deprecated_names": [
+                                        "CUST_DEF_0b01"
+                                    ]
                                 },
                                 {
-                                    "name": "DEFAULT_0b10",
+                                    "name": "DEFAULT_2",
                                     "value": 2,
-                                    "description": "Default ROM defined pins"
+                                    "description": "Default ROM defined pins",
+                                    "deprecated_names": [
+                                        "DEFAULT_0b10"
+                                    ]
                                 },
                                 {
-                                    "name": "DEFAULT_0b11",
+                                    "name": "DEFAULT_3",
                                     "value": 3,
-                                    "description": "Default ROM defined pins"
+                                    "description": "Default ROM defined pins",
+                                    "deprecated_names": [
+                                        "DEFAULT_0b11"
+                                    ]
                                 }
                             ]
                         },
@@ -714,24 +826,36 @@
                             "description": "Use customer defined I2C ISP pins",
                             "values": [
                                 {
-                                    "name": "DEFAULT_0b00",
+                                    "name": "DEFAULT_0",
                                     "value": 0,
-                                    "description": "Default ROM defined pins"
+                                    "description": "Default ROM defined pins",
+                                    "deprecated_names": [
+                                        "DEFAULT_0b00"
+                                    ]
                                 },
                                 {
-                                    "name": "CUST_DEF_0b01",
+                                    "name": "CUST_DEF",
                                     "value": 1,
-                                    "description": "Customer defined"
+                                    "description": "Customer defined",
+                                    "deprecated_names": [
+                                        "CUST_DEF_0b01"
+                                    ]
                                 },
                                 {
-                                    "name": "DEFAULT_0b10",
+                                    "name": "DEFAULT_2",
                                     "value": 2,
-                                    "description": "Default ROM defined pins"
+                                    "description": "Default ROM defined pins",
+                                    "deprecated_names": [
+                                        "DEFAULT_0b10"
+                                    ]
                                 },
                                 {
-                                    "name": "DEFAULT_0b11",
+                                    "name": "DEFAULT_3",
                                     "value": 3,
-                                    "description": "Default ROM defined pins"
+                                    "description": "Default ROM defined pins",
+                                    "deprecated_names": [
+                                        "DEFAULT_0b11"
+                                    ]
                                 }
                             ]
                         },
@@ -742,24 +866,36 @@
                             "description": "Use customer defined UART ISP pins",
                             "values": [
                                 {
-                                    "name": "DEFAULT_0b00",
+                                    "name": "DEFAULT_0",
                                     "value": 0,
-                                    "description": "Default ROM defined pins"
+                                    "description": "Default ROM defined pins",
+                                    "deprecated_names": [
+                                        "DEFAULT_0b00"
+                                    ]
                                 },
                                 {
-                                    "name": "CUST_DEF_0b01",
+                                    "name": "CUST_DEF",
                                     "value": 1,
-                                    "description": "Customer defined"
+                                    "description": "Customer defined",
+                                    "deprecated_names": [
+                                        "CUST_DEF_0b01"
+                                    ]
                                 },
                                 {
-                                    "name": "DEFAULT_0b10",
+                                    "name": "DEFAULT_2",
                                     "value": 2,
-                                    "description": "Default ROM defined pins"
+                                    "description": "Default ROM defined pins",
+                                    "deprecated_names": [
+                                        "DEFAULT_0b10"
+                                    ]
                                 },
                                 {
-                                    "name": "DEFAULT_0b11",
+                                    "name": "DEFAULT_3",
                                     "value": 3,
-                                    "description": "Default ROM defined pins"
+                                    "description": "Default ROM defined pins",
+                                    "deprecated_names": [
+                                        "DEFAULT_0b11"
+                                    ]
                                 }
                             ]
                         }
@@ -7496,70 +7632,70 @@
                 {
                     "id": "field080",
                     "name": "QUICK_SET_GPIO_0",
-                    "description": "Quick Set to Drive GPIO 0 port [31:0] pins high after reset. Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "description": "Drive GPIO 0 port pins high after reset. Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot",
                     "offset_int": "0x0080",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field084",
                     "name": "QUICK_CLR_GPIO_0",
-                    "description": "Quick Clear to Drive GPIO 0 port [31:0] pins low after reset. Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "description": "Drive GPIO 0 port pins low after reset. Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin low as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot",
                     "offset_int": "0x0084",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field088",
                     "name": "QUICK_SET_GPIO_1",
-                    "description": "Quick Set to Drive GPIO 1 port [31:0] pins high after reset. Each bit corresponds to the pin in GPIO port 1. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "description": "Drive GPIO 1 port pins high after reset. Each bit corresponds to the pin in GPIO port 1. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot",
                     "offset_int": "0x0088",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field08C",
                     "name": "QUICK_CLR_GPIO_1",
-                    "description": "Quick Clear to Drive GPIO 1 port [31:0] pins low after reset. Each bit corresponds to the pin in GPIO port 1. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "description": "Drive GPIO 1 port pins low after reset. Each bit corresponds to the pin in GPIO port 1. When set ROM drives the corresponding pin low as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot",
                     "offset_int": "0x008C",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field090",
                     "name": "QUICK_SET_GPIO_2",
-                    "description": "Quick Set to Drive GPIO 2 port [31:0] pins high after reset. Each bit corresponds to the pin in GPIO port 2. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "description": "Drive GPIO 2 port pins high after reset. Each bit corresponds to the pin in GPIO port 2. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot",
                     "offset_int": "0x0090",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field094",
                     "name": "QUICK_CLR_GPIO_2",
-                    "description": "Quick Clear to Drive GPIO 2 port [31:0] pins low after reset. Each bit corresponds to the pin in GPIO port 2. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "description": "Drive GPIO 2 port pins low after reset. Each bit corresponds to the pin in GPIO port 2. When set ROM drives the corresponding pin low as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot",
                     "offset_int": "0x0094",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field098",
                     "name": "QUICK_SET_GPIO_3",
-                    "description": "Quick Set to Drive GPIO 3 port [31:0] pins high after reset. Each bit corresponds to the pin in GPIO port 3. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "description": "Drive GPIO 3 port pins high after reset. Each bit corresponds to the pin in GPIO port 3. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot",
                     "offset_int": "0x0098",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field09C",
                     "name": "QUICK_CLR_GPIO_3",
-                    "description": "Quick Clear to Drive GPIO 3 port [31:0] pins low after reset. Each bit corresponds to the pin in GPIO port 3. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "description": "Drive GPIO 3 port pins low after reset. Each bit corresponds to the pin in GPIO port 3. When set ROM drives the corresponding pin low as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot",
                     "offset_int": "0x009C",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field0A0",
                     "name": "QUICK_SET_GPIO_4",
-                    "description": "Quick Set to Drive GPIO 4 port [31:0] pins high after reset. Each bit corresponds to the pin in GPIO port 4. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "description": "Drive GPIO 4 port pins high after reset. Each bit corresponds to the pin in GPIO port 4. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot",
                     "offset_int": "0x00A0",
                     "default_value_int": "0"
                 },
                 {
                     "id": "field0A4",
                     "name": "QUICK_CLR_GPIO_4",
-                    "description": "Quick Clear to Drive GPIO 4 port [31:0] pins low after reset. Each bit corresponds to the pin in GPIO port 4. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.",
+                    "description": "Drive GPIO 4 port pins low after reset. Each bit corresponds to the pin in GPIO port 4. When set ROM drives the corresponding pin low as soon as possible. By default most pins come-up as tri-stated inputs. This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot",
                     "offset_int": "0x00A4",
                     "default_value_int": "0"
                 }
@@ -7598,22 +7734,24 @@
                 {
                     "id": "field0B0",
                     "name": "ROP_STATE",
-                    "description": "Read Out Protection (ROP) State value. Device does not support secure boot, but it does support four levels of Read Out Protection, referred as ROP_STATE. This read out protection is a mechanism that allows user to enable different levels of protection in the system. ROM reads ROP_STATE from ROP_STATE and ROP_STATE_DP on IFR0, does the compare, and if it does not match, resets the device; if match then programs it to SYSCON->ROP_STATE. Any other value then four listed means ROP3-like behavior (debug disabled/locked, ISP disabled).",
+                    "description": "Read Out Protection (ROP) State value. Device does not support secure boot, but it does support four levels of Read Out Protection, referred as ROP_STATE. This read out protection is a mechanism that allows user to enable different levels of protection in the system. ROM reads ROP_STATE from ROP_STATE and ROP_STATE_DP on IFR0, does the compare, and if it does not match, resets the device; if match then programs it to SYSCON->ROP_STATE. Any other value then four listed means ROP3-like behavior (debug disabled/locked, ISP disabled)",
                     "offset_int": "0x00B0",
                     "default_value_int": "0xFFFFFFFF"
                 },
                 {
-                    "id": "field0B4",
-                    "name": "SBL_PROT",
-                    "description": "SBL prot",
+                    "id": "Reserved000B4",
+                    "name": "Reserved 0x000B4",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x00B4",
+                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "field0B8",
-                    "name": "SBL_START_ADDR.",
-                    "description": "SBL start addr",
+                    "id": "Reserved000B8",
+                    "name": "Reserved 0x000B8",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x00B8",
+                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
@@ -7627,22 +7765,24 @@
                 {
                     "id": "field0C0",
                     "name": "ROP_STATE_DP",
-                    "description": "Read Out Protection (ROP) State duplicate value. ROM reads ROP_STATE from ROP_STATE and ROP_STATE_DP on IFR0, does the compare, and if it does not match, resets the device; if match then programs it to SYSCON->ROP_STATE. Any other value then four listed means ROP3-like behavior (debug disabled/locked, ISP disabled).",
+                    "description": "Read Out Protection (ROP) State duplicate value. ROM reads ROP_STATE from ROP_STATE and ROP_STATE_DP on IFR0, does the compare, and if it does not match, resets the device; if match then programs it to SYSCON->ROP_STATE. Any other value then four listed means ROP3-like behavior (debug disabled/locked, ISP disabled)",
                     "offset_int": "0x00C0",
                     "default_value_int": "0xFFFFFFFF"
                 },
                 {
-                    "id": "field0C4",
-                    "name": "SBL_PROT_DP",
-                    "description": "SBL prot DP",
+                    "id": "Reserved000C4",
+                    "name": "Reserved 0x000C4",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x00C4",
+                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {
-                    "id": "field0C8",
-                    "name": "SBL_START_ADDR_DP",
-                    "description": "SBL start addr DP",
+                    "id": "Reserved000C8",
+                    "name": "Reserved 0x000C8",
+                    "description": "This field is reserved for internal use",
                     "offset_int": "0x00C8",
+                    "is_reserved": true,
                     "default_value_int": "0"
                 },
                 {

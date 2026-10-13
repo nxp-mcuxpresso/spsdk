@@ -13,7 +13,7 @@ communication capabilities.
 """
 
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from typing_extensions import Self
@@ -186,7 +186,7 @@ class ConfigBaseClass(ABC):
         return CommentedConfig(
             main_title=(
                 f"{main_title}.\n"
-                f"Created: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}.\n"
+                f"Created: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M:%S')}.\n"
                 f"NXP SPSDK version: {spsdk_version}"
             ),
             schemas=schemas,

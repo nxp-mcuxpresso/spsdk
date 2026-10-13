@@ -12,7 +12,8 @@ additional functionality for SPSDK applications.
 """
 
 # pylint: disable=unused-import  # Type is necessary for Mypy
-from typing import Type
+
+from typing import ClassVar
 
 from spsdk import get_logger
 
@@ -30,11 +31,11 @@ class SerialProxy:
     :cvar ignore_ack: Flag to control ACK packet handling in internal buffer.
     """
 
-    responses: dict[bytes, bytes] = {}
+    responses: ClassVar[dict[bytes, bytes]] = {}
     ignore_ack: bool = False
 
     @classmethod
-    def init_proxy(cls, data: dict[bytes, bytes], ignore_ack: bool = False) -> "Type[SerialProxy]":
+    def init_proxy(cls, data: dict[bytes, bytes], ignore_ack: bool = False) -> "type[SerialProxy]":
         """Initialize response dictionary of write and read bytes.
 
         Configures the SerialProxy class with predefined responses for write operations
@@ -158,7 +159,7 @@ class SimpleReadSerialProxy(SerialProxy):
     FULL_BUFFER = b""
 
     @classmethod
-    def init_data_proxy(cls, data: bytes) -> "Type[SimpleReadSerialProxy]":
+    def init_data_proxy(cls, data: bytes) -> "type[SimpleReadSerialProxy]":
         """Initialize data proxy with response buffer.
 
         This class method sets up the serial proxy with a predefined data buffer

@@ -56,7 +56,7 @@ def certificate_block(
     :return: Configured certificate block ready for testing.
     """
     # read public certificate
-    cert_data_list: list[bytes | None] = list()
+    cert_data_list: list[bytes | None] = []
     for der_file_name in der_file_names:
         if der_file_name:
             with open(os.path.join(data_dir, "keys_and_certs", der_file_name), "rb") as f:

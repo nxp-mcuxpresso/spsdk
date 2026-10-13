@@ -336,7 +336,7 @@ class BaseWPCClass(FeatureBaseClassComm):
                 f"Class {cls.__name__} uses legacy identifier '{cls.legacy_identifier_name} = \"{identifier}\"', "
                 f"please use 'identifier = \"{identifier}\"' instead"
             )
-            setattr(cls, "identifier", identifier)
+            cls.identifier = identifier
 
         if not inspect.isabstract(cls) and not hasattr(cls, "identifier"):
             raise SPSDKError(f"{cls.__name__}.identifier is not set")

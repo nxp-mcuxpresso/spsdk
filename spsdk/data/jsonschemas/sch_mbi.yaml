@@ -24,6 +24,21 @@ output_file:
       description: The path for result binary file.
       format: file_name
       template_value: my_mbi.bin
+    output_format:
+      type: string
+      title: Output file format
+      description: |-
+        Format of the output file.
+        bin = raw binary (default);
+        hex = Intel HEX;
+        s19 = Motorola S-record;
+        elf = minimal flash-ready ELF with PT_LOAD segments (no debug info);
+        elf_patch = patch the input source ELF file preserving DWARF debug info and symbols
+        for direct flash+debug from IDE (requires spsdk 'elf' extension:
+        pip install spsdk[elf] or pip install spsdk[all]).
+      enum: [bin, hex, s19, elf, elf_patch]
+      default: bin
+      template_value: bin
   required: [masterBootOutputFile]
 
 trust_zone:
@@ -72,6 +87,20 @@ load_addr:
       type: [number, string]
       title: Loading address of application
       description: Application loading address in RAM if not XiP, otherwise address of load in XiP.
+      template_value: 0
+
+load_addr_nbu:
+  type: object
+  title: Basic Settings
+  properties:
+    outputImageExecutionAddress:
+      type: [number, string]
+      title: Application load address or NBU reserved partition size
+      description:
+        For the NBU core, this value defines the reserved NBU partition size in bytes and is stored
+        in the IVT Load Address field. Values 0 and 0xFFFFFFFF leave the size unspecified, and values
+        not larger than the image length do not enlarge the partition. The ROM rounds the effective
+        partition size to 32 KiB. For the Cortex-M33 core, this is the application load address.
       template_value: 0
 
 firmware_version:

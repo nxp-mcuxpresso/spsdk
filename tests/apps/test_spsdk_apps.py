@@ -147,21 +147,27 @@ class TestDetectShell:
 
     def test_zsh_from_shell_env(self) -> None:
         """$SHELL containing 'zsh' returns 'zsh' on non-Windows."""
-        with patch("platform.system", return_value="Linux"):
-            with patch.dict("os.environ", {"SHELL": "/bin/zsh"}):
-                assert _detect_shell() == "zsh"
+        with (
+            patch("platform.system", return_value="Linux"),
+            patch.dict("os.environ", {"SHELL": "/bin/zsh"}),
+        ):
+            assert _detect_shell() == "zsh"
 
     def test_bash_from_shell_env(self) -> None:
         """$SHELL containing 'bash' returns 'bash' on non-Windows."""
-        with patch("platform.system", return_value="Linux"):
-            with patch.dict("os.environ", {"SHELL": "/bin/bash"}):
-                assert _detect_shell() == "bash"
+        with (
+            patch("platform.system", return_value="Linux"),
+            patch.dict("os.environ", {"SHELL": "/bin/bash"}),
+        ):
+            assert _detect_shell() == "bash"
 
     def test_fallback_to_bash(self) -> None:
         """Unknown $SHELL value falls back to bash on non-Windows."""
-        with patch("platform.system", return_value="Linux"):
-            with patch.dict("os.environ", {"SHELL": "/bin/sh"}):
-                assert _detect_shell() == "bash"
+        with (
+            patch("platform.system", return_value="Linux"),
+            patch.dict("os.environ", {"SHELL": "/bin/sh"}),
+        ):
+            assert _detect_shell() == "bash"
 
     def test_autodetect_echo_in_output(self, cli_runner: CliRunner) -> None:
         """setup-autocomplete without --shell prints the auto-detected shell."""

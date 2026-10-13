@@ -33,9 +33,15 @@ from spsdk.image.ahab.ahab_container import AHABContainerV2
 from spsdk.image.ahab.ahab_iae import ImageArrayEntryV2
 from spsdk.image.cert_block.cert_block_v21 import CertBlockV21
 from spsdk.image.cert_block.cert_block_vx import CertBlockVx
+from spsdk.image.fcf.fcf import FCF
 from spsdk.image.keystore import KeyStore
 from spsdk.image.mbi.mbi import MasterBootImage
-from spsdk.image.mbi.mbi_mixin import MasterBootImageManifestCrc, Mbi_MixinHmac, Mbi_MixinIvt
+from spsdk.image.mbi.mbi_mixin import (
+    MasterBootImageManifestCrc,
+    Mbi_MixinAhab,
+    Mbi_MixinHmac,
+    Mbi_MixinIvt,
+)
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db
@@ -221,7 +227,7 @@ def test_mbi_parser_basic(
     mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
     config_file = os.path.join(mbi_data_dir, "cfgs", family, config_file)
 
-    ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+    _, new_binary, new_config = process_config_file(config_file, tmpdir)
 
     cmd = f"mbi export -c {new_config}"
     with use_working_directory(nxpimage_data_dir):
@@ -264,12 +270,29 @@ def test_mbi_parser_basic(
                 ), "Non-MISR padding should be 0x00"
 
 
+def test_fcf_verify_mcxe247(nxpimage_data_dir: str) -> None:
+    """Test MCXE247 FCF verifier reports effective settings without a fallback warning.
+
+    :param nxpimage_data_dir: Directory containing nxpimage test data.
+    """
+    config_file = os.path.join(nxpimage_data_dir, "workspace", "cfgs", "mcxe247", "fcf.yaml")
+    fcf = FCF.load_from_config(Config(load_configuration(config_file)))
+
+    verification_report = fcf.verify().draw(colorize=False)
+
+    assert "Not implemented" not in verification_report
+    assert "BACKDOOR_KEY" in verification_report
+    assert "FSEC" in verification_report
+    assert "SEC(Succeeded): UNSECURE" in verification_report
+    assert "MEEN(Succeeded): ENABLED_3" in verification_report
+
+
 def test_mbi_misr_alignment(cli_runner: CliRunner, tmpdir: str, nxpimage_data_dir: str) -> None:
     """Test MISR image alignment to 128-byte page size with 0xFF padding."""
     mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
     config_file = os.path.join(mbi_data_dir, "cfgs", "mcxc151", "mb_misr.yaml")
 
-    ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+    _, new_binary, new_config = process_config_file(config_file, tmpdir)
 
     cmd = f"mbi export -c {new_config}"
     with use_working_directory(nxpimage_data_dir):
@@ -313,7 +336,7 @@ def test_mbi_misr_ivt_fields(cli_runner: CliRunner, tmpdir: str, nxpimage_data_d
     mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
     config_file = os.path.join(mbi_data_dir, "cfgs", "mcxc151", "mb_misr.yaml")
 
-    ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+    _, new_binary, new_config = process_config_file(config_file, tmpdir)
 
     # Load original application
     sub_path: str = load_configuration(config_file)["inputImageFile"]
@@ -370,7 +393,7 @@ def test_mbi_misr_alignment_unaligned_input(
     mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
     config_file = os.path.join(mbi_data_dir, "cfgs", "mcxc151", "mb_misr.yaml")
 
-    ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+    _, new_binary, new_config = process_config_file(config_file, tmpdir)
 
     # Load original application
     sub_path: str = load_configuration(config_file)["inputImageFile"]
@@ -743,7 +766,7 @@ def test_mbi_parser_basic_mcxe31_image_with_ivt(
     mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
     config_file = os.path.join(mbi_data_dir, "cfgs", "mcxe31b", "mb_xip_plain_with_ivt.yaml")
 
-    ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+    _, new_binary, new_config = process_config_file(config_file, tmpdir)
 
     cmd = f"mbi export -c {new_config}"
     with use_working_directory(nxpimage_data_dir):
@@ -1090,6 +1113,38 @@ def test_nxpimage_mbi_ahab_signed(
             ), f"Fuse version mismatch: expected 0x{expected_fuse_version:02x}, got 0x{ahab_container.fuse_version:02x}"
 
 
+def test_nxpimage_mbi_kw43_nbu_reserved_size(
+    cli_runner: CliRunner, nxpimage_data_dir: str, tmpdir: str
+) -> None:
+    """Test KW43 NBU reserved partition size in IVT and AHAB metadata."""
+    family = FamilyRevision("kw43l43z97")
+    with use_working_directory(nxpimage_data_dir):
+        config_file = os.path.join(
+            nxpimage_data_dir,
+            "workspace/cfgs/kw43l43z97/mb_xip_signed_nbu_ecc384.yaml",
+        )
+        _, new_binary, new_config = process_config_file(config_file, tmpdir)
+        config = Config.create_from_file(new_config)
+        reserved_size = config.get_int("outputImageExecutionAddress")
+
+        cli_runner.invoke(nxpimage.main, ["mbi", "export", "-c", new_config])
+        mbi_data = load_binary(new_binary)
+
+        assert Mbi_MixinIvt.get_load_address_from_data(mbi_data) == reserved_size
+        assert Mbi_MixinIvt.get_total_length_from_data(mbi_data) == len(mbi_data)
+
+        mbi_cls = MasterBootImage.get_mbi_class(config)
+        parsed_mbi = mbi_cls.parse(family=family, data=mbi_data)
+
+        assert isinstance(parsed_mbi, Mbi_MixinAhab)
+        assert parsed_mbi.ahab.image_array[0].flags_core_id_name == "nbu"
+        assert parsed_mbi.ahab.image_array[0].load_address == 0
+
+        parsed_config = parsed_mbi.get_config(data_path=tmpdir)
+        assert parsed_config.get_str("core_id") == "nbu"
+        assert parsed_config.get_int("outputImageExecutionAddress") == reserved_size
+
+
 @pytest.mark.parametrize(
     "config_file,device,added_hash",
     [
@@ -1256,7 +1311,7 @@ def test_mbi_parser_signed(
     mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
     config_file = os.path.join(mbi_data_dir, "cfgs", family, config_file)
 
-    ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+    _, new_binary, new_config = process_config_file(config_file, tmpdir)
 
     cmd = f"mbi export -c {new_config}"
     with use_working_directory(nxpimage_data_dir):
@@ -1377,9 +1432,7 @@ def test_nxpimage_mbi_cert_block_signed_invalid(
     with use_working_directory(nxpimage_data_dir):
         cert_config_file = f"{nxpimage_data_dir}/workspace/cfgs/cert_block/{cert_block_config_file}"
         mbi_config_file = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{mbi_config_file}"
-        mbi_ref_binary, mbi_new_binary, mbi_new_config = process_config_file(
-            mbi_config_file, tmpdir
-        )
+        _, _, mbi_new_config = process_config_file(mbi_config_file, tmpdir)
         cert_ref_binary, cert_new_binary, cert_new_config = process_config_file(
             cert_config_file, tmpdir
         )
@@ -1499,7 +1552,7 @@ def test_mbi_parser_legacy_signed(
     mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
     config_file = os.path.join(mbi_data_dir, "cfgs", family, config_file)
 
-    ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+    _, new_binary, new_config = process_config_file(config_file, tmpdir)
 
     cmd = f"mbi export -c {new_config}"
     with use_working_directory(nxpimage_data_dir):
@@ -2054,3 +2107,126 @@ def test_lpc55s16_mbi_export_warns_on_chain_cert_rsa4096(
     assert any(
         "RSA4096" in r.message and "lpc55s16" in r.message.lower() for r in caplog.records
     ), f"Expected RSA4096 chain cert warning for lpc55s16, got: {caplog.text}"
+
+
+ELF_MAGIC = b"\x7fELF"
+
+
+def test_nxpimage_mbi_export_elf(
+    cli_runner: CliRunner, tmpdir: str, nxpimage_data_dir: str
+) -> None:
+    """Test MBI export produces a valid ELF file when output_format is 'elf'.
+
+    Creates a lpc55s6x XIP CRC MBI config using keil.elf as inputImageFile,
+    exports with output_format: elf, and verifies ELF magic bytes.
+
+    :param cli_runner: Click CLI test runner.
+    :param tmpdir: Temporary directory for output.
+    :param nxpimage_data_dir: nxpimage test data directory.
+    """
+    elf_input = os.path.join(nxpimage_data_dir, "utils", "binary", "convert", "keil.elf")
+    out_file = os.path.join(str(tmpdir), "output.elf")
+    config = {
+        "family": "lpc55s6x",
+        "outputImageExecutionTarget": "xip",
+        "outputImageAuthenticationType": "crc",
+        "masterBootOutputFile": out_file.replace("\\", "/"),
+        "inputImageFile": elf_input.replace("\\", "/"),
+        "output_format": "elf",
+    }
+    config_path = os.path.join(str(tmpdir), "mbi_elf.yaml")
+    with open(config_path, "w", encoding="utf-8") as f:
+        yaml.dump(config, f)
+
+    cli_runner.invoke(nxpimage.main, ["mbi", "export", "-c", config_path])
+
+    assert os.path.isfile(out_file)
+    with open(out_file, "rb") as f:
+        assert f.read(4) == ELF_MAGIC
+
+
+@pytest.mark.parametrize(
+    "elf_filename",
+    [
+        "keil.elf",  # ARM/Keil: single flat XIP PT_LOAD
+        "gcc.elf",  # GCC ARM: multiple flash PT_LOADs, no separate RAM segment in bincopy
+        "iar.out",  # IAR: three contiguous XIP PT_LOADs (IVT, flash-config, text)
+    ],
+)
+def test_nxpimage_mbi_export_elf_patch_roundtrip(
+    cli_runner: CliRunner, tmpdir: str, nxpimage_data_dir: str, elf_filename: str
+) -> None:
+    """Test MBI ELF_PATCH round-trip for multiple ELF toolchains.
+
+    For each toolchain ELF (Keil/ARM, GCC, IAR):
+    1. Export MBI as direct BIN (reference).
+    2. Export MBI as ELF_PATCH (overlays MBI data on the source ELF).
+    3. Convert the patched ELF back to flat BIN.
+    4. Assert the converted BIN equals the direct BIN export byte-for-byte
+       (only the MBI-applied data should be visible in the binary, no corruption).
+
+    :param cli_runner: Click CLI test runner.
+    :param tmpdir: Temporary directory for output.
+    :param nxpimage_data_dir: nxpimage test data directory.
+    :param elf_filename: Source ELF filename under utils/binary/convert/.
+    """
+    elf_input = os.path.join(nxpimage_data_dir, "utils", "binary", "convert", elf_filename)
+    work_dir = str(tmpdir)
+    direct_bin = os.path.join(work_dir, "direct.bin")
+    patched_elf = os.path.join(work_dir, "patched.elf")
+    converted_bin = os.path.join(work_dir, "from_elf.bin")
+
+    base_cfg: dict = {
+        "family": "lpc55s6x",
+        "outputImageExecutionTarget": "xip",
+        "outputImageAuthenticationType": "crc",
+        "inputImageFile": elf_input.replace("\\", "/"),
+    }
+
+    # Step 1: Export as direct BIN (reference output)
+    bin_cfg = dict(
+        base_cfg, masterBootOutputFile=direct_bin.replace("\\", "/"), output_format="bin"
+    )
+    bin_config_path = os.path.join(work_dir, "mbi_bin.yaml")
+    with open(bin_config_path, "w", encoding="utf-8") as f:
+        yaml.dump(bin_cfg, f)
+    cli_runner.invoke(nxpimage.main, ["mbi", "export", "-c", bin_config_path])
+
+    # Step 2: Export as ELF_PATCH (overlays MBI data on source ELF)
+    elf_cfg = dict(
+        base_cfg, masterBootOutputFile=patched_elf.replace("\\", "/"), output_format="elf_patch"
+    )
+    elf_config_path = os.path.join(work_dir, "mbi_elf_patch.yaml")
+    with open(elf_config_path, "w", encoding="utf-8") as f:
+        yaml.dump(elf_cfg, f)
+    cli_runner.invoke(nxpimage.main, ["mbi", "export", "-c", elf_config_path])
+
+    # Step 3: Convert patched ELF back to flat BIN
+    cli_runner.invoke(
+        nxpimage.main,
+        [
+            "utils",
+            "binary-image",
+            "convert",
+            "-i",
+            patched_elf,
+            "-p",
+            "-f",
+            "bin",
+            "-o",
+            converted_bin,
+        ],
+    )
+
+    assert os.path.isfile(direct_bin), f"Direct BIN export not created ({elf_filename})"
+    assert os.path.isfile(patched_elf), f"ELF_PATCH output not created ({elf_filename})"
+    assert os.path.isfile(
+        converted_bin
+    ), f"Converted BIN from patched ELF not created ({elf_filename})"
+    # Step 4: The ELF_PATCH output, when converted back to BIN, must equal the direct BIN export.
+    # This verifies that the only changes in the patched ELF are exactly the MBI data overlaid —
+    # no extra bytes, no corruption, no padding differences.
+    assert filecmp.cmp(direct_bin, converted_bin, shallow=False), (
+        f"ELF_PATCH round-trip failed for {elf_filename}: "
+        "converted BIN differs from direct BIN export"
+    )

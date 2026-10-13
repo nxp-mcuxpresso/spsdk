@@ -1,4 +1,4 @@
-.. TODO: [SPSDK-686] Add missing sub-commands into sdphost user guide when available
+.. TODO: Add missing sub-commands into sdphost user guide when available
 
 ====================
 User Guide - sdphost

@@ -13,6 +13,7 @@ credential export/parse operations, invalid data handling, and ROT metadata
 integration for various MCU families including LPC55S3x and ELEv2.
 """
 
+import logging
 import os
 
 import pytest
@@ -22,6 +23,7 @@ from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import PrivateKeyEcc
 from spsdk.dat.debug_credential import (
     DebugCredentialCertificate,
+    DebugCredentialCertificateEcc,
     DebugCredentialEdgeLockEnclaveV2,
     ProtocolVersion,
 )
@@ -110,6 +112,61 @@ def test_verify_ecc_signature(data_dir: str) -> None:
     assert pub_key.verify_signature(
         signature_bytes, data_without_signature, EnumHashAlgorithm.SHA256
     )
+
+
+def test_debugcredential_ecc_mixed_key_sizes_export(data_dir: str) -> None:
+    """Test that a DC with mismatched ECC key sizes fails verification.
+
+    When the RoT keys and the DCK use different ECC curve sizes (e.g. ecc384 RoT
+    and ecc256 DCK), the resulting debug credential cannot be parsed by the device.
+    The verifier must report an error so the application flow refuses to export an
+    invalid binary.
+
+    :param data_dir: Directory path containing test data files including the YAML configuration.
+    """
+    with use_working_directory(data_dir):
+        yaml_config = Config.create_from_file("new_dck_secp384_lpc55s3x.yml")
+        # Use a 256-bit DCK while the RoT keys are 384-bit
+        yaml_config["dck"] = "../../_data/keys/ecc256/dck_ecc256.pub"
+        dc = DebugCredentialCertificate.load_from_config(config=yaml_config)
+        dc.sign()
+        assert dc.verify().has_errors
+        with pytest.raises(SPSDKError):
+            dc.verify().validate()
+
+
+def test_debugcredential_ecc_matching_key_sizes_verify(data_dir: str) -> None:
+    """Test that a DC with matching ECC key sizes passes verification.
+
+    :param data_dir: Directory path containing test data files including the YAML configuration.
+    """
+    with use_working_directory(data_dir):
+        yaml_config = Config.create_from_file("new_dck_secp384_lpc55s3x.yml")
+        dc = DebugCredentialCertificate.load_from_config(config=yaml_config)
+        dc.sign()
+        assert not dc.verify().has_errors
+        dc.verify().validate()
+
+
+def test_debugcredential_ecc_mixed_key_sizes_parse(data_dir: str) -> None:
+    """Test that parsing a malformed/mismatched DC binary raises a handled error.
+
+    A debug credential binary that does not match the expected ECC key size must
+    raise an SPSDKError instead of an unhandled struct unpacking exception.
+
+    :param data_dir: Directory path containing test data files including the YAML configuration.
+    """
+    with use_working_directory(data_dir):
+        yaml_config = Config.create_from_file("new_dck_secp384_lpc55s3x.yml")
+        dc = DebugCredentialCertificate.load_from_config(config=yaml_config)
+        dc.sign()
+        data = dc.export()
+    # Truncate the binary so the tail (RoT/DCK/signature) cannot be unpacked
+    truncated = data[:-100]
+    with pytest.raises(SPSDKError):
+        DebugCredentialCertificateEcc.parse(truncated)
+    # The pre-parse verify must explain why the binary cannot be parsed
+    assert DebugCredentialCertificateEcc.pre_parse_verify(truncated).has_errors
 
 
 def test_verify_ecc_signature_lpc55s3x_256(data_dir: str) -> None:
@@ -271,6 +328,58 @@ def test_elev2_export_parse(data_dir: str, yml_file_name: str) -> None:
         assert dc == dc_parsed
 
 
+def test_elev2_load_from_config_or_binary(data_dir: str, tmpdir: str) -> None:
+    """Test loading ELE V2 debug credential from a configuration file or a binary file.
+
+    This verifies that ``load_from_config_or_binary`` builds and signs a debug credential
+    when a YAML configuration file is passed, and that the same helper parses an already
+    prepared binary debug credential. Both loaded credentials must be equivalent.
+
+    :param data_dir: Directory containing test data files.
+    :param tmpdir: Temporary directory for the exported binary debug credential.
+    """
+    with use_working_directory(data_dir):
+        family = FamilyRevision("mimx9596")
+        # Load from a YAML configuration file - the DC is built and signed
+        dc_from_config = DebugCredentialEdgeLockEnclaveV2.load_from_config_or_binary(
+            "dc_mx95_ecc256.yaml", family=family
+        )
+        # Export it to a binary file and load it back as a binary
+        dc_bin_path = os.path.join(tmpdir, "dc_mx95_ecc256.bin")
+        with open(dc_bin_path, "wb") as f:
+            f.write(dc_from_config.export())
+        dc_from_binary = DebugCredentialEdgeLockEnclaveV2.load_from_config_or_binary(
+            dc_bin_path, family=family
+        )
+        assert dc_from_config == dc_from_binary
+
+
+def test_classic_load_from_config_or_binary(data_dir: str, tmpdir: str) -> None:
+    """Test loading a classic (non-ELE) debug credential from a config or a binary file.
+
+    This verifies that ``load_from_config_or_binary`` builds and signs a debug credential
+    when a YAML configuration file is passed, and that the same helper parses an already
+    prepared binary debug credential. Both loaded credentials must be equivalent.
+
+    :param data_dir: Directory containing test data files.
+    :param tmpdir: Temporary directory for the exported binary debug credential.
+    """
+    with use_working_directory(data_dir):
+        family = FamilyRevision("lpc55s36")
+        # Load from a YAML configuration file - the DC is built and signed
+        dc_from_config = DebugCredentialCertificate.load_from_config_or_binary(
+            "new_dck_secp256_lpc55s3x.yml", family=family
+        )
+        # Export it to a binary file and load it back as a binary
+        dc_bin_path = os.path.join(tmpdir, "dc_lpc55s3x_ecc256.bin")
+        with open(dc_bin_path, "wb") as f:
+            f.write(dc_from_config.export())
+        dc_from_binary = DebugCredentialCertificate.load_from_config_or_binary(
+            dc_bin_path, family=family
+        )
+        assert dc_from_config == dc_from_binary
+
+
 def test_lpc55s3x_export_parse_invalid(data_dir: str) -> None:
     """Test invalid parsing of LPC55S3X debug credential certificate export.
 
@@ -315,6 +424,60 @@ def test_parse(data_dir: str, dc_file_name: str, class_name: str, family: str) -
             dc_file = f.read()
         dc = DebugCredentialCertificate.parse(dc_file, FamilyRevision(family))
         assert dc.__class__.__name__ == class_name
+
+
+def test_dc_pre_validation_hook_fills_ele_unsupported_fields(caplog) -> None:  # type: ignore[no-untyped-def]
+    """ELE families auto-fill missing unsupported fields in pre-validation hook."""
+    cfg = Config(
+        {
+            "family": "mimx943",
+            "revision": "a0",
+            "uuid": "00000000000000000000000000000000",
+            "cc_socu": 0,
+            "rot_id": 0,
+            "rot_meta": ["../../_data/keys/ecc256/srk0_ecc256.pub"],
+            "dck": "../../_data/keys/ecc256/dck_ecc256.pub",
+            "signer": "../../_data/keys/ecc256/srk0_ecc256.pem",
+        }
+    )
+    cfg.search_paths = [os.path.join(os.path.dirname(__file__), "data")]
+
+    with caplog.at_level(logging.DEBUG, logger="spsdk.dat.debug_credential"):
+        normalized = DebugCredentialCertificate.PRE_VALIDATION_CFG_HOOK(cfg)
+
+    assert normalized.get_int("cc_vu") == 0
+    assert normalized.get_int("cc_beacon") == 0
+    assert "auto-filled" in caplog.text
+
+
+def test_dc_pre_validation_hook_keeps_non_ele_unchanged() -> None:
+    """Non-ELE families are not modified by DAT pre-validation hook."""
+    cfg = Config(
+        {
+            "family": "lpc55s36",
+            "revision": "a1",
+            "uuid": "00000000000000000000000000000000",
+            "cc_socu": 0,
+            "rot_id": 0,
+            "rot_meta": ["../../_data/keys/ecc256/srk0_ecc256.pub"],
+            "dck": "../../_data/keys/ecc256/dck_ecc256.pub",
+            "signer": "../../_data/keys/ecc256/srk0_ecc256.pem",
+        }
+    )
+    cfg.search_paths = [os.path.join(os.path.dirname(__file__), "data")]
+
+    normalized = DebugCredentialCertificate.PRE_VALIDATION_CFG_HOOK(cfg)
+    assert "cc_vu" not in normalized
+    assert "cc_beacon" not in normalized
+
+
+def test_ele_dc_schema_uses_iee_clear_regions() -> None:
+    """IEE-capable ELE debug credential templates expose only the IEE clear regions field."""
+    schemas = DebugCredentialEdgeLockEnclaveV2.get_validation_schemas(FamilyRevision("mx95"))
+    properties = {key for schema in schemas for key in schema.get("properties", {})}
+
+    assert "iee_clear_regions" in properties
+    assert "permission_data_ext" not in properties
 
 
 @pytest.mark.parametrize(

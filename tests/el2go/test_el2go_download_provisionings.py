@@ -59,9 +59,11 @@ def test_00_018_prov_download_error(
 
         mock_el2go_response = EL2GOApiResponse(status_code=status_code, json_body=generic_dict)
 
-        with patch(
-            "spsdk.el2go.api_utils.EL2GOTPClient._handle_el2go_request",
-            return_value=mock_el2go_response,
+        with (
+            patch(
+                "spsdk.el2go.api_utils.EL2GOTPClient._handle_el2go_request",
+                return_value=mock_el2go_response,
+            ),
+            pytest.raises(SPSDKError),
         ):
-            with pytest.raises(SPSDKError):
-                client.download_provisionings(device_id=device_id)
+            client.download_provisionings(device_id=device_id)

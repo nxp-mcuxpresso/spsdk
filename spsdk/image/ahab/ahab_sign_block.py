@@ -14,11 +14,13 @@ both standard and version 2 signature block formats for secure boot operations.
 import logging
 import os
 from struct import calcsize, pack, unpack
-from typing import Any
+from typing import Any, ClassVar
 
 from typing_extensions import Self
 
 from spsdk.crypto.hash import EnumHashAlgorithm
+from spsdk.crypto.keys import PrivateKey, PublicKey
+from spsdk.crypto.signature_provider import get_signature_provider
 from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKUnsupportedOperation
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer, HeaderContainerData
 from spsdk.image.ahab.ahab_blob import AhabBlob
@@ -43,6 +45,35 @@ from spsdk.utils.schema_validator import SPSDKErrorValidationFailed
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
+_EXPECTED_PUBLIC_KEY_TYPE_ATTR = "_expected_public_key_type"
+_EXPECTED_PUBLIC_KEY_TYPES_ATTR = "_expected_public_key_types"
+
+
+def _get_expected_srk_public_key_type(
+    config: Config, signer_key: str = "signer"
+) -> type[PublicKey] | None:
+    """Infer the public-key type expected in an SRK table from the configured signer."""
+    if signer_key not in config:
+        return None
+    try:
+        signature_provider = get_signature_provider(config, key=signer_key)
+        private_key = getattr(signature_provider, "private_key", None)
+        if isinstance(private_key, PrivateKey):
+            return type(private_key.get_public_key())
+    except (AttributeError, SPSDKError):
+        return None
+    return None
+
+
+def _clone_srk_config_with_expected_public_key_types(
+    config: Config, expected_public_key_types: list[type[PublicKey] | None]
+) -> Config:
+    """Clone SRK config and attach internal public-key type hints for raw PQC key loading."""
+    cloned = Config(config)
+    if expected_public_key_types:
+        setattr(cloned, _EXPECTED_PUBLIC_KEY_TYPE_ATTR, expected_public_key_types[0])
+    setattr(cloned, _EXPECTED_PUBLIC_KEY_TYPES_ATTR, expected_public_key_types)
+    return cloned
 
 
 class SignatureBlock(HeaderContainer):
@@ -93,13 +124,18 @@ class SignatureBlock(HeaderContainer):
     VERSION = 0x00
     SUPPORTED_SIGNATURES_CNT = 1
 
-    DIFF_ATTRIBUTES_VALUES = [
+    DIFF_ATTRIBUTES_VALUES: ClassVar[list[str]] = [
         "_srk_assets_offset",
         "_certificate_offset",
         "_blob_offset",
         "_signature_offset",
     ]
-    DIFF_ATTRIBUTES_OBJECTS = ["srk_assets", "signature", "certificate", "blob"]
+    DIFF_ATTRIBUTES_OBJECTS: ClassVar[list[str]] = [
+        "srk_assets",
+        "signature",
+        "certificate",
+        "blob",
+    ]
 
     def __init__(
         self,
@@ -140,21 +176,19 @@ class SignatureBlock(HeaderContainer):
         :param other: Object to compare with this signature block.
         :return: True if objects are equal, False otherwise.
         """
-        if isinstance(other, SignatureBlock):
-            if (
-                super().__eq__(other)  # pylint: disable=too-many-boolean-expressions
-                and self._srk_assets_offset == other._srk_assets_offset
-                and self._certificate_offset == other._certificate_offset
-                and self._blob_offset == other._blob_offset
-                and self._signature_offset == other._signature_offset
-                and self.srk_assets == other.srk_assets
-                and self.signature == other.signature
-                and self.certificate == other.certificate
-                and self.blob == other.blob
-            ):
-                return True
-
-        return False
+        return isinstance(
+            other, SignatureBlock
+        ) and (  # pylint: disable=too-many-boolean-expressions
+            super().__eq__(other)
+            and self._srk_assets_offset == other._srk_assets_offset
+            and self._certificate_offset == other._certificate_offset
+            and self._blob_offset == other._blob_offset
+            and self._signature_offset == other._signature_offset
+            and self.srk_assets == other.srk_assets
+            and self.signature == other.signature
+            and self.certificate == other.certificate
+            and self.blob == other.blob
+        )
 
     def __len__(self) -> int:
         """Get the length of the signature block.
@@ -488,7 +522,7 @@ class SignatureBlock(HeaderContainer):
                         (
                             "Cannot restore public key to verify signature."
                             f" The key is restoring from {'certificate' if used_image_key else 'SRK'}. "
-                            f"The problem raised with this reason: {str(exc)}"
+                            f"The problem raised with this reason: {exc!s}"
                         ),
                     )
                 if self.signature.signature_data == self.signature.get_dummy_signature(
@@ -504,7 +538,9 @@ class SignatureBlock(HeaderContainer):
                         self.signature.signature_data,
                         data_to_sign,
                         algorithm=EnumHashAlgorithm.from_label(
-                            self.srk_assets.srk_records[0].hash_algorithm.label
+                            self.srk_assets.srk_records[
+                                self.chip_config.used_srk_id
+                            ].hash_algorithm.label
                         ),
                         pss_padding=True,
                     )
@@ -633,7 +669,7 @@ class SignatureBlock(HeaderContainer):
             logger.warning(
                 "AHAB Blob parsing error. In case that no encrypted images"
                 " are presented in container, it should not be an big issue."
-                f"\n{str(exc)}"
+                f"\n{exc!s}"
             )
             signature_block.blob = None
 
@@ -722,9 +758,12 @@ class SignatureBlock(HeaderContainer):
         """
         signature_block = cls(chip_config=chip_config)
         # SRK Table
+        expected_public_key_type = _get_expected_srk_public_key_type(config)
         signature_block.srk_assets = (
             SRKTable.load_from_config(
-                config.get_config("srk_table"),
+                _clone_srk_config_with_expected_public_key_types(
+                    config.get_config("srk_table"), [expected_public_key_type]
+                ),
                 chip_config=chip_config.base,  # Pass base chip config
             )
             if "srk_table" in config
@@ -734,7 +773,11 @@ class SignatureBlock(HeaderContainer):
         # Container Signature
         srk_set = config.get_str("srk_set", "none")
         signature_block.signature = (
-            ContainerSignature.load_from_config(config, signature_block.srk_assets)
+            ContainerSignature.load_from_config(
+                config,
+                signature_block.srk_assets,
+                used_srk_id=chip_config.used_srk_id,
+            )
             if srk_set != "none"
             else None
         )
@@ -752,7 +795,7 @@ class SignatureBlock(HeaderContainer):
                 ).load_from_config(cert_cfg)
             except SPSDKErrorValidationFailed as exc:
                 raise SPSDKErrorValidationFailed(
-                    f"Failed to load certificate from configuration: {str(exc)}"
+                    f"Failed to load certificate from configuration: {exc!s}"
                 ) from exc
             except SPSDKError:
                 # this could be pre-exported binary certificate :-)
@@ -860,7 +903,13 @@ class SignatureBlockV2(HeaderContainer):
     #     "_blob_offset",
     #     "_signature_offset",
     # ]
-    DIFF_ATTRIBUTES_OBJECTS = ["srk_assets", "signature", "signature_2", "certificate", "blob"]
+    DIFF_ATTRIBUTES_OBJECTS: ClassVar[list[str]] = [
+        "srk_assets",
+        "signature",
+        "signature_2",
+        "certificate",
+        "blob",
+    ]
 
     def __init__(
         self,
@@ -904,22 +953,20 @@ class SignatureBlockV2(HeaderContainer):
         :param other: Object to compare with this signature block.
         :return: True if objects are equal, False otherwise.
         """
-        if isinstance(other, SignatureBlockV2):
-            if (
-                super().__eq__(other)  # pylint: disable=too-many-boolean-expressions
-                and self._srk_assets_offset == other._srk_assets_offset
-                and self._certificate_offset == other._certificate_offset
-                and self._blob_offset == other._blob_offset
-                and self._signature_offset == other._signature_offset
-                and self.srk_assets == other.srk_assets
-                and self.signature == other.signature
-                and self.signature_2 == other.signature_2
-                and self.certificate == other.certificate
-                and self.blob == other.blob
-            ):
-                return True
-
-        return False
+        return isinstance(
+            other, SignatureBlockV2
+        ) and (  # pylint: disable=too-many-boolean-expressions
+            super().__eq__(other)
+            and self._srk_assets_offset == other._srk_assets_offset
+            and self._certificate_offset == other._certificate_offset
+            and self._blob_offset == other._blob_offset
+            and self._signature_offset == other._signature_offset
+            and self.srk_assets == other.srk_assets
+            and self.signature == other.signature
+            and self.signature_2 == other.signature_2
+            and self.certificate == other.certificate
+            and self.blob == other.blob
+        )
 
     def __len__(self) -> int:
         """Get the length of the AHAB sign block in bytes.
@@ -1318,7 +1365,7 @@ class SignatureBlockV2(HeaderContainer):
                         (
                             "Cannot restore public key to verify signature."
                             f" The key is restoring from {'certificate' if used_image_key else 'SRK'}. "
-                            f"The problem raised with this reason: {str(exc)}"
+                            f"The problem raised with this reason: {exc!s}"
                         ),
                     )
                 if signature_container.signature_data == signature_container.get_dummy_signature(
@@ -1334,7 +1381,9 @@ class SignatureBlockV2(HeaderContainer):
                         signature_container.signature_data,
                         data_to_sign,
                         algorithm=EnumHashAlgorithm.from_label(
-                            self.srk_assets._srk_tables[ix].srk_records[0].hash_algorithm.label
+                            self.srk_assets._srk_tables[ix]
+                            .srk_records[self.chip_config.used_srk_id]
+                            .hash_algorithm.label
                         ),
                         pss_padding=True,
                     )
@@ -1488,7 +1537,7 @@ class SignatureBlockV2(HeaderContainer):
             logger.warning(
                 "AHAB Blob parsing error. In case that no encrypted images"
                 " are presented in container, it should not be an big issue."
-                f"\n{str(exc)}"
+                f"\n{exc!s}"
             )
             signature_block.blob = None
 
@@ -1573,8 +1622,16 @@ class SignatureBlockV2(HeaderContainer):
         """
         signature_block = cls(chip_config=chip_config)
         # SRK Table Array
+        expected_public_key_type_0 = _get_expected_srk_public_key_type(config)
+        expected_public_key_type_1 = _get_expected_srk_public_key_type(config, "signer_#2")
         signature_block.srk_assets = (
-            SRKTableArray.load_from_config(config.get_config("srk_table"), chip_config=chip_config)
+            SRKTableArray.load_from_config(
+                _clone_srk_config_with_expected_public_key_types(
+                    config.get_config("srk_table"),
+                    [expected_public_key_type_0, expected_public_key_type_1],
+                ),
+                chip_config=chip_config,
+            )
             if "srk_table" in config
             else None
         )
@@ -1589,7 +1646,9 @@ class SignatureBlockV2(HeaderContainer):
                     " when the SRK keys are not defined."
                 )
             signature_block.signature = ContainerSignature.load_from_config(
-                config, signature_block.srk_assets._srk_tables[0]
+                config,
+                signature_block.srk_assets._srk_tables[0],
+                used_srk_id=chip_config.used_srk_id,
             )
             if len(signature_block.srk_assets._srk_tables) == 2:
                 temp_cfg = Config()
@@ -1597,7 +1656,9 @@ class SignatureBlockV2(HeaderContainer):
                 if "signer_#2" in config:
                     temp_cfg["signer"] = config["signer_#2"]
                 signature_block.signature_2 = ContainerSignature.load_from_config(
-                    temp_cfg, signature_block.srk_assets._srk_tables[1]
+                    temp_cfg,
+                    signature_block.srk_assets._srk_tables[1],
+                    used_srk_id=chip_config.used_srk_id,
                 )
 
         # Certificate Block
@@ -1612,7 +1673,7 @@ class SignatureBlockV2(HeaderContainer):
                 ).load_from_config(cert_cfg)
             except SPSDKErrorValidationFailed as exc:
                 raise SPSDKErrorValidationFailed(
-                    f"Failed to load certificate from configuration: {str(exc)}"
+                    f"Failed to load certificate from configuration: {exc!s}"
                 ) from exc
             except SPSDKError:
                 # this could be pre-exported binary certificate :-)

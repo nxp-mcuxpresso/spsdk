@@ -18,6 +18,8 @@ import click
 
 from spsdk.apps.spsdk_apps import main as spsdk_main
 
+logger = logging.getLogger(__name__)
+
 
 def gather(
     group: click.Group | click.Command,
@@ -71,7 +73,7 @@ def test_get_template_has_force() -> None:
         """
         if group.name and group.name.startswith("get-template"):
             result = any(param.name == "force" for param in group.params)
-            logging.debug(f"Checking command: {command_name} -> {result}")
+            logger.debug(f"Checking command: {command_name} -> {result}")
             yield result
 
     results = gather(
@@ -115,7 +117,7 @@ def test_templates_to_dirs() -> None:
                 result = (group.name == "get-templates" and is_dir) or (
                     group.name == "get-template" and not is_dir
                 )
-                logging.debug(f"Checking command: {command_name} -> {result}")
+                logger.debug(f"Checking command: {command_name} -> {result}")
                 yield result
 
     results = gather(

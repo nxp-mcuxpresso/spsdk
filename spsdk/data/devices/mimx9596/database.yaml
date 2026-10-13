@@ -227,6 +227,11 @@ info:
           pid: 0x0151
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe:
+    protocols: [swd, jtag]
+    test_address: 0x2048_0000
+
   # ======== Fuses description section ========
   fuses:
     tool: nxpele
@@ -269,7 +274,6 @@ features:
     ele_cnt_version: 1
     dac_version_is_swapped: True
     sub_features: ["ele_pqc"]
-    test_address: 0x2048_0000
     dmbox_ap_ix: 0
     dac_rot_type: not_available # The Dac packet doesn't contains the ROT hash
 
@@ -593,5 +597,14 @@ features:
 
   # ======== nxpuuu ==========
   nxpuuu: {}
+
+  # ======== EL2GO TP section ========
+  el2go_tp:
+    el2go_interface: uboot_fastboot
+    el2go_name: IMX9
+    prov_method: oem_app
+    validation_method: max_count=16;max_total_size=16384
+    uuid_fuse_index: "6 0 4"
+
   # ===== TLV =====
   tlv_blob: {}

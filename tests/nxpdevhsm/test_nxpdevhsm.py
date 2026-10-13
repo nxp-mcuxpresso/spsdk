@@ -158,7 +158,7 @@ def test_devhsm_factory(family: str, expected_cls: Any) -> None:
 
 def test_kw43_devhsm_sb4_keyblob_injected_before_write_ifr() -> None:
     """Test that DevHSM-injected KW43 SB4 keyblob is placed before WriteIFR."""
-    family_revision = FamilyRevision("kw43b43z97")
+    family_revision = FamilyRevision("kw43l43z97")
     sb4_commands = SecureBinary4Commands(family=family_revision, hash_type=EnumHashAlgorithm.SHA384)
     sb4_commands.add_command(
         CmdWriteIfr(
@@ -219,7 +219,7 @@ def test_sbx_devhsm(data_dir: str) -> None:
         ("mcxa366"),
         ("mcxa365"),
         ("mcxa457"),
-        ("kw43b43z97"),
+        ("kw43l43z97"),
     ],
 )
 def test_nxpdevhsm_get_template(cli_runner: CliRunner, tmpdir: Any, family: str) -> None:

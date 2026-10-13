@@ -255,9 +255,11 @@ def test_read_from_device_exception() -> None:
 def test_read_from_device_addr_minus_one() -> None:
     """Test read_from_device raises SPSDKPfrError when read_address returns -1."""
     cmpa = CMPA(LPC_FAMILY)
-    with mock.patch.object(type(cmpa), "read_address", new_callable=lambda: property(lambda _: -1)):
-        with pytest.raises(SPSDKPfrError, match="Failed to read"):
-            cmpa.read_from_device(lambda addr, size: bytes(size))
+    with (
+        mock.patch.object(type(cmpa), "read_address", new_callable=lambda: property(lambda _: -1)),
+        pytest.raises(SPSDKPfrError, match="Failed to read"),
+    ):
+        cmpa.read_from_device(lambda addr, size: bytes(size))
 
 
 # ---------------------------------------------------------------------------

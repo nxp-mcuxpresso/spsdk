@@ -20,7 +20,7 @@ import pytest
 
 from spsdk.apps.nxpdebugmbox import main
 from spsdk.apps.utils.utils import SPSDKAppError
-from spsdk.dat.dm_commands import ProgramLifecycle, SetBrickedMode
+from spsdk.dat.dm_commands import EnterISPMode, ProgramLifecycle, SetBrickedMode
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.family import get_device, get_families
 from spsdk.utils.misc import use_working_directory
@@ -184,7 +184,7 @@ def test_nxpdebugmbox_program_lifecycle_exe(cli_runner: CliRunner) -> None:
     ACK token (remainCount=1 << 16 | 0xA5A5 = 0x1A5A5) for the parameter,
     followed by a success status (0x0) for the final response.
     """
-    hw_responses = '-o subs_ap={"16777224":[107941,0]}'
+    hw_responses = '-o subs_ap={"16777468":[2752512],"16777224":[107941,0]}'
     cmd = (
         f"-i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {hw_responses} -vv "
         f"cmd -f mcxc151 program-lifecycle -l 0x96368BC7"
@@ -219,7 +219,7 @@ def test_nxpdebugmbox_program_lifecycle_unsupported_family(cli_runner: CliRunner
 
 def test_nxpdebugmbox_program_lifecycle_by_name(cli_runner: CliRunner) -> None:
     """--lifecycle accepts a symbolic name (IN_FIELD1) from cmpa_lc.json."""
-    hw_responses = '-o subs_ap={"16777224":[107941,0]}'
+    hw_responses = '-o subs_ap={"16777468":[2752512],"16777224":[107941,0]}'
     cmd = (
         f"-i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {hw_responses} "
         f"cmd -f mcxc151 program-lifecycle -l IN_FIELD1"
@@ -230,7 +230,7 @@ def test_nxpdebugmbox_program_lifecycle_by_name(cli_runner: CliRunner) -> None:
 
 def test_nxpdebugmbox_program_lifecycle_by_deprecated_name(cli_runner: CliRunner) -> None:
     """--lifecycle also resolves deprecated_names (e.g. ROP_LEVEL1 -> IN_FIELD1)."""
-    hw_responses = '-o subs_ap={"16777224":[107941,0]}'
+    hw_responses = '-o subs_ap={"16777468":[2752512],"16777224":[107941,0]}'
     cmd = (
         f"-i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {hw_responses} "
         f"cmd -f mcxc151 program-lifecycle -l rop_level1"
@@ -324,6 +324,47 @@ def test_program_lifecycle_handles_timeout() -> None:
     assert result == []
     # Two spin_writes: the request word and the lifecycle value.
     assert dm.spin_write.call_count == 2
+
+
+def test_enter_isp_mode_handles_timeout() -> None:
+    """Test that EnterISPMode treats post-acknowledgment unresponsiveness as successful."""
+    dm = MagicMock()
+    dm.registers = {
+        "REQUEST": {"address": 0x04},
+        "RETURN": {"address": 0x08},
+    }
+    dm.command_delays = {}
+    dm.non_standard_statuses = {}
+    # The first response acknowledges the mode parameter; the reset prevents
+    # the final command status response from being read.
+    dm.read_return.side_effect = [
+        (1 << 16) | 0xA5A5,
+        SPSDKTimeoutError("The Debug Mailbox read operation ends on timeout."),
+    ]
+
+    result = EnterISPMode(dm=dm).run([0])
+
+    assert result == []
+    assert dm.spin_write.call_count == 2
+
+
+def test_enter_isp_mode_propagates_pre_ack_timeout() -> None:
+    """Test that EnterISPMode does not hide a timeout before parameter acknowledgment."""
+    dm = MagicMock()
+    dm.registers = {
+        "REQUEST": {"address": 0x04},
+        "RETURN": {"address": 0x08},
+    }
+    dm.command_delays = {}
+    dm.non_standard_statuses = {}
+    dm.read_return.side_effect = SPSDKTimeoutError(
+        "The Debug Mailbox read operation ends on timeout."
+    )
+
+    with pytest.raises(SPSDKTimeoutError):
+        EnterISPMode(dm=dm).run([0])
+
+    assert dm.spin_write.call_count == 1
 
 
 def test_program_lifecycle_paramlen() -> None:

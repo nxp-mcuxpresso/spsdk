@@ -452,7 +452,7 @@ class CmdLoadBase(BaseCmd):
                 # Note: length still contains compressed size for backward compatibility
                 load_data = decompressed_data
             except lzma.LZMAError as exc:
-                raise SPSDKError(f"Failed to decompress LZMA data: {str(exc)}") from exc
+                raise SPSDKError(f"Failed to decompress LZMA data: {exc!s}") from exc
 
         return address, length, load_data, cmd, memory_id, is_compressed, crc, check_size
 
@@ -1404,7 +1404,7 @@ class CmdLoadKeyBlob(BaseCmd):
         :return: Integer value representing the key identifier.
         """
         database = get_db(family)
-        feature_name = [x for x in database.features.keys() if str(x).startswith("sb")][0]
+        feature_name = next(x for x in database.features if str(x).startswith("sb"))
         key_wraps_version = database.get_int(feature_name, "key_wraps_version")
         key_wraps = {1: cls._KeyWraps, 2: cls._KeyWrapsV2}.get(key_wraps_version)
         if key_wraps is None:
@@ -1899,20 +1899,31 @@ class CmdReset(BaseCmd):
 
     CMD_TAG = EnumCmdTag.RESET
 
-    def __init__(self) -> None:
+    def __init__(self, params: int | None = None) -> None:
         """Initialize reset command.
 
         Creates a new reset command instance with zero address and length values.
         This command is used to reset the target device during secure boot execution.
         """
-        super().__init__(address=0, length=0)
+        super().__init__(address=params or 0, length=0)
 
     def __str__(self) -> str:
         """Get string representation of the RESET command.
 
         :return: String representation of the command.
         """
-        return "RESET"
+        msg = "RESET"
+        if self.params:
+            msg += f": Params={self.params}"
+        return msg
+
+    @property
+    def params(self) -> int:
+        """Get command parameters.
+
+        :return: Command parameters as an integer value.
+        """
+        return self.address
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
@@ -1920,10 +1931,10 @@ class CmdReset(BaseCmd):
 
         :param data: Input data as bytes array
         :raises SPSDKError: Invalid data format or parsing error
-        :return: CmdReset instance
+        :return: CmdReset instance created from parsed data
         """
-        _, _ = cls.header_parse(data=data)
-        return cls()
+        params, _ = cls.header_parse(data=data)
+        return cls(params=params)
 
     @classmethod
     def load_from_config(cls, config: Config) -> list[Self]:
@@ -1932,7 +1943,13 @@ class CmdReset(BaseCmd):
         :param config: Dictionary with configuration fields.
         :return: List of command objects loaded from configuration.
         """
-        return [cls()]
+        params = config.get("params", None)
+        if not params:
+            return [cls()]
+        if isinstance(params, int):
+            out_params = value_to_int(params, 0)
+            return [cls(out_params)]
+        raise SPSDKError("Invalid param format for RESET command expected int")
 
     def get_config_context(self, data_path: str = "./") -> Config:
         """Create configuration for the RESET command.
@@ -1946,8 +1963,8 @@ class CmdReset(BaseCmd):
         :param data_path: Path to store any data files (not used for this command).
         :return: Configuration object with command-specific settings (empty for this command).
         """
-        # Reset command doesn't need any parameters
-        return Config({})
+        context = {"params": self.params} if self.params else {}
+        return Config(context)
 
 
 class CmdWriteIfr(BaseCmd):

@@ -25,5 +25,7 @@ features:
   pfr:
     cmpa: # CMPA description
       address: 0x5_E000
+      # 256K-phantom variant of the mcxl253 device. SI base = CMPA - 0x18000 = 0x46000.
+      si_probe_address: 0x46000
     cfpa: # CFPA description
       address: 0x5_FFF0

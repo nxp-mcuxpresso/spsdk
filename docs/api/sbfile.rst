@@ -151,6 +151,7 @@ SBFile Version C - DEVHSM
 SBFile - miscellaneous functions
 ----------------------------------
 .. automodule:: spsdk.sbfile.misc
+   :no-index:
    :members:
    :undoc-members:
    :show-inheritance:

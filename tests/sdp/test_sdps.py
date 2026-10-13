@@ -96,7 +96,7 @@ class VirtualDevice(DeviceBase):
             assert data == cmd_pack
             self.cmd_index += 1
         else:
-            assert data == data
+            assert data == globals()["data"]
 
     def __str__(self) -> str:
         """Get string representation of the virtual device.
@@ -313,5 +313,5 @@ def test_sdps_exception() -> None:
         assert False
     except SdpConnectionError:
         assert True
-    except Exception:
+    except Exception:  # noqa: BLE001
         assert False

@@ -7,12 +7,14 @@
 
 import os
 
+import click
 import pytest
 
 from spsdk.apps import nxpdice
 from spsdk.apps import pfr as pfr_cli
 from spsdk.apps.nxpimage import main as nxpimage_main
 from spsdk.apps.spsdk_apps import main as spsdk_main
+from spsdk.apps.utils.common_cli_options import FamilyChoice, GetFamiliesCommand
 from tests.cli_runner import CliRunner
 
 # Helpers
@@ -519,6 +521,16 @@ class TestSpsdkAppsCli:
         result = cli_runner.invoke(spsdk_main, ["utils", "families", "-f", feature])
         assert result.output
 
+    def test_spsdk_utils_families_no_supported(
+        self, cli_runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test spsdk utils families shows the generic message when a feature has no families."""
+        from spsdk.apps import spsdk_apps
+
+        monkeypatch.setattr(spsdk_apps, "get_families", lambda feature: [])
+        result = cli_runner.invoke(spsdk_main, ["utils", "families", "-f", "mbi"])
+        assert GetFamiliesCommand.NO_SUPPORTED_FAMILIES_MESSAGE in result.output
+
 
 # NXPIMAGE MBI CLI tests  (spsdk/apps/nxpimage_apps/nxpimage_mbi.py)
 
@@ -605,3 +617,45 @@ class TestNxpimageMbiCli:
             ["mbi", "verify", "-f", MBI_FAMILY, "-b", "nonexistent.bin"],
             expected_code=-1,
         )
+
+
+# get-families empty database message tests  (spsdk/apps/utils/common_cli_options.py)
+
+
+class TestGetFamiliesEmpty:
+    """Tests for the get-families message when no families are supported."""
+
+    def test_get_families_group_no_supported_families(self, cli_runner: CliRunner) -> None:
+        """Test get-families prints a clear message for an empty group family option."""
+        command = GetFamiliesCommand()
+        empty_param = click.Option(["-f", "--family"], type=FamilyChoice(choices=[]))
+        command.add_cmd(empty_param, None)
+        result = cli_runner.invoke(command, [])
+        assert GetFamiliesCommand.NO_SUPPORTED_FAMILIES_MESSAGE in result.output
+
+    def test_get_families_cmd_no_supported_families(self, cli_runner: CliRunner) -> None:
+        """Test get-families -c prints a clear message for an empty command family option."""
+        command = GetFamiliesCommand()
+        empty_param = click.Option(["-f", "--family"], type=FamilyChoice(choices=[]))
+        command.add_cmd(empty_param, "get-template")
+        result = cli_runner.invoke(command, ["-c", "get-template"])
+        assert GetFamiliesCommand.NO_SUPPORTED_FAMILIES_MESSAGE in result.output
+
+    def test_get_families_no_cmd_all_unsupported(self, cli_runner: CliRunner) -> None:
+        """Test get-families (no -c) shows the generic message when no sub-command supports families."""
+        command = GetFamiliesCommand()
+        empty_param = click.Option(["-f", "--family"], type=FamilyChoice(choices=[]))
+        command.add_cmd(empty_param, "get-template")
+        result = cli_runner.invoke(command, [])
+        assert GetFamiliesCommand.NO_SUPPORTED_FAMILIES_MESSAGE in result.output
+
+    def test_nxpimage_ahab_keyblob_get_families(self, cli_runner: CliRunner) -> None:
+        """Test AHAB keyblob get-families reports RT266x support."""
+        result = cli_runner.invoke(nxpimage_main, ["ahab", "keyblob", "get-families"])
+        assert "Missing option '-c'/'--cmd-name'" in result.output
+
+        result = cli_runner.invoke(
+            nxpimage_main, ["ahab", "keyblob", "get-families", "-c", "get-template"]
+        )
+        assert "Shown families for command 'get-template':" in result.output
+        assert "mimxrt2662[a0]" in result.output

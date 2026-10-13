@@ -385,10 +385,12 @@ class DriverInterface:
             logger.error("Serial not initialized")
             return
 
-        if self.backend == Backend.PYFTDI and self.dev:
-            self.dev.baudrate = baudrate
-
-        elif self.backend == Backend.PYLIBFTDI and self.dev:
+        if (
+            self.backend == Backend.PYFTDI
+            and self.dev
+            or self.backend == Backend.PYLIBFTDI
+            and self.dev
+        ):
             self.dev.baudrate = baudrate
 
         elif self.backend == Backend.FTD2xx and self.dev:

@@ -12,7 +12,7 @@ of secure objects from EL2GO service using job-based processing approach.
 
 import logging
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 from typing_extensions import Self
@@ -32,7 +32,7 @@ class JobInfo:
 
     job_id: str
     device_count: int
-    created_at: datetime = datetime.now(timezone.utc)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime | None = None
     status: str | None = None
     percentage: int = 0

@@ -7,18 +7,18 @@ click-option-group<1,>=0.3.0
 click!=8.1.4,!=8.3,<9,>=7.1
 click<8.3; python_version == "3.10" # command object is not deep-copyable
 colorama<1,>=0.4.6
-crcmod<2
+crcmod-plus<3,>=2  # maintained drop-in replacement for unmaintained crcmod 1.7 (imports as `crcmod`)
 cryptography<50,>=48.0.1
 deepmerge<3
 fastjsonschema<3,>=2.15.1
 filelock<4,>=3
 hexdump<4
 importlib-metadata<9
-libusbsio<3,>=2.2.0
+libusbsio<3,>=2.2.1
 libuuu<2,>=1.5.239
 oscrypto<2
 packaging<27,>=23.2
-platformdirs<5,>=3.9.1
+platformdirs<4.12,>=3.9.1 # 4.12 changed private API used by SPSDKPlatformDirs
 prettytable<4,>=3.12
 pyasn1<1,>=0.6
 pyserial<4,>=3.1
@@ -26,7 +26,7 @@ requests<3,>=2.32.3
 ruamel.yaml<1,>=0.17
 ruamel.yaml.clib!=0.2.13,!=0.2.15,<1  # 0.2.13: missing header files for build, 0.2.15: Black Duck detection issues
 setuptools_scm<10
-setuptools<81,>75
+setuptools<84,>=83.0.0  # >=83.0.0: fix MANIFEST.in exclusion bypass via Unicode NFC/NFD collision (GHSA / VU#604762)
 sly<1
 spsdk-mcu-link<1,>=0.6.11
 spsdk-pyocd<1,>=0.2.0

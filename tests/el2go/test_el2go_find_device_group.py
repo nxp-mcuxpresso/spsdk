@@ -100,12 +100,14 @@ def test_00_007_008_extract_device_groups_fail(
 
         mock_el2go_response = EL2GOApiResponse(status_code=status_code, json_body=generic_dict)
 
-        with patch(
-            "spsdk.el2go.api_utils.EL2GOTPClient._handle_el2go_request",
-            return_value=mock_el2go_response,
+        with (
+            patch(
+                "spsdk.el2go.api_utils.EL2GOTPClient._handle_el2go_request",
+                return_value=mock_el2go_response,
+            ),
+            pytest.raises(SPSDKError),
         ):
-            with pytest.raises(SPSDKError):
-                client._find_device_group_id(device_id=device_id)
+            client._find_device_group_id(device_id=device_id)
 
 
 @pytest.mark.parametrize(
@@ -216,12 +218,14 @@ def test_00_011_012_find_device_group_error(
             status_code=status_code_success, json_body=generic_dict
         )
 
-        with patch(
-            "spsdk.el2go.api_utils.EL2GOTPClient._handle_el2go_request",
-            side_effect=[mock_el2go_response_found, mock_el2go_response_not_found],
+        with (
+            patch(
+                "spsdk.el2go.api_utils.EL2GOTPClient._handle_el2go_request",
+                side_effect=[mock_el2go_response_found, mock_el2go_response_not_found],
+            ),
+            pytest.raises(SPSDKError),
         ):
-            with pytest.raises(SPSDKError):
-                client._find_device_group_id(device_id=device_id)
+            client._find_device_group_id(device_id=device_id)
 
 
 @pytest.mark.parametrize(
@@ -272,14 +276,16 @@ def test_00_014_find_device_group_corner_case(
             status_code=status_code, json_body=generic_dict
         )
 
-        with patch(
-            "spsdk.el2go.api_utils.EL2GOTPClient._handle_el2go_request",
-            side_effect=[
-                mock_el2go_response_found,
-                mock_el2go_response_not_found,
-                mock_el2go_response_not_found,
-                mock_el2go_response_not_found,
-            ],
+        with (
+            patch(
+                "spsdk.el2go.api_utils.EL2GOTPClient._handle_el2go_request",
+                side_effect=[
+                    mock_el2go_response_found,
+                    mock_el2go_response_not_found,
+                    mock_el2go_response_not_found,
+                    mock_el2go_response_not_found,
+                ],
+            ),
+            pytest.raises(SPSDKError),
         ):
-            with pytest.raises(SPSDKError):
-                client._find_device_group_id(device_id=device_id)
+            client._find_device_group_id(device_id=device_id)

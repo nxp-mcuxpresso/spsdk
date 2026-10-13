@@ -22,10 +22,10 @@ import pytest
 from serial import Serial, SerialException
 from serial.tools.list_ports_common import ListPortInfo
 
-import spsdk.utils.devicedescription as devicedescription
 import spsdk.utils.nxpdevscan as nds
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.exceptions import McuBootConnectionError
+from spsdk.utils import devicedescription
 from spsdk.utils.interfaces.protocol.protocol_base import SpsdkNoDeviceFoundError
 
 
@@ -246,9 +246,7 @@ def mock_uboot_is_serial_console_open(self: Any) -> bool:
     :param self: Instance of the mock class containing port information.
     :return: True if the port is COM9, False otherwise.
     """
-    if self.port == "COM9":
-        return True
-    return False
+    return self.port == "COM9"
 
 
 list_port_info_mock: list[ListPortInfo] = [
@@ -449,9 +447,11 @@ def test_sdio_device_search_no_device_found() -> None:
                 "mimxrt1176",
                 "mimxrt1181",
                 "mimxrt1182",
+                "mimxrt1185",
                 "mimxrt1187",
                 "mimxrt1186",
                 "mimxrt1189",
+                "mimxrt118c",
                 "mwct2014s",
                 "mwct2015s",
                 "mwct2016s",

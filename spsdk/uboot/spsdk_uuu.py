@@ -20,6 +20,7 @@ from typing import Any, no_type_check
 
 from libuuu import LibUUU, UUUNotifyCallback, UUUState
 from libuuu.libuuu import UUUNotifyStruct, UUUNotifyType, _default_notify_callback
+from typing_extensions import Self
 
 from spsdk import get_logger
 from spsdk.exceptions import SPSDKError, SPSDKValueError
@@ -125,6 +126,15 @@ class SPSDKUUUState(UUUState):
 
         self.logger.debug(f"{self.cmd=},{self.dev=},{self.waiting=},{self.error=}")
 
+    def finish_progress(self) -> None:
+        """Finish any active progress bar and restore the terminal.
+
+        Must be called when a UUU operation ends (successfully or not), otherwise
+        the terminal cursor stays hidden because the progress bar manager is not
+        used as a context manager here.
+        """
+        self.progress_manager.finish()
+
 
 @no_type_check
 # pylint: disable=no-self-argument,missing-type-doc
@@ -226,7 +236,7 @@ class SPSDKUUU:
         rc = self.add_usbserial_no_filter(usb_serial_no_filter) if usb_serial_no_filter else 0
         if rc != 0:
             raise SPSDKValueError(f"Error adding USB serial number filter: {rc}")
-        self._state.progress_bar = progress_bar
+        self._state.progress_bar_enabled = progress_bar
 
     @property
     def response(self) -> str:
@@ -477,7 +487,10 @@ class SPSDKUUU:
         if not interruptible:
             return self.uuu.run_cmd(cmd, int(dry))
         wait_helper = CancellableWait()
-        return wait_helper.run_interruptible(self.uuu.run_cmd, cmd, int(dry))
+        try:
+            return wait_helper.run_interruptible(self.uuu.run_cmd, cmd, int(dry))
+        finally:
+            self.finish_progress()
 
     @check_uuu_error_state_after_command
     def run_script(self, script_path: str, dry: bool = False) -> int:
@@ -532,9 +545,19 @@ class SPSDKUUU:
             self.uuu.set_wait_next_timeout(-1)
 
         wait_helper = CancellableWait()
-        return wait_helper.run_interruptible(
-            self.uuu.lib.uuu_wait_uuu_finish, c_int(int(daemon)), c_int(int(dry))
-        )
+        try:
+            return wait_helper.run_interruptible(
+                self.uuu.lib.uuu_wait_uuu_finish, c_int(int(daemon)), c_int(int(dry))
+            )
+        finally:
+            self.finish_progress()
+
+    def finish_progress(self) -> None:
+        """Finish any active progress bar and restore the terminal cursor.
+
+        Safe to call multiple times and when no progress bar was displayed.
+        """
+        self._state.finish_progress()
 
     def for_each_devices(self, callback: Callable) -> int:
         """Execute callback function for each connected USB device.
@@ -625,7 +648,7 @@ class SPSDKUUU:
                 self.original_wait: int | None = None
                 self.original_next: int | None = None
 
-            def __enter__(self) -> "TimeoutContext":
+            def __enter__(self) -> Self:
                 """Enter the timeout context manager.
 
                 Sets temporary timeout values for UUU operations and stores the original
@@ -672,6 +695,6 @@ class SPSDKUUU:
                 # Try a simple fastboot command to verify connection
                 result = self.run_cmd("FB: getvar version", dry=False)
                 return result == 0
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.debug(f"Fastboot verification failed: {e}")
             return False

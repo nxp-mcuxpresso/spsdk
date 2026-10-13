@@ -258,7 +258,6 @@ def test_cert_block_invalid() -> None:
         ({"mainRootCertId": 1}, True, 1),
         ({"mainRootCertId": "2"}, True, 2),
         ({"mainRootCertId": "1abc"}, False, SPSDKError),
-        ({"mainRootCertId": "1abc"}, False, SPSDKError),
     ],
 )
 def test_get_main_cert_index(
@@ -573,11 +572,12 @@ def test_chain_cert_rsa_over_2048_warning_for_lpc55s16(data_dir: str) -> None:
     mock_key = MagicMock(spec=PublicKeyRsa)
     mock_key.key_size = 4096
 
-    with patch.object(chain_cert, "get_public_key", return_value=mock_key):
-        # validate() is called internally; patch it to pass so we reach the key-size check
-        with patch.object(chain_cert, "validate", return_value=True):
-            cb.add_certificate(chain_cert)
-            ver = cb.verify()
+    with (
+        patch.object(chain_cert, "get_public_key", return_value=mock_key),
+        patch.object(chain_cert, "validate", return_value=True),
+    ):
+        cb.add_certificate(chain_cert)
+        ver = cb.verify()
 
     assert ver.get_count([VerifierResult.WARNING]) >= 1
     output = str(ver)
@@ -607,10 +607,12 @@ def test_chain_cert_rsa_over_2048_no_warning_for_other_cert_block_1_families(
     mock_key = MagicMock(spec=PublicKeyRsa)
     mock_key.key_size = 4096
 
-    with patch.object(chain_cert, "get_public_key", return_value=mock_key):
-        with patch.object(chain_cert, "validate", return_value=True):
-            cb.add_certificate(chain_cert)
-            ver = cb.verify()
+    with (
+        patch.object(chain_cert, "get_public_key", return_value=mock_key),
+        patch.object(chain_cert, "validate", return_value=True),
+    ):
+        cb.add_certificate(chain_cert)
+        ver = cb.verify()
 
     assert ver.get_count([VerifierResult.WARNING]) == 0
     assert "only supports RSA2048" not in str(ver)
@@ -668,10 +670,12 @@ def test_chain_cert_rsa2048_no_warning_for_lpc55s16(data_dir: str) -> None:
     mock_key = MagicMock(spec=PublicKeyRsa)
     mock_key.key_size = 2048
 
-    with patch.object(chain_cert, "get_public_key", return_value=mock_key):
-        with patch.object(chain_cert, "validate", return_value=True):
-            cb.add_certificate(chain_cert)
-            ver = cb.verify()
+    with (
+        patch.object(chain_cert, "get_public_key", return_value=mock_key),
+        patch.object(chain_cert, "validate", return_value=True),
+    ):
+        cb.add_certificate(chain_cert)
+        ver = cb.verify()
 
     assert ver.get_count([VerifierResult.WARNING]) == 0
     assert "only supports RSA2048" not in str(ver)
@@ -702,13 +706,13 @@ def test_chain_cert_rsa_over_2048_no_warning_for_unknown_family(data_dir: str) -
     mock_db_features = MagicMock()
     mock_db_features.get_bool.return_value = False
 
-    with patch.object(chain_cert, "get_public_key", return_value=mock_key):
-        with patch.object(chain_cert, "validate", return_value=True):
-            with patch(
-                "spsdk.image.cert_block.cert_block_v1.get_db", return_value=mock_db_features
-            ):
-                cb.add_certificate(chain_cert)
-                ver = cb.verify()
+    with (
+        patch.object(chain_cert, "get_public_key", return_value=mock_key),
+        patch.object(chain_cert, "validate", return_value=True),
+        patch("spsdk.image.cert_block.cert_block_v1.get_db", return_value=mock_db_features),
+    ):
+        cb.add_certificate(chain_cert)
+        ver = cb.verify()
 
     assert ver.get_count([VerifierResult.WARNING]) == 0
     assert "only supports RSA2048" not in str(ver)

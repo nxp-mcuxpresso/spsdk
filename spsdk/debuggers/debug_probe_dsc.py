@@ -88,11 +88,12 @@ import functools
 from abc import abstractmethod
 from dataclasses import dataclass
 from time import sleep
-from typing import Any, no_type_check
+from typing import Any, ClassVar, no_type_check
 
 from spsdk import get_logger
 from spsdk.debuggers.debug_probe import (
     DebugProbe,
+    DebugProbeProtocol,
     MemorySpace,
     SPSDKDebugProbeError,
     SPSDKDebugProbeNotOpenError,
@@ -152,6 +153,7 @@ class DebugProbeDsc(DebugProbe):
 
     ARCHITECTURE = "dsc56800ex"
     NAME = "base-dsc"
+    SUPPORTED_PROTOCOLS = (DebugProbeProtocol.ONCE,)
 
     # Core-TAP JTAG IR instructions (4-bit IR, per MC56F85xxx RM Section 9.3.3)
     ONCE_IR_EONCE = 0x06  # ENABLE_EOnCE - enables OnCE register access via DR
@@ -251,7 +253,7 @@ class DebugProbeDsc(DebugProbe):
     DEFAULT_TAP = "CHIP-TAG"
 
     # Default TAP configurations
-    DEFAULT_TAPS = {
+    DEFAULT_TAPS: ClassVar[dict[str, TapConfig]] = {
         "CHIP-TAG": TapConfig(
             ir_length=8,
             dr_length=4,
@@ -328,7 +330,7 @@ class DebugProbeDsc(DebugProbe):
                         f"No TAP configurations in database for {self.family}, using defaults"
                     )
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(f"Could not load TAP configs from database: {e}, using defaults")
 
     @abstractmethod
@@ -649,7 +651,7 @@ class DebugProbeDsc(DebugProbe):
                 "Debug probe is not opened or write_ir/write_dr methods are not available"
             ) from exc
         except Exception as exc:
-            raise SPSDKDebugProbeError(f"Failed to read DSC chip IDCode: {str(exc)}") from exc
+            raise SPSDKDebugProbeError(f"Failed to read DSC chip IDCode: {exc!s}") from exc
 
     def _once_read_word(self, addr: int) -> int:
         """Read a single 16-bit word from DSC data memory.
@@ -1087,7 +1089,7 @@ class DebugProbeDsc(DebugProbe):
 
         except Exception as exc:
             self.dmi_selected = False
-            raise SPSDKDebugProbeError(f"DMI operation failed: {str(exc)}") from exc
+            raise SPSDKDebugProbeError(f"DMI operation failed: {exc!s}") from exc
 
     def _reset_dmi(self) -> None:
         """Reset DMI (Debug Module Interface) for debug mailbox access.
@@ -1117,7 +1119,7 @@ class DebugProbeDsc(DebugProbe):
                 "Debug probe is not opened or JTAG methods are not available"
             ) from exc
         except Exception as exc:
-            raise SPSDKDebugProbeError(f"Failed to reset DMI: {str(exc)}") from exc
+            raise SPSDKDebugProbeError(f"Failed to reset DMI: {exc!s}") from exc
 
     def _recover_dmi(self, op: int) -> None:
         """Recover DMI from error state based on the OP code.
@@ -1221,7 +1223,7 @@ class DebugProbeDsc(DebugProbe):
         except Exception as exc:
             self.last_accessed_tap = "Unknown"
             self.dmi_selected = False
-            raise SPSDKDebugProbeError(f"Failed to select DM-TAP: {str(exc)}") from exc
+            raise SPSDKDebugProbeError(f"Failed to select DM-TAP: {exc!s}") from exc
 
     @no_type_check
     # pylint: disable=no-self-argument
@@ -1292,7 +1294,7 @@ class DebugProbeDsc(DebugProbe):
             raise
         except Exception as exc:
             raise SPSDKDebugProbeError(
-                f"Failed to read debug mailbox register at 0x{addr:02X}: {str(exc)}"
+                f"Failed to read debug mailbox register at 0x{addr:02X}: {exc!s}"
             ) from exc
 
     @select_dmtap
@@ -1324,5 +1326,5 @@ class DebugProbeDsc(DebugProbe):
             raise
         except Exception as exc:
             raise SPSDKDebugProbeError(
-                f"Failed to write debug mailbox register at 0x{addr:02X}: {str(exc)}"
+                f"Failed to write debug mailbox register at 0x{addr:02X}: {exc!s}"
             ) from exc

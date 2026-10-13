@@ -22,12 +22,12 @@ from spsdk.image.hab.commands.cmd_write_data import CmdWriteData
 
 __all__ = [
     "CmdAuthData",
+    "CmdCheckData",
+    "CmdInitialize",
     "CmdInstallKey",
     "CmdInstallSecretKey",
-    "CmdInitialize",
-    "CmdUnlock",
-    "CmdSet",
-    "CmdCheckData",
-    "CmdWriteData",
     "CmdNop",
+    "CmdSet",
+    "CmdUnlock",
+    "CmdWriteData",
 ]

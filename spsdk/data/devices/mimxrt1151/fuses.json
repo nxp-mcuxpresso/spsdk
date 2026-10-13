@@ -1,5 +1,5 @@
 {
-    "cpu": "MIMXRT1151",
+    "cpu": "mimxrt1151",
     "groups": [
         {
             "group": {
@@ -810,35 +810,88 @@
                             ]
                         },
                         {
-                            "width": 4,
-                            "id": "fuse13-bits-8-11",
-                            "name": "SRK_REVOKE[3:0]",
-                            "description": "Reserved for SRK keys revocation",
+                            "width": 1,
+                            "id": "fuse13-bit-8",
+                            "name": "SRK_REVOKE[0]",
+                            "description": "SRK key 1 revocation",
                             "values": [
                                 {
-                                    "name": "Revoke Key 1",
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "Revoke Key",
                                     "value": 1,
-                                    "description": "Revoke Key 1"
-                                },
-                                {
-                                    "name": "Revoke Key 2",
-                                    "value": 2,
-                                    "description": "Revoke Key 2"
-                                },
-                                {
-                                    "name": "Revoke Key 3",
-                                    "value": 4,
-                                    "description": "Revoke Key 3"
-                                },
-                                {
-                                    "name": "Revoke Key 4",
-                                    "value": 8,
-                                    "description": "Revoke Key 4"
+                                    "description": "Revoke Key"
                                 }
                             ]
                         },
                         {
-                            "width": 4
+                            "width": 1,
+                            "id": "fuse13-bit-9",
+                            "name": "SRK_REVOKE[1]",
+                            "description": "SRK key 2 revocation",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "Revoke Key",
+                                    "value": 1,
+                                    "description": "Revoke Key"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse13-bit-10",
+                            "name": "SRK_REVOKE[2]",
+                            "description": "SRK key 3 revocation",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "Revoke Key",
+                                    "value": 1,
+                                    "description": "Revoke Key"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "id": "fuse13-bit-11",
+                            "name": "SRK_REVOKE[3]",
+                            "description": "SRK key 4 revocation",
+                            "values": [
+                                {
+                                    "name": "Disabled",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "Revoke Key",
+                                    "value": 1,
+                                    "description": "Revoke Key"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
                         },
                         {
                             "width": 16
@@ -1019,10 +1072,7 @@
                             "width": 8
                         },
                         {
-                            "width": 4
-                        },
-                        {
-                            "width": 4
+                            "width": 8
                         },
                         {
                             "width": 16
@@ -1040,16 +1090,22 @@
                 {
                     "id": "fuse16",
                     "name": "LOT_NO_ENC[42:11]",
-                    "description": "FSL-wide unique, encoded LOT ID STD II/JTAG CHALLENGE/ Unique ID",
+                    "description": "FSL-wide unique, encoded LOT ID STD II/JTAG CHALLENGE/Unique ID",
                     "offset_int": "0x0900",
+                    "deprecated_names": [
+                        "LOT_NO_ENC1"
+                    ],
                     "index_int": "0x0010",
                     "individual_write_lock": "ecc"
                 },
                 {
                     "id": "fuse17",
                     "name": "LOT_NO_ENC[10:0]",
-                    "description": "FSL-wide unique, encoded LOT ID STD II/JTAG CHALLENGE/ Unique ID",
+                    "description": "FSL-wide unique, encoded LOT ID STD II/JTAG CHALLENGE/Unique ID",
                     "offset_int": "0x0910",
+                    "deprecated_names": [
+                        "LOT_NO_ENC0_WAFER_COORD"
+                    ],
                     "index_int": "0x0011",
                     "individual_write_lock": "ecc",
                     "bitfields": [
@@ -1057,25 +1113,25 @@
                             "width": 11,
                             "id": "fuse17-bits-0-10",
                             "name": "LOT_NO_ENC[10:0]",
-                            "description": "FSL-wide unique, encoded LOT ID STD II/JTAG CHALLENGE/ Unique ID"
+                            "description": "FSL-wide unique, encoded LOT ID STD II/JTAG CHALLENGE/Unique ID"
                         },
                         {
                             "width": 5,
                             "id": "fuse17-bits-11-15",
                             "name": "WAFER_NO[4:0]",
-                            "description": "The wafer number of the wafer on which the device was fabricated/JTAG CHALLENGE/ Unique ID"
+                            "description": "The wafer number of the wafer on which the device was fabricated/JTAG CHALLENGE/Unique ID"
                         },
                         {
                             "width": 8,
                             "id": "fuse17-bits-16-23",
                             "name": "DIE-Y-CORDINATE[7:0]",
-                            "description": "The Y-coordinate of the die location on the wafer/JTAG CHALLENGE/ Unique ID"
+                            "description": "The Y-coordinate of the die location on the wafer/JTAG CHALLENGE/Unique ID"
                         },
                         {
                             "width": 8,
                             "id": "fuse17-bits-24-31",
                             "name": "DIE-X-CORDINATE[7:0]",
-                            "description": "The X-coordinate of the die location on the wafer/JTAG CHALLENGE/ Unique ID"
+                            "description": "The X-coordinate of the die location on the wafer/JTAG CHALLENGE/Unique ID"
                         }
                     ]
                 },
@@ -1274,7 +1330,7 @@
                                 {
                                     "name": "1",
                                     "value": 1,
-                                    "description": "Fast recovery path in the ROM is not allowed and a cold boot is always performed.  Customers wanting a higher level of security should burn this fuse."
+                                    "description": "Fast recovery path in the ROM is not allowed and a cold boot is always performed. Customers wanting a higher level of security should burn this fuse."
                                 }
                             ]
                         },
@@ -1576,7 +1632,7 @@
                                 {
                                     "name": "0",
                                     "value": 0,
-                                    "description": "DLL Slave Mode for SD/eMMC ( delay 10, step 2)"
+                                    "description": "DLL Slave Mode for SD/eMMC (delay 10, step 2)"
                                 },
                                 {
                                     "name": "1",
@@ -2161,17 +2217,17 @@
                                 {
                                     "name": "1",
                                     "value": 1,
-                                    "description": "customer area included in CDI -  0x8E0 + 0x940-0x9B0  + 0xB00-0xB70"
+                                    "description": "customer area included in CDI - 0x8E0 + 0x940-0x9B0  + 0xB00-0xB70"
                                 },
                                 {
                                     "name": "2",
                                     "value": 2,
-                                    "description": "customer area included in CDI -  0x8E0 + 0x940-0x9B0  + 0xB00-0xB70"
+                                    "description": "customer area included in CDI - 0x8E0 + 0x940-0x9B0  + 0xB00-0xB70"
                                 },
                                 {
                                     "name": "3",
                                     "value": 3,
-                                    "description": "customer area included in CDI -  0x8E0 + 0x940-0x9B0  + 0xB00-0xB70"
+                                    "description": "customer area included in CDI - 0x8E0 + 0x940-0x9B0  + 0xB00-0xB70"
                                 }
                             ]
                         },
@@ -2363,6 +2419,9 @@
                     "name": "MAC1_ADDR[47:16]",
                     "description": "Ethernet MAC Address",
                     "offset_int": "0x0A80",
+                    "deprecated_names": [
+                        "MAC1_ADDR1"
+                    ],
                     "index_int": "0x0028",
                     "individual_write_lock": "ecc"
                 },
@@ -2371,6 +2430,9 @@
                     "name": "MAC1_ADDR[15:0]",
                     "description": "Ethernet MAC Address",
                     "offset_int": "0x0A90",
+                    "deprecated_names": [
+                        "MAC1_ADDR0"
+                    ],
                     "index_int": "0x0029",
                     "individual_write_lock": "ecc",
                     "bitfields": [
@@ -2390,6 +2452,9 @@
                     "name": "MAC2_ADDR[47:16]",
                     "description": "Ethernet MAC Address",
                     "offset_int": "0x0AA0",
+                    "deprecated_names": [
+                        "MAC2_ADDR1"
+                    ],
                     "index_int": "0x002A",
                     "individual_write_lock": "ecc"
                 },
@@ -2398,6 +2463,9 @@
                     "name": "MAC2_ADDR[15:0]",
                     "description": "Ethernet MAC Address",
                     "offset_int": "0x0AB0",
+                    "deprecated_names": [
+                        "MAC2_ADDR0"
+                    ],
                     "index_int": "0x002B",
                     "individual_write_lock": "ecc",
                     "bitfields": [
@@ -2417,6 +2485,9 @@
                     "name": "MAC3_ADDR[47:16]",
                     "description": "Ethernet MAC Address",
                     "offset_int": "0x0AC0",
+                    "deprecated_names": [
+                        "MAC3_ADDR1"
+                    ],
                     "index_int": "0x002C",
                     "individual_write_lock": "ecc"
                 },
@@ -2425,6 +2496,9 @@
                     "name": "MAC3_ADDR[15:0]",
                     "description": "Ethernet MAC Address",
                     "offset_int": "0x0AD0",
+                    "deprecated_names": [
+                        "MAC3_ADDR0"
+                    ],
                     "index_int": "0x002D",
                     "individual_write_lock": "ecc",
                     "bitfields": [
@@ -2840,6 +2914,9 @@
                             "width": 8,
                             "id": "fuse71-bits-8-15",
                             "name": "BOOT_CONFIG_MISC1[15:8]",
+                            "deprecated_names": [
+                                "BOOT_CONFIG_MISC1[7:0]"
+                            ],
                             "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details."
                         },
                         {
@@ -2852,6 +2929,9 @@
                             "width": 10,
                             "id": "fuse71-bits-22-31",
                             "name": "BOOT_CONFIG_MISC1[31:22]",
+                            "deprecated_names": [
+                                "BOOT_CONFIG_MISC1[17:8]"
+                            ],
                             "description": "Boot configuration misc fields are boot device dependent. See the reference manual for details."
                         }
                     ]

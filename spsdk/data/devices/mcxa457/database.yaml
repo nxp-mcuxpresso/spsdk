@@ -59,7 +59,6 @@ features:
     auth_beacon_length: 4 # The length in bytes of authentication beacon
     sub_features: ["ele_pqc", "ssf_cert"]
     dac_rot_type: ecc_pqc_sha521_truncated # The Dac packet is using truncated SHA512 hash and in case of 2 signatures
-    test_address: 0x2002_8000
     dmbox_ap_ix: 1
     dat_auth_warning: Be aware that this device needs to be in ISP mode to perform DAT authentication.
     command_delays: # Additional standard command delays per individual DM commands [seconds]
@@ -71,6 +70,10 @@ features:
       ecdsa_puk_size: 0x60 # Size for ECDSA PUK (96 bytes)
       hybrid_puk_address: 0x30022100 # Address for Hybrid PUK
       hybrid_puk_size: 0xA80 # Size for Hybrid PUK (2688 bytes)
+
+  # ======== Debug probe access section ========
+  debug_probe:
+    test_address: 0x2002_8000
 
   # ======== AHAB section ========
   ahab: &ahab_common_config

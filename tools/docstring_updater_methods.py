@@ -157,7 +157,7 @@ class DocstringUpdater:
             LOGGER.info(f"Found {len(methods)} methods in {file_path}")
             return methods
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOGGER.error(f"Error processing file {file_path}: {e}")
             return []
 
@@ -222,7 +222,7 @@ class DocstringUpdater:
                 current_docstring=current_docstring,
             )
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOGGER.error(f"Error extracting method info for {node.name}: {e}")
             return None
 
@@ -325,7 +325,7 @@ class DocstringUpdater:
             LOGGER.error(f"No response from Cody for method: {method_info.name}")
             return None
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOGGER.error(f"Error getting docstring from Cody for {method_info.name}: {e}")
             return None
 
@@ -345,8 +345,7 @@ class DocstringUpdater:
             stripped = line.strip()
             # Skip lines that document None returns
             if (
-                stripped.startswith(":return: None")
-                or stripped.startswith(":returns: None")
+                stripped.startswith((":return: None", ":returns: None"))
                 or stripped == ":return: None."
                 or stripped == ":returns: None."
                 or stripped.lower()
@@ -385,11 +384,7 @@ class DocstringUpdater:
             stripped = line.strip()
 
             # Detect start of parameters section
-            if (
-                stripped.startswith(":param")
-                or stripped.startswith(":return")
-                or stripped.startswith(":raises")
-            ):
+            if stripped.startswith((":param", ":return", ":raises")):
                 if not description_ended and formatted_lines and formatted_lines[-1].strip() != "":
                     # Add empty line before parameters if not already there
                     formatted_lines.append("")
@@ -492,7 +487,7 @@ class DocstringUpdater:
                 # Look for the start of existing docstring
                 for i in range(insert_line, min(insert_line + 20, len(lines))):
                     line = lines[i].strip()
-                    if line.startswith('"""') or line.startswith("'''"):
+                    if line.startswith(('"""', "'''")):
                         remove_start = i
                         quote_count = line.count('"""') + line.count("'''")
 
@@ -534,7 +529,7 @@ class DocstringUpdater:
 
             return True
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOGGER.error(f"Error updating docstring for {method_info.name} in {file_path}: {e}")
             return False
 
@@ -617,7 +612,7 @@ class DocstringUpdater:
         for file_path in python_files:
             try:
                 self.process_file(file_path)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 LOGGER.error(f"Error processing file {file_path}: {e}")
                 continue
 
@@ -681,7 +676,7 @@ python docstring_updater_methods.py single_file.py --dry-run
         except KeyboardInterrupt:
             LOGGER.info("Process interrupted by user")
             sys.exit(1)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOGGER.error(f"Unexpected error: {e}")
             sys.exit(1)
 
@@ -694,7 +689,7 @@ python docstring_updater_methods.py single_file.py --dry-run
         except KeyboardInterrupt:
             LOGGER.info("Process interrupted by user")
             sys.exit(1)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOGGER.error(f"Unexpected error: {e}")
             sys.exit(1)
     else:

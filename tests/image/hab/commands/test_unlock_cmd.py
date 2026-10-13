@@ -62,7 +62,7 @@ def test_unlock_cmd_equality() -> None:
 
     Verifies that CmdUnlockAny objects correctly implement equality comparison
     by testing against different object types and configurations. Ensures that
-    commands are equal to themselves, not equal to different command types,
+    commands are equal to equivalent instances, not equal to different command types,
     and not equal to commands with different configurations.
     """
     cmd = CmdUnlockAny()
@@ -70,7 +70,7 @@ def test_unlock_cmd_equality() -> None:
     cmd_other = CmdUnlockAny(engine=EngineEnum.DCP)
 
     assert cmd != nop
-    assert cmd == cmd
+    assert cmd == CmdUnlockAny()
     assert cmd != cmd_other
 
 

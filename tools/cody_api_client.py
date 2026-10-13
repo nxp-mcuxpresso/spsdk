@@ -21,6 +21,7 @@ import logging
 import os
 
 import requests
+from typing_extensions import Self
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -44,7 +45,7 @@ class LlmApiClient:
     _instance = None
     _initialized = False
 
-    def __new__(cls) -> "LlmApiClient":
+    def __new__(cls) -> Self:
         """Create or return the singleton instance of LlmApiClient.
 
         :return: The singleton instance of LlmApiClient.
@@ -325,7 +326,7 @@ class LlmApiClient:
             LOGGER.error(f"❌ API request failed: {e}")
         except (json.JSONDecodeError, KeyError) as e:
             LOGGER.error(f"❌ Response parsing error: {e}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOGGER.error(f"❌ Unexpected error: {e}")
         return None
 

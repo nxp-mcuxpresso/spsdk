@@ -408,6 +408,14 @@
             }
         },
         {
+            "home_page": "https://github.com/ntamas/crcmod-plus",
+            "name": "crcmod-plus",
+            "package": {
+                "name": "crcmod-plus",
+                "license": "MIT"
+            }
+        },
+        {
             "home_page": "",
             "name": "cryptography",
             "package": {
@@ -980,6 +988,18 @@
             "github": {
                 "project_name": "erezsh/lark",
                 "license": "MIT"
+            }
+        },
+        {
+            "home_page": "https://github.com/lief-project/LIEF",
+            "name": "lief",
+            "package": {
+                "name": "lief",
+                "license": "Apache-2.0"
+            },
+            "github": {
+                "project_name": "lief-project/LIEF",
+                "license": "Apache-2.0"
             }
         },
         {

@@ -179,9 +179,8 @@ def test_load_configuration_invalid_file(data_dir: str, file_name: str) -> None:
     :param file_name: Name of the invalid configuration file to attempt loading.
     :raises SPSDKError: Expected exception when loading invalid configuration file.
     """
-    with use_working_directory(data_dir):
-        with pytest.raises(SPSDKError):
-            load_configuration(file_name)
+    with use_working_directory(data_dir), pytest.raises(SPSDKError):
+        load_configuration(file_name)
 
 
 def test_make_table_from_items() -> None:

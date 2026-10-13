@@ -15,6 +15,7 @@ versions and SRK table formats.
 import logging
 from abc import abstractmethod
 from collections.abc import Sequence
+from typing import ClassVar
 
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.hash import EnumHashAlgorithm
@@ -138,7 +139,7 @@ class RotBase:
 
     rot_type: str | None = None
     supports_custom_hash_algorithm = False
-    _registry: dict[str, type["RotBase"]] = {}
+    _registry: ClassVar[dict[str, type["RotBase"]]] = {}
 
     def __init__(
         self,

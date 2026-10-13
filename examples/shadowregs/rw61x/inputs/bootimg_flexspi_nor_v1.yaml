@@ -1,4 +1,4 @@
-# Copyright 2024 NXP
+# Copyright 2024,2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # ==========================  Bootable Image Configuration template for rw612 / flexspi_nor.  ==========================
@@ -16,6 +16,9 @@ revision: latest
 # ------------------------------------------===== Memory type [Required] =====------------------------------------------
 # Description: Specify type of memory used by bootable image description.
 memory_type: flexspi_nor
+# ---------------------------------------===== Output file name [Optional] =====----------------------------------------
+# Description: Bootable image output file name
+output: ../workspace/bootable_image_v1.bin
 # ======================================================================================================================
 #                                           == Bootable Segments definition ==
 # ======================================================================================================================

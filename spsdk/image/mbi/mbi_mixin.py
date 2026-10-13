@@ -21,7 +21,7 @@ import os
 import pkgutil
 import struct
 from collections.abc import Callable
-from typing import Any
+from typing import Any, ClassVar
 
 from typing_extensions import Self
 
@@ -127,9 +127,9 @@ class Mbi_Mixin:
     """
 
     NAME = ""
-    VALIDATION_SCHEMAS: list[str] = []
-    NEEDED_MEMBERS: dict[str, Any] = {}
-    PRE_PARSED: list[str] = []
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = []
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {}
+    PRE_PARSED: ClassVar[list[str]] = []
     COUNT_IN_LEGACY_CERT_BLOCK_LEN: bool = True
 
     family: FamilyRevision
@@ -216,8 +216,8 @@ class Mbi_MixinApp(Mbi_Mixin):
     """
 
     NAME = "Application"
-    VALIDATION_SCHEMAS: list[str] = ["app"]
-    NEEDED_MEMBERS: dict[str, Any] = {"_app": b"", "app_ext_memory_align": 0x1000}
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["app"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"_app": b"", "app_ext_memory_align": 0x1000}
 
     _app: bytes
     app_ext_memory_align: int
@@ -352,13 +352,13 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
     """
 
     NAME = "TrustZone"
-    VALIDATION_SCHEMAS: list[str] = ["trust_zone"]
-    NEEDED_MEMBERS: dict[str, Any] = {
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["trust_zone"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {
         "trust_zone": None,
         "family": "Unknown",
         "revision": "latest",
     }
-    PRE_PARSED: list[str] = ["cert_block"]
+    PRE_PARSED: ClassVar[list[str]] = ["cert_block"]
 
     trust_zone: TrustZone | None
     cert_block: CertBlockV1 | CertBlockV21 | None
@@ -539,7 +539,7 @@ class Mbi_MixinTrustZoneMandatory(Mbi_MixinTrustZone):
     """
 
     NAME = "Mandatory TrustZone"
-    VALIDATION_SCHEMAS: list[str] = ["trust_zone_mandatory"]
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["trust_zone_mandatory"]
     trust_zone: TrustZone | None
     family: FamilyRevision
 
@@ -620,8 +620,8 @@ class Mbi_MixinTrustZoneV2(Mbi_Mixin):
     """
 
     NAME = "TrustZone V2"
-    VALIDATION_SCHEMAS: list[str] = ["trust_zone_2"]
-    NEEDED_MEMBERS: dict[str, Any] = {
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["trust_zone_2"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {
         "trust_zone": None,
         "family": "Unknown",
         "revision": "latest",
@@ -668,7 +668,7 @@ class Mbi_MixinTrustZoneV2(Mbi_Mixin):
                 )
             except SPSDKErrorValidationFailed as exc:
                 raise SPSDKErrorValidationFailed(
-                    f"Failed to load TrustZone from configuration: {str(exc)}"
+                    f"Failed to load TrustZone from configuration: {exc!s}"
                 ) from exc
             except SPSDKError:
                 self.trust_zone = TrustZoneV2.parse(
@@ -779,7 +779,7 @@ class Mbi_MixinLoadAddress(Mbi_Mixin):
     """
 
     NAME = "Load Address"
-    VALIDATION_SCHEMAS: list[str] = ["load_addr"]
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["load_addr"]
 
     load_address: int | None = 0
     ivt_table: "Mbi_MixinIvt"
@@ -860,6 +860,16 @@ class Mbi_MixinLoadAddress(Mbi_Mixin):
         return ver
 
 
+class Mbi_MixinLoadAddressNbu(Mbi_MixinLoadAddress):
+    """Load address mixin supporting the NBU reserved partition size.
+
+    The NBU ROM reuses the IVT Load Address field as the reserved partition size.
+    """
+
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["load_addr_nbu"]
+    NBU_RESERVED_SIZE_IN_LOAD_ADDRESS: ClassVar[bool] = True
+
+
 class Mbi_MixinFwVersion(Mbi_Mixin):
     """Master Boot Image Firmware Version Mixin.
 
@@ -872,8 +882,8 @@ class Mbi_MixinFwVersion(Mbi_Mixin):
 
     NAME = "Firmware Version"
 
-    VALIDATION_SCHEMAS: list[str] = ["firmware_version"]
-    NEEDED_MEMBERS: dict[str, Any] = {"manifest": None}
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["firmware_version"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"manifest": None}
 
     firmware_version: int | None = 0
 
@@ -984,8 +994,8 @@ class Mbi_MixinImageVersion(Mbi_Mixin):
     """
 
     NAME = "Image Version"
-    VALIDATION_SCHEMAS: list[str] = ["image_version"]
-    NEEDED_MEMBERS: dict[str, Any] = {"image_version": 0}
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["image_version"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"image_version": 0}
     image_version_to_image_type: bool = True
 
     image_version: int | None
@@ -1094,8 +1104,8 @@ class Mbi_MixinImageSubType(Mbi_Mixin):
         RECOVERY = (0x01, "RECOVERY", "Recovery image")
 
     NAME = "Image SubType"
-    VALIDATION_SCHEMAS: list[str] = ["image_subtype"]
-    NEEDED_MEMBERS: dict[str, Any] = {"image_subtype": 0}
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["image_subtype"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"image_subtype": 0}
 
     image_subtype: int | None
     ivt_table: "Mbi_MixinIvt"
@@ -1820,11 +1830,11 @@ class Mbi_MixinIvt(Mbi_Mixin):
                 result=VerifierResult.SUCCEEDED,
                 value=f"Flags: 0x{flags:08X}",
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ver.add_record(
                 name="IVT flags generation",
                 result=VerifierResult.ERROR,
-                value=f"Failed to generate flags: {str(e)}",
+                value=f"Failed to generate flags: {e!s}",
             )
 
     def _verify_parsed_ivt_image_type(self, ver: Verifier, parsed_image_type: int) -> None:
@@ -2124,8 +2134,8 @@ class Mbi_MixinRelocTable(Mbi_Mixin):
     :cvar NEEDED_MEMBERS: Dictionary of required member variables and their defaults.
     """
 
-    VALIDATION_SCHEMAS: list[str] = ["app_table"]
-    NEEDED_MEMBERS: dict[str, Any] = {"app_table": None, "_app": None}
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["app_table"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"app_table": None, "_app": None}
 
     app_table: MultipleImageTable | None
     app: bytes | None
@@ -2256,15 +2266,15 @@ class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
     manifest_class = MasterBootImageManifest
     manifest: MasterBootImageManifest | None
 
-    VALIDATION_SCHEMAS: list[str] = ["trust_zone_mandatory", "firmware_version"]
-    NEEDED_MEMBERS: dict[str, Any] = {
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["trust_zone_mandatory", "firmware_version"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {
         "trust_zone": None,
         "manifest": None,
         "cert_block": None,
         "family": "Unknown",
         "revision": "latest",
     }
-    PRE_PARSED: list[str] = ["cert_block"]
+    PRE_PARSED: ClassVar[list[str]] = ["cert_block"]
 
     cert_block: CertBlockV1 | CertBlockV21 | None
     firmware_version: int | None
@@ -2386,7 +2396,7 @@ class Mbi_MixinManifestDigest(Mbi_MixinManifest):
     manifest_class = MasterBootImageManifestDigest
     manifest: MasterBootImageManifestDigest | None
 
-    VALIDATION_SCHEMAS: list[str] = [
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = [
         "trust_zone_mandatory",
         "firmware_version",
     ]
@@ -2463,8 +2473,8 @@ class Mbi_MixinCertBlockV1(Mbi_Mixin):
     :cvar NEEDED_MEMBERS: Required member variables for mixin functionality.
     """
 
-    VALIDATION_SCHEMAS: list[str] = ["cert_block_v1", "signer"]
-    NEEDED_MEMBERS: dict[str, Any] = {"cert_block": None, "signature_provider": None}
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["cert_block_v1", "signer"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"cert_block": None, "signature_provider": None}
 
     cert_block: CertBlockV1 | None
     signature_provider: SignatureProvider | None
@@ -2590,11 +2600,11 @@ class Mbi_MixinCertBlockV1(Mbi_Mixin):
                         result=VerifierResult.SUCCEEDED,
                         value="Signature provider matches certificate block public key",
                     )
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     ver.add_record(
                         name="Signature provider key match",
                         result=VerifierResult.ERROR,
-                        value=f"Signature provider does not match certificate: {str(e)}",
+                        value=f"Signature provider does not match certificate: {e!s}",
                     )
 
         if "rsa_signature" in self.parsed_elements:
@@ -2620,8 +2630,8 @@ class Mbi_MixinCertBlockV21(Mbi_Mixin):
     :cvar NEEDED_MEMBERS: Required member variables for mixin functionality.
     """
 
-    VALIDATION_SCHEMAS: list[str] = ["cert_block_v21", "signer"]
-    NEEDED_MEMBERS: dict[str, Any] = {"cert_block": None, "signature_provider": None}
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["cert_block_v21", "signer"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"cert_block": None, "signature_provider": None}
 
     cert_block: CertBlockV21 | None
     signature_provider: SignatureProvider | None
@@ -2750,11 +2760,11 @@ class Mbi_MixinCertBlockV21(Mbi_Mixin):
                         result=VerifierResult.SUCCEEDED,
                         value="Signature provider matches certificate block public key",
                     )
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     ver.add_record(
                         name="Signature provider key match",
                         result=VerifierResult.ERROR,
-                        value=f"Signature provider does not match certificate: {str(e)}",
+                        value=f"Signature provider does not match certificate: {e!s}",
                     )
 
         if "ecc_signature" in self.parsed_elements:
@@ -2780,12 +2790,12 @@ class Mbi_MixinAhab(Mbi_Mixin):
     :cvar NEEDED_MEMBERS: Required member dictionary specifying AHAB container dependency.
     """
 
-    VALIDATION_SCHEMAS: list[str] = [
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = [
         "ahab_sign_support",
         "ahab_sign_support_add_image_hash_type",
         "ahab_sign_support_add_core_id",
     ]
-    NEEDED_MEMBERS: dict[str, Any] = {"ahab": None}
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"ahab": None}
 
     FEATURE: str
 
@@ -2875,11 +2885,16 @@ class Mbi_MixinAhab(Mbi_Mixin):
             core_id=core_id.tag,
             hash_type=hash_type,
         )
+        iae_load_address = (
+            0
+            if core_id.label == "nbu" and getattr(self, "NBU_RESERVED_SIZE_IN_LOAD_ADDRESS", False)
+            else self.load_address
+        )
         data_image = ImageArrayEntryV2(
             chip_config=self.ahab.chip_config,
             image=self.app,
             image_offset=0,
-            load_address=self.load_address,
+            load_address=iae_load_address,
             entry_point=0,
             flags=data_iae_flags,
             image_name="MCU Boot Image",
@@ -3081,8 +3096,8 @@ class Mbi_MixinAppCrc(Mbi_Mixin):
     :cvar NEEDED_MEMBERS: Dictionary defining required member variables and defaults.
     """
 
-    VALIDATION_SCHEMAS: list[str] = ["ahab_sign_support_add_crc"]
-    NEEDED_MEMBERS: dict[str, Any] = {"app_crc": False}
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["ahab_sign_support_add_crc"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"app_crc": False}
     app_crc: bool
     crc_check_record: ImageArrayEntryV2 | None
 
@@ -3178,8 +3193,8 @@ class Mbi_MixinCertBlockVx(Mbi_Mixin):
     :cvar NEEDED_MEMBERS: Dictionary defining required member attributes.
     """
 
-    VALIDATION_SCHEMAS: list[str] = ["cert_block_vX", "signer", "just_header"]
-    NEEDED_MEMBERS: dict[str, Any] = {"cert_block": None, "signature_provider": None}
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["cert_block_vX", "signer", "just_header"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"cert_block": None, "signature_provider": None}
 
     cert_block: CertBlockVx
     add_hash: bool
@@ -3271,11 +3286,11 @@ class Mbi_MixinCertBlockVx(Mbi_Mixin):
                         result=VerifierResult.SUCCEEDED,
                         value="Signature provider matches ISK certificate public key",
                     )
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     ver.add_record(
                         name="Signature provider key match",
                         result=VerifierResult.ERROR,
-                        value=f"Signature provider does not match certificate: {str(e)}",
+                        value=f"Signature provider does not match certificate: {e!s}",
                     )
 
         # Verify add_hash flag
@@ -3310,8 +3325,8 @@ class Mbi_MixinBca(Mbi_Mixin):
     :cvar BCA_OFFSET: Memory offset where BCA data is located in the image.
     """
 
-    VALIDATION_SCHEMAS: list[str] = ["bca"]
-    NEEDED_MEMBERS: dict[str, Any] = {"bca": None}
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["bca"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"bca": None}
 
     BCA_OFFSET = 0x3C0
 
@@ -3366,7 +3381,7 @@ class Mbi_MixinBca(Mbi_Mixin):
                 logger.info("Updating BCA from YAML configuration")
             except SPSDKErrorValidationFailed as exc:
                 raise SPSDKErrorValidationFailed(
-                    f"Failed to load BCA from configuration: {str(exc)}"
+                    f"Failed to load BCA from configuration: {exc!s}"
                 ) from exc
             except (SPSDKError, SPSDKTypeError):
                 bca_file = config.get_input_file_name("bca")
@@ -3525,8 +3540,8 @@ class Mbi_MixinFcf(Mbi_Mixin):
     :cvar FCF_OFFSET: Standard offset position for FCF data in flash memory.
     """
 
-    VALIDATION_SCHEMAS: list[str] = ["fcf"]
-    NEEDED_MEMBERS: dict[str, Any] = {"fcf": None}
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["fcf"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"fcf": None}
 
     FCF_OFFSET = 0x400
 
@@ -3585,7 +3600,7 @@ class Mbi_MixinFcf(Mbi_Mixin):
                 logger.info("Updating FCF from YAML configuration")
             except SPSDKErrorValidationFailed as exc:
                 raise SPSDKErrorValidationFailed(
-                    f"Failed to load FCF from configuration: {str(exc)}"
+                    f"Failed to load FCF from configuration: {exc!s}"
                 ) from exc
             except (SPSDKError, SPSDKTypeError):
                 fcf_file = config.get_input_file_name("fcf")
@@ -3727,8 +3742,8 @@ class Mbi_MixinHwKey(Mbi_Mixin):
     :cvar NEEDED_MEMBERS: Default values for required mixin members.
     """
 
-    VALIDATION_SCHEMAS: list[str] = ["hw_key"]
-    NEEDED_MEMBERS: dict[str, Any] = {"user_hw_key_enabled": False}
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["hw_key"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"user_hw_key_enabled": False}
 
     user_hw_key_enabled: bool | None
     ivt_table: Mbi_MixinIvt
@@ -3833,8 +3848,8 @@ class Mbi_MixinKeyStore(Mbi_Mixin):
         certificate block length calculation.
     """
 
-    VALIDATION_SCHEMAS: list[str] = ["key_store"]
-    NEEDED_MEMBERS: dict[str, Any] = {"key_store": None, "_hmac_key": None}
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["key_store"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"key_store": None, "_hmac_key": None}
     COUNT_IN_LEGACY_CERT_BLOCK_LEN: bool = False
 
     key_store: KeyStore | None
@@ -3992,8 +4007,8 @@ class Mbi_MixinHmac(Mbi_Mixin):
     :cvar HMAC_SIZE: Size of HMAC table in bytes.
     """
 
-    VALIDATION_SCHEMAS: list[str] = ["hmac"]
-    NEEDED_MEMBERS: dict[str, Any] = {"_hmac_key": None}
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["hmac"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"_hmac_key": None}
     COUNT_IN_LEGACY_CERT_BLOCK_LEN: bool = False
 
     # offset in the image, where the HMAC table is located
@@ -4166,7 +4181,7 @@ class Mbi_MixinHmacMandatory(Mbi_MixinHmac):
     :cvar VALIDATION_SCHEMAS: List of validation schema names for mandatory HMAC.
     """
 
-    VALIDATION_SCHEMAS: list[str] = ["hmac_mandatory"]
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["hmac_mandatory"]
 
     def mix_verify(self) -> Verifier:
         """Verify the HMAC configuration for mandatory HMAC.
@@ -4211,9 +4226,9 @@ class Mbi_MixinCtrInitVector(Mbi_Mixin):
     :cvar PRE_PARSED: List of pre-parsed configuration elements.
     """
 
-    VALIDATION_SCHEMAS: list[str] = ["ctr_init_vector"]
-    NEEDED_MEMBERS: dict[str, Any] = {"_ctr_init_vector": random_bytes(16)}
-    PRE_PARSED: list[str] = ["cert_block"]
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["ctr_init_vector"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"_ctr_init_vector": random_bytes(16)}
+    PRE_PARSED: ClassVar[list[str]] = ["cert_block"]
     # length of counter initialization vector
     _CTR_INIT_VECTOR_SIZE = 16
 
@@ -4550,14 +4565,13 @@ class Mbi_ExportMixinAppTrustZone(Mbi_ExportMixinApp):
         :return: Image with updated IVT and added TrustZone data if applicable.
         """
         ret = super().collect_data()
-        if self.trust_zone:
-            if self.tz_type == TrustZoneType.CUSTOM:
-                ret.append_image(
-                    BinaryImage(
-                        name=Mbi_ExportMixinAppTrustZone.TRUST_ZONE_IMAGE_NAME,
-                        binary=self.trust_zone.export(),
-                    )
+        if self.trust_zone and self.tz_type == TrustZoneType.CUSTOM:
+            ret.append_image(
+                BinaryImage(
+                    name=Mbi_ExportMixinAppTrustZone.TRUST_ZONE_IMAGE_NAME,
+                    binary=self.trust_zone.export(),
                 )
+            )
         return ret
 
     def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
@@ -4695,11 +4709,10 @@ class Mbi_ExportMixinAppTrustZoneCertBlock(Mbi_ExportMixin):
             )
         ret.append_image(BinaryImage(name="Certification Block", binary=self.cert_block.export()))
 
-        if self.trust_zone:
-            if self.tz_type == TrustZoneType.CUSTOM:
-                ret.append_image(
-                    BinaryImage(name="TrustZone Settings", binary=self.trust_zone.export())
-                )
+        if self.trust_zone and self.tz_type == TrustZoneType.CUSTOM:
+            ret.append_image(
+                BinaryImage(name="TrustZone Settings", binary=self.trust_zone.export())
+            )
         return ret
 
     def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
@@ -4829,15 +4842,16 @@ class Mbi_ExportMixinAppCertBlockManifest(Mbi_ExportMixin):
             raise SPSDKError("Manifest length is invalid.")
 
         # Check if the manifest digest is present and if manifest hash is same as certificate block hash
-        if isinstance(self.manifest, MasterBootImageManifestDigest) and self.cert_block:
-            if (
-                self.manifest.digest_hash_algo
-                and self.manifest.digest_hash_algo
-                != get_hash_type_from_signature_size(self.cert_block.signature_size)
-            ):
-                logger.error(
-                    "Manifest digest algorithm is different than hash in certificate block! Image won't boot"
-                )
+        if (
+            isinstance(self.manifest, MasterBootImageManifestDigest)
+            and self.cert_block
+            and self.manifest.digest_hash_algo
+            and self.manifest.digest_hash_algo
+            != get_hash_type_from_signature_size(self.cert_block.signature_size)
+        ):
+            logger.error(
+                "Manifest digest algorithm is different than hash in certificate block! Image won't boot"
+            )
         ret = BinaryImage(name="Application Block")
         app = self.ivt_table.update_ivt(self.app, self.total_len, self.app_len)
         ret.append_image(BinaryImage(name="Application", binary=app))
@@ -5504,7 +5518,7 @@ class Mbi_ExportMixinEccSignVx(Mbi_ExportMixin):
         if self.add_hash:
             image.find_sub_image("ISK Hash").binary = self.cert_block.cert_hash
 
-        logger.info(f"Cert block info: {str(self.cert_block)}")
+        logger.info(f"Cert block info: {self.cert_block!s}")
         return image
 
 
@@ -5729,11 +5743,10 @@ class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
                 BinaryImage(name="Relocation Table", binary=self.app_table.export(len(app)))
             )
 
-        if self.trust_zone:
-            if self.tz_type == TrustZoneType.CUSTOM:
-                ret.append_image(
-                    BinaryImage(name="TrustZone Settings", binary=self.trust_zone.export())
-                )
+        if self.trust_zone and self.tz_type == TrustZoneType.CUSTOM:
+            ret.append_image(
+                BinaryImage(name="TrustZone Settings", binary=self.trust_zone.export())
+            )
         return ret
 
     def disassemble_image(self, image: bytes) -> None:
@@ -5924,8 +5937,8 @@ class Mbi_MixinMisrIvt(Mbi_MixinIvt):
 class Mbi_ExportMixinMisrSign(Mbi_ExportMixin, Mbi_Mixin):
     """Export Mixin to handle MISR image alignment and signing."""
 
-    VALIDATION_SCHEMAS = ["misr_seed"]
-    NEEDED_MEMBERS = {"misr_seed": None}
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["misr_seed"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"misr_seed": None}
     MISR_PAGE_SIZE = 128
     MISR_SIGNATURE_SIZE = 16
     MISR_PADDING_VALUE = 0xFF

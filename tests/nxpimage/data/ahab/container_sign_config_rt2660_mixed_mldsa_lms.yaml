@@ -1,0 +1,20 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+family: mimxrt2662
+revision: latest
+srk_set: oem
+used_srk_id: 3
+srk_revoke_mask: "0x00"
+fuse_version: 0
+sw_version: 0
+signer: __LMS_PRIVATE_KEY__
+
+srk_table:
+  flag_ca: false
+  srk_array:
+    - ../../_data/keys/mldsa65/srk0_mldsa65_native.pub
+    - ../../_data/keys/mldsa65/srk1_mldsa65_native.pub
+    - ../../_data/keys/mldsa65/srk2_mldsa65_native.pub
+    - __LMS_PUBLIC_KEY__

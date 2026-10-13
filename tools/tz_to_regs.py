@@ -23,6 +23,7 @@ from spsdk.utils.misc import value_to_int
 from spsdk.utils.registers import Register, Registers
 
 regex = re.compile(r"\s+(?P<value>[x0-9a-fA-F]+).*// ?(?P<name>\w+);\s+/[!<\* ]+(?P<desc>[^\*]+).*")
+logger = logging.getLogger(__name__)
 
 
 def parse_c(code: str) -> dict[str, str]:
@@ -38,14 +39,14 @@ def parse_c(code: str) -> dict[str, str]:
     """
     result = {}
     for line in code.splitlines():
-        logging.debug(line)
+        logger.debug(line)
         if m := regex.match(line):
-            logging.debug(f"  {m.groupdict()}")
+            logger.debug(f"  {m.groupdict()}")
             key = f"{m.group('desc').replace(':','')} ({m.group('name')})"
             value = m.group("value")
             result[key] = value
         else:
-            logging.debug("  Not found")
+            logger.debug("  Not found")
     return result
 
 

@@ -24,5 +24,10 @@ info:
         hid_ep1: True
         hid_pack_size: 1020
 
-features: {}
+features:
+  # ======== Debug probe access section ========
+  debug_probe:
+    protocols: [swd, jtag]
+    test_address: 0x2000_0000
+
 

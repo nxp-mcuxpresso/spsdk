@@ -49,11 +49,11 @@ def mp_padding(data: bytes) -> bytes:
     :raises SPSDKError: When padding calculation fails due to alignment issues.
     :return: Calculated padding bytes.
     """
-    l = len(data) * 8  # noqa: E741  # we want to use naming consistent with spec
-    k = (88 - l - 1) % DATA_BIT_ALIGNMENT
-    if (l + 1 + k) % DATA_BIT_ALIGNMENT != 88:
+    bit_length = len(data) * 8
+    k = (88 - bit_length - 1) % DATA_BIT_ALIGNMENT
+    if (bit_length + 1 + k) % DATA_BIT_ALIGNMENT != 88:
         raise SPSDKError("Padding calculation malfunctioned")
-    padding = Bits("0b1") + Bits(k) + Bits(uint=l, length=40)
+    padding = Bits("0b1") + Bits(k) + Bits(uint=bit_length, length=40)
     return padding.tobytes()
 
 

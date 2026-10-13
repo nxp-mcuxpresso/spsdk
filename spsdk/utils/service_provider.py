@@ -14,7 +14,7 @@ import abc
 import inspect
 import logging
 from collections.abc import Iterator
-from typing import Any
+from typing import Any, ClassVar
 
 from typing_extensions import Self
 
@@ -39,7 +39,7 @@ class ServiceProvider(abc.ABC):
     legacy_identifier_name: str
     identifier: str
     plugin_identifier: str
-    reserved_keys = ["type"]
+    reserved_keys: ClassVar[list[str]] = ["type"]
 
     def __init_subclass__(cls) -> None:
         """Initialize subclass with identifier validation and legacy support.
@@ -56,7 +56,7 @@ class ServiceProvider(abc.ABC):
                 f"Class {cls.__name__} uses legacy identifier '{cls.legacy_identifier_name} = {identifier}', "
                 f"please use 'identifier = {identifier}' instead"
             )
-            setattr(cls, "identifier", getattr(cls, cls.legacy_identifier_name))
+            cls.identifier = getattr(cls, cls.legacy_identifier_name)
 
         if not inspect.isabstract(cls) and not hasattr(cls, "identifier"):
             raise SPSDKError(f"{cls.__name__}.identifier is not set")

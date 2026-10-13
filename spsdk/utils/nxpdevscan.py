@@ -203,10 +203,9 @@ def is_real_tty_device(device: str) -> bool:
         with open(device, "rb") as fd:
             serial_info = array.array("i", [0] * 32)
             fcntl.ioctl(fd, TIOCGSERIAL, serial_info, True)  # type: ignore[attr-defined]
-            if serial_info[0] != 0:  # PORT_UNKNOWN is 0
-                return True
-            return False
-    except Exception:
+            return serial_info[0] != 0  # PORT_UNKNOWN is 0
+    except Exception as exc:  # noqa: BLE001
+        logger.debug(f"TTY serial type detection failed for {device}: {exc}")
         return False
 
 
@@ -371,6 +370,6 @@ def search_libusbsio_devices() -> list[SIODeviceDescription]:
                 raise SPSDKError("Cannot retrieve the Device Information.")
             retval.append(SIODeviceDescription(info))
     except (LIBUSBSIO_Exception, SPSDKError) as exc:
-        raise SPSDKError(f"LIBUSBSIO search devices fails: [{str(exc)}]") from exc
+        raise SPSDKError(f"LIBUSBSIO search devices fails: [{exc!s}]") from exc
 
     return retval

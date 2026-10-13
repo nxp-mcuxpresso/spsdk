@@ -29,9 +29,9 @@ iped_output:
       type: string
       title: Output table filename
       description: >-
-        Filename, without extension, of the standalone IPED register-image table.
-        This binary is the keyblob payload used by bootable-image when the keyblob
-        segment points to an IPED YAML configuration.
+        Filename, without extension, of the standalone IPED configuration table.
+        This binary is the keyblob payload used by bootable-image when the
+        keyblob segment points to an IPED YAML configuration.
       template_value: iped_table
       default: iped_table
 
@@ -43,6 +43,16 @@ iped_output:
         is generated only when data_blobs are configured.
       template_value: encrypted_blob
       default: encrypted_blob
+
+    image_name:
+      type: string
+      title: Combined image filename
+      description: >-
+        Filename of the optional combined table and encrypted-data image without
+        file extension. It must differ from output_name and encrypted_name.
+      template_value: iped_image
+      default: iped_image
+
   required: [output_folder]
 
 iped:
@@ -54,11 +64,10 @@ iped:
       type: [number, string]
       title: Exported IPED table size
       description: >-
-        Size of the exported IPED table/keyblob including zero padding. The raw
-        register-image payload is 0x210 bytes (16 context slots followed by
-        IPEDCTRL, a reserved word, and two IPEDCTXCTRL words). The default
-        0x400-byte output fills the bootable-image keyblob area before the FCB at
-        offset 0x400.
+        Reserved size of the IPED table/keyblob area in a combined bootable
+        image. Fixed register-image tables are padded to this size, while tagged
+        ROM configuration files contain only their serialized payload. The
+        default 0x400-byte area places the FCB at offset 0x400.
       format: number
       template_value: "0x400"
 
@@ -84,6 +93,133 @@ iped:
       format: number
       template_value: 8
       default: 8
+
+    instance:
+      type: string
+      title: XSPI instance
+      description: >-
+        XSPI instance used for key derivation and device-specific encryption
+        model selection. For current derivation-enabled families, use xspi0 or
+        xspi1.
+      enum: [xspi0, xspi1]
+      template_value: xspi0
+      skip_in_template: true
+
+    fw_version:
+      type: [number, string]
+      title: Firmware version for key derivation
+      description: >-
+        Optional 32-bit firmware version used when context IV values are derived
+        from nonce. It is also serialized into ROM configuration blobs.
+      format: number
+      template_value: "0x00000001"
+      skip_in_template: true
+
+    lifecycle:
+      type: string
+      title: Lifecycle for key derivation
+      description: >-
+        Optional lifecycle label used by key derivation. Must be one of:
+        fab, nxp_prov, nxp_fr, oem_open, oem_fr, oem_swc, oem_lckd, oem_clsd.
+      enum: [fab, nxp_prov, nxp_fr, oem_open, oem_fr, oem_swc, oem_lckd, oem_clsd]
+      template_value: oem_open
+      skip_in_template: true
+
+    cust_mk_sk:
+      oneOf:
+        - type: array
+          minItems: 8
+          maxItems: 8
+          items:
+            type: [number, string]
+            format: number
+        - type: [number, string]
+          format: number
+      title: CUST_MK_SK fuse words
+      description: >-
+        Optional array of 8 little-endian 32-bit fuse words used for
+        key derivation. It can be specified either as an array of 8 words or as
+        one inline 256-bit hexadecimal value. When provided together with
+        srkh/pqc_srkh/lifecycle, SPSDK derives context key and IV values
+        automatically.
+      template_value:
+        - "0x33221100"
+        - "0x77665544"
+        - "0xbbaa9988"
+        - "0xffeeddcc"
+        - "0x03020100"
+        - "0x07060504"
+        - "0x0b0a0908"
+        - "0x0f0e0d0c"
+      skip_in_template: true
+
+    srkh:
+      oneOf:
+        - type: array
+          minItems: 16
+          maxItems: 16
+          items:
+            type: [number, string]
+            format: number
+        - type: [number, string]
+          format: number
+      title: SRKH fuse words
+      description: >-
+        Optional array of 16 little-endian 32-bit classical SRKH fuse words
+        used by key derivation. It can be specified either as an array
+        of 16 words or as one inline 512-bit hexadecimal value.
+      template_value:
+        - "0x90bf50d4"
+        - "0xd328ecc9"
+        - "0x7d28f0eb"
+        - "0x5f5a3f0c"
+        - "0xcc891f09"
+        - "0x88ff036e"
+        - "0xb6c02073"
+        - "0xe59c0c6b"
+        - "0xa0e60353"
+        - "0x8de9a90d"
+        - "0x8a83b5c9"
+        - "0xd34cf089"
+        - "0x5c73dbb1"
+        - "0x08a84ada"
+        - "0x92da26c2"
+        - "0x50736860"
+      skip_in_template: true
+
+    pqc_srkh:
+      oneOf:
+        - type: array
+          minItems: 16
+          maxItems: 16
+          items:
+            type: [number, string]
+            format: number
+        - type: [number, string]
+          format: number
+      title: PQC SRKH fuse words
+      description: >-
+        Optional array of 16 little-endian 32-bit PQC SRKH fuse words used by
+        key derivation. It can be specified either as an array of
+        16 words or as one inline 512-bit hexadecimal value.
+      template_value:
+        - "0x00000000"
+        - "0x00000001"
+        - "0x00000002"
+        - "0x00000003"
+        - "0x00000004"
+        - "0x00000005"
+        - "0x00000006"
+        - "0x00000007"
+        - "0x00000008"
+        - "0x00000009"
+        - "0x0000000a"
+        - "0x0000000b"
+        - "0x0000000c"
+        - "0x0000000d"
+        - "0x0000000e"
+        - "0x0000000f"
+      skip_in_template: true
 
     control_word:
       type: [number, string]
@@ -244,8 +380,8 @@ iped:
       description: >-
         Optional list of plain binary blobs to encrypt with the matching IPED
         context. Each blob must fit completely into one configured context.
-        Encryption uses the optional iped-offline-tool backend installed in the
-        active Python environment.
+        Encryption is available through SPSDK's built-in Python backend; an
+        optional native backend can accelerate supported legacy models.
       items:
         type: object
         required: [data, address]
@@ -268,16 +404,24 @@ iped:
       type: array
       title: IPED contexts
       description: >-
-        List of IPED context register records. At most 16 contexts are
-        supported. Each context describes one encrypted/decrypted external
-        memory range and the mode-specific IV/AAD values already prepared by the
-        offline encryption flow.
+        List of IPED context or region records. At most 16 entries are supported.
+        Each entry describes one encrypted/decrypted external memory range.
       minItems: 1
       maxItems: 16
       items:
         type: object
         required: [start_address, end_address]
         properties:
+          region_id:
+            type: [number, string]
+            title: Hardware region identifier
+            description: >-
+              Optional hardware context identifier from 0 to 15. If omitted,
+              the context position in the list is used.
+            format: number
+            template_value: 0
+            skip_in_template: true
+
           start_address:
             type: [number, string]
             title: Context start address
@@ -326,6 +470,17 @@ iped:
               value that was used by the offline encryption tool for this
               context.
             template_value: ["0x00010203", "0x04050607"]
+
+          nonce:
+            type: [number, string]
+            title: Context nonce for IV derivation
+            description: >-
+              Optional 64-bit nonce used when key derivation is enabled. For ROM
+              configuration blobs the nonce is serialized and takes precedence
+              over an explicitly configured IV.
+            format: number
+            template_value: "0x0011223344556677"
+            skip_in_template: true
 
           key:
             type: [number, string]

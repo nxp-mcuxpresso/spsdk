@@ -126,6 +126,9 @@ features:
   dat:
     sub_features: [sda]
     sda_ap_index: 7
+
+  # ======== Debug probe access section ========
+  debug_probe:
     mem_ap_index: 5  # AP5: AHB-AP with SPIDEN=1 (CSW=0x43000042), confirmed working via SWD capture
     enable_power_domains_after_connect: True
     enable_sda_debug_paths_after_connect: True

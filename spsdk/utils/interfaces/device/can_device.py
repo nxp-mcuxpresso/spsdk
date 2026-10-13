@@ -232,7 +232,7 @@ class CANDevice(DeviceBase):
             device.open()
             device.close()
             devices = [device] if device else []
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except  # noqa: BLE001
             logger.error(f"{type(e).__name__}: {e}")
             devices = []
         return devices

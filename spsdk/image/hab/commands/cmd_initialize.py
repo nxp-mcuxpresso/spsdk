@@ -139,10 +139,8 @@ class CmdInitialize(CmdBase):
         """
         msg = super().__str__()
         msg += f"Initialize Command (Engine: {self.engine.description})\n"
-        cnt = 0
-        for val in self._data:
+        for cnt, val in enumerate(self._data):
             msg += f" {cnt:02d}) Value: 0x{val:08X}\n"
-            cnt += 1
         return msg
 
     def append(self, value: int) -> None:

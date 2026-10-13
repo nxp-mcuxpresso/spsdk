@@ -6,12 +6,24 @@
 
 """Extra.image.ahab.ahab_srk."""
 
+from pathlib import Path
 from typing import cast
 
 import pytest
 
-from spsdk.crypto.keys import PrivateKeyEcc, PrivateKeyRsa, PublicKeyEcc, PublicKeyRsa
-from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.crypto.keys import (
+    IS_LMS_SUPPORTED,
+    PrivateKeyEcc,
+    PrivateKeyRsa,
+    PublicKeyEcc,
+    PublicKeyMLDSA,
+    PublicKeyRsa,
+)
+
+if IS_LMS_SUPPORTED:
+    from spsdk.crypto.keys import PrivateKeyLMS
+    from spsdk.crypto.lms import LMSParams
+from spsdk.exceptions import SPSDKError, SPSDKUnsupportedOperation, SPSDKValueError
 from spsdk.image.ahab.ahab_data import (
     AhabChipContainerConfig,
     AHABSignAlgorithm,
@@ -30,12 +42,20 @@ from spsdk.image.ahab.ahab_srk import (
 from spsdk.utils.family import FamilyRevision
 
 FAMILY = FamilyRevision("mimxrt1189")
+RT2660_FAMILY = FamilyRevision("mimxrt2662")
+KEYS_DIR = Path(__file__).resolve().parents[2] / "_data" / "keys"
 
 
 @pytest.fixture(scope="module")
 def chip_config_container() -> AhabChipContainerConfig:
     """Return an AhabChipContainerConfig for mimxrt1189."""
     return AhabChipContainerConfig(base=create_chip_config(family=FAMILY))
+
+
+@pytest.fixture(scope="module")
+def rt2660_chip_config_container() -> AhabChipContainerConfig:
+    """Return an AhabChipContainerConfig for mimxrt2662."""
+    return AhabChipContainerConfig(base=create_chip_config(family=RT2660_FAMILY))
 
 
 @pytest.fixture
@@ -747,6 +767,35 @@ def test_srk_table_array_verify(chip_config_container, ecc256_pub) -> None:  # t
     assert not v.has_errors
 
 
+@pytest.mark.skipif(not IS_LMS_SUPPORTED, reason="pyhsslms not available")
+def test_srk_table_array_verify_rt2660_mixed_mldsa_lms(
+    rt2660_chip_config_container: AhabChipContainerConfig,
+) -> None:
+    """RT2660 allows mixing ML-DSA and LMS keys in the same SRK array."""
+    assert rt2660_chip_config_container.base.allow_key_mix
+    assert not create_chip_config(family=FAMILY).allow_key_mix
+
+    table = SRKTableV2()
+    table._chip_config = rt2660_chip_config_container.base
+    for srk_id in range(3):
+        table.add_record(
+            PublicKeyMLDSA.load(str(KEYS_DIR / "mldsa65" / f"srk{srk_id}_mldsa65_native.pub")),
+            srk_id=srk_id,
+        )
+    table.add_record(
+        PrivateKeyLMS.generate_key(LMSParams(hash_length=32, height=5, w=1)).get_public_key(),
+        srk_id=3,
+    )
+    table.update_fields()
+    arr = SRKTableArray(chip_config=rt2660_chip_config_container, srk_tables=[table])
+    arr.update_fields()
+
+    assert not arr.verify().has_errors
+
+    parsed = SRKTableArray.parse(arr.export(), chip_config=rt2660_chip_config_container)
+    assert not parsed.verify().has_errors
+
+
 def test_srk_table_array_export_parse_roundtrip(chip_config_container, ecc256_pub) -> None:  # type: ignore[no-untyped-def]
     """SRKTableArray export → parse round-trip."""
     table = SRKTableV2()
@@ -811,3 +860,54 @@ def test_srk_table_array_equality(chip_config_container, ecc256_pub) -> None:  #
     arr1 = make_array()  # type: ignore[func-returns-value]
     arr2 = make_array()  # type: ignore[func-returns-value]
     assert arr1 == arr2
+
+
+# SRKRecord – additional branch coverage
+
+
+def test_srk_record_key_sizes_unsupported() -> None:
+    """SRKRecord.key_sizes raises for an unsupported key size value."""
+    srk = SRKRecord(chip_config=create_chip_config(family=FAMILY), key_size=0xEE)
+    with pytest.raises(SPSDKError):
+        _ = srk.key_sizes
+
+
+def test_srk_record_create_from_key_unsupported_type() -> None:
+    """create_from_key raises for an unsupported public key type."""
+    with pytest.raises(SPSDKUnsupportedOperation):
+        SRKRecord.create_from_key(object())  # type: ignore[arg-type]
+
+
+def test_srk_record_eq_non_srk(ecc256_pub) -> None:  # type: ignore[no-untyped-def]
+    """SRKRecord.__eq__ returns False when compared to a non-SRK object."""
+    srk = SRKRecord.create_from_key(ecc256_pub)
+    assert srk != "not-an-srk"
+
+
+def test_srk_record_eq_different_key(ecc256_pub, ecc384_pub) -> None:  # type: ignore[no-untyped-def]
+    """SRKRecord.__eq__ returns False for records built from different keys."""
+    srk1 = SRKRecord.create_from_key(ecc256_pub)
+    srk2 = SRKRecord.create_from_key(ecc384_pub)
+    assert srk1 != srk2
+
+
+def test_srk_record_verify_key_size_rsa_mismatch(rsa2048_pub) -> None:  # type: ignore[no-untyped-def]
+    """verify() reports an error when an RSA record carries a non-RSA key size."""
+    srk = SRKRecord.create_from_key(rsa2048_pub)
+    srk.key_size = 0x1  # ECC key size, valid in KEY_SIZES but invalid for RSA
+    assert srk._verify("t").has_errors
+
+
+def test_srk_record_verify_param_length_error(ecc256_pub) -> None:  # type: ignore[no-untyped-def]
+    """verify() reports an error when crypto parameters have the wrong length."""
+    srk = SRKRecord.create_from_key(ecc256_pub)
+    srk.crypto_params = b""
+    assert srk.verify("t").has_errors
+
+
+def test_srk_record_get_public_key_unsupported_algo(ecc256_pub) -> None:  # type: ignore[no-untyped-def]
+    """get_public_key raises for an unsupported signing algorithm."""
+    srk = SRKRecord.create_from_key(ecc256_pub)
+    srk.version = AHABSignAlgorithm.DILITHIUM.tag
+    with pytest.raises(SPSDKUnsupportedOperation):
+        srk.get_public_key()

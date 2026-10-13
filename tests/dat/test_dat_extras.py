@@ -34,6 +34,7 @@ from spsdk.dat.dm_commands import (
     GetCRPLevel,
     NxpDebugAuthenticationStart,
     ProgramLifecycle,
+    ReadFromFlash,
     SetFaultAnalysisMode,
     StartDebugMailbox,
     StartDebugSession,
@@ -198,6 +199,7 @@ class TestVerify:
         mock_dc.version = ProtocolVersion("2.0")
         mock_dc.socc = self.dac.socc
         mock_dc.uuid = self.dac.uuid  # matching UUID
+        mock_dc.cc_vu = self.dac.cc_vu
         mock_dc.calculate_hash.return_value = self.dac.rotid_rkth_hash
         dar = self._make_dar(dc=mock_dc)
         result = dar.verify()
@@ -210,6 +212,7 @@ class TestVerify:
         mock_dc.version = self.dac.version
         mock_dc.socc = 0xDEAD  # different from DAC socc
         mock_dc.uuid = self.dac.uuid
+        mock_dc.cc_vu = self.dac.cc_vu
         mock_dc.calculate_hash.return_value = self.dac.rotid_rkth_hash
         dar = self._make_dar(dc=mock_dc)
         result = dar.verify()
@@ -224,10 +227,12 @@ class TestVerify:
         mock_dac.uuid = self.dc.uuid
         mock_dac.rotid_rkth_hash = self.dac.rotid_rkth_hash
         mock_dac.challenge = self.dac.challenge
+        mock_dac.cc_vu = 0
         mock_dc = MagicMock()
         mock_dc.version = self.dc.version
         mock_dc.socc = 0xABCD  # same as DAC but wrong for family
         mock_dc.uuid = self.dc.uuid
+        mock_dc.cc_vu = 0
         mock_dc.calculate_hash.return_value = b""
         dar = self._make_dar(dac=mock_dac, dc=mock_dc)
         result = dar.verify()
@@ -240,6 +245,7 @@ class TestVerify:
         mock_dc.version = self.dac.version
         mock_dc.socc = self.dac.socc
         mock_dc.uuid = bytes(16)  # all zeros = general UUID
+        mock_dc.cc_vu = self.dac.cc_vu
         mock_dc.calculate_hash.return_value = self.dac.rotid_rkth_hash
         dar = self._make_dar(dc=mock_dc)
         result = dar.verify()
@@ -252,6 +258,7 @@ class TestVerify:
         mock_dc.version = self.dac.version
         mock_dc.socc = self.dac.socc
         mock_dc.uuid = bytes(range(16))  # non-zero but different
+        mock_dc.cc_vu = self.dac.cc_vu
         mock_dc.calculate_hash.return_value = self.dac.rotid_rkth_hash
         dar = self._make_dar(dc=mock_dc)
         result = dar.verify()
@@ -264,6 +271,7 @@ class TestVerify:
         mock_dc.version = self.dac.version
         mock_dc.socc = self.dac.socc
         mock_dc.uuid = self.dac.uuid  # match exactly
+        mock_dc.cc_vu = self.dac.cc_vu
         mock_dc.calculate_hash.return_value = self.dac.rotid_rkth_hash
         dar = self._make_dar(dc=mock_dc)
         result = dar.verify()
@@ -332,13 +340,13 @@ class TestDebugMailboxReadIdr:
         result = dm.read_idr()
         assert result == 0x002A0000
 
-    def test_read_idr_mismatch_still_returns(self) -> None:
-        """When IDR doesn't match, a warning is logged but value is returned."""
+    def test_read_idr_mismatch_raises(self) -> None:
+        """DebugMailbox IDR read returns the raw value without AP validation."""
         dm = _make_mailbox_no_init()
         unexpected = 0xDEADBEEF
         dm.debug_probe.dbgmlbx_reg_read.return_value = unexpected  # type: ignore[attr-defined]
-        result = dm.read_idr()
-        assert result == unexpected
+
+        assert dm.read_idr() == unexpected
 
 
 class TestDebugMailboxClose:
@@ -448,6 +456,16 @@ class TestSubcommandClasses:
         cmd = ProgramLifecycle(dm)
         assert cmd.paramlen == 1
 
+    def test_read_from_flash_cmd(self) -> None:
+        assert ReadFromFlash.CMD == DebugMailboxCommandID.READ_FROM_FLASH
+        assert DebugMailboxCommandID.READ_FROM_FLASH.tag == 0x0A
+
+    def test_read_from_flash_param_resp_len(self) -> None:
+        dm = _make_mock_dm()
+        cmd = ReadFromFlash(dm)
+        assert cmd.paramlen == 1
+        assert cmd.resplen == 4
+
 
 # ---------------------------------------------------------------------------
 # dm_commands  – DebugMailboxCommand.run() and run_safe()
@@ -473,7 +491,7 @@ class TestDebugMailboxCommandRun:
 
     def test_run_params_length_mismatch_raises(self) -> None:
         """run() raises SPSDKError when param count doesn't match paramlen."""
-        cmd, dm = self._make_dm_cmd(paramlen=2)  # type: ignore[misc, func-returns-value]
+        cmd, _ = self._make_dm_cmd(paramlen=2)  # type: ignore[misc, func-returns-value]
         with pytest.raises(SPSDKError, match="parameters length"):
             cmd.run(params=[1])  # only 1 param, expects 2  # type: ignore
 
@@ -525,3 +543,18 @@ class TestDebugMailboxCommandRun:
         dm.spin_write.return_value = None  # type: ignore[has-type]
         with pytest.raises(SPSDKError):
             cmd.run()  # type: ignore[has-type]
+
+    def test_read_from_flash_run_returns_words(self) -> None:
+        """ReadFromFlash.run() sends the address and returns the four read words."""
+        dm = _make_mock_dm()
+        cmd = ReadFromFlash(dm)
+        dm.read_return.side_effect = [  # type: ignore[has-type]
+            0x0001A5A5,  # ACK for the single address parameter
+            0x80040000,  # response header: status=0, resplen=4, new-protocol bit
+            0x11111111,
+            0x22222222,
+            0x33333333,
+            0x44444444,
+        ]
+        result = cmd.run([0x1000])
+        assert result == [0x11111111, 0x22222222, 0x33333333, 0x44444444]

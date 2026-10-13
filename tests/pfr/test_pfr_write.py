@@ -470,6 +470,20 @@ def test_preprocess_increment_adds_one() -> None:
     assert reg.get_value() == 4
 
 
+def test_preprocess_increment_from_erased_value() -> None:
+    """MONOTONIC_INCREMENT should turn an erased counter value into one."""
+    cfpa = CFPA(MCXA457)
+    reg = cfpa.registers.find_reg("EE1_FW_Version")
+    reg.set_value(CFPA.MONOTONIC_INCREMENT)
+
+    device_data = _make_cfpa_device_data(cfpa, {"EE1_FW_Version": CFPA.MONOTONIC_RETAIN})
+    read_mock = MagicMock(return_value=device_data)
+
+    cfpa._preprocess_monotonic_counters(read_mock)
+
+    assert reg.get_value() == 1
+
+
 def test_preprocess_absolute_value_unchanged() -> None:
     """A normal (absolute) register value must not be touched by preprocessing."""
     cfpa = CFPA(MCXA457)

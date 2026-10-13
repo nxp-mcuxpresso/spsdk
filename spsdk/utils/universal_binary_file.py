@@ -12,6 +12,8 @@ binary file formats including Binary, SPARSE, SREC, and Intel HEX formats.
 
 import logging
 import os
+from contextlib import ExitStack
+from pathlib import Path
 from typing import IO
 
 from typing_extensions import Self
@@ -61,6 +63,7 @@ class UniversalBinaryFile:
         self.is_open = False
 
         # Format-specific handlers
+        self._context_manager = ExitStack()
         self._file_handle: IO | None = None  # For BIN format
         self._sparse_reader: SparseImageReader | None = None  # For SPARSE format
         self._binary_image: BinaryImage | None = None  # For SREC/HEX formats
@@ -94,9 +97,8 @@ class UniversalBinaryFile:
             raise SPSDKError(f"Invalid file mode: {mode}")
 
         # Check if file exists for read modes
-        if "r" in mode or "+" in mode:
-            if not os.path.exists(path):
-                raise SPSDKValueError(f"File not found: {path}")
+        if ("r" in mode or "+" in mode) and not os.path.exists(path):
+            raise SPSDKValueError(f"File not found: {path}")
 
         # Store path and mode
         self.path = path
@@ -138,8 +140,10 @@ class UniversalBinaryFile:
     def _open_binary(self) -> None:
         """Open file in binary format (direct file access)."""
         assert self.path is not None
-        self._file_handle = open(  # pylint: disable=unspecified-encoding
-            self.path, self.mode, encoding=None
+        self._file_handle = self._context_manager.enter_context(
+            Path(self.path).open(  # pylint: disable=unspecified-encoding # noqa: SIM115
+                self.mode, encoding=None
+            )
         )
 
     def _open_sparse(self) -> None:
@@ -198,7 +202,7 @@ class UniversalBinaryFile:
     def _close_binary(self) -> None:
         """Close binary format file."""
         if self._file_handle:
-            self._file_handle.close()
+            self._context_manager.close()
             self._file_handle = None
 
     def _close_sparse(self) -> None:

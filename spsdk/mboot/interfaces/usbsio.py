@@ -10,6 +10,8 @@ This module provides USBSIO-based communication interfaces for MBoot protocol,
 supporting both I2C and SPI transport layers through USB-to-serial bridge devices.
 """
 
+from typing import ClassVar
+
 from typing_extensions import Self
 
 from spsdk.mboot.protocol.serial_protocol import MbootSerialProtocol, to_int
@@ -87,7 +89,7 @@ class MbootUsbSioSPIInterface(MbootUsbSioInterface):
     """
 
     # START_NOT_READY may be 0x00 or 0xFF depending on the implementation
-    FRAME_START_NOT_READY_LIST = [0x00, 0xFF]
+    FRAME_START_NOT_READY_LIST: ClassVar[list[int]] = [0x00, 0xFF]
     device: UsbSioSPIDevice
     identifier = "usbsio_spi"
 

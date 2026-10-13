@@ -41,6 +41,7 @@ from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import align, align_block, extend_block, find_file, load_binary
 
 logger = logging.getLogger(__name__)
+UNKNOWN_FAMILY = FamilyRevision("unknown")
 
 
 class SegCSF(PaddingSegment):
@@ -300,13 +301,11 @@ class SegCSF(PaddingSegment):
         for cmd in self.commands:
             if isinstance(cmd, CmdAuthData):
                 if len(cmd) > 0:  # any blocks defined? => sign image data
-                    if not cmd.update_signature(zulu, data, base_data_addr):
-                        if len(data) != 0:
-                            raise SPSDKError("Invalid length of data")
+                    if not cmd.update_signature(zulu, data, base_data_addr) and len(data) != 0:
+                        raise SPSDKError("Invalid length of data")
                 else:  # sign CSF section
-                    if not cmd.update_signature(zulu, self._export_base()):
-                        if len(data) != 0:
-                            raise SPSDKError("Invalid length of data")
+                    if not cmd.update_signature(zulu, self._export_base()) and len(data) != 0:
+                        raise SPSDKError("Invalid length of data")
 
     def export(self) -> bytes:
         """Export segment as bytes array (serialization).
@@ -508,9 +507,12 @@ class HabSegmentCSF(HabSegmentBase):
             EngineEnum.SW,
         }
         for cmd in self.csf.commands:
-            if hasattr(cmd, "engine") and cmd.engine != EngineEnum.ANY:
-                if cmd.engine in valid_header_engines:
-                    return cmd.engine.label
+            if (
+                hasattr(cmd, "engine")
+                and cmd.engine != EngineEnum.ANY
+                and cmd.engine in valid_header_engines
+            ):
+                return cmd.engine.label
         return "ANY"
 
     def _extract_header_engine_config(self) -> int:
@@ -529,9 +531,8 @@ class HabSegmentCSF(HabSegmentBase):
         :return: Certificate format label or default "x509".
         """
         for cmd in self.csf.commands:
-            if hasattr(cmd, "certificate_format"):
-                if cmd.certificate_format == CertFormatEnum.X509:
-                    return "x509"
+            if hasattr(cmd, "certificate_format") and cmd.certificate_format == CertFormatEnum.X509:
+                return "x509"
         return "x509"
 
     def _extract_header_sig_format(self) -> str:
@@ -615,7 +616,7 @@ class HabSegmentCSF(HabSegmentBase):
         return align_block(self.csf.export(), self.CSF_SIZE)
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse CSF segment block from image binary.
 
         Extracts and parses the Command Sequence File (CSF) segment from HAB container
@@ -854,9 +855,12 @@ class HabSegmentCSF(HabSegmentBase):
         if not install_key_cmd.secret_key_path:
             logger.warning("No secret key path specified for saving DEK")
             return
-        if install_key_cmd.secret_key_path and install_key_cmd.secret_key:
-            if (
+        if (
+            install_key_cmd.secret_key_path
+            and install_key_cmd.secret_key
+            and (
                 not find_file(install_key_cmd.secret_key_path, raise_exc=False)
                 or load_binary(install_key_cmd.secret_key_path) != install_key_cmd.secret_key
-            ):
-                install_key_cmd.save_secret_key()
+            )
+        ):
+            install_key_cmd.save_secret_key()

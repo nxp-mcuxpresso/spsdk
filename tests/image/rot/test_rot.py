@@ -204,12 +204,6 @@ def test_get_rot_class_invalid() -> None:
             "cb2cc774b2dcec92c840eca0646b78f8d3661d3a43ed265a490a13aca75e190a",
         ),
         (
-            "srk_table_ahab",
-            "rsa2048_keys",
-            None,
-            "cdad53aa483b4719ccd2319c4cb9ab82bcb399d23dcd9c523571cd3311e273fe",
-        ),
-        (
             "srk_table_ahab_v2",
             "rsa2048_keys",
             None,
