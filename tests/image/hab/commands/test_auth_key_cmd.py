@@ -158,7 +158,7 @@ def test_auth_data_cmd_equality() -> None:
 
     Verifies that CmdAuthData objects correctly implement equality comparison
     by testing against different object types and configurations. Tests include
-    comparison with different command types, self-comparison, and comparison
+    comparison with different command types, equivalent instances, and comparison
     with objects having different parameter values.
     """
     cmd = CmdAuthData()
@@ -167,5 +167,5 @@ def test_auth_data_cmd_equality() -> None:
         flags=AuthDataFlagsEnum.ABS, key_index=2, engine=EngineEnum.DCP, engine_cfg=1, location=1
     )
     assert cmd != nop
-    assert cmd == cmd
+    assert cmd == CmdAuthData()
     assert cmd != cmd_other

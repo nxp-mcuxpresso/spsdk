@@ -28,6 +28,9 @@ info:
       interfaces: ["uart", "spi", "i2c"]
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe: {}
+
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x2800_0000
@@ -73,6 +76,8 @@ features:
   # ======== DAT section ========
   dat:
     dmbox_ap_ix: 1 # Typical Index of debug mailbox access port is 2
+    non_standard_commands:
+      - read-from-flash # ROM supports the non-standard 'read words from flash' DM command (0x0A)
     non_standard_statuses: # dictionary of non standard return statuses from various commands
       2: # Command get_crp_level
         0xFFFF_FFFF: ROP_STATE = 0xFFFF_FFFF (erased FLASH value), no ROP. Default for blank state
@@ -88,6 +93,15 @@ features:
       address: 0x7_E000
       size: 336
       reg_spec: pfr_cmpa.json
+      delete_installer_magic: 0x4027ff65
+      delete_installer_offset: 0xE0
+      # Offset of the SI erase token (16 bytes, written by ROM after successful SI erasure)
+      erase_token_offset: 0xD0
+      # Flash address within the Secure Installer region used to probe whether SI is present.
+      # For the 512K phantom (mcxl255) the SI base is CMPA - 0x18000 = 0x66000.
+      si_probe_address: 0x66000
+      # CMPA header marker (upper 16 bits at CMPA+0). ROM gates SI erase request on this value.
+      cmpa_header_marker: 0x5963
       grouped_registers:
         - uid: cmpa_rotkh
           name: ROTKH

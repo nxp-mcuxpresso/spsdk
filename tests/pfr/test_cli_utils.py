@@ -49,6 +49,5 @@ def test_unsupported_secret_type(data_dir: str) -> None:
     :param data_dir: Directory path containing test data files
     :raises SPSDKError: Expected exception when unsupported secret type is encountered
     """
-    with use_working_directory(data_dir):
-        with pytest.raises(SPSDKError):
-            extract_public_key("cfpa_test.json", password=None)
+    with use_working_directory(data_dir), pytest.raises(SPSDKError):
+        extract_public_key("cfpa_test.json", password=None)

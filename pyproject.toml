@@ -43,11 +43,12 @@ dk6 = ["pyftdi", "pylibftdi", "ftd2xx"]
 oscca = ["gmssl<4,>=3.2"]
 can = ["python-can<5,>=4.5"]
 jlink = ["spsdk-jlink<1,>=0.3.4"]
-lauterbach = ["spsdk-lauterbach<1,>=0.4.0"]
+lauterbach = ["spsdk-lauterbach<1,>=0.5.2"]
 pemicro = ["spsdk-pemicro<1,>=0.3.1"]
 pkcs11 = ["spsdk-pkcs11<1,>=0.3.1"]
 pqc = ["spsdk-pqc<1.0,>=0.6.1", "pyhsslms>=2.0.0,<3"]
 rblhost = ["pymboot-rs<1"]
+elf = ["lief>=0.14"]
 all = [
     "spsdk[examples]",
     "spsdk[dk6]",
@@ -59,6 +60,7 @@ all = [
     "spsdk[pkcs11]",
     "spsdk[pqc]",
     "spsdk[rblhost]",
+    "spsdk[elf]",
 ]
 
 [project.scripts]
@@ -94,6 +96,19 @@ include = '\.pyi?$'
 force-exclude = '''
 '''
 
+[tool.ruff]
+# Match the project's line length (black/isort use 100).
+line-length = 100
+
+[tool.ruff.lint]
+# Pin the selection to the pre-0.16 default set so linter behavior is unchanged after upgrading ruff.
+# To adopt additional rule groups later, extend this list (e.g. "UP", "SIM", ...).
+select = ["E4", "E7", "E9", "F"]
+ignore = ["EXE001", "I001"]
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
+
 [tool.isort]
 multi_line_output = 3
 include_trailing_comma = true
@@ -103,15 +118,6 @@ ensure_newline_before_comments = true
 line_length = 100
 extend_skip_glob = ["**/__version__.py"]
 
-
-[tool.ruff]
-# Match the project's line length (black/isort use 100).
-line-length = 100
-
-[tool.ruff.lint]
-# Pin the selection to the pre-0.16 default set so linter behavior is unchanged after upgrading ruff.
-# To adopt additional rule groups later, extend this list (e.g. "UP", "SIM", ...).
-select = ["E4", "E7", "E9", "F"]
 
 [tool.mypy]
 disallow_untyped_defs = true
@@ -125,6 +131,7 @@ exclude = [
 
 [tool.pytest.ini_options]
 junit_family = "xunit1"
+addopts = "-p no:nb_regression"
 
 [tool.coverage.report]
 exclude_lines = [
@@ -249,7 +256,7 @@ checkers = [
         "docs",
         "spsdk",
     ], timeout = 60 } },
-    { "black" = { timeout = 120 } },
+    { "black" = { timeout = 240 } },
     { "isort" = { timeout = 200 } },
     "copyright",
     { "py_headers" = { args = [
@@ -310,5 +317,6 @@ ignore = "W002" # Wheel contains duplicate files
 extra_requirements = ["requirements-develop.txt", "docs/requirements.txt"]
 keep_unbound = true
 strategy = "next-major"
-# Remove this when 3.10 is dropped alongside 3.10 restriction in requirements.txt
-ignore = ["click", "chardet"]
+# click, chardet: remove when 3.10 is dropped alongside 3.10 restriction in requirements.txt
+# platformdirs, pylint: capped for 3.12.0 release, see comments in requirements files
+ignore = ["click", "chardet", "platformdirs", "pylint"]

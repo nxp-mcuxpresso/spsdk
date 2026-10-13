@@ -10,6 +10,8 @@ This module provides test functionality for validating SPSDK example
 Jupyter notebooks to ensure they execute correctly without errors.
 """
 
+# cspell:words nbclient
+
 import os
 import sys
 from pathlib import Path

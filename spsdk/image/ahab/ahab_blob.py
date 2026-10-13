@@ -14,7 +14,7 @@ operations for NXP MCUs.
 import logging
 import os
 from struct import pack, unpack
-from typing import Any
+from typing import Any, ClassVar
 
 from typing_extensions import Self
 
@@ -43,6 +43,7 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
+UNKNOWN_FAMILY = FamilyRevision("Unknown")
 
 
 class AhabBlob(HeaderContainer):
@@ -76,8 +77,8 @@ class AhabBlob(HeaderContainer):
     FLAGS_KEK_KEY = 0x80  # KEK key flag
     FLAGS_DEK = 0x01  # DEK flag
     FLAGS_DFLT = FLAGS_KEK_KEY
-    SUPPORTED_KEY_SIZES = [128, 192, 256]
-    DIFF_ATTRIBUTES_VALUES = [
+    SUPPORTED_KEY_SIZES: ClassVar[list[int]] = [128, 192, 256]
+    DIFF_ATTRIBUTES_VALUES: ClassVar[list[str]] = [
         "mode",
         "algorithm",
         "_size",
@@ -139,19 +140,15 @@ class AhabBlob(HeaderContainer):
         :param other: Object to compare with this AhabBlob instance.
         :return: True if objects are equal, False otherwise.
         """
-        if isinstance(other, AhabBlob):
-            if (
-                super().__eq__(other)  # pylint: disable=too-many-boolean-expressions
-                and self.mode == other.mode
-                and self.algorithm == other.algorithm
-                and self._size == other._size
-                and self.flags == other.flags
-                and self.dek_keyblob == other.dek_keyblob
-                and self.key_identifier == other.key_identifier
-            ):
-                return True
-
-        return False
+        return isinstance(other, AhabBlob) and (  # pylint: disable=too-many-boolean-expressions
+            super().__eq__(other)
+            and self.mode == other.mode
+            and self.algorithm == other.algorithm
+            and self._size == other._size
+            and self.flags == other.flags
+            and self.dek_keyblob == other.dek_keyblob
+            and self.key_identifier == other.key_identifier
+        )
 
     def __repr__(self) -> str:
         """Return string representation of AHAB Blob.
@@ -834,7 +831,7 @@ class AhabBlobOffline(FeatureBaseClass, AhabBlob):
         return [sch_family, sch_cfg["ahab_blob"]]
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse binary data into an AhabBlobGenerator object.
 
         Extracts blob information from the provided binary data and creates

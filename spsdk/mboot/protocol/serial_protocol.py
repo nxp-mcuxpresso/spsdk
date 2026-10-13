@@ -16,7 +16,7 @@ import struct
 import time
 from collections.abc import Generator
 from contextlib import contextmanager
-from typing import NamedTuple
+from typing import ClassVar, NamedTuple
 
 from typing_extensions import Self
 
@@ -104,7 +104,7 @@ class MbootSerialProtocol(MbootProtocolBase):
     """
 
     FRAME_START_BYTE = 0x5A
-    FRAME_START_NOT_READY_LIST = [0x00]
+    FRAME_START_NOT_READY_LIST: ClassVar[list[int]] = [0x00]
     PING_TIMEOUT_MS = 500
     MAX_PING_RESPONSE_DUMMY_BYTES = 50
     MAX_UART_OPEN_ATTEMPTS = 3
@@ -130,10 +130,10 @@ class MbootSerialProtocol(MbootProtocolBase):
             except TimeoutError as e:
                 # Closing may take up 30-40 seconds
                 self.close()
-                logger.debug(f"Timeout when pinging the device: {repr(e)}")
+                logger.debug(f"Timeout when pinging the device: {e!r}")
             except McuBootConnectionError as e:
                 self.close()
-                logger.debug(f"Opening interface failed with: {repr(e)}")
+                logger.debug(f"Opening interface failed with: {e!r}")
             except Exception as exc:
                 self.close()
                 raise McuBootConnectionError("Interface open operation fails.") from exc

@@ -543,7 +543,7 @@ def get_tz_class(family: FamilyRevision) -> type[TrustZone] | type[TrustZoneV2]:
     :param family: Family revision to determine TrustZone class.
     :return: Appropriate TrustZone class implementation (TrustZone or TrustZoneV2).
     """
-    classes: dict[str, type[TrustZone] | type[TrustZoneV2]] = {
+    classes: dict[str, type[TrustZone | TrustZoneV2]] = {
         "v1": TrustZone,
         "v2": TrustZoneV2,
     }

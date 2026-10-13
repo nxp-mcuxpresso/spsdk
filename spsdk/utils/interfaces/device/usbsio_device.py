@@ -279,7 +279,7 @@ class UsbSioDevice(DeviceBase):
             if usbsio_config.port_num not in list(range(available_port)):
                 logger.warning(
                     f"Given port {usbsio_config.port_num} is not amongst available ports: "
-                    f"{','.join(list(str(n) for n in range(available_port)))}"
+                    f"{','.join([str(n) for n in range(available_port)])}"
                 )
                 sio.Close()
                 continue
@@ -586,7 +586,7 @@ class UsbSioSPIDevice(UsbSioDevice):
         """
         logger.trace(f"[{' '.join(f'{b:02x}' for b in data)}]")
         try:
-            dummy, result = self.port.Transfer(
+            _, result = self.port.Transfer(
                 devSelectPort=self.spi_sselport, devSelectPin=self.spi_sselpin, txData=data
             )
         except Exception as e:

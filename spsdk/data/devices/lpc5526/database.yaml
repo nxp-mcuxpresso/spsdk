@@ -42,6 +42,10 @@ info:
           pid: 0x0021
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe:
+    test_address: 0x2000_0000
+
   # ======== Blhost section ========
   blhost: {}
 

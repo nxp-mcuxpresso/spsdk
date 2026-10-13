@@ -73,7 +73,11 @@ def get_matching_key_id_from_signature(
     raise SPSDKValueError("There is no match of signature in given list.")
 
 
-def extract_public_key_from_data(object_data: bytes, password: str | None = None) -> PublicKey:
+def extract_public_key_from_data(
+    object_data: bytes,
+    password: str | None = None,
+    expected_public_key_type: type[PublicKey] | None = None,
+) -> PublicKey:
     """Extract any kind of public key from data containing Certificate, Private Key or Public Key.
 
     The method attempts to parse the input data as a certificate first, then as a private key,
@@ -82,6 +86,8 @@ def extract_public_key_from_data(object_data: bytes, password: str | None = None
 
     :param object_data: Raw data containing certificate, private key, or public key.
     :param password: Optional password for encrypted private keys.
+    :param expected_public_key_type: Optional explicit public-key parser to prefer for ambiguous
+        raw key formats.
     :raises SPSDKError: Raised when data cannot be parsed as any supported key format.
     :return: Extracted public key of any supported type.
     """
@@ -92,7 +98,7 @@ def extract_public_key_from_data(object_data: bytes, password: str | None = None
         key = cert.get_public_key()
         if cert.ca:
             # In case of CA certificate, return the public key with the 'ca' attribute set to True
-            setattr(key, "ca", True)
+            key.ca = True  # type: ignore[attr-defined]
 
         return key
     except SPSDKError as exc:
@@ -104,6 +110,12 @@ def extract_public_key_from_data(object_data: bytes, password: str | None = None
         ).get_public_key()
     except SPSDKError as exc:
         errors.append(f"Private key: {exc}")
+
+    if expected_public_key_type:
+        try:
+            return expected_public_key_type.parse(object_data)
+        except SPSDKError as exc:
+            errors.append(f"Expected public key type ({expected_public_key_type.__name__}): {exc}")
 
     try:
         return PublicKey.parse(object_data)
@@ -123,7 +135,10 @@ def extract_public_key_from_data(object_data: bytes, password: str | None = None
 
 
 def extract_public_key(
-    file_path: str, password: str | None = None, search_paths: list[str] | None = None
+    file_path: str,
+    password: str | None = None,
+    search_paths: list[str] | None = None,
+    expected_public_key_type: type[PublicKey] | None = None,
 ) -> PublicKey:
     """Extract any kind of public key from a file.
 
@@ -133,14 +148,16 @@ def extract_public_key(
     :param file_path: File path to public key file.
     :param password: Optional password for encrypted Private file source.
     :param search_paths: List of paths where to search for the file, defaults to None.
+    :param expected_public_key_type: Optional explicit public-key parser to prefer for ambiguous
+        raw key formats.
     :raises SPSDKError: Raised when file cannot be loaded.
     :return: Public key of any type.
     """
     try:
         object_data = load_binary(file_path, search_paths=search_paths)
-        return extract_public_key_from_data(object_data, password)
+        return extract_public_key_from_data(object_data, password, expected_public_key_type)
     except SPSDKError as exc:
-        raise SPSDKError(f"Unable to load secret file '{file_path}'. \n{str(exc)}") from exc
+        raise SPSDKError(f"Unable to load secret file '{file_path}'. \n{exc!s}") from exc
 
 
 def extract_public_keys(

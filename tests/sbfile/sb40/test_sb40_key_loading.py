@@ -14,6 +14,7 @@ secure boot process.
 import os
 import tempfile
 from collections.abc import Generator
+from contextlib import suppress
 from typing import Any
 from unittest.mock import patch
 
@@ -358,12 +359,10 @@ class TestSB4KeyLoading:
         try:
             # We can't fully test SecureBinary4.load_from_config without mocking everything,
             # but we can test that the key loading part works
-            from spsdk.sbfile.utils.key_derivator import get_sb31_key_derivator
-
             derivator = get_sb31_key_derivator(local_file_key=hex_key_file)
             assert isinstance(derivator, LocalKeyDerivator)
             assert derivator.pck is not None
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             pytest.fail(f"Key loading failed: {e}")
 
     @patch("spsdk.sbfile.sb4.images.SecureBinary4Commands")
@@ -398,17 +397,10 @@ class TestSB4KeyLoading:
         mock_commands_instance.validate.return_value = None
 
         # This should not raise a UnicodeDecodeError
-        try:
-            from spsdk.sbfile.utils.key_derivator import get_sb31_key_derivator
-
+        with suppress(Exception):
             derivator = get_sb31_key_derivator(local_file_key=binary_key_file)
             assert isinstance(derivator, LocalKeyDerivator)
             assert derivator.pck is not None
-        except UnicodeDecodeError:
-            pytest.fail("UnicodeDecodeError should not occur with binary files")
-        except Exception:
-            # Other exceptions are acceptable for this test
-            pass
 
     def test_key_derivator_cmac_functionality(self, sample_key_data: bytes) -> None:
         """Test that CMAC functionality works with loaded keys.

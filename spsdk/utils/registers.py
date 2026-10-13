@@ -12,6 +12,7 @@ register bit fields, access control, enumeration handling, and configuration pro
 with validation capabilities.
 """
 
+import copy
 import json
 import logging
 from collections.abc import Iterator, Mapping
@@ -783,10 +784,8 @@ class RegsBitField:
         if self.reserved:
             output += "This is reserved bitfield!\n"
 
-        i = 0
-        for enum in self._enums:
+        for i, enum in enumerate(self._enums):
             output += f"Enum             #{i}: \n" + str(enum)
-            i += 1
 
         return output
 
@@ -913,7 +912,7 @@ class Register:
         """
         return hash(self.uid)
 
-    def __eq__(self, obj: Any) -> bool:
+    def __eq__(self, obj: object) -> bool:
         """Compare if the objects have same settings.
 
         Checks equality by comparing name, width, reverse flag, current value,
@@ -932,9 +931,7 @@ class Register:
             return False
         if obj._value != self._value:
             return False
-        if obj._default_value != self._default_value:
-            return False
-        return True
+        return obj._default_value == self._default_value
 
     @classmethod
     def create_from_spec(cls, spec: dict[str, Any], reg_mods: dict[str, Any] | None = None) -> Self:
@@ -1162,7 +1159,7 @@ class Register:
                 self._value = value
 
         except SPSDKError as exc:
-            raise SPSDKError(f"Loaded invalid value {str(val)}") from exc
+            raise SPSDKError(f"Loaded invalid value {val!s}") from exc
 
     def reset_value(self, raw: bool = False) -> None:
         """Reset the value of register to its default reset value.
@@ -1363,10 +1360,8 @@ class Register:
         output += f"Width:  {self.width} bits\n"
         output += f"Access:   {self.access.label}\n"
         output += f"Description: \n {self.description}\n"
-        i = 0
-        for bitfield in self._bitfields:
+        for i, bitfield in enumerate(self._bitfields):
             output += f"Bitfield #{i}: \n" + str(bitfield)
-            i += 1
 
         return output
 
@@ -1500,11 +1495,11 @@ class _RegistersBase(Generic[RegisterClassT]):
             if do_not_raise_exception:
                 # Only path for testing and internal tools
                 logger.info(
-                    f"Loading of database failed, inform SPSDK team about this error: {str(exc)}"
+                    f"Loading of database failed, inform SPSDK team about this error: {exc!s}"
                     f"\n Family: {self.family}, Feature: {feature}"
                 )
             else:
-                raise exc
+                raise
 
     def __iter__(self) -> Iterator[RegisterClassT]:
         """Return an iterator over the registers in the collection.
@@ -1537,7 +1532,7 @@ class _RegistersBase(Generic[RegisterClassT]):
             return [self.base_key, key]
         return self.base_key + [key]
 
-    def __eq__(self, obj: Any) -> bool:
+    def __eq__(self, obj: object) -> bool:
         """Compare if two register objects have identical settings.
 
         Compares the family, base endianness, and internal register configurations
@@ -1686,6 +1681,27 @@ class _RegistersBase(Generic[RegisterClassT]):
         for k in keys_to_remove:
             del self._reg_index[k]
 
+    def create_shallow_copy(self) -> Self:
+        """Create a lightweight copy of the registers collection.
+
+        The returned collection is a new container that references the same underlying
+        register objects. Adding or removing registers from the copy (for example via
+        :meth:`remove_register`) does not affect the original collection. However, because
+        the register objects themselves are shared, modifying a register value is reflected
+        in both collections.
+
+        This is a much cheaper alternative to :func:`copy.deepcopy` when only the set of
+        registers needs to be altered while the register data remains read-only.
+
+        :return: New registers collection sharing the same register objects.
+        """
+        new = copy.copy(self)
+        # Detach the container-level structures so add/remove operations on the copy
+        # do not propagate to the original collection.
+        new._registers = list(self._registers)
+        new._reg_index = dict(self._reg_index)
+        return new
+
     def get_registers(
         self,
         exclude: list[str] | None = None,
@@ -1765,9 +1781,7 @@ class _RegistersBase(Generic[RegisterClassT]):
 
         return output
 
-    def image_info(
-        self, size: int = 0, pattern: BinaryPattern = BinaryPattern("zeros")
-    ) -> BinaryImage:
+    def image_info(self, size: int = 0, pattern: BinaryPattern | None = None) -> BinaryImage:
         """Export registers into binary image format.
 
         Creates a binary image containing all registers with their current values,
@@ -1777,6 +1791,7 @@ class _RegistersBase(Generic[RegisterClassT]):
         :param pattern: Pattern used to fill gaps between registers.
         :return: Binary image containing all registers data.
         """
+        pattern = pattern if pattern is not None else BinaryPattern("zeros")
         image = BinaryImage(self.family.name, size=size, pattern=pattern)
         for reg in self._registers:
             if reg.has_group_registers():
@@ -1797,7 +1812,7 @@ class _RegistersBase(Generic[RegisterClassT]):
 
         return image
 
-    def export(self, size: int = 0, pattern: BinaryPattern = BinaryPattern("zeros")) -> bytes:
+    def export(self, size: int = 0, pattern: BinaryPattern | None = None) -> bytes:
         """Export Registers into binary.
 
         :param size: Result size of Image, 0 means automatic minimal size.
@@ -2162,9 +2177,7 @@ class _RegistersBase(Generic[RegisterClassT]):
             with open(spec_file, encoding="utf-8") as f:
                 spec = json.load(f)
         except json.JSONDecodeError as exc:
-            raise SPSDKError(
-                f"Cannot load register specification: {spec_file}. {str(exc)}"
-            ) from exc
+            raise SPSDKError(f"Cannot load register specification: {spec_file}. {exc!s}") from exc
         self._load_from_spec(spec, grouped_regs, reg_spec_modifications, deprecated_regs)
 
     def write_spec(self, file_name: str) -> None:
@@ -2204,9 +2217,9 @@ class _RegistersBase(Generic[RegisterClassT]):
             SPSDKRegsErrorRegisterNotFound,
             SPSDKRegsErrorBitfieldNotFound,
             SPSDKRegsErrorEnumNotFound,
-        ) as exc:
+        ):
             if not get_whole_db()._data.restricted_data_path:
-                raise exc
+                raise
 
             # Try to load the configuration with standard database names and convert it to restricted data names
             std_regs = self.__class__(
@@ -2236,12 +2249,12 @@ class _RegistersBase(Generic[RegisterClassT]):
         :raises SPSDKRegsErrorRegisterNotFound: When specified register is not found.
         :raises SPSDKError: When bitfield value is out of range or invalid.
         """
-        for reg_name in config.keys():
+        for reg_name in config:
             try:
                 register = self.find_reg(reg_name, include_group_regs=True)
             except SPSDKRegsErrorRegisterNotFound as exc:
                 logger.error(str(exc))
-                raise exc
+                raise
             reg_value = config[reg_name]
 
             if isinstance(reg_value, dict):
@@ -2254,7 +2267,7 @@ class _RegistersBase(Generic[RegisterClassT]):
                     )
                     register.set_value(val, False)
                 else:
-                    bitfields = reg_value["bitfields"] if "bitfields" in reg_value else reg_value
+                    bitfields = reg_value.get("bitfields", reg_value)
                     for bitfield_name in bitfields:
                         bitfield_val = bitfields[bitfield_name]
                         bitfield = register.find_bitfield(bitfield_name)

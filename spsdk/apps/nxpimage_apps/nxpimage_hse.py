@@ -21,10 +21,11 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_family_option,
     spsdk_output_option,
 )
+from spsdk.apps.utils.utils import SPSDKAppError, print_verifier_to_console
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import PrivateKeyEcc, PrivateKeyRsa, load_key
 from spsdk.exceptions import SPSDKError
-from spsdk.image.hse.common import AuthSchemeEnum
+from spsdk.image.hse.common import AuthSchemeEnum, HashAlgo
 from spsdk.image.hse.core_reset import CoreResetEntry
 from spsdk.image.hse.key_catalog import KeyCatalogCfg
 from spsdk.image.hse.key_info import KeyInfo
@@ -187,6 +188,41 @@ def key_catalog_parse_command(binary: str, family: FamilyRevision, output: str) 
     )
 
 
+@key_catalog_group.command(name="verify", no_args_is_help=True)
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, readable=True, resolve_path=True),
+    required=True,
+    help="Path to binary with key catalog cfg to verify.",
+)
+@spsdk_family_option(families=KeyCatalogCfg.get_supported_families())
+@click.option(
+    "-p",
+    "--problems",
+    is_flag=True,
+    default=False,
+    help="Show just problems in binary.",
+)
+def key_catalog_verify_command(binary: str, family: FamilyRevision, problems: bool) -> None:
+    """Verify Key Catalog binary."""
+    key_catalog_verify(binary, family, problems)
+
+
+def key_catalog_verify(binary: str, family: FamilyRevision, problems: bool) -> None:
+    """Verify Key Catalog binary.
+
+    :param binary: Path to binary with key catalog cfg.
+    :param family: Family revision.
+    :param problems: Show just problems in binary.
+    """
+    key_catalog = KeyCatalogCfg.parse(load_binary(binary), family)
+    ver = key_catalog.verify()
+    print_verifier_to_console(ver, problems=problems)
+    if ver.has_errors:
+        raise SPSDKAppError("Verify failed")
+
+
 @hse_group.group(name="smr-entry", no_args_is_help=True, cls=CommandsTreeGroup)
 def smr_entry_group() -> None:  # pylint: disable=unused-argument
     """Group of sub-commands related to SMR entry functionality."""
@@ -265,6 +301,41 @@ def smr_entry_parse(data: bytes, family: FamilyRevision, output: str) -> None:
     write_file(yaml_data, output)
 
 
+@smr_entry_group.command(name="verify", no_args_is_help=True)
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, readable=True, resolve_path=True),
+    required=True,
+    help="Path to binary with SMR entry to verify.",
+)
+@spsdk_family_option(families=SmrEntry.get_supported_families())
+@click.option(
+    "-p",
+    "--problems",
+    is_flag=True,
+    default=False,
+    help="Show just problems in binary.",
+)
+def smr_entry_verify_command(binary: str, family: FamilyRevision, problems: bool) -> None:
+    """Verify SMR entry binary."""
+    smr_entry_verify(binary, family, problems)
+
+
+def smr_entry_verify(binary: str, family: FamilyRevision, problems: bool) -> None:
+    """Verify SMR entry binary.
+
+    :param binary: Path to binary with SMR entry.
+    :param family: Family revision.
+    :param problems: Show just problems in binary.
+    """
+    smr_entry = SmrEntry.parse(load_binary(binary), family)
+    ver = smr_entry.verify()
+    print_verifier_to_console(ver, problems=problems)
+    if ver.has_errors:
+        raise SPSDKAppError("Verify failed")
+
+
 @smr_entry_group.command(name="create-auth-tag", no_args_is_help=True)
 @spsdk_output_option()
 @click.option(
@@ -287,7 +358,10 @@ def smr_entry_parse(data: bytes, family: FamilyRevision, output: str) -> None:
     "-a",
     "--auth-scheme",
     required=False,
-    type=click.Choice(list(AuthSchemeEnum.labels()), case_sensitive=False),
+    type=click.Choice(
+        [scheme.label.lower() for scheme in SmrAuthenticationTag.get_supported_auth_schemes()],
+        case_sensitive=False,
+    ),
     help="Authentication scheme to use. If not specified, it will be determined by key type.",
     callback=lambda ctx, param, value: (
         AuthSchemeEnum.from_label(value.lower()) if value is not None else None
@@ -298,11 +372,12 @@ def smr_entry_parse(data: bytes, family: FamilyRevision, output: str) -> None:
     "--hash-algorithm",
     required=False,
     type=click.Choice(
-        [label for label in EnumHashAlgorithm.labels() if label != "none"], case_sensitive=False
+        [algo.label for algo in HashAlgo if algo not in (HashAlgo.NULL, HashAlgo.RESERVED1)],
+        case_sensitive=False,
     ),
-    help="Name of a hash algorithm to use. Use the same hash algorithm in SMR entry definition.",
+    help="Name of a hash algorithm to use. Must match the hash algorithm used in the SMR entry definition.",
     callback=lambda ctx, param, value: (
-        EnumHashAlgorithm.from_label(value.lower()) if value is not None else None
+        HashAlgo.from_label(value).get_crypto_algorithm() if value is not None else None
     ),
 )
 def smr_entry_create_auth_tag(
@@ -324,7 +399,7 @@ def smr_entry_create_auth_tag(
         auth_tag = SmrAuthenticationTag.create_auth_tag(data, key, auth_scheme, hash_algorithm)
         write_file(auth_tag, output, mode="wb")
     except SPSDKError as exc:
-        raise SPSDKError(f"Failed to create authentication tag: {str(exc)}") from exc
+        raise SPSDKError(f"Failed to create authentication tag: {exc!s}") from exc
     click.echo(
         f"Success. Authentication tag of type {auth_scheme_used.label} created: {get_printable_path(output)}"
     )
@@ -406,3 +481,38 @@ def cr_entry_parse(data: bytes, family: FamilyRevision, output: str) -> None:
         schemas=smr_entry.get_validation_schemas(family),
     ).get_config(cfg)
     write_file(yaml_data, output)
+
+
+@core_reset_entry_group.command(name="verify", no_args_is_help=True)
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, readable=True, resolve_path=True),
+    required=True,
+    help="Path to binary with Core Reset entry to verify.",
+)
+@spsdk_family_option(families=CoreResetEntry.get_supported_families())
+@click.option(
+    "-p",
+    "--problems",
+    is_flag=True,
+    default=False,
+    help="Show just problems in binary.",
+)
+def cr_entry_verify_command(binary: str, family: FamilyRevision, problems: bool) -> None:
+    """Verify Core Reset entry binary."""
+    cr_entry_verify(binary, family, problems)
+
+
+def cr_entry_verify(binary: str, family: FamilyRevision, problems: bool) -> None:
+    """Verify Core Reset entry binary.
+
+    :param binary: Path to binary with Core Reset entry.
+    :param family: Family revision.
+    :param problems: Show just problems in binary.
+    """
+    cr_entry = CoreResetEntry.parse(load_binary(binary), family)
+    ver = cr_entry.verify()
+    print_verifier_to_console(ver, problems=problems)
+    if ver.has_errors:
+        raise SPSDKAppError("Verify failed")

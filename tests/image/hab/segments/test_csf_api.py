@@ -45,7 +45,6 @@ def test_txt_parser() -> None:
     This test verifies that the TXT parser correctly processes and parses
     text-based configuration files for CSF (Command Sequence File) operations.
     """
-    pass
 
 
 @pytest.mark.skip
@@ -55,4 +54,3 @@ def test_bin_parser() -> None:
     This test method validates the binary parser implementation for CSF (Command Sequence File)
     processing in the HAB (High Assurance Boot) image segments.
     """
-    pass

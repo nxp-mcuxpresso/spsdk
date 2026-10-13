@@ -13,13 +13,22 @@ code coverage without requiring real debug probe hardware.
 
 import contextlib
 import os
+import struct
 from collections.abc import Iterator
 
 import pytest
 from typing_extensions import Never
 
-from spsdk.apps.nxpdebugmbox import DebugMailboxParams, DebugProbeParams, main
+from spsdk.apps.nxpdebugmbox import (
+    DebugMailboxParams,
+    DebugProbeParams,
+    list_probes,
+    main,
+    read_from_flash,
+    reset,
+)
 from spsdk.apps.nxpdebugmbox import test_connection as nxpdebugmbox_test_connection
+from spsdk.apps.utils.utils import SPSDKAppError
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.family import FamilyRevision
 from tests.cli_runner import CliRunner
@@ -120,6 +129,13 @@ def test_dat_auth_help(cli_runner: CliRunner) -> None:
     """Test dat auth --help."""
     result = cli_runner.invoke(main, ["dat", "auth", "--help"])
     assert "Show this message and exit." in result.output
+
+
+def test_dat_auth_debug_artifacts_option(cli_runner: CliRunner) -> None:
+    """The dat auth command exposes the --debug-artifacts / -da option."""
+    result = cli_runner.invoke(main, ["dat", "auth", "--help"])
+    assert "--debug-artifacts" in result.output
+    assert "-da" in result.output
 
 
 def test_dat_auth_missing_file_fails(cli_runner: CliRunner) -> None:
@@ -264,7 +280,7 @@ def test_tool_help(cli_runner: CliRunner) -> None:
     assert "Show this message and exit." in result.output
 
 
-@pytest.mark.parametrize("subcommand", ["reset", "get-uuid", "halt", "resume"])
+@pytest.mark.parametrize("subcommand", ["reset", "get-uuid", "halt", "resume", "list-probes"])
 def test_tool_subcommands_help(cli_runner: CliRunner, subcommand: str) -> None:
     """Test tool subcommand --help."""
     result = cli_runner.invoke(main, ["tool", subcommand, "--help"])
@@ -275,6 +291,109 @@ def test_tool_get_families(cli_runner: CliRunner) -> None:
     """Test tool get-families lists supported families."""
     result = cli_runner.invoke(main, ["tool", "get-families"])
     assert result.output
+
+
+def test_tool_reset_uses_debug_mailbox_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test tool reset uses DebugMailbox reset by default."""
+    calls: list[bool] = []
+
+    def fail_perform_reset(*args: object, **kwargs: object) -> None:
+        raise AssertionError("Generic debug probe reset must not be used by default")
+
+    @contextlib.contextmanager
+    def fake_open_debugmbox(
+        family: FamilyRevision,
+        debug_probe_params: DebugProbeParams,
+        debug_mailbox_params: DebugMailboxParams,
+    ) -> Iterator[None]:
+        calls.append(debug_mailbox_params.reset)
+        yield None
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox._open_debugmbox", fake_open_debugmbox)
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.perform_reset", fail_perform_reset)
+    debug_probe_params = DebugProbeParams(
+        interface="virtual", serial_no="dummy", debug_probe_user_params={}
+    )
+    debug_mailbox_params = DebugMailboxParams(reset=False, more_delay=0.0, operation_timeout=1000)
+
+    reset(
+        family=FamilyRevision(name="mimxrt1166"),
+        debug_probe_params=debug_probe_params,
+        debug_mailbox_params=debug_mailbox_params,
+        hard_reset=False,
+    )
+
+    assert calls == [True]
+
+
+@pytest.mark.parametrize(
+    ("hard_reset", "nvic_reset", "expected_nvic"),
+    [(True, False, False), (False, True, True)],
+)
+def test_tool_reset_forces_requested_reset_type(
+    monkeypatch: pytest.MonkeyPatch,
+    hard_reset: bool,
+    nvic_reset: bool,
+    expected_nvic: bool,
+) -> None:
+    """Test tool reset forwards explicitly selected reset type."""
+    calls: list[bool | None] = []
+
+    class FakeProbe:
+        """Fake debug probe for reset test."""
+
+    @contextlib.contextmanager
+    def fake_open_debug_probe(*args: object, **kwargs: object) -> Iterator[FakeProbe]:
+        yield FakeProbe()
+
+    def fake_perform_reset(
+        debug_probe: FakeProbe, family: FamilyRevision, nvic: bool | None = None
+    ) -> None:
+        calls.append(nvic)
+
+    def fail_open_debugmbox(*args: object, **kwargs: object) -> Iterator[Never]:
+        raise AssertionError("DebugMailbox reset must not be used for explicit reset type")
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.open_debug_probe", fake_open_debug_probe)
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox._open_debugmbox", fail_open_debugmbox)
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.perform_reset", fake_perform_reset)
+    debug_probe_params = DebugProbeParams(
+        interface="virtual", serial_no="dummy", debug_probe_user_params={}
+    )
+    debug_mailbox_params = DebugMailboxParams(reset=False, more_delay=0.0, operation_timeout=1000)
+
+    reset(
+        family=FamilyRevision(name="mimxrt1166"),
+        debug_probe_params=debug_probe_params,
+        debug_mailbox_params=debug_mailbox_params,
+        hard_reset=hard_reset,
+        nvic_reset=nvic_reset,
+    )
+
+    assert calls == [expected_nvic]
+
+
+def test_list_probes_filters_by_debug_probe_family(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test list-probes uses family-derived architecture and debug probe options."""
+    captured: dict[str, object] = {}
+
+    def fake_get_connected_probes(**kwargs: object) -> list[object]:
+        captured.update(kwargs)
+        return []
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.get_connected_probes", fake_get_connected_probes)
+    debug_probe_params = DebugProbeParams(
+        interface="virtual",
+        serial_no="dummy",
+        debug_probe_user_params={"protocol": "jtag"},
+    )
+
+    list_probes(FamilyRevision(name="mimxrt1166"), debug_probe_params)
+
+    assert captured["interface"] == "virtual"
+    assert captured["hardware_id"] == "dummy"
+    assert captured["architecture"] == "arm-cortex"
+    assert captured["options"] == debug_probe_params.debug_probe_user_params
 
 
 # ---------------------------------------------------------------------------
@@ -324,6 +443,7 @@ def test_cmd_help(cli_runner: CliRunner) -> None:
         "start-debug-session",
         "erase-one-sector",
         "write-to-flash",
+        "read-from-flash",
         "get-dac",
         "send-dar",
         "set-bricked-mode",
@@ -343,3 +463,128 @@ def test_cmd_get_families(cli_runner: CliRunner) -> None:
     """Test cmd get-families lists supported families."""
     result = cli_runner.invoke(main, ["cmd", "-f", DAT_FAMILY, "get-families"])
     assert result.output
+
+
+# ---------------------------------------------------------------------------
+# cmd read-from-flash
+# ---------------------------------------------------------------------------
+
+
+def _dbg_params() -> tuple[DebugProbeParams, DebugMailboxParams]:
+    """Return dummy debug probe and mailbox parameters for read-from-flash tests."""
+    return (
+        DebugProbeParams(interface="virtual", serial_no="dummy", debug_probe_user_params={}),
+        DebugMailboxParams(reset=False, more_delay=0.0, operation_timeout=1000),
+    )
+
+
+def test_read_from_flash_unsupported_family() -> None:
+    """read-from-flash is rejected for families without database support."""
+    probe_params, mbox_params = _dbg_params()
+    with pytest.raises(SPSDKAppError, match="not supported"):
+        read_from_flash(FamilyRevision(DAT_FAMILY), probe_params, mbox_params, address=0, count=16)
+
+
+def test_read_from_flash_unaligned_address(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: os.PathLike
+) -> None:
+    """read-from-flash accepts unaligned addresses (the ROM has no alignment requirement)."""
+
+    class FakeReadCmd:
+        """Fake ReadFromFlash returning deterministic words per address."""
+
+        def __init__(self, dm: object) -> None:
+            pass
+
+        def run(self, params: list[int]) -> list[int]:
+            base = params[0]
+            return [base, base + 4, base + 8, base + 12]
+
+    @contextlib.contextmanager
+    def fake_open_debugmbox(*args: object, **kwargs: object) -> Iterator[object]:
+        yield object()
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox._open_debugmbox", fake_open_debugmbox)
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.dm_commands.ReadFromFlash", FakeReadCmd)
+
+    out_file = os.path.join(tmp_path, "flash.bin")
+    probe_params, mbox_params = _dbg_params()
+    # Address 0x1004 is intentionally not 16-byte aligned.
+    read_from_flash(
+        FamilyRevision("mcxa255"),
+        probe_params,
+        mbox_params,
+        address=0x1004,
+        count=16,
+        output=out_file,
+    )
+    expected = struct.pack("<4I", 0x1004, 0x1008, 0x100C, 0x1010)
+    with open(out_file, "rb") as f:
+        assert f.read() == expected
+
+
+@pytest.mark.parametrize("family", ["mcxa255", "mcxl255"])
+def test_read_from_flash_success(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: os.PathLike, family: str
+) -> None:
+    """read-from-flash loops 16-byte reads and stores the data to a file."""
+
+    class FakeReadCmd:
+        """Fake ReadFromFlash returning deterministic words per address."""
+
+        def __init__(self, dm: object) -> None:
+            pass
+
+        def run(self, params: list[int]) -> list[int]:
+            base = params[0]
+            return [base, base + 4, base + 8, base + 12]
+
+    @contextlib.contextmanager
+    def fake_open_debugmbox(*args: object, **kwargs: object) -> Iterator[object]:
+        yield object()
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox._open_debugmbox", fake_open_debugmbox)
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.dm_commands.ReadFromFlash", FakeReadCmd)
+
+    out_file = os.path.join(tmp_path, "flash.bin")
+    probe_params, mbox_params = _dbg_params()
+    read_from_flash(
+        FamilyRevision(family),
+        probe_params,
+        mbox_params,
+        address=0x1000,
+        count=32,
+        output=out_file,
+    )
+    expected = struct.pack("<4I", 0x1000, 0x1004, 0x1008, 0x100C) + struct.pack(
+        "<4I", 0x1010, 0x1014, 0x1018, 0x101C
+    )
+    with open(out_file, "rb") as f:
+        assert f.read() == expected
+
+
+def test_read_from_flash_hexdump_to_stdout(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """read-from-flash prints a hex dump when no output file is given."""
+
+    class FakeReadCmd:
+        """Fake ReadFromFlash returning a constant response."""
+
+        def __init__(self, dm: object) -> None:
+            pass
+
+        def run(self, params: list[int]) -> list[int]:
+            return [0x11111111, 0x22222222, 0x33333333, 0x44444444]
+
+    @contextlib.contextmanager
+    def fake_open_debugmbox(*args: object, **kwargs: object) -> Iterator[object]:
+        yield object()
+
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox._open_debugmbox", fake_open_debugmbox)
+    monkeypatch.setattr("spsdk.apps.nxpdebugmbox.dm_commands.ReadFromFlash", FakeReadCmd)
+
+    probe_params, mbox_params = _dbg_params()
+    read_from_flash(FamilyRevision("mcxa255"), probe_params, mbox_params, address=0, count=16)
+    captured = capsys.readouterr()
+    assert "11" in captured.out

@@ -4578,28 +4578,28 @@
                     "name": "SI_ERASE_TOKEN0",
                     "description": "This field is used to let the bootloader know that the SI is erased. It is programmed by the bootloader after the bootloader erases the SI. This token is device unique",
                     "offset_int": "0x00D0",
-                    "default_value_int": "0"
+                    "default_value_int": "0xFFFFFFFF"
                 },
                 {
                     "id": "field0D4",
                     "name": "SI_ERASE_TOKEN1",
                     "description": "SI erase token [32:63]",
                     "offset_int": "0x00D4",
-                    "default_value_int": "0"
+                    "default_value_int": "0xFFFFFFFF"
                 },
                 {
                     "id": "field0D8",
                     "name": "SI_ERASE_TOKEN2",
                     "description": "SI erase token [64: 95]",
                     "offset_int": "0x00D8",
-                    "default_value_int": "0"
+                    "default_value_int": "0xFFFFFFFF"
                 },
                 {
                     "id": "field0DC",
                     "name": "SI_ERASE_TOKEN3",
                     "description": "SI erase token [96:127]",
                     "offset_int": "0x00DC",
-                    "default_value_int": "0"
+                    "default_value_int": "0xFFFFFFFF"
                 },
                 {
                     "id": "field0E0",

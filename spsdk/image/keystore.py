@@ -62,7 +62,7 @@ class KeyStore:
         if key_store:
             if len(key_store) != self.KEY_STORE_SIZE:
                 raise SPSDKError(
-                    f"Invalid key-store size, expected is {str(self.KEY_STORE_SIZE)} bytes"
+                    f"Invalid key-store size, expected is {self.KEY_STORE_SIZE!s} bytes"
                 )
             if key_source != KeySourceType.KEYSTORE:
                 raise SPSDKError("KeyStore can be initialized only if key_source == KEYSTORE")
@@ -97,7 +97,7 @@ class KeyStore:
         """
         return (
             f"Device key source:    {self.key_source.label}\n"
-            f"Device key store len: {str(len(self.export()))}"
+            f"Device key store len: {len(self.export())!s}"
         )
 
     @staticmethod

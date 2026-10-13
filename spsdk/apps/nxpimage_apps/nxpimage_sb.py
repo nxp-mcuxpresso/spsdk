@@ -137,7 +137,7 @@ def sb21_export(
         )
         write_file(sb2.export(), output, mode="wb")
     except (SPSDKError, KeyError) as exc:
-        raise SPSDKAppError(f"The SB2.1 file generation failed: ({str(exc)}).") from exc
+        raise SPSDKAppError(f"The SB2.1 file generation failed: ({exc!s}).") from exc
     if sb2.cert_block:
         click.echo(f"RKTH: {sb2.cert_block.rkth.hex()}")
     click.echo(f"Success. (Secure binary 2.1: {get_printable_path(output)} created.)")
@@ -172,7 +172,7 @@ def sb21_parse(binary: str, key: str, output: str) -> None:
     try:
         parsed_sb = BootImageV21.parse(data=load_binary(binary), kek=sb_kek)
     except SPSDKError as exc:
-        raise SPSDKAppError(f"SB21 parse: Attempt to parse image failed: {str(exc)}") from exc
+        raise SPSDKAppError(f"SB21 parse: Attempt to parse image failed: {exc!s}") from exc
 
     if isinstance(parsed_sb.cert_block, CertBlockV1):
         for cert_idx, certificate in enumerate(parsed_sb.cert_block.certificates):
@@ -484,7 +484,7 @@ def sb31_parse(
         )
 
     except SPSDKError as exc:
-        raise SPSDKAppError(f"SB3.1 parse: Attempt to parse image failed: {str(exc)}") from exc
+        raise SPSDKAppError(f"SB3.1 parse: Attempt to parse image failed: {exc!s}") from exc
 
 
 @click.group(name="sb40", cls=CommandsTreeGroup)
@@ -601,7 +601,7 @@ def sb40_parse(
         logger.info(f"Parsed SB4.0 image memory map:\n{parsed_sb.image_info().draw()}")
 
     except SPSDKError as exc:
-        raise SPSDKAppError(f"SB4.0 parse: Attempt to parse image failed: {str(exc)}") from exc
+        raise SPSDKAppError(f"SB4.0 parse: Attempt to parse image failed: {exc!s}") from exc
 
 
 @sb40_group.command(name="verify", no_args_is_help=True)

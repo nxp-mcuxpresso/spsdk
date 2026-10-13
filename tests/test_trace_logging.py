@@ -200,6 +200,13 @@ def test_get_logger_with_full_module_name() -> None:
     assert isinstance(logger, SPSDKLogger)
 
 
+def test_get_logger_with_spsdk_prefixed_plugin_name() -> None:
+    """Test that SPSDK plugin names are placed under the SPSDK logger hierarchy."""
+    logger = get_logger("spsdk_jlink.probe")
+    assert logger.name == "spsdk.spsdk_jlink.probe"
+    assert isinstance(logger, SPSDKLogger)
+
+
 def test_logger_class_not_permanently_changed() -> None:
     """Test that get_logger doesn't permanently change the global logger class."""
     original_class = logging.getLoggerClass()
@@ -306,6 +313,7 @@ def test_configure_logging_with_trace_level() -> None:
 
 def test_configure_logging_preserves_other_loggers() -> None:
     """Test that configure_logging doesn't break other package loggers."""
+    spsdk_prefixed_external_logger = logging.getLogger("spsdk_jlink.probe")
     config = {
         "version": 1,
         "disable_existing_loggers": False,
@@ -326,6 +334,7 @@ def test_configure_logging_preserves_other_loggers() -> None:
     external_logger = logging.getLogger("external_package")
     assert isinstance(external_logger, logging.Logger)
     assert not isinstance(external_logger, SPSDKLogger)
+    assert not isinstance(spsdk_prefixed_external_logger, SPSDKLogger)
 
 
 def test_get_logger_after_configure_logging() -> None:

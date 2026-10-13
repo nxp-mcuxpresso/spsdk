@@ -28,7 +28,7 @@ from enum import Enum
 from math import ceil
 from pathlib import Path
 from struct import pack, unpack
-from typing import Any, TypeVar
+from typing import Any, ClassVar, TypeVar
 
 import yaml
 
@@ -97,7 +97,7 @@ class BinaryPattern:
     :cvar SPECIAL_PATTERNS: List of supported special pattern names.
     """
 
-    SPECIAL_PATTERNS = ["rand", "zeros", "ones", "inc"]
+    SPECIAL_PATTERNS: ClassVar[list[str]] = ["rand", "zeros", "ones", "inc"]
 
     def __init__(self, pattern: str) -> None:
         """Initialize binary pattern generator.
@@ -569,7 +569,7 @@ def get_bytes_cnt_of_int(value: int, align_to_2n: bool = True, byte_cnt: int | N
         cnt += 1
 
     if align_to_2n and cnt > 2:
-        cnt = int(ceil(cnt / 4)) * 4
+        cnt = ceil(cnt / 4) * 4
 
     if byte_cnt and cnt > byte_cnt:
         raise SPSDKValueError(
@@ -680,7 +680,7 @@ def load_hex_string(
     :raises SPSDKError: Invalid input data or size mismatch.
     :return: Data in bytes with the expected size.
     """
-    if not source:
+    if source is None or source in ("", b""):
         logger.warning(
             f"The key source is not specified, the random value is used in size of {expected_size} B."
         )
@@ -705,7 +705,8 @@ def load_hex_string(
                 raise SPSDKError(f"Invalid {name} size. Expected: {expected_size}, got: {len(key)}")
         except (SPSDKError, UnicodeDecodeError):
             key = load_binary(file_path)
-    except Exception:
+    except Exception as exc:  # noqa: BLE001
+        logger.debug(f"Key file loading failed, trying direct value parsing: {exc}")
         try:
             if not source.startswith(("0x", "0X")):
                 source = "0x" + source
@@ -781,7 +782,7 @@ class Timeout:
     :cvar UNITS: Supported time units and their conversion factors to microseconds.
     """
 
-    UNITS = {
+    UNITS: ClassVar[dict[str, int]] = {
         "s": 1000000,
         "ms": 1000,
         "us": 1,
@@ -884,7 +885,7 @@ class Timeout:
         return overflow
 
 
-def size_fmt(num: float | int, use_kibibyte: bool = True) -> str:
+def size_fmt(num: float, use_kibibyte: bool = True) -> str:
     """Format byte size into human-readable string representation.
 
     Converts a numeric byte value into a formatted string with appropriate
@@ -1042,10 +1043,7 @@ def check_range(x: int, start: int = 0, end: int = (1 << 32) - 1) -> bool:
     :param end: Upper border of range, default is unsigned 32-bit range.
     :return: True if fits, False otherwise.
     """
-    if start > x > end:
-        return False
-
-    return True
+    return not start > x > end
 
 
 def load_configuration(path: str, search_paths: list[str] | None = None) -> dict:
@@ -1070,17 +1068,18 @@ def load_configuration(path: str, search_paths: list[str] | None = None) -> dict
         cache_key = (resolved_path, mtime)
         if cache_key in _configuration_cache:
             return copy.deepcopy(_configuration_cache[cache_key])
-    except Exception:
+    except Exception as exc:  # noqa: BLE001
         # If path resolution or stat fails, fall through to normal load (raises below).
+        logger.debug(f"Configuration cache lookup failed, loading directly: {exc}")
         cache_key = None
 
     try:
         config = load_text(path, search_paths=search_paths)
     except SPSDKNotTextFileError as exc:
-        raise SPSDKNotTextFileError(f"Configuration file is not a text file: {str(exc)}") from exc
+        raise SPSDKNotTextFileError(f"Configuration file is not a text file: {exc!s}") from exc
 
     except Exception as exc:
-        raise SPSDKError(f"Can't load configuration file: {str(exc)}") from exc
+        raise SPSDKError(f"Can't load configuration file: {exc!s}") from exc
 
     config_data: dict | None = None
     json_error: Exception | None = None
@@ -1093,12 +1092,16 @@ def load_configuration(path: str, search_paths: list[str] | None = None) -> dict
             # SecretLoader inherits from SafeLoader, thus using yaml.load is OK
             config_data = yaml.load(config, Loader=SecretsLoader)  # nosec: yaml_load
         except UnicodeDecodeError as exc:
-            raise SPSDKError(f"Can't load configuration file: {str(exc)}") from exc
+            raise SPSDKError(f"Can't load configuration file: {exc!s}") from exc
         except yaml.YAMLError as yaml_exc:
             yaml_error = yaml_exc
 
     if not config_data:
         error_to_show = _determine_primary_parsing_error(config, json_error, yaml_error)
+        if json_error and yaml_error and "\x00" in config:
+            raise SPSDKNotTextFileError(
+                f"Configuration file is not a text file (binary content detected): {path}"
+            ) from error_to_show
         raise SPSDKParsingError(
             f"Can't parse configuration file: {path}: {error_to_show if error_to_show else 'Unknown error'}"
         ) from error_to_show
@@ -1162,7 +1165,7 @@ def get_hash(text: str | bytes) -> str:
     """
     if isinstance(text, str):
         text = text.encode("utf-8")
-    return hashlib.sha256(text).digest().hex()[:8]
+    return hashlib.sha256(text).hexdigest()[:8]
 
 
 def deep_update(d: dict, u: dict) -> dict:

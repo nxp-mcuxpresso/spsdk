@@ -17,6 +17,8 @@ import time
 from collections.abc import Callable, Sequence
 from types import TracebackType
 
+from typing_extensions import Self
+
 from spsdk import get_logger
 from spsdk.mboot.commands import (
     CmdPacket,
@@ -128,7 +130,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         self.available_commands_lst: list[CommandTag] = []
         self.max_packet_size: int | None = None
 
-    def __enter__(self) -> "McuBoot":
+    def __enter__(self) -> Self:
         """Enter the runtime context of the McuBoot object.
 
         This method is used as a context manager entry point that ensures the McuBoot
@@ -142,8 +144,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
     def __exit__(
         self,
-        exception_type: type[Exception] | None = None,
-        exception_value: Exception | None = None,
+        exception_type: type[BaseException] | None = None,
+        exception_value: BaseException | None = None,
         traceback: TracebackType | None = None,
     ) -> None:
         """Close the MCU boot interface context manager.
@@ -172,7 +174,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             logger.info("TX: Device not opened")
             raise McuBootConnectionError("Device not opened")
 
-        logger.trace(f"TX-PACKET: {str(cmd_packet)}")
+        logger.trace(f"TX-PACKET: {cmd_packet!s}")
 
         try:
             self._interface.write_command(cmd_packet)
@@ -183,7 +185,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             response = NoResponse(cmd_tag=cmd_packet.header.tag)
 
         assert isinstance(response, CmdResponse)
-        logger.trace(f"RX-PACKET: {str(response)}")
+        logger.trace(f"RX-PACKET: {response!s}")
         self._status_code = response.status
 
         if self._cmd_exception and self._status_code != StatusCode.SUCCESS:
@@ -235,7 +237,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
                     progress_callback(len(data), length)
 
             elif isinstance(response, GenericResponse):
-                logger.trace(f"RX-PACKET: {str(response)}")
+                logger.trace(f"RX-PACKET: {response!s}")
                 self._status_code = response.status
                 if response.cmd_tag == cmd_tag:
                     break
@@ -310,7 +312,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         if expect_response:
             assert isinstance(response, CmdResponse)
-            logger.trace(f"RX-PACKET: {str(response)}")
+            logger.trace(f"RX-PACKET: {response!s}")
             self._status_code = response.status
             if response.status != StatusCode.SUCCESS:
                 status_info = (
@@ -377,7 +379,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :raises SPSDKConnectionError: If the connection to the device fails.
         :raises SPSDKError: If the interface is not properly configured.
         """
-        logger.info(f"Connect: {str(self._interface)}")
+        logger.info(f"Connect: {self._interface!s}")
         self._interface.open()
 
     def close(self) -> None:
@@ -387,7 +389,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         This method should be called when communication with the device is no longer needed
         to properly release resources and terminate the connection.
         """
-        logger.info(f"Closing: {str(self._interface)}")
+        logger.info(f"Closing: {self._interface!s}")
         self._interface.close()
 
     def get_property_list(self) -> list[PropertyValueBase]:
@@ -818,7 +820,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         if cmd_response.status == StatusCode.SUCCESS:
             if isinstance(cmd_response, GetPropertyResponse):
                 return cmd_response.values
-            raise McuBootError(f"Received invalid get-property response: {str(cmd_response)}")
+            raise McuBootError(f"Received invalid get-property response: {cmd_response!s}")
         return None
 
     def set_property(self, prop_tag: PropertyTag | int, value: int) -> bool:
@@ -924,7 +926,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         cmd_packet = CmdPacket(CommandTag.CALL, CommandFlag.NONE.tag, address, argument)
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
-    def reset(self, timeout: int = 2000, reopen: bool = True) -> bool:
+    def reset(self, timeout: int = 2000, reopen: bool = True, params: int | None = None) -> bool:
         """Reset MCU and reconnect if enabled.
 
         The method sends a reset command to the MCU, closes the current connection,
@@ -932,11 +934,16 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         :param timeout: The maximal waiting time in milliseconds for reopen connection.
         :param reopen: True for reopen connection after HW reset else False.
+        :param params: Optional parameters (as integer) to pass with the reset command.
         :return: False in case of any problem; True otherwise.
         :raises McuBootConnectionError: Reset command failed or reopen failed.
         """
         logger.info("CMD: Reset MCU")
-        cmd_packet = CmdPacket(CommandTag.RESET, CommandFlag.NONE.tag)
+        if params is not None:
+            logger.info(f"Reset command parameters: 0x{params:08X}")
+            cmd_packet = CmdPacket(CommandTag.RESET, CommandFlag.NONE.tag, params)
+        else:
+            cmd_packet = CmdPacket(CommandTag.RESET, CommandFlag.NONE.tag)
         ret_val = False
         status = self._process_cmd(cmd_packet).status
         self.close()

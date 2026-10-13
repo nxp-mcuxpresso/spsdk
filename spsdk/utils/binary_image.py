@@ -11,14 +11,17 @@ color picking utilities and binary image processing capabilities for SPSDK
 applications.
 """
 
+import io
 import logging
 import math
 import os
 import re
+import struct
 import sys
 import textwrap
+import traceback
 from collections.abc import Generator
-from typing import Any
+from typing import Any, ClassVar
 
 import colorama
 from typing_extensions import Self
@@ -58,7 +61,7 @@ class ColorPicker:
     :cvar COLORS: List of available colorama foreground colors for selection.
     """
 
-    COLORS = [
+    COLORS: ClassVar[list[str]] = [
         colorama.Fore.LIGHTBLACK_EX,
         colorama.Fore.BLUE,
         colorama.Fore.GREEN,
@@ -159,7 +162,7 @@ class BinaryImage:
 
         if parent:
             assert isinstance(parent, BinaryImage)
-        self.sub_images: list["BinaryImage"] = []
+        self.sub_images: list[BinaryImage] = []
 
     @property
     def size(self) -> int:
@@ -373,9 +376,9 @@ class BinaryImage:
 
                     raise SPSDKOverlapError(
                         f"The image overlap error:\n"
-                        f"{str(image)}\n"
+                        f"{image!s}\n"
                         "overlaps the:\n"
-                        f"{str(sibling)}\n"
+                        f"{sibling!s}\n"
                     )
 
     def _get_size_line(self, size: int) -> str:
@@ -679,7 +682,7 @@ class BinaryImage:
 
         # Build a map of which sub-images cover which ranges
         # This helps us efficiently determine what data to use for each block
-        sub_image_map: list[tuple[int, int, "BinaryImage"]] = []
+        sub_image_map: list[tuple[int, int, BinaryImage]] = []
         for sub_image in self.sub_images:
             start = sub_image.offset
             end = start + len(sub_image)
@@ -801,6 +804,7 @@ class BinaryImage:
         self,
         path: str,
         file_format: str = "BIN",
+        source_elf_file: str | None = None,
     ) -> None:
         """Save binary data file.
 
@@ -809,12 +813,17 @@ class BinaryImage:
         if available.
 
         :param path: Path to the output file.
-        :param file_format: Format of saved file ('BIN', 'HEX', 'S19', 'SREC'), defaults to 'BIN'.
+        :param file_format: Format of saved file ('BIN', 'HEX', 'S19', 'SREC', 'ELF', 'ELF_PATCH'), defaults to 'BIN'.
+        :param source_elf_file: Source ELF to patch (ELF_PATCH mode only).
         :raises SPSDKValueError: The file format is invalid.
         """
         file_format = file_format.upper()
-        if file_format.upper() not in ("BIN", "HEX", "S19", "SREC", "SPARSE"):
+        if file_format.upper() not in ("BIN", "HEX", "S19", "SREC", "SPARSE", "ELF", "ELF_PATCH"):
             raise SPSDKValueError(f"Invalid input file format: {file_format}")
+
+        if file_format in ("ELF", "ELF_PATCH"):
+            self._save_elf(path, file_format=file_format, source_elf_file=source_elf_file)
+            return
 
         if file_format == "BIN":
             data = b""
@@ -1143,7 +1152,7 @@ class BinaryImage:
             with open(path, "rb") as f:
                 data = f.read(4096)  # Read more data for better detection
         except Exception as e:
-            raise SPSDKError(f"Error loading file: {str(e)}") from e
+            raise SPSDKError(f"Error loading file: {e!s}") from e
 
         # Check for SPARSE magic number
         if len(data) >= 4:
@@ -1168,8 +1177,9 @@ class BinaryImage:
 
                     if is_srec(text_data):
                         return "SREC"
-                except Exception:
-                    pass
+                except Exception as exc:  # noqa: BLE001
+                    logger.debug(f"SREC format detection failed: {exc}")
+                    logger.debug(traceback.format_exc())
 
             # Check for Intel HEX format (starts with ':')
             if first_line and first_line[0] == ":":
@@ -1179,8 +1189,9 @@ class BinaryImage:
 
                     if is_ihex(text_data):
                         return "HEX"
-                except Exception:
-                    pass
+                except Exception as exc:  # noqa: BLE001
+                    logger.debug(f"Intel HEX format detection failed: {exc}")
+                    logger.debug(traceback.format_exc())
 
         except (UnicodeDecodeError, AttributeError):
             # Not a text format, fall through to binary
@@ -1237,6 +1248,85 @@ class BinaryImage:
         return bin_image
 
     @staticmethod
+    def _supplement_elf_with_ptload(bin_file: Any, path: str) -> None:
+        """Add PT_LOAD data that lies past the last byte already loaded by bincopy sections.
+
+        bincopy.add_elf_file() loads PROGBITS sections and may miss PT_LOAD segments
+        that have no corresponding sections (e.g. new segments appended by ELF_PATCH).
+        This method finds PT_LOAD segments where both virtual and physical addresses are
+        identical (true flash-mapped segments, not RAM init segments with separate LMA)
+        and whose physical address lies beyond the current max bincopy address.
+
+        RAM init segments (e.g. GCC .data: vaddr=0x1fff0000, paddr=0x2eb4) are skipped
+        because their flash content is already included in the bincopy output at the LMA,
+        and their vaddr would incorrectly extend the image into the RAM address space.
+
+        :param bin_file: Already-populated bincopy.BinFile (from add_elf_file).
+        :param path: Path to the ELF file on disk.
+        """
+        from elftools.elf.elffile import ELFFile  # pylint: disable=import-outside-toplevel
+
+        max_addr = max(
+            (seg.minimum_address + len(seg.data) for seg in bin_file.segments), default=0
+        )
+        if max_addr == 0:
+            return
+        with open(path, "rb") as f:
+            raw = f.read()
+        elf = ELFFile(io.BytesIO(raw))
+        for segment in elf.iter_segments():
+            if segment["p_type"] != "PT_LOAD" or segment["p_filesz"] == 0:
+                continue
+            seg_vaddr = segment["p_vaddr"]
+            seg_paddr = segment["p_paddr"]
+            seg_data = segment.data()
+            # Only add true flash segments (vaddr == paddr, i.e. no separate RAM/LMA split)
+            # whose physical start address lies beyond what bincopy already loaded.
+            # This handles ELF_PATCH extra PT_LOAD entries appended beyond existing sections,
+            # while correctly skipping GCC-style RAM init segments (vaddr != paddr).
+            if seg_vaddr == seg_paddr and seg_paddr >= max_addr:
+                bin_file.add_binary(seg_data, seg_paddr)
+
+    @staticmethod
+    def _load_elf_with_pyelftools(path: str) -> Any:
+        """Load an ELF file using pyelftools, reading PT_LOAD segments directly.
+
+        Unlike bincopy (which requires sections), this method works for any valid ELF
+        including section-less ELF files generated by SPSDK's minimal ELF writer.
+
+        :param path: Path to the ELF file.
+        :return: Loaded bincopy.BinFile object with segments populated from PT_LOAD entries.
+        :raises SPSDKError: If the file cannot be loaded or parsed as ELF.
+        """
+        import bincopy  # pylint: disable=import-outside-toplevel
+        from elftools.elf.elffile import ELFFile  # pylint: disable=import-outside-toplevel
+
+        bin_file = bincopy.BinFile()
+        try:
+            with open(path, "rb") as f:
+                raw = f.read()
+
+            elf = ELFFile(__import__("io").BytesIO(raw))
+            bin_file.execution_start_address = elf.header["e_entry"]
+
+            for segment in elf.iter_segments():
+                if segment["p_type"] != "PT_LOAD":
+                    continue
+                offset = segment["p_offset"]
+                size = segment["p_filesz"]
+                vaddr = segment["p_vaddr"]
+                if size == 0:
+                    continue
+                data = raw[offset : offset + size]
+                bin_file.add_binary(data, vaddr, overwrite=True)
+
+            logger.debug(f"Loading file as ELF (pyelftools PT_LOAD): {path}")
+        except Exception as e:
+            raise SPSDKError(f"Error loading ELF file: {e!s}") from e
+
+        return bin_file
+
+    @staticmethod
     def _load_bincopy_format(path: str, format_type: str) -> Any:
         """Load a file using bincopy library.
 
@@ -1250,7 +1340,28 @@ class BinaryImage:
         bin_file = bincopy.BinFile()
         try:
             if format_type == "ELF":
-                bin_file.add_elf_file(path)
+                # Load by sections (bincopy), with pyelftools as fallback for section-less ELFs.
+                # After section-based loading, supplement with any PT_LOAD segments that extend
+                # beyond the last loaded byte — this handles ELF_PATCH output which may add new
+                # PT_LOAD segments at addresses past the last section (no corresponding sections).
+                try:
+                    bin_file.add_elf_file(path)
+                    if len(bin_file) > 0:
+                        from elftools.elf.elffile import (  # pylint: disable=import-outside-toplevel
+                            ELFFile,
+                        )
+
+                        with open(path, "rb") as _f:
+                            elf_for_entry = ELFFile(_f)
+                            bin_file.execution_start_address = elf_for_entry.header["e_entry"]
+                        BinaryImage._supplement_elf_with_ptload(bin_file, path)
+                    else:
+                        raise ValueError("bincopy returned no data (section-less ELF)")
+                except Exception:  # noqa: BLE001
+                    logger.debug(
+                        "bincopy ELF load failed, falling back to pyelftools PT_LOAD reader"
+                    )
+                    bin_file = BinaryImage._load_elf_with_pyelftools(path)
                 logger.debug(f"Loading file as ELF: {path}")
             elif format_type == "SREC":
                 bin_file.add_srec_file(path)
@@ -1264,7 +1375,7 @@ class BinaryImage:
             else:
                 raise SPSDKError(f"Unsupported format type: {format_type}")
         except Exception as e:
-            raise SPSDKError(f"Error loading file: {str(e)}") from e
+            raise SPSDKError(f"Error loading file: {e!s}") from e
 
         return bin_file
 
@@ -1440,3 +1551,424 @@ class BinaryImage:
         info_lines.append(self.draw(no_color=no_color))
 
         return "\n".join(info_lines)
+
+    def _collect_segments(self) -> list:
+        """Collect all leaf binary segments from this image and its sub-images.
+
+        :return: List of (address, data) tuples ordered by address.
+        """
+        segments: list = []
+        if self.sub_images:
+            for sub in self.sub_images:
+                segments.extend(sub._collect_segments())
+        elif self.binary:
+            segments.append((self.absolute_address, bytes(self.binary)))
+        return sorted(segments, key=lambda s: s[0])
+
+    def _save_elf(
+        self, path: str, file_format: str = "ELF", source_elf_file: str | None = None
+    ) -> None:
+        """Save image as ELF file.
+
+        :param path: Output path.
+        :param file_format: ``'ELF'`` for minimal ELF, ``'ELF_PATCH'`` to patch source ELF.
+        :param source_elf_file: Source ELF to patch when file_format is ``'ELF_PATCH'``.
+        """
+        logger.warning(
+            f"The {file_format} output format is experimental. "
+            "Always verify the produced ELF (e.g. segment addresses and a flash/debug test) "
+            "before relying on it."
+        )
+        if file_format == "ELF_PATCH":
+            if not source_elf_file:
+                logger.warning(
+                    "ELF_PATCH requested but no source_elf_file provided. "
+                    "Falling back to plain ELF output."
+                )
+                self._save_elf_minimal(path)
+                return
+            if not self._is_elf_file(source_elf_file):
+                logger.warning(
+                    f"ELF_PATCH: source_elf_file {source_elf_file} is not a valid ELF."
+                    " Falling back to plain ELF output."
+                )
+                self._save_elf_minimal(path)
+                return
+            logger.info(f"ELF_PATCH: Using {source_elf_file} as source ELF for patching.")
+            self._save_elf_patch(path, source_elf_file)
+        else:
+            self._save_elf_minimal(path)
+
+    @staticmethod
+    def _is_elf_file(path: str) -> bool:
+        """Return True if the file at path starts with the ELF magic bytes.
+
+        :param path: Path to check.
+        :return: True if file looks like an ELF.
+        """
+        try:
+            with open(path, "rb") as f:
+                return f.read(4) == b"\x7fELF"
+        except OSError:
+            return False
+
+    def _save_elf_minimal(self, path: str) -> None:
+        """Write a minimal, section-less ELF (flash-ready, no debug info).
+
+        Detects 32-bit vs 64-bit from entry-point address width.
+
+        :param path: Destination file path.
+        """
+        segments = self._collect_segments()
+        entry = self.execution_start_address or 0
+        bits64 = entry > 0xFFFF_FFFF or any(addr > 0xFFFF_FFFF for addr, _ in segments)
+        if bits64:
+            self._write_elf64(path, segments, entry)
+        else:
+            self._write_elf32(path, segments, entry)
+        logger.debug(f"Saved minimal ELF: {path}")
+
+    def _write_elf32(self, path: str, segments: list, entry: int) -> None:
+        """Write a 32-bit ELF file.
+
+        :param path: Output path.
+        :param segments: List of (address, data) tuples.
+        :param entry: Entry point address.
+        """
+        e_machine = 0x28  # EM_ARM
+        e_flags = 0x5000400  # EF_ARM_EABI_VER5
+        phdr_size = 32
+        e_ehsize = 52
+        n_segments = len(segments)
+
+        segment_offsets = []
+        file_offset = e_ehsize + n_segments * phdr_size
+        for _, data in segments:
+            segment_offsets.append(file_offset)
+            file_offset += len(data)
+
+        elf_header = struct.pack(
+            "<4sBBBBBxxxxxxxHHIIIIIHHHHHH",  # cspell:ignore Bxxxxxxx
+            b"\x7fELF",
+            1,  # EI_CLASS = ELFCLASS32
+            1,  # EI_DATA = ELFDATA2LSB
+            1,  # EI_VERSION = EV_CURRENT
+            0,  # EI_OSABI = ELFOSABI_NONE
+            0,  # EI_ABIVERSION
+            2,  # e_type = ET_EXEC
+            e_machine,
+            1,  # e_version
+            entry,  # e_entry
+            e_ehsize,  # e_phoff
+            0,  # e_shoff (no sections)
+            e_flags,
+            e_ehsize,  # e_ehsize
+            phdr_size,  # e_phentsize
+            n_segments,  # e_phnum
+            0,  # e_shentsize
+            0,  # e_shnum
+            0,  # e_shstrndx
+        )
+
+        program_headers = b""
+        for i, (vaddr, data) in enumerate(segments):
+            program_headers += struct.pack(
+                "<IIIIIIII",
+                1,  # p_type = PT_LOAD
+                segment_offsets[i],  # p_offset
+                vaddr,  # p_vaddr
+                vaddr,  # p_paddr
+                len(data),  # p_filesz
+                len(data),  # p_memsz
+                7,  # p_flags = PF_R | PF_W | PF_X
+                4,  # p_align
+            )
+
+        with open(path, "wb") as f:
+            f.write(elf_header)
+            f.write(program_headers)
+            for _, data in segments:
+                f.write(data)
+
+    def _write_elf64(self, path: str, segments: list, entry: int) -> None:
+        """Write a 64-bit ELF file.
+
+        :param path: Output path.
+        :param segments: List of (address, data) tuples.
+        :param entry: Entry point address.
+        """
+        e_machine = 0xB7  # EM_AARCH64
+        e_flags = 0
+        phdr_size = 56
+        e_ehsize = 64
+        n_segments = len(segments)
+
+        segment_offsets = []
+        file_offset = e_ehsize + n_segments * phdr_size
+        for _, data in segments:
+            segment_offsets.append(file_offset)
+            file_offset += len(data)
+
+        elf_header = struct.pack(
+            "<4sBBBBBxxxxxxxHHIQQQIHHHHHH",  # cspell:ignore Bxxxxxxx
+            b"\x7fELF",
+            2,  # EI_CLASS = ELFCLASS64
+            1,  # EI_DATA = ELFDATA2LSB
+            1,  # EI_VERSION
+            0,  # EI_OSABI
+            0,  # EI_ABIVERSION
+            2,  # e_type = ET_EXEC
+            e_machine,
+            1,  # e_version
+            entry,  # e_entry (64-bit Q)
+            e_ehsize,  # e_phoff (64-bit Q)
+            0,  # e_shoff (64-bit Q)
+            e_flags,
+            e_ehsize,  # e_ehsize
+            phdr_size,  # e_phentsize
+            n_segments,  # e_phnum
+            0,  # e_shentsize
+            0,  # e_shnum
+            0,  # e_shstrndx
+        )
+
+        program_headers = b""
+        for i, (vaddr, data) in enumerate(segments):
+            program_headers += struct.pack(
+                "<IIQQQQQQ",
+                1,  # p_type = PT_LOAD
+                7,  # p_flags = PF_R | PF_W | PF_X
+                segment_offsets[i],  # p_offset (Q)
+                vaddr,  # p_vaddr (Q)
+                vaddr,  # p_paddr (Q)
+                len(data),  # p_filesz (Q)
+                len(data),  # p_memsz (Q)
+                8,  # p_align (Q)
+            )
+
+        with open(path, "wb") as f:
+            f.write(elf_header)
+            f.write(program_headers)
+            for _, data in segments:
+                f.write(data)
+
+    @staticmethod
+    def _subtract_intervals(
+        start: int, end: int, covered: list[tuple[int, int]]
+    ) -> list[tuple[int, int]]:
+        """Return the sub-intervals of [start, end) not covered by any interval in *covered*.
+
+        :param start: Start of the range to check.
+        :param end: End (exclusive) of the range to check.
+        :param covered: List of (start, end) pairs that are already covered.
+        :return: List of (start, end) pairs representing uncovered sub-ranges.
+        """
+        uncovered = [(start, end)]
+        for cov_start, cov_end in covered:
+            remaining = []
+            for seg_start, seg_end in uncovered:
+                if cov_end <= seg_start or cov_start >= seg_end:
+                    remaining.append((seg_start, seg_end))
+                else:
+                    if seg_start < cov_start:
+                        remaining.append((seg_start, cov_start))
+                    if cov_end < seg_end:
+                        remaining.append((cov_end, seg_end))
+            uncovered = remaining
+        return uncovered
+
+    def _save_elf_patch(self, path: str, source_elf_file: str) -> None:
+        """Patch source ELF file with current binary data, preserving DWARF/debug info.
+
+        Uses raw ELF byte manipulation (via pyelftools) to avoid any ELF restructuring:
+        - Patches bytes in-place within existing PT_LOAD segments.
+        - Appends compact new PT_LOAD entries to the PHDR table for any data outside
+          the original segments (e.g. CRC or IVT extensions).
+        - All DWARF/symbol sections are preserved untouched.
+
+        :param path: Destination path for the patched ELF.
+        :param source_elf_file: Path to the original ELF from compiler/IDE.
+        :raises SPSDKError: If the source file cannot be parsed as ELF.
+        """
+        try:
+            from elftools.elf.elffile import ELFFile  # pylint: disable=import-outside-toplevel
+        except ImportError as exc:
+            raise SPSDKError(
+                "ELF patch output requires optional dependency 'pyelftools'. "
+                "Install SPSDK with extra dependencies: uv pip install -e '.[all]'"
+            ) from exc
+
+        with open(source_elf_file, "rb") as f:
+            raw = bytearray(f.read())
+
+        try:
+            elf = ELFFile(io.BytesIO(bytes(raw)))
+        except Exception as exc:
+            raise SPSDKError(f"Cannot parse ELF: {source_elf_file}: {exc}") from exc
+
+        is_32bit = elf.elfclass == 32
+        endian = "<" if elf.little_endian else ">"
+
+        # Collect existing PT_LOAD segments
+        existing_loads = [
+            {
+                "vaddr": seg["p_vaddr"],
+                "filesz": seg["p_filesz"],
+                "offset": seg["p_offset"],
+            }
+            for seg in elf.iter_segments()
+            if seg["p_type"] == "PT_LOAD" and seg["p_filesz"] > 0
+        ]
+
+        # Rebase the (0-based) image segments onto the source ELF's load base, patch the
+        # overlapping regions in place, then append whatever remains as new PT_LOAD entries.
+        mbi_segments = self._rebase_segments(self._collect_segments(), existing_loads)
+        all_covered = self._patch_overlapping_regions(raw, mbi_segments, existing_loads)
+        new_segs = self._collect_uncovered_segments(mbi_segments, all_covered)
+        if new_segs:
+            self._append_new_load_segments(raw, elf, new_segs, is_32bit, endian)
+
+        with open(path, "wb") as f:
+            f.write(raw)
+        logger.debug(f"Saved ELF_PATCH: {path} (patched from {source_elf_file})")
+
+    @staticmethod
+    def _rebase_segments(
+        segments: list[tuple[int, bytes]], existing_loads: list[dict[str, int]]
+    ) -> list[tuple[int, bytes]]:
+        """Lift a 0-based image up onto the source ELF's lowest load address.
+
+        Some images are collected relative to the image base (starting at address 0) while the
+        source ELF links at the device flash base (e.g. 0x0200_0000). Only when the image sits
+        *below* the source's lowest PT_LOAD is it shifted up so the two align; this prevents a
+        bogus PT_LOAD at address 0 (which would span two address spaces and be un-flashable).
+        Images that already carry absolute addresses (at or above the source base) are left
+        untouched, so a sub-region placed above the ELF base is never shifted down. See
+        SPSDK-5724.
+
+        :param segments: Collected (address, data) image segments.
+        :param existing_loads: Source ELF PT_LOAD descriptors.
+        :return: Rebased (address, data) segments.
+        """
+        if not segments or not existing_loads:
+            return segments
+        rebase = min(seg["vaddr"] for seg in existing_loads) - min(addr for addr, _ in segments)
+        # Only lift a 0-based image up to the flash base; never shift an already-absolute
+        # image down (that would corrupt sub-regions placed above the source ELF base).
+        if rebase <= 0:
+            return segments
+        return [(addr + rebase, data) for addr, data in segments]
+
+    @staticmethod
+    def _patch_overlapping_regions(
+        raw: bytearray,
+        segments: list[tuple[int, bytes]],
+        existing_loads: list[dict[str, int]],
+    ) -> list[tuple[int, int]]:
+        """Patch image data in place within overlapping source PT_LOAD segments.
+
+        :param raw: Mutable ELF byte buffer being patched.
+        :param segments: Rebased (address, data) image segments.
+        :param existing_loads: Source ELF PT_LOAD descriptors.
+        :return: List of covered (start, end) virtual-address intervals.
+        """
+        covered: list[tuple[int, int]] = []
+        for addr, data in segments:
+            end = addr + len(data)
+            for seg in existing_loads:
+                seg_va = seg["vaddr"]
+                ovl_start = max(addr, seg_va)
+                ovl_end = min(end, seg_va + seg["filesz"])
+                if ovl_start < ovl_end:
+                    file_off = seg["offset"] + (ovl_start - seg_va)
+                    chunk = data[ovl_start - addr : ovl_end - addr]
+                    raw[file_off : file_off + len(chunk)] = chunk
+                    covered.append((ovl_start, ovl_end))
+        return covered
+
+    def _collect_uncovered_segments(
+        self, segments: list[tuple[int, bytes]], covered: list[tuple[int, int]]
+    ) -> list[tuple[int, bytes]]:
+        """Collect image data ranges not covered by any existing PT_LOAD segment.
+
+        :param segments: Rebased (address, data) image segments.
+        :param covered: Covered (start, end) virtual-address intervals.
+        :return: List of (address, data) segments to append as new PT_LOAD entries.
+        """
+        new_segs: list[tuple[int, bytes]] = []
+        for addr, data in segments:
+            end = addr + len(data)
+            for unc_start, unc_end in self._subtract_intervals(addr, end, covered):
+                new_segs.append((unc_start, bytes(data[unc_start - addr : unc_end - addr])))
+        return new_segs
+
+    @staticmethod
+    def _build_phdr_entry(
+        is_32bit: bool, endian: str, file_offset: int, vaddr: int, size: int, align_seg: int
+    ) -> bytes:
+        """Build a compact PT_LOAD program-header entry.
+
+        :param is_32bit: True for Elf32_Phdr, False for Elf64_Phdr.
+        :param endian: Struct endianness prefix ('<' or '>').
+        :param file_offset: Offset of the segment data within the file.
+        :param vaddr: Virtual (and physical) address of the segment.
+        :param size: Segment size in bytes (file and memory).
+        :param align_seg: Segment alignment.
+        :return: Packed program-header entry bytes.
+        """
+        if is_32bit:
+            # Elf32_Phdr: p_type p_offset p_vaddr p_paddr p_filesz p_memsz p_flags p_align
+            return struct.pack(
+                endian + "IIIIIIII", 1, file_offset, vaddr, vaddr, size, size, 7, align_seg
+            )
+        # Elf64_Phdr: p_type p_flags p_offset p_vaddr p_paddr p_filesz p_memsz p_align
+        return struct.pack(
+            endian + "IIQQQQQQ", 1, 7, file_offset, vaddr, vaddr, size, size, align_seg
+        )
+
+    def _append_new_load_segments(
+        self,
+        raw: bytearray,
+        elf: Any,
+        new_segs: list[tuple[int, bytes]],
+        is_32bit: bool,
+        endian: str,
+    ) -> None:
+        """Append new PT_LOAD segments and relocate the PHDR table to the file end.
+
+        :param raw: Mutable ELF byte buffer being extended.
+        :param elf: Parsed source ELFFile providing the original header values.
+        :param new_segs: (address, data) segments to append.
+        :param is_32bit: True for a 32-bit ELF.
+        :param endian: Struct endianness prefix ('<' or '>').
+        """
+        align_seg = 4
+        new_phdr_entries: list[bytes] = []
+        for vaddr, data in new_segs:
+            pad = (align_seg - len(raw) % align_seg) % align_seg
+            raw += bytes(pad)
+            file_offset = len(raw)
+            raw += data
+            new_phdr_entries.append(
+                self._build_phdr_entry(is_32bit, endian, file_offset, vaddr, len(data), align_seg)
+            )
+
+        # Relocate the PHDR table to end of file with the new entries appended.
+        e_phoff: int = elf.header["e_phoff"]
+        e_phnum: int = elf.header["e_phnum"]
+        e_phentsize: int = elf.header["e_phentsize"]
+        existing_phdr = bytes(raw[e_phoff : e_phoff + e_phnum * e_phentsize])
+        raw += bytes((4 - len(raw) % 4) % 4)  # align before PHDR table
+        new_phoff = len(raw)
+        raw += existing_phdr
+        for entry in new_phdr_entries:
+            raw += entry
+
+        # Update ELF header: e_phoff and e_phnum.
+        new_phnum = e_phnum + len(new_segs)
+        if is_32bit:
+            struct.pack_into(endian + "I", raw, 28, new_phoff)  # e_phoff at byte 28
+            struct.pack_into(endian + "H", raw, 44, new_phnum)  # e_phnum at byte 44
+        else:
+            struct.pack_into(endian + "Q", raw, 32, new_phoff)  # e_phoff at byte 32
+            struct.pack_into(endian + "H", raw, 56, new_phnum)  # e_phnum at byte 56

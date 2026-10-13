@@ -296,7 +296,7 @@ class DevHsmSB31(DevHsm):
         self.timestamp = sb3_header.timestamp
         sb3_header_exported = sb3_header.export()
         logger.debug(
-            f" 5.1: The template SB3 header: \n{str(sb3_header)} \n Length:{len(sb3_header_exported)}"
+            f" 5.1: The template SB3 header: \n{sb3_header!s} \n Length:{len(sb3_header_exported)}"
         )
 
         # 5.2: Create SB3 file un-encrypted data part
@@ -347,7 +347,7 @@ class DevHsmSB31(DevHsm):
             self.info_print(" 5.4: CUST_MK_SK/SBKEK not provided. Key provisioning is skipped.")
             logger.warning(" 5.4 CUST_MK_SK/SBKEK not provided. Key provisioning is skipped.")
 
-        logger.debug(f" 5.5: Created un-encrypted SB3 data: \n{str(sb3_data)}")
+        logger.debug(f" 5.5: Created un-encrypted SB3 data: \n{sb3_data!s}")
         # 5.4: Get SB3 file data part individual chunks
         data_cmd_blocks = sb3_data.get_cmd_blocks_to_export()
 
@@ -367,7 +367,7 @@ class DevHsmSB31(DevHsm):
         cb_header.cert_block_size = (
             cb_header.SIZE + 68 + self.DEVBUFF_GEN_MASTER_ENC_SHARE_OUTPUT_SIZE
         )
-        logger.debug(f" 6.2: The dummy certificate block has been created:\n{str(cb_header)}.")
+        logger.debug(f" 6.2: The dummy certificate block has been created:\n{cb_header!s}.")
 
         # 6.3: Update the SB3 pre-prepared header by current data
         self.info_print(" 6.3: Updating SB3 header by valid values.")
@@ -375,7 +375,7 @@ class DevHsmSB31(DevHsm):
         sb3_header.image_total_length += (
             len(sb3_data.final_hash) + cb_header.cert_block_size + self.DEVBUFF_SB_SIGNATURE_SIZE
         )
-        logger.debug(f" 6.3: The SB3 header has been updated by valid values:\n{str(sb3_header)}.")
+        logger.debug(f" 6.3: The SB3 header has been updated by valid values:\n{sb3_header!s}.")
 
         # 6.4: Compose manifest that will be signed
         self.info_print(" 6.4: Preparing SB3 manifest to sign.")

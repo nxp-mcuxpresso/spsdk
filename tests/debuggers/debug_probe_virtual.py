@@ -73,21 +73,21 @@ class DebugProbeVirtual(DebugProbeCoreSightOnly):
         self.coresight_dp_substituted: dict[Any, Any] = {}
 
         if options is not None:
-            if "exc" in options.keys():
+            if "exc" in options:
                 raise SPSDKDebugProbeError("Forced exception from constructor.")
-            if "subs_ap" in options.keys():
+            if "subs_ap" in options:
                 self.set_coresight_ap_substitute_data(
                     self._load_subs_from_param(options["subs_ap"])
                 )
-            if "subs_dp" in options.keys():
+            if "subs_dp" in options:
                 self.set_coresight_dp_substitute_data(
                     self._load_subs_from_param(options["subs_dp"])
                 )
-            if "subs_mem" in options.keys():
+            if "subs_mem" in options:
                 self.set_virtual_memory_substitute_data(
                     self._load_subs_from_param(options["subs_mem"])
                 )
-            if "mem_read_exp" in options.keys():
+            if "mem_read_exp" in options:
                 self.mem_read_cause_exception(int(options["mem_read_exp"]))
 
         # setup IDR register of standard AP:
@@ -177,7 +177,7 @@ class DebugProbeVirtual(DebugProbeCoreSightOnly):
         """
         probes = DebugProbes()
 
-        if options is not None and "exc" in options.keys():
+        if options is not None and "exc" in options:
             raise SPSDKDebugProbeError("Forced exception from discovery function.")
 
         # Find this 'probe' just in case of direct request (user must know the hardware id :-) )
@@ -240,15 +240,14 @@ class DebugProbeVirtual(DebugProbeCoreSightOnly):
         :return: Value found at the specified address, or 0 if address not found.
         :raises SPSDKDebugProbeError: When substituted value is "Exception" string.
         """
-        if subs_values and addr in subs_values.keys():
-            if len(subs_values[addr]) > 0:
-                svalue = subs_values[addr].pop()
-                if isinstance(svalue, int):
-                    return svalue
-                if isinstance(svalue, str) and svalue == "Exception":
-                    raise SPSDKDebugProbeError("Simulated Debug probe exception")
+        if subs_values and addr in subs_values and len(subs_values[addr]) > 0:
+            svalue = subs_values[addr].pop()
+            if isinstance(svalue, int):
+                return svalue
+            if isinstance(svalue, str) and svalue == "Exception":
+                raise SPSDKDebugProbeError("Simulated Debug probe exception")
 
-        return int(values[addr]) if addr in values.keys() else 0
+        return int(values[addr]) if addr in values else 0
 
     def mem_reg_read(self, addr: int = 0, space: MemorySpace = MemorySpace.DATA) -> int:
         """Read 32-bit register in memory space of MCU.
@@ -403,8 +402,8 @@ class DebugProbeVirtual(DebugProbeCoreSightOnly):
                                and values are lists of substitute data bytes to be returned
                                during virtual memory reads.
         """
-        for key in substitute_data.keys():
-            substitute_data[key].reverse()
+        for data in substitute_data.values():
+            data.reverse()
         self.virtual_memory_substituted = substitute_data
 
     def set_coresight_dp_substitute_data(self, substitute_data: dict) -> None:
@@ -416,8 +415,8 @@ class DebugProbeVirtual(DebugProbeCoreSightOnly):
         :param substitute_data: Dictionary containing lists of substitute data values
                                that will be used during virtual memory operations.
         """
-        for key in substitute_data.keys():
-            substitute_data[key].reverse()
+        for data in substitute_data.values():
+            data.reverse()
         self.coresight_dp_substituted = substitute_data
 
     def set_coresight_ap_substitute_data(self, substitute_data: dict) -> None:
@@ -430,8 +429,8 @@ class DebugProbeVirtual(DebugProbeCoreSightOnly):
                                for coresight Access Port operations. The lists will be
                                reversed in-place to match expected consumption order.
         """
-        for key in substitute_data.keys():
-            substitute_data[key].reverse()
+        for data in substitute_data.values():
+            data.reverse()
 
         self.coresight_ap_substituted = substitute_data
 
@@ -477,11 +476,11 @@ class DebugProbeVirtual(DebugProbeCoreSightOnly):
         try:
             subs_data_raw = json.loads(arg)
             subs_data = {}
-            for key in subs_data_raw.keys():
+            for key in subs_data_raw:
                 subs_data[int(key)] = subs_data_raw[key]
             return subs_data
         except (TypeError, JSONDecodeError) as exc:
-            raise SPSDKDebugProbeError(f"Cannot parse substituted values: ({str(exc)})") from exc
+            raise SPSDKDebugProbeError(f"Cannot parse substituted values: ({exc!s})") from exc
 
     def debug_halt(self) -> None:
         """Halt the CPU execution.

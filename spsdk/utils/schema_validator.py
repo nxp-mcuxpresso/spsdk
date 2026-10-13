@@ -78,7 +78,7 @@ def _cleanup_orphaned_validators(cache_dir: str) -> None:
 
     :param cache_dir: Path to the ``schema_validators`` cache directory.
     """
-    global _orphan_cleanup_done  # noqa: PLW0603  # pylint: disable=global-statement
+    global _orphan_cleanup_done  # pylint: disable=global-statement
     if _orphan_cleanup_done:
         return
     _orphan_cleanup_done = True
@@ -262,7 +262,7 @@ def _load_disk_validator(schema_hash: str, formats: dict[str, Callable]) -> Call
         if validate_fn is None:  # pragma: no cover
             return None
         return functools.partial(validate_fn, custom_formats=formats)
-    except Exception:  # pragma: no cover
+    except Exception:  # pragma: no cover  # noqa: BLE001
         try:
             os.remove(cache_path)
         except OSError:
@@ -310,7 +310,7 @@ def _save_disk_validator(
                 with os.fdopen(fd, "wb") as fh:
                     fh.write(sig + bytecode)
                 os.replace(tmp_path, cache_path)
-            except Exception:  # pragma: no cover
+            except Exception:  # pragma: no cover  # noqa: BLE001
                 try:
                     os.remove(tmp_path)
                 except OSError:
@@ -353,7 +353,7 @@ def _compute_check_config_keys(
         ).hexdigest()
         validation_key = f"{validator_key}:{config_hash}"
         return validator_key, validation_key
-    except Exception:  # pragma: no cover
+    except Exception:  # pragma: no cover  # noqa: BLE001
         return None, None
 
 
@@ -463,18 +463,18 @@ class SPSDKMerger(Merger):
     :cvar PROVIDED_TYPE_STRATEGIES: Mapping of data types to their available merge strategies.
     """
 
-    PROVIDED_TYPE_STRATEGIES = {
+    PROVIDED_TYPE_STRATEGIES: dict[type, Any] = {  # noqa: RUF012
         list: SPSDKListStrategies,
         dict: DictStrategies,
         set: SetStrategies,
     }
 
-    def __init__(  # pylint: disable=dangerous-default-value
+    def __init__(
         self,
-        type_strategies: list = [(list, ["set"]), (dict, ["merge"]), (set, ["union"])],
-        fallback_strategies: list = ["override"],
-        type_conflict_strategies: list = ["override"],
-    ):
+        type_strategies: list | None = None,
+        fallback_strategies: list | None = None,
+        type_conflict_strategies: list | None = None,
+    ) -> None:
         """Initialize SPSDK Merger with configurable merge strategies.
 
         The merger provides flexible data merging capabilities with customizable strategies
@@ -487,6 +487,9 @@ class SPSDKMerger(Merger):
         :param type_conflict_strategies: List of strategies for resolving type conflicts
             during merge operations.
         """
+        type_strategies = type_strategies or [(list, ["set"]), (dict, ["merge"]), (set, ["union"])]
+        fallback_strategies = fallback_strategies or ["override"]
+        type_conflict_strategies = type_conflict_strategies or ["override"]
         super().__init__(type_strategies, fallback_strategies, type_conflict_strategies)
 
 
@@ -654,7 +657,7 @@ def _print_validation_fail_reason(
 
     message = str(exc)
     if exc.rule == "required":
-        missing = filter(lambda x: x not in exc.value.keys(), exc.rule_definition)
+        missing = filter(lambda x: x not in exc.value, exc.rule_definition)
         message += f"; Missing field(s): {', '.join(missing)}"
     elif exc.rule == "format":
         if exc.rule_definition == "file":
@@ -906,7 +909,7 @@ def check_config(
     try:
         validator = _get_validator(validator_key, schema, formats)
     except (TypeError, fastjsonschema.JsonSchemaDefinitionException) as exc:
-        raise SPSDKError(f"Invalid validation schema to check config: {str(exc)}") from exc
+        raise SPSDKError(f"Invalid validation schema to check config: {exc!s}") from exc
 
     try:
         validator(config_to_check)
@@ -1196,8 +1199,16 @@ class CommentedConfig:
         val_i: dict = block["items"]
 
         cfg_s = CSeq()
-        if custom_value is not None:
-            for cust_val in custom_value:
+        values = custom_value
+        if values is None and "template_value" in block:
+            template_value = block["template_value"]
+            if isinstance(template_value, list):
+                values = template_value
+            else:
+                values = [template_value]
+
+        if values is not None:
+            for cust_val in values:
                 value = self._get_schema_value(val_i, cust_val)
                 if isinstance(value, (CSeq, list)):
                     cfg_s.extend(value)
@@ -1246,7 +1257,7 @@ class CommentedConfig:
                 properties = one_of.get("properties")
                 if not properties:
                     raise SPSDKError("Properties must be defined")
-                if all([key in properties for key in cust_val.keys()]):
+                if all(key in properties for key in cust_val):
                     return True
 
             if isinstance(cust_val, str) and check_type(one_of, "string"):
@@ -1323,7 +1334,7 @@ class CommentedConfig:
             assert isinstance(value, CMap)
             cmap_update(ret, value)
 
-            key = list(value.keys())[0]
+            key = next(iter(value.keys()))
             comment = ""
             if i == 0:
                 comment = self._get_title_block(title, f"Options [{option_types}]") + "\n"
@@ -1361,7 +1372,7 @@ class CommentedConfig:
             :raises SPSDKError: When neither custom_value nor template_value is defined in block.
             :return: The custom value if available, otherwise the template value from block.
             """
-            if not (custom_value or "template_value" in block.keys()):
+            if not (custom_value or "template_value" in block):
                 raise SPSDKError("Custom value or template_value must be defined")
             return (
                 custom_value
@@ -1399,7 +1410,7 @@ class CommentedConfig:
         cfg: CMap | CSeq,
         schema: dict[str, Any],
         key: str | int,
-        value: CMap | CSeq | str | int | float | list | None,
+        value: CMap | CSeq | str | float | list | None,
         required: str,
     ) -> None:
         """Add comment block to configuration based on JSON schema.
@@ -1577,7 +1588,7 @@ class CommentedConfig:
 
                 first_key = None
                 for info_key in info["properties"]:
-                    if info_key in cfg.keys():
+                    if info_key in cfg:
                         first_key = info_key
                         break
 
@@ -1591,7 +1602,7 @@ class CommentedConfig:
 
         except Exception as exc:
             self.creating_configuration = False
-            raise SPSDKError(f"Template generation failed: {str(exc)}") from exc
+            raise SPSDKError(f"Template generation failed: {exc!s}") from exc
 
     def get_template(self) -> str:
         """Export configuration template directly into YAML string format.

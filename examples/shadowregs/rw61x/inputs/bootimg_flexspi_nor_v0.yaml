@@ -25,8 +25,11 @@ revision: latest
 # ------------------------------------------===== Memory type [Required] =====------------------------------------------
 # Description: Specify type of memory used by bootable image description.
 memory_type: flexspi_nor
+# ---------------------------------------===== Output file name [Optional] =====----------------------------------------
+# Description: Bootable image output file name
+output: ../workspace/bootable_image_v0.bin
 # ======================================================================================================================
-#                                           == Bootable Segments definition ==                                          
+#                                           == Bootable Segments definition ==
 # ======================================================================================================================
 # ----------------------------------------===== FCB block path [Optional] =====-----------------------------------------
 # Description: Flash Configuration block Image path. It could be used as pre-prepared binary form of FCB and also YAML

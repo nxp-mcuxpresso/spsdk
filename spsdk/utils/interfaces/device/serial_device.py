@@ -239,6 +239,6 @@ class SerialDevice(DeviceBase):
         except SPSDKPermissionError as e:
             logger.warning(f"{type(e).__name__}: {e}")
             return None
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except  # noqa: BLE001
             logger.info(f"{type(e).__name__}: {e}")
             return None

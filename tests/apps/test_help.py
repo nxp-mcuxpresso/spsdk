@@ -25,6 +25,8 @@ from spsdk.apps.utils.common_cli_options import CommandsTreeGroup
 from spsdk.utils.misc import load_text
 from tests.cli_runner import CliRunner
 
+logger = logging.getLogger(__name__)
+
 try:
     # ruff: noqa: F401
     import ftd2xx  # pylint: disable=unused-import
@@ -81,7 +83,7 @@ def test_spsdk_apps_subcommands_help_without_help_option(cli_runner: CliRunner) 
     for name, command in spsdk_apps.main.commands.items():
         if name in ["utils", "get-families"]:
             continue
-        logging.debug(f"running help for {name}")
+        logger.debug(f"running help for {name}")
         run_help(cli_runner, command, help_option=False)
 
 
@@ -110,7 +112,7 @@ def test_spsdk_apps_subcommands_help_with_help_option(cli_runner: CliRunner, cap
             cmd_args = [name, "--help"]
             with patch.object(sys, "argv", cmd_args):
                 result = cli_runner.invoke(group, cmd_args)
-            assert "Show this message and exit." in str(result.output), f"{str(group)} : {cmd}"
+            assert "Show this message and exit." in str(result.output), f"{group!s} : {cmd}"
             if isinstance(cmd, CommandsTreeGroup):
                 # test main "dk6prog" app, but skip subcommands is DK6 extras are not installed
                 if cmd.name == "dk6prog" and not DK6_SUPPORT_INSTALLED:
@@ -135,7 +137,7 @@ def test_apps_spec() -> None:
     commands.pop("utils")  # remove utils group commands
     if "get-families" in commands:
         commands.pop("get-families")  # remove general get-families
-    spsdk_apps_list = [name.replace("-", "_") for name in commands.keys()]
+    spsdk_apps_list = [name.replace("-", "_") for name in commands]
 
     root_path = os.path.join(SPSDK_DATA_FOLDER, "..", "..")
     apps_spec_path = os.path.join(root_path, "apps.spec")
@@ -148,10 +150,11 @@ def test_apps_spec() -> None:
             # el2go host is different
             continue
         # Check apps collection
-        assert f"exe_{app_name},"
-        assert f"a_{app_name}.datas,"  # cspell:disable-line
-        assert f"a_{app_name}.binaries,"
-        assert f"a_{app_name}.zipfiles,"
+        assert f"exe_{app_name}," in apps_spec_content
+        if f"a_{app_name}.datas," in apps_spec_content:  # cspell:disable-line
+            assert f"a_{app_name}.datas," in apps_spec_content  # cspell:disable-line
+            assert f"a_{app_name}.binaries," in apps_spec_content
+            assert f"a_{app_name}.zipfiles," in apps_spec_content
         # Check merge step
         assert f'(a_{app_name}, "{app_name}", "{app_name}")' in apps_spec_content
         # Check analyze step

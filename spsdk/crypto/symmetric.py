@@ -387,4 +387,4 @@ def aes_gcm_decrypt(
     try:
         return aesgcm.decrypt(init_vector, encrypted_data, associated_data)
     except Exception as e:
-        raise SPSDKError(f"AES-GCM decryption failed: {str(e)}") from e
+        raise SPSDKError(f"AES-GCM decryption failed: {e!s}") from e

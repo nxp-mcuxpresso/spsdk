@@ -89,11 +89,13 @@ class Certificate(BaseClass):
         :param pss_padding: Use RSA-PSS padding instead of PKCS1v15, RSA keys only.
         :return: Generated X.509 certificate instance.
         """
-        before = datetime.now(timezone.utc) if duration else datetime(2000, 1, 1)
+        before = (
+            datetime.now(timezone.utc) if duration else datetime(2000, 1, 1, tzinfo=timezone.utc)
+        )
         after = (
             datetime.now(timezone.utc) + timedelta(days=duration)
             if duration
-            else datetime(9999, 12, 31)
+            else datetime(9999, 12, 31, tzinfo=timezone.utc)
         )
         crt = x509.CertificateBuilder(
             subject_name=subject,
@@ -308,9 +310,9 @@ class Certificate(BaseClass):
         """
         # TODO Remove this workaround once cryptography > 42.0.0 is supported
         not_valid_before = (
-            getattr(self.cert, "not_valid_before_utc")
+            self.cert.not_valid_before_utc
             if hasattr(self.cert, "not_valid_before_utc")
-            else getattr(self.cert, "not_valid_before")
+            else self.cert.not_valid_before
         )
         assert isinstance(not_valid_before, datetime)
         return not_valid_before
@@ -326,9 +328,9 @@ class Certificate(BaseClass):
         """
         # TODO Remove this workaround once cryptography > 42.0.0 is supported
         not_valid_after = (
-            getattr(self.cert, "not_valid_after_utc")
+            self.cert.not_valid_after_utc
             if hasattr(self.cert, "not_valid_after_utc")
-            else getattr(self.cert, "not_valid_after")
+            else self.cert.not_valid_after
         )
         assert isinstance(not_valid_after, datetime)
         return not_valid_after
@@ -485,7 +487,7 @@ class Certificate(BaseClass):
             )  # type: ignore
             return Certificate(cert)  # type: ignore
         except ValueError as exc:
-            raise SPSDKError(f"Cannot load certificate: ({str(exc)})") from exc
+            raise SPSDKError(f"Cannot load certificate: ({exc!s})") from exc
 
 
 def validate_certificate_chain(chain_list: list[Certificate]) -> list[bool]:

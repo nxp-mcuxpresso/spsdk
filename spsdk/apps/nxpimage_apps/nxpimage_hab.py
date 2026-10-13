@@ -20,10 +20,11 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_family_option,
     spsdk_output_option,
 )
-from spsdk.apps.utils.utils import SPSDKAppError, print_files
+from spsdk.apps.utils.utils import SPSDKAppError, print_files, print_verifier_to_console
 from spsdk.exceptions import SPSDKError
 from spsdk.image.hab.hab_image import HabImage
 from spsdk.sbfile.sb2 import sly_bd_parser as bd_parser
+from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import get_printable_path, load_binary, load_text, write_file
@@ -57,8 +58,16 @@ def hab_export_command(
     output: str,
 ) -> None:
     """Generate HAB container from configuration."""
-    image = hab_export(config)
-    write_file(image, output, mode="wb")
+    image_bytes = hab_export(config)
+    output_format = config.get_str("output_format", default="bin").upper()
+    if output_format in ("ELF", "ELF_PATCH"):
+        source_elf = (
+            config.get_input_file_name("inputImageFile") if output_format == "ELF_PATCH" else None
+        )
+        bin_image = BinaryImage(name="hab", binary=image_bytes)
+        bin_image.save_binary_image(output, file_format=output_format, source_elf_file=source_elf)
+    else:
+        write_file(image_bytes, output, mode="wb")
     click.echo(f"Success. (HAB container: {get_printable_path(output)} created.)")
 
 
@@ -118,7 +127,7 @@ def hab_convert(command: str, external: list[str]) -> str:
         return ret
 
     except SPSDKError as exc:
-        raise SPSDKAppError(f"The conversion failed: ({str(exc)}).") from exc
+        raise SPSDKAppError(f"The conversion failed: ({exc!s}).") from exc
 
 
 @hab_group.command(name="parse", no_args_is_help=True)
@@ -166,3 +175,33 @@ def hab_parse(binary: bytes, family: FamilyRevision, output: str) -> list[str]:
         generated_files.append(segment_path)
 
     return generated_files
+
+
+@hab_group.command(name="verify", no_args_is_help=True)
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, readable=True, resolve_path=True),
+    required=True,
+    help="Path to binary HAB image to verify.",
+)
+@spsdk_family_option(families=HabImage.get_supported_families())
+@click.option(
+    "-p",
+    "--problems",
+    is_flag=True,
+    default=False,
+    help="Show just problems in image.",
+)
+def hab_verify_command(binary: str, family: FamilyRevision, problems: bool) -> None:
+    """Verify HAB container."""
+    hab_verify(load_binary(binary), family, problems)
+
+
+def hab_verify(binary: bytes, family: FamilyRevision, problems: bool) -> None:
+    """Verify HAB container."""
+    hab_image = HabImage.parse(binary, family)
+    ver = hab_image.verify()
+    print_verifier_to_console(ver, problems=problems)
+    if ver.has_errors:
+        raise SPSDKAppError("Verify failed")

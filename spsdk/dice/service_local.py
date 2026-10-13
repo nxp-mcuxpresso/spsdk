@@ -16,7 +16,7 @@ import logging
 import secrets
 import sqlite3
 from collections.abc import Iterator
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 
 from spsdk.crypto.keys import PublicKeyEcc
 from spsdk.dice.exceptions import SPSDKDICEError, SPSDKDICEVerificationError
@@ -208,7 +208,7 @@ class LocalDICEVerificationService(DICEVerificationService):
         :return: Challenge as bytes converted from hexadecimal string.
         """
         logger.info("Generating DICE challenge")
-        timestamp = datetime.now()
+        timestamp = datetime.now(timezone.utc)
         challenge = pre_set or secrets.token_hex(32)
         for _ in range(10):
             try:
@@ -409,7 +409,7 @@ class LocalDICEVerificationService(DICEVerificationService):
         if reset_challenge:
             self.get_challenge(pre_set=response.challenge.hex())
 
-        timestamp = datetime.now()
+        timestamp = datetime.now(timezone.utc)
         with sqlite_cursor(self.db_file) as cursor:
             cursor.execute(
                 "SELECT * FROM attestation_records WHERE challenge = ?",

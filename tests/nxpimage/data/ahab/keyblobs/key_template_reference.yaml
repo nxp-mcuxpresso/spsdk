@@ -15,16 +15,16 @@ family: mimxrt2660
 # Possible options: <a0, latest>
 revision: latest
 # ----------------------------------------===== Lifecycle State [Required] =====----------------------------------------
-# Description: Device lifecycle state for blob generation:
+# Description: Device lifecycle state for blob generation using ELE-aligned labels:
 # - fab: Fabrication state
-# - prov: Provisioning state
+# - nxp_prov: NXP Provisioned state
 # - nxp_fr: NXP Field Return state
 # - oem_open: OEM Open state
 # - oem_fr: OEM Field Return state
 # - oem_swc: OEM Software Closed state
-# - oem_locked: OEM Locked state
-# - oem_closed: OEM Closed state
-# Possible options: <fab, prov, nxp_fr, oem_open, oem_fr, oem_swc, oem_locked, oem_closed>
+# - oem_clsd: OEM Closed state
+# - oem_lckd: OEM Locked state
+# Possible options: <fab, nxp_prov, nxp_fr, oem_open, oem_fr, oem_swc, oem_clsd, oem_lckd>
 lifecycle: oem_open
 # -----------------------------------------===== Debug Enable [Required] =====------------------------------------------
 # Description: Enable or disable debug functionality for the blob.

@@ -97,6 +97,43 @@ def test_probe_options_are_not_mutated() -> None:
     assert options == {"family": "lpc55s69", "revision": "latest", "test_address": 0x20000000}
 
 
+def test_probe_protocol_options() -> None:
+    """Test generic debug probe protocol option handling."""
+    probe = DummyCoreSightProbe("dummy")
+    assert probe.protocol == DP.DebugProbeProtocol.SWD
+    assert probe.get_debug_probe_protocol() == DP.DebugProbeProtocol.SWD
+
+    probe = DummyCoreSightProbe("dummy", {"protocol": "swd"})
+    assert probe.protocol == DP.DebugProbeProtocol.SWD
+    assert probe.get_debug_probe_protocol() == DP.DebugProbeProtocol.SWD
+
+    probe = DummyCoreSightProbe("dummy", {"use_jtag": "1"})
+    assert probe.protocol == DP.DebugProbeProtocol.JTAG
+
+    with pytest.raises(DP.SPSDKDebugProbeError, match="does not support JTAG"):
+        probe.get_debug_probe_protocol()
+
+
+def test_probe_protocol_invalid_option() -> None:
+    """Test invalid debug probe protocol option handling."""
+    with pytest.raises(DP.SPSDKDebugProbeError, match="Unsupported debug probe protocol"):
+        DummyCoreSightProbe("dummy", {"protocol": "invalid"})
+
+
+def test_clear_sticky_errors_uses_selected_jtag_protocol(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test JTAG sticky-error clear uses the selected protocol option."""
+    monkeypatch.setattr(
+        DummyCoreSightProbe,
+        "SUPPORTED_PROTOCOLS",
+        (DP.DebugProbeProtocol.SWD, DP.DebugProbeProtocol.JTAG),
+    )
+    probe = DummyCoreSightProbe("dummy", {"protocol": "jtag"})
+
+    probe.clear_sticky_errors()
+
+    assert (False, 4, 0x50000F20) in probe.writes
+
+
 def test_mcxe31b_mem_ap_settings_are_database_driven() -> None:
     """Test MCXE31B enables explicit MEM-AP behavior flags from database."""
     probe = DummyCoreSightProbe("dummy", {"family": "mcxe31b"})
@@ -133,6 +170,15 @@ def test_mcxn947_mem_ap_settings_keep_standard_behavior() -> None:
     assert probe.enable_sda_debug_paths_after_connect is False
     assert probe.preserve_csw_ro_bits is False
     assert probe.mem_ap_scan_write_before_read is False
+
+
+def test_debug_probe_only_family_does_not_require_dat() -> None:
+    """Test debug_probe-only families do not require DAT configuration."""
+    probe = DummyCoreSightProbe("dummy", {"family": "mimxrt1166"})
+
+    assert probe.family is not None
+    assert probe.mem_ap_ix == 0
+    assert probe.dbgmlbx_ap_ix == -1
 
 
 @pytest.mark.parametrize("family", ["lpc55s36", "lpc55s69"])
@@ -187,3 +233,41 @@ def test_get_mem_ap_restores_dhcsr_with_debug_key() -> None:
         probe.DHCSR_DEBUGKEY | probe.DHCSR_C_HALT | probe.DHCSR_C_DEBUGEN,
     ) in probe.mem_writes
     assert (0, probe.DHCSR_REG, probe.DHCSR_DEBUGKEY | 0x5678) in probe.mem_writes
+
+
+class DummyDebugMailboxApProbe(DummyCoreSightProbe):
+    """Dummy probe for testing debug mailbox AP validation."""
+
+    def __init__(self, idr: int) -> None:
+        """Initialize dummy debug mailbox AP probe."""
+        super().__init__("dummy")
+        self.dbgmlbx_ap_ix = 2
+        self.idr = idr
+        self.idr_reads = 0
+
+    def coresight_reg_read(self, access_port: bool = True, addr: int = 0) -> int:
+        """Return configured IDR on debug mailbox AP."""
+        ap2_idr_addr = self.get_coresight_ap_address(access_port=2, address=self.AP_IDR_REG)
+        if access_port and addr == ap2_idr_addr:
+            self.idr_reads += 1
+            return self.idr
+        return super().coresight_reg_read(access_port=access_port, addr=addr)
+
+
+def test_dbgmlbx_ap_fixed_index_is_validated_once() -> None:
+    """Test fixed debug mailbox AP index is validated once before use."""
+    probe = DummyDebugMailboxApProbe(idr=0x002A0000)
+
+    probe.dbgmlbx_reg_read(0)
+    probe.dbgmlbx_reg_read(0)
+
+    assert probe.dbgmlbx_ap_validated is True
+    assert probe.idr_reads == 1
+
+
+def test_dbgmlbx_ap_fixed_index_invalid_idr_raises() -> None:
+    """Test fixed debug mailbox AP index rejects unexpected IDR."""
+    probe = DummyDebugMailboxApProbe(idr=0xDEADBEEF)
+
+    with pytest.raises(SPSDKError, match="doesn't match the expected value"):
+        probe.dbgmlbx_reg_read(0)

@@ -337,6 +337,37 @@ def test_nxpimage_hab_parse(
             )
 
 
+@pytest.mark.parametrize(
+    "configuration, family",
+    [
+        ("rt1170_RAM_unsigned", FamilyRevision("mimxrt1176")),
+        ("rt1050_ext_xip_unsigned", FamilyRevision("mimxrt1050")),
+    ],
+)
+def test_nxpimage_hab_verify(
+    cli_runner: CliRunner,
+    hab_data_dir: str,
+    configuration: str,
+    family: FamilyRevision,
+) -> None:
+    """Test HAB verify CLI command on unsigned HAB containers.
+
+    :param cli_runner: Click CLI test runner for invoking commands.
+    :param hab_data_dir: Base directory containing HAB test data.
+    :param configuration: Configuration name identifying the test case.
+    :param family: Target MCU family and revision for HAB processing.
+    """
+    source_bin_path = os.path.join(hab_data_dir, "parse", configuration, "hab_container.bin")
+    cmd = ["hab", "verify", "--family", family.name, "--binary", source_bin_path]
+    result = cli_runner.invoke(nxpimage.main, cmd)
+    assert "High Assurance Boot(Succeeded)" in result.output
+    assert "Overall  result: Succeeded" in result.output
+
+    # verify with the --problems flag shows only warnings/errors (none expected here)
+    result = cli_runner.invoke(nxpimage.main, cmd + ["--problems"])
+    assert "Overall  result: Succeeded" in result.output
+
+
 def test_nxpimage_hab_export_secret_key_generated(
     cli_runner: CliRunner, tmpdir: Any, hab_data_dir: str
 ) -> None:
@@ -402,3 +433,111 @@ def test_nxpimage_hab_template_cli(cli_runner: CliRunner, tmpdir: Any) -> None:
     ]
     cli_runner.invoke(nxpimage.main, cmd)
     assert os.path.isfile(template)
+
+
+ELF_MAGIC = b"\x7fELF"
+
+
+def test_nxpimage_hab_export_elf(cli_runner: CliRunner, tmpdir: Any, hab_data_dir: str) -> None:
+    """Test HAB export produces a valid ELF file when output_format is 'elf'.
+
+    Copies an existing unsigned config to a temp dir, injects ``output_format: elf``,
+    and verifies that the resulting output starts with the ELF magic bytes.
+
+    :param cli_runner: CLI test runner.
+    :param tmpdir: Temporary directory for output.
+    :param hab_data_dir: Path to HAB test data directory.
+    """
+    src_dir = os.path.join(hab_data_dir, "export", "rt1160_xip_mdk_unsigned")
+    work_dir = os.path.join(str(tmpdir), "hab_elf")
+    shutil.copytree(src_dir, work_dir)
+
+    config_path = os.path.join(work_dir, "config.yaml")
+    with open(config_path, "a", encoding="utf-8") as f:
+        f.write("\noutput_format: elf\n")
+
+    out_file = os.path.join(str(tmpdir), "output.elf")
+    with use_working_directory(work_dir):
+        cli_runner.invoke(
+            nxpimage.main,
+            ["hab", "export", "--config", config_path, "--output", out_file, "--force"],
+        )
+    assert os.path.isfile(out_file)
+    with open(out_file, "rb") as f:
+        assert f.read(4) == ELF_MAGIC
+
+
+def test_nxpimage_hab_export_elf_patch_with_elf_input(
+    cli_runner: CliRunner, tmpdir: Any, hab_data_dir: str
+) -> None:
+    """Test HAB ELF_PATCH with an actual ELF as inputImageFile (non-fallback path).
+
+    Replaces the SREC inputImageFile in the rt1160 unsigned config with keil.elf
+    and exports with output_format: elf_patch.  Because keil.elf is a valid ELF,
+    the exporter must take the real ELF_PATCH code path (not the minimal-ELF
+    fallback), so the output must be at least as large as keil.elf itself.
+
+    :param cli_runner: CLI test runner.
+    :param tmpdir: Temporary directory for output.
+    :param hab_data_dir: Path to HAB test data directory.
+    """
+    keil_elf = os.path.join(os.path.dirname(hab_data_dir), "utils", "binary", "convert", "keil.elf")
+    src_dir = os.path.join(hab_data_dir, "export", "rt1160_xip_mdk_unsigned")
+    work_dir = os.path.join(str(tmpdir), "hab_elf_patch_elf_input")
+    shutil.copytree(src_dir, work_dir)
+
+    config_path = os.path.join(work_dir, "config.yaml")
+    with open(config_path, encoding="utf-8") as f:
+        content = f.read()
+    # Replace SREC input with keil.elf so ELF_PATCH takes the real patch code path
+    content = content.replace(
+        "evkbimxrt1160_iled_blinky_cm7_xip_mdk_unsigned.srec",
+        keil_elf.replace("\\", "/"),
+    )
+    content += "\noutput_format: elf_patch\n"
+    with open(config_path, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    out_file = os.path.join(str(tmpdir), "output_elf_patch.elf")
+    with use_working_directory(work_dir):
+        cli_runner.invoke(
+            nxpimage.main,
+            ["hab", "export", "--config", config_path, "--output", out_file, "--force"],
+        )
+
+    assert os.path.isfile(out_file)
+    with open(out_file, "rb") as f:
+        assert f.read(4) == ELF_MAGIC
+    # Real patch preserves the source ELF and appends container data → output ≥ source size
+    assert os.path.getsize(out_file) >= os.path.getsize(keil_elf)
+
+
+def test_nxpimage_hab_export_elf_patch_fallback_non_elf_input(
+    cli_runner: CliRunner, tmpdir: Any, hab_data_dir: str
+) -> None:
+    """Test HAB ELF_PATCH falls back to plain ELF when inputImageFile is not an ELF.
+
+    Uses a config whose inputImageFile is an SREC. The exporter should warn and
+    produce a plain section-less ELF.
+
+    :param cli_runner: CLI test runner.
+    :param tmpdir: Temporary directory for output.
+    :param hab_data_dir: Path to HAB test data directory.
+    """
+    src_dir = os.path.join(hab_data_dir, "export", "rt1160_xip_mdk_unsigned")
+    work_dir = os.path.join(str(tmpdir), "hab_elf_patch_fallback")
+    shutil.copytree(src_dir, work_dir)
+
+    config_path = os.path.join(work_dir, "config.yaml")
+    with open(config_path, "a", encoding="utf-8") as f:
+        f.write("\noutput_format: elf_patch\n")
+
+    out_file = os.path.join(str(tmpdir), "output_patch.elf")
+    with use_working_directory(work_dir):
+        cli_runner.invoke(
+            nxpimage.main,
+            ["hab", "export", "--config", config_path, "--output", out_file, "--force"],
+        )
+    assert os.path.isfile(out_file)
+    with open(out_file, "rb") as f:
+        assert f.read(4) == ELF_MAGIC

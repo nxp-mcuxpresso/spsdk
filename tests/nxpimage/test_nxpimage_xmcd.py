@@ -239,10 +239,7 @@ def test_nxpimage_supported_mem_types() -> None:
     are supported and validates the specific memory types returned.
     """
     mem_types = XMCD.get_supported_memory_types()
-    assert len(mem_types) == 3
-    mem_types[0] == MemoryType.FLEXSPI_RAM
-    mem_types[0] == MemoryType.SEMC_SDRAM
-    mem_types[0] == MemoryType.XSPI_RAM
+    assert mem_types == [MemoryType.FLEXSPI_RAM, MemoryType.SEMC_SDRAM, MemoryType.XSPI_RAM]
 
 
 def test_nxpimage_xmcd_validate(

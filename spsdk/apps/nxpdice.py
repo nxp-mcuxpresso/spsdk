@@ -472,7 +472,7 @@ def display_response(response: APIResponse) -> None:
 
 def display_had_diff(response: APIResponse, family: FamilyRevision) -> None:
     """Display detailed breakdown of HAD differences."""
-    if not response.status == "HAD_DIFF":
+    if response.status != "HAD_DIFF":
         return
     if not response.expected_had or not response.actual_had:
         raise SPSDKAppError("HAD data is missing in the response")
@@ -718,7 +718,7 @@ def verify_csr(
     if export_alias_keys and alias_keys:
         for i, key in enumerate(alias_keys):
             export_path = f"{export_alias_keys}_{i}.pem"
-            click.echo(f"Exporting DICE Alias key #{i} ({repr(key)}) to {export_path}")
+            click.echo(f"Exporting DICE Alias key #{i} ({key!r}) to {export_path}")
             key.save(export_path)
 
 

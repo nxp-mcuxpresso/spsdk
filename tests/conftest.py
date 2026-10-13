@@ -23,10 +23,12 @@ from tests.cli_runner import CliRunner
 
 # Disable RSA key blinding to speed up unit tests in cryptography 37+
 # https://github.com/pyca/cryptography/issues/7236
-setattr(backend, "_rsa_skip_check_key", True)
+backend._rsa_skip_check_key = True  # type: ignore[attr-defined]
 
 os.environ["SPSDK_ENV_CACHE_DISABLED"] = "False"
 os.environ["SPSDK_DEBUG_LOGGING_DISABLED"] = "True"
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
@@ -51,9 +53,9 @@ def data_dir(request: Any) -> str:
     :param request: Pytest request fixture containing test execution context.
     :return: Absolute path to the test data directory.
     """
-    logging.debug(f"data_dir for module: {request.fspath}")
+    logger.debug(f"data_dir for module: {request.fspath}")
     data_path = os.path.join(os.path.dirname(request.fspath), "data")
-    logging.debug(f"data_dir: {data_path}")
+    logger.debug(f"data_dir: {data_path}")
     return data_path
 
 

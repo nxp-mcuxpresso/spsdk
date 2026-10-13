@@ -13,6 +13,7 @@ CSF segment operations including command management, serialization, and authenti
 """
 
 import os.path
+from datetime import datetime, timezone
 
 import pytest
 
@@ -180,3 +181,72 @@ def test_SegCSF_invalid_append_command() -> None:
     obj = SegCSF(enabled=True)
     with pytest.raises(SPSDKError, match="Invalid command"):
         obj.append_command(cmd=6)  # type: ignore
+
+
+def test_SegCSF_disabled_size_space_export() -> None:
+    """A disabled CSF segment reports zero size/space and exports empty bytes."""
+    obj = SegCSF(enabled=False)
+    obj.append_command(
+        CmdCheckData(ops=CheckDataOpsEnum.ALL_CLEAR, address=0x307900C4, mask=0x00000001)
+    )
+    assert obj.size == 0
+    assert obj.space == 0
+    assert obj.export() == b""
+
+
+def test_SegCSF_enabled_size_space_with_cmd_data(ref_fast_auth_csf: SegCSF) -> None:
+    """An enabled CSF segment with command data computes size and padded space."""
+    assert ref_fast_auth_csf.size > 0
+    ref_fast_auth_csf.padding_len = 0x10
+    assert ref_fast_auth_csf.space == ref_fast_auth_csf.size + 0x10
+
+
+def test_SegCSF_macs_iterator(ref_fast_auth_csf: SegCSF) -> None:
+    """The macs property returns an iterator over MAC command data sections."""
+    from spsdk.image.hab.hab_mac import MAC
+
+    assert all(isinstance(m, MAC) for m in ref_fast_auth_csf.macs)
+
+
+def test_SegCSF_setitem_invalid() -> None:
+    """Assigning an invalid command via __setitem__ raises SPSDKError."""
+    obj = SegCSF()
+    obj.append_command(
+        CmdCheckData(ops=CheckDataOpsEnum.ALL_CLEAR, address=0x307900C4, mask=0x00000001)
+    )
+    with pytest.raises(SPSDKError, match="Invalid command"):
+        obj[0] = 6  # type: ignore
+
+
+def test_SegCSF_parse_cmd_data_invalid_cmd() -> None:
+    """_parse_cmd_data raises when the command does not need a data reference."""
+    obj = SegCSF()
+    cmd = CmdWriteData(ops=WriteDataOpsEnum.WRITE_VALUE, data=[(0x30340004, 0x4F400005)])
+    assert not cmd.needs_cmd_data_reference
+    with pytest.raises(SPSDKError, match="Invalid cmd"):
+        obj._parse_cmd_data(cmd, b"\x00" * 16)
+
+
+def test_SegCSF_update_signatures_disabled() -> None:
+    """update_signatures returns immediately when no_signature_updates is set."""
+    obj = SegCSF(enabled=True)
+    obj.no_signature_updates = True
+    # Should not raise even with empty data.
+    obj.update_signatures(zulu=datetime.now(timezone.utc), data=b"", base_data_addr=0)
+
+
+def test_SegCSF_str_with_cmd_data(ref_fast_auth_csf: SegCSF) -> None:
+    """__str__ includes the command-data section when cmd_data is present."""
+    text = str(ref_fast_auth_csf)
+    assert "[CMD-DATA]" in text
+    assert "OFFSET" in text
+
+
+def test_SegCSF_parse_cmd_data_duplicate_offset(ref_fast_auth_csf: SegCSF) -> None:
+    """_parse_cmd_data raises when the target offset is already populated."""
+    auth_cmd = ref_fast_auth_csf[4]
+    assert isinstance(auth_cmd, CmdAuthData)
+    obj = SegCSF()
+    obj._cmd_data[auth_cmd.cmd_data_offset] = auth_cmd.cmd_data_reference  # type: ignore[assignment]
+    with pytest.raises(SPSDKError, match="Invalid cmd's data"):
+        obj._parse_cmd_data(auth_cmd, b"\x00" * (auth_cmd.cmd_data_offset + 16))

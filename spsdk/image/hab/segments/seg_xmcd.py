@@ -21,6 +21,8 @@ from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_binary
 
+UNKNOWN_FAMILY = FamilyRevision("unknown")
+
 
 class HabSegmentXMCD(HabSegmentBase):
     """HAB Segment implementation for External Memory Configuration Data (XMCD).
@@ -97,7 +99,7 @@ class HabSegmentXMCD(HabSegmentBase):
         return ret_cfg
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse XMCD segment block from image binary.
 
         The method parses binary data to create an XMCD HAB segment instance, verifies and

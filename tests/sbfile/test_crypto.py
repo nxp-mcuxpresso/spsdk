@@ -178,7 +178,7 @@ def test_rsa_sign(data_dir: str) -> None:
         b";O\xa2eT\xcf\xdffd0?\xbd\xf6\xe2\xb6m\x0b\xe34V5Z\xca\x831\xae\x7f\x94C\x0e<?fI\xf1\xedS\xe8K\xd9"
         b"\xd0S\xf0\xf6\xf5e\xb6\xb1Z\x85\x1e!"
     )
-    data = bytes([v % 256 for v in range(0, 512)])
+    data = bytes([v % 256 for v in range(512)])
     # specify key using SPSDK_Key class
     calc_signature = private_key.sign(data)
     assert len(calc_signature) == 256
@@ -206,7 +206,7 @@ def test_rsa_verify(data_dir: str) -> None:
         b";O\xa2eT\xcf\xdffd0?\xbd\xf6\xe2\xb6m\x0b\xe34V5Z\xca\x831\xae\x7f\x94C\x0e<?fI\xf1\xedS\xe8K\xd9"
         b"\xd0S\xf0\xf6\xf5e\xb6\xb1Z\x85\x1e!"
     )
-    data = bytes([v % 256 for v in range(0, 512)])
+    data = bytes([v % 256 for v in range(512)])
     assert private_key.get_public_key().verify_signature(signature, data)
 
 

@@ -107,7 +107,7 @@ class BootSectionV2(BaseClass):
             raw_size += cmd.raw_size
         if raw_size > 0:
             block_count = (raw_size + 15) // 16
-            hmac_count = self._hmac_count if block_count >= self._hmac_count else block_count
+            hmac_count = min(self._hmac_count, block_count)
         return hmac_count
 
     @property
@@ -213,7 +213,7 @@ class BootSectionV2(BaseClass):
         """
         nfo = ""
         for index, cmd in enumerate(self._commands):
-            nfo += f" {index}) {str(cmd)}\n"
+            nfo += f" {index}) {cmd!s}\n"
         return nfo
 
     # pylint: disable=too-many-locals

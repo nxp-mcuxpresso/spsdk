@@ -11,8 +11,6 @@ to support Buspal communication protocols including I2C and SPI modes for
 NXP MCU interactions.
 """
 
-from typing import Type  # pylint: disable=unused-import  # Type is necessary for Mypy
-
 from spsdk import get_logger
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.interfaces.buspal import I2cModeCommand, SpiModeCommand
@@ -34,7 +32,7 @@ class SerialBuspalProxy(SerialProxy):
     frame_header: int
 
     @classmethod
-    def init_buspal_proxy(cls, target: str, data: dict[bytes, bytes]) -> "Type[SerialProxy]":
+    def init_buspal_proxy(cls, target: str, data: dict[bytes, bytes]) -> "type[SerialProxy]":
         """Initialize BUSPAL proxy with target-specific configuration.
 
         Sets up the frame header based on the target communication protocol (I2C or SPI)

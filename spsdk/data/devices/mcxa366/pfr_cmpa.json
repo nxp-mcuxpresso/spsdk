@@ -7699,28 +7699,28 @@
                     "name": "ERASE_TOKEN0",
                     "description": "ERASE_TOKEN[31:0]",
                     "offset_int": "0x00D0",
-                    "default_value_int": "0"
+                    "default_value_int": "0xFFFFFFFF"
                 },
                 {
                     "id": "field0D4",
                     "name": "ERASE_TOKEN1",
                     "description": "ERASE_TOKEN[63:32]",
                     "offset_int": "0x00D4",
-                    "default_value_int": "0"
+                    "default_value_int": "0xFFFFFFFF"
                 },
                 {
                     "id": "field0D8",
                     "name": "ERASE_TOKEN2",
                     "description": "ERASE_TOKEN[95:64]",
                     "offset_int": "0x00D8",
-                    "default_value_int": "0"
+                    "default_value_int": "0xFFFFFFFF"
                 },
                 {
                     "id": "field0DC",
                     "name": "ERASE_TOKEN3",
                     "description": "ERASE_TOKEN[127:96]",
                     "offset_int": "0x00DC",
-                    "default_value_int": "0"
+                    "default_value_int": "0xFFFFFFFF"
                 },
                 {
                     "id": "field0E0",

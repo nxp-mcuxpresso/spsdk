@@ -62,7 +62,7 @@ IPED
 ------
 
 The IPED support in SPSDK creates the register-image table consumed by the boot ROM/ELE
-handoff for supported external-flash decrypted-XIP flows, such as i.MX943.
+handoff for supported external-flash decrypted-XIP flows, such as i.MX943 and i.MXRT266x.
 The table contains up to 16 IPED contexts followed by the ``IPEDCTRL`` and ``IPEDCTXCTRL``
 register values. The exported binary is typically placed in the bootable-image ``keyblob``
 area at offset ``0x0``, before the FCB at offset ``0x400``.
@@ -142,6 +142,15 @@ Generate an IPED template and export the table:
 To generate encrypted data in the same run, add ``data_blobs`` and a matching context
 ``key`` to the configuration. The export then creates the table/keyblob file, the encrypted
 data blob file, and a combined image containing both.
+
+For RT266x templates, the default external-flash base is ``0x60000000``
+(``0x28000000`` on i.MX943).
+When RT266x fuse-material fields (``cust_mk_sk``, ``srkh``, ``pqc_srkh``,
+``lifecycle``) are provided, SPSDK derives per-context effective keys and IV values
+from context ``nonce`` automatically, so explicit ``key`` and ``iv`` values can be omitted.
+The fuse-material fields can be provided either as word arrays or as inline hexadecimal values.
+For RT266x GCM contexts, encrypted output includes one 8-byte authentication tag
+after each 32-byte encrypted data chunk.
 
 .. code-block:: yaml
 

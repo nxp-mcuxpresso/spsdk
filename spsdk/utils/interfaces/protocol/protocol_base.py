@@ -15,7 +15,7 @@ the SPSDK ecosystem.
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from types import ModuleType, TracebackType
-from typing import Any
+from typing import Any, cast
 
 from typing_extensions import Self
 
@@ -96,7 +96,7 @@ class SpsdkMultipleDevicesFoundError(SPSDKError):
         )
         devices = [interface.device for interface in self.interfaces]
         for idx, device in enumerate(devices):
-            msg += f"\n Device #{idx}: {str(device)}"
+            msg += f"\n Device #{idx}: {device!s}"
         return msg
 
 
@@ -140,8 +140,8 @@ class ProtocolBase(ABC):
 
     def __exit__(
         self,
-        exception_type: type[Exception] | None = None,
-        exception_value: Exception | None = None,
+        exception_type: type[BaseException] | None = None,
+        exception_value: BaseException | None = None,
         traceback: TracebackType | None = None,
     ) -> None:
         """Close the protocol interface and clean up resources.
@@ -197,7 +197,7 @@ class ProtocolBase(ABC):
         :return: Single interface instance from the scan results.
         """
         try:
-            scan = getattr(cls, "scan")
+            scan = cast(Any, cls).scan
         except AttributeError as e:
             raise SPSDKAttributeError("The scan method for the interface isn't implemented.") from e
         interfaces = scan(*args, **kwargs)

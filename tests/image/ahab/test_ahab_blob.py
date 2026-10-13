@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from spsdk.ele.ele_constants import KeyBlobEncryptionAlgorithm
-from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError
 from spsdk.image.ahab.ahab_blob import AhabBlob, AhabBlobOffline
 from spsdk.image.ahab.ahab_data import DebugEnable, KeyblobLifeCycle
 from spsdk.utils.config import Config
@@ -571,6 +571,64 @@ def test_ahab_blob_offline_load_from_config_with_dek_and_blob_key() -> None:
     assert blob.blob_key == BLOB_KEY_256
     assert blob.debug_enable == DebugEnable.YES
     assert blob.key_identifier == 42
+
+
+@pytest.mark.parametrize(
+    "lifecycle,expected_state",
+    [
+        ("nxp_prov", KeyblobLifeCycle.NXP_PROV),
+        ("oem_clsd", KeyblobLifeCycle.OEM_CLOSED),
+        ("oem_lckd", KeyblobLifeCycle.OEM_LOCKED),
+    ],
+)
+def test_ahab_blob_offline_load_from_config_ele_lifecycle_labels(
+    lifecycle: str, expected_state: KeyblobLifeCycle
+) -> None:
+    """Test AhabBlobOffline.load_from_config() accepts ELE lifecycle labels."""
+    cfg = Config(
+        {
+            "family": "mimxrt1189",
+            "lifecycle": lifecycle,
+            "debug": False,
+            "key_id": 0,
+            "cust_mk_sk": CMK.hex(),
+            "srkh0": SRKH0.hex(),
+            "srkh1": SRKH1.hex(),
+            "dek_key_size": 256,
+        }
+    )
+    blob = AhabBlobOffline.load_from_config(cfg)
+    assert blob.lifecycle_state == expected_state
+
+
+@pytest.mark.parametrize("lifecycle", ["prov", "oem_closed", "oem_locked"])
+def test_ahab_blob_offline_load_from_config_rejects_legacy_labels(lifecycle: str) -> None:
+    """Test AhabBlobOffline.load_from_config() rejects removed legacy lifecycle labels."""
+    cfg = Config(
+        {
+            "family": "mimxrt1189",
+            "lifecycle": lifecycle,
+            "debug": False,
+            "key_id": 0,
+            "cust_mk_sk": CMK.hex(),
+            "srkh0": SRKH0.hex(),
+            "srkh1": SRKH1.hex(),
+            "dek_key_size": 256,
+        }
+    )
+    with pytest.raises(SPSDKKeyError):
+        AhabBlobOffline.load_from_config(cfg)
+
+
+def test_ahab_blob_offline_get_config_template_lists_aligned_labels() -> None:
+    """Test AHAB keyblob template exposes only ELE-aligned lifecycle labels."""
+    template = AhabBlobOffline.get_config_template(FamilyRevision("mimxrt2662"))
+    assert "nxp_prov" in template
+    assert "oem_clsd" in template
+    assert "oem_lckd" in template
+    assert "oem_closed" not in template
+    assert "oem_locked" not in template
+    assert "# - prov:" not in template
 
 
 # ---------------------------------------------------------------------------

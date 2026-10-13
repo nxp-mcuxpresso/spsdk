@@ -38,6 +38,7 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
+UNKNOWN_FAMILY = FamilyRevision("Unknown")
 
 
 class BootDevice(SpsdkEnum):
@@ -436,7 +437,7 @@ class HabImage(FeatureBaseClass):
             [HabSegmentEnum.XMCD],
         ]
         for segments_names in segment_blocks:
-            all_defined = all([self.get_segment(seg_name) for seg_name in segments_names])
+            all_defined = all(self.get_segment(seg_name) for seg_name in segments_names)
             if all_defined:
                 block_size = sum(
                     [
@@ -526,7 +527,7 @@ class HabImage(FeatureBaseClass):
         return bin_image
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse existing binary into HAB image object.
 
         The method analyzes binary data to extract HAB segments and constructs a HAB image

@@ -48,6 +48,7 @@ class DebugMailboxCommandID(SpsdkEnum):
 
     # Flash operations
     WRITE_TO_FLASH = (0x09, "WRITE_TO_FLASH", "Write data to Flash memory")
+    READ_FROM_FLASH = (0x0A, "READ_FROM_FLASH", "Read words from Flash memory")
     ERASE_ONE_SECTOR = (0x0B, "ERASE_ONE_SECTOR", "Erase a single Flash sector")
 
     # Authentication commands
@@ -140,6 +141,7 @@ class DebugMailboxCommand:
         self.resplen = resplen
         self.delay = delay or self.dm.command_delays.get(self.CMD.label, self.DELAY_DEFAULT)
         self.response_delay = response_delay
+        self._parameter_acknowledged = False
 
     def run(self, params: list[int] | None = None) -> list[Any]:
         """Execute debug mailbox command with optional parameters.
@@ -153,6 +155,7 @@ class DebugMailboxCommand:
                            status codes indicate failure, or protocol validation fails.
         :return: List of response values from the debug mailbox command execution.
         """
+        self._parameter_acknowledged = False
         paramslen = len(params) if params else 0
         if paramslen != self.paramlen:
             raise SPSDKError(
@@ -186,6 +189,7 @@ class DebugMailboxCommand:
                     raise SPSDKError(
                         "Device expects parameters of different length we can provide!"
                     )
+                self._parameter_acknowledged = True
                 logger.debug(f"<- spin_write: {format_value(params[i], 32)}")
                 self.dm.spin_write(self.dm.registers["REQUEST"]["address"], params[i])
 
@@ -328,8 +332,8 @@ class EnterISPMode(DebugMailboxCommand):
     """Debug Mailbox command for entering In-System Programming mode.
 
     This command instructs the target device to enter ISP mode, allowing
-    for firmware updates and programming operations through the debug mailbox
-    interface.
+    for firmware updates and programming operations through the debug mailbox interface.
+    The target may reset before returning a final mailbox status word.
 
     :cvar CMD: Command identifier for Enter ISP Mode operation.
     """
@@ -342,6 +346,21 @@ class EnterISPMode(DebugMailboxCommand):
         :param dm: Debug mailbox instance to be used for command execution.
         """
         super().__init__(dm, paramlen=1)
+
+    def run(self, params: list[int] | None = None) -> list[Any]:
+        """Execute the command and tolerate a reset before its final status response.
+
+        :param params: Single-element list with the requested ISP mode.
+        :return: Result of the base ``run`` call, or an empty list when the
+            device became unresponsive after acknowledging the parameter.
+        """
+        try:
+            return super().run(params=params)
+        except SPSDKTimeoutError:
+            if not self._parameter_acknowledged:
+                raise
+            logger.debug("Enter ISP mode: device is no longer responding (expected after reset).")
+            return []
 
 
 class SetFaultAnalysisMode(DebugMailboxCommand):
@@ -499,6 +518,30 @@ class WriteToFlash(DebugMailboxCommand):
         :param dm: Debug mailbox instance to be used for command execution.
         """
         super().__init__(dm, paramlen=5)
+
+
+class ReadFromFlash(DebugMailboxCommand):
+    """Debug Mailbox command for reading data from flash memory.
+
+    This command reads a single 128-bit phrase (four 32-bit words) from the target
+    device's flash memory through the debug mailbox interface. The host sends the flash
+    start address as a single parameter word and the device returns the four words
+    located at that address.
+
+    This command is not part of the standard debug mailbox specification and is only
+    available on devices that declare support for it in the SPSDK database.
+
+    :cvar CMD: Command identifier for read-from-flash operation.
+    """
+
+    CMD = DebugMailboxCommandID.READ_FROM_FLASH  # Cmd ID: 0x0A
+
+    def __init__(self, dm: DebugMailbox) -> None:
+        """Initialize the debug mailbox command.
+
+        :param dm: Debug mailbox instance to be used for command execution.
+        """
+        super().__init__(dm, paramlen=1, resplen=4)
 
 
 class EraseOneSector(DebugMailboxCommand):

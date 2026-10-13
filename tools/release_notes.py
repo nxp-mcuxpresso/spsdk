@@ -28,6 +28,7 @@ from spsdk.exceptions import SPSDKError
 
 TICKET_REGEX = re.compile(r"(SPSDK-\d+)")
 JIRA_SERVER = "https://jira.sw.nxp.com"
+logger = logging.getLogger(__name__)
 
 
 class RNParams(NamedTuple):
@@ -130,7 +131,7 @@ class RecordsList(list[TicketRecord]):
         :return: Sorted list of unique attribute values.
         """
         group = [getattr(item, attribute_name) for item in self]
-        return sorted(list(set(group)))
+        return sorted(set(group))
 
     def filter(self, attrib_name: str, attrib_value: str) -> "RecordsList":
         """Filter records based on attribute name and its value.
@@ -271,11 +272,11 @@ def get_commit_messages(since: str, till: str) -> str:
     :raises subprocess.CalledProcessError: Git command execution failed.
     :return: Git commit messages as a string with newline separators.
     """
-    logging.info("Getting git information")
+    logger.info("Getting git information")
     cmd = f'git log --pretty="%s" {since}..{till}'
-    logging.debug(f"Running: {cmd}")
+    logger.debug(f"Running: {cmd}")
     output = subprocess.check_output(cmd.split()).decode("utf-8")
-    logging.debug(f"Git output:\n{output}")
+    logger.debug(f"Git output:\n{output}")
     return output
 
 
@@ -288,10 +289,10 @@ def get_jira_ids(git_output: str) -> list[str]:
     :param git_output: Text content to search for JIRA ticket IDs, typically git log output.
     :return: Sorted list of unique JIRA ticket IDs found in the input text.
     """
-    logging.info("Extracting JIRA ticket ids from commit messages")
+    logger.info("Extracting JIRA ticket ids from commit messages")
     ids = re.findall(TICKET_REGEX, git_output)
-    ids = sorted(list(set(ids)))
-    logging.debug(f"JIRA ids found: {ids}")
+    ids = sorted(set(ids))
+    logger.debug(f"JIRA ids found: {ids}")
     return ids
 
 
@@ -311,7 +312,7 @@ def ticket_info_hasher(args: tuple, kwargs: dict) -> str:
     digest = hashes.Hash(hashes.MD5())  # nosec
     digest.update(to_hash.encode("utf-8"))
     digest_string = digest.finalize().hex()
-    logging.debug(f"cache param hashing: {to_hash} -> {digest_string}")
+    logger.debug(f"cache param hashing: {to_hash} -> {digest_string}")
     return digest_string
 
 
@@ -328,7 +329,7 @@ def get_ticket_info(ticket: str, jira: JIRA | None) -> TicketRecord:
     """
     if not jira:
         raise SPSDKError(f"Info for {ticket} is not pre-recorded, can't work in offline mode")
-    logging.info(f"Fetching info for ticket: {ticket}")
+    logger.info(f"Fetching info for ticket: {ticket}")
     issue = jira.issue(ticket)
     return TicketRecord.from_jira_issue(issue=issue)
 
@@ -348,13 +349,13 @@ def main() -> None:
     """
     args = parse_inputs()
     logging.basicConfig(level=args.log_level)
-    logging.debug(f"Input args: {args}")
+    logger.debug(f"Input args: {args}")
 
     git_output = get_commit_messages(args.since, args.till)
     ticket_ids = get_jira_ids(git_output)
 
     if not ticket_ids:
-        logging.info("No tickets found in commit messages.")
+        logger.info("No tickets found in commit messages.")
         sys.exit(1)
 
     password = None
@@ -372,8 +373,8 @@ def main() -> None:
         auth = (args.user, password)
 
     if args.netrc and not os.path.isfile(os.path.expanduser("~/.netrc")):
-        logging.error("NetRC authentication selected (-n) but ~/.netrc file not found")
-        logging.error("Either create .netrc file or use username/pass authentication (-u)")
+        logger.error("NetRC authentication selected (-n) but ~/.netrc file not found")
+        logger.error("Either create .netrc file or use username/pass authentication (-u)")
         sys.exit(1)
 
     # for offline mode, we don't instantiate the JIRA connection

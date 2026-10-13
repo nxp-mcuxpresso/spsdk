@@ -13,7 +13,9 @@ device interaction capabilities for secure provisioning operations.
 
 import inspect
 import time
+import traceback
 from collections.abc import Callable
+from typing import ClassVar
 
 from spsdk import get_logger
 from spsdk.crypto.crc import CrcAlg, from_crc_algorithm
@@ -74,9 +76,9 @@ class LPCProgProtocol:
     CRC_VECT_TABLE_OFFSET = 0x1C
     VECT_TABLE_SIZE = 32
 
-    ALLOWED_BAUD_RATES = [9600, 19200, 38400, 57600, 115200, 230400, 460800]
+    ALLOWED_BAUD_RATES: ClassVar[list[int]] = [9600, 19200, 38400, 57600, 115200, 230400, 460800]
     # this is just for click - Click.choice must be str
-    ALLOWED_BAUD_RATES_STR = [str(i) for i in ALLOWED_BAUD_RATES]
+    ALLOWED_BAUD_RATES_STR: ClassVar[list[str]] = [str(i) for i in ALLOWED_BAUD_RATES]
 
     def __init__(
         self,
@@ -261,8 +263,9 @@ class LPCProgProtocol:
             # Wait for 500 ms to get all responses from sync
             self.interface.read_all()
             self.interface.clear_serial()
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001
+            logger.debug(f"Failed to clear serial synchronization response: {exc}")
+            logger.debug(traceback.format_exc())
         self.print_func("Synchronized")
         return True
 
@@ -359,9 +362,8 @@ class LPCProgProtocol:
         total_length = length
 
         # check boundaries in case device is provided
-        if self.device:
-            if not self.device.is_valid_address(address, length):
-                logger.error("Address is not valid for the provided LPC device!")
+        if self.device and not self.device.is_valid_address(address, length):
+            logger.error("Address is not valid for the provided LPC device!")
 
         while length > 0:
             chunk_length = min(length, self.SECTOR_SIZE)

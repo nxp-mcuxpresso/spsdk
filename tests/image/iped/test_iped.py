@@ -26,14 +26,28 @@ from spsdk.utils.misc import load_binary, write_file
 def _load_optional_offline_backend() -> type[Any]:
     """Load optional iped-offline-tool backend class or skip test."""
     try:
-        offline_backend_cls, _ = iped_module._load_iped_backend()
-    except SPSDKError:
+        from iped.iped import IPED as OfflineIped
+    except ImportError:
         pytest.skip("iped-offline-tool backend is not installed")
-    return offline_backend_cls
+
+    # Sanity-check installed backend against official reference vector.
+    plain = (0x0CF16D721BCADFCB).to_bytes(8, "big")
+    expected = (0xCEDB66D149075929).to_bytes(8, "big")
+    backend = OfflineIped(
+        key=0x01,
+        address=0x80003000,
+        iv=0x79EAFAB3A72412A1,
+        double_encrypt=True,
+        use_gcm=False,
+    )
+    if backend.encrypt(plain) != expected:
+        pytest.skip("Installed iped-offline-tool backend does not match its reference vectors")
+    return OfflineIped
 
 
 def _load_optional_offline_cli() -> Any:
     """Load optional iped-offline-tool CLI module or skip test."""
+    _load_optional_offline_backend()
     try:
         return import_module("iped.cli")
     except ImportError:
@@ -43,6 +57,32 @@ def _load_optional_offline_cli() -> Any:
 def _u64_to_words(value: int) -> list[int]:
     """Split 64-bit value into two 32-bit words."""
     return [(value >> 32) & 0xFFFFFFFF, value & 0xFFFFFFFF]
+
+
+def _get_available_spsdk_backends() -> list[tuple[str, type[Any]]]:
+    """Get available SPSDK PRINCE backends (Python always, native optionally)."""
+    from spsdk.image.iped.prince import PrinceCipher
+
+    backends: list[tuple[str, type[Any]]] = [("python", PrinceCipher)]
+    try:
+        from spsdk_iped import IPED as NativeIPED
+
+        backends.append(("spsdk-iped", NativeIPED))
+    except ImportError:
+        pass
+    return backends
+
+
+AVAILABLE_SPSDK_BACKENDS = _get_available_spsdk_backends()
+
+
+def test_iped_v2_backend_loader_uses_spsdk_backends() -> None:
+    """Test backend loader selects SPSDK backends (Python or optional spsdk-iped)."""
+    backend_cls, _ = iped_module._load_iped_backend()
+    backend_module = backend_cls.__module__
+
+    assert backend_module != "iped.iped"
+    assert backend_module.startswith(("spsdk.image.iped.prince", "spsdk_iped"))
 
 
 def test_iped_export_vector() -> None:
@@ -73,6 +113,12 @@ def test_iped_export_vector() -> None:
     )
     assert exported[0x200:0x210] == pack("<IIII", 0x12, 0, 3, 0)
     assert exported[0x210:] == bytes(0x400 - 0x210)
+
+
+def test_iped_factory_dispatch_rt266x() -> None:
+    """Test IPED factory dispatches RT266x family to V2 implementation."""
+    assert Iped.get_iped_class(FamilyRevision("mimx943")) is IpedV1
+    assert Iped.get_iped_class(FamilyRevision("mimxrt2662")) is IpedV2
 
 
 def test_iped_parse_roundtrip() -> None:
@@ -474,6 +520,325 @@ def test_iped_supported_families() -> None:
     families = [family.name for family in Iped.get_supported_families()]
 
     assert "mimx943" in families
+    assert "mimxrt2662" in families
+
+
+def test_iped_v2_default_keyblob_address_rt266x() -> None:
+    """Test RT266x V2 default keyblob address is derived from device memory map."""
+    assert IpedV2.get_default_keyblob_address(FamilyRevision("mimxrt2662")) == 0x60000000
+
+
+def test_iped_v2_rt266x_rom_config_matches_reference(data_dir: str) -> None:
+    """Test RT266x derivation and ROM configuration match the supplied reference artifacts."""
+    config = Config.create_from_file(os.path.join(data_dir, "rt2660_reference.yaml"))
+    iped = IpedV2.load_from_config(config)
+    reference = bytes.fromhex(Path(data_dir, "rt2660_table.hex").read_text().strip())
+    plaintext = bytes.fromhex(Path(data_dir, "rt2660_plaintext.hex").read_text().strip())
+    ciphertext = bytes.fromhex(Path(data_dir, "rt2660_ciphertext.hex").read_text().strip())
+
+    assert iped.contexts[0].key == bytes.fromhex("b938104c9a597f0caecca7a525ea7263")
+    assert iped.contexts[0].iv == [0xE0D7BC70, 0xC290FFEC]
+    assert iped.export() == reference
+    assert iped.encrypt_image(plaintext, 0x60001000) == ciphertext
+
+    parsed = IpedV2.parse(reference + bytes(0x400 - len(reference)), FamilyRevision("mimxrt2661"))
+
+    assert parsed.export() == reference
+    assert parsed.fw_version == 0x12345678
+    assert parsed.contexts[0].region_id == 0
+    assert parsed.contexts[0].nonce == 0x000000006902C9E2
+
+
+def test_iped_v2_rt266x_derivation_from_fuse_material() -> None:
+    """Test RT266x V2 can derive context key and IV from fuse-like material."""
+    config = Config(
+        {
+            "family": "mimxrt2662",
+            "instance": "xspi0",
+            "lifecycle": "oem_open",
+            "fw_version": "0x44332211",
+            "cust_mk_sk": [
+                0x33221100,
+                0x77665544,
+                0xBBAA9988,
+                0xFFEEDDCC,
+                0x03020100,
+                0x07060504,
+                0x0B0A0908,
+                0x0F0E0D0C,
+            ],
+            "srkh": [
+                0x90BF50D4,
+                0xD328ECC9,
+                0x7D28F0EB,
+                0x5F5A3F0C,
+                0xCC891F09,
+                0x88FF036E,
+                0xB6C02073,
+                0xE59C0C6B,
+                0xA0E60353,
+                0x8DE9A90D,
+                0x8A83B5C9,
+                0xD34CF089,
+                0x5C73DBB1,
+                0x08A84ADA,
+                0x92DA26C2,
+                0x50736860,
+            ],
+            "pqc_srkh": [
+                0x00000000,
+                0x00000001,
+                0x00000002,
+                0x00000003,
+                0x00000004,
+                0x00000005,
+                0x00000006,
+                0x00000007,
+                0x00000008,
+                0x00000009,
+                0x0000000A,
+                0x0000000B,
+                0x0000000C,
+                0x0000000D,
+                0x0000000E,
+                0x0000000F,
+            ],
+            "contexts": [
+                {
+                    "start_address": "0x60001000",
+                    "end_address": "0x60002000",
+                    "mode": "ctr",
+                    "nonce": "0x4455667700112233",
+                    "iv": "0x0001020304050607",
+                    "key": "0x00000000000000000000000000000001",
+                }
+            ],
+        }
+    )
+
+    iped = IpedV2.load_from_config(config)
+
+    assert iped.device == "rt2660_a0"
+    assert iped.instance == "xspi0"
+    assert iped.contexts[0].key == bytes.fromhex("f05dfb1d3a0c87f57c2e32b849f3f0cc")
+    assert iped.contexts[0].iv == [0xFDAC1E57, 0xE79B5906]
+    assert iped.contexts[0].nonce == 0x4455667700112233
+
+
+def test_iped_v2_rt266x_derivation_requires_nonce() -> None:
+    """Test RT266x ROM configuration requires nonce even when IV is provided."""
+    config = Config(
+        {
+            "family": "mimxrt2662",
+            "device": "rt2660_a0",
+            "instance": "xspi0",
+            "lifecycle": "oem_open",
+            "cust_mk_sk": [0] * 8,
+            "srkh": [0] * 16,
+            "pqc_srkh": [0] * 16,
+            "contexts": [
+                {
+                    "start_address": "0x60001000",
+                    "end_address": "0x60002000",
+                    "iv": "0x0001020304050607",
+                }
+            ],
+        }
+    )
+
+    with pytest.raises(SPSDKValueError, match="requires 'nonce'"):
+        IpedV2.load_from_config(config)
+
+
+def test_iped_v2_double_encryption_in_config() -> None:
+    """Test ``double_encryption`` flag enables double encryption mode."""
+    config = Config(
+        {
+            "family": "mimxrt2662",
+            "double_encryption": True,
+            "contexts": [
+                {
+                    "start_address": "0x60001000",
+                    "end_address": "0x60002000",
+                    "key": "0x000102030405060708090A0B0C0D0E0F",
+                    "nonce": "0x0011223344556677",
+                }
+            ],
+        }
+    )
+
+    iped = IpedV2.load_from_config(config)
+
+    assert iped.double_encryption is True
+
+
+def test_iped_v2_rt266x_derivation_supports_inline_fuse_values() -> None:
+    """Test RT266x derivation accepts inline hex values for CUST_MK_SK and SRKHs."""
+    cust_mk_sk = [
+        0x33221100,
+        0x77665544,
+        0xBBAA9988,
+        0xFFEEDDCC,
+        0x03020100,
+        0x07060504,
+        0x0B0A0908,
+        0x0F0E0D0C,
+    ]
+    srkh = [
+        0x90BF50D4,
+        0xD328ECC9,
+        0x7D28F0EB,
+        0x5F5A3F0C,
+        0xCC891F09,
+        0x88FF036E,
+        0xB6C02073,
+        0xE59C0C6B,
+        0xA0E60353,
+        0x8DE9A90D,
+        0x8A83B5C9,
+        0xD34CF089,
+        0x5C73DBB1,
+        0x08A84ADA,
+        0x92DA26C2,
+        0x50736860,
+    ]
+    pqc_srkh = [
+        0x00000000,
+        0x00000001,
+        0x00000002,
+        0x00000003,
+        0x00000004,
+        0x00000005,
+        0x00000006,
+        0x00000007,
+        0x00000008,
+        0x00000009,
+        0x0000000A,
+        0x0000000B,
+        0x0000000C,
+        0x0000000D,
+        0x0000000E,
+        0x0000000F,
+    ]
+
+    config = Config(
+        {
+            "family": "mimxrt2662",
+            "device": "rt2660_a0",
+            "instance": "xspi0",
+            "lifecycle": "oem_open",
+            "fw_version": "0x44332211",
+            "cust_mk_sk": "0x" + b"".join(word.to_bytes(4, "little") for word in cust_mk_sk).hex(),
+            "srkh": "0x" + b"".join(word.to_bytes(4, "little") for word in srkh).hex(),
+            "pqc_srkh": "0x" + b"".join(word.to_bytes(4, "little") for word in pqc_srkh).hex(),
+            "contexts": [
+                {
+                    "start_address": "0x60001000",
+                    "end_address": "0x60002000",
+                    "mode": "ctr",
+                    "nonce": "0x4455667700112233",
+                }
+            ],
+        }
+    )
+
+    iped = IpedV2.load_from_config(config)
+
+    assert iped.contexts[0].key == bytes.fromhex("f05dfb1d3a0c87f57c2e32b849f3f0cc")
+    assert iped.contexts[0].iv == [0xFDAC1E57, 0xE79B5906]
+
+
+def test_iped_v2_gcm_output_matches_rt266x_reference() -> None:
+    """Test built-in RT266x GCM encryption and interleaved tags against reference data."""
+    context = IpedContext(
+        start_address=0x60001000,
+        end_address=0x60001100,
+        mode=IpedMode.GCM,
+        aad=[0, 0],
+        key=bytes.fromhex("b938104c9a597f0caecca7a525ea7263"),
+        iv=[0xCBD00D4D, 0xC34B692B],
+        nonce=0x6902C9E2,
+    )
+    iped = IpedV2(
+        family=FamilyRevision("mimxrt2662"),
+        contexts=[context],
+        keyblob_address=0x60000000,
+        device="rt2660_a0",
+        instance="xspi0",
+    )
+
+    plain = bytes.fromhex(
+        "02ac028702000000000000019000000000900000c5f8000000a0006000000000"
+        "00a00060000000001301000000000000029655611b06eab2648eb2af81b91d8e"
+    )
+    encrypted = iped.encrypt_image(plain, 0x60001000)
+
+    assert encrypted == bytes.fromhex(
+        "bd1fb91b6746fe5aad180af1e568e87f7afc22b6d2b17574969409e2b10e716e"
+        "7e57f3f84f603741"
+        "a42c647f67f631dd1ea632291c6c2415f856838361068b2f71208107b4822ab7"
+        "bfb35882f44ab076"
+    )
+
+
+def test_iped_v2_gcm_range_uses_plaintext_size() -> None:
+    """Test interleaved GCM tags do not count against the logical protected range."""
+    context = IpedContext(
+        start_address=0x60001000,
+        end_address=0x60001100,
+        mode=IpedMode.GCM,
+        aad=[0, 0],
+        key=bytes.fromhex("b938104c9a597f0caecca7a525ea7263"),
+        iv=[0xCBD00D4D, 0xC34B692B],
+        nonce=0x6902C9E2,
+    )
+    iped = IpedV2(
+        family=FamilyRevision("mimxrt2662"),
+        contexts=[context],
+        instance="xspi0",
+    )
+
+    assert len(iped.encrypt_image(bytes(0x100), 0x60001000)) == 0x140
+
+
+def test_iped_v2_rt266x_preserves_encrypted_output_name(tmp_path: Path) -> None:
+    """Test the combined image does not overwrite an encrypted output named iped_image."""
+    plain_file = tmp_path / "plain.bin"
+    plain_file.write_bytes(b"\x01\x02\x03")
+    config = Config(
+        {
+            "family": "mimxrt2661",
+            "output_folder": str(tmp_path),
+            "output_name": "iped_table",
+            "encrypted_name": "iped_image",
+            "keyblob_address": "0x60000000",
+            "instance": "xspi0",
+            "fw_version": "0x44332211",
+            "contexts": [
+                {
+                    "start_address": "0x60001000",
+                    "end_address": "0x60002000",
+                    "mode": "ctr",
+                    "nonce": "0x0011223344556677",
+                    "iv": "0x0001020304050607",
+                    "key": "0x00000000000000000000000000000001",
+                }
+            ],
+            "data_blobs": [{"data": str(plain_file), "address": "0x60001000"}],
+        }
+    )
+    iped = IpedV2.load_from_config(config)
+
+    generated_files = iped.post_export(str(tmp_path))
+
+    assert iped.image_name == "iped_image_combined"
+    assert iped.device == "rt2660_a0"
+    assert str(tmp_path / "iped_image.bin") in generated_files
+    assert str(tmp_path / "iped_image_combined.bin") in generated_files
+    assert (tmp_path / "iped_table.bin").stat().st_size == 48
+    encrypted = (tmp_path / "iped_image.bin").read_bytes()
+    assert len(encrypted) == 8
+    assert encrypted != b"\x01\x02\x03" + bytes(5)
 
 
 # ==============================================================================
@@ -737,19 +1102,13 @@ def test_iped_v1_encrypt_data_blob() -> None:
     assert encrypted != plaintext
     assert len(encrypted) == len(plaintext)
 
-    # Derive IV the same way as the implementation
-    nonce_msb = (nonce >> 32) & 0xFFFFFFFF
-    nonce_lsb = nonce & 0xFFFFFFFF
-    aes_input = (
-        nonce_msb.to_bytes(4, "little")
-        + nonce_lsb.to_bytes(4, "little")
-        + fw_version.to_bytes(4, "little")
-        + bytes(4)
-    )
+    # Derive IV from the serialized nonce layout used by the IPED V1 table.
+    aes_input = nonce.to_bytes(8, "little") + fw_version.to_bytes(4, "little") + bytes(4)
     aes_key = bytes(reversed(user_key))
     aes_cipher = Cipher(algorithms.AES(aes_key), modes.ECB())
     cipher_data = aes_cipher.encryptor().update(aes_input)
     derived_iv = int.from_bytes(cipher_data[0:8], "little")
+    assert iped._derive_iv(region) == derived_iv
 
     # Decrypt with same effective key and derived IV
     cipher = PrinceCipher(key=effective_key, address=0x28001000, iv=derived_iv)
@@ -798,7 +1157,8 @@ def test_iped_v1_encrypt_post_export(tmp_path: Path) -> None:
     assert "iped_fuses" in files[2]
 
     # Encrypted blob should be same size as input
-    enc_data = open(files[1], "rb").read()
+    with open(files[1], "rb") as f:
+        enc_data = f.read()
     assert len(enc_data) == len(plaintext)
     assert enc_data != plaintext
 
@@ -854,32 +1214,84 @@ def test_prince_cipher_matches_paper_vectors(
     assert decrypted == plaintext
 
 
-def test_prince_ctr_matches_iped_offline_tool_reference() -> None:
-    """Test that PrinceCipher CTR mode matches the iped-offline-tool reference vector."""
-    from spsdk.image.iped.prince import PrinceCipher
-
-    # Reference vector from iped-offline-tool test suite (test_ref_encrypt_crt)
-    cipher = PrinceCipher(
-        key=0x01,
-        address=0x80003000,
-        iv=0x79EAFAB3A72412A1,
-        double_encrypt=True,
-        use_gcm=False,
-    )
+@pytest.mark.parametrize(
+    ("backend_name", "backend_cls"),
+    AVAILABLE_SPSDK_BACKENDS,
+    ids=[name for name, _ in AVAILABLE_SPSDK_BACKENDS],
+)
+def test_prince_ctr_matches_reference_vector_for_spsdk_backends(
+    backend_name: str, backend_cls: type[Any]
+) -> None:
+    """Test CTR reference vector parity for SPSDK Python and optional native backends."""
+    del backend_name
     data = (0x0CF16D721BCADFCB).to_bytes(8, "big")
-    result = cipher.encrypt(data)
     expected = (0xCEDB66D149075929).to_bytes(8, "big")
-    assert result == expected
 
-    # Verify decrypt roundtrip
-    cipher2 = PrinceCipher(
+    cipher = backend_cls(
         key=0x01,
         address=0x80003000,
         iv=0x79EAFAB3A72412A1,
         double_encrypt=True,
         use_gcm=False,
     )
-    assert cipher2.decrypt(expected) == data
+    assert cipher.encrypt(data) == expected
+
+    decrypt_cipher = backend_cls(
+        key=0x01,
+        address=0x80003000,
+        iv=0x79EAFAB3A72412A1,
+        double_encrypt=True,
+        use_gcm=False,
+    )
+    assert decrypt_cipher.decrypt(expected) == data
+
+
+@pytest.mark.parametrize(
+    ("backend_name", "backend_cls"),
+    AVAILABLE_SPSDK_BACKENDS,
+    ids=[name for name, _ in AVAILABLE_SPSDK_BACKENDS],
+)
+def test_prince_gcm_matches_reference_vector_for_spsdk_backends(
+    backend_name: str, backend_cls: type[Any]
+) -> None:
+    """Test GCM reference vector parity for SPSDK Python and optional native backends."""
+    del backend_name
+    plain_blocks = [
+        0x8A64EC141794252F,
+        0xDE143CBCDE2BBEBC,
+        0xB30C0C6618836731,
+        0xE218FAC40858B510,
+    ]
+    cipher_blocks = [
+        0x6FD8089AD7A48DF6,
+        0xC90DBE898F02BA55,
+        0xF5F7A65030D0693B,
+        0xAD103E34E80016FC,
+    ]
+    plain = b"".join(block.to_bytes(8, "big") for block in plain_blocks)
+    expected = b"".join(block.to_bytes(8, "big") for block in cipher_blocks)
+    expected_tag = 0xE38CA1F93131FC30
+
+    encrypt_cipher = backend_cls(
+        key=0x9DC81A3B3AEF4775297C23529ACCCE35,
+        address=0x80003000,
+        iv=0xC5FFB28BBB2F7876,
+        aad=0x0D11BB1AA784324F,
+        use_gcm=True,
+    )
+    assert encrypt_cipher.encrypt(plain) == expected
+    assert int(encrypt_cipher.tag) == expected_tag
+
+    decrypt_cipher = backend_cls(
+        key=0x9DC81A3B3AEF4775297C23529ACCCE35,
+        address=0x80003000,
+        iv=0xC5FFB28BBB2F7876,
+        aad=0x0D11BB1AA784324F,
+        tag=expected_tag,
+        use_gcm=True,
+    )
+    assert decrypt_cipher.decrypt(expected) == plain
+    assert int(decrypt_cipher.tag) == expected_tag
 
 
 def test_iped_v1_encrypt_rejects_address_outside_region() -> None:
@@ -942,6 +1354,49 @@ def test_iped_v1_encrypt_clips_to_region_boundary() -> None:
     assert result[:256] != plaintext[:256]
     # Last 256 bytes should be plaintext (unchanged)
     assert result[256:] == plaintext[256:]
+
+
+def test_iped_v1_encrypt_spans_adjacent_regions() -> None:
+    """Test that encryption continues across adjacent configured regions."""
+    from spsdk.image.iped.iped_v1 import IpedV1, IpedV1Region
+
+    family = FamilyRevision("mimx943", "a0")
+    user_key = bytes.fromhex("7bfb7a1cd3c2a9a98bcf48daaa081bbe")
+    regions = [
+        IpedV1Region(
+            region_id=0,
+            start_address=0x28001000,
+            end_address=0x28002000,
+            nonce=0x11,
+            context_key=bytes.fromhex("dfdb6654139a8d29143f48e580d6e0eb"),
+        ),
+        IpedV1Region(
+            region_id=1,
+            start_address=0x28002000,
+            end_address=0x28003000,
+            nonce=0x22,
+            context_key=bytes.fromhex("6a5ab8157a0e72405ab6d2e7189a6ae6"),
+        ),
+    ]
+
+    iped = IpedV1(
+        family=family,
+        regions=regions,
+        fw_version=1,
+        xspi_instance="xspi1",
+        user_key=user_key,
+    )
+
+    plaintext = bytes((index % 251) + 1 for index in range(0x2000))
+    expected = iped.encrypt_data(plaintext[:0x1000], 0x28001000) + iped.encrypt_data(
+        plaintext[0x1000:], 0x28002000
+    )
+
+    result = iped.encrypt_data(plaintext, 0x28001000)
+
+    assert result == expected
+    assert result[:0x1000] != plaintext[:0x1000]
+    assert result[0x1000:] != plaintext[0x1000:]
 
 
 def test_iped_v1_load_from_config_and_export(tmp_path: Path) -> None:
@@ -1033,16 +1488,22 @@ def test_iped_v1_load_from_config_without_encryption(tmp_path: Path) -> None:
 def _get_verified_native_backend() -> type[Any]:
     """Get the native C++ IPED backend or skip if unavailable/broken."""
     try:
-        from spsdk_iped import IPED  # noqa: PLC0415
+        from spsdk_iped import IPED
 
-        # Verify native matches Python for a simple case
-        from spsdk.image.iped.prince import PrinceCipher
-
-        test_data = b"\x01\x02\x03\x04\x05\x06\x07\x08"
-        py_result = PrinceCipher(key=0, address=0, iv=0).encrypt(test_data)
-        native_result = IPED(key=0, address=0, iv=0).encrypt(test_data)
-        if native_result != py_result:
-            pytest.skip("Native C++ backend produces different results than Python")
+        plain = (0x0CF16D721BCADFCB).to_bytes(8, "big")
+        expected = (0xCEDB66D149075929).to_bytes(8, "big")
+        native_result = IPED(
+            key=0x01,
+            address=0x80003000,
+            iv=0x79EAFAB3A72412A1,
+            double_encrypt=True,
+            use_gcm=False,
+        ).encrypt(plain)
+        if native_result != expected:
+            pytest.fail(
+                "Native C++ backend does not match reference CTR vector: "
+                f"{native_result.hex()} != {expected.hex()}"
+            )
         return IPED
     except ImportError:
         pytest.skip("spsdk-iped package not installed")

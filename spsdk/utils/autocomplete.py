@@ -1249,12 +1249,6 @@ def setup_shell_completion(
     completions_dir = get_completions_dir()
     tree = walk_command_tree(cmd, name=tool_name)
 
-    if dry_run:
-        return (
-            True,
-            f"[dry-run] Would write completions for {tool_name} ({shell}) to {completions_dir}",
-        )
-
     paths = backend.write_completion(tool_name, tree, completions_dir)
     names = ", ".join(p.name for p in paths)
     return True, f"  {names}"

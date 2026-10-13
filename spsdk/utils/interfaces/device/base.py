@@ -42,8 +42,8 @@ class DeviceBase(ABC):
 
     def __exit__(
         self,
-        exception_type: type[Exception] | None = None,
-        exception_value: Exception | None = None,
+        exception_type: type[BaseException] | None = None,
+        exception_value: BaseException | None = None,
         traceback: TracebackType | None = None,
     ) -> None:
         """Clean up device resources and close the connection.

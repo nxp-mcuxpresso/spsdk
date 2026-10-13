@@ -16,10 +16,10 @@ import pytest
 
 pytest.importorskip("gmssl")
 
-from spsdk.crypto.crypto_types import SPSDKEncoding  # noqa: E402
-from spsdk.crypto.keys import PrivateKeySM2, PublicKeySM2  # noqa: E402
-from spsdk.crypto.oscca import SM2Encoder, sanitize_pem  # noqa: E402
-from spsdk.utils.misc import load_binary  # noqa: E402
+from spsdk.crypto.crypto_types import SPSDKEncoding
+from spsdk.crypto.keys import PrivateKeySM2, PublicKeySM2
+from spsdk.crypto.oscca import SM2Encoder, sanitize_pem
+from spsdk.utils.misc import load_binary
 
 
 @pytest.mark.parametrize(

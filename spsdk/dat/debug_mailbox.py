@@ -146,18 +146,11 @@ class DebugMailbox:
     def read_idr(self) -> int:
         """Read IDR of debug mailbox.
 
-        Reads the Identification Register (IDR) value from the debug mailbox Access Port
-        and validates it against the expected value. Issues a warning if the values don't match.
+        Reads the Identification Register (IDR) value from the debug mailbox Access Port.
 
         :return: IDR value of debug mailbox AP.
         """
-        idr = self.debug_probe.dbgmlbx_reg_read(addr=self.registers["IDR"]["address"])
-        if idr != self.registers["IDR"]["expected"]:
-            logger.warning(
-                f"The read IDR value({hex(idr)}) doesn't match the expected "
-                f"value: {hex(self.registers['IDR']['expected'])}"
-            )
-        return idr
+        return self.debug_probe.dbgmlbx_reg_read(addr=self.registers["IDR"]["address"])
 
     def close(self) -> None:
         """Close the debug mailbox session.
@@ -187,7 +180,7 @@ class DebugMailbox:
                 logger.debug(f"read exception  {reg:#08X}")
                 if timeout.overflow():
                     raise SPSDKTimeoutError(
-                        f"The Debug Mailbox read operation ends on timeout. ({str(e)})"
+                        f"The Debug Mailbox read operation ends on timeout. ({e!s})"
                     ) from e
                 sleep(0.1)
 
@@ -222,7 +215,7 @@ class DebugMailbox:
                 logger.debug(f"write exception addr={reg:#08X}, val={value:#08X}")
                 if timeout.overflow():
                     raise SPSDKTimeoutError(
-                        f"The Debug Mailbox write operation ends on timeout. ({str(e)})"
+                        f"The Debug Mailbox write operation ends on timeout. ({e!s})"
                     ) from e
                 sleep(0.1)
 
@@ -247,7 +240,7 @@ class DebugMailbox:
                     logger.debug("Read exception on CSW register")
                     if timeout.overflow():
                         raise SPSDKTimeoutError(
-                            f"The Debug Mailbox read operation ends on timeout. ({str(e)})"
+                            f"The Debug Mailbox read operation ends on timeout. ({e!s})"
                         ) from e
                     sleep(0.1)
 

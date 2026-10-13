@@ -107,7 +107,7 @@ class UsbDevice(DeviceBase):
         :raises SPSDKError: If device is already opened.
         :raises SPSDKConnectionError: If the device cannot be opened.
         """
-        logger.debug(f"Opening the Interface: {str(self)}")
+        logger.debug(f"Opening the Interface: {self!s}")
         if self.is_opened:
             # This would get HID_DEVICE into broken state
             raise SPSDKError("Can't open already opened device")
@@ -115,7 +115,7 @@ class UsbDevice(DeviceBase):
             self._device.Open(self.path)
             self._opened = True
         except Exception as error:
-            raise SPSDKConnectionError(f"Unable to open device '{str(self)}'") from error
+            raise SPSDKConnectionError(f"Unable to open device '{self!s}'") from error
 
     def close(self) -> None:
         """Close the USB device interface.
@@ -125,13 +125,13 @@ class UsbDevice(DeviceBase):
 
         :raises SPSDKConnectionError: If the device cannot be closed due to underlying USB errors.
         """
-        logger.debug(f"Closing the Interface: {str(self)}")
+        logger.debug(f"Closing the Interface: {self!s}")
         if self.is_opened:
             try:
                 self._device.Close()
                 self._opened = False
             except Exception as error:
-                raise SPSDKConnectionError(f"Unable to close device '{str(self)}'") from error
+                raise SPSDKConnectionError(f"Unable to close device '{self!s}'") from error
 
     def read(self, length: int, timeout: int | None = None) -> bytes:
         """Read data on the IN endpoint associated to the HID interface.

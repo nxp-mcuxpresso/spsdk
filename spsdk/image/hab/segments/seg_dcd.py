@@ -33,6 +33,7 @@ from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import load_binary, write_file
 
 logger = logging.getLogger(__name__)
+UNKNOWN_FAMILY = FamilyRevision("unknown")
 
 
 class SegDCD(PaddingSegment):
@@ -373,7 +374,7 @@ class HabSegmentDcd(HabSegmentBase):
         return ret_cfg
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse DCD segment block from image binary.
 
         Extracts the Device Configuration Data (DCD) segment from HAB container binary data
@@ -482,10 +483,11 @@ class SegDcdBuilder:
             addr = int(cmd[2], 0)
             value = int(cmd[3], 0)
 
-            if self.cmd_write is not None:
-                if (self.cmd_write.ops != ops) or (self.cmd_write.num_bytes != numbytes):
-                    dcd_obj.append(self.cmd_write)
-                    self.cmd_write = None
+            if self.cmd_write is not None and (
+                (self.cmd_write.ops != ops) or (self.cmd_write.num_bytes != numbytes)
+            ):
+                dcd_obj.append(self.cmd_write)
+                self.cmd_write = None
 
             if self.cmd_write is None:
                 self.cmd_write = CmdWriteData(numbytes, ops)
@@ -540,7 +542,6 @@ class SegDcdBuilder:
                 if cmd[0] not in _SEG_DCD_COMMANDS:
                     logger.error(f"Unknown DCD command ignored: {cmd}")
                     continue
-            #
             if cmd[-1] == "\\":
                 cmd = cmd[:-1]
                 cmd_mline = True

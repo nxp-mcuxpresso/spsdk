@@ -50,7 +50,7 @@ class CancellableWait:
         """
         try:
             self.result = func(*args, **kwargs)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.exception = e
         finally:
             self.finished.set()

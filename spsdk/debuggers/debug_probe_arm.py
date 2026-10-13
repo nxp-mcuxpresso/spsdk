@@ -85,6 +85,7 @@ from spsdk import get_logger
 from spsdk.debuggers.debug_probe import (
     DISABLE_AP_SELECT_CACHING,
     DebugProbe,
+    DebugProbeProtocol,
     MemorySpace,
     SPSDKDebugProbeError,
     SPSDKDebugProbeTransferError,
@@ -96,6 +97,12 @@ from spsdk.utils.family import get_db
 from spsdk.utils.misc import Timeout, value_to_int
 
 logger = get_logger(__name__)
+
+# Shared CoreSight transaction tracer. Both debug-probe plugins (J-Link, MCU-Link, ...)
+# emit their high-level DP/AP read/write operations through this single logger using an
+# identical line format, so the resulting TRACE streams are directly comparable between
+# probes (e.g. when correlating with a logic analyzer capture on the physical SWD line).
+cs_trace_logger = get_logger("spsdk.probe.trace")
 
 
 class DebugProbeCoreSightOnly(DebugProbe):
@@ -127,6 +134,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
 
     ARCHITECTURE = "arm-cortex"
     NAME = "base-arm"
+    SUPPORTED_PROTOCOLS: tuple[DebugProbeProtocol, ...] = (DebugProbeProtocol.SWD,)
 
     # Constants to detect the debug mailbox access port
     APBANKSEL = 0x000000F0
@@ -213,6 +221,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
         super().__init__(hardware_id, options)
         self.mem_ap_ix = -1
         self.dbgmlbx_ap_ix = -1
+        self.dbgmlbx_ap_validated = False
 
         self.last_accessed_ap = -1
         self.enable_power_domains_after_connect = False
@@ -225,25 +234,39 @@ class DebugProbeCoreSightOnly(DebugProbe):
         if self.family:
             db = get_db(self.family)
             self.enable_power_domains_after_connect = db.get_bool(
-                DatabaseManager.DAT, "enable_power_domains_after_connect", False
+                DatabaseManager.DEBUG_PROBE, "enable_power_domains_after_connect", False
             )
             self.enable_sda_debug_paths_after_connect = db.get_bool(
-                DatabaseManager.DAT, "enable_sda_debug_paths_after_connect", False
+                DatabaseManager.DEBUG_PROBE, "enable_sda_debug_paths_after_connect", False
             )
             self.preserve_csw_ro_bits = db.get_bool(
-                DatabaseManager.DAT, "mem_ap_preserve_csw_ro_bits", False
+                DatabaseManager.DEBUG_PROBE, "mem_ap_preserve_csw_ro_bits", False
             )
             self.mem_ap_scan_write_before_read = db.get_bool(
-                DatabaseManager.DAT, "mem_ap_scan_write_before_read", False
+                DatabaseManager.DEBUG_PROBE, "mem_ap_scan_write_before_read", False
             )
-            self.mem_ap_ix = db.get_int(DatabaseManager.DAT, "mem_ap_index", -1)
+            self.mem_ap_ix = db.get_int(DatabaseManager.DEBUG_PROBE, "mem_ap_index", -1)
             if self.mem_ap_ix >= 0:
                 logger.debug(
                     f"Using fixed mem_ap_index={self.mem_ap_ix} from device database "
                     "(skipping AP scan)."
                 )
 
-            self.dbgmlbx_ap_ix = db.get_int(DatabaseManager.DAT, "dmbox_ap_ix", -1)
+            if DatabaseManager.DAT in db.features:
+                self.dbgmlbx_ap_ix = db.get_int(DatabaseManager.DAT, "dmbox_ap_ix", -1)
+
+    def get_debug_probe_protocol(self) -> DebugProbeProtocol:
+        """Get effective ARM debug probe protocol.
+
+        :return: Effective debug probe protocol. If not specified, SWD is used.
+        :raises SPSDKDebugProbeError: JTAG protocol is requested but unsupported.
+        """
+        protocol = self.protocol or DebugProbeProtocol.SWD
+        if protocol not in self.SUPPORTED_PROTOCOLS:
+            raise SPSDKDebugProbeError(
+                f"Debug probe '{self.NAME}' does not support {protocol.label.upper()} protocol."
+            )
+        return protocol
 
     def connect_safe(self) -> None:
         """Debug probe connect in safe manner.
@@ -256,11 +279,11 @@ class DebugProbeCoreSightOnly(DebugProbe):
         """
         try:
             self.connect()
-        except Exception as e:
+        except Exception:
             if self.recover_debug_connection():
                 self.connect()
                 return
-            raise e
+            raise
 
         self._init_debug_access_after_connect()
 
@@ -305,12 +328,48 @@ class DebugProbeCoreSightOnly(DebugProbe):
 
         return access_port << DebugProbeCoreSightOnly.APSEL_SHIFT | address
 
+    def trace_cs_read(self, access_port: bool, addr: int, data: int) -> None:
+        """Trace a completed high-level CoreSight register read in a unified format.
+
+        Emits a single line on the shared ``spsdk.probe.trace`` logger so the TRACE
+        stream is identical across all debug-probe plugins and can be compared directly.
+
+        :param access_port: True if the Access Port (AP) was read, False for Debug Port (DP).
+        :param addr: The CoreSight register address that was read.
+        :param data: The 32-bit value that was read.
+        """
+        port = f"AP{(addr & self.APSEL) >> self.APSEL_SHIFT}" if access_port else "DP"
+        cs_trace_logger.trace(f"CS RD {port} addr=0x{addr:08X} data=0x{data:08X}")
+
+    def trace_cs_write(self, access_port: bool, addr: int, data: int) -> None:
+        """Trace a completed high-level CoreSight register write in a unified format.
+
+        Emits a single line on the shared ``spsdk.probe.trace`` logger so the TRACE
+        stream is identical across all debug-probe plugins and can be compared directly.
+
+        :param access_port: True if the Access Port (AP) was written, False for Debug Port (DP).
+        :param addr: The CoreSight register address that was written.
+        :param data: The 32-bit value that was written.
+        """
+        port = f"AP{(addr & self.APSEL) >> self.APSEL_SHIFT}" if access_port else "DP"
+        cs_trace_logger.trace(f"CS WR {port} addr=0x{addr:08X} data=0x{data:08X}")
+
+    def trace_cs_event(self, message: str) -> None:
+        """Trace a high-level probe event (connect, power-up, reset, ...) in a unified format.
+
+        Emits a single line on the shared ``spsdk.probe.trace`` logger so the TRACE
+        stream is identical across all debug-probe plugins and can be compared directly.
+
+        :param message: Human-readable description of the event.
+        """
+        cs_trace_logger.trace(f"CS EV {message}")
+
     def _init_debug_access_after_connect(self) -> None:
         """Initialize optional device-specific debug access after connect."""
         if self.enable_power_domains_after_connect:
             try:
                 self.power_up_target()
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(f"Post-connect power domain init skipped: {e}")
 
         if self.enable_sda_debug_paths_after_connect:
@@ -328,7 +387,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
                         f"Written DBGENCTRL (GDBGEN|CDBGEN) to SDA-AP {sda_ap_ix} "
                         "to enable debug paths."
                     )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(f"SDA-AP DBGENCTRL init skipped: {e}")
 
     def coresight_reg_write_safe(
@@ -369,10 +428,10 @@ class DebugProbeCoreSightOnly(DebugProbe):
                             logger.debug(
                                 "CoreSight register write failed and recovery failed also :-("
                             )
-                    except Exception as recovery_error:
+                    except Exception as recovery_error:  # noqa: BLE001
                         logger.debug(f"Recovery attempt failed: {recovery_error}")
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 # Handle unexpected errors
                 last_exception = SPSDKDebugProbeTransferError(
                     f"Unexpected error during coresight write: {e}"
@@ -425,10 +484,10 @@ class DebugProbeCoreSightOnly(DebugProbe):
                                 "CoreSight register read failed and recovery failed also :-("
                             )
 
-                    except Exception as recovery_error:
+                    except Exception as recovery_error:  # noqa: BLE001
                         logger.debug(f"Recovery attempt failed: {recovery_error}")
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 # Handle unexpected errors
                 last_exception = SPSDKDebugProbeTransferError(
                     f"Unexpected error during coresight read: {e}"
@@ -547,8 +606,11 @@ class DebugProbeCoreSightOnly(DebugProbe):
                                             addr=self.DP_ABORT_REG,
                                             data=0x1F,
                                         )
-                                    except Exception:
-                                        pass
+                                    except Exception as exc:
+                                        logger.debug(
+                                            f"Failed to clear sticky errors after DHCSR read: {exc}",
+                                            exc_info=True,
+                                        )
                                 try:
                                     if self.mem_ap_scan_write_before_read:
                                         # Write before read to initialize ECC-protected SRAM.
@@ -597,8 +659,11 @@ class DebugProbeCoreSightOnly(DebugProbe):
                                             addr=self.DP_ABORT_REG,
                                             data=0x1F,
                                         )
-                                    except Exception:
-                                        pass
+                                    except Exception as exc:
+                                        logger.debug(
+                                            f"Failed to clear sticky errors after memory test: {exc}",
+                                            exc_info=True,
+                                        )
                                     continue
                             except SPSDKError:
                                 continue
@@ -616,8 +681,8 @@ class DebugProbeCoreSightOnly(DebugProbe):
                             self.coresight_reg_write_safe(
                                 access_port=False, addr=self.DP_ABORT_REG, data=0x1F
                             )
-                        except Exception:
-                            pass
+                        except Exception as exc:
+                            logger.debug(f"Failed to clear AP sticky errors: {exc}", exc_info=True)
 
                 if self.mem_ap_ix < 0:
                     raise SPSDKDebugProbeError("The memory access port is not found!")
@@ -698,7 +763,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
                 access_port=True, addr=self.get_coresight_ap_address(mem_ap_ix, self.DRW_REG)
             )
         except SPSDKError as exc:
-            raise SPSDKDebugProbeTransferError(f"Failed read memory({str(exc)})") from exc
+            raise SPSDKDebugProbeTransferError(f"Failed read memory({exc!s})") from exc
 
     @get_mem_ap
     def mem_reg_read(self, addr: int = 0, space: MemorySpace = MemorySpace.DATA) -> int:
@@ -747,7 +812,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
             )
             self.coresight_reg_read_safe(access_port=False, addr=self.DP_CTRL_STAT_REG)
         except SPSDKError as exc:
-            raise SPSDKDebugProbeTransferError(f"Failed write memory({str(exc)})") from exc
+            raise SPSDKDebugProbeTransferError(f"Failed write memory({exc!s})") from exc
 
     @get_mem_ap
     def mem_reg_write(
@@ -947,6 +1012,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
                         )
                         if idr == IDR_VALUE:
                             self.dbgmlbx_ap_ix = i
+                            self.dbgmlbx_ap_validated = True
                             logger.debug(
                                 f"Found debug mailbox access port at AP{i}, IDR: 0x{idr:08X}"
                             )
@@ -956,6 +1022,20 @@ class DebugProbeCoreSightOnly(DebugProbe):
 
                 if self.dbgmlbx_ap_ix < 0:
                     raise SPSDKError("The debug mailbox access port is not found!")
+
+            if not self.dbgmlbx_ap_validated:
+                idr = self.coresight_reg_read_safe(
+                    access_port=True,
+                    addr=self.get_coresight_ap_address(
+                        access_port=self.dbgmlbx_ap_ix, address=IDR_ADDRESS
+                    ),
+                )
+                if idr != IDR_VALUE:
+                    raise SPSDKError(
+                        f"The debug mailbox AP{self.dbgmlbx_ap_ix} IDR value({hex(idr)}) "
+                        f"doesn't match the expected value: {hex(IDR_VALUE)}"
+                    )
+                self.dbgmlbx_ap_validated = True
 
             return func(self, *args, **kwargs)  # pylint: disable=not-callable
 
@@ -971,7 +1051,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
         :param addr: The register address to read from.
         :return: The read value of addressed register (4 bytes).
         """
-        return self.coresight_reg_read_safe(
+        return self.coresight_reg_read(
             addr=self.get_coresight_ap_address(access_port=self.dbgmlbx_ap_ix, address=addr)
         )
 
@@ -985,7 +1065,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
         :param addr: Register address to write to.
         :param data: Data value to write into the register.
         """
-        self.coresight_reg_write_safe(
+        self.coresight_reg_write(
             addr=self.get_coresight_ap_address(access_port=self.dbgmlbx_ap_ix, address=addr),
             data=data,
         )
@@ -999,7 +1079,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
 
         :raises SPSDKDebugProbeTransferError: When debug probe communication cannot be reestablished.
         """
-        if self.options.get("use_jtag") is not None:
+        if self.protocol == DebugProbeProtocol.JTAG:
             # Currently clear_sticky_errors has been defined only for SWD (uncleared for JTAG-DP)
             self.coresight_reg_write(access_port=False, addr=4, data=0x50000F20)
         try:
@@ -1162,7 +1242,7 @@ class DebugProbeCoreSightOnly(DebugProbe):
                 if recovery_step():
                     logger.debug(f"Recovery successful at level {step_num}")
                     return True
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(f"Recovery level {step_num} failed: {e}")
                 continue
 
@@ -1202,7 +1282,8 @@ class DebugProbeCoreSightOnly(DebugProbe):
             ctrl_stat = self.coresight_reg_read(access_port=False, addr=self.DP_CTRL_STAT_REG)
             return (ctrl_stat & self.DP_CTRL_STAT_ERROR_MASK) == 0
 
-        except Exception:
+        except Exception as exc:  # noqa: BLE001
+            logger.debug(f"Level 1 debug power recovery failed: {exc}")
             return False
 
     def _level2_power_cycle_recovery(self) -> bool:
@@ -1245,7 +1326,8 @@ class DebugProbeCoreSightOnly(DebugProbe):
 
             return False
 
-        except Exception:
+        except Exception as exc:  # noqa: BLE001
+            logger.debug(f"Level 2 power cycle recovery failed: {exc}")
             return False
 
     def _level3_probe_reconnect_recovery(self) -> bool:
@@ -1273,7 +1355,8 @@ class DebugProbeCoreSightOnly(DebugProbe):
             dp_idr = self.read_dp_idr()
             return dp_idr != 0 and dp_idr != 0xFFFFFFFF
 
-        except Exception:
+        except Exception as exc:  # noqa: BLE001
+            logger.debug(f"Level 3 probe reconnect recovery failed: {exc}")
             return False
 
     def _level4_hard_reset_recovery(self) -> bool:
@@ -1323,7 +1406,8 @@ class DebugProbeCoreSightOnly(DebugProbe):
 
             return False
 
-        except Exception:
+        except Exception as exc:  # noqa: BLE001
+            logger.debug(f"Level 4 hard reset recovery failed: {exc}")
             return False
 
     @get_mem_ap

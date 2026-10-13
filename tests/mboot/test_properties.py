@@ -36,6 +36,7 @@ from spsdk.mboot.properties import (
     VersionValue,
     get_properties,
     get_property_index,
+    get_property_tag_label,
     parse_property_value,
 )
 from spsdk.utils.family import FamilyRevision
@@ -401,3 +402,24 @@ def test_get_property_index() -> None:
     assert get_property_index(PropertyTag.CURRENT_VERSION, family) == 0x01
     assert get_property_index(PropertyTag.BOOT_STATUS_REGISTER, family) == 0x14
     assert get_property_index(PropertyTag.VERIFY_ERASE, family) == 0xA
+
+
+def test_get_property_tag_label() -> None:
+    """Test the get_property_tag_label function with various input types.
+
+    This test verifies that the get_property_tag_label function correctly handles:
+    - PropertyTag enums (returns index and label)
+    - Known integer property indexes (returns index and label)
+    - Unknown integer property indexes that are not defined in the PropertyTag
+      enum / COMMON_PROPERTY_INDEXES table. These must be handled gracefully by
+      returning the "Unknown" label instead of raising an SPSDKError.
+    """
+    assert get_property_tag_label(PropertyTag.CURRENT_VERSION) == (
+        0x01,
+        PropertyTag.CURRENT_VERSION.label,
+    )
+    assert get_property_tag_label(0x01) == (0x01, PropertyTag.CURRENT_VERSION.label)
+    # Index 0x23 (35) has no entry in the PropertyTag enum / COMMON_PROPERTY_INDEXES
+    # table, so from_index raises the base SPSDKError. This must be caught and the
+    # "Unknown" label returned instead of propagating the exception.
+    assert get_property_tag_label(0x23) == (0x23, "Unknown")

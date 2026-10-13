@@ -78,6 +78,7 @@ class SocId(SpsdkSoftEnum):
     MX91 = (0x9100, "MX91", "i.MX91")
     MX93 = (0x9300, "MX93", "i.MX93")
     MX95 = (0x9500, "MX95", "i.MX95")
+    MX95_1 = (0x9590, "MX95", "i.MX95")
     MX943 = (0x9430, "MX943", "i.MX943")
     MX952 = (0x9570, "MX952", "i.MX952")
 
@@ -445,8 +446,10 @@ class EleImemState(SpsdkSoftEnum):
     ELE_IMEM_LOST = (
         0xFE,
         "ELE_IMEM_LOST",
-        "Some IMEM regions have been lost during power down and fw "
-        "must be re-installed to use all ELE features",
+        (
+            "Some IMEM regions have been lost during power down and fw "
+            "must be re-installed to use all ELE features"
+        ),
     )
 
 

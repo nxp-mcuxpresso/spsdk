@@ -141,6 +141,9 @@ class UUUOperation:
         traceback: TracebackType | None = None,
     ) -> None:
         """Exit the context manager and print success if no exceptions occurred."""
+        # Always restore the terminal (cursor) even when the operation failed or
+        # was interrupted before wait_uuu_finish() had a chance to run.
+        self.uuu.finish_progress()
         if exception_type is None:
             click.echo("Success")
 

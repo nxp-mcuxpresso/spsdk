@@ -21,14 +21,24 @@ import shutil
 import tempfile
 
 import pytest
+import yaml
 
 from spsdk.apps import nxpimage
 from spsdk.crypto.dilithium import IS_DILITHIUM_SUPPORTED
 from spsdk.crypto.hash import EnumHashAlgorithm
-from spsdk.crypto.keys import IS_OSCCA_SUPPORTED
+from spsdk.crypto.keys import (
+    IS_LMS_SUPPORTED,
+    IS_OSCCA_SUPPORTED,
+    PrivateKeyMLDSA,
+    PublicKeyMLDSA,
+    SPSDKEncoding,
+)
 from spsdk.image.ahab.ahab_blob import AhabBlob, AhabBlobOffline
+from spsdk.image.ahab.ahab_certificate import AhabCertificate
+from spsdk.image.ahab.ahab_container import AHABContainerV1forV2, AHABContainerV2
 from spsdk.image.ahab.ahab_data import FlagsSrkSet
 from spsdk.image.ahab.ahab_image import AHABImage
+from spsdk.image.ahab.ahab_srk import SRKRecordV2, SRKTableArray
 from spsdk.image.ahab.signed_msg import MessageCommands, SignedMessage
 from spsdk.image.ahab.utils import ahab_sign_image
 from spsdk.image.bootable_image.bimg import BootableImage
@@ -49,6 +59,45 @@ from spsdk.utils.misc import (
 from tests.cli_runner import CliRunner
 from tests.misc import compare_bin_files
 from tests.nxpimage.test_nxpimage_cert_block import process_config_file
+
+if IS_LMS_SUPPORTED:
+    from spsdk.crypto.keys import PrivateKeyLMS
+    from spsdk.crypto.lms import LMSParams
+
+
+def _write_mldsa_raw_ahab_config(tmpdir: str, data_dir: str, variant: str) -> str:
+    """Create an AHAB config using raw ML-DSA private and public keys."""
+    key_dir = os.path.abspath(os.path.join(data_dir, "..", "..", "_data", "keys", "mldsa65"))
+    rsa_dir = os.path.abspath(os.path.join(data_dir, "..", "..", "_data", "keys", "rsa4096"))
+    config_path = os.path.join(
+        data_dir, "ahab", "container_sign_config_mx95b0_rsa4096_mldsa65_legacy.yaml"
+    )
+    config_data = Config.create_from_file(config_path)
+
+    private_suffix = "_native.pem" if variant == "native" else ".pem"
+    public_suffix = "_native.pub" if variant == "native" else ".pub"
+
+    private_key = PrivateKeyMLDSA.load(os.path.join(key_dir, f"srk0_mldsa65{private_suffix}"))
+    raw_private_path = os.path.join(tmpdir, f"srk0_mldsa65_{variant}.bin")
+    write_file(private_key.export(encoding=SPSDKEncoding.NXP), raw_private_path, mode="wb")
+
+    raw_public_paths = []
+    for i in range(4):
+        public_key = PublicKeyMLDSA.load(os.path.join(key_dir, f"srk{i}_mldsa65{public_suffix}"))
+        raw_public_path = os.path.join(tmpdir, f"srk{i}_mldsa65_{variant}.pub.bin")
+        write_file(public_key.export(encoding=SPSDKEncoding.NXP), raw_public_path, mode="wb")
+        raw_public_paths.append(raw_public_path)
+
+    config_data["signer"] = os.path.join(rsa_dir, "srk0_rsa4096.pem")
+    config_data["signer_#2"] = raw_private_path
+    config_data["srk_table/srk_array"] = [
+        os.path.join(rsa_dir, f"srk{i}_rsa4096.pub") for i in range(4)
+    ]
+    config_data["srk_table/srk_table_#2/srk_array"] = raw_public_paths
+
+    output_config_path = os.path.join(tmpdir, f"container_sign_config_mx95_{variant}_raw.yaml")
+    write_file(yaml.safe_dump(dict(config_data), sort_keys=False), output_config_path)
+    return output_config_path
 
 
 @pytest.mark.parametrize(
@@ -316,6 +365,32 @@ def test_nxpimage_ahab_cert_parse(
         cmd = f"ahab certificate parse -f mx95 -b {input_binary} -o {tmpdir} -s oem"
         cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile("certificate_config.yaml")
+
+
+@pytest.mark.parametrize("flag_ca", [True, False])
+def test_nxpimage_ahab_cert_flag_ca(tmpdir: str, data_dir: str, flag_ca: bool) -> None:
+    """Test that the certificate SRK CA flag option is applied and round-tripped.
+
+    Verifies that the ``flag_ca_0`` configuration option sets the CA flag on the
+    certificate SRK record and that :meth:`AhabCertificate.get_config` reports the
+    same value back.
+
+    :param tmpdir: Temporary directory for exported public key files.
+    :param data_dir: Directory containing test data files.
+    :param flag_ca: Value of the CA flag to configure and expect.
+    """
+    with use_working_directory(data_dir):
+        config = Config.create_from_file(os.path.join("ahab", "ahab_certificate256.yaml"))
+        config["flag_ca_0"] = flag_ca
+        certificate = AhabCertificate.load_from_config(config)
+
+    assert isinstance(certificate.public_key_0, SRKRecordV2)
+    ca_set = bool(certificate.public_key_0.srk_flags & SRKRecordV2.FLAGS_CA_MASK)
+    assert ca_set is flag_ca
+
+    # The generated configuration must expose the same CA flag value
+    ret_cfg = certificate.get_config(data_path=str(tmpdir))
+    assert ret_cfg["flag_ca_0"] is flag_ca
 
 
 @pytest.mark.parametrize(
@@ -1050,7 +1125,7 @@ def test_nxpimage_ahab_update_keyblob_bootable_multiple_containers_with_keyblob(
         bimg.verify().validate()
 
         assert len(bimg.segments) == 2, "Expected two segments in the bootable image"
-        assert all([isinstance(segment, SegmentAhab) for segment in bimg.segments])
+        assert all(isinstance(segment, SegmentAhab) for segment in bimg.segments)
 
         segment = bimg.segments[image]
         assert isinstance(segment, SegmentAhab), "Segment should be an AHAB segment"
@@ -1415,12 +1490,15 @@ def test_nxpimage_ahab_sign(
         dek = "000102030405060708090a0b0c0d0e0f"
         if "encrypted" in config_file:
             for container in ahab.ahab_containers:
-                if container.flag_srk_set != FlagsSrkSet.NXP:
-                    if container.signature_block and container.signature_block.blob:
-                        container.signature_block.blob.dek = load_hex_string(
-                            dek, container.signature_block.blob._size // 8
-                        )
-                        container.decrypt_data()
+                if (
+                    container.flag_srk_set != FlagsSrkSet.NXP
+                    and container.signature_block
+                    and container.signature_block.blob
+                ):
+                    container.signature_block.blob.dek = load_hex_string(
+                        dek, container.signature_block.blob._size // 8
+                    )
+                    container.decrypt_data()
 
         # Verify the signed image
         ahab.verify().validate()
@@ -1495,6 +1573,107 @@ def test_nxpimage_ahab_sign(
                         assert (
                             len(srk_hash) == expected_hash_len
                         ), f"Container {i}, SRK {srk_id}: length {len(srk_hash)}, expected {expected_hash_len}"
+
+
+@pytest.mark.parametrize(
+    "variant",
+    [
+        "native",
+        pytest.param(
+            "legacy",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="Legacy ML-DSA raw fixtures require spsdk-pqc"
+            ),
+        ),
+    ],
+)
+def test_nxpimage_ahab_sign_raw_mldsa_keys(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str, variant: str
+) -> None:
+    """Test AHAB signing with raw ML-DSA private and public keys."""
+    with use_working_directory(data_dir):
+        config_file_path = _write_mldsa_raw_ahab_config(tmpdir, data_dir, variant)
+        binary_for_sign = f"{data_dir}/ahab/ahab_mx95_dilithium3.bin"
+        output_file = os.path.join(tmpdir, f"signed_{variant}.bin")
+
+        cmd = f"ahab sign -c {config_file_path} -b {binary_for_sign} -o {output_file}"
+        cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=0)
+
+        signed_image = load_binary(output_file)
+        ahab = AHABImage.parse(signed_image, FamilyRevision("mx95"))
+        ahab.verify().validate()
+
+        signature_block = ahab.ahab_containers[0].signature_block
+        assert signature_block is not None
+        assert isinstance(signature_block.srk_assets, SRKTableArray)
+        assert (
+            signature_block.srk_assets._srk_tables[1].srk_records[0].signing_algorithm.label
+            == "ML-DSA"
+        )
+        assert isinstance(
+            signature_block.srk_assets._srk_tables[1].srk_records[0].get_public_key(),
+            PublicKeyMLDSA,
+        )
+
+
+@pytest.mark.skipif(not IS_LMS_SUPPORTED, reason="pyhsslms not available")
+def test_nxpimage_ahab_sign_rt2660_mixed_mldsa_lms(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str
+) -> None:
+    """Test RT2660 AHAB signing with mixed ML-DSA and LMS SRK entries."""
+    with use_working_directory(data_dir):
+        config_template = f"{data_dir}/ahab/container_sign_config_rt2660_mixed_mldsa_lms.yaml"
+        config_path = f"{tmpdir}/container_sign_config_rt2660_mixed_mldsa_lms.yaml"
+        output_file = f"{tmpdir}/signed_rt2660.bin"
+        binary_for_sign = f"{tmpdir}/rt2660_serial_downloader.bin"
+        keys_dir = os.path.normpath(os.path.join(data_dir, "..", "..", "_data", "keys")).replace(
+            "\\", "/"
+        )
+        # RT2660 ahab sign expects a bootable image; for serial_downloader the AHAB container
+        # starts at offset 0x400.
+        input_ahab = load_binary(f"{data_dir}/ahab/ahab_mx95_dilithium3.bin")
+        write_file(b"\x00" * 0x400 + input_ahab, binary_for_sign, mode="wb")
+        lms_private = PrivateKeyLMS.generate_key(LMSParams(hash_length=32, height=5, w=1))
+        lms_private_path = f"{tmpdir}/srk3_lms.prv".replace("\\", "/")
+        lms_public_path = f"{tmpdir}/srk3_lms.pub".replace("\\", "/")
+        write_file(lms_private.export(), lms_private_path, mode="wb")
+        write_file(lms_private.get_public_key().export(), lms_public_path, mode="wb")
+
+        config_text = load_text(config_template)
+        config_text = config_text.replace("../../_data/keys", keys_dir)
+        config_text = config_text.replace("__LMS_PRIVATE_KEY__", lms_private_path)
+        config_text = config_text.replace("__LMS_PUBLIC_KEY__", lms_public_path)
+        write_file(config_text, config_path)
+
+        cmd = (
+            f"ahab sign -c {config_path} -b {binary_for_sign} "
+            f"--mem-type serial_downloader -o {output_file}"
+        )
+        cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=0)
+
+        bimg = BootableImage.parse(
+            load_binary(output_file), FamilyRevision("mimxrt2662"), MemoryType.SERIAL_DOWNLOADER
+        )
+        segment = next(seg for seg in bimg.segments if isinstance(seg, SegmentAhab))
+        ahab = segment.ahab
+        assert isinstance(ahab, AHABImage)
+        ahab.verify().validate()
+
+        container = ahab.ahab_containers[0]
+        assert container.flag_used_srk_id == 3
+        assert container.signature_block
+        assert container.signature_block.signature
+        assert container.signature_block.srk_assets
+        signature = container.signature_block.signature
+        assert signature.signature_data != signature.get_dummy_signature(
+            len(signature.signature_data)
+        )
+
+        srk_assets = container.signature_block.srk_assets
+        assert isinstance(srk_assets, SRKTableArray)
+        srk_table = srk_assets._srk_tables[0]
+        assert srk_table.srk_records[0].hash_algorithm.label == "SHA384"
+        assert srk_table.srk_records[3].hash_algorithm.label == "SHA256"
 
 
 def test_nxpimage_ahab_sign_emmc(cli_runner: CliRunner, tmpdir: str, data_dir: str) -> None:
@@ -1943,3 +2122,193 @@ def test_nxpimage_ahab_parse_nxp_roundtrip(data_dir: str, tmpdir: str) -> None:
     # The recreated binary must match the original AHAB portion exactly
     ahab_size = len(recreated)
     assert original[:ahab_size] == recreated, "Roundtrip mismatch: AHAB portion differs"
+
+
+def test_nxpimage_ahab_load_binary_container_with_v1_for_v2(tmpdir: str) -> None:
+    """Test loading a binary container containing V2 and V1-for-V2 containers.
+
+    :param tmpdir: Temporary directory path.
+    """
+    family = FamilyRevision("mimx943", "a1")
+    source = AHABImage(family=family, target_memory="standard")
+    container_config = Config(
+        {
+            "srk_set": "none",
+            "fuse_version": 0,
+            "sw_version": 0,
+            "images": [],
+        }
+    )
+    containers = [
+        AHABContainerV2.load_from_config(source.chip_config, container_config, 0),
+        AHABContainerV1forV2.load_from_config(source.chip_config, container_config, 1),
+    ]
+
+    binary = bytearray(AHABContainerV1forV2.CONTAINER_SIZE + len(containers[1]))
+    for index, container in enumerate(containers):
+        container.update_fields()
+        container_offset = container.get_container_offset(index)
+        container_binary = container.export()
+        binary[container_offset : container_offset + len(container_binary)] = container_binary
+
+    binary_path = os.path.join(tmpdir, "mixed_nxp_containers.bin")
+    write_file(binary, binary_path, mode="wb")
+    config = Config(
+        {
+            "family": family.name,
+            "revision": family.revision,
+            "target_memory": "standard",
+            "containers": [{"binary_container": {"path": binary_path}}],
+        }
+    )
+
+    loaded = AHABImage.load_from_config(config)
+
+    assert [type(container) for container in loaded.ahab_containers] == [
+        AHABContainerV2,
+        AHABContainerV1forV2,
+    ]
+    assert [container.chip_config.container_offset for container in loaded.ahab_containers] == [
+        0,
+        0x4000,
+    ]
+
+
+ELF_MAGIC = b"\x7fELF"
+
+
+def test_nxpimage_ahab_export_elf(cli_runner: CliRunner, tmpdir: str, data_dir: str) -> None:
+    """Test AHAB export produces a valid ELF file when output_format is 'elf'.
+
+    Writes a patched AHAB config with ``output_format: elf`` alongside the original
+    config so relative image paths resolve correctly, then verifies ELF magic bytes.
+
+    :param cli_runner: CLI test runner.
+    :param tmpdir: Temporary directory for output.
+    :param data_dir: Base test data directory.
+    """
+    src_config = os.path.join(data_dir, "ahab", "config_ctcm.yaml")
+    out_file = os.path.join(tmpdir, "ahab_out.elf")
+
+    with open(src_config, encoding="utf-8") as f:
+        content = f.read()
+    # Replace relative output name with absolute path and inject format
+    patched = content.replace("cntr_ctcm_cm33_img.bin", out_file.replace("\\", "/"))
+    patched += "\noutput_format: elf\n"
+
+    # Write patched config next to original so relative image_path resolves
+    patched_config = os.path.join(data_dir, "ahab", "_config_elf_tmp.yaml")
+    try:
+        with open(patched_config, "w", encoding="utf-8") as f:
+            f.write(patched)
+        with use_working_directory(data_dir):
+            cli_runner.invoke(nxpimage.main, ["ahab", "export", "-c", patched_config])
+    finally:
+        if os.path.isfile(patched_config):
+            os.remove(patched_config)
+
+    assert os.path.isfile(out_file)
+    with open(out_file, "rb") as f:
+        assert f.read(4) == ELF_MAGIC
+
+
+def test_nxpimage_ahab_export_elf_patch_fallback(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str
+) -> None:
+    """Test AHAB ELF_PATCH falls back to plain ELF when image_path is not an ELF.
+
+    The AHAB config has a BIN file as image_path. ELF_PATCH should detect this,
+    warn, and fall back to a plain section-less ELF.
+
+    :param cli_runner: CLI test runner.
+    :param tmpdir: Temporary directory for output.
+    :param data_dir: Base test data directory.
+    """
+    src_config = os.path.join(data_dir, "ahab", "config_ctcm.yaml")
+    out_file = os.path.join(tmpdir, "ahab_patch.elf")
+
+    with open(src_config, encoding="utf-8") as f:
+        content = f.read()
+    patched = content.replace("cntr_ctcm_cm33_img.bin", out_file.replace("\\", "/"))
+    patched += "\noutput_format: elf_patch\n"
+
+    patched_config = os.path.join(data_dir, "ahab", "_config_elf_patch_tmp.yaml")
+    try:
+        with open(patched_config, "w", encoding="utf-8") as f:
+            f.write(patched)
+        with use_working_directory(data_dir):
+            cli_runner.invoke(nxpimage.main, ["ahab", "export", "-c", patched_config])
+    finally:
+        if os.path.isfile(patched_config):
+            os.remove(patched_config)
+
+    assert os.path.isfile(out_file)
+    with open(out_file, "rb") as f:
+        assert f.read(4) == ELF_MAGIC
+
+
+def test_find_ahab_source_elf_returns_none_for_bin(data_dir: str) -> None:
+    """Test _find_ahab_source_elf returns the resolved path for an existing BIN image_path.
+
+    The BIN file is not a valid ELF, but _find_ahab_source_elf only resolves the path.
+    The ELF magic check happens inside _save_elf. This test verifies the helper
+    correctly resolves an existing file path.
+
+    :param data_dir: Base test data directory.
+    """
+    from spsdk.apps.nxpimage_apps.nxpimage_ahab import _find_ahab_source_elf
+    from spsdk.utils.config import Config
+
+    config_path = os.path.join(data_dir, "ahab", "config_ctcm.yaml")
+    with use_working_directory(data_dir):
+        config = Config.create_from_file(config_path)
+        result = _find_ahab_source_elf(config)
+    # The image_path is a BIN file which exists → returns resolved path (not None)
+    assert result is not None
+    assert os.path.isfile(result)
+
+
+def test_nxpimage_ahab_export_elf_patch_with_elf_input(
+    cli_runner: CliRunner, tmpdir: str, data_dir: str
+) -> None:
+    """Test AHAB ELF_PATCH with an actual ELF as image_path (non-fallback path).
+
+    Patches the AHAB config so the first container's first image_path points to
+    keil.elf instead of the default BIN file, then exports with output_format:
+    elf_patch.  Because keil.elf is a valid ELF, the real ELF_PATCH code path
+    executes and the output must be at least as large as keil.elf itself.
+
+    :param cli_runner: CLI test runner.
+    :param tmpdir: Temporary directory for output.
+    :param data_dir: Base test data directory.
+    """
+    keil_elf = os.path.join(data_dir, "utils", "binary", "convert", "keil.elf")
+    src_config = os.path.join(data_dir, "ahab", "config_ctcm.yaml")
+    out_file = os.path.join(tmpdir, "ahab_elf_patch.elf")
+
+    with open(src_config, encoding="utf-8") as f:
+        content = f.read()
+    # Replace output path with absolute path so the file lands in tmpdir
+    patched = content.replace("cntr_ctcm_cm33_img.bin", out_file.replace("\\", "/"))
+    # Replace the first image_path value (ctcm_cm33_img.bin) with keil.elf
+    patched = patched.replace(
+        r".\ahab\ctcm_cm33_img.bin",
+        keil_elf.replace("\\", "/"),
+    )
+    patched += "\noutput_format: elf_patch\n"
+
+    patched_config = os.path.join(data_dir, "ahab", "_config_elf_patch_elf_input_tmp.yaml")
+    try:
+        with open(patched_config, "w", encoding="utf-8") as f:
+            f.write(patched)
+        with use_working_directory(data_dir):
+            cli_runner.invoke(nxpimage.main, ["ahab", "export", "-c", patched_config])
+    finally:
+        if os.path.isfile(patched_config):
+            os.remove(patched_config)
+
+    assert os.path.isfile(out_file)
+    with open(out_file, "rb") as f:
+        assert f.read(4) == ELF_MAGIC
+    # Real patch preserves the source ELF and appends container data → output ≥ source size
+    assert os.path.getsize(out_file) >= os.path.getsize(keil_elf)

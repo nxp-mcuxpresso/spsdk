@@ -6,11 +6,15 @@
 
 """Tests for spsdk/image/mbi/mbi_mixin.py."""
 
+from typing import Any
+
 import pytest
 
 from spsdk.exceptions import SPSDKError
 from spsdk.image.mbi.mbi_mixin import (
     Mbi_Mixin,
+    Mbi_MixinAhab,
+    Mbi_MixinApp,
     Mbi_MixinFwVersion,
     Mbi_MixinHmac,
     Mbi_MixinHmacMandatory,
@@ -18,11 +22,13 @@ from spsdk.image.mbi.mbi_mixin import (
     Mbi_MixinImageSubType,
     Mbi_MixinImageVersion,
     Mbi_MixinLoadAddress,
+    Mbi_MixinLoadAddressNbu,
     Mbi_MixinTrustZone,
     Mbi_MixinTrustZoneMandatory,
 )
 from spsdk.image.trustzone import TrustZone
 from spsdk.utils.config import Config
+from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision
 from spsdk.utils.verifier import VerifierResult
 
@@ -90,8 +96,6 @@ def test_mbi_mixin_base_mix_verify() -> None:
 
 class ConcreteLoadAddress(Mbi_MixinLoadAddress):
     """Concrete implementation of Mbi_MixinLoadAddress for testing."""
-
-    pass
 
 
 def test_load_address_mix_load_from_config() -> None:
@@ -161,6 +165,47 @@ def test_load_address_mix_verify_out_of_range() -> None:
     assert ver.result in (VerifierResult.ERROR, VerifierResult.WARNING)
 
 
+class ConcreteNbuLoadAddress(Mbi_MixinLoadAddressNbu):
+    """Concrete NBU load address implementation for testing."""
+
+
+class ConcreteNbuAhab(Mbi_MixinAhab):
+    """Concrete AHAB implementation with NBU load address semantics for testing."""
+
+    FEATURE = DatabaseManager.MBI
+    NBU_RESERVED_SIZE_IN_LOAD_ADDRESS = True
+
+
+def test_nbu_load_address_schema() -> None:
+    """Test NBU load address schema describes the reserved partition behavior."""
+    schemas = ConcreteNbuLoadAddress.mix_get_validation_schemas(FamilyRevision("kw43l43z97"))
+    description = schemas[0]["properties"]["outputImageExecutionAddress"]["description"]
+    assert "reserved NBU partition size" in description
+    assert "32 KiB" in description
+
+
+@pytest.mark.parametrize(
+    "core_id,expected_load_address",
+    [
+        ("nbu", 0),
+        ("cortex-m33", 0x80000),
+    ],
+)
+def test_nbu_load_address_ahab_entry(core_id: str, expected_load_address: int) -> None:
+    """Test NBU reserved size is not copied to the AHAB image entry."""
+    obj = ConcreteNbuAhab()
+    obj.family = FamilyRevision("kw43l43z97")
+    obj.app = bytes(64)
+    obj.app_crc = False
+    obj.trust_zone = None
+    obj.load_address = 0x80000
+
+    Mbi_MixinAhab.mix_load_from_config(obj, Config({"core_id": core_id}))
+
+    assert obj.ahab.image_array[0].flags_core_id_name == core_id
+    assert obj.ahab.image_array[0].load_address == expected_load_address
+
+
 # ===========================================================================================
 # Mbi_MixinFwVersion tests
 # ===========================================================================================
@@ -168,8 +213,6 @@ def test_load_address_mix_verify_out_of_range() -> None:
 
 class ConcreteFwVersion(Mbi_MixinFwVersion):
     """Concrete implementation for testing."""
-
-    pass
 
 
 def test_fw_version_mix_load_from_config() -> None:
@@ -235,8 +278,6 @@ def test_fw_version_mix_verify_out_of_range() -> None:
 
 class ConcreteImageVersion(Mbi_MixinImageVersion):
     """Concrete implementation for testing."""
-
-    pass
 
 
 def test_image_version_mix_load_from_config() -> None:
@@ -304,8 +345,6 @@ def test_image_version_mix_verify_max() -> None:
 class ConcreteImageSubType(Mbi_MixinImageSubType):
     """Concrete implementation for testing."""
 
-    pass
-
 
 def test_image_subtype_mix_load_from_config_main() -> None:
     """Test ImageSubType mix_load_from_config loads 'main' subtype."""
@@ -369,8 +408,6 @@ def test_image_subtype_mix_get_config_none_raises() -> None:
 class ConcreteTrustZone(Mbi_MixinTrustZone):
     """Concrete implementation for testing."""
 
-    pass
-
 
 def test_tz_mix_get_config_disabled(lpc55_family: FamilyRevision) -> None:
     """Test TrustZone mix_get_config returns disabled when trust_zone is None."""
@@ -415,8 +452,6 @@ def test_tz_mix_load_from_config_enabled_no_preset(lpc55_family: FamilyRevision)
 
 class ConcreteTrustZoneMandatory(Mbi_MixinTrustZoneMandatory):
     """Concrete implementation for testing."""
-
-    pass
 
 
 def test_tz_mandatory_mix_verify_configured(lpc55_family: FamilyRevision) -> None:
@@ -463,8 +498,6 @@ def test_tz_mandatory_mix_load_from_config_enabled(lpc55_family: FamilyRevision)
 
 class ConcreteHwKey(Mbi_MixinHwKey):
     """Concrete implementation for testing."""
-
-    pass
 
 
 def test_hw_key_mix_load_from_config_enabled() -> None:
@@ -539,7 +572,7 @@ def test_hw_key_mix_verify_none() -> None:
 class ConcreteHmac(Mbi_MixinHmac):
     """Concrete implementation for testing."""
 
-    parsed_elements: dict = {}
+    parsed_elements: dict[str, Any] = {}  # noqa: RUF012
 
 
 def test_hmac_mix_verify_with_key() -> None:
@@ -563,7 +596,7 @@ def test_hmac_mix_verify_no_key() -> None:
 class ConcreteHmacMandatory(Mbi_MixinHmacMandatory):
     """Concrete implementation for testing."""
 
-    parsed_elements: dict = {}
+    parsed_elements: dict[str, Any] = {}  # noqa: RUF012
 
 
 def test_hmac_mandatory_mix_verify_with_key() -> None:
@@ -621,3 +654,58 @@ def test_hmac_mix_len_without_key() -> None:
     obj = ConcreteHmac()
     obj._hmac_key = None
     assert obj.mix_len() == 0
+
+
+# ===========================================================================================
+# Mbi_MixinApp tests
+# ===========================================================================================
+
+
+class ConcreteApp(Mbi_MixinApp):
+    """Concrete implementation of Mbi_MixinApp for testing."""
+
+    def __init__(self) -> None:
+        """Initialize with default members."""
+        self._app = b""
+        self.app_ext_memory_align = 0x1000
+
+
+def test_app_setter_aligns_block() -> None:
+    """Application setter aligns the stored data to a block boundary."""
+    obj = ConcreteApp()
+    obj.app = b"\x01\x02\x03"
+    assert len(obj.app) >= 3
+    assert obj.mix_len() == len(obj.app)
+
+
+def test_app_mix_get_config_empty() -> None:
+    """mix_get_config returns an empty dict when no application is present."""
+    assert ConcreteApp().mix_get_config(".") == {}
+
+
+def test_app_mix_get_config_with_app(tmp_path: Any) -> None:
+    """mix_get_config writes the application binary and references it."""
+    obj = ConcreteApp()
+    obj._app = b"\x11" * 0x40
+    cfg = obj.mix_get_config(str(tmp_path))
+    assert cfg["inputImageFile"] == "application.bin"
+    assert (tmp_path / "application.bin").exists()
+
+
+def test_app_mix_verify_ivt_unique() -> None:
+    """mix_verify passes IVT uniqueness when the first vectors differ."""
+    obj = ConcreteApp()
+    obj._app = (
+        (1).to_bytes(4, "little")
+        + (2).to_bytes(4, "little")
+        + (3).to_bytes(4, "little")
+        + b"\x00" * (0x38 - 12)
+    )
+    assert "IVT vectors uniqueness" in str(obj.mix_verify())
+
+
+def test_app_mix_verify_ivt_identical() -> None:
+    """mix_verify reports identical IVT vectors as a failure."""
+    obj = ConcreteApp()
+    obj._app = b"\x00" * 0x38
+    assert "identical" in str(obj.mix_verify()).lower()

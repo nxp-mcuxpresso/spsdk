@@ -84,7 +84,7 @@ class AHABImage(FeatureBaseClass):
         self.chip_config = create_chip_config(family=family, target_memory=target_memory)
         self.ahab_containers: list[AHABContainer | AHABContainerV2] = ahab_containers or []
         self._container_type: (
-            type[AHABContainer] | type[AHABContainerV1forV2] | type[AHABContainerV2] | None
+            type[AHABContainer | AHABContainerV1forV2 | AHABContainerV2] | None
         ) = None
         self.db = get_db(family)
 
@@ -128,8 +128,9 @@ class AHABImage(FeatureBaseClass):
     def start_recommended_image_address(self) -> int:
         """Get the recommended start address for data images.
 
-        The method determines the appropriate start address based on the target memory type,
-        using different addresses for NAND memory types versus other memory types.
+        The address defined in the device database has the highest priority and is used for all
+        target memory types. When the database does not define it, the container version specific
+        default is used, with a dedicated value for NAND memory types.
 
         :return: Start address for data images based on target memory type.
         :raises SPSDKError: If no containers are defined.
@@ -138,6 +139,8 @@ class AHABImage(FeatureBaseClass):
             raise SPSDKError(
                 "Cannot determine the Start data images address without defined container version."
             )
+        if self.chip_config.start_image_address:
+            return self.chip_config.start_image_address
         return (
             self.ahab_containers[0].START_IMAGE_ADDRESS_NAND
             if self.chip_config.target_memory.is_nand
@@ -206,7 +209,6 @@ class AHABImage(FeatureBaseClass):
                 f" the maximum count: {self.chip_config.containers_max_cnt}"
             )
 
-        # ADD THIS VALIDATION:
         self._validate_container_type_support(type(container))
 
         # Handle V2 containers which can be mixed with V1forV2
@@ -405,6 +407,15 @@ class AHABImage(FeatureBaseClass):
                 )
 
                 ret.add_image(data_image)
+                if image_entry.gap_after_image_binary:
+                    gap_image = BinaryImage(
+                        name=f"{image_name} gap payload",
+                        size=image_entry.gap_after_image,
+                        offset=image_entry.image_offset + image_entry.image_size,
+                        binary=image_entry.gap_after_image_binary,
+                        description=f"Prefilled data for gap_after_image behind {image_name}.",
+                    )
+                    ret.add_image(gap_image)
 
         return ret
 
@@ -646,7 +657,7 @@ class AHABImage(FeatureBaseClass):
                     except SPSDKError as exc:
                         if j == 0:
                             raise SPSDKParsingError(
-                                f"AHAB Binary Container parsing failed. ({str(exc)})"
+                                f"AHAB Binary Container parsing failed. ({exc!s})"
                             ) from exc
                         break
 
@@ -719,13 +730,13 @@ class AHABImage(FeatureBaseClass):
                     )
                     ret.ahab_containers.append(container)
             except (SPSDKError, IndexError) as exc:
-                logger.debug(f"AHAB Container parsing index {i} failed: {str(exc)}")
+                logger.debug(f"AHAB Container parsing index {i} failed: {exc!s}")
                 if not ver_header.has_errors:
                     pre_ver = container_type.pre_parse_verify(
                         data[container_type.get_container_offset(i) :]
                     )
                     raise SPSDKError(
-                        f"AHAB Container parsing failed on container on index: {i}. \nException: \n{str(exc)}. "
+                        f"AHAB Container parsing failed on container on index: {i}. \nException: \n{exc!s}. "
                         f"\nThe pre-parse verify reason: \n{pre_ver.draw()}"
                     ) from exc
         if len(ret.ahab_containers) == 0:
@@ -1105,8 +1116,11 @@ class AHABImage(FeatureBaseClass):
             :cvar TAG: Container header tag identifier.
             """
 
-            VERSION = [0, 2]
-            TAG = [AHABTags.CONTAINER_HEADER.tag, AHABTags.CONTAINER_HEADER_V1_WITH_V2.tag]
+            VERSION: list[int] = [0, 2]  # noqa: RUF012
+            TAG: list[int] = [  # noqa: RUF012
+                AHABTags.CONTAINER_HEADER.tag,
+                AHABTags.CONTAINER_HEADER_V1_WITH_V2.tag,
+            ]
 
         logger.debug("Trying to find AHAB container on every 0x400 bytes")
         for offset in range(0, len(binary), 0x400):
@@ -1136,9 +1150,9 @@ class AHABImage(FeatureBaseClass):
         :param container_type: AHAB container class type to validate against family support
         :raises SPSDKValueError: If container type is unknown or not supported by the family
         """
-        if container_type == AHABContainerV2:
+        if container_type in [AHABContainerV2, AHABContainerV1forV2]:
             required_version = 2
-        elif container_type in [AHABContainer, AHABContainerV1forV2]:
+        elif container_type == AHABContainer:
             required_version = 1
         else:
             raise SPSDKValueError(f"Unknown container type: {container_type}")

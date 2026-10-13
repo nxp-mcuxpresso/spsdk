@@ -1,0 +1,66 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+family: mimxrt2661
+revision: latest
+output_folder: iped_output
+output_format: bin
+output_name: iped_table
+encrypted_name: encrypted_blob
+image_name: iped_image
+table_size: "0x400"
+keyblob_address: "0x60000000"
+data_alignment: 8
+instance: xspi0
+fw_version: "0x12345678"
+lifecycle: oem_open
+cust_mk_sk:
+  - "0x33221100"
+  - "0x77665544"
+  - "0xbbaa9988"
+  - "0xffeeddcc"
+  - "0x03020100"
+  - "0x07060504"
+  - "0x0b0a0908"
+  - "0x0f0e0d0c"
+srkh:
+  - "0xb388573a"
+  - "0x01504c30"
+  - "0x800ee92b"
+  - "0x800c516e"
+  - "0xf1ed2d5a"
+  - "0x82c4a449"
+  - "0x889081ca"
+  - "0x13d2f099"
+  - "0xbdb9a340"
+  - "0x5f98555a"
+  - "0x08080be0"
+  - "0x415e7d3a"
+  - "0x58b228f4"
+  - "0x70123aee"
+  - "0x8e7fc921"
+  - "0x83edc02f"
+pqc_srkh:
+  - "0x00000000"
+  - "0x00000000"
+  - "0x00000000"
+  - "0x00000000"
+  - "0x00000000"
+  - "0x00000000"
+  - "0x00000000"
+  - "0x00000000"
+  - "0x00000000"
+  - "0x00000000"
+  - "0x00000000"
+  - "0x00000000"
+  - "0x00000000"
+  - "0x00000000"
+  - "0x00000000"
+  - "0x00000000"
+contexts:
+  - region_id: 0
+    mode: ctr
+    start_address: "0x60001000"
+    end_address: "0x6001d000"
+    nonce: "0x000000006902c9e2"

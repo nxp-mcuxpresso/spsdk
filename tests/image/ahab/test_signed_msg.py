@@ -479,7 +479,7 @@ def test_load_from_config_generic_with_issue_date() -> None:
     cfg["issue_date"] = "2024-6"
     cfg["uuid"] = bytes(8).hex()
     cfg["flags"] = 0
-    cert_ver, permission, issue_date, uuid, flags = Message.load_from_config_generic(cfg)
+    _, _, issue_date, _, _ = Message.load_from_config_generic(cfg)
     assert issue_date is not None
     assert (issue_date >> 12) & 0xF == 6  # month
     assert (issue_date & 0xFFF) == 2024  # year
@@ -629,7 +629,7 @@ def test_signed_message_container_type_returns_class(chip_config) -> None:  # ty
 def test_signed_message_equality() -> None:
     """SignedMessage equality returns True when compared to itself."""
     sm = SignedMessage(family=FAMILY)
-    assert sm == sm
+    assert sm.__eq__(sm)
 
 
 def test_signed_message_not_equal_other_type() -> None:
@@ -815,6 +815,13 @@ def test_message_load_from_config_generic_without_issue_date() -> None:
     cfg = Config({"cert_version": 0, "cert_permission": 0, "uuid": "0000000000000000", "flags": 0})
     _, _, issue_date, _, _ = Message.load_from_config_generic(cfg)
     assert issue_date is None
+
+
+def test_message_load_from_config_generic_respects_unique_id_len() -> None:
+    """load_from_config_generic uses explicit UUID length for default UUID value."""
+    cfg = Config({"cert_version": 0, "cert_permission": 0, "flags": 0})
+    _, _, _, uuid, _ = Message.load_from_config_generic(cfg, unique_id_len=16)
+    assert uuid == bytes(16)
 
 
 def test_message_unique_id_truncation_warning(family: FamilyRevision, caplog) -> None:  # type: ignore[no-untyped-def]
@@ -1455,6 +1462,26 @@ def test_signed_message_container_v2_config_roundtrip(chip_config_v2) -> None:  
     assert ctr2.cert_version == 0x07
 
 
+def test_signed_message_container_v2_check_all_signatures_from_config(chip_config_v2) -> None:  # type: ignore[no-untyped-def]
+    """check_all_signatures from config sets container flags and is exported back."""
+    from spsdk.image.ahab.signed_msg import SignedMessageContainerV2
+
+    msg = MessageReturnLifeCycle(family=FAMILY_V2, life_cycle=3)
+    ctr = SignedMessageContainerV2(chip_config=chip_config_v2, message=msg)
+    cfg = ctr.get_config()
+    cfg["check_all_signatures"] = "check_all_signatures"
+
+    ctr2 = SignedMessageContainerV2.load_from_config(chip_config_v2, cfg)
+    assert ctr2.flag_check_all_signatures == ctr2.FlagsCheckAllSignatures.CheckAllSignatures
+
+    raw = ctr2.export()
+    flags = int.from_bytes(raw[4:8], byteorder="little")
+    assert flags & (1 << ctr2.FLAGS_CHECK_ALL_SIGNATURES_OFFSET)
+
+    cfg2 = ctr2.get_config()
+    assert cfg2["check_all_signatures"] == "check_all_signatures"
+
+
 def test_signed_message_container_v2_schema_has_cert_version_at_container_level() -> None:
     """get_validation_schemas for V2 exposes cert_version at container level."""
     from spsdk.image.ahab.signed_msg import SignedMessageContainerV2
@@ -1468,6 +1495,16 @@ def test_signed_message_container_v2_schema_has_cert_version_at_container_level(
 
     assert "cert_version" in container_props
     assert container_props["cert_version"].get("skip_in_template") is False
+
+
+def test_signed_message_container_v2_schema_has_16b_uuid_template() -> None:
+    """V2 schema uses 16-byte UUID template in message section."""
+    from spsdk.image.ahab.signed_msg import SignedMessageContainerV2
+
+    schemas = SignedMessageContainerV2.get_validation_schemas(FAMILY_V2)
+    signed_message_props = schemas[1]["properties"]
+    message_props = signed_message_props["message"]["properties"]
+    assert message_props["uuid"]["template_value"] == "00000000000000000000000000000000"
 
 
 def test_signed_message_container_v2_version_byte(chip_config_v2) -> None:  # type: ignore[no-untyped-def]

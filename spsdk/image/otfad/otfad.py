@@ -288,7 +288,7 @@ class KeyBlob:
         result = bytearray(16)
         result[:4] = self.ctr_init_vector[:4]
         result[4:8] = self.ctr_init_vector[4:]
-        for i in range(0, 4):
+        for i in range(4):
             result[8 + i] = self.ctr_init_vector[0 + i] ^ self.ctr_init_vector[4 + i]
 
         # result[15:12] = start_addr as a counter; nonce has these bytes zero and value passes as counter init value
@@ -557,7 +557,7 @@ class Otfad(FeatureBaseClass):
                 if key_blob.matches_range(addr, addr + len(block) - 1) and key_blob.is_encrypted:
                     logger.debug(
                         f"Encrypting {hex(addr)}:{hex(len(block) + addr - 1)}"
-                        f" with keyblob: \n {str(key_blob)}"
+                        f" with keyblob: \n {key_blob!s}"
                     )
                     encrypted_data[addr - base_addr : len(block) + addr - base_addr] = (
                         key_blob.encrypt_image(addr, block, byte_swap, counter_value=addr)
@@ -658,7 +658,7 @@ class Otfad(FeatureBaseClass):
         """
         msg = "Key-Blob\n"
         for index, key_blob in enumerate(self._key_blobs):
-            msg += f"Key-Blob {str(index)}:\n"
+            msg += f"Key-Blob {index!s}:\n"
             msg += str(key_blob)
         return msg
 
@@ -901,11 +901,12 @@ class Otfad(FeatureBaseClass):
 
         key_scramble_mask = None
         key_scramble_align = None
-        if database.get_bool(cls.FEATURE, "supports_key_scrambling", default=False):
-            if "key_scramble" in config.keys():
-                key_scramble = config["key_scramble"]
-                key_scramble_mask = value_to_int(key_scramble["key_scramble_mask"])
-                key_scramble_align = value_to_int(key_scramble["key_scramble_align"])
+        if database.get_bool(cls.FEATURE, "supports_key_scrambling", default=False) and (
+            "key_scramble" in config
+        ):
+            key_scramble = config["key_scramble"]
+            key_scramble_mask = value_to_int(key_scramble["key_scramble_mask"])
+            key_scramble_align = value_to_int(key_scramble["key_scramble_align"])
 
         binaries = None
         if "data_blobs" in config:
@@ -1058,10 +1059,10 @@ class Otfad(FeatureBaseClass):
                 image.save_binary_image(path=image.name, file_format=self.output_format)
                 generated_files.append(image.name)
                 logger.info(f"Created OTFAD Image:\n{image.name}")
-                memory_map += f"\n{image.name}:\n{str(image)}"
+                memory_map += f"\n{image.name}:\n{image!s}"
             else:
                 logger.info(
-                    f"Skipping export of {str(image)}, value is blank in the configuration file"
+                    f"Skipping export of {image!s}, value is blank in the configuration file"
                 )
             if sb21_supported:
                 bd_file_sources += f'\n    image{i} = "{image.name}";'

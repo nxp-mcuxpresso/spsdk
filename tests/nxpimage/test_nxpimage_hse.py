@@ -377,8 +377,76 @@ def test_hse_key_info_roundtrip(
     assert set(roundtrip_config["smrFlags"]) == set(config_data["smrFlags"])
 
     # Verify specific data matches
-    if "specificData" in config_data:
-        if "aesBlockModeMask" in config_data["specificData"]:
-            assert set(roundtrip_config["specificData"]["aesBlockModeMask"]) == set(
-                config_data["specificData"]["aesBlockModeMask"]
-            )
+    if "specificData" in config_data and "aesBlockModeMask" in config_data["specificData"]:
+        assert set(roundtrip_config["specificData"]["aesBlockModeMask"]) == set(
+            config_data["specificData"]["aesBlockModeMask"]
+        )
+
+
+def test_hse_key_catalog_verify(cli_runner: CliRunner, tmpdir: str) -> None:
+    """Test the 'hse key-catalog verify' command on an exported binary."""
+    template = os.path.join(tmpdir, "kc.yaml")
+    cli_runner.invoke(
+        nxpimage.main, ["hse", "key-catalog", "get-template", "-f", "mcxe31b", "-o", template]
+    )
+    cli_runner.invoke(nxpimage.main, ["hse", "key-catalog", "export", "-c", template])
+    binary = os.path.join(tmpdir, "key_catalog.bin")
+
+    result = cli_runner.invoke(
+        nxpimage.main, ["hse", "key-catalog", "verify", "-f", "mcxe31b", "-b", binary]
+    )
+    assert "Key Catalog Configuration(Succeeded)" in result.output
+    assert "Overall  result: Succeeded" in result.output
+
+
+def test_hse_smr_entry_verify(cli_runner: CliRunner, tmpdir: str) -> None:
+    """Test the 'hse smr-entry verify' command on an exported binary."""
+    config = {
+        "family": "mcxe31b",
+        "output": "smr_entry.bin",
+        "smrSrcAddr": "0x0040_0000",
+        "smrSize": 19568,
+        "smrDest": "0",
+        "checkPeriod": "0x0",
+        "authKeyHandle": {"catalogId": "NVM", "groupIdx": 5, "slotIdx": 0},
+        "authScheme": {"ecdsa": {"hashAlgo": "SHA256"}},
+        "versionOffset": 0,
+    }
+    config_path = os.path.join(tmpdir, "smr.yaml")
+    with open(config_path, "w") as f:
+        yaml.dump(config, f)
+    cli_runner.invoke(nxpimage.main, ["hse", "smr-entry", "export", "-c", config_path])
+    binary = os.path.join(tmpdir, "smr_entry.bin")
+
+    result = cli_runner.invoke(
+        nxpimage.main, ["hse", "smr-entry", "verify", "-f", "mcxe31b", "-b", binary]
+    )
+    assert "SMR Entry(Succeeded)" in result.output
+    assert "Overall  result: Succeeded" in result.output
+
+
+def test_hse_cr_entry_verify(cli_runner: CliRunner, tmpdir: str) -> None:
+    """Test the 'hse cr-entry verify' command on an exported binary."""
+    config = {
+        "family": "mcxe31b",
+        "output": "cr_entry.bin",
+        "coreId": "M7_0",
+        "crSanction": "KEEP_CORE_IN_RESET",
+        "preBootSmrMap": [],
+        "passResetAddr": "0x0",
+        "altPreBootSmrMap": [],
+        "altResetAddr": "0x0",
+        "postBootSmrMap": [],
+        "startOption": "AUTO_START",
+    }
+    config_path = os.path.join(tmpdir, "cr.yaml")
+    with open(config_path, "w") as f:
+        yaml.dump(config, f)
+    cli_runner.invoke(nxpimage.main, ["hse", "cr-entry", "export", "-c", config_path])
+    binary = os.path.join(tmpdir, "cr_entry.bin")
+
+    result = cli_runner.invoke(
+        nxpimage.main, ["hse", "cr-entry", "verify", "-f", "mcxe31b", "-b", binary]
+    )
+    assert "Core Reset Entry(Succeeded)" in result.output
+    assert "Overall  result: Succeeded" in result.output

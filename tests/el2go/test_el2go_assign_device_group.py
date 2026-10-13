@@ -98,16 +98,18 @@ def test_00_002_device_reg_correct_group(
         client.headers["EL2G-Correlation-ID"] = "some-uuid"
         client.device_group_id = int(device_group_id)
 
-        with patch(
-            "spsdk.el2go.api_utils.EL2GOTPClient._assign_device_to_group",
-            return_value=[mock_el2go_response, mock_url],
-        ):
-            with patch(
+        with (
+            patch(
+                "spsdk.el2go.api_utils.EL2GOTPClient._assign_device_to_group",
+                return_value=[mock_el2go_response, mock_url],
+            ),
+            patch(
                 "spsdk.el2go.api_utils.EL2GOTPClient._find_device_group_id",
                 return_value=device_group_id,
-            ):
-                with pytest.raises(SPSDKError):
-                    client.assign_device_to_devicegroup(device_id=device_id)
+            ),
+            pytest.raises(SPSDKError),
+        ):
+            client.assign_device_to_devicegroup(device_id=device_id)
 
 
 @pytest.mark.parametrize(
@@ -145,9 +147,11 @@ def test_00_004_005_assign_device_error(
         client = EL2GOTPClient.load_from_config(config_data=config_data)
         client.headers["EL2G-Correlation-ID"] = "some-uuid"
 
-        with patch(
-            "spsdk.el2go.api_utils.EL2GOTPClient._assign_device_to_group",
-            return_value=[mock_el2go_response, mock_url],
+        with (
+            patch(
+                "spsdk.el2go.api_utils.EL2GOTPClient._assign_device_to_group",
+                return_value=[mock_el2go_response, mock_url],
+            ),
+            pytest.raises(SPSDKError),
         ):
-            with pytest.raises(SPSDKError):
-                client.assign_device_to_devicegroup(device_id=device_id)
+            client.assign_device_to_devicegroup(device_id=device_id)

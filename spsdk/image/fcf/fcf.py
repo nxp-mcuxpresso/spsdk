@@ -24,6 +24,7 @@ from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, update_validation_schema_family
 from spsdk.utils.misc import Endianness
 from spsdk.utils.registers import Registers, RegistersPreValidationHook
+from spsdk.utils.verifier import Verifier
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +118,32 @@ class FCF(SegmentBase):
         config["revision"] = self.family.revision
         config["fcf"] = self.registers.get_config()
         return config
+
+    def verify(self) -> Verifier:
+        """Verify FCF content and report the effective register values.
+
+        :return: Verifier containing the FCF size and configured register values.
+        """
+        verifier = Verifier("Flash Configuration Field (FCF)")
+        verifier.add_record(
+            name="FCF size",
+            result=len(self.export()) == self.SIZE,
+            value=f"FCF size: {len(self.export())} bytes (expected {self.SIZE} bytes)",
+        )
+        for register in self.registers.get_registers(include_group_regs=True):
+            verifier.add_record(
+                name=register.name,
+                result=True,
+                value=register.get_hex_value(),
+            )
+            for bitfield in register.get_bitfields():
+                if bitfield.has_enums():
+                    verifier.add_record(
+                        name=bitfield.name,
+                        result=True,
+                        value=bitfield.get_enum_value(),
+                    )
+        return verifier
 
     @classmethod
     def get_validation_schemas(cls, family: FamilyRevision) -> list[dict[str, Any]]:

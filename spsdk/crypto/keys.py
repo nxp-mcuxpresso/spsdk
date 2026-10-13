@@ -20,7 +20,7 @@ import logging
 import math
 from collections.abc import Callable
 from enum import Enum
-from typing import Any, Protocol, TypeGuard, cast
+from typing import Any, ClassVar, Protocol, TypeGuard, cast
 
 from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
@@ -150,6 +150,10 @@ class LegacyMLDSAPrivateKeyProtocol(Protocol):
 
 MLDSA_PRIVATE_KEY_TYPES = (MLDSA44PrivateKey, MLDSA65PrivateKey, MLDSA87PrivateKey)
 MLDSA_PUBLIC_KEY_TYPES = (MLDSA44PublicKey, MLDSA65PublicKey, MLDSA87PublicKey)
+MLDSA_KEY_LENGTH_TO_NIST_LEVEL = {44: 2, 65: 3, 87: 5}
+MLDSA_NIST_LEVEL_TO_KEY_LENGTH = {
+    level: key_length for key_length, level in MLDSA_KEY_LENGTH_TO_NIST_LEVEL.items()
+}
 MLDSA_PRIVATE_KEY_CLASSES: dict[int, MLDSAPrivateKeyClass] = {
     2: MLDSA44PrivateKey,
     3: MLDSA65PrivateKey,
@@ -160,8 +164,27 @@ MLDSA_PUBLIC_KEY_CLASSES: dict[int, MLDSAPublicKeyClass] = {
     3: MLDSA65PublicKey,
     5: MLDSA87PublicKey,
 }
+MLDSA_NATIVE_PRIVATE_KEY_SEED_LENGTH = 32
 MLDSA_PUBLIC_KEY_LENGTHS = {2: 1312, 3: 1952, 5: 2592}
+MLDSA_NATIVE_PRIVATE_KEY_LENGTHS = {
+    level: MLDSA_NATIVE_PRIVATE_KEY_SEED_LENGTH + public_length
+    for level, public_length in MLDSA_PUBLIC_KEY_LENGTHS.items()
+}
 MLDSA_SIGNATURE_SIZES = {2: 2420, 3: 3309, 5: 4627}
+
+
+def get_mldsa_nist_level(key_length: int) -> int:
+    """Get the NIST security level for an ML-DSA parameter-set length.
+
+    :param key_length: ML-DSA parameter-set length suffix: 44, 65, or 87.
+    :raises SPSDKValueError: If the key length is not supported.
+    :return: Corresponding NIST security level.
+    """
+    try:
+        return MLDSA_KEY_LENGTH_TO_NIST_LEVEL[key_length]
+    except KeyError as exc:
+        raise SPSDKValueError(f"Unsupported ML-DSA key length: {key_length}") from exc
+
 
 if IS_LMS_SUPPORTED:
     # pylint: disable=import-error
@@ -218,6 +241,34 @@ def _load_pem_private_key(data: bytes, password: bytes | None) -> Any:
 
     error_details = "\n- ".join([""] + errors)
     raise SPSDKError(f"Cannot load PEM private key. Attempted methods failed: {error_details}")
+
+
+def _parse_native_nxp_mldsa_private_key(data: bytes) -> MLDSAPrivateKeyType | None:
+    """Parse a native ML-DSA NXP private key.
+
+    The native NXP ML-DSA private-key encoding contains the 32-byte seed followed by the raw
+    public key. The public-key portion is validated against the seed-derived public key.
+
+    :param data: ML-DSA private key bytes in native NXP format.
+    :raises SPSDKValueError: If the data length matches a native ML-DSA format but the embedded
+        public key does not match the seed-derived public key.
+    :return: Native ML-DSA private key instance if the input matches a supported NXP format;
+        otherwise None.
+    """
+    for level, expected_length in MLDSA_NATIVE_PRIVATE_KEY_LENGTHS.items():
+        if len(data) != expected_length:
+            continue
+        seed = data[:MLDSA_NATIVE_PRIVATE_KEY_SEED_LENGTH]
+        public_data = data[MLDSA_NATIVE_PRIVATE_KEY_SEED_LENGTH:]
+        private_key = MLDSA_PRIVATE_KEY_CLASSES[level].from_seed_bytes(seed)
+        derived_public_data = private_key.public_key().public_bytes_raw()
+        if public_data != derived_public_data:
+            raise SPSDKValueError(
+                f"Invalid ML-DSA-{MLDSA_NIST_LEVEL_TO_KEY_LENGTH[level]} NXP private key: "
+                "the public portion does not match the seed-derived public key"
+            )
+        return private_key
+    return None
 
 
 def _load_der_private_key(data: bytes, password: bytes | None) -> Any:
@@ -282,7 +333,7 @@ def _load_der_private_key(data: bytes, password: bytes | None) -> Any:
                 "Please use an HSM instead."
             )
             return key
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             errors.append(f"LMS: {exc}")
     else:
         errors.append(
@@ -329,11 +380,11 @@ def _crypto_load_private_key(encoding: SPSDKEncoding, data: bytes, password: byt
         # the data is explicitly marked as encrypted and a password was supplied.
         if password is not None and b"ENCRYPTED PRIVATE KEY" in data:
             raise SPSDKWrongKeyPassphrase("Provided password was incorrect.") from exc
-        raise exc
+        raise
     except TypeError as exc:
         if "Password was not given but private key is encrypted" in str(exc):
             raise SPSDKKeyPassphraseMissing(str(exc)) from exc
-        raise exc
+        raise
 
 
 def _load_pem_public_key(data: bytes) -> Any:
@@ -443,7 +494,7 @@ def _load_der_public_key(data: bytes) -> Any:
                     f"Expected {params.get_public_key_length()} bytes, got {len(data)} bytes"
                 )
             return LmsPublicKey.deserialize(buffer=data)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             errors.append(f"LMS: {exc}")
     else:
         errors.append(
@@ -538,7 +589,7 @@ class PrivateKey(BaseClass, abc.ABC):
         :return: True if the keys form a valid pair, False otherwise.
         """
 
-    def __eq__(self, obj: Any) -> bool:
+    def __eq__(self, obj: object) -> bool:
         """Check object equality.
 
         Compares this object with another object by checking if they are of the same class
@@ -633,8 +684,8 @@ class PrivateKey(BaseClass, abc.ABC):
             if IS_LMS_SUPPORTED and isinstance(private_key, LmsPrivateKey):
                 return cls.create(private_key)
         except (ValueError, SPSDKInvalidKeyType) as exc:
-            raise SPSDKError(f"Cannot load private key: ({str(exc)})") from exc
-        raise SPSDKError(f"Unsupported private key: ({str(private_key)})")
+            raise SPSDKError(f"Cannot load private key: ({exc!s})") from exc
+        raise SPSDKError(f"Unsupported private key: ({private_key!s})")
 
     @classmethod
     def create(cls, key: Any) -> Self:
@@ -669,7 +720,7 @@ class PrivateKey(BaseClass, abc.ABC):
             if isinstance(key, v):
                 return cast(Self, cast(Any, k)(key))
 
-        raise SPSDKInvalidKeyType(f"Unsupported key type: {str(key)}")
+        raise SPSDKInvalidKeyType(f"Unsupported key type: {key!s}")
 
 
 class PublicKey(BaseClass, abc.ABC):
@@ -834,7 +885,7 @@ class PublicKey(BaseClass, abc.ABC):
         """
         return get_hash(self.export(), algorithm)
 
-    def __eq__(self, obj: Any) -> bool:
+    def __eq__(self, obj: object) -> bool:
         """Check object equality.
 
         Compare this object with another object to determine if they are equal.
@@ -879,7 +930,7 @@ class PublicKey(BaseClass, abc.ABC):
             if isinstance(key, v):
                 return cast(Self, cast(Any, k)(key))
 
-        raise SPSDKInvalidKeyType(f"Unsupported key type: {str(key)}")
+        raise SPSDKInvalidKeyType(f"Unsupported key type: {key!s}")
 
 
 class NonSupportingPublicKey(PublicKey):
@@ -941,7 +992,7 @@ class PrivateKeyRsa(PrivateKey):
     :cvar SUPPORTED_KEY_SIZES: List of supported RSA key sizes in bits.
     """
 
-    SUPPORTED_KEY_SIZES = [2048, 3072, 4096]
+    SUPPORTED_KEY_SIZES: ClassVar[list[int]] = [2048, 3072, 4096]
 
     key: rsa.RSAPrivateKey
 
@@ -1247,7 +1298,7 @@ class PublicKeyRsa(PublicKey):
 
         return True
 
-    def __eq__(self, obj: Any) -> bool:
+    def __eq__(self, obj: object) -> bool:
         """Check object equality.
 
         Compare this object with another object to determine if they are equal.
@@ -1767,7 +1818,7 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
             )
             key = pub_numbers.public_key()
         except ValueError as exc:
-            raise SPSDKValueError(f"Cannot recreate the public key: {str(exc)}") from exc
+            raise SPSDKValueError(f"Cannot recreate the public key: {exc!s}") from exc
         return cls(key)
 
     @classmethod
@@ -1827,9 +1878,9 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
                 if isinstance(der_key, ec.EllipticCurvePublicKey):
                     # Successfully parsed DER, curve is determined from OID
                     return cls(der_key)
-            except Exception:
+            except Exception as exc:
                 # DER parsing failed, continue with raw binary format
-                pass
+                logger.debug(f"DER public key parsing failed: {exc}", exc_info=True)
 
         # Handle NXP binary format - try each possible curve until one works
         raw_curves = [c for c in possible_curves if not c[1]]  # Filter raw binary format curves
@@ -1850,7 +1901,7 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
             try:
                 return cls.recreate(coor_x=coor_x, coor_y=coor_y, curve=selected_curve)
             except (SPSDKValueError, ValueError) as e:
-                errors.append(f"{selected_curve.value}: {str(e)}")
+                errors.append(f"{selected_curve.value}: {e!s}")
                 continue
 
         # If we get here, none of the curves worked
@@ -2241,7 +2292,11 @@ class ECDSASignature:
     :cvar COORDINATE_LENGTHS: Mapping of ECC curves to their coordinate byte lengths.
     """
 
-    COORDINATE_LENGTHS = {EccCurve.SECP256R1: 32, EccCurve.SECP384R1: 48, EccCurve.SECP521R1: 66}
+    COORDINATE_LENGTHS: ClassVar[dict[EccCurve, int]] = {
+        EccCurve.SECP256R1: 32,
+        EccCurve.SECP384R1: 48,
+        EccCurve.SECP521R1: 66,
+    }
 
     def __init__(self, r: int, s: int, ecc_curve: EccCurve) -> None:
         """Initialize ECDSA signature with r and s values.
@@ -2366,7 +2421,7 @@ if IS_DILITHIUM_SUPPORTED:
         :cvar RECOMMENDED_ENCODING: Preferred encoding format for key serialization.
         """
 
-        SUPPORTED_LEVELS = [2, 3, 5]
+        SUPPORTED_LEVELS: ClassVar[list[int]] = [2, 3, 5]
         RECOMMENDED_ENCODING = SPSDKEncoding.PEM
         key: DilithiumPrivateKey | DilithiumPublicKey
 
@@ -2490,7 +2545,7 @@ if IS_DILITHIUM_SUPPORTED:
             """
             return f"{self.key.algorithm.value} Public key"
 
-        def __eq__(self, obj: Any) -> bool:
+        def __eq__(self, obj: object) -> bool:
             """Check equality between PQC public keys.
 
             Compares two PQC public keys by their public data content. Since Dilithium and MLDSA
@@ -2564,7 +2619,7 @@ if IS_DILITHIUM_SUPPORTED:
             """
             return f"{self.key.algorithm.value} Private key"
 
-        def __eq__(self, obj: Any) -> bool:
+        def __eq__(self, obj: object) -> bool:
             """Check equality of two private key objects.
 
             Compares this private key instance with another object by checking if the other
@@ -2773,7 +2828,7 @@ if MLDSA_PUBLIC_KEY_TYPES:
 
         def __repr__(self) -> str:
             """Return string representation of the public key."""
-            return f"ML-DSA-{ {2: 44, 3: 65, 5: 87}[self.level] } Public key"
+            return f"ML-DSA-{MLDSA_NIST_LEVEL_TO_KEY_LENGTH[self.level]} Public key"
 
         def __str__(self) -> str:
             """Return string representation of the public key."""
@@ -2907,7 +2962,7 @@ if MLDSA_PUBLIC_KEY_TYPES:
             """Export key into bytes to requested format."""
             if encoding == SPSDKEncoding.NXP:
                 if self._is_legacy_key(self.key):
-                    return self.key.private_data + (self.key.public_data or bytes())
+                    return self.key.private_data + (self.key.public_data or b"")
                 assert self._is_native_key(self.key)
                 return self.key.private_bytes_raw() + self.public_numbers
             if self._is_legacy_key(self.key):
@@ -2926,13 +2981,14 @@ if MLDSA_PUBLIC_KEY_TYPES:
 
         def __repr__(self) -> str:
             """Return string representation of the private key."""
-            return f"ML-DSA-{ {2: 44, 3: 65, 5: 87}[self.get_public_key().level] } Private key"
+            level = self.get_public_key().level
+            return f"ML-DSA-{MLDSA_NIST_LEVEL_TO_KEY_LENGTH[level]} Private key"
 
         def __str__(self) -> str:
             """Return string representation of the private key."""
             return repr(self)
 
-        def __eq__(self, obj: Any) -> bool:
+        def __eq__(self, obj: object) -> bool:
             """Check equality of two private key objects."""
             return isinstance(obj, self.__class__) and self.export(
                 encoding=SPSDKEncoding.NXP
@@ -2977,6 +3033,7 @@ if MLDSA_PUBLIC_KEY_TYPES:
             :return: Recreated MLDSA private key object.
             """
             normalized = _normalize_mldsa_pem(data)
+            native_nxp_error: SPSDKError | None = None
             try:
                 loaded_key = {
                     SPSDKEncoding.PEM: crypto_load_pem_private_key,
@@ -2988,6 +3045,12 @@ if MLDSA_PUBLIC_KEY_TYPES:
                     return cls(loaded_key)
             except (UnsupportedAlgorithm, ValueError, TypeError, KeyError):
                 pass
+            try:
+                native_nxp_key = _parse_native_nxp_mldsa_private_key(data)
+                if native_nxp_key:
+                    return cls(native_nxp_key)
+            except SPSDKError as exc:
+                native_nxp_error = exc
             try:
                 level, seed = extract_legacy_mldsa_seed(data)
                 return cls(MLDSA_PRIVATE_KEY_CLASSES[level].from_seed_bytes(seed))
@@ -3005,6 +3068,8 @@ if MLDSA_PUBLIC_KEY_TYPES:
                     return cls(parsed_key)
                 except (AttributeError, PQCError):
                     pass
+            if native_nxp_error:
+                raise native_nxp_error
             raise SPSDKError("Could not parse key")
 
 
@@ -3234,9 +3299,9 @@ def get_supported_keys_generators(basic: bool = False) -> KeyGeneratorInfo:
         ret["dil2"] = (PrivateKeyDilithium.generate_key, {"level": 2})
         ret["dil3"] = (PrivateKeyDilithium.generate_key, {"level": 3})
         ret["dil5"] = (PrivateKeyDilithium.generate_key, {"level": 5})
-    ret["mldsa44"] = (PrivateKeyMLDSA.generate_key, {"level": 2})
-    ret["mldsa65"] = (PrivateKeyMLDSA.generate_key, {"level": 3})
-    ret["mldsa87"] = (PrivateKeyMLDSA.generate_key, {"level": 5})
+    ret["mldsa44"] = (PrivateKeyMLDSA.generate_key, {"level": get_mldsa_nist_level(44)})
+    ret["mldsa65"] = (PrivateKeyMLDSA.generate_key, {"level": get_mldsa_nist_level(65)})
+    ret["mldsa87"] = (PrivateKeyMLDSA.generate_key, {"level": get_mldsa_nist_level(87)})
 
     if IS_LMS_SUPPORTED:
         ret["lms"] = (PrivateKeyLMS.generate_key, {})  # LMSParams must be provided by caller

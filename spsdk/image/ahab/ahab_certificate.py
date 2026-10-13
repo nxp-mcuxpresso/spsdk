@@ -14,7 +14,7 @@ post-quantum cryptography certificates for container signature verification.
 import logging
 import os
 from struct import pack, unpack
-from typing import Any, cast
+from typing import Any, ClassVar, cast
 
 from typing_extensions import Self
 
@@ -115,14 +115,14 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
 
     TAG = AHABTags.CERTIFICATE.tag
     VERSION = 0x02
-    PERM_NXP = {
+    PERM_NXP: ClassVar[dict[str, int]] = {
         "container": 0x01,
         "debug": 0x04,
         "secure_fuse": 0x08,
         "return_life_cycle": 0x10,
         "patch_fuses": 0x40,
     }
-    PERM_OEM = {
+    PERM_OEM: ClassVar[dict[str, int]] = {
         "container": 0x01,
         "debug": 0x04,
         "secure_fuse": 0x08,
@@ -135,7 +135,7 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
     PERMISSION_DATA_EXT_BIT_SIZE = 8
     UUID_SIZE = 16
 
-    DIFF_ATTRIBUTES_VALUES = [
+    DIFF_ATTRIBUTES_VALUES: ClassVar[list[str]] = [
         "_permissions",
         "permission_data",
         "signature_offset",
@@ -207,22 +207,20 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         :param other: Object to compare with this certificate instance.
         :return: True if certificates are equal, False otherwise.
         """
-        if isinstance(other, self.__class__):
-            if (
-                super().__eq__(other)  # pylint: disable=too-many-boolean-expressions
-                and self._permissions == other._permissions
-                and self.permission_data == other.permission_data
-                and self.permission_data_ext == other.permission_data_ext
-                and self.signature_offset == other.signature_offset
-                and self._uuid == other._uuid
-                and self.public_key_0 == other.public_key_0
-                and self.signature_0 == other.signature_0
-                and self.public_key_1 == other.public_key_1
-                and self.signature_1 == other.signature_1
-            ):
-                return True
-
-        return False
+        return isinstance(
+            other, self.__class__
+        ) and (  # pylint: disable=too-many-boolean-expressions
+            super().__eq__(other)
+            and self._permissions == other._permissions
+            and self.permission_data == other.permission_data
+            and self.permission_data_ext == other.permission_data_ext
+            and self.signature_offset == other.signature_offset
+            and self._uuid == other._uuid
+            and self.public_key_0 == other.public_key_0
+            and self.signature_0 == other.signature_0
+            and self.public_key_1 == other.public_key_1
+            and self.signature_1 == other.signature_1
+        )
 
     def __repr__(self) -> str:
         """Return string representation of AHAB Certificate.
@@ -813,6 +811,7 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
         )
         ret_cfg["public_key_0"] = filename
         ret_cfg["signer_0"] = "N/A"
+        ret_cfg["flag_ca_0"] = bool(self.public_key_0.srk_flags & SRKRecordV2.FLAGS_CA_MASK)
         if self.public_key_1:
             filename = (
                 f"container{index}_certificate_public_key1_{self.public_key_1.get_key_name()}.pem"
@@ -825,6 +824,7 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
             )
             ret_cfg["public_key_1"] = filename
             ret_cfg["signer_1"] = "N/A"
+            ret_cfg["flag_ca_1"] = bool(self.public_key_1.srk_flags & SRKRecordV2.FLAGS_CA_MASK)
 
         return ret_cfg
 
@@ -867,8 +867,10 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
             if cert_hash0_str == "default"
             else AHABSignHashAlgorithm.from_label(cert_hash0_str.upper())
         )
+        cert_flag_ca0 = SRKRecordV2.FLAGS_CA_MASK if config.get("flag_ca_0", False) else 0
         cert_public_key0 = SRKRecordV2.create_from_key(
             extract_public_key(config.get_input_file_name("public_key_0")),
+            srk_flags=cert_flag_ca0,
             hash_algorithm=cert_hash0,
         )
         cert_signature_provider0 = get_signature_provider(
@@ -885,8 +887,10 @@ class AhabCertificate(FeatureBaseClass, HeaderContainer):
                 else AHABSignHashAlgorithm.from_label(cert_hash1_str.upper())
             )
             cert_public_key1_path = config.get_input_file_name("public_key_1")
+            cert_flag_ca1 = SRKRecordV2.FLAGS_CA_MASK if config.get("flag_ca_1", False) else 0
             cert_public_key1 = SRKRecordV2.create_from_key(
                 extract_public_key(cert_public_key1_path),
+                srk_flags=cert_flag_ca1,
                 hash_algorithm=cert_hash1,
             )
             cert_signature_provider1 = get_signature_provider(

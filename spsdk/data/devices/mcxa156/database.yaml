@@ -29,6 +29,9 @@ info:
           pid: 0x015e
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe: {}
+
 
   # ======== Communication buffer section ========
   comm_buffer:

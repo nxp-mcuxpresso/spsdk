@@ -12,6 +12,8 @@ used in secure boot processes. It defines tokens and lexical rules for BD file s
 using the SLY lexer framework.
 """
 
+from typing import ClassVar
+
 from sly import Lexer
 from sly.lex import Token
 
@@ -32,7 +34,7 @@ class Variable:
     lexical parsing and processing.
     """
 
-    def __init__(self, name: str, token: str, value: str | int | float) -> None:
+    def __init__(self, name: str, token: str, value: str | float) -> None:
         """Initialize identifier with name, token type, and value.
 
         :param name: Name of the identifier (variable).
@@ -91,7 +93,7 @@ class BDLexer(Lexer):
         self._sources.append(source)
 
     # List of reserved keywords
-    reserved = {
+    reserved: ClassVar[dict[str, str]] = {
         "call": "CALL",
         "constants": "CONSTANTS",
         "extern": "EXTERN",
@@ -180,7 +182,7 @@ class BDLexer(Lexer):
         "DOLLAR",
     ] + list(reserved.values())
 
-    literals = {"@"}
+    literals: ClassVar[set[str]] = {"@"}
 
     # A regular expression rules with some action code
     # The order of these functions MATTER!!! Make sure you know what you are

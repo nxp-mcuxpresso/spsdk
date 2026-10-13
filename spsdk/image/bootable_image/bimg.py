@@ -169,9 +169,7 @@ class BootableImage(FeatureBaseClass):
         for seg in self.segments:
             if seg.NAME == name:
                 return seg
-        raise SPSDKError(
-            f"The segment {segment} is not present in this Bootable image: {str(self)}"
-        )
+        raise SPSDKError(f"The segment {segment} is not present in this Bootable image: {self!s}")
 
     @property
     def init_offset(self) -> int:
@@ -271,7 +269,7 @@ class BootableImage(FeatureBaseClass):
 
         if segment.excluded:
             raise SPSDKError(
-                f"The segment '{segment.NAME}' is not present in this Bootable image: {str(self)}."
+                f"The segment '{segment.NAME}' is not present in this Bootable image: {self!s}."
             )
         return _get_segment_offset(self._segments, segment) - self._init_offset
 
@@ -864,20 +862,19 @@ class BootableImage(FeatureBaseClass):
         except SPSDKError:
             ret.add_record("Binary structure", VerifierResult.ERROR, image_info.draw(), raw=True)
 
-        if not ret.has_errors:
-            if self.bootable_header_only and self.parsed_binary_size:
-                # Verify that input image size doesn't exceed header area when only header segments are present
-                header_size = self.header_len(full=False)
-                if self.parsed_binary_size > header_size:
-                    ret.add_record(
-                        name="Bootable Image",
-                        result=VerifierResult.ERROR,
-                        value=(
-                            f"Input image size ({self.parsed_binary_size} bytes) "
-                            f"exceeds header area size ({header_size} bytes) "
-                            "when there is just Bootable area segments"
-                        ),
-                    )
+        if not ret.has_errors and self.bootable_header_only and self.parsed_binary_size:
+            # Verify that input image size doesn't exceed header area when only header segments are present
+            header_size = self.header_len(full=False)
+            if self.parsed_binary_size > header_size:
+                ret.add_record(
+                    name="Bootable Image",
+                    result=VerifierResult.ERROR,
+                    value=(
+                        f"Input image size ({self.parsed_binary_size} bytes) "
+                        f"exceeds header area size ({header_size} bytes) "
+                        "when there is just Bootable area segments"
+                    ),
+                )
 
         return ret
 
@@ -911,7 +908,7 @@ class BootableImage(FeatureBaseClass):
             database = get_db(family)
             return [
                 MemoryType.from_label(memory)
-                for memory in database.get_dict(DatabaseManager.BOOTABLE_IMAGE, "mem_types").keys()
+                for memory in database.get_dict(DatabaseManager.BOOTABLE_IMAGE, "mem_types")
             ]
 
         return [

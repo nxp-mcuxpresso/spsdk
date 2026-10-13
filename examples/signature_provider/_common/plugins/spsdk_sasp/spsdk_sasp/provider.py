@@ -119,8 +119,8 @@ class SuperAwesomeSP(SignatureProvider):
         except requests.HTTPError as e:
             if response.text:
                 raise requests.HTTPError(
-                    f"{str(e)}; Error Message: {response.text}",
+                    f"{e!s}; Error Message: {response.text}",
                     request=e.request,
                     response=e.response,
                 )
-            raise e
+            raise

@@ -25,6 +25,9 @@ revision: latest
 # ------------------------------------------===== Memory type [Required] =====------------------------------------------
 # Description: Specify type of memory used by bootable image description.
 memory_type: flexspi_nor
+# ------------------------------------===== Output file name [Optional] =====-------------------------------------------
+# Description: Bootable image output file name
+output: ../../workspace/bootable_image.bin
 # ======================================================================================================================
 #                                           == Bootable Segments definition ==
 # ======================================================================================================================

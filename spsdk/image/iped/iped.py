@@ -10,7 +10,7 @@ This module provides the ``Iped`` factory class that dispatches to the correct
 IPED implementation based on the ``iped_version`` database key:
 
 - **Version 1** (``IpedV1``): Tagged ELE configuration structure (i.MX943).
-- **Version 2** (``IpedV2``): XSPI register-image table format.
+- **Version 2** (``IpedV2``): XSPI register-image or ROM configuration format.
 
 For backward compatibility, ``IpedContext`` and ``IpedMode`` are re-exported from
 the V2 module. Use ``Iped.load_from_config()`` or ``Iped.get_validation_schemas()``

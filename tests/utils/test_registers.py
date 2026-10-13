@@ -34,11 +34,13 @@ from spsdk.utils.family import FamilyRevision
 from spsdk.utils.misc import Endianness, use_working_directory, value_to_bytes, value_to_int
 from spsdk.utils.registers import (
     Access,
+    ConfigProcessor,
     Register,
     Registers,
     RegistersPreValidationHook,
     RegsBitField,
     RegsEnum,
+    ShiftRightConfigProcessor,
 )
 
 TEST_DEVICE_NAME = "TestDevice1"
@@ -835,13 +837,11 @@ def test_registers_corrupted_json(data_dir: str) -> None:
         family=FamilyRevision(TEST_DEVICE_NAME), feature="test", do_not_raise_exception=True
     )
 
-    with pytest.raises(SPSDKError):
-        with use_working_directory(data_dir):
-            regs._load_spec("registers_corr.json")
+    with pytest.raises(SPSDKError), use_working_directory(data_dir):
+        regs._load_spec("registers_corr.json")
 
-    with pytest.raises(SPSDKError):
-        with use_working_directory(data_dir):
-            regs._load_spec("registers_corr2.json")
+    with pytest.raises(SPSDKError), use_working_directory(data_dir):
+        regs._load_spec("registers_corr2.json")
 
 
 def test_basic_grouped_register(data_dir: str) -> None:
@@ -1076,12 +1076,12 @@ def test_create_yml() -> None:
     regs = create_simple_regs()
     yml = regs.get_config()
 
-    assert TEST_REG_NAME in yml.keys()
-    assert TEST_REG_NAME + "_2" in yml.keys()
+    assert TEST_REG_NAME in yml
+    assert TEST_REG_NAME + "_2" in yml
     assert int(yml[TEST_REG_NAME], 16) == TEST_REG_VALUE
-    assert TEST_BITFIELD_NAME in yml[TEST_REG_NAME + "_2"].keys()
+    assert TEST_BITFIELD_NAME in yml[TEST_REG_NAME + "_2"]
     assert yml[TEST_REG_NAME + "_2"][TEST_BITFIELD_NAME] == "0x1E"
-    assert TEST_BITFIELD_NAME + "_2" in yml[TEST_REG_NAME + "_2"].keys()
+    assert TEST_BITFIELD_NAME + "_2" in yml[TEST_REG_NAME + "_2"]
     assert yml[TEST_REG_NAME + "_2"][TEST_BITFIELD_NAME + "_2"] == TEST_ENUM_NAME
 
 
@@ -2146,3 +2146,108 @@ def test_grouped_register_get_config_round_trip_after_parse(data_dir: str) -> No
 
     assert parsed_cfg == original_cfg
     assert dst.export() == binary
+
+
+def test_regs_enum_create_spec_with_deprecated_names() -> None:
+    """Test RegsEnum.create_spec includes deprecated_names when present."""
+    enum = RegsEnum("MyEnum", 1, "desc", 8, deprecated_names=["OldEnum"])
+    spec = enum.create_spec()
+    assert spec["name"] == "MyEnum"
+    assert spec["deprecated_names"] == ["OldEnum"]
+
+    enum_plain = RegsEnum("Plain", 0, "desc", 8)
+    assert "deprecated_names" not in enum_plain.create_spec()
+
+
+def test_config_processor_get_params_invalid_format() -> None:
+    """Test ConfigProcessor.get_params raises on a malformed parameter.
+
+    :raises SPSDKRegsError: When a parameter is not in '<name>=<value>' format.
+    """
+    with pytest.raises(SPSDKRegsError):
+        ConfigProcessor.get_params("METHOD:invalid")
+
+
+def test_config_processor_get_params_without_params() -> None:
+    """Test ConfigProcessor.get_params returns empty dict when no parameters are given."""
+    assert ConfigProcessor.get_params("METHOD") == {}
+
+
+def test_config_processor_from_spec_variants() -> None:
+    """Test ConfigProcessor.from_spec handles None, unknown and known method names."""
+    assert ConfigProcessor.from_spec(None) is None
+    assert ConfigProcessor.from_spec("UNKNOWN_METHOD:COUNT=1") is None
+    processor = ConfigProcessor.from_spec("SHIFT_RIGHT:COUNT=2")
+    assert isinstance(processor, ShiftRightConfigProcessor)
+    assert processor.count == 2
+
+
+def test_shift_right_config_processor_operations() -> None:
+    """Test ShiftRightConfigProcessor pre/post-processing and width update."""
+    processor = ShiftRightConfigProcessor(count=3)
+    assert processor.pre_process(0x40) == 0x08
+    assert processor.post_process(0x08) == 0x40
+    assert processor.width_update(5) == 8
+
+
+def test_shift_right_from_str_invalid_name() -> None:
+    """Test ShiftRightConfigProcessor.from_str rejects a wrong method name.
+
+    :raises SPSDKRegsError: When the method name does not match SHIFT_RIGHT.
+    """
+    with pytest.raises(SPSDKRegsError):
+        ShiftRightConfigProcessor.from_str("WRONG:COUNT=1")
+
+
+def test_shift_right_from_str_missing_count() -> None:
+    """Test ShiftRightConfigProcessor.from_str requires the COUNT parameter.
+
+    :raises SPSDKRegsError: When the COUNT parameter is missing.
+    """
+    with pytest.raises(SPSDKRegsError):
+        ShiftRightConfigProcessor.from_str("SHIFT_RIGHT:OTHER=1")
+
+
+def test_regs_bitfield_create_spec_with_deprecated_names() -> None:
+    """Test RegsBitField.create_spec includes deprecated_names when present."""
+    parent = Register(TEST_REG_NAME, TEST_REG_OFFSET, TEST_REG_WIDTH, TEST_REG_UID)
+    bitfield = RegsBitField(
+        parent,
+        "BF",
+        0,
+        4,
+        "bitfield",
+        "desc",
+        Access.RW,
+        deprecated_names=["OldBF"],
+    )
+    spec = bitfield.create_spec()
+    assert spec["deprecated_names"] == ["OldBF"]
+
+    plain = RegsBitField(parent, "BF2", 4, 4, "bitfield2", "desc", Access.RW)
+    assert "deprecated_names" not in plain.create_spec()
+
+
+def test_register_create_spec_with_deprecated_names() -> None:
+    """Test Register.create_spec includes deprecated_names when present."""
+    reg = Register(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_UID,
+        deprecated_names=["OldReg"],
+    )
+    spec = reg.create_spec()
+    assert spec["deprecated_names"] == ["OldReg"]
+
+    plain = Register(TEST_REG_NAME + "_2", TEST_REG_OFFSET, TEST_REG_WIDTH, TEST_REG_UID2)
+    assert "deprecated_names" not in plain.create_spec()
+
+
+def test_register_invalid_width_raises() -> None:
+    """Test Register construction rejects widths that are not a multiple of 8.
+
+    :raises SPSDKError: When the register width is not a multiple of 8 bits.
+    """
+    with pytest.raises(SPSDKError):
+        Register(TEST_REG_NAME, TEST_REG_OFFSET, 12, TEST_REG_UID)

@@ -147,13 +147,11 @@ class IeeKeyBlobAttribute:
 
         :return: True if AES mode is CTR variant, False otherwise.
         """
-        if self.aes_mode in [
+        return self.aes_mode in [
             IeeKeyBlobModeAttributes.AesCTRWAddress,
             IeeKeyBlobModeAttributes.AesCTRWOAddress,
             IeeKeyBlobModeAttributes.AesCTRkeystream,
-        ]:
-            return True
-        return False
+        ]
 
     @property
     def key1_size(self) -> int:
@@ -604,7 +602,7 @@ class Iee(FeatureBaseClass):
                 if key_blob.matches_range(addr, addr + len(block)):
                     logger.debug(
                         f"Encrypting {hex(addr)}:{hex(len(block) + addr)}"
-                        f" with keyblob: \n {str(key_blob)}"
+                        f" with keyblob: \n {key_blob!s}"
                     )
                     encrypted_data[addr - base_addr : len(block) + addr - base_addr] = (
                         key_blob.encrypt_image(addr, block)
@@ -716,10 +714,10 @@ class Iee(FeatureBaseClass):
                 image.save_binary_image(path=image.name, file_format=self.output_format)
                 generated_files.append(image.name)
                 logger.info(f"Created Encrypted IEE data blob {image.description}:\n{image.name}")
-                memory_map += f"\n{image.name}:\n{str(image)}"
+                memory_map += f"\n{image.name}:\n{image!s}"
             else:
                 logger.info(
-                    f"Skipping export of {str(image)}, value is blank in the configuration file"
+                    f"Skipping export of {image!s}, value is blank in the configuration file"
                 )
 
         readme_file = os.path.join(output_path, "readme.txt")
@@ -911,8 +909,7 @@ class Iee(FeatureBaseClass):
             # pylint: disable-next=nested-min-max
             data_blobs = config.get_list_of_configs("data_blobs")
             start_address_data = min([addr.get_int("address", 0xFFFFFFFF) for addr in data_blobs])
-            if start_address_data < start_address:
-                start_address = start_address_data
+            start_address = min(start_address, start_address_data)
             binaries = BinaryImage(
                 filepath_from_config(
                     config,

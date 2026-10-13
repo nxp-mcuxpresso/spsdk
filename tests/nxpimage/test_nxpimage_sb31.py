@@ -369,14 +369,14 @@ def _get_sb31_command_schema_names(family: str) -> set[str]:
     """
     schemas = SecureBinary31.get_commands_validation_schemas(FamilyRevision(family))
     command_schemas = schemas[0]["properties"]["commands"]["items"]["oneOf"]
-    return {list(command["properties"].keys())[0] for command in command_schemas}
+    return {next(iter(command["properties"].keys())) for command in command_schemas}
 
 
 @pytest.mark.parametrize("family", ["mcxl253", "mcxl254", "mcxl255"])
-def test_mcxl20_sb31_supported_commands_are_restricted(family: str) -> None:
-    """Test that MCXL20 SB3.1 schema exposes only ROM-supported commands.
+def test_mcxl255_sb31_supported_commands_are_restricted(family: str) -> None:
+    """Test that MCXL255 SB3.1 schema exposes only ROM-supported commands.
 
-    :param family: MCXL20 family or alias.
+    :param family: MCXL255 device or alias.
     """
     assert _get_sb31_command_schema_names(family) == {
         "erase",
@@ -388,8 +388,8 @@ def test_mcxl20_sb31_supported_commands_are_restricted(family: str) -> None:
 
 
 @pytest.mark.parametrize("command", ["programIFR", "fillMemory", "writeIFR"])
-def test_mcxl20_sb31_unsupported_commands_are_rejected(command: str) -> None:
-    """Test that MCXL20 SB3.1 schema rejects unsupported commands.
+def test_mcxl255_sb31_unsupported_commands_are_rejected(command: str) -> None:
+    """Test that MCXL255 SB3.1 schema rejects unsupported commands.
 
     :param command: Unsupported command name to validate.
     """

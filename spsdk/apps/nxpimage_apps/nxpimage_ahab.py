@@ -39,7 +39,7 @@ from spsdk.image.bootable_image.bimg import BootableImage
 from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.family import FamilyRevision
-from spsdk.utils.misc import get_printable_path, load_binary, load_hex_string, write_file
+from spsdk.utils.misc import find_file, get_printable_path, load_binary, load_hex_string, write_file
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
@@ -66,6 +66,30 @@ def ahab_export_command(config: Config, no_fuse_scripts: bool) -> None:
     ahab_export(config, export_fuse_scripts=not no_fuse_scripts)
 
 
+def _find_ahab_source_elf(config: Config) -> str | None:
+    """Auto-detect the first ELF image file from AHAB container configuration.
+
+    Looks for image_path in the first image entry of the first container.
+    Returns the absolute path if the file is a valid ELF, otherwise None.
+
+    :param config: Loaded AHAB YAML/JSON configuration.
+    :return: Resolved path to the source ELF file, or None if not found.
+    """
+    try:
+        image_path = (
+            config.get("containers", [{}])[0]
+            .get("container", {})
+            .get("images", [{}])[0]
+            .get("image_path")
+        )
+        if not image_path:
+            return None
+        resolved = find_file(image_path, search_paths=config.search_paths)
+        return resolved if os.path.isfile(resolved) else None
+    except (TypeError, KeyError, SPSDKError):
+        return None
+
+
 def ahab_export(config: Config, export_fuse_scripts: bool = True) -> None:
     """Generate AHAB Image from YAML/JSON configuration.
 
@@ -81,7 +105,16 @@ def ahab_export(config: Config, export_fuse_scripts: bool = True) -> None:
     ahab_output_file_path = config.get_output_file_name("output")
     ahab_output_file_format = config.get_str("output_format", default="bin").lower()
     ahab_image.offset = config.get_int("output_offset", default=0)
-    ahab_image.save_binary_image(ahab_output_file_path, file_format=ahab_output_file_format)
+
+    source_elf: str | None = None
+    if ahab_output_file_format == "elf_patch":
+        source_elf = _find_ahab_source_elf(config)
+        if source_elf:
+            logger.warning(f"ELF_PATCH: Auto-detected {source_elf} as source ELF file.")
+
+    ahab_image.save_binary_image(
+        ahab_output_file_path, file_format=ahab_output_file_format, source_elf_file=source_elf
+    )
 
     logger.info(f"Created AHAB Image:\n{ahab_image}")
     logger.info(f"Created AHAB Image memory map:\n{ahab_image.draw()}")
@@ -168,7 +201,7 @@ def ahab_parse(
     try:
         ahab_image = ahab_parse_image(family=family, binary=data)
     except SPSDKError as exc:
-        click.echo(f"Failed. (AHAB: {binary} parsing failed.: {str(exc)})")
+        click.echo(f"Failed. (AHAB: {binary} parsing failed.: {exc!s})")
         return
     if not os.path.exists(parsed_folder):
         os.makedirs(parsed_folder, exist_ok=True)
@@ -233,7 +266,7 @@ def ahab_parse_image(family: FamilyRevision, binary: bytes) -> AHABImage:
             ahab_image.verify().validate()
         except SPSDKError as exc:
             logger.debug(
-                f"AHAB parse: Attempt to parse image for {target_memory} target failed: {str(exc)}"
+                f"AHAB parse: Attempt to parse image for {target_memory} target failed: {exc!s}"
             )
             ahab_image = None
         else:
@@ -638,7 +671,7 @@ def ahab_fix_signature_block_command(family: FamilyRevision, binary: str, output
         write_file(fixed_data, output, "wb")
         click.echo(f"Fixed image saved to {get_printable_path(output)}")
     except SPSDKError as exc:
-        raise SPSDKAppError(f"Failed to fix AHAB headers: {str(exc)}") from exc
+        raise SPSDKAppError(f"Failed to fix AHAB headers: {exc!s}") from exc
 
 
 @ahab_certificate_group.command(name="export", no_args_is_help=True)
@@ -766,7 +799,7 @@ def ahab_info_command(family: FamilyRevision, binary: str) -> None:
     try:
         ahab_image = ahab_parse_image(family=family, binary=data)
     except SPSDKError as exc:
-        raise SPSDKAppError(f"Failed to parse AHAB image: {str(exc)}") from exc
+        raise SPSDKAppError(f"Failed to parse AHAB image: {exc!s}") from exc
 
     click.echo(ahab_image.info())
 
@@ -803,7 +836,7 @@ def ahab_keyblob_export(config: Config, output: str) -> None:
         click.echo(f"Success. (AHAB Keyblob: {get_printable_path(output)} created.)")
 
     except SPSDKError as exc:
-        raise SPSDKAppError(f"Failed to generate keyblob: {str(exc)}") from exc
+        raise SPSDKAppError(f"Failed to generate keyblob: {exc!s}") from exc
 
 
 @ahab_keyblob_group.command(name="get-template", no_args_is_help=True)
@@ -888,8 +921,8 @@ def ahab_keyblob_parse(config: Config, binary: str, output: str) -> None:
                 # Save decrypted DEK
                 write_file(decrypted_dek, os.path.join(output, "decrypted_dek.bin"), mode="wb")
 
-            except Exception as e:
-                click.echo(f"Decryption failed: {str(e)}", err=True)
+            except Exception as e:  # noqa: BLE001
+                click.echo(f"Decryption failed: {e!s}", err=True)
         else:
             click.echo("\nNo customer master key provided in configuration - skipping decryption")
 
@@ -899,7 +932,7 @@ def ahab_keyblob_parse(config: Config, binary: str, output: str) -> None:
         )
 
     except SPSDKError as exc:
-        raise SPSDKAppError(f"Failed to parse keyblob: {str(exc)}") from exc
+        raise SPSDKAppError(f"Failed to parse keyblob: {exc!s}") from exc
 
 
 def parse_dek_parameter(dek_values: tuple[str, ...]) -> dict[int | None, str]:

@@ -12,7 +12,6 @@ across different components.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any
 
 from typing_extensions import Self
 
@@ -29,7 +28,7 @@ class RawBaseClass(ABC):
     classes must implement.
     """
 
-    def __eq__(self, obj: Any) -> bool:
+    def __eq__(self, obj: object) -> bool:
         """Check object equality.
 
         Compare this object with another object for equality by checking if they are
@@ -40,7 +39,7 @@ class RawBaseClass(ABC):
         """
         return isinstance(obj, self.__class__) and vars(obj) == vars(self)
 
-    def __ne__(self, obj: Any) -> bool:
+    def __ne__(self, obj: object) -> bool:
         """Check if this object is not equal to another object.
 
         This method implements the inequality comparison by negating the equality comparison.

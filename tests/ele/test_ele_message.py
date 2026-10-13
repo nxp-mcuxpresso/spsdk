@@ -58,7 +58,7 @@ from spsdk.ele.ele_message import (
     EleMessageWriteFuse,
     EleMessageWriteShadowFuse,
 )
-from spsdk.exceptions import SPSDKParsingError, SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKValueError
 from spsdk.utils.misc import LITTLE_ENDIAN, UINT8, UINT16, UINT32, value_to_bytes, value_to_int
 
 
@@ -225,11 +225,11 @@ class TestEleMessageBase:
 
     def test_inequality_different_type(self) -> None:
         """Ping and Reset messages are not equal."""
-        assert not (EleMessagePing() == EleMessageReset())
+        assert EleMessagePing() != EleMessageReset()
 
     def test_inequality_non_message(self) -> None:
         """EleMessage is not equal to a non-EleMessage object."""
-        assert not (EleMessagePing() == "not a message")
+        assert EleMessagePing() != "not a message"
 
     def test_status_string_success(self) -> None:
         """status_string returns 'Succeeded' on success status."""
@@ -610,13 +610,68 @@ class TestEleMessageReadCommonFuse:
         assert len(msg.export()) == 8
 
     def test_decode_response(self) -> None:
-        """ReadCommonFuse decodes fuse value."""
+        """ReadCommonFuse decodes fuse value from the newer 4-word response."""
         msg = EleMessageReadCommonFuse(128)
         fuse_val = 0xCAFE_BABE
-        payload = fuse_val.to_bytes(4, "little")
+        payload = fuse_val.to_bytes(4, "little") + b"\x00\x00\x00\x00"
         response = make_response(cmd=msg.CMD, size=msg.response_words_count, payload=payload)
         msg.decode_response(response)
         assert msg.fuse_value == fuse_val
+        assert msg.fuse_read_status == 0
+        assert msg.fuse_read_status_available
+
+    def test_decode_response_legacy_size(self) -> None:
+        """ReadCommonFuse still accepts the older 3-word response format."""
+        msg = EleMessageReadCommonFuse(128)
+        fuse_val = 0xCAFE_BABE
+        payload = fuse_val.to_bytes(4, "little")
+        response = make_response(cmd=msg.CMD, size=3, payload=payload)
+        msg.decode_response(response)
+        assert msg.fuse_value == fuse_val
+        assert msg.fuse_read_status == 0
+        assert not msg.fuse_read_status_available
+
+    def test_decode_response_rejects_header_only_size(self) -> None:
+        """ReadCommonFuse rejects response sizes outside legacy/new layouts."""
+        msg = EleMessageReadCommonFuse(128)
+        response = make_response(cmd=msg.CMD, size=2)
+        with pytest.raises(SPSDKParsingError, match="Message SIZE"):
+            msg.decode_response(response)
+
+    def test_decode_response_non_error_status_bits(self) -> None:
+        """ReadCommonFuse reports status bits that are defined as non-errors."""
+        msg = EleMessageReadCommonFuse(128)
+        fuse_val = 0xCAFE_BABE
+        fuse_status = (1 << 17) | (1 << 18)
+        payload = fuse_val.to_bytes(4, "little") + fuse_status.to_bytes(4, "little")
+        response = make_response(cmd=msg.CMD, size=4, payload=payload)
+        msg.decode_response(response)
+        info = msg.response_info()
+        assert msg.fuse_read_status == fuse_status
+        assert "Fuse not programmed" in info
+        assert "Fuse has no ECB" in info
+
+    def test_decode_response_corrected_status_bits(self) -> None:
+        """ReadCommonFuse reports corrected status bits without failing."""
+        msg = EleMessageReadCommonFuse(128)
+        fuse_val = 0xCAFE_BABE
+        fuse_status = (1 << 10) | (1 << 12)
+        payload = fuse_val.to_bytes(4, "little") + fuse_status.to_bytes(4, "little")
+        response = make_response(cmd=msg.CMD, size=4, payload=payload)
+        msg.decode_response(response)
+        info = msg.response_info()
+        assert "Single bit Redundancy error" in info
+        assert "Single bit ECC error" in info
+
+    def test_decode_response_error_status_bits(self) -> None:
+        """ReadCommonFuse fails when fuse read status contains error bits."""
+        msg = EleMessageReadCommonFuse(128)
+        fuse_val = 0xCAFE_BABE
+        fuse_status = 1 << 19
+        payload = fuse_val.to_bytes(4, "little") + fuse_status.to_bytes(4, "little")
+        response = make_response(cmd=msg.CMD, size=4, payload=payload)
+        with pytest.raises(SPSDKError, match="Fuse access error"):
+            msg.decode_response(response)
 
     def test_response_info(self) -> None:
         """response_info includes fuse ID."""
@@ -635,6 +690,7 @@ class TestEleMessageReadShadowFuse:
         """ReadShadowFuse export is 8 bytes (header + 4-byte index)."""
         msg = EleMessageReadShadowFuse(10)
         assert len(msg.export()) == 8
+        assert msg.response_words_count == 3
 
     def test_export_different_from_common(self) -> None:
         """ReadShadowFuse packs index as UINT32 (not UINT16+UINT16)."""
@@ -660,7 +716,7 @@ class TestEleMessageGetInfo:
         """GetInfo decode_response_data populates fields."""
         msg = EleMessageGetInfo()
         # Build 160-byte response data
-        word0 = (92 << 16) | (0x01 << 8) | 0xDA  # length=92, version=1, cmd=0xDA
+        word0 = (160 << 16) | (0x01 << 8) | 0xDA  # length=160, version=1, cmd=0xDA
         word1 = (0x1000 << 16) | 0x9300  # soc_rev=0x1000, soc_id=0x9300
         word2 = (0x10 << 24) | (0x00 << 16) | 0x0020  # attest=0x10, sssm=0, lc=0x0020
         data = (
@@ -676,7 +732,7 @@ class TestEleMessageGetInfo:
         msg.decode_response_data(data)
         assert msg.info_cmd == 0xDA
         assert msg.info_version == 0x01
-        assert msg.info_length == 92
+        assert msg.info_length == 160
         assert msg.info_soc_id == 0x9300
 
     def test_get_attribute_valid(self) -> None:
@@ -702,7 +758,7 @@ class TestEleMessageGetInfo:
     def test_decode_response_data_with_pqc_srkh(self) -> None:
         """GetInfo decode_response_data handles PQC SRKH field (>160 bytes)."""
         msg = EleMessageGetInfo()
-        word0 = (92 << 16) | (0x03 << 8) | 0xDA  # version=3
+        word0 = (256 << 16) | (0x04 << 8) | 0xDA  # version=4, with PQC data present
         word1 = 0
         word2 = 0
         data = (
@@ -713,17 +769,49 @@ class TestEleMessageGetInfo:
             + b"\x00" * 32  # sha256_rom_patch
             + b"\x00" * 32  # sha256_fw
             + b"\x00" * 64  # oem_srkh
-            + b"\x00" * 4  # word39
+            + (0x00_55_02_03).to_bytes(4, "little")  # word39: trng=0x03, csal=0x02, revoke=0x55
             + b"\xee" * 64  # oem_pqc_srkh
+            + b"\x00" * 32  # reserved
         )
         msg.decode_response_data(data)
         assert msg.info_oem_pqc_srkh == b"\xee" * 64
+        assert msg.info_oem_srk_revoke == 0x55
+
+    def test_decode_response_data_respects_valid_length(self) -> None:
+        """GetInfo ignores trailing buffer bytes when reported length has no PQC SRKH."""
+        msg = EleMessageGetInfo()
+        word0 = (160 << 16) | (0x03 << 8) | 0xDA  # length=160, no PQC field in valid payload
+        word1 = 0
+        word2 = 0
+        data = (
+            word0.to_bytes(4, "little")
+            + word1.to_bytes(4, "little")
+            + word2.to_bytes(4, "little")
+            + b"\x00" * 16  # uuid
+            + b"\x00" * 32  # sha256_rom_patch
+            + b"\x00" * 32  # sha256_fw
+            + b"\x00" * 64  # oem_srkh
+            + (0x00_01_02_03).to_bytes(4, "little")  # word39
+            + b"\xff" * 96  # unread/garbage from response buffer
+        )
+        msg.decode_response_data(data)
+        assert msg.info_oem_pqc_srkh == b""
+        assert "OEM PQC SRKH" not in msg.response_info()
 
     def test_response_info(self) -> None:
         """response_info returns formatted string."""
         msg = EleMessageGetInfo()
         info = msg.response_info()
         assert "Life Cycle" in info
+
+    def test_response_info_v4_contains_oem_srk_revoke(self) -> None:
+        """GetInfo v4 response_info includes OEM SRK revoke bitmap."""
+        msg = EleMessageGetInfo()
+        msg.info_version = 4
+        msg.info_oem_srk_revoke = 0x03
+        info = msg.response_info()
+        assert "OEM SRK revoke" in info
+        assert "0x03" in info
 
 
 # EleMessageDeriveKey
@@ -1373,8 +1461,8 @@ class TestEleMessageGetInfoAttributes:
     def _make_populated_msg(self) -> EleMessageGetInfo:
         msg = EleMessageGetInfo()
         msg.info_cmd = 0xDA
-        msg.info_version = 1
-        msg.info_length = 92
+        msg.info_version = 4
+        msg.info_length = 160
         msg.info_soc_id = 0x9300
         msg.info_soc_rev = 0x1000
         msg.info_life_cycle = 0x0020
@@ -1387,6 +1475,7 @@ class TestEleMessageGetInfoAttributes:
         msg.info_imem_state = 0
         msg.info_csal_state = 0
         msg.info_trng_state = 0
+        msg.info_oem_srk_revoke = 0x05
         msg.info_oem_pqc_srkh = b""
         return msg
 
@@ -1426,3 +1515,55 @@ class TestEleMessageGetInfoAttributes:
         result = msg.get_attribute("oem_srkh")
         assert result is not None
         assert len(result) > 60  # should contain full hex string
+
+    def test_get_attribute_oem_srk_revoke(self) -> None:
+        """get_attribute('oem_srk_revoke') returns hexadecimal bitmap."""
+        msg = self._make_populated_msg()
+        result = msg.get_attribute("oem_srk_revoke")
+        assert result is not None
+        assert "0x05" in result
+
+
+# HSM message subclasses - decode_response header validation error branches
+
+
+_HSM_DECODE_FACTORIES = [
+    lambda: EleMessageSessionOpen(),
+    lambda: EleMessageSessionClose(session_handle=0x1234),
+    lambda: EleMessageSabInit(),
+    lambda: EleMessageKeyStoreOpen(session_handle=0x1, key_store_id=0x2, nonce=0x3),
+    lambda: EleMessagePublicKeyExport(key_store_handle=0x1, key_id=0x2),
+    lambda: EleMessageKeyStoreClose(key_store_handle=0x1),
+]
+
+
+@pytest.mark.parametrize("factory", _HSM_DECODE_FACTORIES)
+def test_hsm_decode_response_bad_command(factory) -> None:  # type: ignore[no-untyped-def]
+    """decode_response raises on an invalid command for HSM message subclasses."""
+    msg = factory()
+    with pytest.raises(SPSDKParsingError):
+        msg.decode_response(make_response(cmd=0xFE, size=msg.response_words_count))
+
+
+@pytest.mark.parametrize("factory", _HSM_DECODE_FACTORIES)
+def test_hsm_decode_response_bad_size(factory) -> None:  # type: ignore[no-untyped-def]
+    """decode_response raises on an invalid size for HSM message subclasses."""
+    msg = factory()
+    with pytest.raises(SPSDKParsingError):
+        msg.decode_response(make_response(cmd=msg.CMD, size=0xFF))
+
+
+@pytest.mark.parametrize("factory", _HSM_DECODE_FACTORIES)
+def test_hsm_decode_response_bad_version(factory) -> None:  # type: ignore[no-untyped-def]
+    """decode_response raises on an invalid version for HSM message subclasses."""
+    msg = factory()
+    bad = make_response(cmd=msg.CMD, size=msg.response_header_words_count, version=0x99)
+    with pytest.raises(SPSDKParsingError):
+        msg.decode_response(bad)
+
+
+def test_session_open_response_info_success() -> None:
+    """response_info reports success when a valid session handle is present."""
+    msg = EleMessageSessionOpen()
+    msg.session_handle = 0xDEADBEEF
+    assert "successfully" in msg.response_info().lower()

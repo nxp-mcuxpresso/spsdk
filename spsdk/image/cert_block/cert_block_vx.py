@@ -33,6 +33,7 @@ from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
 
+UNKNOWN_FAMILY = FamilyRevision("Unknown")
 
 ########################################################################################################################
 # Certificate Block Class for SB X
@@ -107,7 +108,7 @@ class IskCertificateLite(BaseClass):
         """
         info = "ISK Certificate lite\n"
         info += f"Constraints:     {self.constraints}\n"
-        info += f"Public Key:      {str(self.pub_key)}\n"
+        info += f"Public Key:      {self.pub_key!s}\n"
         return info
 
     def create_isk_signature(
@@ -296,11 +297,11 @@ class IskCertificateLite(BaseClass):
                 result=expected_size == (4 + 4 + self.ISK_PUB_KEY_LENGTH + self.ISK_SIGNATURE_SIZE),
                 value=f"Expected size: {expected_size} bytes",
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ver.add_record(
                 name="Expected size calculation",
                 result=VerifierResult.ERROR,
-                value=f"Failed to calculate expected size: {str(e)}",
+                value=f"Failed to calculate expected size: {e!s}",
             )
 
         # Verify signature offset
@@ -341,11 +342,11 @@ class IskCertificateLite(BaseClass):
                         else "Export/parse roundtrip FAILED"
                     ),
                 )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 ver.add_record(
                     name="Export/Parse consistency",
                     result=VerifierResult.ERROR,
-                    value=f"Export/parse failed: {str(e)}",
+                    value=f"Export/parse failed: {e!s}",
                 )
 
         return ver
@@ -426,7 +427,7 @@ class CertBlockVx(CertBlock):
         :return: Formatted string containing certificate block information.
         """
         msg = "Certificate block version x\n"
-        msg += f"ISK Certificate:\n{str(self.isk_certificate)}\n"
+        msg += f"ISK Certificate:\n{self.isk_certificate!s}\n"
         msg += f"Certificate hash: {self.cert_hash.hex()}"
         return msg
 
@@ -454,7 +455,7 @@ class CertBlockVx(CertBlock):
         return self.isk_certificate.get_tbs_data()
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse CertBlockVx from binary file.
 
         The method creates a Certificate Block instance by parsing the ISK certificate from the
@@ -550,9 +551,12 @@ class CertBlockVx(CertBlock):
         :raises SPSDKError: Invalid ISK certificate configuration when certificate
             exists without signature but no valid signature provider is set.
         """
-        if self.isk_certificate and not self.isk_certificate.signature:
-            if not isinstance(self.signature_provider, SignatureProvider):
-                raise SPSDKError("Invalid ISK certificate.")
+        if (
+            self.isk_certificate
+            and not self.isk_certificate.signature
+            and not isinstance(self.signature_provider, SignatureProvider)
+        ):
+            raise SPSDKError("Invalid ISK certificate.")
 
     def get_otp_script(self) -> str:
         """Generate OTP programming script for writing certificate hash to fuses.
@@ -601,11 +605,11 @@ class CertBlockVx(CertBlock):
                 result=expected_size == self.ISK_CERT_LENGTH,
                 value=f"Expected size: {expected_size} bytes (should be {self.ISK_CERT_LENGTH} bytes)",
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ver.add_record(
                 name="Expected size calculation",
                 result=VerifierResult.ERROR,
-                value=f"Failed to calculate expected size: {str(e)}",
+                value=f"Failed to calculate expected size: {e!s}",
             )
 
         # Verify certificate hash
@@ -623,11 +627,11 @@ class CertBlockVx(CertBlock):
                 value=f"Hash [0:127]: {cert_hash.hex().upper()}",
                 important=False,
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ver.add_record(
                 name="Certificate hash calculation",
                 result=VerifierResult.WARNING,
-                value=f"Failed to calculate certificate hash: {str(e)}, the ISK signature is not ready.",
+                value=f"Failed to calculate certificate hash: {e!s}, the ISK signature is not ready.",
             )
 
         # Verify signature provider
@@ -672,11 +676,11 @@ class CertBlockVx(CertBlock):
                     else "Export/parse roundtrip FAILED"
                 ),
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ver.add_record(
                 name="Export/Parse consistency",
                 result=VerifierResult.ERROR,
-                value=f"Export/parse failed: {str(e)}",
+                value=f"Export/parse failed: {e!s}",
             )
 
         # Verify family

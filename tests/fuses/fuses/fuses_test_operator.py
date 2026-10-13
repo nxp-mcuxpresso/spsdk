@@ -12,6 +12,7 @@ for validating fuse programming and reading functionality.
 """
 
 from dataclasses import dataclass
+from typing import ClassVar
 
 from spsdk.fuses.fuse_registers import FuseRegister, FuseRegisters
 from spsdk.fuses.fuses import FuseOperator
@@ -138,8 +139,8 @@ class TestBlhostFuseOperator(FuseOperator):
     __test__ = False
 
     NAME = "blhost"
-    ACTIONS: list[FuseAction] = []
-    RETURN_VALUES: dict = {}
+    ACTIONS: ClassVar[list[FuseAction]] = []
+    RETURN_VALUES: ClassVar[dict[int, int]] = {}
 
     def __init__(self, family: FamilyRevision):
         """Initialize the fuses test operator.

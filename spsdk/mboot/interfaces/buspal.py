@@ -17,7 +17,7 @@ import logging
 import struct
 import time
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from serial import SerialException
 from serial.tools.list_ports import comports
@@ -334,11 +334,14 @@ class MbootBuspalProtocol(MbootSerialProtocol):
         :raises McuBootDataAbortError: Abort frame received from the device.
         """
         header = None
-        time_start = datetime.datetime.now()
+        time_start = datetime.datetime.now(datetime.timezone.utc)
         time_end = time_start + datetime.timedelta(milliseconds=self.device.timeout)
 
         # read uart until start byte is equal to FRAME_START_BYTE, max. 'retry_count' times
-        while header != self.FRAME_START_BYTE and datetime.datetime.now() < time_end:
+        while (
+            header != self.FRAME_START_BYTE
+            and datetime.datetime.now(datetime.timezone.utc) < time_end
+        ):
             header = to_int(self._read(1))
             if header == FPType.ABORT:
                 raise McuBootDataAbortError()
@@ -368,7 +371,7 @@ class MbootBuspalSPIInterface(MbootBuspalProtocol):
     :cvar ACK_WAIT_DELAY: Delay in seconds between acknowledgment attempts.
     """
 
-    TARGET_SETTINGS = ["speed", "polarity", "phase", "direction"]
+    TARGET_SETTINGS: ClassVar[list[str]] = ["speed", "polarity", "phase", "direction"]
 
     HDR_FRAME_RETRY_CNT = 3
     ACK_WAIT_DELAY = 0.01  # in seconds
@@ -508,7 +511,7 @@ class MbootBuspalI2CInterface(MbootBuspalProtocol):
     :cvar HDR_FRAME_RETRY_CNT: Number of retry attempts for frame transmission.
     """
 
-    TARGET_SETTINGS = ["speed", "address"]
+    TARGET_SETTINGS: ClassVar[list[str]] = ["speed", "address"]
 
     HDR_FRAME_RETRY_CNT = 3
     device: SerialDevice

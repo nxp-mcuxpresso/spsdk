@@ -108,7 +108,7 @@ class TLVElement:
 
         :return: Formatted string containing object representation and value.
         """
-        return f"{repr(self)}: {self.value!r}"
+        return f"{self!r}: {self.value!r}"
 
     def export(self) -> bytes:
         """Export TLV element to binary data.
@@ -417,15 +417,16 @@ class SecureObjects(list[SecureObject]):
         if ValidationMethod.NONE in validators:
             return True
         for method, values in validators.items():
-            if method == ValidationMethod.MAX_COUNT:
-                if self.length > int(values[0]):
-                    raise SPSDKError(f"Too many Secure Objects. Max {values[0]}, got {len(self)}")
-            if method == ValidationMethod.MAX_SO_SIZE:
-                if any(obj.size > int(values[0]) for obj in self):
-                    raise SPSDKError(f"Secure Object too big. Max {values[0]}")
-            if method == ValidationMethod.MAX_TOTAL_SIZE:
-                if sum(obj.size for obj in self) > int(values[0]):
-                    raise SPSDKError(f"Total size of Secure Objects too big. Max {values[0]}")
+            if method == ValidationMethod.MAX_COUNT and self.length > int(values[0]):
+                raise SPSDKError(f"Too many Secure Objects. Max {values[0]}, got {len(self)}")
+            if method == ValidationMethod.MAX_SO_SIZE and any(
+                obj.size > int(values[0]) for obj in self
+            ):
+                raise SPSDKError(f"Secure Object too big. Max {values[0]}")
+            if method == ValidationMethod.MAX_TOTAL_SIZE and sum(obj.size for obj in self) > int(
+                values[0]
+            ):
+                raise SPSDKError(f"Total size of Secure Objects too big. Max {values[0]}")
         return True
 
     @classmethod

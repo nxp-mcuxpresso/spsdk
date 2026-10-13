@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 #
-#!/usr/bin/env python
 # Copyright 2025-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -148,8 +147,7 @@ class JsonSchemaValidator:
 
         for root, _, _ in os.walk(search_path):
             # Find fuses_*.json files
-            for file_path in glob.glob(os.path.join(root, "fuses*.json")):
-                fuses_files.append(file_path)
+            fuses_files.extend(glob.glob(os.path.join(root, "fuses*.json")))
 
             # # Find tz_*.json files
             # for file_path in glob.glob(os.path.join(root, "tz*.json")):
@@ -207,8 +205,8 @@ class JsonSchemaValidator:
             return False, f"Invalid JSON format: {e}"
         except jsonschema.exceptions.ValidationError as e:
             return False, f"Schema validation error: {e}"
-        except Exception as e:
-            return False, f"Unexpected error: {str(e)}"
+        except Exception as e:  # noqa: BLE001
+            return False, f"Unexpected error: {e!s}"
 
     def validate_all(
         self, search_dir: str | None = None

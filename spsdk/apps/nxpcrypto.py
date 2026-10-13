@@ -465,8 +465,8 @@ def verify(certificate: str, sign: str, puk: str) -> None:
         logger.info("Performing public key verification")
         cert_puk = cert.get_public_key()
         other_puk = extract_public_key(puk)
-        logger.debug(f"Certificate public key: {str(cert_puk)}")
-        logger.debug(f"Other public key: {str(other_puk)}")
+        logger.debug(f"Certificate public key: {cert_puk!s}")
+        logger.debug(f"Other public key: {other_puk!s}")
 
         if cert_puk == other_puk:
             click.echo("Public key in certificate matches the input")

@@ -576,9 +576,8 @@ class ShadowregsOperator(FuseOperator):
         self.possible_verification = self._db.get_bool(
             DatabaseManager.SHADOW_REGS, "possible_verification", True
         )
-        if probe:
-            if not self.enable_debug():
-                raise SPSDKError("Cannot enable debug interface")
+        if probe and not self.enable_debug():
+            raise SPSDKError("Cannot enable debug interface")
 
     def enable_debug(self) -> bool:
         """Enable debug access ports on devices with debug mailbox.
@@ -616,10 +615,10 @@ class ShadowregsOperator(FuseOperator):
                 debug_enabled = True
 
         except AttributeError as exc:
-            raise SPSDKError(f"Invalid input parameters({str(exc)})") from exc
+            raise SPSDKError(f"Invalid input parameters({exc!s})") from exc
 
         except SPSDKDebugProbeError as exc:
-            raise SPSDKError(f"Can't unlock device ({str(exc)})") from exc
+            raise SPSDKError(f"Can't unlock device ({exc!s})") from exc
 
         return debug_enabled
 
@@ -973,7 +972,7 @@ class Fuses(FeatureBaseClassComm):
         """
         fuses = cls(FamilyRevision.load_from_config(config), fuse_operator=fuse_operator)
         fuses.registers.load_from_config(config.get_config("registers"))
-        for reg_name in config["registers"].keys():
+        for reg_name in config["registers"]:
             reg = fuses.registers.find_reg(reg_name, include_group_regs=True)
             reg.loaded_from_config = True
         return fuses
@@ -1133,10 +1132,28 @@ class Fuses(FeatureBaseClassComm):
         :param verify: Verify write operation after setting each register.
         :raises SPSDKError: If register write operation fails.
         """
-        regs = {r for r in self if r.loaded_from_config}
-        # add also antipole registers
-        regs.update(r.antipole_register for r in list(regs) if r.antipole_register)
-        self._write_multiple(list(regs), verify=verify)
+        regs: list[FuseRegister] = []
+        added_uids: set[str] = set()
+
+        def add_register(reg: FuseRegister) -> None:
+            if reg.uid not in added_uids:
+                regs.append(reg)
+                added_uids.add(reg.uid)
+
+        for reg in self:
+            if reg.loaded_from_config:
+                add_register(reg)
+            elif reg.has_group_registers():
+                for sub_reg in reg.sub_regs:
+                    if sub_reg.loaded_from_config:
+                        add_register(sub_reg)
+
+        # Add also antipole registers.
+        for reg in list(regs):
+            if reg.antipole_register:
+                add_register(reg.antipole_register)
+
+        self._write_multiple(regs, verify=verify)
 
     def _write_multiple(
         self,
@@ -1327,8 +1344,7 @@ class Fuses(FeatureBaseClassComm):
             registers_to_process = [r for r in registers_to_process if not r.has_reset_value]
         for reg in registers_to_process:
             if reg.has_group_registers():
-                for sub_reg in reg.sub_regs[:: -1 if reg.reverse_subregs_order else 1]:
-                    fuse_regs.append(sub_reg)
+                fuse_regs.extend(reg.sub_regs[:: -1 if reg.reverse_subregs_order else 1])
             else:
                 fuse_regs.append(reg)
             if reg.antipole_register:
@@ -1494,17 +1510,21 @@ class FuseScript:
             if reg.sub_regs:
                 script += f"# Grouped register name: {reg.name}\n\n"
                 info += f"\n --== Grouped register name: {reg.name} ==-- \n"
-                for reg in reg.sub_regs:
-                    script += f"# OTP ID: {reg.name}, Value: 0x{reg.get_value():08X}\n"
-                    if reg.otp_index is None:
-                        raise SPSDKError(f"OTP index is not defined for {reg.name}")
+                for sub_reg in reg.sub_regs:
+                    script += f"# OTP ID: {sub_reg.name}, Value: 0x{sub_reg.get_value():08X}\n"
+                    if sub_reg.otp_index is None:
+                        raise SPSDKError(f"OTP index is not defined for {sub_reg.name}")
                     script += (
                         self.operator.get_fuse_write_cmd(
-                            reg.otp_index, reg.get_value(raw=True), verify=not self.no_verify
+                            sub_reg.otp_index,
+                            sub_reg.get_value(raw=True),
+                            verify=not self.no_verify,
                         )
                         + "\n"
                     )
-                    info += f"OTP ID: {reg.otp_index}, Value: 0x{reg.get_value(raw=True):08X}\n"
+                    info += (
+                        f"OTP ID: {sub_reg.otp_index}, Value: 0x{sub_reg.get_value(raw=True):08X}\n"
+                    )
             else:
                 script += f"# OTP ID: {reg.name}\n\n"
                 if reg.otp_index is None:

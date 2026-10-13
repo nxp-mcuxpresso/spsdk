@@ -106,6 +106,10 @@ info:
           pid: 0x0073
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe:
+    protocols: [swd, jtag]
+
   # ======== Blhost section ========
   blhost: {}
 

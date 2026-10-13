@@ -130,7 +130,6 @@ def test_align_block(test_input: bytes, alignment: int, padding: int, expected: 
         (b"\x00", 3, 3),
         # align to 4
         (b"\x00", 4, 4),
-        (b"\x00", 4, 4),
         # align to 16
         (b"\x02", 16, 16),
     ],

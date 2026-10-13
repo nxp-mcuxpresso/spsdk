@@ -22,14 +22,11 @@ from spsdk.sbfile.sb31.commands import (
 from spsdk.sbfile.sb31.constants import EnumCmdTag
 
 __all__ = [
-    # commands3
     "CmdErase",
-    "CmdLoad",
     "CmdExecute",
+    "CmdLoad",
     "CmdLoadKeyBlob",
     "CmdSectionHeader",
-    # constants
     "EnumCmdTag",
-    # functions
     "parse_command",
 ]

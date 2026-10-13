@@ -144,14 +144,14 @@ def test_writedata_cmd_equality() -> None:
     """Test equality comparison for CmdWriteData command objects.
 
     Verifies that CmdWriteData instances correctly implement equality comparison
-    by testing against different command types, self-comparison, and instances
+    by testing against different command types, equivalent instances, and instances
     with different data content.
     """
     cmd = CmdWriteData(data=[(0, 1)])
     cmd_other = CmdWriteData()
     nop = CmdNop()
     assert cmd != nop
-    assert cmd == cmd
+    assert cmd == CmdWriteData(data=[(0, 1)])
     assert cmd != cmd_other
 
 
@@ -165,9 +165,9 @@ def test_writedata_cmd_pop_append() -> None:
     :raises AssertionError: If header length calculations are incorrect during operations.
     """
     cmd = CmdWriteData()
-    cmd._header.length == 4
+    assert cmd._header.length == 4
     cmd.append(5, 6)
     cmd.append(7, 8)
-    cmd._header.length == 12
+    assert cmd._header.length == 20
     cmd.pop(1)
-    cmd._header.length == 4
+    assert cmd._header.length == 12

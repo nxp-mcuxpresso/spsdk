@@ -166,7 +166,7 @@ class ClassDocstringUpdater:
             LOGGER.info(f"Found {len(classes)} classes in {file_path}")
             return classes
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOGGER.error(f"Error processing file {file_path}: {e}")
             return []
 
@@ -259,7 +259,7 @@ class ClassDocstringUpdater:
                 current_docstring=current_docstring,
             )
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOGGER.error(f"Error extracting class info for {node.name}: {e}")
             return None
 
@@ -383,7 +383,7 @@ class ClassDocstringUpdater:
             LOGGER.error(f"No response from Cody for class: {class_info.name}")
             return None
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOGGER.error(f"Error getting docstring from Cody for {class_info.name}: {e}")
             return None
 
@@ -402,13 +402,7 @@ class ClassDocstringUpdater:
         for line in lines:
             stripped = line.strip()
             # Skip lines that document parameters, instance variables, exceptions, or returns
-            if (
-                stripped.startswith(":param")
-                or stripped.startswith(":ivar")
-                or stripped.startswith(":raises")
-                or stripped.startswith(":return")
-                or stripped.startswith(":returns")
-            ):
+            if stripped.startswith((":param", ":ivar", ":raises", ":return", ":returns")):
                 continue
             filtered_lines.append(line)
 
@@ -537,7 +531,7 @@ class ClassDocstringUpdater:
                 # Look for the start of existing docstring
                 for i in range(insert_line, min(insert_line + 20, len(lines))):
                     line = lines[i].strip()
-                    if line.startswith('"""') or line.startswith("'''"):
+                    if line.startswith(('"""', "'''")):
                         remove_start = i
                         quote_count = line.count('"""') + line.count("'''")
 
@@ -579,7 +573,7 @@ class ClassDocstringUpdater:
 
             return True
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOGGER.error(
                 f"Error updating docstring for class {class_info.name} in {file_path}: {e}"
             )
@@ -663,7 +657,7 @@ class ClassDocstringUpdater:
         for file_path in python_files:
             try:
                 self.process_file(file_path)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 LOGGER.error(f"Error processing file {file_path}: {e}")
                 continue
 
@@ -727,7 +721,7 @@ python docstring_updater_classes.py single_file.py --dry-run
         except KeyboardInterrupt:
             LOGGER.info("Process interrupted by user")
             sys.exit(1)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOGGER.error(f"Unexpected error: {e}")
             sys.exit(1)
 
@@ -740,7 +734,7 @@ python docstring_updater_classes.py single_file.py --dry-run
         except KeyboardInterrupt:
             LOGGER.info("Process interrupted by user")
             sys.exit(1)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             LOGGER.error(f"Unexpected error: {e}")
             sys.exit(1)
     else:

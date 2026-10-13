@@ -30,23 +30,19 @@ from spsdk.sbfile.sb2.commands import (
 )
 
 __all__ = [
-    # modules
-    "commands",
-    # main classes
-    "SecureBootV1",
-    "BootSectionV1",
-    # commands
-    "CmdFill",
-    "CmdNop",
-    "CmdTag",
-    "CmdMemEnable",
-    "CmdErase",
-    "CmdReset",
-    "CmdCall",
-    "CmdLoad",
-    "CmdJump",
-    "CmdProg",
-    # helper classes and enums
-    "SecureBootFlagsV1",
     "BcdVersion3",
+    "BootSectionV1",
+    "CmdCall",
+    "CmdErase",
+    "CmdFill",
+    "CmdJump",
+    "CmdLoad",
+    "CmdMemEnable",
+    "CmdNop",
+    "CmdProg",
+    "CmdReset",
+    "CmdTag",
+    "SecureBootFlagsV1",
+    "SecureBootV1",
+    "commands",
 ]

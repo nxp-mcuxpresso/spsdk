@@ -20,13 +20,14 @@ from dataclasses import dataclass
 import click
 import colorama
 
-from spsdk.apps.nxpdebugmbox import get_debug_probe_options_help
+from spsdk.apps.nxpdebugmbox import get_debug_probe_options_help, perform_reset
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
     is_click_help,
     spsdk_apps_common_options,
     spsdk_config_option,
+    spsdk_debug_probe_protocol_option,
     spsdk_family_option,
     spsdk_output_option,
 )
@@ -85,8 +86,6 @@ def _open_debug_probe(debug_probe_cfg: DebugProbeCfg) -> Iterator[DebugProbe]:
         probe.connect_safe()
         try:
             yield probe
-        except SPSDKError as exc:
-            raise exc
         finally:
             probe.close()
 
@@ -118,12 +117,14 @@ def create_debug_probe_cfg(
     interface: str | None,
     serial_no: str | None,
     debug_probe_option: list[str],
+    debug_probe_protocol: str | None = None,
 ) -> DebugProbeCfg:
     """Create DebugProbeCfg from command line options.
 
     :param interface: Debug probe interface type.
     :param serial_no: Serial number of debug probe.
     :param debug_probe_option: List of debug probe options in key=value format.
+    :param debug_probe_protocol: Optional debug probe protocol.
     :param family: Target family for setting test address.
     :return: Configured DebugProbeCfg object.
     :raises SPSDKError: If debug probe option format is invalid.
@@ -134,6 +135,8 @@ def create_debug_probe_cfg(
             raise SPSDKError(f"Invalid -o parameter {par}!")
         par_splitted = par.split("=")
         probe_user_params[par_splitted[0]] = par_splitted[1]
+    if debug_probe_protocol:
+        probe_user_params["protocol"] = debug_probe_protocol
 
     debug_probe_cfg = DebugProbeCfg(
         interface=interface, serial_no=serial_no, debug_probe_params=probe_user_params
@@ -169,6 +172,7 @@ def create_debug_probe_cfg(
     multiple=True,
     help=get_debug_probe_options_help(),
 )
+@spsdk_debug_probe_protocol_option
 @click.pass_context
 def main(
     ctx: click.Context,
@@ -176,6 +180,7 @@ def main(
     log_level: int,
     serial_no: str,
     debug_probe_option: list[str],
+    debug_probe_protocol: str | None,
     family: FamilyRevision,
 ) -> int:
     """NXP Shadow Registers control Tool."""
@@ -196,6 +201,7 @@ def main(
         "interface": interface,
         "serial_no": serial_no,
         "debug_probe_option": debug_probe_option,
+        "debug_probe_protocol": debug_probe_protocol,
     }
 
     return 0
@@ -240,6 +246,7 @@ def save_config(
         interface=pass_obj["interface"],
         serial_no=pass_obj["serial_no"],
         debug_probe_option=pass_obj["debug_probe_option"],
+        debug_probe_protocol=pass_obj["debug_probe_protocol"],
         family=family,
     )
     get_config_command(family, debug_probe_cfg, save_diff, ignore_access_rights, output)
@@ -278,6 +285,7 @@ def get_config(
         interface=pass_obj["interface"],
         serial_no=pass_obj["serial_no"],
         debug_probe_option=pass_obj["debug_probe_option"],
+        debug_probe_protocol=pass_obj["debug_probe_protocol"],
         family=family,
     )
     get_config_command(family, debug_probe_cfg, diff_only, ignore_access_rights, output)
@@ -313,7 +321,7 @@ def get_config_command(
             except SPSDKFuseOperationFailure as e:
                 click.echo(f"{e}. Check debug logs for details.")
             except SPSDKError as exc:
-                raise SPSDKAppError(f"Reading the shadow registers failed: ({str(exc)})") from exc
+                raise SPSDKAppError(f"Reading the shadow registers failed: ({exc!s})") from exc
         write_file(shadow_regs.get_config_yaml(diff=diff_only), output)
         click.echo(
             f"The shadow registers configuration has been saved into {get_printable_path(output)}"
@@ -338,6 +346,7 @@ def load_config(pass_obj: dict, config: Config, verify: bool) -> None:
         interface=pass_obj["interface"],
         serial_no=pass_obj["serial_no"],
         debug_probe_option=pass_obj["debug_probe_option"],
+        debug_probe_protocol=pass_obj["debug_probe_protocol"],
         family=family,
     )
     write_command(family, debug_probe_cfg, config, verify)
@@ -359,6 +368,7 @@ def write(pass_obj: dict, config: Config, verify: bool) -> None:
         interface=pass_obj["interface"],
         serial_no=pass_obj["serial_no"],
         debug_probe_option=pass_obj["debug_probe_option"],
+        debug_probe_protocol=pass_obj["debug_probe_protocol"],
         family=family,
     )
     write_command(family, debug_probe_cfg, config, verify)
@@ -433,6 +443,7 @@ def print_regs(pass_obj: dict, rich: bool, family: FamilyRevision | None) -> Non
         interface=pass_obj["interface"],
         serial_no=pass_obj["serial_no"],
         debug_probe_option=pass_obj["debug_probe_option"],
+        debug_probe_protocol=pass_obj["debug_probe_protocol"],
         family=family,
     )
     print_registers_command(family, debug_probe_cfg, None, rich, True)
@@ -459,6 +470,7 @@ def get_reg(pass_obj: dict, reg: str, rich: bool, family: FamilyRevision | None)
         interface=pass_obj["interface"],
         serial_no=pass_obj["serial_no"],
         debug_probe_option=pass_obj["debug_probe_option"],
+        debug_probe_protocol=pass_obj["debug_probe_protocol"],
         family=family,
     )
     print_registers_command(family, debug_probe_cfg, reg, rich, True)
@@ -500,6 +512,7 @@ def print_registers(
         interface=pass_obj["interface"],
         serial_no=pass_obj["serial_no"],
         debug_probe_option=pass_obj["debug_probe_option"],
+        debug_probe_protocol=pass_obj["debug_probe_protocol"],
         family=family,
     )
     print_registers_command(family, debug_probe_cfg, name, rich, ignore_access_rights)
@@ -540,12 +553,12 @@ def print_registers_command(
                     click.echo()
                 except SPSDKFuseOperationFailure as e:
                     logger.debug(
-                        f"Permission error, unable to read shadow register {reg.name}: {str(e)}"
+                        f"Permission error, unable to read shadow register {reg.name}: {e!s}"
                     )
                     error_count += 1
                 except SPSDKError as e:
                     logger.debug(
-                        f"Error occurred, unable to read the shadow register {reg.name}: {str(e)}"
+                        f"Error occurred, unable to read the shadow register {reg.name}: {e!s}"
                     )
                     error_count += 1
 
@@ -594,6 +607,7 @@ def set_reg(
         interface=pass_obj["interface"],
         serial_no=pass_obj["serial_no"],
         debug_probe_option=pass_obj["debug_probe_option"],
+        debug_probe_protocol=pass_obj["debug_probe_protocol"],
         family=family,
     )
     write_single_command(family, debug_probe_cfg, reg_name, reg_val, raw, verify)
@@ -635,6 +649,7 @@ def write_single(
         interface=pass_obj["interface"],
         serial_no=pass_obj["serial_no"],
         debug_probe_option=pass_obj["debug_probe_option"],
+        debug_probe_protocol=pass_obj["debug_probe_protocol"],
         family=family,
     )
     write_single_command(family, debug_probe_cfg, name, value, raw, verify)
@@ -685,23 +700,19 @@ def reset(pass_obj: dict, family: FamilyRevision | None) -> None:
         interface=pass_obj["interface"],
         serial_no=pass_obj["serial_no"],
         debug_probe_option=pass_obj["debug_probe_option"],
+        debug_probe_protocol=pass_obj["debug_probe_protocol"],
         family=family,
     )
     with _open_debug_probe(debug_probe_cfg) as probe:
         db = get_db(family)
-        reset_type = db.get_str(DatabaseManager.SHADOW_REGS, "reset_type")
-        if reset_type == "nvic_reset":
-            # Do a NVIC system reset
-            nvic_reset = db.get_dict(DatabaseManager.SHADOW_REGS, "nvic_reset")
-            address = nvic_reset.get("address")
-            value = nvic_reset.get("value")
-            if not address or not value:
-                raise SPSDKError(f"The NVIC reset configuration missing for device {family}")
-            logger.debug(f"Writing register address: {address}, data: {value}")
-            probe.mem_reg_write(addr=address, data=value)
-        else:
-            probe.reset()
-    click.echo("The target has been reset.")
+        reset_type = db.get_str(
+            DatabaseManager.SHADOW_REGS,
+            "reset_type",
+            db.get_str(DatabaseManager.DAT, "reset_type", "hw_reset"),
+        )
+        # Keep ShadowRegs-specific reset type decision, but use shared reset implementation.
+        perform_reset(probe, family, nvic=reset_type == "nvic_reset")
+    click.echo(f"The target has been reset. Reset type: {reset_type}.")
 
 
 @main.command(name="fuses-script", no_args_is_help=True)

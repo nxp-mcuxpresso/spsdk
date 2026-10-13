@@ -1333,7 +1333,7 @@ class CmdVersionCheck(CmdBaseClass):
         :return: Formatted string with command details.
         """
         return (
-            f"CVER: Type={self.type.label}, Version={str(self.version)}, "
+            f"CVER: Type={self.type.label}, Version={self.version!s}, "
             f"Flags=0x{self.header.flags:08X}"
         )
 
@@ -1514,7 +1514,7 @@ def parse_command(data: bytes) -> CmdBaseClass:
     for cmd_tag, cmd in _CMD_CLASS.items():
         if cmd_tag.tag == header_tag:
             return cmd.parse(data)
-    raise SPSDKError(f"Unsupported command: {str(header_tag)}")
+    raise SPSDKError(f"Unsupported command: {header_tag!s}")
 
 
 def get_device_id(mem_id: int) -> int:

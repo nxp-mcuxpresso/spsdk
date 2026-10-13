@@ -32,8 +32,17 @@ output_definition:
     output_format:
       type: string
       title: Output file format
-      description: Output file format for Bootable image
-      enum: [bin, hex, srec, sparse]
+      description: |-
+        Format of the output file.
+        bin = raw binary (default);
+        hex = Intel HEX;
+        srec = Motorola S-record;
+        sparse = sparse binary;
+        elf = minimal flash-ready ELF with PT_LOAD segments (no debug info);
+        elf_patch = patch the application ELF file (from MBI inputImageFile) preserving DWARF debug info
+        and symbols for direct flash+debug from IDE (requires spsdk 'elf' extension:
+        pip install spsdk[elf] or pip install spsdk[all]).
+      enum: [bin, hex, srec, sparse, elf, elf_patch]
       template_value: bin
 
 keyblob:

@@ -845,3 +845,40 @@ def test_signature_block_v2_pre_parse_verify_empty(chip_cfg: AhabChipContainerCo
     exported = sb.export()
     v = SignatureBlockV2.pre_parse_verify(exported)
     assert isinstance(v, Verifier)
+
+
+# SignatureBlock.verify - verify_block error branches
+
+
+def test_signature_block_verify_block_exists_offset_missing(
+    chip_cfg: AhabChipContainerConfig, srk_table: SRKTable
+) -> None:
+    """verify() errors when a block exists but its offset is left undefined."""
+    block = SignatureBlock(chip_cfg, srk_assets=srk_table)
+    # _srk_assets_offset intentionally left at 0 while srk_assets is present
+    assert block.verify().has_errors
+
+
+def test_signature_block_verify_offset_without_block(chip_cfg: AhabChipContainerConfig) -> None:
+    """verify() errors when an offset is defined but the block is missing."""
+    block = SignatureBlock(chip_cfg)
+    block._signature_offset = 0x100
+    assert block.verify().has_errors
+
+
+def test_signature_block_verify_offset_below_min(
+    chip_cfg: AhabChipContainerConfig, srk_table: SRKTable
+) -> None:
+    """verify() errors when a block offset is below the minimal offset."""
+    block = SignatureBlock(chip_cfg, srk_assets=srk_table)
+    block._srk_assets_offset = 1
+    assert block.verify().has_errors
+
+
+def test_signature_block_verify_offset_misaligned(
+    chip_cfg: AhabChipContainerConfig, srk_table: SRKTable
+) -> None:
+    """verify() errors when a block offset is not properly aligned."""
+    block = SignatureBlock(chip_cfg, srk_assets=srk_table)
+    block._srk_assets_offset = block.fixed_length() * 2 + 1
+    assert block.verify().has_errors

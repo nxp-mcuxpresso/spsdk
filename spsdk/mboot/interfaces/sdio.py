@@ -161,9 +161,8 @@ class MbootSdioInterface(MbootSerialProtocol):
             )
         if frame_type == FPType.ABORT:
             raise McuBootDataAbortError()
-        if expected_frame_type:
-            if frame_type != expected_frame_type:
-                raise McuBootConnectionError(
-                    f"received invalid ACK '{frame_type:#X}' expected '{expected_frame_type.tag:#X}'"
-                )
+        if expected_frame_type and frame_type != expected_frame_type:
+            raise McuBootConnectionError(
+                f"received invalid ACK '{frame_type:#X}' expected '{expected_frame_type.tag:#X}'"
+            )
         return header, frame_type

@@ -16,7 +16,7 @@ import logging
 import os
 from inspect import isclass
 from struct import unpack
-from typing import Any
+from typing import Any, ClassVar
 
 import colorama
 from typing_extensions import Self
@@ -98,7 +98,7 @@ class Segment(BaseClass):
     INIT_SEGMENT = False
     CFG_NAME: str | None = None
     ALT_NAME: str | None = None
-    IMAGE_PATTERNS = ["zeros", "ones"]
+    IMAGE_PATTERNS: ClassVar[list[str]] = ["zeros", "ones"]
     OFFSET_ALIGNMENT = 1
 
     def __init__(
@@ -334,11 +334,9 @@ class Segment(BaseClass):
         :param binary: Binary data to check for padding patterns.
         :return: True if the binary contains only padding patterns, False otherwise.
         """
-        if self.size > 0 and binary[: self.size] in [
+        return self.size > 0 and binary[: self.size] in [
             BinaryPattern(pattern).get_block(self.size) for pattern in self.IMAGE_PATTERNS
-        ]:
-            return True
-        return False
+        ]
 
     def create_config(self, output_dir: str, **_kwargs: Any) -> str | int | dict:
         """Create configuration and store segment data to specified directory.
@@ -441,7 +439,7 @@ class Segment(BaseClass):
         else:
             ret.add_record_bytes("Raw data", self.raw_block.export())
 
-        if self.INIT_SEGMENT and not self.is_present and not self._offset == 0:
+        if self.INIT_SEGMENT and not self.is_present and self._offset != 0:
             ret.add_record("Presence", VerifierResult.ERROR, "Mandatory segment is missing")
 
         return ret
@@ -457,6 +455,23 @@ class SegmentKeyBlob(Segment):
     """
 
     NAME = BootableImageSegment.KEYBLOB
+
+    def __init__(
+        self,
+        offset: int,
+        family: FamilyRevision,
+        mem_type: MemoryType,
+        raw_block: BinaryImage | None = None,
+    ) -> None:
+        """Initialize keyblob segment.
+
+        :param offset: Offset of segment in whole bootable image.
+        :param family: Target chip family and revision information.
+        :param mem_type: Type of memory where segment will be stored.
+        :param raw_block: Raw binary data of the segment, optional.
+        """
+        super().__init__(offset, family, mem_type, raw_block)
+        self._iped: Any | None = None
 
     @property
     def size(self) -> int:
@@ -486,6 +501,7 @@ class SegmentKeyBlob(Segment):
             )
 
         file_path = config.get_input_file_name(self.cfg_key())
+        self._iped = None
         try:
             iped_config = Config.create_from_file(file_path)
             from spsdk.image.iped.iped import Iped  # pylint: disable=import-outside-toplevel
@@ -499,6 +515,7 @@ class SegmentKeyBlob(Segment):
             self.raw_block = BinaryImage(
                 name=self.NAME.label + "_data", binary=iped.export(), size=iped.table_size
             )
+            self._iped = iped
         except (SPSDKNotTextFileError, SPSDKParsingError):
             try:
                 self.raw_block = BinaryImage.load_binary_image(
@@ -509,7 +526,17 @@ class SegmentKeyBlob(Segment):
                     f"The binary file path to load {self.NAME.label} segment expected."
                 ) from exc
         except SPSDKError as exc:
-            raise SPSDKValueError(f"Cannot load IPED keyblob configuration: {str(exc)}") from exc
+            raise SPSDKValueError(f"Cannot load IPED keyblob configuration: {exc!s}") from exc
+
+    def post_export(self, output_path: str) -> list[str]:
+        """Export additional IPED artifacts when keyblob was loaded from IPED YAML config.
+
+        :param output_path: Path to export artifacts.
+        :return: List of generated artifact file paths.
+        """
+        if self._iped:
+            return self._iped.post_export(output_path)
+        return []
 
 
 class SegmentFcb(Segment):
@@ -673,7 +700,7 @@ class SegmentFcb(Segment):
         except SPSDKErrorValidationFailed as exc:
             raise SPSDKErrorValidationFailed(
                 f"Cannot load {self.NAME.label} segment from the configuration: "
-                f"{config.get_input_file_name(self.cfg_key())}\n{str(exc)}"
+                f"{config.get_input_file_name(self.cfg_key())}\n{exc!s}"
             ) from exc
         except SPSDKNotTextFileError:
             try:
@@ -687,7 +714,7 @@ class SegmentFcb(Segment):
                 )
             except SPSDKError as exc:
                 raise SPSDKParsingError(
-                    f"The given binary form of FCB block looks corrupted: {str(exc)}"
+                    f"The given binary form of FCB block looks corrupted: {exc!s}"
                 ) from exc
 
 
@@ -885,7 +912,7 @@ class SegmentImageVersionAntiPole(Segment):
                 ret.add_record(
                     "Image version",
                     VerifierResult.SUCCEEDED,
-                    f"{str(image_version)}, 0x{hex(image_version)}",
+                    f"{image_version!s}, 0x{hex(image_version)}",
                 )
             # unprogrammed value 0xFFFFFFFF is also considered as a valid value.
             elif image_version == image_version_anti == self.UNPROGRAMMED_VALUE:
@@ -1079,7 +1106,7 @@ class SegmentXmcd(Segment):
         except SPSDKErrorValidationFailed as exc:
             raise SPSDKErrorValidationFailed(
                 f"Cannot load {self.NAME.label} segment from the configuration: "
-                f"{config.get_input_file_name(self.cfg_key())}\n{str(exc)}"
+                f"{config.get_input_file_name(self.cfg_key())}\n{exc!s}"
             ) from exc
         except SPSDKNotTextFileError:
             try:
@@ -1089,7 +1116,7 @@ class SegmentXmcd(Segment):
                 self.xmcd = XMCD.parse(binary=self.raw_block.export(), offset=0, family=self.family)
             except SPSDKError as exc:
                 raise SPSDKParsingError(
-                    f"The given binary form of XMCD block looks corrupted: {str(exc)}"
+                    f"The given binary form of XMCD block looks corrupted: {exc!s}"
                 ) from exc
 
     def verify(self) -> Verifier:
@@ -1261,11 +1288,11 @@ class SegmentMbi(Segment):
         except SPSDKErrorValidationFailed as exc:
             raise SPSDKErrorValidationFailed(
                 f"Cannot load {self.NAME.label} segment from the configuration: "
-                f"{config.get_input_file_name(self.cfg_key())}\n{str(exc)}"
+                f"{config.get_input_file_name(self.cfg_key())}\n{exc!s}"
             ) from exc
         except SPSDKError as exc:
             raise SPSDKValueError(
-                f"Cannot export MBI container from the configuration:\n{str(exc)}"
+                f"Cannot export MBI container from the configuration:\n{exc!s}"
             ) from exc
 
     def verify(self) -> Verifier:
@@ -1401,7 +1428,7 @@ class SegmentHab(Segment):
         except SPSDKErrorValidationFailed as exc:
             raise SPSDKErrorValidationFailed(
                 f"Cannot load {self.NAME.label} segment from the configuration: "
-                f"{config.get_input_file_name(self.cfg_key())}\n{str(exc)}"
+                f"{config.get_input_file_name(self.cfg_key())}\n{exc!s}"
             ) from exc
         except SPSDKNotTextFileError:
             super().load_config(config=config)
@@ -1412,7 +1439,7 @@ class SegmentHab(Segment):
             self.hab = hab
         except SPSDKError as exc:
             raise SPSDKValueError(
-                f"Cannot export HAB container from the configuration:\n{str(exc)}"
+                f"Cannot export HAB container from the configuration:\n{exc!s}"
             ) from exc
 
     def create_config(self, output_dir: str, **_kwargs: Any) -> str | int | dict:
@@ -1543,16 +1570,19 @@ class SegmentAhab(Segment):
             from spsdk.utils.misc import load_hex_string
 
             for container_idx, container in enumerate(ahab.ahab_containers):
-                if container.flag_srk_set != FlagsSrkSet.NXP:
-                    if container.signature_block and container.signature_block.blob:
-                        # Determine which DEK to use
-                        dek_value = None
-                        if None in dek_map:
-                            # Legacy format - use for all containers
-                            dek_value = dek_map[None]
-                        elif container_idx in dek_map:
-                            # New format - use specific container DEK
-                            dek_value = dek_map[container_idx]
+                if (
+                    container.flag_srk_set != FlagsSrkSet.NXP
+                    and container.signature_block
+                    and container.signature_block.blob
+                ):
+                    # Determine which DEK to use
+                    dek_value = None
+                    if None in dek_map:
+                        # Legacy format - use for all containers
+                        dek_value = dek_map[None]
+                    elif container_idx in dek_map:
+                        # New format - use specific container DEK
+                        dek_value = dek_map[container_idx]
 
                         if dek_value:
                             container.signature_block.blob.dek = load_hex_string(
@@ -1670,7 +1700,7 @@ class SegmentAhab(Segment):
         except SPSDKErrorValidationFailed as exc:
             raise SPSDKErrorValidationFailed(
                 f"Cannot load {self.NAME.label} segment from the configuration: "
-                f"{config.get_input_file_name(self.cfg_key())}\n{str(exc)}"
+                f"{config.get_input_file_name(self.cfg_key())}\n{exc!s}"
             ) from exc
         except SPSDKNotTextFileError:
             # In case that the file is not configuration, load is as binary
@@ -1687,7 +1717,7 @@ class SegmentAhab(Segment):
             self.ahab = ahab
         except SPSDKError as exc:
             raise SPSDKValueError(
-                f"Cannot export AHAB container from the configuration:\n{str(exc)}"
+                f"Cannot export AHAB container from the configuration:\n{exc!s}"
             ) from exc
 
     def pre_parse_verify(self, data: bytes) -> Verifier:
@@ -1876,7 +1906,7 @@ class SegmentSB21(Segment):
         except SPSDKErrorValidationFailed as exc:
             raise SPSDKErrorValidationFailed(
                 f"Cannot load {self.NAME.label} segment from the configuration: "
-                f"{config.get_input_file_name(self.cfg_key())}\n{str(exc)}"
+                f"{config.get_input_file_name(self.cfg_key())}\n{exc!s}"
             ) from exc
         except SPSDKNotTextFileError:
             # In case that the file is not configuration, load is as binary
@@ -1890,9 +1920,7 @@ class SegmentSB21(Segment):
             )
             self.sb21 = sb21
         except SPSDKError as exc:
-            raise SPSDKValueError(
-                f"Cannot export SB2.1 from the configuration:\n{str(exc)}"
-            ) from exc
+            raise SPSDKValueError(f"Cannot export SB2.1 from the configuration:\n{exc!s}") from exc
 
     def parse_binary(self, binary: bytes, dek_map: dict[int | None, str] | None = None) -> None:
         """Parse binary block into Segment object.
@@ -1971,7 +1999,7 @@ class SegmentSB31(Segment):
         except SPSDKErrorValidationFailed as exc:
             raise SPSDKErrorValidationFailed(
                 f"Cannot load {self.NAME.label} segment from the configuration: "
-                f"{config.get_input_file_name(self.cfg_key())}\n{str(exc)}"
+                f"{config.get_input_file_name(self.cfg_key())}\n{exc!s}"
             ) from exc
         except SPSDKNotTextFileError:
             # In case that the file is not configuration, load is as binary
@@ -1985,9 +2013,7 @@ class SegmentSB31(Segment):
             )
             self.sb31 = sb31
         except SPSDKError as exc:
-            raise SPSDKValueError(
-                f"Cannot export SB3.1 from the configuration:\n{str(exc)}"
-            ) from exc
+            raise SPSDKValueError(f"Cannot export SB3.1 from the configuration:\n{exc!s}") from exc
 
     def parse_binary(self, binary: bytes, dek_map: dict[int | None, str] | None = None) -> None:
         """Parse binary block into Segment object.

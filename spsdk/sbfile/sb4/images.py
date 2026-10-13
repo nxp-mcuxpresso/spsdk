@@ -12,9 +12,9 @@ classes for image description, command handling, and complete image assembly.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from struct import calcsize, pack, unpack, unpack_from
-from typing import Any, cast
+from typing import Any, ClassVar, cast
 
 from typing_extensions import Self
 
@@ -74,7 +74,7 @@ class SecureBinary4Descr(BaseClass):
     FORMAT_VERSION = "4.0"
     MANIFEST_FORMAT = f"{HEADER_FORMAT}48s64s"
     MANIFEST_SIZE = calcsize(MANIFEST_FORMAT)
-    SUPPORTED_HASHES = ["sha384"]
+    SUPPORTED_HASHES: ClassVar[list[str]] = ["sha384"]
 
     def __init__(
         self,
@@ -96,7 +96,7 @@ class SecureBinary4Descr(BaseClass):
 
         self.hash_type = EnumHashAlgorithm.SHA384
         self.block_count = 0
-        self.timestamp = timestamp or int(datetime.now().timestamp())
+        self.timestamp = timestamp or int(datetime.now(timezone.utc).timestamp())
         self.original_description = description
         self.description = self._adjust_description(description)
         self.block1_hash = bytes(48)
@@ -272,7 +272,7 @@ class SecureBinary4Commands(SecureBinary31Commands):
 
     FEATURE = DatabaseManager.SB40
     SB_COMMANDS_NAME = "SB4.0"
-    SUPPORTED_HASHES = [EnumHashAlgorithm.SHA384]
+    SUPPORTED_HASHES: ClassVar[list[EnumHashAlgorithm]] = [EnumHashAlgorithm.SHA384]
 
     @classmethod
     def parse_block_header(
@@ -371,7 +371,7 @@ class SecureBinary4(FeatureBaseClass):
 
     FEATURE = DatabaseManager.SB40
 
-    PCK_SIZES = [256, 128]
+    PCK_SIZES: ClassVar[list[int]] = [256, 128]
 
     SB4_BLOCK_ALIGNMENT = 4
 
@@ -425,7 +425,7 @@ class SecureBinary4(FeatureBaseClass):
         schemas[0]["properties"]["commands"]["items"]["oneOf"] = [
             command
             for command in list_of_commands
-            if list(command["properties"].keys())[0] in supported_commands
+            if next(iter(command["properties"].keys())) in supported_commands
         ]
         supports_compression = db.get_bool(cls.FEATURE, "supports_compression")
         if not supports_compression:
@@ -671,7 +671,7 @@ class SecureBinary4(FeatureBaseClass):
             ret.add_record(name="SB4.0 Header", result=VerifierResult.SUCCEEDED, value="Valid")
         except SPSDKError as e:
             ret.add_record(
-                name="SB4.0 Header", result=VerifierResult.ERROR, value=f"Invalid: {str(e)}"
+                name="SB4.0 Header", result=VerifierResult.ERROR, value=f"Invalid: {e!s}"
             )
 
         # Validate the commands
@@ -693,7 +693,7 @@ class SecureBinary4(FeatureBaseClass):
                 )
             except SPSDKError as e:
                 ret.add_record(
-                    name="SB4.0 Commands", result=VerifierResult.ERROR, value=f"Invalid: {str(e)}"
+                    name="SB4.0 Commands", result=VerifierResult.ERROR, value=f"Invalid: {e!s}"
                 )
 
         # Validate family
@@ -945,7 +945,7 @@ class SecureBinary4(FeatureBaseClass):
                 timestamp=sb_descriptor.timestamp,
             )
         except SPSDKError as exc:
-            logger.error(f"Cannot parse SB4 commands, probably invalid file or PCK key. {str(exc)}")
+            logger.error(f"Cannot parse SB4 commands, probably invalid file or PCK key. {exc!s}")
             sb_commands = SecureBinary4Commands(
                 family=family, hash_type=hash_type, timestamp=sb_descriptor.timestamp
             )
@@ -996,8 +996,8 @@ class SecureBinary4(FeatureBaseClass):
                     logger.info(
                         f"Parsed and decrypted reference value: {decrypted_reference_value.hex()}"
                     )
-                except Exception as exc:
-                    logger.warning(f"Failed to decrypt reference value: {str(exc)}")
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning(f"Failed to decrypt reference value: {exc!s}")
                     sb4_obj.reference_value = encrypted_reference_value
             else:
                 sb4_obj.reference_value = encrypted_reference_value

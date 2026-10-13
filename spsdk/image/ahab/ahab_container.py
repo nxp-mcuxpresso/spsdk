@@ -15,9 +15,10 @@ AHABContainerV2 for different container versions and configurations.
 """
 
 import logging
+import traceback
 from struct import pack, unpack
 from types import SimpleNamespace
-from typing import cast
+from typing import ClassVar, cast
 
 from typing_extensions import Self
 
@@ -104,8 +105,8 @@ class AHABContainerBase(HeaderContainer):
     FLAGS_SRK_REVOKE_MASK_OFFSET = 8
     FLAGS_SRK_REVOKE_MASK_SIZE = 4
 
-    DIFF_ATTRIBUTES_VALUES = ["flags", "fuse_version", "sw_version"]
-    DIFF_ATTRIBUTES_OBJECTS = ["signature_block"]
+    DIFF_ATTRIBUTES_VALUES: ClassVar[list[str]] = ["flags", "fuse_version", "sw_version"]
+    DIFF_ATTRIBUTES_OBJECTS: ClassVar[list[str]] = ["signature_block"]
 
     def __init__(
         self,
@@ -148,16 +149,15 @@ class AHABContainerBase(HeaderContainer):
         :param other: Object to compare with this AHAB container instance.
         :return: True if objects are equal, False otherwise.
         """
-        if isinstance(other, type(self)):
-            if (
+        return bool(
+            isinstance(other, type(self))
+            and (
                 super().__eq__(other)
                 and self.flags == other.flags
                 and self.fuse_version == other.fuse_version
                 and self.sw_version == other.sw_version
-            ):
-                return True
-
-        return False
+            )
+        )
 
     def set_flags(
         self, srk_set: str = "none", used_srk_id: int = 0, srk_revoke_mask: int = 0
@@ -196,8 +196,9 @@ class AHABContainerBase(HeaderContainer):
         if hasattr(self, "chip_config") and self.chip_config and hasattr(self.chip_config, "base"):
             try:
                 return cast(FlagsSrkSet, self.chip_config.base.srk_sets.from_tag(srk_set))
-            except Exception:
-                pass
+            except Exception as exc:  # noqa: BLE001
+                logger.debug(f"Chip-specific SRK set lookup failed: {exc}")
+                logger.debug(traceback.format_exc())
 
         # Fallback to default FlagsSrkSet
         return cast(FlagsSrkSet, FlagsSrkSet.from_tag(srk_set))
@@ -671,8 +672,10 @@ class AHABContainer(AHABContainerBase):
         Disabled = (
             0x00,
             "disabled",
-            "Glitch Detector is disabled after the first OEM container"
-            " has been authenticated (default behavior)",
+            (
+                "Glitch Detector is disabled after the first OEM container"
+                " has been authenticated (default behavior)"
+            ),
         )
         EnabledEleApi = (
             0x01,

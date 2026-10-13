@@ -168,7 +168,7 @@ class DevHsmSBc(DevHsm):
         self.info_print(" 5: Creating template SBc header.")
 
         sbc_header_exported = self.sbc.export()
-        logger.debug(f" 5.1: The template SBc header: \n{str(self.sbc)} \n")
+        logger.debug(f" 5.1: The template SBc header: \n{self.sbc!s} \n")
         self.store_temp_res("sbc_header.bin", sbc_header_exported)
 
         # 6: Create dummy certificate block header part of SBc
@@ -176,15 +176,15 @@ class DevHsmSBc(DevHsm):
         cb_header = CertificateBlockHeaderV2_2()
         cb_header_exported = cb_header.export()
         cb_header_exported += oem_enc_share
-        logger.debug(f" 6.1: The dummy certificate block has been created:\n{str(cb_header)}.")
+        logger.debug(f" 6.1: The dummy certificate block has been created:\n{cb_header!s}.")
         logger.debug(
-            f" 6.2: The template cert: \n{str(cb_header)} \n Length:{len(cb_header_exported)}"
+            f" 6.2: The template cert: \n{cb_header!s} \n Length:{len(cb_header_exported)}"
         )
         self.store_temp_res("cb_header.bin", cb_header_exported)
 
         # 7: Export unencrypted SBc data blocks
         self.info_print(" 7: Created unencrypted SBc data")
-        logger.info(f"\n SBc data: \n{str(self.sbc)}\n")
+        logger.info(f"\n SBc data: \n{self.sbc!s}\n")
         # 7.1: Handle load key blob commands
         for command in self.sbc.sb_commands.commands:
             if isinstance(command, CmdLoadKeyBlob):

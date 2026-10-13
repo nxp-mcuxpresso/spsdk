@@ -116,7 +116,7 @@ def get_boot_sections(
     :param load_addr: Address where to load the image (for simple section)
     :return: List of boot sections configured according to the specified parameters
     """
-    result = list()
+    result = []
 
     class TestExtMemId(MemIdEnum):
         """Test enumeration for external memory identifiers.
@@ -283,7 +283,7 @@ def test_sb2x_builder(
 
     # this is hardcoded in the test; if not specified, current value will be used
     timestamp = datetime.fromtimestamp(
-        int(datetime(2020, month=1, day=31, hour=0, tzinfo=timezone.utc).timestamp())
+        int(datetime(2020, month=1, day=31, hour=0, tzinfo=timezone.utc).timestamp()), timezone.utc
     )
     adv_params = SBV2xAdvancedParams(
         dek=dek_value, mac=mac_value, nonce=bytes(16), timestamp=timestamp
@@ -339,7 +339,7 @@ def test_sb2x_builder(
         mode = "signed" + str(sign_bits)
     else:
         mode = "unsigned"
-    expected_file_name = f"expected_sb2_{str(sb_minor_ver)}_{sect_cont_str}_{mode}.sb2"
+    expected_file_name = f"expected_sb2_{sb_minor_ver!s}_{sect_cont_str}_{mode}.sb2"
 
     with open(os.path.join(data_dir, expected_file_name), "rb") as f:
         expected = f.read()
@@ -490,11 +490,11 @@ def test_invalid_boot_image_v2() -> None:
     bimg = BootImageV20(True, kek=bytes(31))
     bimg.cert_block = None
     with pytest.raises(SPSDKError, match="Certification block not present"):
-        bimg.raw_size_without_signature
+        _ = bimg.raw_size_without_signature
 
     bimg = BootImageV20(True, kek=bytes(31))
     with pytest.raises(SPSDKError, match="Certification block not present"):
-        bimg.raw_size
+        _ = bimg.raw_size
 
 
 def test_invalid_boot_image_v2_invalid_export() -> None:

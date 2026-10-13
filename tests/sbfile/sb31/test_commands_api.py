@@ -35,6 +35,7 @@ from spsdk.sbfile.sb31.commands import (
     CmdLoadKeyBlob,
     CmdProgFuses,
     CmdProgIfr,
+    CmdReset,
     CmdSectionHeader,
     CmdWriteIfr,
     parse_command,
@@ -1359,3 +1360,60 @@ def test_cmd_load_compression_roundtrip_multiple() -> None:
     # Verify all commands have same properties
     assert cmd2.address == cmd3.address == cmd4.address == 0xF000
     assert cmd2.memory_id == cmd3.memory_id == cmd4.memory_id == 15
+
+
+def test_cmd_reset() -> None:
+    """Test CmdReset command export and parsing.
+
+    Validates that CmdReset command can be properly created, exported to binary format,
+    and parsed back while maintaining all properties and equality.
+
+    :raises AssertionError: If the parsed command doesn't match expected values.
+    """
+    cmd = CmdReset()
+    assert cmd.params == 0
+    assert str(cmd)
+
+    data = cmd.export()
+    assert len(data) == 16  # BaseCmd.SIZE
+
+    cmd_parsed = CmdReset.parse(data=data)
+    assert cmd == cmd_parsed
+
+
+def test_cmd_reset_with_params() -> None:
+    """Test CmdReset command with parameters.
+
+    Validates that CmdReset command can be created with parameters, exported to binary format,
+    and parsed back while maintaining all properties and equality.
+
+    :raises AssertionError: If the parsed command doesn't match expected values.
+    """
+    cmd = CmdReset(1)
+    assert cmd.params == 1
+
+    data = cmd.export()
+    assert len(data) == 16
+
+    cmd_parsed = CmdReset.parse(data=data)
+    assert cmd == cmd_parsed
+
+
+def test_cmd_reset_load_from_config() -> None:
+    """Test loading CmdReset from configuration.
+
+    Validates that CmdReset command can be properly loaded from an empty configuration
+    since it doesn't require any parameters.
+
+    :raises SPSDKError: When configuration is not empty (unexpected parameters).
+    """
+    # Test with empty config
+    config = Config({})
+    cmd = CmdReset.load_from_config(config)[0]
+    assert isinstance(cmd, CmdReset)
+    assert cmd.params == 0
+
+    config = Config({"params": 1})
+    cmd = CmdReset.load_from_config(config)[0]
+    assert isinstance(cmd, CmdReset)
+    assert cmd.params == 1

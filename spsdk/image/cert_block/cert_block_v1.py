@@ -33,6 +33,8 @@ from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_
 from spsdk.utils.misc import Endianness, align, align_block, find_file, load_binary
 from spsdk.utils.verifier import Verifier, VerifierResult
 
+UNKNOWN_FAMILY = FamilyRevision("Unknown")
+
 
 ########################################################################################################################
 # Certificate Block Header Class
@@ -436,7 +438,7 @@ class CertBlockV1(CertBlock):
                 raise SPSDKError("Chain certificate cannot be verified using parent public key")
         else:  # root certificate
             if not cert_obj.self_signed:
-                raise SPSDKError(f"Root certificate must be self-signed.\n{str(cert_obj)}")
+                raise SPSDKError(f"Root certificate must be self-signed.\n{cert_obj!s}")
         self._cert.append(cert_obj)
         self._header.cert_count += 1
         self._header.cert_table_length += cert_obj.raw_size + 4
@@ -538,7 +540,7 @@ class CertBlockV1(CertBlock):
         return data
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse CertBlockV1 from binary data.
 
         Parses the binary data to create a CertBlockV1 instance by extracting the header,
@@ -632,7 +634,7 @@ class CertBlockV1(CertBlock):
 
         # get all certificate chain related keys from config
         pattern = f"chainCertificate{main_cert_chain_id}File[0-3]"
-        keys = [key for key in config.keys() if re.fullmatch(pattern, key)]
+        keys = [key for key in config if re.fullmatch(pattern, key)]
         # just in case, sort the chain certificate keys in order
         keys.sort()
         for key in keys:
@@ -894,7 +896,7 @@ class CertBlockV1(CertBlock):
             ver.add_record(
                 name="Export validation",
                 result=VerifierResult.ERROR,
-                value=f"Cannot export certificate block: {str(e)}",
+                value=f"Cannot export certificate block: {e!s}",
             )
 
         return ver

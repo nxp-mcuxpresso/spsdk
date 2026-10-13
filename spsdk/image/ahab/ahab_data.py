@@ -436,16 +436,20 @@ class LifeCycle(SpsdkEnum):
 
 
 class KeyblobLifeCycle(SpsdkEnum):
-    """Life Cycle State enumeration for blob generation."""
+    """Life Cycle State enumeration for blob generation.
+
+    Offline keyblob derivation uses lifecycle buckets instead of raw ELE lifecycle
+    values while keeping the exposed labels aligned with ELE terminology.
+    """
 
     FAB = (0x33, "FAB", "Fabrication lifecycle state")
-    PROV = (0x55, "PROV", "Provisioning lifecycle state")
+    NXP_PROV = (0x55, "NXP_PROV", "NXP provisioned lifecycle state")
     NXP_FR = (0x55, "NXP_FR", "NXP field return lifecycle state")
     OEM_OPEN = (0x66, "OEM_OPEN", "OEM open lifecycle state")
     OEM_FR = (0x66, "OEM_FR", "OEM field return lifecycle state")
     OEM_SWC = (0x99, "OEM_SWC", "OEM software closed lifecycle state")
-    OEM_LOCKED = (0x99, "OEM_LOCKED", "OEM locked lifecycle state")
-    OEM_CLOSED = (0x99, "OEM_CLOSED", "OEM closed lifecycle state")
+    OEM_CLOSED = (0x99, "OEM_CLSD", "OEM closed lifecycle state")
+    OEM_LOCKED = (0x99, "OEM_LCKD", "OEM locked lifecycle state")
     FAILURE = (0xFF, "FAILURE", "Failure lifecycle state")
 
 
@@ -624,11 +628,14 @@ class AhabChipConfig:
     :cvar container_types: List of supported container type identifiers.
     :cvar valid_offset_minimal_alignment: Minimum alignment requirement for offsets.
     :cvar allow_empty_hash: Whether empty hash values are permitted.
+    :cvar allow_key_mix: Whether mixed SRK key types are permitted in a single SRK table.
     :cvar iae_has_signed_offsets: Whether Image Array Entry uses signed offset values.
+    :cvar start_image_address: Recommended offset of the first data image. Zero means the
+        container version specific default is used.
     :cvar metadata_type: Type of metadata used
     """
 
-    family: FamilyRevision = FamilyRevision("Unknown")
+    family: FamilyRevision = field(default_factory=lambda: FamilyRevision("Unknown"))
     target_memory: TargetMemoryDescr = field(
         default_factory=lambda: MEMORY_TARGET_DESCRIPTIONS[AhabTargetMemory.TARGET_MEMORY_STANDARD]
     )
@@ -645,7 +652,9 @@ class AhabChipConfig:
     container_types: list[int] = field(default_factory=list)
     valid_offset_minimal_alignment: int = 4
     allow_empty_hash: bool = False
+    allow_key_mix: bool = False
     iae_has_signed_offsets: bool = False
+    start_image_address: int = 0
     metadata_type: AhabMetadataType = AhabMetadataType.SCFW
 
 
@@ -767,7 +776,9 @@ def create_chip_config(
 
     container_types = db.get_list(feature, make_key("container_types"))
     allow_empty_hash = db.get_bool(feature, make_key("allow_empty_hash"))
+    allow_key_mix = db.get_bool(feature, make_key("allow_key_mix"), False)
     iae_has_signed_offsets = db.get_bool(feature, make_key("iae_has_signed_offsets"), False)
+    start_image_address = db.get_int(feature, make_key("start_image_address"), 0)
 
     # Create dynamic enumerations
     signature_algorithms = SpsdkDynamicEnum.create_from_db(
@@ -813,6 +824,8 @@ def create_chip_config(
         container_types=container_types,
         valid_offset_minimal_alignment=valid_offset_minimal_alignment,
         allow_empty_hash=allow_empty_hash,
+        allow_key_mix=allow_key_mix,
         iae_has_signed_offsets=iae_has_signed_offsets,
+        start_image_address=start_image_address,
         metadata_type=metadata_type,
     )

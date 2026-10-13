@@ -15,7 +15,7 @@ and encryption options for secure boot and runtime verification.
 import logging
 import struct
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from struct import pack
 from typing import Any
 
@@ -32,6 +32,7 @@ from spsdk.image.hse.common import (
     AuthSchemeEnum,
     EcdsaSignScheme,
     EddsaSignScheme,
+    HashAlgo,
     KeyHandle,
 )
 from spsdk.utils.abstract_features import FeatureBaseClass
@@ -43,6 +44,7 @@ from spsdk.utils.spsdk_enum import SpsdkIntFlag
 from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
+UNKNOWN_FAMILY = FamilyRevision("unknown")
 
 
 class SmrConfigFlags(SpsdkIntFlag):
@@ -83,7 +85,9 @@ class SmrDecrypt:
 
     HSE_SMR_DECRYPT_KEY_HANDLE_NOT_USED = 0x00000000
 
-    decrypt_key_handle: KeyHandle = KeyHandle(HSE_SMR_DECRYPT_KEY_HANDLE_NOT_USED)
+    decrypt_key_handle: KeyHandle = field(
+        default_factory=lambda: KeyHandle(SmrDecrypt.HSE_SMR_DECRYPT_KEY_HANDLE_NOT_USED)
+    )
     """The key handle referencing the decryption key. If None, SMR is not encrypted."""
 
     gmac_tag_addr: int = 0
@@ -204,7 +208,7 @@ class SmrEntry(FeatureBaseClass):
         smr_size: int,
         smr_dest: int,
         auth_key_handle: KeyHandle,
-        config_flags: SmrConfigFlags = SmrConfigFlags(0),
+        config_flags: SmrConfigFlags | None = None,
         check_period: int = 0,
         inst_auth_tag: tuple[int, int] = (0, 0),
         version_offset: int = 0,
@@ -229,7 +233,7 @@ class SmrEntry(FeatureBaseClass):
         self.smr_src_addr = smr_src_addr
         self.smr_size = smr_size
         self.smr_dest = smr_dest
-        self.config_flags = config_flags
+        self.config_flags = config_flags if config_flags is not None else SmrConfigFlags(0)
         self.check_period = check_period
         self.auth_key_handle = auth_key_handle
         self.inst_auth_tag_addrs = inst_auth_tag
@@ -402,7 +406,7 @@ class SmrEntry(FeatureBaseClass):
         return result
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse SMR entry from binary data.
 
         :param data: Binary data containing the SMR entry
@@ -502,8 +506,14 @@ class SmrEntry(FeatureBaseClass):
         schemas["smr"]["properties"]["authScheme"]["oneOf"] = [
             sch
             for sch in schemas["smr"]["properties"]["authScheme"]["oneOf"]
-            if AuthSchemeEnum.from_label(list(sch["properties"])[0]) in available_schemes
+            if AuthSchemeEnum.from_label(next(iter(sch["properties"]))) in available_schemes
         ]
+        # Update the hash algorithm enums with the algorithms supported by the family
+        hash_algorithms = [algo.label for algo in HashAlgo.get_available_hash_algorithms(family)]
+        for sch in schemas["smr"]["properties"]["authScheme"]["oneOf"]:
+            scheme_props = sch["properties"][next(iter(sch["properties"]))]["properties"]
+            if "hashAlgo" in scheme_props:
+                scheme_props["hashAlgo"]["enum"] = hash_algorithms
         config_flags = [flag.name for flag in SmrConfigFlags.get_available_flags(family)]
         schemas["smr"]["properties"]["configFlags"]["items"]["enum"] = config_flags
         schemas["smr"]["properties"]["configFlags"]["enum_template"] = config_flags
@@ -546,7 +556,7 @@ class SmrEntry(FeatureBaseClass):
         if auth_scheme is None:
             raise SPSDKValueError(
                 "No valid authentication scheme found in configuration. "
-                f"Expected one of: {','.join([s.label.lower() for s in AuthScheme.auth_schemes().keys()])}"
+                f"Expected one of: {','.join(s.label.lower() for s in AuthScheme.auth_schemes())}"
             )
 
         # Get optional installation authentication tag
@@ -856,7 +866,18 @@ class SmrAuthenticationTag:
         :return: Method name string
         :raises SPSDKError: If scheme is not supported
         """
-        method_map = {
+        method_name = SmrAuthenticationTag._creation_methods().get(auth_scheme_enum)
+        if not method_name:
+            raise SPSDKError(f"Unsupported authentication scheme: {auth_scheme_enum}")
+        return method_name
+
+    @staticmethod
+    def _creation_methods() -> dict[AuthSchemeEnum, Callable]:
+        """Get the mapping of authentication schemes to their tag creation methods.
+
+        :return: Dictionary mapping supported authentication schemes to creation methods.
+        """
+        return {
             AuthSchemeEnum.ECDSA: SmrAuthenticationTag._create_ecdsa_signature,
             AuthSchemeEnum.RSASSA_PKCS1_V15: SmrAuthenticationTag._create_rsa_pkcs1_signature,
             AuthSchemeEnum.RSASSA_PSS: SmrAuthenticationTag._create_rsa_pss_signature,
@@ -865,10 +886,16 @@ class SmrAuthenticationTag:
             AuthSchemeEnum.GMAC: SmrAuthenticationTag._create_gmac_tag,
         }
 
-        method_name = method_map.get(auth_scheme_enum)
-        if not method_name:
-            raise SPSDKError(f"Unsupported authentication scheme: {auth_scheme_enum}")
-        return method_name
+    @staticmethod
+    def get_supported_auth_schemes() -> list[AuthSchemeEnum]:
+        """Get the authentication schemes for which SPSDK can create an authentication tag.
+
+        Note that some schemes valid in an SMR entry definition (e.g. XCBC_MAC) are not
+        listed here because SPSDK does not implement their tag calculation.
+
+        :return: List of supported authentication schemes.
+        """
+        return list(SmrAuthenticationTag._creation_methods().keys())
 
     @staticmethod
     def _create_cmac_tag(

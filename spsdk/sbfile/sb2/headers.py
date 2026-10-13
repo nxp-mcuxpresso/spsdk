@@ -10,7 +10,7 @@ This module provides functionality for handling Secure Binary version 2 (SB2) im
 including header creation, validation, and serialization for NXP MCU secure provisioning.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from struct import calcsize, pack, unpack_from
 
 from typing_extensions import Self
@@ -83,7 +83,7 @@ class ImageHeaderV2(BaseClass):
         self.timestamp = (
             timestamp
             if timestamp is not None
-            else datetime.fromtimestamp(int(datetime.now().timestamp()))
+            else datetime.fromtimestamp(int(datetime.now(timezone.utc).timestamp()), timezone.utc)
         )
         self.product_version: BcdVersion3 = BcdVersion3.to_version(product_version)
         self.component_version: BcdVersion3 = BcdVersion3.to_version(component_version)

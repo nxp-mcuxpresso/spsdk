@@ -176,7 +176,7 @@ class CmdBase(BaseClass):
 
         :return: Formatted string with command details including description, tag, and length.
         """
-        return f'Command "{CmdTag.get_description(self.tag)}"   [Tag={str(self.tag)}, Length={str(self.size)}]\n'
+        return f'Command "{CmdTag.get_description(self.tag)}"   [Tag={self.tag!s}, Length={self.size!s}]\n'
 
     def export(self) -> bytes:
         """Export command to binary form.
@@ -245,7 +245,7 @@ class CmdBase(BaseClass):
 
         cmd_configs = config.get_list_of_configs("sections")
         cmd_configs = [
-            cmd for cmd in cmd_configs if list(cmd.keys())[0] == cls.CMD_IDENTIFIER.label
+            cmd for cmd in cmd_configs if next(iter(cmd.keys())) == cls.CMD_IDENTIFIER.label
         ]
         if not cmd_configs:
             raise SPSDKCommandNotDefined(

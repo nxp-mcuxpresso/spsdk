@@ -26,6 +26,7 @@ from spsdk.utils.family import FamilyRevision, get_db, get_families
 from spsdk.utils.verifier import Verifier
 
 logger = logging.getLogger(__name__)
+UNKNOWN_FAMILY = FamilyRevision("Unknown")
 
 
 class CertBlockAhab(CertBlock):
@@ -129,7 +130,7 @@ class CertBlockAhab(CertBlock):
         return self._ahab_certificate.public_key_0.get_public_key()
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("Unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse Certificate block from binary data.
 
         Creates a CertBlockAhab instance by parsing the provided binary data and extracting
@@ -219,7 +220,7 @@ class CertBlockAhab(CertBlock):
 
         :return: Formatted string containing AHAB certificate block information.
         """
-        return f"AHAB Certificate Block:\n{str(self._ahab_certificate)}"
+        return f"AHAB Certificate Block:\n{self._ahab_certificate!s}"
 
     def verify(self) -> Verifier:
         """Verify the certificate block.

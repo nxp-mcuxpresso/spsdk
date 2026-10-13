@@ -322,12 +322,12 @@ def print_fuses(
                 rich,
             )
         except SPSDKFuseOperationFailure as e:
-            logger.debug(f"Permission error, unable to read fuse {name}: {str(e)}")
+            logger.debug(f"Permission error, unable to read fuse {name}: {e!s}")
             click.echo(f"Error: Unable to read fuse '{name}'. Check debug logs for details.")
             click.echo("Use -i option to ignore access rights.")
             error_count += 1
         except SPSDKError as e:
-            logger.debug(f"Error occurred, unable to read the fuse {name}: {str(e)}")
+            logger.debug(f"Error occurred, unable to read the fuse {name}: {e!s}")
             click.echo(f"Error: Unable to read fuse '{name}'. Check debug logs for details.")
             error_count += 1
     else:
@@ -337,10 +337,10 @@ def print_fuses(
                 print_register_info(reg, rich)
                 click.echo()
             except SPSDKFuseOperationFailure as e:
-                logger.debug(f"Permission error, unable to read fuse {reg.name}: {str(e)}")
+                logger.debug(f"Permission error, unable to read fuse {reg.name}: {e!s}")
                 error_count += 1
             except SPSDKError as e:
-                logger.debug(f"Error occurred, unable to read the fuse {reg.name}: {str(e)}")
+                logger.debug(f"Error occurred, unable to read the fuse {reg.name}: {e!s}")
                 error_count += 1
 
         if error_count > 0:
@@ -428,7 +428,7 @@ def get_config(
         except SPSDKFuseOperationFailure as e:
             click.echo(f"{e}. Check debug logs for details.")
         except SPSDKError as exc:
-            raise SPSDKAppError(f"Reading the fuses failed: ({str(exc)})") from exc
+            raise SPSDKAppError(f"Reading the fuses failed: ({exc!s})") from exc
         finally:
             write_file(fuses.get_config_yaml(diff=diff_only), output)
             click.echo(f"The fuses configuration has been saved into {get_printable_path(output)}")

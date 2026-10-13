@@ -26,6 +26,8 @@ import sys
 
 import spsdk
 
+logger = logging.getLogger(__name__)
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -40,7 +42,9 @@ logging.basicConfig(level=logging.INFO)
 # -- Project information -----------------------------------------------------
 
 project = "SPSDK"
-copyright = f"2019-{datetime.datetime.now().year}, NXP"  # pylint: disable=redefined-builtin
+copyright = (  # pylint: disable=redefined-builtin
+    f"2019-{datetime.datetime.now(datetime.timezone.utc).year}, NXP"
+)
 author = "NXP"
 
 # The full version, including alpha/beta/rc tags
@@ -68,6 +72,7 @@ nb_execution_mode = "off"
 # ones.
 extensions = [
     "copy_examples",
+    "check_notebooks",
     "generate_schemas",
     "generate_table",
     "generate_apps_img",
@@ -142,5 +147,5 @@ try:
     from sphinx.ext.autodoc.mock import mock as _sphinx_autodoc_mock
 
     _sphinx_click_ext.mock = _sphinx_autodoc_mock
-except Exception:
-    pass
+except (AttributeError, ImportError):
+    logger.debug("Unable to patch sphinx_click mock for Sphinx 9 compatibility", exc_info=True)

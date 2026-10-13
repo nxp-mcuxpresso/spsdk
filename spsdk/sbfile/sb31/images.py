@@ -12,9 +12,9 @@ SecureBinary V3.1 format images used in NXP MCU secure boot process.
 
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from struct import calcsize, pack, unpack, unpack_from
-from typing import Any
+from typing import Any, ClassVar
 
 from typing_extensions import Self
 
@@ -378,15 +378,18 @@ class SecureBinary31Commands(BaseClass):
 
     FEATURE = DatabaseManager.SB31
     SB_COMMANDS_NAME = "SB3.1"
-    SUPPORTED_HASHES = [EnumHashAlgorithm.SHA256, EnumHashAlgorithm.SHA384]
-    PCK_SIZES = [256, 128]
+    SUPPORTED_HASHES: ClassVar[list[EnumHashAlgorithm]] = [
+        EnumHashAlgorithm.SHA256,
+        EnumHashAlgorithm.SHA384,
+    ]
+    PCK_SIZES: ClassVar[list[int]] = [256, 128]
 
     def __init__(
         self,
         family: FamilyRevision,
         hash_type: EnumHashAlgorithm,
         timestamp: int | None = None,
-        encryption_provider: EncryptionProvider = NoEncryption(),
+        encryption_provider: EncryptionProvider | None = None,
     ) -> None:
         """Initialize container for SB3.1 commands.
 
@@ -406,7 +409,9 @@ class SecureBinary31Commands(BaseClass):
         self.block1_size = 0
         self.commands: list[BaseCmd] = []
         self.timestamp = timestamp or SecureBinary31.get_current_timestamp()
-        self.encryption_provider = encryption_provider
+        self.encryption_provider = (
+            encryption_provider if encryption_provider is not None else NoEncryption()
+        )
         db = get_db(family=family)
         self.data_chunk_length = db.get_int(self.FEATURE, "commands_block_length")
         self.variable_block_length = db.get_bool(self.FEATURE, "variable_block_length")
@@ -546,7 +551,7 @@ class SecureBinary31Commands(BaseClass):
         )
 
         for cfg_cmd in config.get_list_of_configs("commands", []):
-            cfg_cmd_key = list(cfg_cmd.keys())[0]
+            cfg_cmd_key = next(iter(cfg_cmd.keys()))
             cfg_cmd_value = cfg_cmd.get_config(cfg_cmd_key)
             cfg_cmd_value["family"] = family.name
             cfg_cmd_value["revision"] = family.revision
@@ -691,7 +696,7 @@ class SecureBinary31Commands(BaseClass):
         info += "COMMANDS:\n"
         info += f"Number of commands: {len(self.commands)}\n"
         for command in self.commands:
-            info += f"  {str(command)}\n"
+            info += f"  {command!s}\n"
         return info
 
     @classmethod
@@ -989,7 +994,9 @@ class SecureBinary31(FeatureBaseClass):
 
         :return: Integer representing seconds elapsed since January 1, 2000.
         """
-        return int((datetime.now() - datetime(2000, 1, 1)).total_seconds())
+        return int(
+            (datetime.now(timezone.utc) - datetime(2000, 1, 1, tzinfo=timezone.utc)).total_seconds()
+        )
 
     def get_rkth(self) -> bytes:
         """Get the Root Key Table Hash (RKTH) from the certificate block.
@@ -1021,7 +1028,7 @@ class SecureBinary31(FeatureBaseClass):
         schemas[0]["properties"]["commands"]["items"]["oneOf"] = [
             command
             for command in list_of_commands
-            if list(command["properties"].keys())[0] in supported_commands
+            if next(iter(command["properties"].keys())) in supported_commands
         ]
         supports_compression = db.get_bool(DatabaseManager.SB31, "supports_compression")
         if not supports_compression:
@@ -1051,7 +1058,7 @@ class SecureBinary31(FeatureBaseClass):
         schemas[0]["properties"]["commands"]["items"]["oneOf"] = [
             command
             for command in list_of_commands
-            if list(command["properties"].keys())[0] in supported_commands
+            if next(iter(command["properties"].keys())) in supported_commands
         ]
         # The 'commands' are optional for device HSM
         required: list[str] = schemas[0]["required"]

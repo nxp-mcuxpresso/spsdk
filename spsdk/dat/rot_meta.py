@@ -15,6 +15,7 @@ import abc
 import logging
 import math
 from struct import pack
+from typing import ClassVar
 
 from typing_extensions import Self
 
@@ -177,7 +178,7 @@ class RotMetaRSA(RotMeta):
         if len(data) < 128:
             raise SPSDKValueError("The provided data must be 128 bytes long.")
         rot_items = []
-        for index in range(0, 4):
+        for index in range(4):
             rot_item = data[index * 32 : (index + 1) * 32]
             if int.from_bytes(rot_item, Endianness.LITTLE.value):
                 rot_items.append(rot_item)
@@ -348,7 +349,7 @@ class RotMetaEcc(RotMeta):
     :cvar HASH_SIZE: Hash size in bytes, overridden by derived classes.
     """
 
-    HASH_SIZES = {32: 256, 48: 384, 66: 512}
+    HASH_SIZES: ClassVar[dict[int, int]] = {32: 256, 48: 384, 66: 512}
     HASH_SIZE = 0  # to be overridden by derived class
 
     def __init__(self, flags: RotMetaFlags, rot_items: list[bytes]) -> None:
@@ -485,7 +486,7 @@ class RotMetaEcc(RotMeta):
         crt_table = data[4:]
         rot_items = []
         if flags.cnt_root_cert > 1:
-            for rot_item_idx in range(0, flags.cnt_root_cert):
+            for rot_item_idx in range(flags.cnt_root_cert):
                 rot_item = crt_table[
                     rot_item_idx * cls.HASH_SIZE : (rot_item_idx + 1) * cls.HASH_SIZE
                 ]

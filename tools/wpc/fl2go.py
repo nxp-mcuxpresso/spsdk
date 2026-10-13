@@ -68,7 +68,7 @@ def request_product_unit_certificate(qi_id: str) -> tuple[Response, int]:
         extra_text = config["extra_text"]
         if extra_text:
             common_name += f"-{extra_text}"
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return jsonify({"error": str(e)}), 400
 
     try:
@@ -99,7 +99,7 @@ def request_product_unit_certificate(qi_id: str) -> tuple[Response, int]:
             ),
             200,
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return jsonify({"error": str(e)}), 500
 
 

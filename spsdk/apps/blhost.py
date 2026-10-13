@@ -125,7 +125,7 @@ def batch(ctx: click.Context, command_file: str) -> None:
     COMMAND_FILE    - path to blhost command file
     """
     with open(command_file, encoding="utf-8") as f:
-        for line in f.readlines():
+        for line in f:
             tokes = shlex.split(line, comments=True)
             if len(tokes) < 1:
                 continue
@@ -818,13 +818,13 @@ def read_memory(
                  to print to stdout.
     MEMORY_ID   - id of memory to read from (default: 0)
     """
-    with McuBoot(ctx.obj["interface"]) as mboot:
-        with progress_bar(
+    with (
+        McuBoot(ctx.obj["interface"]) as mboot,
+        progress_bar(
             suppress=ctx.obj["suppress_progress_bar"], label="Reading memory"
-        ) as progress_callback:
-            response = mboot.read_memory(
-                address, byte_count, memory_id, progress_callback, fast_mode
-            )
+        ) as progress_callback,
+    ):
+        response = mboot.read_memory(address, byte_count, memory_id, progress_callback, fast_mode)
 
     if response:
         if out_file and out_file.name != "<stdout>":
@@ -890,14 +890,32 @@ def reliable_update(ctx: click.Context, address: int) -> None:
 
 
 @main.command(no_args_is_help=False)
+@click.option(
+    "-rp",
+    "--reset-parameter",
+    type=str,
+    help=("""
+        Integer describing reset parameter flags.
+
+        \b
+        Parameter flags structure:
+        32-24 (8): magic: 0xEB
+        23-20 (4): mode: 0x0 - normal boot, 0x1 - ISP, 0z2 - image update
+        19-16 (4): ISP interface: 0x0 - UART, 0x1 - I2C, 0x2 - SPI, 0x3 - CAN, 0xF - auto-detect
+        15-12 (4): reserved, set to 0
+        11- 8 (4): Update image index (bitmask): 1 - main core, 2 - NBU core
+         7- 0 (8): reserved, set to 0
+        """),
+)
 @click.pass_context
-def reset(ctx: click.Context) -> None:
+def reset(ctx: click.Context, reset_parameter: str | None) -> None:
     """Resets the device.
 
     A response packet is sent before resetting the device.
     """
+    params_list = int(reset_parameter, 0) if reset_parameter else None
     with McuBoot(ctx.obj["interface"]) as mboot:
-        mboot.reset(reopen=False)
+        mboot.reset(reopen=False, params=params_list)
     display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 

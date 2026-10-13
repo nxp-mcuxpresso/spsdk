@@ -21,6 +21,8 @@ from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.family import FamilyRevision, get_db, update_validation_schema_family
 from spsdk.utils.spsdk_enum import SpsdkIntFlag
 
+UNKNOWN_FAMILY = FamilyRevision("unknown")
+
 
 class HseKeyGroupOwner(IntEnum):
     """HSE Key Group owner."""
@@ -249,7 +251,7 @@ class KeyInfo(FeatureBaseClass):
         )
 
     @classmethod
-    def parse(cls, data: bytes, family: FamilyRevision = FamilyRevision("unknown")) -> Self:
+    def parse(cls, data: bytes, family: FamilyRevision = UNKNOWN_FAMILY) -> Self:
         """Parse the raw key info data into structured fields.
 
         :param data: Raw key info data as bytes
@@ -372,8 +374,8 @@ class KeyInfo(FeatureBaseClass):
         :return: String representation
         """
         # Count flags and SMRs instead of listing them
-        flag_count = bin(int(self.key_flags)).count("1")
-        smr_count = bin(int(self.smr_flags)).count("1")
+        flag_count = int(self.key_flags).bit_count()
+        smr_count = int(self.smr_flags).bit_count()
 
         return f"HseKeyInfo({self.key_type.label}, {self.key_bit_len.name}, {flag_count} flags, {smr_count} SMRs)"
 

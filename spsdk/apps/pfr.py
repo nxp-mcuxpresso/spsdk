@@ -48,11 +48,23 @@ from spsdk.pfr.pfr import (
     get_ifr_pfr_class_from_config,
 )
 from spsdk.pfr.pfrc import Pfrc
+from spsdk.pfr.secure_installer import (
+    SecureInstallerEraser,
+    SIStatus,
+    get_erase_token_register_names,
+    get_supported_families,
+)
 from spsdk.utils.binary_image import BinaryImage
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db
-from spsdk.utils.misc import BinaryPattern, get_printable_path, load_binary, write_file
+from spsdk.utils.misc import (
+    BinaryPattern,
+    get_printable_path,
+    load_binary,
+    load_configuration,
+    write_file,
+)
 
 PFRArea = type[BaseConfigArea]
 logger = logging.getLogger(__name__)
@@ -86,7 +98,7 @@ def pfr_device_type_options(required: bool = True) -> Callable:
             "--type",
             "area",
             required=required,
-            type=click.Choice(sorted(list(CONFIG_AREA_CLASSES.keys())), case_sensitive=False),
+            type=click.Choice(sorted(CONFIG_AREA_CLASSES.keys()), case_sensitive=False),
             help="Select PFR/IFR partition",
         )(options)
 
@@ -513,6 +525,339 @@ def erase_cmpa(interface: MbootProtocolBase, family: FamilyRevision) -> None:
         except McuBootError as exc:
             raise SPSDKAppError(f"CMPA page erase failed: {exc}") from exc
     click.echo("CMPA page has been erased.")
+
+
+@main.command(name="erase-secure-installer", no_args_is_help=True)
+@spsdk_family_option(families=get_supported_families())
+@spsdk_mboot_interface(use_long_timeout_form=True)
+@click.option(
+    "-nr",
+    "--no-reset",
+    is_flag=True,
+    help="Do not reset device after erasing Secure Installer. (Not recommended)",
+)
+def erase_secure_installer(
+    interface: MbootProtocolBase, family: FamilyRevision, no_reset: bool
+) -> None:
+    """Erase Secure Installer from the device.
+
+    This command erases the Secure Installer (SI) from devices that support this feature
+    by writing the DELETE_INSTALLER_MAGIC value to the DELETE_INSTALLER field in CMPA and
+    resetting the device. The ROM completes the erase on the next boot.
+
+    If the DELETE_INSTALLER flash phrase has already been programmed by a prior full CMPA
+    write (it reads back as 0xFF but the flash controller rejects an in-place re-program
+    with a cumulative-write error), the command automatically falls back to erasing the
+    CMPA sector and reprogramming it - preserving the current settings - with the magic,
+    while leaving the ERASE_TOKEN phrase erased so the ROM can store its device-unique
+    token. Do not power off the device while this recovery runs.
+
+    If the CMPA is entirely blank (e.g. after a full flash erase wiped the factory CMPA),
+    a default CMPA carrying the magic is provisioned automatically (the ERASE_TOKEN phrase
+    is left erased for the ROM). A CMPA that is not confirmed blank is refused so an
+    unexpected/partial CMPA is never overwritten.
+
+    Note: On a 512K flash device the SI flash region is reopened as customer flash
+    after the ROM completes the erase. On 128K/256K devices the SI region stays
+    hidden (no flash is reclaimed).
+
+    The device will be reset after the magic value is written unless --no-reset is set.
+    """
+    try:
+        with McuBoot(interface=interface, cmd_exception=True, family=family) as mboot:
+            eraser = SecureInstallerEraser(mboot, family)
+
+            # Display device information
+            info = eraser.get_device_info()
+            click.echo(f"Erasing Secure Installer on {family}...")
+            click.echo(f"  CMPA Address:               {info['cmpa_address']}")
+            click.echo(f"  DELETE_INSTALLER target:    {info['target_address']}")
+            click.echo(f"  DELETE_INSTALLER magic:     {info['delete_installer_magic']}")
+            click.echo(f"  ERASE_TOKEN offset:         {info['erase_token_offset']}")
+            click.echo(f"  SI probe address:           {info['si_probe_address']}")
+            if "cmpa_header_marker" in info:
+                click.echo(f"  CMPA header marker:         {info['cmpa_header_marker']}")
+
+            # Check the current SI status before proceeding
+            si_status, erase_token_programmed = eraser.check_si_status()
+
+            if si_status == SIStatus.PRESENT_VALID:
+                click.echo("  SI Status: present and valid (receive-sb-file available)")
+            elif si_status == SIStatus.PRESENT_CORRUPTED:
+                click.echo(
+                    "  SI Status: present but CORRUPTED "
+                    "(receive-sb-file not reported by get-property 7 and "
+                    "the SI probe read returned a memory-range-invalid status)."
+                )
+                if erase_token_programmed:
+                    click.echo(
+                        "WARNING: The SI erase-token field in CMPA is already programmed "
+                        "(not all 0xFF). Writing DELETE_INSTALLER_MAGIC again would cause "
+                        "a cumulative write to the ERASE_TOKEN flash phrase, which results "
+                        "in an infinite reset loop and effectively bricks the device.\n"
+                        "Do NOT proceed with SI erasure on this device."
+                    )
+                raise SPSDKAppError(
+                    "Aborting: Secure Installer is present but corrupted "
+                    "(receive-sb-file missing and the SI probe read returned a "
+                    "memory-range-invalid status)."
+                )
+            elif si_status == SIStatus.ERASED:
+                if erase_token_programmed:
+                    click.echo("  SI Status: already erased (ERASE_TOKEN in CMPA is programmed).")
+                else:
+                    click.echo("  SI Status: already erased.")
+                return
+            else:
+                click.echo(
+                    "  SI Status: unknown — Secure Installer does not appear to be "
+                    "present on this device, or the device is in an unexpected state."
+                )
+                raise SPSDKAppError(
+                    "Aborting: Secure Installer state could not be confirmed as "
+                    "present-and-valid. Refusing to write DELETE_INSTALLER_MAGIC blindly."
+                )
+
+            # Erase the Secure Installer
+            eraser.erase(reset=not no_reset)
+
+            if not no_reset:
+                click.echo("Device has been reset. Secure Installer erasure is complete.")
+            else:
+                click.echo(
+                    "WARNING: Device was not reset. Please reset the device manually "
+                    "to apply the Secure Installer removal."
+                )
+
+    except SPSDKError as exc:
+        raise SPSDKAppError(f"Failed to erase Secure Installer: {exc}") from exc
+
+
+@main.command(name="read-secure-installer-token", no_args_is_help=True)
+@spsdk_family_option(families=get_supported_families())
+@spsdk_mboot_interface(use_long_timeout_form=True)
+@spsdk_output_option(
+    required=False,
+    force=True,
+    help="Write a ready-to-merge CMPA config snippet with the erase token to this file.",
+)
+def read_secure_installer_token(
+    interface: MbootProtocolBase, family: FamilyRevision, output: str | None
+) -> None:
+    """Read the device-unique Secure Installer erase token from CMPA.
+
+    After the Secure Installer is erased, the ROM programs a device-unique 16-byte
+    erase token into CMPA (the erase-token registers declared for the family). The ROM
+    re-validates this token on every boot; if a later ``pfr write`` overwrites it
+    with blank/default values, the freed flash region gets locked again.
+
+    This command reads the token back so it can be preserved in your CMPA
+    configuration. Use ``--output`` to write a ready-to-merge CMPA config snippet.
+
+    WARNING: The erase token is valid ONLY on the device it was read from. Never
+    program it into the CMPA of another device — doing so re-locks that device's
+    freed flash region.
+    """
+    try:
+        with McuBoot(interface=interface, cmd_exception=True, family=family) as mboot:
+            eraser = SecureInstallerEraser(mboot, family)
+            token, programmed = eraser.read_erase_token()
+
+        token_address = eraser.cmpa_address + eraser.erase_token_offset
+
+        if not programmed:
+            click.echo(
+                f"SI erase token at {token_address:#010x} is blank (all 0x00 or 0xFF).\n"
+                "The Secure Installer has not been erased on this device, so there is "
+                "no device-unique token to preserve."
+            )
+            return
+
+        registers = eraser.erase_token_as_registers(token)
+        click.echo(f"Device-unique SI erase token read from {family} at {token_address:#010x}:")
+        click.echo(f"  Raw (16 bytes): {token.hex()}")
+        for name, value in registers.items():
+            click.echo(f"  {name}: {value:#010x}")
+        click.echo(
+            "\nWARNING: This token is valid ONLY on this device. Preserve these "
+            "erase-token register values in the CMPA of THIS device to keep the freed flash "
+            "region unlocked. Do NOT program them into another device's CMPA."
+        )
+
+        if output:
+            settings = "\n".join(f"  {name}: '{value:#010x}'" for name, value in registers.items())
+            snippet = (
+                "# Device-unique Secure Installer erase token.\n"
+                f"# Read from {family} at {token_address:#010x}.\n"
+                "# WARNING: valid ONLY on this device - do not reuse on other devices.\n"
+                f"family: {family.name}\n"
+                f"revision: {family.revision}\n"
+                "type: CMPA\n"
+                "settings:\n"
+                f"{settings}\n"
+            )
+            _store_output(
+                snippet,
+                output,
+                msg=f"\nCMPA config snippet stored in: {get_printable_path(output)}",
+            )
+
+    except SPSDKError as exc:
+        raise SPSDKAppError(f"Failed to read Secure Installer erase token: {exc}") from exc
+
+
+def _resolve_merge_registers(
+    registers: str | None,
+    registers_config: str | None,
+    si_erase_token: bool,
+    family: FamilyRevision,
+) -> list[str]:
+    """Resolve the list of register names to merge from CLI options.
+
+    Exactly one source must be provided: an inline comma-separated ``--registers`` list,
+    a ``--registers-config`` YAML file, or the ``--si-erase-token`` flag which resolves
+    the family's Secure Installer erase-token registers automatically. The YAML file must
+    be a mapping with a top-level ``registers`` key holding the list of register names.
+
+    :param registers: Comma-separated register names from ``--registers`` (or None).
+    :param registers_config: Path to a YAML register list from ``--registers-config``
+        (or None).
+    :param si_erase_token: When True, resolve the family's SI erase-token registers.
+    :param family: Device family, used to resolve the SI erase-token registers.
+    :raises SPSDKAppError: If not exactly one source is provided, the YAML content does
+        not hold a list of register names, or the SI erase-token region can't be resolved.
+    :return: Ordered, de-duplicated list of register names.
+    """
+    sources = (bool(registers), bool(registers_config), si_erase_token)
+    if sum(sources) != 1:
+        raise SPSDKAppError(
+            "Specify exactly one of --registers, --registers-config or --si-erase-token."
+        )
+
+    if si_erase_token:
+        try:
+            return get_erase_token_register_names(family)
+        except SPSDKError as exc:
+            raise SPSDKAppError(
+                f"Can't resolve the Secure Installer erase-token registers for {family}: {exc}"
+            ) from exc
+
+    if registers:
+        names = [name.strip() for name in registers.split(",")]
+    else:
+        assert registers_config is not None
+        try:
+            loaded = load_configuration(registers_config)
+        except SPSDKError as exc:
+            raise SPSDKAppError(
+                f"Can't parse register list {get_printable_path(registers_config)}: {exc}"
+            ) from exc
+        reg_list = loaded.get("registers")
+        if not isinstance(reg_list, list) or not all(isinstance(name, str) for name in reg_list):
+            raise SPSDKAppError(
+                f"The register list in {get_printable_path(registers_config)} must be a YAML "
+                "list of register names under a top-level 'registers' key."
+            )
+        names = [name.strip() for name in reg_list]
+
+    # Preserve order while removing empties and duplicates.
+    result: list[str] = []
+    for name in names:
+        if name and name not in result:
+            result.append(name)
+    if not result:
+        raise SPSDKAppError("No register names were provided for the merge operation.")
+    return result
+
+
+@main.command(name="cmpa-merge", no_args_is_help=True)
+@spsdk_family_option(get_supported_families())
+@click.option(
+    "-m",
+    "--main-cmpa",
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    required=True,
+    help="Finalized (user) CMPA binary that provides all bytes except the merged registers.",
+)
+@click.option(
+    "-d",
+    "--device-cmpa",
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    required=True,
+    help="CMPA binary read back from the device that provides the selected register values.",
+)
+@click.option(
+    "-o",
+    "--output-cmpa",
+    type=click.Path(dir_okay=False, resolve_path=True),
+    required=True,
+    help="Path where the merged CMPA binary is written.",
+)
+@click.option(
+    "--registers",
+    type=str,
+    help=(
+        "Comma-separated list of register names copied from the device CMPA "
+        "(e.g. the Secure Installer erase-token registers)."
+    ),
+)
+@click.option(
+    "--registers-config",
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    help="YAML file with the list of register names to merge (alternative to --registers).",
+)
+@click.option(
+    "--si-erase-token",
+    is_flag=True,
+    help=(
+        "Merge the Secure Installer erase-token registers, resolved automatically for "
+        "the family from the device database. Use instead of --registers/--registers-config."
+    ),
+)
+def cmpa_merge(
+    family: FamilyRevision,
+    main_cmpa: str,
+    device_cmpa: str,
+    output_cmpa: str,
+    registers: str | None,
+    registers_config: str | None,
+    si_erase_token: bool,
+) -> None:
+    """Merge selected registers from a device CMPA binary into a main CMPA binary.
+
+    This is a pure binary, offline operation intended for a mass-production flow. The
+    finalized main CMPA is kept byte-for-byte and only the explicitly selected registers
+    are taken from the CMPA read back from the device. No values are recomputed, so any
+    CRC, seal or ROTKH fields already present in the main CMPA are preserved.
+
+    Only families that expose the Secure Installer erase functionality in the database
+    are supported. Register names must match the CMPA register spec (JSON) exactly.
+    Prefer --si-erase-token to preserve the device-unique Secure Installer erase token
+    without needing to know the per-family register names.
+
+    Example: pfr cmpa-merge --family <family> --main-cmpa CMPA.bin --device-cmpa
+    CMPA_dev.bin --output-cmpa CMPA_out.bin --si-erase-token
+    """
+    register_names = _resolve_merge_registers(registers, registers_config, si_erase_token, family)
+    main_data = load_binary(main_cmpa)
+    device_data = load_binary(device_cmpa)
+
+    try:
+        merged = CMPA.merge_binary(
+            main_data=main_data,
+            device_data=device_data,
+            register_names=register_names,
+            family=family,
+        )
+    except SPSDKError as exc:
+        raise SPSDKAppError(f"CMPA merge failed: {exc}") from exc
+
+    write_file(merged, output_cmpa, mode="wb")
+    click.echo(
+        f"Merged registers {', '.join(register_names)} from "
+        f"{get_printable_path(device_cmpa)} into {get_printable_path(main_cmpa)}."
+    )
+    click.echo(f"Merged CMPA binary stored in: {get_printable_path(output_cmpa)}")
 
 
 def create_read_method(

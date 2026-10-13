@@ -13,7 +13,9 @@ class for handling SDIO protocol communications with NXP MCU devices.
 
 import os
 import time
+from contextlib import ExitStack
 from io import FileIO
+from pathlib import Path
 
 from typing_extensions import Self
 
@@ -59,6 +61,7 @@ class SdioDevice(DeviceBase):
         self.path = path
         self.is_blocking = False
         self.device: FileIO | None = None
+        self._context_manager = ExitStack()
 
     @property
     def timeout(self) -> int:
@@ -98,7 +101,9 @@ class SdioDevice(DeviceBase):
         logger.debug("Opening the sdio device.")
         if not self._opened:
             try:
-                self.device = open(self.path, "rb+", buffering=0)
+                self.device = self._context_manager.enter_context(
+                    Path(self.path).open("rb+", buffering=0)  # noqa: SIM115
+                )
                 if self.device is None:
                     raise SPSDKConnectionError("No device available")
                 if not self.is_blocking:
@@ -127,7 +132,8 @@ class SdioDevice(DeviceBase):
             raise SPSDKConnectionError("No device available")
         if self._opened:
             try:
-                self.device.close()
+                self._context_manager.close()
+                self.device = None
                 self._opened = False
             except Exception as error:
                 raise SPSDKConnectionError(
@@ -311,7 +317,7 @@ class SdioDevice(DeviceBase):
             device.open()
             device.close()
             devices = [device] if device else []
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except  # noqa: BLE001
             logger.debug(f"{type(e).__name__}: {e}")
             devices = []
         return devices

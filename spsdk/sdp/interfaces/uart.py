@@ -12,6 +12,7 @@ enabling serial communication with NXP MCUs through UART protocol.
 """
 
 import logging
+import traceback
 
 from typing_extensions import Self
 
@@ -72,6 +73,7 @@ class SdpUARTInterface(SDPSerialProtocol):
                 interface.open()
                 interface.close()
                 interfaces.append(interface)
-            except Exception:
-                pass
+            except Exception as exc:  # noqa: BLE001
+                logger.debug(f"SDP UART interface probe failed: {exc}")
+                logger.debug(traceback.format_exc())
         return interfaces

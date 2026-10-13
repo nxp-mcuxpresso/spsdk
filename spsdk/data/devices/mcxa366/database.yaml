@@ -27,6 +27,9 @@ info:
       interfaces: ["uart", "spi", "i2c"]
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe: {}
+
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x2000_2000
@@ -65,6 +68,14 @@ features:
       address: 0xf_e000
       size: 256
       reg_spec: pfr_cmpa.json
+      delete_installer_magic: 0x4027ff65
+      delete_installer_offset: 0xE0
+      # Offset of the SI erase token (16 bytes, written by ROM after successful SI erasure)
+      erase_token_offset: 0xD0
+      # Flash address within the Secure Installer region used to probe whether SI is present
+      si_probe_address: 0xC0000
+      # CMPA header marker (upper 16 bits at CMPA+0). ROM gates SI erase request on this value.
+      cmpa_header_marker: 0x5963
       grouped_registers:
         - name: ERASE_TOKEN
           uid: cmpa_erase_token

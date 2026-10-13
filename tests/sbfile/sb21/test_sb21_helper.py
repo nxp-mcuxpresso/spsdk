@@ -37,7 +37,6 @@ from spsdk.utils.misc import value_to_int
     "address, argument, spreg",
     [
         (0x1000, 0x2000, 0x800),
-        (4096, 8192, 2048),
         ("0x1000", "0x2000", "2048"),
         ("4096", "8192", "2048"),
         ("4096", "8192", None),

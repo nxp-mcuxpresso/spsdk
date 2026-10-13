@@ -572,11 +572,18 @@ class IpedV1(FeatureBaseClass):
             + ", ".join(f"[{hex(r.start_address)}-{hex(r.end_address)})" for r in self.regions)
         )
 
+    def _get_sorted_regions(self) -> list[IpedV1Region]:
+        """Get IPED regions sorted by start address.
+
+        :return: Regions sorted by start address.
+        """
+        return sorted(self.regions, key=lambda region: region.start_address)
+
     def _derive_iv(self, region: "IpedV1Region") -> int:
         """Derive the 64-bit PRINCE IV from nonce, fw_version, and user_key via AES-ECB.
 
         The hardware (ELE) derives the IV as:
-            aes_input = nonce_msb(4B LE) + nonce_lsb(4B LE) + fw_version(4B LE) + zeros(4B)
+            aes_input = nonce(8B LE) + fw_version(4B LE) + zeros(4B)
             cipher_data = AES_ECB(key=user_key in LE byte order, data=aes_input)
             iv = int.from_bytes(cipher_data[0:8], 'little')
 
@@ -586,14 +593,8 @@ class IpedV1(FeatureBaseClass):
         if self.user_key is None:
             raise SPSDKValueError("user_key is required for IV derivation.")
 
-        nonce_msb = (region.nonce >> 32) & 0xFFFFFFFF
-        nonce_lsb = region.nonce & 0xFFFFFFFF
-
         aes_input = (
-            nonce_msb.to_bytes(4, "little")
-            + nonce_lsb.to_bytes(4, "little")
-            + self.fw_version.to_bytes(4, "little")
-            + bytes(4)
+            region.nonce.to_bytes(8, "little") + self.fw_version.to_bytes(4, "little") + bytes(4)
         )
 
         # AES key is user_key in little-endian byte order
@@ -607,56 +608,71 @@ class IpedV1(FeatureBaseClass):
         """Encrypt plaintext data using the PRINCE cipher for a given address.
 
         The effective key = user_key XOR context_key (from DB). The IV is derived
-        from nonce + fw_version via AES-ECB keyed with user_key. Only data within
-        the region boundaries is encrypted; bytes outside the region remain plaintext.
+        from nonce + fw_version via AES-ECB keyed with user_key. When the blob spans
+        multiple configured regions, each covered segment is encrypted with the matching
+        region context and nonce. Bytes outside all configured regions remain plaintext.
 
         :param data: Plaintext data to encrypt.
         :param address: Absolute memory address where the data will be placed.
         :raises SPSDKValueError: If the region has no context key or user_key is missing.
         :return: Data with the region portion encrypted.
         """
-        region = self._find_region_for_address(address)
-        if region.context_key is None:
-            raise SPSDKValueError(
-                f"Region {region.region_id} has no context key. "
-                "Cannot encrypt without a context key from the database."
-            )
         if self.user_key is None:
             raise SPSDKValueError(
                 "user_key is required for encryption. "
                 "Provide the 128-bit user key from fuses in the configuration."
             )
-        # Effective key = user_key XOR context_key (same as iped-offline-tool)
-        effective_key = bytes(a ^ b for a, b in zip(self.user_key, region.context_key))
+        self._find_region_for_address(address)
 
-        # Derive IV from nonce + fw_version via AES-ECB
-        iv = self._derive_iv(region)
+        output = bytearray()
+        current_address = address
+        data_offset = 0
+        sorted_regions = self._get_sorted_regions()
 
-        # Only encrypt data within the region boundaries
-        data_end = address + len(data)
-        encrypt_end = min(data_end, region.end_address)
-        encrypt_length = encrypt_end - address
-
-        if encrypt_length <= 0:
-            logger.warning(
-                f"Data at 0x{address:x} does not overlap with region "
-                f"[0x{region.start_address:x}-0x{region.end_address:x})"
-            )
-            return data
-
-        if encrypt_length < len(data):
-            logger.info(
-                f"Data extends beyond region end (0x{region.end_address:x}). "
-                f"Encrypting only first {encrypt_length} bytes of {len(data)}."
+        while data_offset < len(data):
+            region = next(
+                (
+                    item
+                    for item in sorted_regions
+                    if item.start_address <= current_address < item.end_address
+                ),
+                None,
             )
 
-        cipher = get_prince_cipher(
-            key=effective_key,
-            address=address,
-            iv=iv,
-        )
-        encrypted_part = cipher.encrypt(data[:encrypt_length])
-        return encrypted_part + data[encrypt_length:]
+            if region is None:
+                next_region = next(
+                    (item for item in sorted_regions if item.start_address > current_address), None
+                )
+                if next_region is None:
+                    output.extend(data[data_offset:])
+                    break
+                gap_length = min(
+                    len(data) - data_offset, next_region.start_address - current_address
+                )
+                output.extend(data[data_offset : data_offset + gap_length])
+                current_address += gap_length
+                data_offset += gap_length
+                continue
+
+            if region.context_key is None:
+                raise SPSDKValueError(
+                    f"Region {region.region_id} has no context key. "
+                    "Cannot encrypt without a context key from the database."
+                )
+
+            encrypt_length = min(len(data) - data_offset, region.end_address - current_address)
+            effective_key = bytes(a ^ b for a, b in zip(self.user_key, region.context_key))
+            iv = self._derive_iv(region)
+            cipher = get_prince_cipher(
+                key=effective_key,
+                address=current_address,
+                iv=iv,
+            )
+            output.extend(cipher.encrypt(data[data_offset : data_offset + encrypt_length]))
+            current_address += encrypt_length
+            data_offset += encrypt_length
+
+        return bytes(output)
 
     def post_export(self, output_path: str) -> list[str]:
         """Export IPED V1 configuration and optionally encrypt data blobs.

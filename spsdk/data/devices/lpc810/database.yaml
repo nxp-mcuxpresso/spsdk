@@ -26,6 +26,10 @@ info:
       interfaces: ["uart"]
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe:
+    test_address: 0x2000_0000
+
   lpcprog:
     part_ids:
       "8100": LPC810M021FN8

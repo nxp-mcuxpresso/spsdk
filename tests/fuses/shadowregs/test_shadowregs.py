@@ -14,6 +14,7 @@ debug enablement, and probe communication features.
 import os
 from copy import copy
 from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 import yaml
@@ -342,6 +343,32 @@ def test_shadowreg_yml_compute_values(mock_test_database: Any, data_dir: str, tm
     )
     assert shadowregs_load.get_register("REG_BIG") == test_val
     assert shadowregs_load.get_register("REG_BIG_REV") == test_val
+
+
+def test_shadowreg_write_loaded_group_sub_registers() -> None:
+    """Test writing grouped-register sub-registers loaded from configuration.
+
+    :raises AssertionError: If a configured grouped-register sub-register is not written.
+    """
+    values = [0x1000 + index for index in range(12)]
+    cfg = Config(
+        {
+            "family": "mimxrt798s",
+            "revision": "latest",
+            "registers": {
+                f"fuse{index}": {"value": hex(value)}
+                for index, value in zip(range(88, 100), values)
+            },
+        }
+    )
+    operator = MagicMock(spec=ShadowregsOperator)
+    operator.read_fuse.return_value = 0
+    shadowregs = SR.ShadowRegisters.load_from_config(cfg, operator)
+
+    shadowregs.write_loaded(verify=False)
+
+    writes = [(call.args[0], call.args[1]) for call in operator.write_fuse.call_args_list]
+    assert writes == list(zip(range(88, 100), values))
 
 
 def test_shadowreg_yml_corrupted(mock_test_database: Any, data_dir: str) -> None:

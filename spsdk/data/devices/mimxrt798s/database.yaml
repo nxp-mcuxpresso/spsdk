@@ -181,6 +181,9 @@ info:
       non_xip_type: int_ram
 
 features:
+  # ======== Debug probe access section ========
+  debug_probe: {}
+
   # ======== Blhost section ========
   blhost:
     sub_features: [overridden_properties]

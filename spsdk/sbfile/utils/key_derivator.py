@@ -229,7 +229,7 @@ class LocalKeyDerivator(SB31KeyDerivator):
             try:
                 self.pck = bytes.fromhex(data)
             except ValueError as exc:
-                raise SPSDKError(f"Cannot parse hex data: {str(exc)}") from exc
+                raise SPSDKError(f"Cannot parse hex data: {exc!s}") from exc
         elif file_path:
             try:
                 # Try to load key with different expected sizes (256-bit first, then 128-bit)
@@ -249,7 +249,7 @@ class LocalKeyDerivator(SB31KeyDerivator):
                         "PCK key must be either 128-bit (16 bytes) or 256-bit (32 bytes)"
                     )
             except SPSDKError as exc:
-                raise SPSDKError(f"Cannot load PCK from {file_path}: {str(exc)}") from exc
+                raise SPSDKError(f"Cannot load PCK from {file_path}: {exc!s}") from exc
         else:
             raise SPSDKError("Either file_path or data must be provided")
 

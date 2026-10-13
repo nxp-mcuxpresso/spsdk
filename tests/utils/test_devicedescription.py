@@ -14,8 +14,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import spsdk.utils.devicedescription as devicedescription
 from spsdk.mboot.interfaces.usb import MbootUSBInterface
+from spsdk.utils import devicedescription
 
 
 def test_uart_device_description() -> None:
@@ -142,9 +142,11 @@ def test_repr() -> None:
                 "mimxrt1176",
                 "mimxrt1181",
                 "mimxrt1182",
+                "mimxrt1185",
                 "mimxrt1186",
                 "mimxrt1187",
                 "mimxrt1189",
+                "mimxrt118c",
                 "mwct2014s",
                 "mwct2015s",
                 "mwct2016s",
@@ -205,9 +207,11 @@ def test_get_device_name2(vid: int, pid: int, expected_result: list[str]) -> Non
                 "mimxrt1176",
                 "mimxrt1181",
                 "mimxrt1182",
+                "mimxrt1185",
                 "mimxrt1186",
                 "mimxrt1187",
                 "mimxrt1189",
+                "mimxrt118c",
                 "mwct2014s",
                 "mwct2015s",
                 "mwct2016s",
