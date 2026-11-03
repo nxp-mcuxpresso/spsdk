@@ -1,0 +1,52 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ============================  mbi Configuration template for mcxc353, Revision: latest.  =============================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxc353
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# --------------------------------------===== Application target [Required] =====---------------------------------------
+# Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+# Possible options: <xip>
+outputImageExecutionTarget: xip
+# -------------------------------===== Type of boot image authentication [Required] =====-------------------------------
+# Description: Specification of final master boot image authentication.
+# Possible options: <crc, misr, plain>
+outputImageAuthenticationType: misr
+# ---------------------------------------===== Output Image name [Required] =====---------------------------------------
+# Description: The path for result binary file.
+masterBootOutputFile: ../workspace/mbi_misr.bin
+# --------------------------------------===== Output file format [Optional] =====---------------------------------------
+# Description: Format of the output file.
+# bin = raw binary (default);
+# hex = Intel HEX;
+# s19 = Motorola S-record;
+# elf = minimal flash-ready ELF with PT_LOAD segments (no debug info);
+# elf_patch = patch the input source ELF file preserving DWARF debug info and symbols
+# for direct flash+debug from IDE (requires spsdk 'elf' extension:
+# pip install spsdk[elf] or pip install spsdk[all]).
+# Possible options: <bin, hex, s19, elf, elf_patch>
+output_format: bin
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image to by modified to Master Boot Image.
+inputImageFile: mcxc353_user_img_flash.bin
+# ======================================================================================================================
+#                                                == MISR Seed Settings ==
+#         Configuration for MISR (Multiple Input Signature Register) seed value used in cryptographic operations
+# ======================================================================================================================
+# -------------------------------------------===== MISR Seed [Required] =====-------------------------------------------
+# Description: MISR seed value for cryptographic operations (16 bytes hexadecimal).
+# misrSeed: '00000000000000000000000000000000'
+misrSeed: '12345678123456781234567812345678'

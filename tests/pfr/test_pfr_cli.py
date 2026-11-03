@@ -481,7 +481,7 @@ def test_pfrc_integration_1(
     config["settings"]["DCFG_CC_SOCU_DFLT"]["bitfields"]["Inverse_value"] = dfl_inverse
     cmpa_config_path = os.path.join(tmp_path, "output.yaml")
     output_bin = os.path.join(tmp_path, "pfr.bin")
-    with open(cmpa_config_path, "w") as fp:
+    with open(cmpa_config_path, "w", encoding="utf-8") as fp:
         yaml = YAML()
         yaml.dump(config, fp)
 

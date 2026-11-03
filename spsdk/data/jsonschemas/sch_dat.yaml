@@ -248,6 +248,15 @@ ahab_certificate_vendor_usage:
       description: The value must be equal to VU stored in fuses to allow loading this certificate.
       format: number
       template_value: 0
+    cc_vu:
+      type: [number, string]
+      title: Vendor Usage version
+      description:
+        Alias of 'cc_vendor_usage' using the common DAT field name. When both are present they
+        must contain the same value.
+      format: number
+      template_value: 0
+      skip_in_template: true
 
 ahab_debug_certificate:
   type: object

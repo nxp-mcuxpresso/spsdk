@@ -44,6 +44,27 @@ class SPSDKExtensionNotFoundError(SPSDKError, ExtensionNotFound):
     """
 
 
+# Composite (hybrid) public key algorithm OIDs. Such a SubjectPublicKeyInfo carries a classic
+# and a post-quantum public key together, which SPSDK has no representation for. The OIDs are
+# recognized only to be able to report an actionable error.
+COMPOSITE_PUBLIC_KEY_OIDS = (
+    # draft-ounsworth-pq-composite-sigs, classic key first
+    "1.3.9999.2.7.1",  # p256_dilithium2
+    "1.3.9999.2.7.3",  # p384_dilithium3
+    "1.3.9999.2.7.4",  # p521_dilithium5
+    "1.3.9999.7.1",  # p256_mldsa44
+    "1.3.9999.7.3",  # p384_mldsa65
+    "1.3.9999.7.4",  # p521_mldsa87
+    "1.3.9999.7.5",  # p256_mldsa44
+    "1.3.9999.7.7",  # p384_mldsa65
+    "1.3.9999.7.8",  # p521_mldsa87
+    # Entrust composite ML-DSA OIDs, ML-DSA key first
+    "2.16.840.1.114027.80.8.1.4",  # mldsa44_p256
+    "2.16.840.1.114027.80.8.1.8",  # mldsa65_p256
+    "2.16.840.1.114027.80.8.1.11",  # mldsa87_p384
+)
+
+
 class Certificate(BaseClass):
     """SPSDK Certificate wrapper for X.509 certificates.
 
@@ -172,13 +193,69 @@ class Certificate(BaseClass):
         Extracts the public key from the certificate using the standard method,
         and falls back to manual extraction if the standard method fails.
 
+        :raises SPSDKError: The certificate holds a public key that SPSDK cannot represent.
         :return: Public key extracted from the certificate.
         """
         try:
             pub_key = self.cert.public_key()
             return PublicKey.create(pub_key)
-        except ValueError:
-            return self._extract_public_key()
+        except (ValueError, UnsupportedAlgorithm):
+            # 'cryptography' raises UnsupportedAlgorithm (not a ValueError subclass) for
+            # SubjectPublicKeyInfo algorithms it does not implement, e.g. composite/hybrid keys.
+            from pyasn1.error import PyAsn1Error
+
+            try:
+                return self._extract_public_key()
+            except (SPSDKError, PyAsn1Error, ValueError) as exc:
+                raise self._unsupported_public_key_error(exc) from exc
+
+    def _unsupported_public_key_error(self, cause: Exception) -> SPSDKError:
+        """Build an actionable error for a certificate whose public key cannot be loaded.
+
+        Composite (hybrid) certificates carry two public keys under a single
+        SubjectPublicKeyInfo. SPSDK has no representation for such a key, so the error
+        explicitly names the offending algorithm OID and points to the supported approach.
+
+        :param cause: The original failure raised while loading the public key.
+        :return: Error instance describing the unsupported public key.
+        """
+        oid = self.public_key_algorithm_oid or "<unknown>"
+        message = [f"Cannot load public key from certificate. Public key algorithm OID: {oid}."]
+        if oid in COMPOSITE_PUBLIC_KEY_OIDS:
+            message += [
+                "This is a composite (hybrid) certificate holding both a classic and a"
+                " post-quantum public key in a single SubjectPublicKeyInfo.",
+                "SPSDK does not support composite certificates.",
+                "Use the classic and post-quantum keys separately instead. For AHAB dual"
+                " signing, configure two SRK tables ('srk_table' + 'srk_table_#2') with two"
+                " signers ('signer' + 'signer_#2'). The 'pqctool split' command from the"
+                " 'spsdk-pqc' plugin splits a composite private key into its two parts.",
+            ]
+        else:
+            message.append(f"The public key algorithm is not supported: {cause}")
+        return SPSDKError(" ".join(message))
+
+    @property
+    def public_key_algorithm_oid(self) -> str | None:
+        """Get the SubjectPublicKeyInfo algorithm OID as a dotted string.
+
+        Unlike :meth:`get_public_key`, this reads the OID straight from the DER structure,
+        so it also works for algorithms that are not supported by SPSDK.
+
+        :return: Dotted-string OID, or None if it cannot be determined.
+        """
+        from pyasn1.codec.der.decoder import decode
+        from pyasn1.error import PyAsn1Error
+        from pyasn1.type import univ
+
+        try:
+            tbs, _ = decode(self.cert.tbs_certificate_bytes, asn1Spec=univ.Sequence())
+            # SubjectPublicKeyInfo is the last member of the TBSCertificate prefix, which is
+            # followed only by optional tagged members (issuerUniqueID/subjectUniqueID/extensions).
+            spki = tbs.getComponentByPosition(6 if len(tbs) > 6 else len(tbs) - 1)
+            return str(spki.getComponentByPosition(0).getComponentByPosition(0))
+        except (PyAsn1Error, IndexError, AttributeError, ValueError):
+            return None
 
     def _extract_public_key(self) -> PublicKey:
         """Extract public key from TBS certificate raw data using signature algorithm OID.

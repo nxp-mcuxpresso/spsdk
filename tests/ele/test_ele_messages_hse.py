@@ -41,6 +41,8 @@ from spsdk.ele.hse_attrs import (
     AppDebugKeyAttributeHandler,
     CapabilitiesAttributeHandler,
     CapabilityIndex,
+    CoreReleaseStrategy,
+    CoreResetReleaseAttributeHandler,
     DebugAuthModeAttributeHandler,
     EnablePublishKeyStoreRamToFlashAttributeHandler,
     FwMemoryConfig,
@@ -50,6 +52,7 @@ from spsdk.ele.hse_attrs import (
     HseAttributeType,
     SecureLifecycle,
     SecureLifecycleAttributeHandler,
+    SmrCoreBootStatusAttributeHandler,
 )
 from spsdk.exceptions import SPSDKValueError
 from spsdk.image.hse.common import HseKeyBits, KeyCatalogId, KeyHandle, KeyType
@@ -626,9 +629,11 @@ class TestHseAttributeId:
     def test_all_members_accessible(self) -> None:
         assert HseAttributeId.FW_VERSION.tag == 1
         assert HseAttributeId.CAPABILITIES.tag == 2
+        assert HseAttributeId.SMR_CORE_BOOT_STATUS.tag == 3
         assert HseAttributeId.DEBUG_AUTH_MODE.tag == 10
         assert HseAttributeId.APP_DEBUG_KEY.tag == 11
         assert HseAttributeId.SECURE_LIFECYCLE.tag == 12
+        assert HseAttributeId.CORE_RESET_RELEASE.tag == 23
         assert HseAttributeId.ENABLE_PUBLISH_KEYSTORE_RAM_TO_FLASH.tag == 602
 
     def test_from_tag(self) -> None:
@@ -665,6 +670,14 @@ class TestGetAttrHandlerCls:
     def test_secure_lifecycle_handler(self) -> None:
         cls = HseAttributeHandler.get_attr_handler_cls(HseAttributeId.SECURE_LIFECYCLE)
         assert cls is SecureLifecycleAttributeHandler
+
+    def test_core_reset_release_handler(self) -> None:
+        cls = HseAttributeHandler.get_attr_handler_cls(HseAttributeId.CORE_RESET_RELEASE)
+        assert cls is CoreResetReleaseAttributeHandler
+
+    def test_smr_core_boot_status_handler(self) -> None:
+        cls = HseAttributeHandler.get_attr_handler_cls(HseAttributeId.SMR_CORE_BOOT_STATUS)
+        assert cls is SmrCoreBootStatusAttributeHandler
 
     def test_unknown_id_raises(self) -> None:
         # Patch tag to something unrecognised
@@ -1102,6 +1115,58 @@ class TestEleMessageHseGetAttr:
             msg = EleMessageHseGetAttr(attr_id)
             assert msg.response_data_size > 0
 
+    def test_decode_response_data_with_alignment_padding_core_reset_release(self) -> None:
+        """Regression test: response_data_size is aligned to ELE_MSG_ALIGN (8 B).
+
+        CoreResetReleaseAttributeHandler is only 4 B long (calcsize("<L") == 4), so the
+        buffer read back from target memory via ReadMemory() is padded to 8 B. Ensure
+        decode_response_data() truncates the padded buffer before struct.unpack() instead
+        of crashing with struct.error.
+        """
+        msg = EleMessageHseGetAttr(HseAttributeId.CORE_RESET_RELEASE)
+        exact_size = CoreResetReleaseAttributeHandler.get_size()
+        assert exact_size == 4
+        # response_data_size getter aligns to ELE_MSG_ALIGN (8 B)
+        assert msg.response_data_size == 8
+
+        sample = CoreResetReleaseAttributeHandler(CoreReleaseStrategy.ONE_BY_ONE)
+        padded_response = sample.export() + b"\x00" * (msg.response_data_size - exact_size)
+        assert len(padded_response) == 8
+
+        msg.decode_response_data(padded_response)
+
+        assert isinstance(msg.attr_value, CoreResetReleaseAttributeHandler)
+        assert msg.attr_value.strategy == CoreReleaseStrategy.ONE_BY_ONE
+
+    def test_decode_response_data_with_alignment_padding_smr_core_boot_status(self) -> None:
+        """Regression test: response_data_size is aligned to ELE_MSG_ALIGN (8 B).
+
+        SmrCoreBootStatusAttributeHandler is 20 B long (calcsize("<LLLLL") == 20), so the
+        buffer read back from target memory via ReadMemory() is padded to 24 B. Ensure
+        decode_response_data() truncates the padded buffer before struct.unpack() instead
+        of crashing with struct.error.
+        """
+        msg = EleMessageHseGetAttr(HseAttributeId.SMR_CORE_BOOT_STATUS)
+        exact_size = SmrCoreBootStatusAttributeHandler.get_size()
+        assert exact_size == 20
+        # response_data_size getter aligns to ELE_MSG_ALIGN (8 B)
+        assert msg.response_data_size == 24
+
+        sample = SmrCoreBootStatusAttributeHandler(
+            smr_status=[0x1, 0x1],
+            core_boot_status=[0x1, 0x0],
+            smr_entry_install_status=0x1,
+        )
+        padded_response = sample.export() + b"\x00" * (msg.response_data_size - exact_size)
+        assert len(padded_response) == 24
+
+        msg.decode_response_data(padded_response)
+
+        assert isinstance(msg.attr_value, SmrCoreBootStatusAttributeHandler)
+        assert msg.attr_value.smr_status == [0x1, 0x1]
+        assert msg.attr_value.core_boot_status == [0x1, 0x0]
+        assert msg.attr_value.smr_entry_install_status == 0x1
+
 
 # EleMessageHseSetAttr
 
@@ -1377,3 +1442,147 @@ class TestBootDataImageSignSignature:
         msg.gmac_value = b"\x02" * 16
         sig = msg.signature
         assert sig == b"\x01" * 12 + b"\x02" * 16
+
+
+# CoreResetReleaseAttributeHandler
+
+
+class TestCoreReleaseStrategy:
+    def test_tags(self) -> None:
+        assert CoreReleaseStrategy.ALL_AT_ONCE.tag == 0xA5556933
+        assert CoreReleaseStrategy.ONE_BY_ONE.tag == 0xA5557555
+
+
+class TestCoreResetReleaseAttributeHandler:
+    def test_parse_roundtrip_all_at_once(self) -> None:
+        handler = CoreResetReleaseAttributeHandler(CoreReleaseStrategy.ALL_AT_ONCE)
+        data = handler.export()
+        parsed = CoreResetReleaseAttributeHandler.parse(data)
+        assert parsed.strategy == CoreReleaseStrategy.ALL_AT_ONCE
+
+    def test_parse_roundtrip_one_by_one(self) -> None:
+        handler = CoreResetReleaseAttributeHandler(CoreReleaseStrategy.ONE_BY_ONE)
+        data = handler.export()
+        parsed = CoreResetReleaseAttributeHandler.parse(data)
+        assert parsed.strategy == CoreReleaseStrategy.ONE_BY_ONE
+
+    def test_str(self) -> None:
+        handler = CoreResetReleaseAttributeHandler(CoreReleaseStrategy.ONE_BY_ONE)
+        s = str(handler)
+        assert "Core Reset Release Strategy" in s
+        assert "ONE_BY_ONE" in s
+
+    def test_repr(self) -> None:
+        handler = CoreResetReleaseAttributeHandler(CoreReleaseStrategy.ALL_AT_ONCE)
+        assert "CoreResetRelease" in repr(handler)
+        assert "ALL_AT_ONCE" in repr(handler)
+
+    def test_to_dict(self) -> None:
+        handler = CoreResetReleaseAttributeHandler(CoreReleaseStrategy.ALL_AT_ONCE)
+        d = handler.to_dict()
+        assert d["attr_id"] == HseAttributeId.CORE_RESET_RELEASE.label
+        assert d["settings"]["strategy"] == CoreReleaseStrategy.ALL_AT_ONCE.label
+
+    def test_is_readable(self) -> None:
+        assert CoreResetReleaseAttributeHandler.is_readable() is True
+
+    def test_is_writeable(self) -> None:
+        assert CoreResetReleaseAttributeHandler.is_writeable() is True
+
+    def test_get_size(self) -> None:
+        assert CoreResetReleaseAttributeHandler.get_size() == 4
+
+
+# SmrCoreBootStatusAttributeHandler
+
+
+class TestSmrCoreBootStatusAttributeHandler:
+    def _make(self) -> SmrCoreBootStatusAttributeHandler:
+        return SmrCoreBootStatusAttributeHandler(
+            smr_status=[0b11, 0b01],  # SMR0,1 verified; SMR0 pass, SMR1 fail
+            core_boot_status=[0b11, 0b01],  # Core0,1 booted; Core0 primary, Core1 alternate
+            smr_entry_install_status=0b11,  # SMR0,1 installed
+        )
+
+    def test_invalid_smr_status_length_raises(self) -> None:
+        with pytest.raises(SPSDKValueError):
+            SmrCoreBootStatusAttributeHandler(
+                smr_status=[0],
+                core_boot_status=[0, 0],
+                smr_entry_install_status=0,
+            )
+
+    def test_invalid_core_boot_status_length_raises(self) -> None:
+        with pytest.raises(SPSDKValueError):
+            SmrCoreBootStatusAttributeHandler(
+                smr_status=[0, 0],
+                core_boot_status=[0],
+                smr_entry_install_status=0,
+            )
+
+    def test_export_parse_roundtrip(self) -> None:
+        handler = self._make()
+        data = handler.export()
+        parsed = SmrCoreBootStatusAttributeHandler.parse(data)
+        assert parsed.smr_status == [0b11, 0b01]
+        assert parsed.core_boot_status == [0b11, 0b01]
+        assert parsed.smr_entry_install_status == 0b11
+
+    def test_is_smr_installed(self) -> None:
+        handler = self._make()
+        assert handler.is_smr_installed(0) is True
+        assert handler.is_smr_installed(1) is True
+        assert handler.is_smr_installed(2) is False
+
+    def test_is_smr_verified(self) -> None:
+        handler = self._make()
+        assert handler.is_smr_verified(0) is True
+        assert handler.is_smr_verified(1) is True
+        assert handler.is_smr_verified(2) is False
+
+    def test_is_smr_verification_passed(self) -> None:
+        handler = self._make()
+        assert handler.is_smr_verification_passed(0) is True
+        assert handler.is_smr_verification_passed(1) is False
+
+    def test_is_core_booted(self) -> None:
+        handler = self._make()
+        assert handler.is_core_booted(0) is True
+        assert handler.is_core_booted(1) is True
+        assert handler.is_core_booted(2) is False
+
+    def test_is_core_booted_from_primary_address(self) -> None:
+        handler = self._make()
+        assert handler.is_core_booted_from_primary_address(0) is True
+        assert handler.is_core_booted_from_primary_address(1) is False
+
+    def test_str(self) -> None:
+        handler = self._make()
+        s = str(handler)
+        assert "SMR Verification & Core Boot Status" in s
+        assert "SMR[0]" in s
+        assert "Core[0]" in s
+
+    def test_repr(self) -> None:
+        handler = self._make()
+        r = repr(handler)
+        assert "SmrCoreBootStatus" in r
+
+    def test_to_dict(self) -> None:
+        handler = self._make()
+        d = handler.to_dict()
+        assert d["attr_id"] == HseAttributeId.SMR_CORE_BOOT_STATUS.label
+        assert d["settings"]["smr_entries"][0]["installed"] is True
+        assert d["settings"]["smr_entries"][0]["verification_passed"] is True
+        assert d["settings"]["smr_entries"][1]["verification_passed"] is False
+        assert d["settings"]["cores"][0]["primary_reset_address"] is True
+        assert d["settings"]["cores"][1]["primary_reset_address"] is False
+
+    def test_is_readable(self) -> None:
+        assert SmrCoreBootStatusAttributeHandler.is_readable() is True
+
+    def test_is_not_writeable(self) -> None:
+        assert SmrCoreBootStatusAttributeHandler.is_writeable() is False
+
+    def test_get_size(self) -> None:
+        assert SmrCoreBootStatusAttributeHandler.get_size() == 20

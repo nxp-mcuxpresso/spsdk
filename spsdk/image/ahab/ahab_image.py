@@ -16,6 +16,7 @@ configurations, and exporting complete AHAB images to binary format.
 
 import logging
 import os
+from abc import ABC
 from copy import deepcopy
 from typing import Any
 
@@ -31,7 +32,6 @@ from spsdk.image.ahab.ahab_data import (
     AHABSignHashAlgorithm,
     AHABTags,
     AhabTargetMemory,
-    FlagsSrkSet,
     create_chip_config,
 )
 from spsdk.image.ahab.ahab_iae import ImageArrayEntryTemplates
@@ -543,11 +543,38 @@ class AHABImage(FeatureBaseClass):
         """Write scripts for fuses after image export.
 
         The method processes all AHAB containers and generates their post-export files,
-        typically fuse scripts and configuration data files.
+        typically fuse scripts and configuration data files. If the SRK hash is identical
+        across all containers, only a single shared set of files is generated instead of
+        one set per container. This also covers mixed layouts common on MPUs, such as one
+        NXP-signed container plus several OEM-signed containers sharing the same SRK table:
+        the NXP container itself never produces fuse files, but the OEM containers still
+        get a single shared set instead of one set each.
 
         :param output_path: Path to store the data files of configuration.
         :return: List of generated files.
         """
+        srk_hashes = [
+            tuple(container.get_srk_hash(srk_id) for srk_id in range(container.srk_count))
+            for container in self.ahab_containers
+        ]
+        if len(srk_hashes) > 1 and all(h == srk_hashes[0] for h in srk_hashes):
+            # Find the first container that actually produces fuse files (some
+            # containers, e.g. NXP/DEVHSM/v2x-1, are always skipped regardless of
+            # SRK hash). Using it as the shared representative also correctly
+            # covers mixed cases like [NXP, OEM, OEM] with identical SRK hash,
+            # where only the OEM containers would otherwise generate files.
+            for container in self.ahab_containers:
+                shared_files = container.post_export(output_path, cnt_ix=None)
+                if shared_files:
+                    logger.info(
+                        "SRK hash is identical across all AHAB containers. "
+                        "Generating just one shared set of SRKH fuse files."
+                    )
+                    return shared_files
+            # None of the containers produced any files (e.g. all are
+            # NXP/DEVHSM/v2x-1). Fall through to the regular per-container
+            # generation below, which will also produce no files.
+
         generated_files = []
         for cnt_ix, container in enumerate(self.ahab_containers):
             generated_files.extend(container.post_export(output_path, cnt_ix))
@@ -884,6 +911,9 @@ class AHABImage(FeatureBaseClass):
         certificate_supported = "certificate_supported" in db.get_list(
             DatabaseManager.AHAB, "sub_features", []
         )
+        parallel_verification_supported = "parallel_verification" in db.get_list(
+            DatabaseManager.AHAB, "sub_features", []
+        )
         hide_force_container_type = len(container_type) <= 1
         container_type_2 = 2 in container_type
 
@@ -902,9 +932,17 @@ class AHABImage(FeatureBaseClass):
         if not certificate_supported:
             sch_cnt.pop("certificate")
 
+        if parallel_verification_supported:
+            sch_cnt.pop("fast_boot", None)
+            if container_type_2:
+                sch_cnt["parallel_verification"]["skip_in_template"] = False
+        else:
+            sch_cnt.pop("parallel_verification", None)
+
         if container_type_2:
             sch_cnt["check_all_signatures"]["skip_in_template"] = False
-            sch_cnt["fast_boot"]["skip_in_template"] = False
+            if not parallel_verification_supported:
+                sch_cnt["fast_boot"]["skip_in_template"] = False
             sch_cnt["srk_table"]["properties"]["srk_table_#2"]["skip_in_template"] = False
             sch_cnt["signer_#2"]["skip_in_template"] = False
 
@@ -1044,9 +1082,9 @@ class AHABImage(FeatureBaseClass):
         The method generates a configuration dictionary containing family information, target memory
         settings, and container configurations for the AHAB image.
 
-        By default, NXP-signed containers (SECO/ELE/V2X) are not fully parsed.  Instead they are
-        exported to a ``binary_container`` binary file and referenced by path.  This preserves the
-        original binary so the image can be re-assembled without requiring the NXP private keys.
+        By default, NXP-signed containers (SECO/ELE/V2X), including ICCS, are not fully parsed.
+        Instead they are exported to a ``binary_container`` binary file and referenced by path.
+        This preserves the original binary so it can be re-assembled without the NXP private keys.
         Pass ``parse_nxp=True`` (or the ``--parse-nxp`` CLI flag) to parse all containers fully.
 
         :param data_path: Path to store the data files of configuration.
@@ -1077,7 +1115,7 @@ class AHABImage(FeatureBaseClass):
             nxp_batch.clear()
 
         for cnt_ix, container in enumerate(self.ahab_containers):
-            if container.flag_srk_set == FlagsSrkSet.NXP and not parse_nxp:
+            if container.flag_srk_set.label in ("nxp", "iccs") and not parse_nxp:
                 if not nxp_batch:
                     nxp_batch_start_ix = cnt_ix
                 nxp_batch.append((cnt_ix, container))
@@ -1104,7 +1142,7 @@ class AHABImage(FeatureBaseClass):
         :raises SPSDKError: AHAB container not found in the provided binary data.
         """
 
-        class DummyContainer(HeaderContainer):
+        class DummyContainer(HeaderContainer, ABC):
             """AHAB dummy container for fast format validation.
 
             This class provides a lightweight container implementation used for quickly

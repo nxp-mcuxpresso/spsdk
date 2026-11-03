@@ -10,10 +10,12 @@ This module provides the base class for Serial Download Protocol (SDP) implement
 in SPSDK, defining the common interface and functionality for SDP communication.
 """
 
+from abc import ABC
+
 from spsdk.utils.interfaces.protocol.protocol_base import ProtocolBase
 
 
-class SDPProtocolBase(ProtocolBase):
+class SDPProtocolBase(ProtocolBase, ABC):
     """SDP protocol base class.
 
     This class provides the foundation for Serial Download Protocol (SDP) implementations,

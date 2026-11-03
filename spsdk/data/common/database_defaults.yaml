@@ -101,6 +101,8 @@ features:
     # Standard DM commands are always available; list only extras, e.g. 'read-from-flash'.
     non_standard_commands: []
 
+    more_delay: 0.0 # Default extra delay in seconds after DM reset sequence, used when '--timing' is not given
+
     command_delays: # Additional standard command delays per individual DM commands
       ERASE_FLASH: 0.5
 
@@ -125,6 +127,10 @@ features:
     containers_max_cnt: 2
     oem_images_max_cnt: 8
     valid_offset_minimal_alignment: 4
+    # Alignment of individual members (SRK table, signature, certificate, blob) inside the
+    # AHAB v2 signature block and of the signatures inside the AHAB certificate.
+    # Value 1 means that the members are packed back-to-back without any padding.
+    signature_block_member_alignment: 1
     container_types: [1] # Supported container types
     certificate_type: standard # The standard certificate
     iae_has_signed_offsets: False # There is a special cases when the Container is after images

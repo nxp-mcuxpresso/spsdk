@@ -8,12 +8,14 @@
 
 import pytest
 
+from spsdk.ele.ele_constants import SecureBootCryptoMode
 from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError, SPSDKValueError
 from spsdk.image.ahab.ahab_data import KeyUsage, create_chip_config
 from spsdk.image.ahab.signed_msg import (
     Message,
     MessageCommands,
     MessageDat,
+    MessageForwardBootCrypto,
     MessageKeyExchange,
     MessageKeyStoreReprovisioningEnable,
     MessageReturnLifeCycle,
@@ -54,6 +56,11 @@ def test_message_commands_lifecycle() -> None:
 def test_message_commands_write_sec_fuse() -> None:
     """WRITE_SEC_FUSE_REQ tag is 0x91."""
     assert MessageCommands.WRITE_SEC_FUSE_REQ.tag == 0x91
+
+
+def test_message_commands_forward_boot_crypto() -> None:
+    """FORWARD_BOOT_CRYPTO_REQ tag is 0x93."""
+    assert MessageCommands.FORWARD_BOOT_CRYPTO_REQ.tag == 0x93
 
 
 def test_message_commands_dat() -> None:
@@ -139,6 +146,90 @@ def test_return_lifecycle_load_from_config() -> None:
     msg2 = Message.load_from_config(cfg, FAMILY)
     assert isinstance(msg2, MessageReturnLifeCycle)
     assert msg2.life_cycle == 0x10
+
+
+# MessageForwardBootCrypto
+
+
+def test_forward_boot_crypto_str() -> None:
+    """MessageForwardBootCrypto __str__ includes secure boot crypto mode."""
+    msg = MessageForwardBootCrypto(
+        family=FAMILY, secure_boot_crypto_mode=SecureBootCryptoMode.HYBRID
+    )
+    s = str(msg)
+    assert "Secure boot crypto mode" in s
+    assert "HYBRID" in s
+
+
+def test_forward_boot_crypto_export_payload() -> None:
+    """MessageForwardBootCrypto.export_payload() produces correct 4-byte LE magic."""
+    msg = MessageForwardBootCrypto(
+        family=FAMILY, secure_boot_crypto_mode=SecureBootCryptoMode.HYBRID
+    )
+    payload = msg.export_payload()
+    assert payload == b"\xff\x05\x00\x00"
+
+
+def test_forward_boot_crypto_parse_payload() -> None:
+    """parse_payload() correctly populates secure_boot_crypto_mode."""
+    msg = MessageForwardBootCrypto(family=FAMILY)
+    msg.parse_payload(b"\x1f\x7a\x00\x00")
+    assert msg.secure_boot_crypto_mode == SecureBootCryptoMode.PQC
+
+
+def test_forward_boot_crypto_export_parse_roundtrip() -> None:
+    """Full export -> parse round-trip for MessageForwardBootCrypto."""
+    msg = MessageForwardBootCrypto(
+        family=FAMILY,
+        secure_boot_crypto_mode=SecureBootCryptoMode.RETURN_TO_CLASSIC,
+        cert_ver=1,
+        permissions=0x05,
+        issue_date=0x4028,
+        unique_id=bytes(8),
+    )
+    raw = msg.export()
+    msg2 = Message.parse(raw, family=FAMILY)
+    assert isinstance(msg2, MessageForwardBootCrypto)
+    assert msg2.secure_boot_crypto_mode == SecureBootCryptoMode.RETURN_TO_CLASSIC
+    assert msg2.cert_ver == 1
+
+
+def test_forward_boot_crypto_verify_ok() -> None:
+    """verify() returns no errors for a valid MessageForwardBootCrypto."""
+    msg = MessageForwardBootCrypto(family=FAMILY, secure_boot_crypto_mode=SecureBootCryptoMode.PQC)
+    v = msg.verify()
+    assert not v.has_errors
+
+
+def test_forward_boot_crypto_get_config() -> None:
+    """get_config() returns a Config with FORWARD_BOOT_CRYPTO_REQ key and mode label."""
+    msg = MessageForwardBootCrypto(
+        family=FAMILY, secure_boot_crypto_mode=SecureBootCryptoMode.HYBRID
+    )
+    cfg = msg.get_config()
+    assert "command" in cfg
+    assert cfg["command"]["FORWARD_BOOT_CRYPTO_REQ"] == "HYBRID"
+
+
+def test_forward_boot_crypto_load_from_config() -> None:
+    """_load_from_config() recreates the message from its get_config() output."""
+    msg = MessageForwardBootCrypto(
+        family=FAMILY,
+        secure_boot_crypto_mode=SecureBootCryptoMode.PQC,
+        cert_ver=2,
+        permissions=0x3,
+        issue_date=0x5029,
+    )
+    cfg = msg.get_config()
+    msg2 = Message.load_from_config(cfg, FAMILY)
+    assert isinstance(msg2, MessageForwardBootCrypto)
+    assert msg2.secure_boot_crypto_mode == SecureBootCryptoMode.PQC
+
+
+def test_get_message_class_forward_boot_crypto() -> None:
+    """get_message_class returns MessageForwardBootCrypto for the correct label."""
+    cls = Message.get_message_class("FORWARD_BOOT_CRYPTO_REQ")
+    assert cls is MessageForwardBootCrypto
 
 
 # MessageWriteSecureFuse

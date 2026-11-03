@@ -457,14 +457,16 @@ class PeripheryTag(SpsdkEnum):
     for the corresponding peripheral interface type.
     """
 
-    UART      = (0x01, "UART", "UART Interface")
-    I2C_SLAVE = (0x02, "I2C-Slave", "I2C Slave Interface")
-    SPI_SLAVE = (0x04, "SPI-Slave", "SPI Slave Interface")
-    CAN       = (0x08, "CAN", "CAN Interface")
-    USB_HID   = (0x10, "USB-HID", "USB HID-Class Interface")
-    USB_CDC   = (0x20, "USB-CDC", "USB CDC-Class Interface")
-    USB_DFU   = (0x40, "USB-DFU", "USB DFU-Class Interface")
-    LIN       = (0x80, "LIN", "LIN Interface")
+    UART       = (0x01, "UART", "UART Interface")
+    I2C_SLAVE  = (0x02, "I2C-Slave", "I2C Slave Interface")
+    SPI_SLAVE  = (0x04, "SPI-Slave", "SPI Slave Interface")
+    CAN        = (0x08, "CAN", "CAN Interface")
+    USB_HID    = (0x10, "USB-HID", "USB HID-Class Interface")
+    USB_CDC    = (0x20, "USB-CDC", "USB CDC-Class Interface")
+    USB_DFU    = (0x40, "USB-DFU", "USB DFU-Class Interface")
+    LIN        = (0x80, "LIN", "LIN Interface")
+    QSPI_SLAVE = (0x100, "QSPI-Slave", "QSPI Slave Interface")
+    I3C_SLAVE  = (0x200, "I3C-Slave", "I3C Slave interface")
 
 
 class FlashReadMargin(SpsdkEnum):
@@ -700,6 +702,53 @@ class BoolValue(PropertyValueBase):
         :return: String representation of the property value.
         """
         return self._true_string if self.value in self._true_values else self._false_string
+
+
+class LifeCycleStateValue(PropertyValueBase):
+    """Device lifecycle property value supporting one- and two-word ROM responses."""
+
+    __slots__ = ("states", "status", "value")
+
+    def __init__(
+        self,
+        prop: PropertyTag,
+        raw_values: list[int],
+        states: dict[int, str] | None = None,
+    ) -> None:
+        """Initialize lifecycle state value.
+
+        :param prop: Property tag.
+        :param raw_values: Lifecycle word, optionally preceded by a status word.
+        :param states: Optional device-specific lifecycle labels.
+        :raises SPSDKError: When the response is empty.
+        """
+        if not raw_values:
+            raise SPSDKError("Lifecycle property response is empty")
+        super().__init__(prop)
+        self.status = raw_values[0] if len(raw_values) > 1 else None
+        self.value = raw_values[1] if len(raw_values) > 1 else raw_values[0]
+        self.states = states or {}
+
+    def to_int(self) -> int:
+        """Get the raw lifecycle value.
+
+        :return: Lifecycle value.
+        """
+        return self.value
+
+    def to_str(self) -> str:
+        """Format the lifecycle value.
+
+        :return: Device-specific label or hexadecimal lifecycle value.
+        """
+        label = self.states.get(self.value)
+        if label:
+            return f"{label} ({hex(self.value)})"
+        if self.value in (0x00000000, 0x5AA55AA5):
+            return "development life cycle"
+        if self.value in (0x00000001, 0xC33CC33C):
+            return "deployment life cycle"
+        return hex(self.value)
 
 
 class EnumValue(PropertyValueBase):
@@ -1438,13 +1487,8 @@ PROPERTY_RESPONSE: dict[PropertyTag, dict] = {
         "kwargs": {"true_string": "ENABLE", "false_string": "DISABLE"},
     },
     PropertyTag.LIFE_CYCLE_STATE: {
-        "class": BoolValue,
-        "kwargs": {
-            "true_values": (0x00000000, 0x5AA55AA5),
-            "true_string": "development life cycle",
-            "false_values": (0x00000001, 0xC33CC33C),
-            "false_string": "deployment life cycle",
-        },
+        "class": LifeCycleStateValue,
+        "kwargs": {},
     },
     PropertyTag.UNKNOWN: {
         "class": IntListValue,
@@ -1482,9 +1526,14 @@ def parse_property_value(
 
     property_response = PROPERTY_RESPONSE[property_tag]
     cls: Callable = property_response["class"]
-    kwargs: dict = property_response["kwargs"]
+    kwargs: dict = property_response["kwargs"].copy()
     if "mem_id" in kwargs:
         kwargs["mem_id"] = ext_mem_id
+    if cls is LifeCycleStateValue and family:
+        db = get_db(family)
+        if DatabaseManager.DAT in db.features:
+            statuses = db.get_dict(DatabaseManager.DAT, "non_standard_statuses", {})
+            kwargs["states"] = statuses.get(0x02, {})
     obj = cls(property_tag, raw_values, **kwargs)
     return obj
 

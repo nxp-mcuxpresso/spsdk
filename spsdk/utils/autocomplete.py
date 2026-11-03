@@ -917,6 +917,7 @@ def _get_powershell_profile() -> Path:
                 [binary, "-NoProfile", "-NonInteractive", "-Command", "Write-Output $PROFILE"],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
                 timeout=10,
                 check=False,
             )

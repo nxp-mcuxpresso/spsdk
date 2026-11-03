@@ -21,6 +21,7 @@ from spsdk.ele.ele_constants import (
     KeyBlobEncryptionIeeCtrModes,
     LifeCycleToSwitch,
     ResponseStatus,
+    SecureBootCryptoMode,
 )
 from spsdk.ele.ele_message import (
     EleMessage,
@@ -30,6 +31,7 @@ from spsdk.ele.ele_message import (
     EleMessageEleFwAuthenticate,
     EleMessageEnableApc,
     EleMessageEnableRtc,
+    EleMessageForwardBootCrypto,
     EleMessageForwardLifeCycleUpdate,
     EleMessageGenerateKeyBlobDek,
     EleMessageGenerateKeyBlobIee,
@@ -53,6 +55,7 @@ from spsdk.ele.ele_message import (
     EleMessageSabInit,
     EleMessageSessionClose,
     EleMessageSessionOpen,
+    EleMessageSigned,
     EleMessageStartTrng,
     EleMessageVerifyImage,
     EleMessageWriteFuse,
@@ -407,6 +410,77 @@ class TestEleMessageForwardLifeCycleUpdate:
         assert data[5] == 0x00
 
 
+# EleMessageForwardBootCrypto
+
+
+class TestEleMessageForwardBootCrypto:
+    """Tests for EleMessageForwardBootCrypto."""
+
+    def test_export_length_no_signed_msg(self) -> None:
+        """ForwardBootCrypto export without a signed message is 4 + 12 = 16 bytes."""
+        msg = EleMessageForwardBootCrypto(SecureBootCryptoMode.HYBRID)
+        assert len(msg.export()) == 16
+
+    def test_export_contains_magic_no_signed_msg(self) -> None:
+        """Export bytes contain the secure boot crypto magic and zero address words."""
+        msg = EleMessageForwardBootCrypto(SecureBootCryptoMode.HYBRID)
+        data = msg.export()
+        # Word1 (MSB addr) and Word2 (LSB addr) must be zero when no signed message is used
+        assert data[4:8] == b"\x00\x00\x00\x00"
+        assert data[8:12] == b"\x00\x00\x00\x00"
+        # magic HYBRID = 0x05FF, packed as UINT16 little-endian at offset 12
+        assert data[12] == 0xFF
+        assert data[13] == 0x05
+
+    def test_export_contains_pqc_magic(self) -> None:
+        """Export bytes contain the PQC secure boot crypto magic."""
+        msg = EleMessageForwardBootCrypto(SecureBootCryptoMode.PQC)
+        data = msg.export()
+        assert data[12] == 0x1F
+        assert data[13] == 0x7A
+
+    def test_export_contains_return_to_classic_magic(self) -> None:
+        """Export bytes contain the RETURN_TO_CLASSIC secure boot crypto magic."""
+        msg = EleMessageForwardBootCrypto(SecureBootCryptoMode.RETURN_TO_CLASSIC)
+        data = msg.export()
+        assert data[12] == 0xE0
+        assert data[13] == 0x7F
+
+    def test_command_data_empty_without_signed_msg(self) -> None:
+        """command_data is empty and has_command_data is False without a signed message."""
+        msg = EleMessageForwardBootCrypto(SecureBootCryptoMode.HYBRID)
+        assert msg.command_data == b""
+        assert msg.has_command_data is False
+
+    def test_command_data_is_signed_msg(self) -> None:
+        """command_data returns the provided signed message bytes."""
+        signed_msg = b"\xab" * 64
+        msg = EleMessageForwardBootCrypto(SecureBootCryptoMode.PQC, signed_msg=signed_msg)
+        assert msg.command_data == signed_msg
+        assert msg.has_command_data is True
+
+    def test_export_with_signed_msg_uses_command_data_address(self) -> None:
+        """When a signed message is provided, its address is used as LSB address word."""
+        signed_msg = b"\xcd" * 32
+        msg = EleMessageForwardBootCrypto(SecureBootCryptoMode.HYBRID, signed_msg=signed_msg)
+        msg.set_buffer_params(0x2000, 0x1000)
+        data = msg.export()
+        # MSB address word must still be zero
+        assert data[4:8] == b"\x00\x00\x00\x00"
+        # LSB address word must equal command_data_address
+        lsb = int.from_bytes(data[8:12], "little")
+        assert lsb == msg.command_data_address
+        assert lsb != 0
+
+    def test_info_method(self) -> None:
+        """info() includes the secure boot crypto mode label."""
+        msg = EleMessageForwardBootCrypto(SecureBootCryptoMode.PQC)
+        msg.status = 0xD6
+        info = msg.info()
+        assert "Secure boot crypto mode" in info
+        assert "PQC" in info
+
+
 # EleMessageGetEvents
 
 
@@ -678,6 +752,62 @@ class TestEleMessageReadCommonFuse:
         msg = EleMessageReadCommonFuse(42)
         msg.fuse_value = 0x1234
         assert "42" in msg.response_info()
+
+
+# EleMessageSigned
+
+
+class TestEleMessageSignedDecodeResponse:
+    """Tests for EleMessageSigned.decode_response.
+
+    EleMessageSigned carries a command determined by the signed message container itself
+    (e.g. WRITE_SEC_FUSE_REQ, RETURN_LIFECYCLE_UPDATE_REQ, ...). Depending on that inner
+    command, the ELE response can either be the generic 2-word status response, or a
+    3-word response that also contains a Processed_idx field (mirroring the plain
+    WRITE FUSE command). These tests exercise decode_response() directly, without going
+    through the full signed message parsing/verification in __init__.
+    """
+
+    @staticmethod
+    def _make_uninitialized_msg(command: int) -> EleMessageSigned:
+        """Create an EleMessageSigned instance without running __init__."""
+        msg = EleMessageSigned.__new__(EleMessageSigned)
+        EleMessage.__init__(msg)
+        msg.command = command
+        msg.processed_idx = None
+        return msg
+
+    def test_decode_response_generic_2word(self) -> None:
+        """decode_response accepts the generic 2-word status response."""
+        msg = self._make_uninitialized_msg(0xA0)  # RETURN_LIFECYCLE_UPDATE_REQ
+        response = make_response(cmd=0xA0, size=2)
+        msg.decode_response(response)
+        assert msg.status == 0xD6
+        assert msg.processed_idx is None
+
+    def test_decode_response_with_processed_idx(self) -> None:
+        """decode_response extracts Processed_idx from the 3-word response."""
+        msg = self._make_uninitialized_msg(0x91)  # WRITE_SEC_FUSE_REQ
+        processed_idx = 7
+        payload = pack(LITTLE_ENDIAN + UINT16 + UINT16, processed_idx, 0)
+        response = make_response(cmd=0x91, size=3, payload=payload)
+        msg.decode_response(response)
+        assert msg.status == 0xD6
+        assert msg.processed_idx == processed_idx
+
+    def test_decode_response_rejects_invalid_size(self) -> None:
+        """decode_response rejects response sizes other than 2 or 3 words."""
+        msg = self._make_uninitialized_msg(0x91)
+        response = make_response(cmd=0x91, size=4)
+        with pytest.raises(SPSDKParsingError, match="Message SIZE"):
+            msg.decode_response(response)
+
+    def test_decode_response_rejects_short_response(self) -> None:
+        """decode_response rejects a response shorter than its declared size."""
+        msg = self._make_uninitialized_msg(0x91)
+        response = make_response(cmd=0x91, size=3)[:10]
+        with pytest.raises(SPSDKParsingError, match="too short"):
+            msg.decode_response(response)
 
 
 # EleMessageReadShadowFuse

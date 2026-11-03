@@ -389,7 +389,7 @@ class TestFileWriting:
         """JSON file is written with expected structure (utility function)."""
         path = write_completion_json("root", _root_cmd, tmp_path)
         assert path.exists()
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
         assert data["name"] == "root"
         assert "commands" in data
 
@@ -398,14 +398,14 @@ class TestFileWriting:
         tree = walk_command_tree(_root_cmd, "root")
         path = write_shell_data("root", tree, tmp_path)
         assert path.name == "root.sh"
-        assert path.read_text().startswith("# SPSDK")
+        assert path.read_text(encoding="utf-8").startswith("# SPSDK")
 
     def test_write_zsh(self, tmp_path: Path) -> None:
         """Zsh file is named _<tool> and starts with #compdef."""
         tree = walk_command_tree(_root_cmd, "root")
         data_path, zsh_path = write_zsh_completion("root", tree, tmp_path)
         assert zsh_path.name == "_root"
-        assert zsh_path.read_text().startswith("#compdef root")
+        assert zsh_path.read_text(encoding="utf-8").startswith("#compdef root")
         assert data_path.name == "root.sh"
         assert data_path.exists()
 
@@ -493,13 +493,13 @@ class TestSetupZshProfile:
     def test_writes_block(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Block is written to ~.zshrc (mocked)."""
         zshrc = tmp_path / ".zshrc"
-        zshrc.write_text("# existing content\n")
+        zshrc.write_text("# existing content\n", encoding="utf-8")
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         completions_dir = tmp_path / "completions"
         setup_zsh_profile(completions_dir, dry_run=False)
 
-        content = zshrc.read_text()
+        content = zshrc.read_text(encoding="utf-8")
         assert "SPSDK completions begin" in content
         assert "fpath" in content
         assert "autoload -Uz compinit" in content
@@ -507,14 +507,14 @@ class TestSetupZshProfile:
     def test_idempotent(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Running twice results in exactly one block."""
         zshrc = tmp_path / ".zshrc"
-        zshrc.write_text("")
+        zshrc.write_text("", encoding="utf-8")
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         completions_dir = tmp_path / "completions"
         setup_zsh_profile(completions_dir, dry_run=False)
         setup_zsh_profile(completions_dir, dry_run=False)
 
-        content = zshrc.read_text()
+        content = zshrc.read_text(encoding="utf-8")
         assert content.count("SPSDK completions begin") == 1
 
 
@@ -596,7 +596,7 @@ class TestGeneratePowerShellScript:
         """write_powershell_completion creates a .ps1 file."""
         path = write_powershell_completion("root", tree, tmp_path)
         assert path.suffix == ".ps1"
-        assert path.read_text().startswith("# SPSDK")
+        assert path.read_text(encoding="utf-8").startswith("# SPSDK")
 
     def test_tokens_array_unwrap_safe(self, tree: dict) -> None:
         """Token removal uses @(if...) to prevent PowerShell from unwrapping a
@@ -669,22 +669,22 @@ class TestSetupBashProfile:
     def test_writes_block(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Block is written to ~/.bashrc."""
         bashrc = tmp_path / ".bashrc"
-        bashrc.write_text("")
+        bashrc.write_text("", encoding="utf-8")
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         setup_bash_profile(tmp_path / "completions", dry_run=False)
-        content = bashrc.read_text()
+        content = bashrc.read_text(encoding="utf-8")
         assert "SPSDK completions begin" in content
         assert "*.bash" in content
 
     def test_idempotent(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Running twice keeps exactly one block."""
         bashrc = tmp_path / ".bashrc"
-        bashrc.write_text("")
+        bashrc.write_text("", encoding="utf-8")
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         d = tmp_path / "completions"
         setup_bash_profile(d, dry_run=False)
         setup_bash_profile(d, dry_run=False)
-        assert bashrc.read_text().count("SPSDK completions begin") == 1
+        assert bashrc.read_text(encoding="utf-8").count("SPSDK completions begin") == 1
 
 
 class TestGetPowerShellProfile:
@@ -739,7 +739,7 @@ class TestSetupPowerShellProfile:
 
         monkeypatch.setattr(ac, "_get_powershell_profile", lambda: tmp_path / "profile.ps1")
         setup_powershell_profile(tmp_path / "completions", dry_run=False)
-        content = (tmp_path / "profile.ps1").read_text()
+        content = (tmp_path / "profile.ps1").read_text(encoding="utf-8")
         assert "SPSDK completions begin" in content
         assert "*.ps1" in content
 
@@ -748,11 +748,13 @@ class TestSetupPowerShellProfile:
         import spsdk.utils.autocomplete as ac
 
         monkeypatch.setattr(ac, "_get_powershell_profile", lambda: tmp_path / "profile.ps1")
-        (tmp_path / "profile.ps1").write_text("")
+        (tmp_path / "profile.ps1").write_text("", encoding="utf-8")
         d = tmp_path / "completions"
         setup_powershell_profile(d, dry_run=False)
         setup_powershell_profile(d, dry_run=False)
-        assert (tmp_path / "profile.ps1").read_text().count("SPSDK completions begin") == 1
+        assert (tmp_path / "profile.ps1").read_text(encoding="utf-8").count(
+            "SPSDK completions begin"
+        ) == 1
 
 
 # ---------------------------------------------------------------------------

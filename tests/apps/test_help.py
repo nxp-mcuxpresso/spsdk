@@ -142,7 +142,7 @@ def test_apps_spec() -> None:
     root_path = os.path.join(SPSDK_DATA_FOLDER, "..", "..")
     apps_spec_path = os.path.join(root_path, "apps.spec")
 
-    with open(apps_spec_path) as spec_file:
+    with open(apps_spec_path, encoding="utf-8") as spec_file:
         apps_spec_content = spec_file.read()
 
     for app_name in spsdk_apps_list:

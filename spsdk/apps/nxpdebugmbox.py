@@ -69,13 +69,20 @@ from spsdk.debuggers.utils import (
     get_connected_probes,
     get_test_address,
     open_debug_probe,
+    render_debug_access_status_table,
     test_ahb_access,
 )
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
 from spsdk.utils.family import FamilyRevision, get_db, get_families
-from spsdk.utils.misc import align_block, get_printable_path, load_binary, write_file
+from spsdk.utils.misc import (
+    align_block,
+    get_printable_path,
+    load_binary,
+    load_hex_string,
+    write_file,
+)
 from spsdk.utils.verifier import VerifierResult
 
 logger = logging.getLogger(__name__)
@@ -140,7 +147,7 @@ class DebugMailboxParams:
     """
 
     reset: bool
-    more_delay: float
+    more_delay: float | None
     operation_timeout: int
 
 
@@ -205,8 +212,11 @@ def _open_debugmbox(
     "-t",
     "--timing",
     type=float,
-    default=0.0,
-    help="Duration of additional delay after reset sequence, defaults to 0 seconds",
+    default=None,
+    help=(
+        "Duration of additional delay in seconds after reset sequence,"
+        " defaults to the family specific value from the database (typically 0 seconds)"
+    ),
 )
 @click.option(
     "-n",
@@ -239,7 +249,7 @@ def main(
     ctx: click.Context,
     interface: str,
     log_level: int,
-    timing: float,
+    timing: float | None,
     serial_no: str,
     debug_probe_option: list[str],
     debug_probe_protocol: str | None,
@@ -345,10 +355,29 @@ def exit_debug_mbox(
 
 
 @cmd_group.command(name="erase", no_args_is_help=False)
+@click.option(
+    "-p",
+    "--password",
+    type=str,
+    required=False,
+    help=(
+        "Optional 128-bit password used to authenticate the erase command. "
+        "Provide the whole password as a single hex string (e.g. "
+        "0x000102030405060708090A0B0C0D0E0F) or as a path to a file containing "
+        "the hex/binary value. The password is split into four 32-bit words "
+        "in big-endian order (the first 4 hex bytes become the first word) "
+        "and sent to the device sequentially."
+    ),
+)
 @click.pass_obj
-def erase_command(pass_obj: dict) -> None:
+def erase_command(pass_obj: dict, password: str | None) -> None:
     """Erase Flash."""
-    erase(pass_obj["family"], pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"])
+    erase(
+        pass_obj["family"],
+        pass_obj["debug_probe_params"],
+        pass_obj["debug_mailbox_params"],
+        password,
+    )
     click.echo("Mass flash erase succeeded")
 
 
@@ -356,17 +385,25 @@ def erase(
     family: FamilyRevision,
     debug_probe_params: DebugProbeParams,
     debug_mailbox_params: DebugMailboxParams,
+    password: str | None = None,
 ) -> None:
     """Erase Flash.
 
     :param family: Device family
     :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
     :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
+    :param password: Optional 128-bit password as a hex string or path to a file with the password.
+        When provided, the erase command is sent with four 32-bit password words.
     :raises SPSDKAppError: Raised if any error occurred.
     """
     try:
         with _open_debugmbox(family, debug_probe_params, debug_mailbox_params) as mail_box:
-            dm_commands.EraseFlash(dm=mail_box).run()
+            if password:
+                password_bytes = load_hex_string(password, expected_size=16, name="erase password")
+                password_words = list(struct.unpack(">4I", password_bytes))
+                dm_commands.EraseFlash(dm=mail_box, paramlen=4).run(password_words)
+            else:
+                dm_commands.EraseFlash(dm=mail_box).run()
     except Exception as e:
         raise SPSDKAppError(f"Mass flash erase failed: {e}") from e
 
@@ -958,8 +995,19 @@ def set_bricked_mode(
         "(e.g. 0x96368BC7)."
     ),
 )
+@click.option(
+    "-y",
+    "--yes",
+    is_flag=True,
+    help="Skip the interactive confirmation prompt.",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Allow a dangerous or device-specific raw lifecycle value.",
+)
 @click.pass_obj
-def program_lifecycle_command(pass_obj: dict, lifecycle: str) -> None:
+def program_lifecycle_command(pass_obj: dict, lifecycle: str, yes: bool, force: bool) -> None:
     """Program the CMPA lifecycle (LC + LC_DP) and reset the device.
 
     Sends the PROGRAM_LIFECYCLE (0x17) debug-mailbox command. Only honored
@@ -975,6 +1023,36 @@ def program_lifecycle_command(pass_obj: dict, lifecycle: str) -> None:
         raise SPSDKAppError(f"Program lifecycle is not supported for device {family.name}")
 
     lifecycle_value, pretty = resolve_lifecycle(family, lifecycle)
+    if not 0 <= lifecycle_value <= 0xFFFF_FFFF:
+        raise SPSDKAppError(f"Lifecycle value {lifecycle!r} is out of 32-bit range.")
+
+    lifecycle_cfg = db.get_dict(DatabaseManager.DAT, "program_lifecycle", {})
+    allowed_states = lifecycle_cfg.get("allowed_states", [])
+    dangerous_states = lifecycle_cfg.get("dangerous_states", [])
+    forbidden_states = lifecycle_cfg.get("forbidden_states", [])
+    allowed_values = {resolve_lifecycle(family, state)[0]: state for state in allowed_states}
+    dangerous_values = {resolve_lifecycle(family, state)[0]: state for state in dangerous_states}
+    forbidden_values = {resolve_lifecycle(family, state)[0]: state for state in forbidden_states}
+    configured_values = allowed_values | dangerous_values
+    if lifecycle_value in forbidden_values:
+        raise SPSDKAppError(
+            f"Lifecycle {forbidden_values[lifecycle_value]} is not a programmable customer target."
+        )
+    if lifecycle_value in dangerous_values and not force:
+        raise SPSDKAppError(
+            f"Lifecycle {dangerous_values[lifecycle_value]} is destructive and requires --force."
+        )
+    if configured_values and lifecycle_value not in configured_values and not force:
+        raise SPSDKAppError(
+            f"Lifecycle {lifecycle!r} is not an allowed target for device {family.name}. "
+            f"Allowed states: {', '.join(allowed_states)}. Use --force for a raw device-specific value."
+        )
+    if configured_values and not yes:
+        click.confirm(
+            f"This will permanently program the {family.name} lifecycle to {pretty}. Continue?",
+            abort=True,
+        )
+
     program_lifecycle(
         family,
         pass_obj["debug_probe_params"],
@@ -1097,7 +1175,8 @@ def dat_group() -> None:
 @dat_group.command(name="auth", no_args_is_help=True)
 @spsdk_config_option(
     klass=DebugAuthenticateResponse,
-    help="Path to Debug Authentication configuration file.",
+    help="Path to Debug Authentication configuration file. Generate a template with: "
+    "'nxpdebugmbox dat get-template -f <family> -o dat_config.yaml'.",
 )
 @click.option(
     "-n",
@@ -1174,6 +1253,11 @@ def auth(
             logger.info(f"DAR:\n{dar!s}")
             dar_data = align_block(dar.export(), alignment=4)
             if debug_artifacts:
+                dac_bin_path = os.path.join(debug_artifacts, "dac.bin")
+                write_file(dac_data_bytes, dac_bin_path, mode="wb")
+                logger.info(
+                    f"The DAC binary has been stored to: {get_printable_path(dac_bin_path)}"
+                )
                 dar_bin_path = os.path.join(debug_artifacts, "dar.bin")
                 write_file(dar_data, dar_bin_path, mode="wb")
                 logger.info(
@@ -1257,6 +1341,49 @@ def auth(
         raise SPSDKAppError(
             f"{colorama.Fore.RED}Debug Mailbox authentication failed:{colorama.Fore.RESET}\n{e}"
         ) from e
+
+
+@dat_group.command(name="export-dar", no_args_is_help=True)
+@spsdk_config_option(
+    klass=DebugAuthenticateResponse,
+    help="Path to Debug Authentication configuration file. Generate a template with: "
+    "'nxpdebugmbox dat get-template -f <family> -o dat_config.yaml'.",
+)
+@click.option(
+    "-d",
+    "--dac",
+    type=click.Path(resolve_path=True, exists=True, dir_okay=False),
+    required=True,
+    help="Path to Debug Authentication Challenge binary file.",
+)
+@spsdk_output_option(required=True)
+def export_dar_command(config: Config, dac: str, output: str) -> None:
+    """Export Debug Authentication Response binary from a Debug Credential and DAC."""
+    export_dar(config=config, dac_path=dac, output=output)
+
+
+def export_dar(config: Config, dac_path: str, output: str) -> None:
+    """Export Debug Authentication Response binary from a Debug Credential and DAC.
+
+    :param config: Configuration of DAT.
+    :param dac_path: Path to Debug Authentication Challenge binary file.
+    :param output: Path to the generated Debug Authentication Response binary file.
+    :raises SPSDKAppError: Raised if DAR creation or verification fails.
+    """
+    try:
+        family = FamilyRevision.load_from_config(config)
+        dac = DebugAuthenticationChallenge.parse(load_binary(dac_path), family=family)
+        dar_class = DebugAuthenticateResponse._get_class(family, dac.version)
+        dar = dar_class.load_from_config(config=config, dac=dac)
+        verifier = dar.verify()
+        if verifier.has_errors:
+            raise SPSDKAppError(f"DAR verify failed:\n {verifier.draw()}")
+
+        dar_data = align_block(dar.export(), alignment=4)
+        write_file(dar_data, output, mode="wb")
+        click.echo(f"The DAR binary has been stored to: {get_printable_path(output)}")
+    except SPSDKError as exc:
+        raise SPSDKAppError(f"DAR export failed: {exc!s}") from exc
 
 
 @cmd_group.command(name="nxp-ssf-insert-duk", no_args_is_help=True)
@@ -1514,6 +1641,14 @@ def password_auth_command(
     if len(data) != 16:
         raise SPSDKAppError(f"Password must be exactly 16 bytes, got {len(data)} bytes")
 
+    # The device rejects an all-zeros or all-ones debug authentication
+    # password, so fail early with a clear message instead of a silent no-op.
+    if data == b"\x00" * 16 or data == b"\xff" * 16:
+        raise SPSDKAppError(
+            "Debug authentication password must not be all-zeros or all-ones "
+            "(such values are rejected by the device ROM)"
+        )
+
     password_auth(
         pass_obj["family"],
         pass_obj["debug_probe_params"],
@@ -1542,6 +1677,21 @@ def password_auth(
     """
     try:
         with _open_debugmbox(family, debug_probe_params, debug_mailbox_params) as mail_box:
+            # Password debug authentication is only accepted by the ROM in the
+            # IN_FIELD1 (ROP1) lifecycle. Read the CRP/lifecycle level first and
+            # warn (best-effort) if the device is in a different state.
+            try:
+                crp_level = dm_commands.GetCRPLevel(dm=mail_box).run()[0]
+                statuses = mail_box.non_standard_statuses.get(dm_commands.GetCRPLevel.CMD.tag, {})
+                level_name = statuses.get(crp_level)
+                if level_name is not None and level_name != "IN_FIELD1":
+                    logger.warning(
+                        f"Device lifecycle is '{level_name}'. Password debug authentication "
+                        "is only supported in the IN_FIELD1 (ROP1) lifecycle and may be "
+                        "rejected by the device."
+                    )
+            except SPSDKError as e:
+                logger.debug(f"Could not read CRP level before password authentication: {e}")
             mail_box.write_debug_password(password)
     except SPSDKError as e:
         raise SPSDKAppError(f"Password authentication failed: {e!s}") from e
@@ -1570,7 +1720,11 @@ def dc_group() -> None:
 
 
 @dc_group.command(name="export", no_args_is_help=True)
-@spsdk_config_option(klass=DebugCredentialCertificate)
+@spsdk_config_option(
+    klass=DebugCredentialCertificate,
+    help="Path to Debug Credentials configuration file. Generate a template with: "
+    "'nxpdebugmbox dat dc get-template -f <family> -o dc_config.yaml'.",
+)
 @click.option(
     "-e",
     "--rot-config",
@@ -1864,7 +2018,9 @@ def write_memory(
 def test_connection_command(pass_obj: dict, family: FamilyRevision, destination: str) -> None:
     """Method just try if the device debug port is opened or not."""
     ahb_access_granted = test_connection(
-        family, pass_obj["debug_probe_params"], destination=destination
+        family,
+        pass_obj["debug_probe_params"],
+        destination=destination,
     )
     access_str = colorama.Fore.GREEN if ahb_access_granted else colorama.Fore.RED + "NOT "
     click.echo(f"The test connection ends {access_str}successfully.{colorama.Fore.RESET}")
@@ -1873,9 +2029,17 @@ def test_connection_command(pass_obj: dict, family: FamilyRevision, destination:
 
 
 def test_connection(
-    family: FamilyRevision, debug_probe_params: DebugProbeParams, destination: str
+    family: FamilyRevision,
+    debug_probe_params: DebugProbeParams,
+    destination: str,
 ) -> bool:
     """Method just try if the device debug port is opened or not.
+
+    Always records and reports the debug-access gating status (probe connection,
+    Debug Port readability, and — for the ``cpu_mem`` destination — the full ARM
+    CoreSight gating chain). On success the table is logged at INFO level; on
+    failure it is always printed to help diagnose which gate rejected the
+    connection.
 
     :param family: Device family
     :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
@@ -1883,6 +2047,12 @@ def test_connection(
     :return: True when requested connectivity check passed, False otherwise.
     """
     debug_probe_params.set_family(family)
+    # The debug_port destination only exercises the first three base gates (probe
+    # opened over USB, probe attached to target via SWD/JTAG, Debug Port IDR
+    # readable); limit the table accordingly so it doesn't show unrelated,
+    # never-exercised architecture-specific gates.
+    depth = 3 if destination == "debug_port" else None
+    result = False
     try:
         with open_debug_probe(
             interface=debug_probe_params.interface,
@@ -1890,20 +2060,33 @@ def test_connection(
             debug_probe_params=debug_probe_params.debug_probe_user_params,
             print_func=click.echo,
         ) as debug_probe:
-            debug_probe.connect_safe()
-            if destination == "cpu_mem":
-                return test_ahb_access(debug_probe)
-            if destination == "debug_port":
-                try:
-                    dp_idr = debug_probe.read_dp_idr()
-                    logger.info(f"The debug port IDR: 0x{dp_idr:08X}")
-                    return True
-                except SPSDKError:
-                    return False
-            raise SPSDKAppError(f"Unsupported test connection destination: {destination}")
+            try:
+                # connect_safe() must be inside this try/finally as well: if it
+                # raises (e.g. SWD/JTAG connector unplugged), debug_access_status
+                # still records the probe_connected=False gate and the table must
+                # still be rendered to show *where* the connection failed.
+                debug_probe.connect_safe()
+                if destination == "cpu_mem":
+                    result = test_ahb_access(debug_probe)
+                elif destination == "debug_port":
+                    try:
+                        dp_idr = debug_probe.read_dp_idr()
+                        logger.info(f"The debug port IDR: 0x{dp_idr:08X}")
+                        result = True
+                    except SPSDKError:
+                        result = False
+                else:
+                    raise SPSDKAppError(f"Unsupported test connection destination: {destination}")
+            finally:
+                table = render_debug_access_status_table(debug_probe, depth=depth)
+                if result:
+                    logger.info(f"Debug-access gating status:\n{table}")
+                else:
+                    click.echo(table)
     except Exception as exc:  # noqa: BLE001
         logger.debug(f"Testing AHB access failed: {exc}")
-        return False
+        result = False
+    return result
 
 
 @main.group("tool", cls=CommandsTreeGroup)
@@ -2212,6 +2395,173 @@ def debug_resume(family: FamilyRevision, debug_probe_params: DebugProbeParams) -
         debug_probe.debug_resume()
 
 
+@tool_group.command(name="execute", no_args_is_help=True)
+@spsdk_family_option(get_families(DatabaseManager.DEBUG_PROBE))
+@click.option(
+    "-a",
+    "--address",
+    type=INT(),
+    required=True,
+    help=(
+        "Address of the vector table to start execution from. If --file/--hex-string is "
+        "given, the binary is written here first. Otherwise this is expected to already "
+        "contain a valid vector table (e.g. an existing bootable image already "
+        "programmed on the device, such as the boot address 0x0 on LPC devices)."
+    ),
+)
+@optgroup("Data Source", cls=MutuallyExclusiveOptionGroup)
+@optgroup.option(
+    "--file", type=click.Path(exists=True, dir_okay=False), help="Path to the binary to execute."
+)
+@optgroup.option("-h", "--hex-string", type=str, help="String of hex values. e.g. '1234', '12 34'")
+@click.option(
+    "--pc",
+    type=INT(),
+    required=False,
+    help=(
+        "Program Counter (entry point) to start execution from. Defaults to the value "
+        "found at offset 0x4 of the vector table (the Reset_Handler entry in a standard "
+        "Cortex-M vector table), read from the binary if given, otherwise read directly "
+        "from ADDRESS on the target. If both sources provide a value and they differ, a "
+        "warning is printed and this explicit value takes precedence."
+    ),
+)
+@click.option(
+    "--sp",
+    type=INT(),
+    required=False,
+    help=(
+        "Initial Stack Pointer value. Defaults to the value found at offset 0x0 of the "
+        "vector table (the initial SP entry in a standard Cortex-M vector table), read "
+        "from the binary if given, otherwise read directly from ADDRESS on the target. If "
+        "both sources provide a value and they differ, a warning is printed and this "
+        "explicit value takes precedence."
+    ),
+)
+@click.pass_obj
+def execute_command(
+    pass_obj: dict,
+    family: FamilyRevision,
+    address: int,
+    file: str,
+    hex_string: str,
+    pc: int | None,
+    sp: int | None,
+) -> None:
+    """Start (or restart) execution from an existing or freshly loaded vector table.
+
+    If --file/--hex-string is given, the binary is first written into target memory at
+    ADDRESS. Otherwise ADDRESS is assumed to already contain a bootable image (e.g. a
+    binary already flashed/programmed on the device). Either way, the Program Counter
+    (PC) and Stack Pointer (SP) are then set and core execution is resumed from there.
+    This works on any Cortex-M based ARM device connected over a CoreSight debug probe,
+    since the underlying DHCSR/DCRSR/DCRDR register mechanism is fixed by the ARM debug
+    architecture.
+
+    PC/SP default to the values found in the first two 32-bit words of the vector table
+    (offset 0x0 = initial SP, offset 0x4 = Reset_Handler/entry point). Use --pc/--sp to
+    override them explicitly, e.g. when the vector table doesn't start right at ADDRESS.
+    """
+    data = None
+    if file:
+        with open(file, "rb") as f:
+            data = f.read()
+    elif hex_string:
+        data = bytes.fromhex(hex_string)
+    try:
+        execute(family, pass_obj["debug_probe_params"], address, data, pc, sp)
+        click.echo("Execution has been (re)started from the vector table.")
+    except SPSDKError as exc:
+        raise SPSDKAppError(f"Failed to start execution: {exc!s}") from exc
+
+
+def _resolve_vector_table_value(
+    explicit_value: int | None,
+    vector_table_value: int | None,
+    reg_name: str,
+    offset: str,
+) -> int:
+    """Resolve a PC/SP value from an explicit override and/or a vector table value.
+
+    :param explicit_value: Value explicitly requested by the caller (e.g. --pc/--sp), or None.
+    :param vector_table_value: Value found in the vector table, or None if unavailable.
+    :param reg_name: Human-readable register name for error/warning messages.
+    :param offset: Vector table offset for error/warning messages (e.g. "0x0").
+    :return: The resolved value to use.
+    :raises SPSDKAppError: If neither an explicit value nor a vector table value is available.
+    """
+    if explicit_value is None:
+        if vector_table_value is None:
+            raise SPSDKAppError(
+                f"{reg_name} was not provided explicitly and could not be read from the "
+                "vector table (fewer than 8 bytes available)."
+            )
+        return vector_table_value
+    if vector_table_value is not None and explicit_value != vector_table_value:
+        logger.warning(
+            f"{reg_name} mismatch: explicit value 0x{explicit_value:08X} differs from the "
+            f"value 0x{vector_table_value:08X} found at offset {offset} of the vector "
+            f"table. Using the explicit value."
+        )
+    return explicit_value
+
+
+def execute(
+    family: FamilyRevision,
+    debug_probe_params: DebugProbeParams,
+    address: int,
+    data: bytes | None = None,
+    pc: int | None = None,
+    sp: int | None = None,
+) -> None:
+    """Start (or restart) execution from an existing or freshly loaded vector table.
+
+    :param family: Device family.
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param address: Address of the vector table to start execution from.
+    :param data: Binary content to write to ADDRESS before starting execution. If None,
+        ADDRESS is assumed to already contain a valid vector table (e.g. an existing
+        bootable image already programmed on the device) and nothing is written.
+    :param pc: Explicit Program Counter (entry point) override. If None, taken from the
+        vector table (offset 0x4).
+    :param sp: Explicit Stack Pointer override. If None, taken from the vector table
+        (offset 0x0).
+    :raises SPSDKAppError: Raised if the vector table is too small/unavailable and PC/SP
+        were not both provided explicitly, or if the debug probe used doesn't support the
+        required core-register access (CoreSight only).
+    """
+    debug_probe_params.set_family(family)
+    with open_debug_probe(
+        interface=debug_probe_params.interface,
+        serial_no=debug_probe_params.serial_no,
+        debug_probe_params=debug_probe_params.debug_probe_user_params,
+        print_func=click.echo,
+    ) as debug_probe:
+        if not isinstance(debug_probe, DebugProbeCoreSightOnly):
+            raise SPSDKAppError(
+                "Selected debug probe doesn't support CoreSight core-register access "
+                "required by the execute command."
+            )
+        debug_probe.connect_safe()
+
+        if data is not None:
+            vector_table = data if len(data) >= 8 else None
+        else:
+            vector_table = debug_probe.mem_block_read(addr=address, size=8)
+
+        vector_table_sp, vector_table_pc = None, None
+        if vector_table is not None:
+            vector_table_sp, vector_table_pc = struct.unpack_from("<II", vector_table, 0)
+
+        sp = _resolve_vector_table_value(sp, vector_table_sp, "Stack Pointer (--sp)", "0x0")
+        pc = _resolve_vector_table_value(pc, vector_table_pc, "Program Counter (--pc)", "0x4")
+
+        if data is not None:
+            debug_probe.mem_block_write(addr=address, data=data)
+        logger.info(f"Starting execution: PC=0x{pc:08X}, SP=0x{sp:08X}")
+        cast(DebugProbeCoreSightOnly, debug_probe).set_registers_and_resume(pc=pc, sp=sp)
+
+
 @main.group("sda", cls=CommandsTreeGroup)
 def sda_group() -> None:
     """Group of commands for SDA (Secure Debug Access) authentication."""
@@ -2285,29 +2635,38 @@ def sda_auth(
 
 
 @tool_group.command(name="list-probes", no_args_is_help=False)
-@spsdk_family_option(get_families(DatabaseManager.DEBUG_PROBE))
+@spsdk_family_option(
+    get_families(DatabaseManager.DEBUG_PROBE),
+    required=False,
+    help="Select the chip family to filter probes by supported architecture. "
+    "If not specified, probes for all architectures are listed.",
+)
 @click.pass_obj
-def list_probes_command(pass_obj: dict, family: FamilyRevision) -> None:
+def list_probes_command(pass_obj: dict, family: FamilyRevision | None) -> None:
     """List all connected debug probes in the system."""
     list_probes(family, pass_obj["debug_probe_params"])
 
 
-def list_probes(family: FamilyRevision, debug_probe_params: DebugProbeParams) -> None:
+def list_probes(family: FamilyRevision | None, debug_probe_params: DebugProbeParams) -> None:
     """List all connected debug probes in the system.
 
     This function scans all available debug probe interfaces and displays
     information about all connected probes including interface type, hardware ID,
     description, and supported architecture.
 
-    :param family: Device family used to filter probe architecture.
+    :param family: Device family used to filter probe architecture. If None, probes
+        for all architectures are listed and no family-specific probe params are set.
     :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
     """
-    debug_probe_params.set_family(family)
+    architecture = None
+    if family is not None:
+        debug_probe_params.set_family(family)
+        architecture = get_db(family).device.info.architecture
     debug_probes = get_connected_probes(
         interface=debug_probe_params.interface,
         hardware_id=debug_probe_params.serial_no,
         options=debug_probe_params.debug_probe_user_params,
-        architecture=get_db(family).device.info.architecture,
+        architecture=architecture,
     )
 
     if len(debug_probes) == 0:

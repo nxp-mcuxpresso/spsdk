@@ -126,6 +126,26 @@ def test_cr_entry_get_template(cli_runner: CliRunner, tmp_path: Path) -> None:
     assert os.path.isfile(outfile)
 
 
+@pytest.mark.parametrize(
+    "family", ["mcxe315", "mcxe316", "mcxe317", "mcxe31b", "mcxe32b", "mcxe327"]
+)
+def test_cr_entry_get_template_families(cli_runner: CliRunner, tmp_path: Path, family: str) -> None:
+    """Test cr-entry get-template for all MCX E31/E32 families (single- and dual-core).
+
+    SPSDK-7117: the original test above only exercised a single arbitrary family.
+    This extends coverage of `cr-entry get-template` to every MCX E31/E32 device,
+    including the dual-core MCXE327/MCXE32B (which additionally support the M7_1
+    core), ensuring the CLI command succeeds and produces a template file for all
+    of them.
+    """
+    import os
+
+    outfile = str(tmp_path / f"cr_entry_{family}.yaml")
+    result = cli_runner.invoke(hse_group, ["cr-entry", "get-template", "-f", family, "-o", outfile])
+    assert result.exit_code == 0
+    assert os.path.isfile(outfile)
+
+
 def _get_option_choices(option_name: str) -> list[str]:
     """Get the choices of an option of the create-auth-tag command."""
     import click

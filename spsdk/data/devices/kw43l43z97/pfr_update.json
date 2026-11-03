@@ -12,7 +12,7 @@
                     "name": "UPD_TYPE",
                     "description": "Device configuration update request type",
                     "offset_int": "0",
-                    "default_value_int": "0x4E465041",
+                    "default_value_int": "0x494D4730",
                     "bitfields": [
                         {
                             "width": 32,
@@ -20,6 +20,16 @@
                             "name": "DEVCFG_UPD_TYPE",
                             "description": "Device configuration update request type",
                             "values": [
+                                {
+                                    "name": "IMAGE_0_UPDATED",
+                                    "value": 1229801264,
+                                    "description": "Image 0 updated"
+                                },
+                                {
+                                    "name": "IMAGE_1_UPDATED",
+                                    "value": 1229801265,
+                                    "description": "Image 1 updated"
+                                },
                                 {
                                     "name": "NFPA_UPDATED",
                                     "value": 1313230913,
@@ -33,7 +43,7 @@
                                 {
                                     "name": "CMPA_CFPA_UPDATED",
                                     "value": 1431323725,
-                                    "description": "CMPA_CFPA updated",
+                                    "description": "CMPA updated",
                                     "deprecated_names": [
                                         "CMPA_UPDATED"
                                     ]

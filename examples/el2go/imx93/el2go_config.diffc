@@ -2,7 +2,7 @@
 # the difference between the user configuration and the default configuration.
 template_yaml: config_template.yaml
 user_cfg: config_example.yaml
-custom_command: "%! el2go-host get-template -f mimx9352 -o config_template.yaml --force"
+custom_command: "%! el2go-host dev get-template -f mimx9352 -o config_template.yaml --force"
 
 comments:
   url: "URL to EdgeLock 2GO backend API, typically https://api.edgelock2go.com"

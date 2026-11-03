@@ -81,7 +81,7 @@ def generate_qi_id(
         extensions=generate_extensions({"WPC_QIAUTH_POLICY": {"value": policy}}),
     )
     crt.save(os.path.join(model_path, "manufacturer.crt"), SPSDKEncoding.DER)
-    with open(os.path.join(model_path, "config.yaml"), "w") as f:
+    with open(os.path.join(model_path, "config.yaml"), "w", encoding="utf-8") as f:
         YAML().dump(
             {
                 "tokens": [secrets.token_hex(6), secrets.token_hex(6)],

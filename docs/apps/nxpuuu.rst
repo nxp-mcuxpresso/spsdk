@@ -129,6 +129,16 @@ Built-in Scripts:
 - `spi_nand`: Burn boot loader to SPI NAND flash.
 - `spl`: Boot SPL and U-Boot.
 
+To load both SPL and U-Boot from a combined bootloader image, select `-b spl`:
+
+.. code-block:: bash
+
+    nxpuuu -T 30 write -b spl -f mimx943 imx-boot.bin
+
+Without `-b`, a binary download can finish after the ROM stage without loading
+the remaining U-Boot image through SPL. The `-T` option allows extra time for
+the next USB device to appear, for example after DDR training.
+
 List Devices Command
 --------------------
 The `list_devices` command lists all connected USB devices.

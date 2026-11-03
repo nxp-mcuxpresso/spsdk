@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2019-2025 NXP
+# Copyright 2019-2026 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -127,6 +127,10 @@ html_static_path = ["_static"]
 # or fully qualified paths (eg. https://...)
 html_css_files = [
     "custom.css",
+]
+
+html_js_files = [
+    "sticky-table-header.js",
 ]
 
 html_extra_path = ["html_schemas"]

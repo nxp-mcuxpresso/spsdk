@@ -11,10 +11,12 @@ defining the fundamental interface and common functionality for MBoot
 protocol implementations across different transport layers.
 """
 
+from abc import ABC
+
 from spsdk.utils.interfaces.protocol.protocol_base import ProtocolBase
 
 
-class MbootProtocolBase(ProtocolBase):
+class MbootProtocolBase(ProtocolBase, ABC):
     """MBoot protocol base class for secure provisioning operations.
 
     This class serves as the foundation for MBoot protocol implementations,

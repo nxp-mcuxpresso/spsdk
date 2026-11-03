@@ -6,3 +6,39 @@
 body {
     font-family: 'Poppins', sans-serif;
 }
+
+.bd-article table thead {
+    position: sticky;
+    top: 3rem;
+    z-index: 1;
+    background-color: var(--pst-color-table-heading-bg);
+}
+
+.spsdk-floating-table-header {
+    position: fixed;
+    overflow: hidden;
+    z-index: 1010;
+    background-color: var(--pst-color-table-heading-bg);
+    box-shadow: 0 2px 4px var(--pst-color-shadow);
+    pointer-events: none;
+}
+
+.spsdk-floating-table-header table {
+    margin: 0;
+    table-layout: fixed;
+}
+
+.spsdk-floating-table-header thead {
+    position: static;
+}
+
+.spsdk-floating-table-header th,
+.spsdk-floating-table-header td {
+    box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .bd-article table thead {
+        top: 3.5rem;
+    }
+}

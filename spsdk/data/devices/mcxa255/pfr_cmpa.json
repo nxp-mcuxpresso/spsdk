@@ -7790,21 +7790,33 @@
                     "name": "ROP_STATE_DP",
                     "description": "Read Out Protection (ROP) State duplicate value. ROM reads ROP_STATE from ROP_STATE and ROP_STATE_DP on IFR0, does the compare, and if it does not match, resets the device; if match then programs it to SYSCON->ROP_STATE. Any other value then four listed means ROP3-like behavior (debug disabled/locked, ISP disabled)",
                     "offset_int": "0x00C0",
-                    "default_value_int": "0xFFFFFFFF"
+                    "default_value_int": "0xFFFFFFFF",
+                    "calculated": {
+                        "method": "duplicate",
+                        "src_register_id": "field0B0"
+                    }
                 },
                 {
                     "id": "field0C4",
                     "name": "SBL_PROT_DP",
                     "description": "Secondary Boot Loader Protection (Duplicate)",
                     "offset_int": "0x00C4",
-                    "default_value_int": "0"
+                    "default_value_int": "0",
+                    "calculated": {
+                        "method": "duplicate",
+                        "src_register_id": "field0B4"
+                    }
                 },
                 {
                     "id": "field0C8",
                     "name": "SBL_START_ADDR_DP",
                     "description": "Secondary Boot Loader Start Address (Duplicate)",
                     "offset_int": "0x00C8",
-                    "default_value_int": "0"
+                    "default_value_int": "0",
+                    "calculated": {
+                        "method": "duplicate",
+                        "src_register_id": "field0B8"
+                    }
                 },
                 {
                     "id": "Reserved000CC",

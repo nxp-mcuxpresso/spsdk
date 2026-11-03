@@ -1,8 +1,8 @@
+# cert block naming
+# ipynb
 # JSON words list
 # RST Word List
 # SPSDK Words
-# cert block naming
-# ipynb
 # typo in CMPA data
 aaaau
 aaau
@@ -11,6 +11,7 @@ aabbccdd
 AABBCCDDEE
 aabbccddeeffaabbccddeeffaabbccdd
 AARCH
+AARCH64
 abcxyz
 ABIVERSION
 abstractmethods
@@ -25,6 +26,7 @@ addrs
 Adesto
 ADESTOOCTAL
 adipiscing
+ADIV
 adkp
 Adleman
 ADMA
@@ -34,6 +36,7 @@ AESGCM
 AESK
 aeskey
 AGDET
+ahabv
 AHBAP
 AHBCMDERR
 AHBERR
@@ -67,6 +70,7 @@ APBANKSEL
 apdu
 APDU's
 apdus
+APMOD
 appauthor
 appdata
 APPDBGEN
@@ -75,10 +79,11 @@ appname
 APSEL
 APSR
 AQIR
-AARCH64
+ARCHID
 argparse
 armgcc
 asctime
+ASIZE
 aspec
 aspecs
 ASRT
@@ -253,6 +258,7 @@ colour
 comalg
 COMMANDFAILURE
 COMMANDSET
+Commerical
 commentjson
 compadd
 compdef
@@ -261,6 +267,7 @@ compinit
 COMPREPLY
 condimentum
 configurememory
+connested
 consectetur
 CONTAINERENTRYINVALID
 CONTAINERENTRYNOTFOUND
@@ -276,6 +283,7 @@ coverity
 cpacr
 CPFA
 cpha
+CPHY
 cppwr
 CPUID
 cpus
@@ -322,6 +330,10 @@ DBGSWENABLE
 DCDC
 dcdfilepath
 dcdgen
+DCRDR
+dcrdr
+DCRSR
+dcrsr
 dcfg
 DEADBEEFDEADBEEFDEADBEEFDEADBEEF
 deasserting
@@ -345,6 +357,7 @@ derivator
 descr
 descri
 descript
+DEVARCH
 devattest
 devbuff
 DEVCFG
@@ -354,6 +367,7 @@ DEVICEEN
 devicegroup
 devs
 devscan
+DEVTYPE
 DFFF
 DFLAGS
 dflt
@@ -369,6 +383,7 @@ DISBL
 DISP
 divcore
 DLASH
+DLBDLY
 DLIM
 dlla
 dllb
@@ -389,8 +404,11 @@ docutils
 dolore
 DONT
 Downlo
+DPBANKSEL
+DPHY
 DPIDR
 DPROT
+DPVER
 DRBG
 DROM
 DSASS
@@ -421,6 +439,7 @@ Edgelock
 edgelockenclaveimport
 EDMA
 EEBA
+EELM
 eeprom
 efff
 EFLASH
@@ -469,6 +488,7 @@ excinfo
 executemany
 executescript
 extfile
+EXTVPASS
 EZHV
 FACMDEN
 FALLI
@@ -537,7 +557,9 @@ fstring
 FTCEE
 ftdi
 FTFA
+FULLCYCL
 Fusemap
+fuseword
 FUSEV
 FWID
 FWIDLIST
@@ -586,6 +608,7 @@ hashlocking
 hashtable
 HAWKV
 hdcp
+HDDVIAROM
 hexbin
 hexdata
 hexdump
@@ -620,6 +643,7 @@ Hxxx
 Hyperflash
 iadd
 ibkek
+ICCS
 icnp
 icns
 idau
@@ -648,6 +672,7 @@ incrementation
 INDIV
 initialises
 initialloadsize
+INITTECCEN
 inquirerpy
 intelhex
 interruptible
@@ -678,7 +703,6 @@ ipykernel
 ipynb
 ipython
 ipywidgets
-INITTECCEN
 isabstractmethod
 ISBC
 isfile
@@ -834,10 +858,13 @@ metavar
 MFLAG
 MFWENCK
 MFWISK
+mgreen
 MGTP
+MICADC
 Micali
 MICR
 microcontroller
+Multilink
 Microcontrollers
 MICRONOCTAL
 micropower
@@ -848,6 +875,8 @@ milli
 MILLIS
 mimx
 MIMXRT
+MIMXRTL
+MIPI
 MISR
 miyaguchi
 mkimage
@@ -861,6 +890,7 @@ mmccard
 mmcdev
 mmcpart
 mmcroot
+MNEG
 mnew
 modindex
 MONTDH
@@ -868,6 +898,8 @@ morbi
 moredelay
 moriginal
 MOSI
+MPOS
+mred
 MSEL
 msignature
 mspsdk
@@ -881,11 +913,13 @@ multilined
 multiplanes
 multiplicated
 muxed
+mverification
 mwct
 MXIC
 MXICOCTAL
 MXICOPI
 mxrt
+MXRTL
 myapp
 mydevice
 mydir
@@ -986,6 +1020,7 @@ OEMFW
 ofile
 oftad
 OID's
+OIDS
 okey
 Olejar
 Ollama
@@ -1014,6 +1049,7 @@ otpmk
 OTPS
 OTXRX
 OTXRXSR
+ounsworth
 OUTDIV
 outform
 OUTOFRANGEVAL
@@ -1072,10 +1108,12 @@ PORTC
 PORTD
 powerdown
 pprint
+pqctool
 prdb
 prebuild
 precharge
 preconfigured
+PREG
 prehash
 prehashed
 PREIDLE
@@ -1095,8 +1133,8 @@ progfuses
 progifr
 provisionings
 psect
-psutil
 PSRAM
+psutil
 pswd
 ptload
 ptmc
@@ -1166,6 +1204,7 @@ rawlist
 rbar
 rblhost
 RCVRY
+RDBUFF
 rdrw
 Readback
 READOK
@@ -1176,6 +1215,11 @@ rediraffe
 redudant
 refreshperiod
 regs
+REGRDY
+REGSEL
+REGWNR
+regrdy
+regwnr
 reinit
 RELEA
 reloc
@@ -1184,10 +1228,12 @@ reprovisioning
 reqs
 rescanning
 reserverd
+Reserveds
 resplen
 restr
 RESTRICTOTFAD
 RESYNCH
+RFIC
 rgba
 rgpio
 RHKT
@@ -1210,6 +1256,7 @@ ROMPATCH
 rootdir
 ROOTKEY
 rootwait
+ROPUF
 rotid
 rotk
 rotkh
@@ -1351,6 +1398,7 @@ sourceable
 Sourcegraph
 spdhost
 SPDK
+SPDR
 spds
 SPDSK
 sphinxext
@@ -1367,6 +1415,7 @@ SPLL
 SPNIDEN
 spreg
 SPSCK
+SPSEL
 spsdk
 SPSDKDICE
 SPSDKHTTP
@@ -1437,6 +1486,7 @@ tagl
 TAPEN
 tblh
 TBTK
+TCSM
 TDET
 tempor
 TEMPTAMPER
@@ -1478,7 +1528,6 @@ tphsmapplet
 tptarget
 tptargets
 Traceback
-TCSM
 TRDC
 trgt
 TRINPROG
@@ -1632,6 +1681,7 @@ xcdbo
 xdffd
 xdist
 XECC
+XENOPHY
 XEVY
 xfei
 xffff
@@ -1643,6 +1693,7 @@ xfhs
 xmcd
 xmcdfilepath
 xmodem
+xoem
 XOUT
 xpassed
 Xpresso
@@ -1652,7 +1703,6 @@ XSPINOR
 Xtal
 Xtech
 xunit
-XENOPHY
 xxevk
 xxxs
 Yocto

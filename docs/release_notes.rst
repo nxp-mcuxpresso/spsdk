@@ -21,10 +21,78 @@ Release Notes
 3.13.0
 ------
 
+**New Product Introduction or Updates**
+
+* add support for mcxc353, mcxc352
+* add support for mcxn526t
+* add support for mimxrt1183 and mimxrt118d
+
 **New features**
 
 * `nxpdebugmbox`_:
-    - add ``cmd read-from-flash`` command to read words from flash memory through the debug mailbox on supported MCX A/L devices (mcxa255, mcxl255)
+    - add ``tool execute`` command to start (or restart) execution from a vector table on any Cortex-M based ARM device connected over a CoreSight debug probe; optionally loads a binary into target memory first, otherwise reads the existing vector table already present at the given address (e.g. an already-flashed bootable image)
+    - the ``-f``/``--family`` option of ``tool list-probes`` is no longer mandatory; when omitted, connected probes are listed for all architectures instead of being filtered to a single family
+    - add ``dat export-dar`` command to export the Debug Authentication Response binary; ``dat auth --debug-artifacts`` now stores the DAC binary as well
+    - ``mem-tool test-connection`` prints a colour-coded table with the status of each debug access gate (probe opened, probe connected, debug access, debug mailbox or SDA access point, memory access), so it is visible at which step the connection fails
+* `nxpimage`_:
+    - allow the ``devhsm`` SRK set in the signed MBI configuration; the AHAB v2 SRK set field is four bits wide, so it can hold the DevHSM value
+    - add optional secondary-image table for the ``sd`` and ``emmc`` bootable images of mimxrt2660, mimxrt2661, mimxrt2662 and mimxrt2663
+    - add parallel verification support to AHAB containers of mimxrt2660, mimxrt2661, mimxrt2662 and mimxrt2663
+* :ref:`nxpele`:
+    - add ``forward-boot-crypto`` command and the matching signed message
+    - add HSE core reset release and SMR/core boot status attributes to control and diagnose the multi-core boot
+    - support the second Cortex-M7 core (M7_1) of the dual-core mcxe327 and mcxe32b in the HSE commands
+* `nxpcrypto`_:
+    - add ``--fuse-script`` option to ``rot calculate-hash`` to store a device specific fuse script that burns the calculated RoT hash; it is not available for devices storing the RoT hash in the PFR CMPA
+* `blhost`_:
+    - add ``--mode`` option to ``trust-provisioning prove_genuinity`` to select the ``ECDSA`` or ``Hybrid`` mode; the default is ``ECDSA``, so the previous behavior is unchanged
+* debug probes:
+    - add ARM ADIv6 (CoreSight 600 / DPv3) support: automatic ADI version detection, ADIv6-aware Access Port addressing (memory-mapped AP base address and DP SELECT1 for 64-bit address spaces), and auto-discovery of the ADIv6 MEM-AP and debug mailbox via CoreSight ROM table walk
+    - each debug probe now declares its supported ADI versions via ``SUPPORTED_VERSIONS``; connecting to an unsupported ADI version raises a clear error instead of silently misbehaving
+* add ``SPSDK_DEPRECATED_STRICT`` environment variable; when set, deprecated register aliases and deprecated schema properties are reported as errors instead of warnings
+
+**Bugfixes**
+
+* `nxpdebugmbox`_:
+    - add missing ``srk_revoke_mask`` property to the EdgeLock Enclave V2 DAT configuration schema; the field was already consumed to build the signed DAR message and verified against fuses, but was stripped from the schema, causing a false "Unknown property found in configuration" warning and its absence from ``dat get-template`` output
+    - ``dat dc export`` no longer raises false ``Unknown property found in configuration: 'cc_vu'``/``'cc_beacon'`` warnings for EdgeLock Enclave container v2 devices (e.g. mimx9596, mimx943); the pre-validation auto-fill of these fields now only applies to ELE container v1 devices, whose schema actually declares them
+    - fix the debug authentication waiting for the debug mailbox only on one status bit; on mimx943 with hybrid keys the mailbox was used before the reset request had been processed and the following command failed
+    - decode the debug mailbox command status from its lower 16 bits, so a readable error description is reported instead of the generic "Status code is not success" message
+    - use the AHB access port of the Cortex-M7_0 core (AP4) for all mcxe31b, mcxe32b and mcxe327 devices; the memory access through AP5 failed with a wire ACK fault on the dual-core devices when the second core was not running
+* `nxpimage`_:
+    - fix AHAB container signature verification for keys declaring the plain ``RSA`` signing algorithm, which is PKCS#1 v1.5 padded; the verification incorrectly assumed RSA-PSS padding for all RSA keys and rejected valid containers
+    - align the AHAB v2 signature block members (SRK table array, signature, certificate and blob) and the signatures inside the AHAB certificate to a word boundary on kw43l43z97, mcxa457 and mcxn556s; unaligned offsets caused a data abort in the ROM
+    - report the actual reason why a bootable image has been rejected instead of the generic "image is not matching any of memory types" message
+    - read the AHAB container offset from the IVT layout of the actual device family; families overriding the IVT offsets failed to parse their signed MBI
+    - AHAB ``double_authentication`` image extracts the ELE and V2X firmware correctly from NXP firmware with container version 2 (mimx943, mimx95294, mimx9596 B0); the V2X container is no longer skipped and the ELE and V2X images keep the original NXP container layout, so their hashes match. A version 2 NXP firmware used in a version 1 AHAB image is now reported as an error
+    - map an SRK table with LMS keys to the PQC SRKH fuses, the same way as ML-DSA and Dilithium tables, instead of the classic SRKH fuses
+    - generate a single shared set of SRKH fuse files for MPU images with one NXP signed container followed by several OEM signed containers using the same SRK table, instead of one set per OEM container
+    - handle the ICCS signed ELE firmware of mimxrt2660, mimxrt2661, mimxrt2662 and mimxrt2663 as a binary container without requiring an OEM blob and decode the full AHAB v2 SRK set field
+    - correct the list of supported signing algorithms, hash algorithms and image types of mimxrt2660, mimxrt2661, mimxrt2662 and mimxrt2663
+    - remove Cortex-M7 from the AHAB ``core_ids`` of mimxrt1181 and mimxrt1182, which have a single application core
+    - warn when a user defined ``image_offset`` is ignored because the ``serial_downloader`` target memory computes the offsets automatically
+    - remove the misleading "Not implemented" warning printed for every MBI export with TrustZone enabled
+    - fix the ``reset`` command in the SB3.1 configuration schema; its ``params`` property was misspelled and therefore never parsed
+* `nxpcrypto`_:
+    - fix ``key convert --puk`` silently exporting the private key instead of the public key for post-quantum keys (ML-DSA, Dilithium) and LMS keys
+* `crypto`_:
+    - report an actionable error instead of an ``UnsupportedAlgorithm`` traceback when loading a composite (hybrid) certificate holding a classic and a post-quantum public key in a single ``SubjectPublicKeyInfo``; the error now names the algorithm OID and describes the supported AHAB dual-signing approach, including how to split a composite key with ``pqctool split``
+* :ref:`nxpele`:
+    - fix the response size check of signed messages carrying the ``WRITE_SEC_FUSE_REQ`` command, which failed with "Message SIZE in response is invalid: 0x3"
+* :ref:`nxpuuu`:
+    - fix the image argument of ``write -b spl``, which is now substituted in every boot stage of the SPL boot template
+* libusbsio:
+    - fix setting of the IRQ notifier pin: ``nirq_port=0`` was rejected and the pin was configured before the LIBUSBSIO device was opened
+* SPSDK logging no longer fails to strip the color escape sequences and no longer raises a ``TypeError`` when a non-string object (e.g. an exception) is logged
+* report the original input instead of a mutated value in the error of a file or hex value that cannot be loaded
+* use explicit UTF-8 encoding in text file operations, so the behavior does not depend on the system locale (default encoding changes in Python 3.15)
+* add ``pyyaml`` as an explicit core dependency; it was only ever installed transitively (e.g. via ``spsdk-pyocd``), so a minimal SPSDK installation without that plugin used to fail with ``ModuleNotFoundError: No module named 'yaml'``
+* remove i.MX 95 family aliases that are not orderable part numbers: ``mimx9512``, ``mimx9514``, ``mimx9516``, ``mimx9532``, ``mimx9542``, ``mimx9544`` and ``mimx9584``
+
+**Backwards incompatible**
+
+* ``spsdk-pyocd`` is no longer installed by default; it was an optional PyOCD debug probe plugin unconditionally pinned as a core dependency. If you rely on PyOCD-based debug probes, install it explicitly with ``pip install spsdk-pyocd``
+* ``DebugProbeCoreSightOnly`` has moved from ``spsdk.debuggers.debug_probe`` to ``spsdk.debuggers.debug_probe_arm``; debug probe plugins importing it from the old location fail to load, update them to at least spsdk-jlink 0.3.12, spsdk-pemicro 0.3.12, spsdk-lauterbach 0.5.9 and spsdk-mcu-link 0.6.18
 
 ------
 3.12.0
@@ -327,7 +395,7 @@ Release Notes
     - add SPI support for RT118x
     - add support with AHAB QB data for i.MX95
 * `pfr`_:
-    - update PFR implementation for mw30/mcxa55 devices
+    - update PFR implementation for kw43/mcxa55 devices
     - improve mcxa55 CFPA/CMPA grouping
     - improve error messages for incorrect YAML indentation in configuration files
 * :ref:`nxpele`:

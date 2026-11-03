@@ -325,7 +325,7 @@ def test_read_secure_installer_token_writes_config_snippet(
 
     assert result.exit_code == 0
     assert out_file.exists()
-    content = out_file.read_text()
+    content = out_file.read_text(encoding="utf-8")
     assert "type: CMPA" in content
     assert "SI_ERASE_TOKEN0: '0xdeadbeef'" in content
     assert "SI_ERASE_TOKEN3: '0xfeedface'" in content

@@ -581,7 +581,7 @@ def test_generate_template(cli_runner: CliRunner, tmpdir: Any) -> None:
         assert os.path.isfile(template)
         cli_runner.invoke(main, f"--family {family} get-template --output {template} --force")
         assert os.path.isfile(template)
-        with open(template) as f:
+        with open(template, encoding="utf-8") as f:
             assert yaml.safe_load(f)
 
 

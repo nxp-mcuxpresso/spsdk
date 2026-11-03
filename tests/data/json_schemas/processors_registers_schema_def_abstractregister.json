@@ -105,10 +105,11 @@
                 "method": {
                     "$id": "#/properties/register/calculated/method",
                     "type": "string",
-                    "title": "Method, how the register is calculated. The following methods are supported: `inverse` - inversion of another register, 'virtual_counter' - virtual value of counter register.",
+                    "title": "Method, how the register is calculated. The following methods are supported: `inverse` - inversion of another register, 'virtual_counter' - virtual value of counter register, 'duplicate' - copy of another register.",
                     "enum": [
                         "inverse",
-                        "virtual_counter"
+                        "virtual_counter",
+                        "duplicate"
                     ]
                 },
                 "src_register_id": {

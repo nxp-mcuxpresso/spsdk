@@ -26,6 +26,14 @@ from spsdk.utils.misc import Timeout
 
 logger = logging.getLogger(__name__)
 
+# Default timeout in milliseconds of waiting for the debug mailbox ready (idle) state after reset
+DEFAULT_DM_READY_TIMEOUT = 1000
+# Default CSW bit mask of bits that must be clear before the debug mailbox is considered ready.
+# The ROM/ELE code soft-resets the DM block once it services the resynchronization request,
+# which clears RESYNCH_REQ, REQ_PENDING and CHIP_RESET_REQ. Bit 6 (RETURN_PENDING) is part of
+# the mask as well, because no return value may be pending before the first command is sent.
+DEFAULT_DM_READY_CSW_MASK = 0x63
+
 
 class DebugMailboxError(RuntimeError):
     """Debug Mailbox operation error exception.
@@ -53,7 +61,7 @@ class DebugMailbox:
         debug_probe: DebugProbe,
         family: FamilyRevision,
         reset: bool = True,
-        moredelay: float = 0.0,
+        moredelay: float | None = None,
         op_timeout: int = 1000,
     ) -> None:
         """Initialize DebugMailbox object.
@@ -64,7 +72,8 @@ class DebugMailbox:
         :param debug_probe: Debug probe instance for communication.
         :param family: Chip family and revision information.
         :param reset: Do reset of debug mailbox during initialization, defaults to True.
-        :param moredelay: Time of extra delay after reset sequence in seconds, defaults to 0.0.
+        :param moredelay: Time of extra delay after reset sequence in seconds, defaults to None
+            which means the family specific 'more_delay' value from the database is used.
         :param op_timeout: Atomic operation timeout in milliseconds, defaults to 1000.
         :raises SPSDKIOError: Connection timeout or communication failure with debug mailbox.
         """
@@ -87,11 +96,21 @@ class DebugMailbox:
             self.csw_supports_return_pending_flag = db.get_bool(
                 DatabaseManager.DAT, "csw_supports_return_pending_flag", False
             )
+            self.dm_ready_csw_mask = db.get_int(
+                DatabaseManager.DAT, "dm_ready_csw_mask", DEFAULT_DM_READY_CSW_MASK
+            )
+            self.dm_ready_timeout = db.get_int(
+                DatabaseManager.DAT, "dm_ready_timeout", DEFAULT_DM_READY_TIMEOUT
+            )
+            if moredelay is None:
+                moredelay = float(db.get_value(DatabaseManager.DAT, "more_delay", 0.0))
         else:
             self.csw_supports_return_pending_flag = False
+            self.dm_ready_csw_mask = DEFAULT_DM_READY_CSW_MASK
+            self.dm_ready_timeout = DEFAULT_DM_READY_TIMEOUT
 
         self.reset = reset
-        self.moredelay = moredelay
+        self.moredelay = moredelay or 0.0
         # setup registers and register bitfields
         self.registers: dict[str, dict[str, Any]] = REGISTERS
         # set internal operation timeout
@@ -124,24 +143,78 @@ class DebugMailbox:
         # Therefore, the debugger must read back 0x0 in CSW to know that the initiation
         # request has been serviced.
 
+        # The extra delay ('--timing' or the family default 'more_delay' from the database)
+        # gives slow boot flows time to finish, for example ELE hybrid/PQC boot, where
+        # 'dbg_auth_init' issues the DM soft reset only after the post-quantum key material
+        # has been processed.
         if self.moredelay > 0.001:
+            logger.debug(f"Delay after reset before CSW sampling: {self.moredelay}s")
             sleep(self.moredelay)
 
-        ret = None
-        retries = 20
-
-        while ret is None or (ret & self.registers["CSW"]["bits"]["REQ_PENDING"]):
-            try:
-                ret = self.debug_probe.dbgmlbx_reg_read(addr=self.registers["CSW"]["address"])
-                logger.debug(f"Wait for DM ready by reading CSW register: {hex(ret)}")
-            except SPSDKError:
-                pass
-            retries -= 1
-            if retries == 0:
-                raise SPSDKIOError("TransferTimeoutError limit exceeded!")
-            sleep(0.05)
+        self.wait_for_dm_ready()
 
         logger.debug(f"Read DM ID: {hex(self.read_idr())}")
+
+    def wait_for_dm_ready(self) -> None:
+        """Wait until the debug mailbox reports a ready (idle) state in CSW.
+
+        The debug mailbox is ready once the ROM/ELE code has serviced the resynchronization
+        request by soft-resetting the DM block, which clears all request bits in CSW. Any
+        bit set in the ready mask means the handshake is still in progress, so the poll
+        continues instead of proceeding with a stale/busy mailbox.
+
+        When the resynchronization request was issued (``reset`` is True) the full
+        ``dm_ready_csw_mask`` is awaited, since the specification requires CSW to read back
+        as ``0x0``. Without a reset no handshake is pending, so only the ``REQ_PENDING`` bit
+        is checked to keep the original ``--no-reset`` behavior.
+
+        Polling on a busy CSW value is important for ELE based devices using hybrid (PQC)
+        keys, where the ELE boot and ``dbg_auth_init`` DM soft reset take noticeably longer
+        than the classic ECDSA flow. Sampling CSW only once there returns a transient value
+        such as ``0x61`` (RESYNCH_REQ | CHIP_RESET_REQ | RETURN_PENDING) and the subsequent
+        ENTER command fails.
+
+        :raises SPSDKIOError: The debug mailbox did not become ready within the timeout.
+        """
+        mask = (
+            self.dm_ready_csw_mask if self.reset else self.registers["CSW"]["bits"]["REQ_PENDING"]
+        )
+        logger.debug(f"Waiting for DM ready, CSW mask: {hex(mask)}")
+
+        ret = None
+        timeout = Timeout(self.dm_ready_timeout, units="ms")
+        while ret is None or (ret & mask):
+            try:
+                ret = self.debug_probe.dbgmlbx_reg_read(addr=self.registers["CSW"]["address"])
+                logger.debug(
+                    f"Wait for DM ready by reading CSW register: {hex(ret)}"
+                    f" (pending: {self.decode_csw_bits(ret & mask)})"
+                )
+            except SPSDKError as e:
+                logger.debug(f"CSW read failed while waiting for DM ready: {e!s}")
+                ret = None
+            if timeout.overflow():
+                raise SPSDKIOError(
+                    "The Debug Mailbox is not ready"
+                    + (
+                        f"; last CSW value: {hex(ret)}"
+                        f" (pending bits: {self.decode_csw_bits(ret & mask)})"
+                        if ret is not None
+                        else " (CSW register is not readable)"
+                    )
+                    + f". Timeout of {self.dm_ready_timeout} ms exceeded. Advice: increase the"
+                    " post reset delay by the '--timing' option of nxpdebugmbox."
+                )
+            sleep(0.05)
+
+    def decode_csw_bits(self, csw: int) -> str:
+        """Decode a CSW register value into a human readable list of bit names.
+
+        :param csw: CSW register value to decode.
+        :return: Comma separated names of the bits set in the value, or 'none' when clear.
+        """
+        names = [name for name, mask in self.registers["CSW"]["bits"].items() if csw & mask]
+        return ", ".join(names) if names else "none"
 
     def read_idr(self) -> int:
         """Read IDR of debug mailbox.

@@ -1,0 +1,109 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ============================  dat Configuration template for mimx9596, Revision: latest.  ============================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mimx9596
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, a1, b0, latest>
+revision: latest
+# ---------------------------------------===== Container version [Optional] =====---------------------------------------
+# Description: Force container version, if not specified the default version is used. This configuration option is valid
+# only for chips that supports both AHAB container versions. Possible options <2, 1>
+container_version: 2
+
+# ======================================================================================================================
+#                                            == Settings of Signed Message ==                                           
+# ======================================================================================================================
+# -----------------------------------===== Super Root Key (SRK) set [Required] =====------------------------------------
+# Description: Defines which set is used to authenticate the signed message.
+# Possible options: <none, oem, nxp>
+srk_set: oem
+# -------------------------------------------===== Used SRK [Required] =====--------------------------------------------
+# Description: Which key from SRK set is being used.
+used_srk_id: 0
+# ---------------------------------===== Container certificate version [Optional] =====---------------------------------
+# Description: Certificate version stored in the container header (byte 14). This field is only applicable to V2 signed
+# message containers (e.g. i.MX943). In V2 format, the cert_version and cert_permission fields are removed from the
+# message header and cert_version is placed here instead.
+cert_version: 0
+# --------------------------------===== Signed Message container signer [Required] =====--------------------------------
+# Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
+# private key used for sign the container header. Header can be signed by SRK. The referenced SRK must not have been
+# revoked.
+signer: inputs/dck_ecc384.pem
+# ----------------===== Signed Message container signer for second signature (PQC only) [Optional] =====----------------
+# Description: Signature provider configuration in format 'type=<identifier>;<key1>=<value1>;<key2>=<value2>' or a
+# private key used for second sign (PQC only) of the container header. Header can be signed by SRK. The referenced SRK
+# must not have been revoked.
+signer_#2: inputs/dck_mldsa65.pem
+
+# ======================================================================================================================
+#                                    == Configuration of Signed Message SRK table ==                                    
+# ======================================================================================================================
+# -------------------------------------------===== SRK Table [Required] =====-------------------------------------------
+# Description: SRK (Super Root key) table definition.
+srk_table:
+  # -------------------------------------------===== CA Flag [Optional] =====-------------------------------------------
+  # Description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys. In AHAB CA Flag only
+  # affects the final SRKH (Super Root Key Hash) value burned into chip fuses. It is not used in the AHAB signing
+  # process itself. This option exists only for compatibility with systems where fuses are already programmed. In most
+  # cases, this should remain false.
+  flag_ca: false
+  # ---------------------------------------===== Hash Algorithm [Optional] =====----------------------------------------
+  # Description: Hash algorithm used for SRK records. If not specified, default algorithm based on key type will be
+  # used.
+  # Possible options: <default, sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, shake_128_256, shake_256_512, sm3>
+  hash_algorithm: default
+  # ---------------------------------===== Super Root Key (SRK) table [Required] =====----------------------------------
+  # Description: Table containing the used SRK records. All SRKs must be of the same type. Supported signing algorithms
+  # are: RSA-PSS, ECDSA, ML-DSA, Dilithium or SM2. Supported hash algorithms: sha256, sha384, sha512, sha3_256,
+  # sha3_384, sha3_512, shake_128_256, shake_256_512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1,
+  # rsa2048, rsa3072, rsa4096, dil3, dil5, mldsa65, mldsa87, sm2. Certificate may be of Certificate Authority. PQC
+  # algorithms are supported just in a new type of AHAB container
+  srk_array:
+    - ../../_data/keys/ecc384/srk0_ecc384.pub
+    - ../../_data/keys/ecc384/srk1_ecc384.pub
+    - ../../_data/keys/ecc384/srk2_ecc384.pub
+    - ../../_data/keys/ecc384/srk3_ecc384.pub
+
+  # ====================================================================================================================
+  #                  == Configuration of AHAB SRK table in case that the double signing (ECC + PQC) ==                  
+  # ====================================================================================================================
+  # --------------------------------------===== Second SRK Table [Optional] =====---------------------------------------
+  srk_table_#2:
+    # ------------------------------------------===== CA Flag [Optional] =====------------------------------------------
+    # Description: CA Flag is used by AHAB to indicate if the SRK is allowed to sign other keys. In AHAB CA Flag only
+    # affects the final SRKH (Super Root Key Hash) value burned into chip fuses. It is not used in the AHAB signing
+    # process itself. This option exists only for compatibility with systems where fuses are already programmed. In most
+    # cases, this should remain false.
+    flag_ca: false
+    # --------------------------------------===== Hash Algorithm [Optional] =====---------------------------------------
+    # Description: Hash algorithm used for SRK records. If not specified, default algorithm based on key type will be
+    # used.
+    # Possible options: <default, sha256, sha384, sha512, sha3_256, sha3_384, sha3_512, sm3>
+    hash_algorithm: default
+    # --------------------------------===== Super Root Key (SRK) table [Required] =====---------------------------------
+    # Description: Table containing the used SRK Dilithium records. All SRKs must be of the same type. Supported signing
+    # algorithms are: Dilithium level 3. Supported hash algorithms: sha3_256, sha3_384, sha3_512. Certificate may be of
+    # Certificate Authority.
+    srk_array:
+      - ../../_data/keys/mldsa65/srk0_mldsa65.pub
+      - ../../_data/keys/mldsa65/srk1_mldsa65.pub
+      - ../../_data/keys/mldsa65/srk2_mldsa65.pub
+      - ../../_data/keys/mldsa65/srk3_mldsa65.pub
+
+# ======================================================================================================================
+#                                              == AHAB Debug Certificate ==                                             
+# ======================================================================================================================
+# --------------------------------===== The AHAB Debug Certificate file [Required] =====--------------------------------
+# Description: The file that contains AHAB Debug Certificate. It could be used already prepared binary form signed by
+# SRK, or it is possible to use configuration YAML file of debug certificate.
+certificate: ../workspace/imx95.dc

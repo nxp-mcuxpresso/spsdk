@@ -15,6 +15,7 @@ Vx, and AHAB certificate blocks with their respective headers and structures.
 import logging
 import os
 import traceback
+from abc import ABC
 from collections.abc import Iterable
 from typing import Any
 
@@ -40,7 +41,7 @@ logger = logging.getLogger(__name__)
 UNKNOWN_FAMILY = FamilyRevision("Unknown")
 
 
-class CertBlock(FeatureBaseClass):
+class CertBlock(FeatureBaseClass, ABC):
     """Certificate Block base class for secure boot authentication.
 
     This class provides a unified interface for managing different versions of

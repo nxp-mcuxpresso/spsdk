@@ -40,6 +40,7 @@ class MessageIDs(SpsdkSoftEnum):
     ELE_VERIFY_IMAGE_REQ = (0x88, "ELE_VERIFY_IMAGE_REQ", "Verify Image")
     ELE_RELEASE_CONTAINER_REQ = (0x89, "ELE_RELEASE_CONTAINER_REQ", "Release Container.")
     WRITE_SEC_FUSE_REQ = (0x91, "WRITE_SEC_FUSE_REQ", "Write secure fuse request.")
+    ELE_FWD_BOOT_CRYPTO_REQ = (0x93, "ELE_FWD_BOOT_CRYPTO_REQ", "Forward boot crypto request.")
     ELE_FWD_LIFECYCLE_UP_REQ = (0x95, "ELE_FWD_LIFECYCLE_UP_REQ", "Forward Lifecycle update")
     READ_COMMON_FUSE = (0x97, "READ_COMMON_FUSE", "Read common fuse request.")
     GET_FW_VERSION_REQ = (0x9D, "GET_FW_VERSION_REQ", "Get firmware version request.")
@@ -114,6 +115,27 @@ class LifeCycleToSwitch(SpsdkSoftEnum):
 
     OEM_CLOSED = (0x08, "OEM_CLOSED", "OEM Closed")
     OEM_LOCKED = (0x80, "OEM_LOCKED", "OEM Locked")
+
+
+class SecureBootCryptoMode(SpsdkSoftEnum):
+    """Secure boot crypto mode enumeration for FORWARD BOOT CRYPTO requests.
+
+    This enumeration defines the target secure boot crypto modes that the device's
+    secure boot crypto policy (Classic, PQC, Hybrid) can be moved to using the
+    FORWARD BOOT CRYPTO (0x93) baseline command, either directly or via a signed
+    message. Classic is not listed as it is only ever a source state; the
+    destination magic values below define which signatures secure boot will
+    verify going forward.
+    """
+
+    HYBRID = (0x05FF, "HYBRID", "PQC and classic signature will be verified during secure boot.")
+    PQC = (0x7A1F, "PQC", "Only PQC signature will be verified during secure boot.")
+    RETURN_TO_CLASSIC = (
+        0x7FE0,
+        "RETURN_TO_CLASSIC",
+        "When current policy is hybrid or PQC, go back to classic. "
+        "Only classic will be verified during secure boot.",
+    )
 
 
 class MessageUnitId(SpsdkSoftEnum):

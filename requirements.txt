@@ -18,17 +18,17 @@ libusbsio<3,>=2.2.1
 libuuu<2,>=1.5.239
 oscrypto<2
 packaging<27,>=23.2
-platformdirs<4.12,>=3.9.1 # 4.12 changed private API used by SPSDKPlatformDirs
+platformdirs<5,>=3.9.1
 prettytable<4,>=3.12
 pyasn1<1,>=0.6
 pyserial<4,>=3.1
+pyyaml<7,>=6
 requests<3,>=2.32.3
 ruamel.yaml<1,>=0.17
 ruamel.yaml.clib!=0.2.13,!=0.2.15,<1  # 0.2.13: missing header files for build, 0.2.15: Black Duck detection issues
 setuptools_scm<10
 setuptools<84,>=83.0.0  # >=83.0.0: fix MANIFEST.in exclusion bypass via Unicode NFC/NFD collision (GHSA / VU#604762)
 sly<1
-spsdk-mcu-link<1,>=0.6.11
-spsdk-pyocd<1,>=0.2.0
+spsdk-mcu-link<1,>=0.6.18
 typing-extensions<5
 x690<2,>=1.0

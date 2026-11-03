@@ -1,0 +1,36 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ========================  PFR CMPA_PSWD configuration template for mcxc353, Revision: latest  ========================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -------------------------------------===== The chip family name [Required] =====--------------------------------------
+# Description: NXP chip family identifier.
+family: mcxc353
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon. The 'latest' name, means most current revision.
+# Possible options: <a0, latest>
+revision: latest
+# ------------------------------------===== Configuration area type [Required] =====------------------------------------
+# Description: PFR / IFR type
+# Possible options: <CMPA_PSWD, cmpa_pswd>
+type: CMPA_PSWD
+# --------------------------------------------===== mcxc353 [Required] =====--------------------------------------------
+settings:
+  # ---------------------------------------===== PASSWORD_HEADER [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000000, Width: 32b; Password header.
+  # The ROM gates *both* the debug-authentication password and the erase-token compare on this
+  # marker. If the upper 16 bits of this word are not 0x5057 ("PW"), the ROM ignores every
+  # password attempt and the mailbox returns 0x00100003 ("Command failed").
+  PASSWORD_HEADER:
+    # ------------------------------------------===== Header [Required] =====-------------------------------------------
+    Header: 0x5057
+  # ---------------------------------------===== ERASE_PASSWORD [Required] =====----------------------------------------
+  # Description: Offset: 0x00000030, Width: 128b; 128-bit password compared against the value supplied
+  # to ``nxpdebugmbox cmd erase --password``. The four 32-bit words are stored little-endian in CMPA;
+  # the host sends them big-endian on the mailbox wire, so the hex string here and the hex string
+  # passed to nxpdebugmbox must be identical for the compare to succeed.
+  ERASE_PASSWORD: "AABBCC00AABBCC00AABBCC00AABBCC00"

@@ -1056,6 +1056,13 @@ class ImageArrayEntry(Container):
             chip_config.base.target_memory.memory_type
             == AhabTargetMemory.TARGET_MEMORY_SERIAL_DOWNLOADER
         ):
+            user_image_offset = config.get_int("image_offset", 0)
+            if user_image_offset != 0:
+                logger.warning(
+                    f"The 'image_offset' value 0x{user_image_offset:X} is ignored because "
+                    "target memory is 'serial_downloader'. The offset is calculated "
+                    "automatically to place images without gaps."
+                )
             image_offset = 0
         else:
             image_offset = config.get_int("image_offset", 0)
@@ -1614,10 +1621,16 @@ class IaeDoubleAuthentication(ImageArrayEntryTemplates):
 
     :cvar IMAGE_NAME: Human-readable name for this template type.
     :cvar KEY: Configuration key identifier for double authentication.
+    :cvar CONTAINER_HEADER_SIZE: Size of the container header preceding the image array.
+    :cvar CONTAINER_SIZE_V1: Container slot size of version 1 NXP container.
+    :cvar CONTAINER_SIZE_V2: Container slot size of version 2 NXP container.
     """
 
     IMAGE_NAME: str = "Double Authentication for NXP images"
     KEY: str = "double_authentication"
+    CONTAINER_HEADER_SIZE = 0x10
+    CONTAINER_SIZE_V1 = 0x400
+    CONTAINER_SIZE_V2 = 0x4000
 
     @classmethod
     def create_image_array_entry(
@@ -1651,16 +1664,25 @@ class IaeDoubleAuthentication(ImageArrayEntryTemplates):
         header = HeaderContainerData.parse(nxp_image)
         if header.tag != AHABTags.CONTAINER_HEADER.tag:
             raise SPSDKError("Invalid NXP Container")
-        if header.version == 0 and iae_cls != ImageArrayEntry:
+        if (header.version == 0 and iae_cls != ImageArrayEntry) or (
+            header.version == 2 and iae_cls != ImageArrayEntryV2
+        ):
             raise SPSDKError("Invalid NXP container version")
 
-        # Extract ELE firmware
-        container_size = 0x4000 if header.version == 1 else 0x400
-        ele_iae = iae_cls.parse(nxp_image[0x10:], chip_config)
+        # Extract ELE firmware, the container slot size depends on ELE container version
+        # (i.MX95 may use both V1 and V2 containers)
+        if header.version == 2:
+            container_size = cls.CONTAINER_SIZE_V2
+            v2x_tag = AHABTags.CONTAINER_HEADER_V1_WITH_V2.tag
+        else:
+            container_size = cls.CONTAINER_SIZE_V1
+            v2x_tag = AHABTags.CONTAINER_HEADER.tag
+        # Image offsets are relative to the container start, keep the original layout
+        ele_iae = iae_cls.parse(nxp_image[cls.CONTAINER_HEADER_SIZE :], chip_config)
         ele_container = (
             nxp_image[:container_size]
-            + bytes(ele_iae.image_offset - container_size)
-            + ele_iae.image
+            + bytes(ele_iae._image_offset - container_size)
+            + nxp_image[ele_iae._image_offset : ele_iae._image_offset + ele_iae.image_size]
         )
         config["core_id"] = "ele"
         config["image_type"] = "ele_as_image"
@@ -1671,17 +1693,20 @@ class IaeDoubleAuthentication(ImageArrayEntryTemplates):
         )
 
         # Process V2X firmware container if present
+        # With V2 ELE container the V2X container is V1 container with V2 offsets
         header = HeaderContainerData.parse(nxp_image[container_size:])
-        if header.tag == AHABTags.CONTAINER_HEADER.tag:
-            v2xfhp_iae = iae_cls.parse(nxp_image[container_size + 0x10 :], chip_config)
-            v2xfhs_iae = iae_cls.parse(nxp_image[container_size + 0x80 + 0x10 :], chip_config)
-            v2xfh_container = nxp_image[container_size : 2 * container_size]
-            v2xfh_container += bytes(v2xfhp_iae._image_offset)  # Add Padding
-            v2xfh_container += nxp_image[
-                container_size
-                + v2xfhp_iae._image_offset : container_size
-                + v2xfhs_iae._image_offset
-                + v2xfhs_iae.image_size
+        if header.tag == v2x_tag:
+            v2xfhp_offset = container_size + cls.CONTAINER_HEADER_SIZE
+            v2xfhp_iae = iae_cls.parse(nxp_image[v2xfhp_offset:], chip_config)
+            v2xfhs_iae = iae_cls.parse(
+                nxp_image[v2xfhp_offset + iae_cls.fixed_length() :], chip_config
+            )
+            v2xfh_container = nxp_image[
+                container_size : container_size
+                + max(
+                    v2xfhp_iae._image_offset + v2xfhp_iae.image_size,
+                    v2xfhs_iae._image_offset + v2xfhs_iae.image_size,
+                )
             ]
             config["core_id"] = "v2x-1"
             config["image_type"] = "v2x_as_image"

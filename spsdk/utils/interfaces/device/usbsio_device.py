@@ -13,6 +13,7 @@ management and device abstraction for NXP USB-SIO hardware.
 
 import logging
 import re
+from abc import ABC
 from dataclasses import dataclass
 
 import libusbsio
@@ -130,7 +131,7 @@ class UsbSioConfig:
         return (args, kwargs)
 
 
-class UsbSioDevice(DeviceBase):
+class UsbSioDevice(DeviceBase, ABC):
     """USBSIO device interface for NXP MCU communication.
 
     This class provides a unified interface for communicating with NXP MCUs through
@@ -173,8 +174,6 @@ class UsbSioDevice(DeviceBase):
         self._timeout = timeout or 5000
         self.nirq_port = nirq_port
         self.nirq_pin = nirq_pin
-        if self.is_nirq_enabled:
-            self._config_nirq_pin()
 
     def _config_nirq_pin(self) -> None:
         """Configure nIRQ pin for interrupt handling.
@@ -186,7 +185,7 @@ class UsbSioDevice(DeviceBase):
 
         :raises SPSDKValueError: When nIRQ port or pin is not defined.
         """
-        if not (self.nirq_port and self.nirq_pin):
+        if self.nirq_port is None or self.nirq_pin is None:
             raise SPSDKValueError("nIRQ port and pin must be defined.")
         self.sio.GPIO_ConfigIOPin(self.nirq_port, self.nirq_pin, 0x100)
         self.sio.GPIO_SetPortInDir(self.nirq_port, 1 << (self.nirq_pin - 1))
@@ -212,6 +211,9 @@ class UsbSioDevice(DeviceBase):
 
         if not self.sio.IsOpen():
             self.sio.Open(self.dev_ix)
+
+        if self.is_nirq_enabled:
+            self._config_nirq_pin()
 
     @property
     def timeout(self) -> int:
@@ -324,7 +326,7 @@ class UsbSioDevice(DeviceBase):
             raise SPSDKValueError("State must be either 0 or 1.")
         if not self.is_nirq_enabled:
             raise SPSDKError("The nIRQ functionality is disabled. nIRQ pin must be defined.")
-        if not (self.nirq_port and self.nirq_pin):
+        if self.nirq_port is None or self.nirq_pin is None:
             raise SPSDKValueError("nIRQ port and pin must be defined.")
         timeout = Timeout(self.timeout, "ms")
         while not timeout.overflow():

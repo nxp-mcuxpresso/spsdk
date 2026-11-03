@@ -61,10 +61,16 @@ class DebugCredentialCertificate(FeatureBaseClass):
     def PRE_VALIDATION_CFG_HOOK(config: Config) -> Config:
         """Normalize DAT configuration before schema validation.
 
-        For DAT implementations based on ELE, ``cc_vu`` and/or ``cc_beacon`` may be
-        unsupported at runtime. Some schema paths still require these keys, so when they
-        are missing we inject safe defaults and emit a warning to keep template/export
-        flows user-friendly.
+        For DAT implementations based on ELE container version 1
+        (:py:class:`DebugCredentialEdgeLockEnclave`), ``cc_vu`` and/or ``cc_beacon`` may be
+        unsupported at runtime even though the validation schema still declares them as
+        required properties. When they are missing we inject safe defaults and emit a debug
+        log to keep template/export flows user-friendly.
+
+        ELE container version 2 (:py:class:`DebugCredentialEdgeLockEnclaveV2`) uses a
+        completely different (AHAB certificate based) schema that never declares ``cc_vu``/
+        ``cc_beacon`` as top-level properties, so no auto-fill is needed there; injecting
+        those keys would only trigger false "Unknown property" warnings.
 
         :param config: Input configuration loaded from user YAML/JSON.
         :return: Normalized configuration object used for schema validation.
@@ -77,15 +83,21 @@ class DebugCredentialCertificate(FeatureBaseClass):
 
         db = get_db(family)
         based_on_ele = db.get_bool(DatabaseManager.DAT, "based_on_ele", False)
+        ele_cnt_version = db.get_int(DatabaseManager.DAT, "ele_cnt_version", 1)
+        # The cc_vu/cc_beacon auto-fill only applies to the ELE container version 1 schema
+        # (DebugCredentialEdgeLockEnclave). The version 2 schema (DebugCredentialEdgeLockEnclaveV2)
+        # never declares these properties, so they must not be injected there.
+        based_on_ele_v1 = based_on_ele and ele_cnt_version == 1
         use_beacon = db.get_bool(DatabaseManager.DAT, "used_beacons_on_ele", False)
+        vu_instead_fuse_version = db.get_bool(DatabaseManager.DAT, "vu_instead_fuse_version", False)
 
-        if based_on_ele and "cc_vu" not in cfg:
+        if based_on_ele_v1 and not vu_instead_fuse_version and "cc_vu" not in cfg:
             logger.debug(
                 f"The 'cc_vu' field is not used for DAT on {family}; missing value was auto-filled to 0.",
             )
             cfg["cc_vu"] = 0
 
-        if based_on_ele and not use_beacon and "cc_beacon" not in cfg:
+        if based_on_ele_v1 and not use_beacon and "cc_beacon" not in cfg:
             logger.debug(
                 f"The 'cc_beacon' field is not used for DAT on {family}; missing value was auto-filled to 0.",
             )
@@ -1479,6 +1491,8 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
         """
         self.certificate = certificate
         assert isinstance(certificate.public_key_0, SRKRecordV2)
+        db = get_db(family)
+        vu_instead_fuse_version = db.get_bool(DatabaseManager.DAT, "vu_instead_fuse_version", False)
         super().__init__(
             family=family,
             version=ProtocolVersion("3.2"),  # The version is NOT used in DC data
@@ -1486,14 +1500,13 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
             rot_meta=RotMetaDummy(),
             dck_pub=certificate.public_key_0.get_public_key(),
             cc_socu=self.socu,
-            cc_vu=0,
+            cc_vu=certificate.fuse_version if vu_instead_fuse_version else 0,
             cc_beacon=self.beacon,
             # just there is a needs to put any public key it won't be used :-)
             rot_pub=certificate.public_key_0.get_public_key(),
             signature=None,
             signature_provider=None,
         )
-        db = get_db(family)
         self.clear_iee_config = db.get_bool(DatabaseManager.DAT, "clear_iee_config_on_ele", False)
 
     def __eq__(self, value: object) -> bool:
@@ -1714,8 +1727,16 @@ class DebugCredentialEdgeLockEnclaveV2(DebugCredentialCertificate):
         config["permissions"] = ["debug"]
         permission_data = pack("<LLL", socc, socu, beacon)
         config["permission_data"] = permission_data
-        if vu_instead_fuse_version and "cc_vendor_usage" in config:
-            config["fuse_version"] = config.get_int("cc_vendor_usage", 0)
+        if vu_instead_fuse_version:
+            vendor_usage = config.get_int("cc_vendor_usage", 0)
+            if "cc_vu" in config:
+                cc_vu = config.get_int("cc_vu")
+                if "cc_vendor_usage" in config and vendor_usage != cc_vu:
+                    raise SPSDKValueError(
+                        "The 'cc_vu' and 'cc_vendor_usage' fields must contain the same value."
+                    )
+                vendor_usage = cc_vu
+            config["fuse_version"] = vendor_usage
 
         if clear_iee_config:
             config["permission_data_ext"] = config.pop("iee_clear_regions", 0)

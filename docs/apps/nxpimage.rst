@@ -42,6 +42,14 @@ Key commands:
 - ``nxpimage ahab certificate`` — manage AHAB certificates
 - ``nxpimage ahab update-keyblob -b <container.bin>`` — update the key blob in a container
 
+RT2660 ELE firmware signed with ICCS keys can contain encrypted images without an
+OEM key blob. SPSDK preserves these containers and verifies their signatures and
+encrypted-image hashes, but reports a warning that plaintext verification is
+unavailable without the encryption key. This does not relax the key-blob requirement
+for encrypted OEM images. When parsing, ICCS containers are extracted as
+``binary_container`` entries by default, like NXP-signed firmware; use ``--parse-nxp``
+to request their full configuration instead.
+
 ------------------------------
 Signed Messages
 ------------------------------
@@ -106,6 +114,51 @@ Key commands:
 - ``nxpimage bootable-image parse -b <image.bin> -f <family> -o <output_dir>`` — parse image
 - ``nxpimage bootable-image verify -b <image.bin> -f <family>`` — verify image
 - ``nxpimage bootable-image list-boards -f <family>`` — list supported boards for a family
+
+RT266x SD/eMMC redundant boot
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For ``mimxrt2660``, ``mimxrt2661``, ``mimxrt2662``, and ``mimxrt2663``,
+the ``sd`` and ``emmc`` layouts support an optional secondary-image table:
+
+.. code-block:: yaml
+
+   family: mimxrt2660
+   memory_type: sd
+   init_offset: 0
+   secondary_image_table:
+     first_sector_number: 0x1000
+   ahab_container: primary_ahab.yaml
+
+Use ``target_memory: sd_emmc`` in the AHAB configuration. This example places the
+table at primary-image offset ``0x200``, with tag ``0x00112233`` and a pointer
+to media byte offset ``0x1000 * 512 = 0x200000``. XMCD, when configured, remains at
+``0x400`` and the primary AHAB container at ``0x800``.
+
+Program the complete primary bootable image at raw media offset zero. Build the
+secondary bootable image separately using the same memory type and
+``init_offset: 0``, normally without its own secondary-image table, and program
+it at ``0x200000``. Its AHAB container will be at media offset ``0x200800``.
+Choose a sector number that leaves enough space for the complete primary image;
+the table does not combine images, check media capacity, or program the secondary
+image. Do not confuse it with a second AHAB container inside a single boot image.
+
+Omit ``secondary_image_table`` or set it to an empty string to preserve the
+primary-only layout. A path to an exact 20-byte binary table is also accepted.
+New tables contain three zero reserved words. Parsing preserves imported
+reserved words; tables with nonzero reserved words are extracted as binary files
+for a lossless configuration round-trip. Invalid tags, truncated tables, and zero
+sector pointers are rejected. Uniform zero or erased padding in a full image
+means the optional table is absent.
+
+With a nonzero ``init_offset``, program the exported bytes at that offset relative
+to the selected boot image's start. Segments preceding it are excluded, so an
+export beginning at the AHAB container does not include the secondary-image table.
+
+ROM selects the secondary SD/eMMC image using SRC ``GPR5[26]``. Do not modify this
+register during ROM execution. See RT2660 Reference Manual sections 11.5.4.5
+(*Redundant Boot Support for eMMC/SD*), 11.4.6 (*Persistent Bits*), and 11.6.2
+(*Container Format*). Generating the table does not itself force secondary boot.
 
 ---------------------------------------------
 HAB (High Assurance Boot)

@@ -289,6 +289,9 @@ features:
     containers_max_cnt: 3
     valid_offset_minimal_alignment: 0x400
     container_types: [1] # Supported container types
+    fuses_0:
+      _name: "AHAB SRKH"
+      srkh: "__srk_hash0" # SRK hash fuse
     core_ids:
       DUMMY_CORE: [0, "dummy", "Virtual dummy core (used for data)"]
       CORTEX_M33: [1, "cortex-m33", "Cortex M33 - Boot core"]

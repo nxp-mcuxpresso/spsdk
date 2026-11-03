@@ -128,8 +128,12 @@ features:
     sda_ap_index: 7
 
   # ======== Debug probe access section ========
+  # AP4 is the AHB-AP for Cortex-M7_0 on all MCX E3 parts (per the MCX E3 RM
+  # "DAP master address mapping" table). MCXE32B/MCXE327 additionally expose
+  # AP5 as the AHB-AP for Cortex-M7_1, but SPSDK always targets the primary
+  # core M7_0, so AP4 is used uniformly for the whole family (SPSDK-7144).
   debug_probe:
-    mem_ap_index: 5  # AP5: AHB-AP with SPIDEN=1 (CSW=0x43000042), confirmed working via SWD capture
+    mem_ap_index: 4  # AP4: AHB-AP to Cortex-M7_0, confirmed working via SWD capture
     enable_power_domains_after_connect: True
     enable_sda_debug_paths_after_connect: True
     mem_ap_preserve_csw_ro_bits: True

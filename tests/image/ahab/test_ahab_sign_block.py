@@ -8,11 +8,17 @@
 
 import pytest
 
+from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import PrivateKeyRsa
 from spsdk.exceptions import SPSDKError
 from spsdk.image.ahab.ahab_blob import AhabBlob
 from spsdk.image.ahab.ahab_certificate import AhabCertificate
-from spsdk.image.ahab.ahab_data import AhabChipContainerConfig, SignatureType, create_chip_config
+from spsdk.image.ahab.ahab_data import (
+    AhabChipContainerConfig,
+    AHABSignAlgorithm,
+    SignatureType,
+    create_chip_config,
+)
 from spsdk.image.ahab.ahab_sign_block import SignatureBlock, SignatureBlockV2
 from spsdk.image.ahab.ahab_signature import ContainerSignature
 from spsdk.image.ahab.ahab_srk import SRKRecord, SRKRecordV2, SRKTable, SRKTableArray, SRKTableV2
@@ -882,3 +888,140 @@ def test_signature_block_verify_offset_misaligned(
     block = SignatureBlock(chip_cfg, srk_assets=srk_table)
     block._srk_assets_offset = block.fixed_length() * 2 + 1
     assert block.verify().has_errors
+
+
+@pytest.mark.parametrize("pss_padding", [False, True])
+def test_signature_block_verify_authenticity_rsa_padding(
+    chip_cfg: AhabChipContainerConfig, pss_padding: bool
+) -> None:
+    """Signature must verify for both RSA paddings declared by the SRK record.
+
+    AHAB distinguishes RSA (PKCS#1 v1.5) and RSA_PSS (PSS) signing algorithms. The
+    verification must honour the scheme declared in the SRK record instead of always
+    assuming PSS, otherwise valid PKCS#1 v1.5 signed containers are rejected.
+
+    :param chip_cfg: Chip configuration fixture.
+    :param pss_padding: Whether the container is signed using the PSS padding.
+    """
+    key = PrivateKeyRsa.generate_key(2048)
+    record = SRKRecord.create_from_key(key.get_public_key())
+    # create_from_key() always produces RSA_PSS, so switch the declared algorithm to
+    # plain RSA (PKCS#1 v1.5) when that padding is under test.
+    if not pss_padding:
+        record.version = AHABSignAlgorithm.RSA.tag
+    assert record.signing_algorithm == (
+        AHABSignAlgorithm.RSA_PSS if pss_padding else AHABSignAlgorithm.RSA
+    )
+    table = SRKTable(srk_records=[record, record, record, record])
+
+    data_to_sign = b"AHAB container data to be signed"
+    signature = key.sign(
+        data_to_sign,
+        algorithm=EnumHashAlgorithm.from_label(record.hash_algorithm.label),
+        pss_padding=pss_padding,
+    )
+
+    block = SignatureBlock(
+        chip_config=chip_cfg,
+        srk_assets=table,
+        container_signature=ContainerSignature(signature_data=signature),
+    )
+    block.update_fields()
+
+    assert not block.verify_container_authenticity(data_to_sign).has_errors
+
+
+# ---------------------------------------------------------------------------
+# Signature block member alignment (SPSDK-7128)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "family,expected_alignment",
+    [
+        # MCUs with AHAB v2 ROM requiring word aligned signature block members
+        (FamilyRevision("kw43l43z97"), 4),
+        (FamilyRevision("mcxn556s"), 4),
+        (FamilyRevision("mcxa457"), 4),
+        # Devices that must keep the original packed layout
+        (FamilyRevision("mimxrt2662"), 1),
+        (FamilyRevision("mimx95294"), 1),
+        (FamilyRevision("mimxrt1189"), 1),
+    ],
+)
+def test_signature_block_member_alignment_database(
+    family: FamilyRevision, expected_alignment: int
+) -> None:
+    """Signature block member alignment must be loaded from the device database.
+
+    :param family: Family revision under test.
+    :param expected_alignment: Expected alignment of the signature block members.
+    """
+    chip_config = AhabChipContainerConfig(base=create_chip_config(family=family))
+    block = SignatureBlockV2(chip_config=chip_config)
+    assert block.member_alignment == expected_alignment
+    assert chip_config.base.signature_block_member_alignment == expected_alignment
+
+
+def test_signature_block_v2_members_are_word_aligned() -> None:
+    """All AHAB v2 signature block members must start at a word aligned offset.
+
+    RSA SRK data has a 3-byte exponent, so the block following the SRK table array ends
+    up unaligned unless padding is inserted. Unaligned offsets cause a data abort in the
+    ROM of the affected MCUs.
+    """
+    family = FamilyRevision("mcxn556s")
+    chip_config = AhabChipContainerConfig(base=create_chip_config(family=family))
+    key = PrivateKeyRsa.generate_key(2048)
+    record = SRKRecordV2.create_from_key(key.get_public_key(), srk_id=0)
+    table = SRKTableV2(srk_records=[record, record, record, record])
+    srk_assets = SRKTableArray(chip_config=chip_config, srk_tables=[table])
+    # The RSA SRK data has a 3 byte exponent, so it ends at an unaligned offset
+    signature = ContainerSignature(signature_data=bytes(key.signature_size))
+
+    block = SignatureBlockV2(
+        chip_config=chip_config,
+        srk_assets=srk_assets,
+        container_signature=signature,
+    )
+    block.update_fields()
+
+    alignment = block.member_alignment
+    assert alignment == 4
+    assert len(srk_assets) % alignment != 0, "Test needs an unaligned SRK table array size"
+    for name in ("_srk_assets_offset", "_signature_offset"):
+        offset = getattr(block, name)
+        assert offset % alignment == 0, f"{name} ({offset}) is not aligned to {alignment} B"
+    assert len(block) % alignment == 0
+    # The exported data must have exactly the declared length and survive a round trip
+    exported = block.export()
+    assert len(exported) == len(block)
+    assert SignatureBlockV2.parse(exported, chip_config=chip_config).export() == exported
+    assert not block.verify().has_errors
+
+
+def test_signature_block_v2_layout_unchanged_for_packed_devices() -> None:
+    """Devices without the alignment requirement must keep the packed layout.
+
+    This guards the backward compatibility of the already released i.MX images.
+    """
+    family = FamilyRevision("mimx95294")
+    chip_config = AhabChipContainerConfig(base=create_chip_config(family=family))
+    key = PrivateKeyRsa.generate_key(2048)
+    record = SRKRecordV2.create_from_key(key.get_public_key(), srk_id=0)
+    table = SRKTableV2(srk_records=[record, record, record, record])
+    srk_assets = SRKTableArray(chip_config=chip_config, srk_tables=[table])
+
+    block = SignatureBlockV2(
+        chip_config=chip_config,
+        srk_assets=srk_assets,
+        container_signature=ContainerSignature(signature_data=bytes(key.signature_size)),
+    )
+    block.update_fields()
+
+    assert block.member_alignment == 1
+    # Members are packed back to back, without any padding
+    assert block.signature is not None
+    assert block._srk_assets_offset == block.fixed_length()
+    assert block._signature_offset == block._srk_assets_offset + len(srk_assets)
+    assert len(block) == block._signature_offset + len(block.signature)

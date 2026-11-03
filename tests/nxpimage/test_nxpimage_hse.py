@@ -15,7 +15,8 @@ import yaml
 
 from spsdk.apps import nxpimage
 from spsdk.exceptions import SPSDKError
-from spsdk.image.hse.common import HseKeyBits, KeyType
+from spsdk.image.hse.common import CoreId, HseKeyBits, KeyType
+from spsdk.image.hse.core_reset import CoreResetEntry
 from spsdk.image.hse.key_info import (
     HseAesBlockModeMask,
     HseEccCurveId,
@@ -47,7 +48,7 @@ def key_info_config_data() -> dict:
 def key_info_config_file(tmpdir: str, key_info_config_data: dict) -> str:
     """Create a key info configuration file for testing."""
     config_file = os.path.join(tmpdir, "key_info_config.yaml")
-    with open(config_file, "w") as f:
+    with open(config_file, "w", encoding="utf-8") as f:
         yaml.dump(key_info_config_data, f)
     return config_file
 
@@ -65,7 +66,7 @@ def test_hse_key_info_get_template_command(cli_runner: CliRunner, tmpdir: str) -
 
     # Check template file exists and is valid YAML
     assert os.path.isfile(output_file)
-    with open(output_file) as f:
+    with open(output_file, encoding="utf-8") as f:
         template_data = yaml.safe_load(f)
 
     # Check basic template structure
@@ -98,7 +99,7 @@ def test_hse_key_info_export_command(cli_runner: CliRunner, key_info_config_file
     assert "Success. (Key Info:" in result.output
 
     # Load the config to get the output file path
-    with open(key_info_config_file) as f:
+    with open(key_info_config_file, encoding="utf-8") as f:
         config_data = yaml.safe_load(f)
     output_file = os.path.join(os.path.dirname(key_info_config_file), config_data["output"])
 
@@ -135,7 +136,7 @@ def test_hse_key_info_export_command_invalid_config(cli_runner: CliRunner, tmpdi
         "output": "key_info.bin",
     }
     invalid_config_file = os.path.join(tmpdir, "invalid_config.yaml")
-    with open(invalid_config_file, "w") as f:
+    with open(invalid_config_file, "w", encoding="utf-8") as f:
         yaml.dump(invalid_config, f)
 
     cmd = f"hse key-info export -c {invalid_config_file}"
@@ -181,7 +182,7 @@ def test_hse_key_info_export_different_key_types(cli_runner: CliRunner, tmpdir: 
         }
 
         config_file = os.path.join(tmpdir, f"key_info_config_{i}.yaml")
-        with open(config_file, "w") as f:
+        with open(config_file, "w", encoding="utf-8") as f:
             yaml.dump(config_data, f)
 
         cmd = f"hse key-info export -c {config_file}"
@@ -203,7 +204,7 @@ def test_hse_key_info_export_with_json_config(
     """Test exporting key info using a JSON configuration file."""
     # Create JSON config file
     json_config_file = os.path.join(tmpdir, "key_info_config.json")
-    with open(json_config_file, "w") as f:
+    with open(json_config_file, "w", encoding="utf-8") as f:
         json.dump(key_info_config_data, f)
 
     cmd = f"hse key-info export -c {json_config_file}"
@@ -226,7 +227,7 @@ def test_hse_key_info_export_idempotent(cli_runner: CliRunner, key_info_config_f
     cli_runner.invoke(nxpimage.main, cmd.split())
 
     # Get the output file path
-    with open(key_info_config_file) as f:
+    with open(key_info_config_file, encoding="utf-8") as f:
         config_data = yaml.safe_load(f)
     output_file = os.path.join(os.path.dirname(key_info_config_file), config_data["output"])
 
@@ -259,7 +260,7 @@ def test_hse_key_info_export_with_counter(cli_runner: CliRunner, tmpdir: str) ->
         }
 
         config_file = os.path.join(tmpdir, f"key_info_counter_{i}.yaml")
-        with open(config_file, "w") as f:
+        with open(config_file, "w", encoding="utf-8") as f:
             yaml.dump(config_data, f)
 
         cmd = f"hse key-info export -c {config_file}"
@@ -292,7 +293,7 @@ def test_hse_key_info_export_with_ecc_curves(cli_runner: CliRunner, tmpdir: str)
         }
 
         config_file = os.path.join(tmpdir, f"key_info_ecc_{i}.yaml")
-        with open(config_file, "w") as f:
+        with open(config_file, "w", encoding="utf-8") as f:
             yaml.dump(config_data, f)
 
         cmd = f"hse key-info export -c {config_file}"
@@ -330,7 +331,7 @@ def test_hse_key_info_export_with_aes_block_modes(cli_runner: CliRunner, tmpdir:
         }
 
         config_file = os.path.join(tmpdir, f"key_info_aes_{i}.yaml")
-        with open(config_file, "w") as f:
+        with open(config_file, "w", encoding="utf-8") as f:
             yaml.dump(config_data, f)
 
         cmd = f"hse key-info export -c {config_file}"
@@ -358,7 +359,7 @@ def test_hse_key_info_roundtrip(
     cli_runner.invoke(nxpimage.main, export_cmd.split())
 
     # Get the output file path
-    with open(key_info_config_file) as f:
+    with open(key_info_config_file, encoding="utf-8") as f:
         config_data = yaml.safe_load(f)
     output_file = os.path.join(os.path.dirname(key_info_config_file), config_data["output"])
 
@@ -413,7 +414,7 @@ def test_hse_smr_entry_verify(cli_runner: CliRunner, tmpdir: str) -> None:
         "versionOffset": 0,
     }
     config_path = os.path.join(tmpdir, "smr.yaml")
-    with open(config_path, "w") as f:
+    with open(config_path, "w", encoding="utf-8") as f:
         yaml.dump(config, f)
     cli_runner.invoke(nxpimage.main, ["hse", "smr-entry", "export", "-c", config_path])
     binary = os.path.join(tmpdir, "smr_entry.bin")
@@ -440,7 +441,7 @@ def test_hse_cr_entry_verify(cli_runner: CliRunner, tmpdir: str) -> None:
         "startOption": "AUTO_START",
     }
     config_path = os.path.join(tmpdir, "cr.yaml")
-    with open(config_path, "w") as f:
+    with open(config_path, "w", encoding="utf-8") as f:
         yaml.dump(config, f)
     cli_runner.invoke(nxpimage.main, ["hse", "cr-entry", "export", "-c", config_path])
     binary = os.path.join(tmpdir, "cr_entry.bin")
@@ -450,3 +451,46 @@ def test_hse_cr_entry_verify(cli_runner: CliRunner, tmpdir: str) -> None:
     )
     assert "Core Reset Entry(Succeeded)" in result.output
     assert "Overall  result: Succeeded" in result.output
+
+
+@pytest.mark.parametrize("family", ["mcxe327", "mcxe32b"])
+def test_hse_cr_entry_verify_second_core(cli_runner: CliRunner, tmpdir: str, family: str) -> None:
+    """Test the 'hse cr-entry verify' command with M7_1 on dual-core MCX E32 families.
+
+    SPSDK-7117: end-to-end CLI check (config -> export -> verify -> parse) that a
+    Core Reset entry configured for the second Cortex-M7 core (coreId=M7_1) can be
+    exported to binary and successfully verified via `nxpimage hse cr-entry` on both
+    dual-core MCX E32 variants (MCXE327, MCXE32B), and that the parsed binary
+    preserves the M7_1 core ID.
+    """
+    config = {
+        "family": family,
+        "output": "cr_entry.bin",
+        "coreId": "M7_1",
+        "crSanction": "KEEP_CORE_IN_RESET",
+        "preBootSmrMap": [],
+        "passResetAddr": "0x0",
+        "altPreBootSmrMap": [],
+        "altResetAddr": "0x0",
+        "postBootSmrMap": [],
+        "startOption": "AUTO_START",
+    }
+    config_path = os.path.join(tmpdir, "cr.yaml")
+    with open(config_path, "w", encoding="utf-8") as f:
+        yaml.dump(config, f)
+    export_result = cli_runner.invoke(
+        nxpimage.main, ["hse", "cr-entry", "export", "-c", config_path]
+    )
+    assert export_result.exit_code == 0
+    binary = os.path.join(tmpdir, "cr_entry.bin")
+
+    result = cli_runner.invoke(
+        nxpimage.main, ["hse", "cr-entry", "verify", "-f", family, "-b", binary]
+    )
+    # CLI verify must report success for M7_1 on dual-core families.
+    assert "Core Reset Entry(Succeeded)" in result.output
+    assert "Overall  result: Succeeded" in result.output
+
+    # Re-parse the exported binary and confirm the core ID round-trips correctly.
+    parsed = CoreResetEntry.parse(load_binary(binary), FamilyRevision(family))
+    assert parsed.core_id == CoreId.CORE_M7_1

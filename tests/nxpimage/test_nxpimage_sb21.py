@@ -153,7 +153,7 @@ def test_nxpimage_sb21(
         cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.isfile(out_file_path_new)
 
-        with open(kek_key_path) as f:
+        with open(kek_key_path, encoding="utf-8") as f:
             # transform text-based KEK into bytes
             sb_kek = unhexlify(f.read())
 
@@ -329,7 +329,7 @@ def test_nxpimage_relative_path_sb21(
     cli_runner.invoke(nxpimage.main, cmd)
     assert os.path.isfile(out_file_path_new)
 
-    with open(kek_key_path) as f:
+    with open(kek_key_path, encoding="utf-8") as f:
         # transform text-based KEK into bytes
         sb_kek = unhexlify(f.read())
 
@@ -490,7 +490,7 @@ def test_nxpimage_sb21_convert(
         cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.isfile(sb_file_path_new)
 
-        with open(kek_key_path) as f:
+        with open(kek_key_path, encoding="utf-8") as f:
             # transform text-based KEK into bytes
             sb_kek = unhexlify(f.read())
 
@@ -755,7 +755,7 @@ def test_nxpimage_sb21_yaml(
         assert os.path.isfile(new_binary)
         ref_path = os.path.join(nxpimage_data_dir, "sb_sources", "YAML_files", conf, ref_binary)
 
-        with open(KEK_PATH) as f:
+        with open(KEK_PATH, encoding="utf-8") as f:
             # transform text-based KEK into bytes
             sb_kek = unhexlify(f.read())
 

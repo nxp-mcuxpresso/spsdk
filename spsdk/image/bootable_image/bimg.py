@@ -418,6 +418,122 @@ class BootableImage(FeatureBaseClass):
         self.parsed_binary_size = len(binary)
 
     @classmethod
+    def _try_parse_exact_match(
+        cls,
+        binary: bytes,
+        family: FamilyRevision,
+        memory_type: MemoryType,
+        no_errors: bool,
+        dek_map: dict[str | int | None, dict[int | None, str]] | None,
+        parse_errors: list[str] | None,
+    ) -> Self | None:
+        """Try to parse binary data as an exact match for the given memory type.
+
+        :param binary: Binary data of the bootable image to parse.
+        :param family: Target chip family and revision for parsing.
+        :param memory_type: Memory type to attempt parsing with.
+        :param no_errors: When True, validates parsed images and rejects any with errors.
+        :param dek_map: Optional dictionary mapping segment identifier to container DEK map.
+        :param parse_errors: Optional output list that collects the reasons why the
+                             memory type has been rejected.
+        :return: Parsed bootable image instance, or None when parsing failed or was empty.
+        """
+        logger.debug(
+            f"Parsing the image for memory type '{memory_type.description}' finding the exact match"
+        )
+        try:
+            bimg = cls(family, memory_type)
+            bimg._parse(binary, dek_map=dek_map)
+            if len(bimg.segments) == 0:
+                return None
+            if no_errors:
+                bimg.verify().validate()
+            return bimg
+        except SPSDKError as e:
+            logger.debug(str(e))
+            if parse_errors is not None:
+                parse_errors.append(f"Memory type '{memory_type.description}': {e!s}")
+            return None
+
+    @classmethod
+    def _try_parse_incomplete_image(
+        cls,
+        binary: bytes,
+        family: FamilyRevision,
+        memory_type: MemoryType,
+        init_offset: int,
+        no_errors: bool,
+        dek_map: dict[str | int | None, dict[int | None, str]] | None,
+        parse_errors: list[str] | None,
+    ) -> Self | None:
+        """Try to parse binary data with a moved initial segment offset.
+
+        :param binary: Binary data of the bootable image to parse.
+        :param family: Target chip family and revision for parsing.
+        :param memory_type: Memory type to attempt parsing with.
+        :param init_offset: Initial segment offset to use for parsing.
+        :param no_errors: When True, validates parsed images and rejects any with errors.
+        :param dek_map: Optional dictionary mapping segment identifier to container DEK map.
+        :param parse_errors: Optional output list that collects the reasons why the
+                             memory type/offset combination has been rejected.
+        :return: Parsed bootable image instance, or None when parsing failed or was empty.
+        """
+        logger.debug(
+            f"Parsing the image for memory type '{memory_type.description}' "
+            f"with init offset 0x{init_offset:08X}"
+        )
+        try:
+            bimg = cls(family, memory_type, init_offset)
+            bimg._parse(binary, dek_map=dek_map)
+            if len(bimg.segments) == 0:
+                return None
+            if no_errors:
+                bimg.verify().validate()
+            return bimg
+        except SPSDKError as e:
+            logger.debug(str(e))
+            if parse_errors is not None:
+                parse_errors.append(
+                    f"Memory type '{memory_type.description}' "
+                    f"(init offset 0x{init_offset:08X}): {e!s}"
+                )
+            return None
+
+    @classmethod
+    def _parse_incomplete_images(
+        cls,
+        binary: bytes,
+        family: FamilyRevision,
+        mem_types: list[MemoryType],
+        no_errors: bool,
+        dek_map: dict[str | int | None, dict[int | None, str]] | None,
+        parse_errors: list[str] | None,
+    ) -> list[Self]:
+        """Try to parse binary data with moving initial offset across all memory types.
+
+        :param binary: Binary data of the bootable image to parse.
+        :param family: Target chip family and revision for parsing.
+        :param mem_types: Memory types to attempt parsing with.
+        :param no_errors: When True, validates parsed images and rejects any with errors.
+        :param dek_map: Optional dictionary mapping segment identifier to container DEK map.
+        :param parse_errors: Optional output list that collects the reasons why the
+                             individual attempts have been rejected.
+        :return: List of successfully parsed bootable image instances.
+        """
+        logger.debug("The exact match has not been found")
+        bimg_instances: list[Self] = []
+        for memory_type in mem_types:
+            segments = cls._get_segments(family, memory_type)
+            init_offsets = [seg.full_image_offset for seg in segments if seg.INIT_SEGMENT]
+            for init_offset in init_offsets:
+                bimg = cls._try_parse_incomplete_image(
+                    binary, family, memory_type, init_offset, no_errors, dek_map, parse_errors
+                )
+                if bimg is not None:
+                    bimg_instances.append(bimg)
+        return bimg_instances
+
+    @classmethod
     def _parse_all(
         cls,
         binary: bytes,
@@ -425,6 +541,7 @@ class BootableImage(FeatureBaseClass):
         mem_type: MemoryType | None = None,
         no_errors: bool = True,
         dek_map: dict[str | int | None, dict[int | None, str]] | None = None,
+        parse_errors: list[str] | None = None,
     ) -> list[Self]:
         """Parse binary data into bootable image objects.
 
@@ -440,6 +557,9 @@ class BootableImage(FeatureBaseClass):
                         {None: {None: dek}} for simple format (applies to all)
                         {seg_id: {None: dek}} for segment-specific
                         {seg_id: {cnt_id: dek}} for container-specific
+        :param parse_errors: Optional output list that collects the reasons why the
+                             individual memory types have been rejected. It allows the
+                             caller to report the root cause instead of a generic message.
         :raises SPSDKValueError: When family parameter is not specified.
         :return: List of successfully parsed bootable image instances.
         """
@@ -453,20 +573,12 @@ class BootableImage(FeatureBaseClass):
         bimg_instances: list[Self] = []
         # first try to find the exact match as it is a full bootable image
         for memory_type in mem_types:
-            logger.debug(
-                f"Parsing the image for memory type '{memory_type.description}' finding the exact match"
+            bimg = cls._try_parse_exact_match(
+                binary, family, memory_type, no_errors, dek_map, parse_errors
             )
-            try:
-                bimg = cls(family, memory_type)
-                bimg._parse(binary, dek_map=dek_map)
-                if len(bimg.segments) == 0:
-                    continue
-                if no_errors:
-                    bimg.verify().validate()
+            if bimg is not None:
                 bimg_instances.append(bimg)
-            except SPSDKError as e:
-                logger.debug(e)
-                continue
+
         # try to parse bootable image with moving initial offset
         do_parse_incomplete_images = not bimg_instances
         if bimg_instances:
@@ -474,26 +586,11 @@ class BootableImage(FeatureBaseClass):
             do_parse_incomplete_images = not succeeded_validation and not no_errors
 
         if do_parse_incomplete_images:
-            logger.debug("The exact match has not been found")
-            for memory_type in mem_types:
-                segments = cls._get_segments(family, memory_type)
-                init_offsets = [seg.full_image_offset for seg in segments if seg.INIT_SEGMENT]
-                for init_offset in init_offsets:
-                    logger.debug(
-                        f"Parsing the image for memory type '{memory_type.description}' "
-                        f"with init offset 0x{init_offset:08X}"
-                    )
-                    try:
-                        bimg = cls(family, memory_type, init_offset)
-                        bimg._parse(binary, dek_map=dek_map)
-                        if len(bimg.segments) == 0:
-                            continue
-                        if no_errors:
-                            bimg.verify().validate()
-                        bimg_instances.append(bimg)
-                    except SPSDKError as e:
-                        logger.debug(e)
-                        continue
+            bimg_instances.extend(
+                cls._parse_incomplete_images(
+                    binary, family, mem_types, no_errors, dek_map, parse_errors
+                )
+            )
 
         return bimg_instances
 
@@ -521,15 +618,26 @@ class BootableImage(FeatureBaseClass):
         :raises SPSDKError: When binary parsing fails for all memory types.
         :return: Parsed bootable image object.
         """
+        parse_errors: list[str] = []
         bimg_instances = cls._parse_all(
-            binary=binary, family=family, mem_type=mem_type, dek_map=dek_map
+            binary=binary,
+            family=family,
+            mem_type=mem_type,
+            dek_map=dek_map,
+            parse_errors=parse_errors,
         )
 
         if not bimg_instances:
-            raise SPSDKError(
-                "The image parsing failed. The image is not matching any of memory types."
-                " To get more accurate info try to run verify command or enable debug log."
-            )
+            msg = "The image parsing failed. The image is not matching any of memory types."
+            if parse_errors:
+                # Report the collected root causes, otherwise the user has no clue why the
+                # image has been rejected (e.g. a failed signature verification).
+                msg += "\nThe following issues have been detected:\n" + "\n".join(
+                    f" - {error}" for error in parse_errors
+                )
+            else:
+                msg += " To get more accurate info try to run verify command or enable debug log."
+            raise SPSDKError(msg)
         if len(bimg_instances) > 1:
             mem_types_str = ", ".join(f'"{img.mem_type.description}"' for img in bimg_instances)
             logger.warning(

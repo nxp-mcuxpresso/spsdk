@@ -31,6 +31,7 @@ from spsdk.mboot.properties import (
     IntListValue,
     IntValue,
     IrqNotifierPinValue,
+    LifeCycleStateValue,
     PropertyTag,
     Version,
     VersionValue,
@@ -379,6 +380,27 @@ def test_get_properties_with_family_with_overrides() -> None:
         if idx in overwritten:
             continue
         assert properties[idx] == prop
+
+
+def test_mcxc353_two_word_lifecycle_property() -> None:
+    """MCXC353 property 0x11 takes its lifecycle from the second response word."""
+    family = FamilyRevision("mcxc353")
+    value = parse_property_value(0x11, [0, 0x07], family=family)
+
+    assert isinstance(value, LifeCycleStateValue)
+    assert value.status == 0
+    assert value.to_int() == 0x07
+    assert value.to_str() == "IN_FIELD1 (0x7)"
+    assert get_properties(family)[0x11] == PropertyTag.LIFE_CYCLE_STATE
+
+
+@pytest.mark.parametrize("family_name", ["mcxc151", "mcxa156"])
+def test_single_word_lifecycle_property_is_backward_compatible(family_name: str) -> None:
+    """Legacy one-word lifecycle responses keep their established labels."""
+    value = parse_property_value(0x11, [0], family=FamilyRevision(family_name))
+
+    assert isinstance(value, LifeCycleStateValue)
+    assert value.to_str() == "development life cycle"
 
 
 def test_get_property_index() -> None:

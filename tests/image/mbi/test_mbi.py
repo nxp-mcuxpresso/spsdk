@@ -13,10 +13,12 @@ chain validation, Trust Zone configurations, and multi-image handling.
 """
 
 import os
+import struct
 
 import pytest
 
 from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.misr import calculate_misr_checksum
 from spsdk.crypto.signature_provider import SignatureProvider
 from spsdk.exceptions import SPSDKError
 from spsdk.image.cert_block.cert_block_v1 import CertBlockV1
@@ -1185,3 +1187,36 @@ def test_get_mbi_class(
         mbi_cls = MasterBootImage.get_mbi_class(config)
         assert mbi_cls.IMAGE_TARGET == expected_target
         assert mbi_cls.IMAGE_AUTHENTICATIONS == expected_auth
+
+
+def test_mcxc353_misr_matches_rom_geometry() -> None:
+    """Test MCXC353 MISR geometry and seed byte order against a ROM-compatible vector."""
+    family = FamilyRevision("mcxc353")
+    app = bytearray(b"\xff" * 2160)
+    app[0x34:0x38] = struct.pack("<I", 0)
+    misr_seed = bytes.fromhex("87654321876543218765432187654321")
+    mbi_class = MasterBootImage.create_mbi_class("misr_xip", family)
+    data = mbi_class(family=family, app=bytes(app), misr_seed=misr_seed).export()
+
+    image_length = struct.unpack_from("<I", data, 0x20)[0]
+    stored_signature = data[image_length - 0x10 : image_length]
+
+    assert image_length == len(data) == 2192
+    assert data[image_length - 0x20 : image_length - 0x10] == bytes([0xFF] * 16)
+    assert stored_signature == bytes.fromhex("E533CC296A318223052DB63D90915F1D")
+
+
+def test_mcxc151_misr_keeps_legacy_seed_byte_order() -> None:
+    """Test MCXC151 keeps the legacy little-endian MISR seed interpretation."""
+    family = FamilyRevision("mcxc151")
+    app = bytearray(b"\xff" * 2160)
+    app[0x34:0x38] = struct.pack("<I", 0)
+    misr_seed = bytes.fromhex("0123456789ABCDEFFEDCBA9876543210")
+    mbi_class = MasterBootImage.create_mbi_class("misr_xip", family)
+    data = mbi_class(family=family, app=bytes(app), misr_seed=misr_seed).export()
+
+    image_length = struct.unpack_from("<I", data, 0x20)[0]
+    stored_signature = data[image_length - 0x10 : image_length]
+    legacy_signature = calculate_misr_checksum(misr_seed, data[: image_length - 0x10])
+
+    assert stored_signature == legacy_signature

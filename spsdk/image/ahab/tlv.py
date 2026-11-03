@@ -12,6 +12,7 @@ and key import operations.
 """
 
 import logging
+from abc import ABC
 from inspect import isclass
 from typing import Any
 
@@ -50,7 +51,7 @@ from spsdk.utils.verifier import Verifier
 logger = logging.getLogger(__name__)
 
 
-class TLV(FeatureBaseClass):
+class TLV(FeatureBaseClass, ABC):
     """Tag-Length-Value (TLV) base class for AHAB image processing.
 
     This abstract base class provides the foundation for handling TLV data structures

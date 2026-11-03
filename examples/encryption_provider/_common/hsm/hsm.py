@@ -35,7 +35,7 @@ def load_key(key_id: int) -> bytes:
     key_path = THIS_DIR / f"pck_{key_id}.txt"
     if not key_path.exists():
         raise ValueError(f"Key with ID {key_id} not found")
-    key_hex = key_path.read_text().strip()
+    key_hex = key_path.read_text(encoding="utf-8").strip()
     return bytes.fromhex(key_hex)
 
 

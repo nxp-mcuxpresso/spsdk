@@ -372,8 +372,14 @@ class DebugProbeDsc(DebugProbe):
 
         :raises SPSDKError: When connection to debug probe fails.
         :raises SPSDKTimeoutError: When connection timeout occurs.
+        :raises Exception: Re-raises the original connection exception.
         """
-        self.connect()
+        try:
+            self.connect()
+        except Exception:
+            self.debug_access_status["probe_connected"] = False
+            raise
+        self.debug_access_status["probe_connected"] = True
 
     @no_type_check
     # pylint: disable=no-self-argument
@@ -644,13 +650,16 @@ class DebugProbeDsc(DebugProbe):
             # Convert the returned data to integer (little-endian)
             value = int.from_bytes(data_list, "little")
 
+            self.debug_access_status["dp_idr_ok"] = True
             return value
 
         except AttributeError as exc:
+            self.debug_access_status["dp_idr_ok"] = False
             raise SPSDKDebugProbeNotOpenError(
                 "Debug probe is not opened or write_ir/write_dr methods are not available"
             ) from exc
         except Exception as exc:
+            self.debug_access_status["dp_idr_ok"] = False
             raise SPSDKDebugProbeError(f"Failed to read DSC chip IDCode: {exc!s}") from exc
 
     def _once_read_word(self, addr: int) -> int:

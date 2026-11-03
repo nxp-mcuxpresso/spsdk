@@ -33,6 +33,7 @@ from spsdk.image.ahab.ahab_data import (
     CONTAINER_ALIGNMENT,
     RESERVED,
     AhabChipContainerConfig,
+    AHABSignAlgorithm,
     AHABTags,
     FlagsSrkSet,
     SignatureType,
@@ -534,15 +535,14 @@ class SignatureBlock(HeaderContainer):
                         "The container has dummy signature. Must be re-signed!",
                     )
                 else:
+                    srk_record = self.srk_assets.srk_records[self.chip_config.used_srk_id]
                     sign_ok = public_key.verify_signature(
                         self.signature.signature_data,
                         data_to_sign,
-                        algorithm=EnumHashAlgorithm.from_label(
-                            self.srk_assets.srk_records[
-                                self.chip_config.used_srk_id
-                            ].hash_algorithm.label
-                        ),
-                        pss_padding=True,
+                        algorithm=EnumHashAlgorithm.from_label(srk_record.hash_algorithm.label),
+                        # RSA keys may be used with either PKCS#1 v1.5 (RSA) or PSS
+                        # (RSA_PSS) padding. The used scheme is declared in the SRK record.
+                        pss_padding=srk_record.signing_algorithm != AHABSignAlgorithm.RSA,
                     )
                     if sign_ok:
                         ver_sign.add_record(
@@ -987,6 +987,18 @@ class SignatureBlockV2(HeaderContainer):
         """
         return "AHAB Signature Block V2"
 
+    @property
+    def member_alignment(self) -> int:
+        """Get required alignment of the signature block members.
+
+        Some devices (ROM implementations) require that all members of the signature block
+        (SRK table array, signature, certificate and blob) start at an aligned offset,
+        otherwise an unaligned access fault may be raised during the boot.
+
+        :return: Alignment in bytes. Value 1 means that no padding is inserted.
+        """
+        return self.chip_config.base.signature_block_member_alignment
+
     def __str__(self) -> str:
         """Get string representation of AHAB Signature Block.
 
@@ -1028,15 +1040,17 @@ class SignatureBlockV2(HeaderContainer):
         This method recalculates and updates the offsets and length of all components
         within the AHAB signature block including SRK assets, signatures, certificates,
         and blobs. The components are positioned sequentially and their offsets are
-        updated accordingly.
+        updated accordingly. When the chip requires it, each member is placed at an
+        aligned offset and the total length is aligned as well.
         """
+        alignment = self.member_alignment
         # 1: Update SRK Table
         # Nothing to do with SRK Table
         last_offset = 0
         last_block_size = calcsize(self.format())
         if self.srk_assets:
             self.srk_assets.update_fields()
-            last_offset = self._srk_assets_offset = last_offset + last_block_size
+            last_offset = self._srk_assets_offset = align(last_offset + last_block_size, alignment)
             last_block_size = len(self.srk_assets)
         else:
             self._srk_assets_offset = 0
@@ -1044,28 +1058,28 @@ class SignatureBlockV2(HeaderContainer):
         # 2: Update Signature (at least length)
         # Nothing to do with Signature - in this time , it MUST be ready
         if self.signature:
-            last_offset = self._signature_offset = last_offset + last_block_size
+            last_offset = self._signature_offset = align(last_offset + last_block_size, alignment)
             last_block_size = len(self.signature)
             if self.signature_2:
-                last_block_size += len(self.signature_2)
+                last_block_size = align(last_block_size, alignment) + len(self.signature_2)
         else:
             self._signature_offset = 0
         # 3: Optionally update Certificate
         if self.certificate:
             self.certificate.update_fields()
-            last_offset = self._certificate_offset = last_offset + last_block_size
+            last_offset = self._certificate_offset = align(last_offset + last_block_size, alignment)
             last_block_size = len(self.certificate)
         else:
             self._certificate_offset = 0
         # 4: Optionally update Blob
         if self.blob:
-            last_offset = self._blob_offset = last_offset + last_block_size
+            last_offset = self._blob_offset = align(last_offset + last_block_size, alignment)
             last_block_size = len(self.blob)
         else:
             self._blob_offset = 0
 
         # 5: Update length of Signature block
-        self.length = last_offset + last_block_size
+        self.length = align(last_offset + last_block_size, alignment)
 
     def sign_itself(self, data_to_sign: bytes) -> None:
         """Sign the container with provided data.
@@ -1125,7 +1139,9 @@ class SignatureBlockV2(HeaderContainer):
                 self._signature_offset : self._signature_offset + len(self.signature)
             ] = self.signature.export()
             if self.signature_2:
-                signature_offset_2 = self._signature_offset + len(self.signature)
+                signature_offset_2 = self._signature_offset + align(
+                    len(self.signature), self.member_alignment
+                )
                 signature_block[signature_offset_2 : signature_offset_2 + len(self.signature_2)] = (
                     self.signature_2.export()
                 )
@@ -1191,6 +1207,12 @@ class SignatureBlockV2(HeaderContainer):
                     VerifierResult.ERROR,
                     f"Invalid: {offset} < minimal offset {min_offset}",
                 )
+            elif offset % self.member_alignment:
+                ver.add_record(
+                    "Offset",
+                    VerifierResult.ERROR,
+                    f"Invalid: {offset} is not aligned to {self.member_alignment} bytes",
+                )
             else:
                 ver.add_record_bit_range("Offset", offset, 16)
 
@@ -1236,7 +1258,7 @@ class SignatureBlockV2(HeaderContainer):
         else:
             if self.signature_2:
                 target_ver.add_child(self.signature_2.verify(), prefix_name="Second Signature")
-                min_offset += len(self.signature_2)
+                min_offset = align(min_offset, self.member_alignment) + len(self.signature_2)
             else:
                 target_ver.add_record("Second Signature", VerifierResult.ERROR, "Missing")
 
@@ -1377,15 +1399,16 @@ class SignatureBlockV2(HeaderContainer):
                         "The container has dummy signature. Must be re-signed!",
                     )
                 elif public_key is not None:
+                    srk_record = self.srk_assets._srk_tables[ix].srk_records[
+                        self.chip_config.used_srk_id
+                    ]
                     sign_ok = public_key.verify_signature(
                         signature_container.signature_data,
                         data_to_sign,
-                        algorithm=EnumHashAlgorithm.from_label(
-                            self.srk_assets._srk_tables[ix]
-                            .srk_records[self.chip_config.used_srk_id]
-                            .hash_algorithm.label
-                        ),
-                        pss_padding=True,
+                        algorithm=EnumHashAlgorithm.from_label(srk_record.hash_algorithm.label),
+                        # RSA keys may be used with either PKCS#1 v1.5 (RSA) or PSS
+                        # (RSA_PSS) padding. The used scheme is declared in the SRK record.
+                        pss_padding=srk_record.signing_algorithm != AHABSignAlgorithm.RSA,
                     )
 
                     if sign_ok:
@@ -1523,7 +1546,12 @@ class SignatureBlockV2(HeaderContainer):
                 signature_block.signature = ContainerSignature.parse(data[signature_offset:])
                 if signature_block.srk_assets and len(signature_block.srk_assets._srk_tables) == 2:
                     signature_block.signature_2 = ContainerSignature.parse(
-                        data[signature_offset + len(signature_block.signature) :]
+                        data[
+                            signature_offset
+                            + align(
+                                len(signature_block.signature), signature_block.member_alignment
+                            ) :
+                        ]
                     )
         except SPSDKParsingError:
             signature_block.signature = None

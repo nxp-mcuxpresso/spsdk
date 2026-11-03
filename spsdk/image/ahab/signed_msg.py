@@ -15,10 +15,12 @@ EdgeLock security features. The module allows customization of container values
 according to device-specific requirements.
 """
 
+# pylint: disable=too-many-lines
+
 import datetime
 import logging
 import os
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from inspect import isclass
 from struct import calcsize, pack, unpack
 from typing import Any, TypeAlias
@@ -27,6 +29,7 @@ from typing_extensions import Self
 
 from spsdk.crypto.hkdf import hkdf
 from spsdk.crypto.keys import PrivateKeyEcc, PublicKeyEcc
+from spsdk.ele.ele_constants import SecureBootCryptoMode
 from spsdk.exceptions import (
     SPSDKError,
     SPSDKNotImplementedError,
@@ -105,6 +108,11 @@ class MessageCommands(SpsdkEnum):
         "Key exchange signed message content",
     )
     WRITE_SEC_FUSE_REQ = (0x91, "WRITE_SEC_FUSE_REQ", "Write secure fuse request.")
+    FORWARD_BOOT_CRYPTO_REQ = (
+        0x93,
+        "FORWARD_BOOT_CRYPTO_REQ",
+        "Forward boot crypto request.",
+    )
     RETURN_LIFECYCLE_UPDATE_REQ = (
         0xA0,
         "RETURN_LIFECYCLE_UPDATE_REQ",
@@ -496,7 +504,7 @@ class Message(Container):
         """
 
 
-class MessageV2(Message):
+class MessageV2(Message, ABC):
     """AHAB Signed Message Version 2.
 
     This class represents a version 2 signed message in the AHAB (Advanced High Assurance Boot)
@@ -655,6 +663,169 @@ class MessageReturnLifeCycle(Message):
         """
         ret = super().verify()
         ret.add_record_range("Life Cycle", self.life_cycle)
+        return ret
+
+
+class MessageForwardBootCrypto(Message):
+    """AHAB forward boot crypto signed message content.
+
+    This class represents the signed message payload used to authorize moving the
+    secure boot crypto state (Classic, PQC, Hybrid) from one value to another on
+    devices with EdgeLock security subsystem. It is used together with the
+    FORWARD BOOT CRYPTO (0x93) baseline command when the current secure boot
+    crypto forward policy requires a signed message for the requested transition.
+    The signed message container must have the "Check all signatures" flag set
+    and be signed by both PQC and classic keys, otherwise the request will fail.
+
+    :cvar TAG: Message command tag identifier.
+    :cvar PAYLOAD_LENGTH: Fixed payload length in bytes.
+    """
+
+    TAG = MessageCommands.FORWARD_BOOT_CRYPTO_REQ.tag
+    PAYLOAD_LENGTH = 4
+
+    def __init__(
+        self,
+        family: FamilyRevision,
+        cert_ver: int = 0,
+        permissions: int = 0,
+        issue_date: int | None = None,
+        unique_id: bytes | None = None,
+        unique_id_len: int = Message.UNIQUE_ID_LEN,
+        secure_boot_crypto_mode: SecureBootCryptoMode = SecureBootCryptoMode.HYBRID,
+        header_flags: int = 0,
+    ) -> None:
+        """Initialize AHAB signed message for EdgeLock device communication.
+
+        Creates a message structure that can be signed and sent to devices with EdgeLock
+        security subsystem to authorize a secure boot crypto forward transition.
+
+        :param family: Family revision of the target device.
+        :param cert_ver: Certificate version, defaults to 0.
+        :param permissions: Certificate permissions for future use. Must allow the operation
+            requested by the signed message, defaults to 0.
+        :param issue_date: Message issue date. If None, current date will be used.
+        :param unique_id: Unique identifier of the target device, defaults to None.
+        :param unique_id_len: Length of unique ID in bytes (8 or 16), defaults to 8 bytes.
+        :param secure_boot_crypto_mode: Target secure boot crypto mode to switch to
+            (HYBRID, PQC or RETURN_TO_CLASSIC), defaults to HYBRID.
+        :param header_flags: Message flags for additional control options, defaults to 0.
+        """
+        super().__init__(
+            family=family,
+            cert_ver=cert_ver,
+            permissions=permissions,
+            issue_date=issue_date,
+            cmd=self.TAG,
+            unique_id=unique_id,
+            unique_id_len=unique_id_len,
+            header_flags=header_flags,
+        )
+        self.secure_boot_crypto_mode = secure_boot_crypto_mode
+
+    def __str__(self) -> str:
+        """Get string representation of the signed message.
+
+        Extends the parent class string representation with secure boot crypto
+        mode information.
+
+        :return: Formatted string containing the signed message details including
+            the secure boot crypto mode.
+        """
+        ret = super().__str__() + "\n"
+        ret += f"  Secure boot crypto mode: {self.secure_boot_crypto_mode.label}"
+        return ret
+
+    def export_payload(self) -> bytes:
+        """Export message payload to bytes array.
+
+        The method converts the secure boot crypto magic value to a 4-byte little-endian
+        byte representation that forms the message payload.
+
+        :return: Bytes representation of message payload containing the secure boot
+            crypto magic value.
+        """
+        return self.secure_boot_crypto_mode.tag.to_bytes(
+            length=4, byteorder=Endianness.LITTLE.value
+        )
+
+    def parse_payload(self, data: bytes) -> None:
+        """Parse payload data and extract secure boot crypto mode.
+
+        The method extracts the secure boot crypto magic value from the first 4 bytes
+        of the provided binary data using little-endian byte order.
+
+        :param data: Binary data with payload to parse.
+        """
+        magic = int.from_bytes(data[:4], byteorder=Endianness.LITTLE.value)
+        self.secure_boot_crypto_mode = SecureBootCryptoMode.from_tag(magic)
+
+    @classmethod
+    def _load_from_config(
+        cls, config: Config, family: FamilyRevision, base_cls: type[Message] = Message
+    ) -> Self:
+        """Load forward boot crypto request message from configuration.
+
+        Creates a MessageForwardBootCrypto object from the provided configuration dictionary,
+        validating the command type and extracting the target secure boot crypto mode.
+
+        :param config: Message configuration dictionaries.
+        :param family: Family revision context.
+        :param base_cls: Base message class for configuration loading.
+        :raises SPSDKError: Invalid configuration detected.
+        :return: Message object.
+        """
+        command = config.get_config("command")
+        if len(command) != 1:
+            raise SPSDKError(f"Invalid config field command: {command}")
+        command_name = next(iter(command.keys()))
+        if MessageCommands.from_label(command_name) != MessageForwardBootCrypto.TAG:
+            raise SPSDKError("Invalid configuration for Forward Boot Crypto Request command.")
+
+        cert_ver, permission, issue_date, uuid, header_flags = cls.load_from_config_generic(
+            config, unique_id_len=base_cls.UNIQUE_ID_LEN
+        )
+
+        secure_boot_crypto_mode = SecureBootCryptoMode.from_attr(
+            command.get_str("FORWARD_BOOT_CRYPTO_REQ")
+        )
+
+        return cls(
+            family=family,
+            cert_ver=cert_ver,
+            permissions=permission,
+            issue_date=issue_date,
+            unique_id=uuid,
+            unique_id_len=base_cls.UNIQUE_ID_LEN,
+            secure_boot_crypto_mode=secure_boot_crypto_mode,
+            header_flags=header_flags,
+        )
+
+    def get_config(self) -> Config:
+        """Create configuration of the Signed Message.
+
+        :return: Configuration dictionary with the target secure boot crypto mode.
+        """
+        cfg = self._create_general_config()
+        cmd_cfg = {}
+        cmd_cfg[MessageCommands.get_label(self.TAG)] = self.secure_boot_crypto_mode.label
+        cfg["command"] = cmd_cfg
+
+        return cfg
+
+    def verify(self) -> Verifier:
+        """Verify message properties and secure boot crypto mode.
+
+        This method extends the parent verification by adding a secure boot crypto
+        mode record to the verification results.
+
+        :return: Verifier object containing verification results with secure boot
+            crypto mode data.
+        """
+        ret = super().verify()
+        ret.add_record_enum(
+            "Secure boot crypto mode", self.secure_boot_crypto_mode, SecureBootCryptoMode
+        )
         return ret
 
 

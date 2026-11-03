@@ -20,6 +20,7 @@ from typing import Any, Generic, TypeVar, cast
 
 from typing_extensions import Self
 
+from spsdk import SPSDK_DEPRECATED_STRICT
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.binary_image import BinaryImage, BinaryPattern
 from spsdk.utils.config import Config, PreValidationHook
@@ -729,6 +730,7 @@ class RegsBitField:
 
         :param enum_name: Name of the enum (string) or its integer value to search for.
         :raises SPSDKRegsErrorEnumNotFound: The enum has not been found.
+        :raises SPSDKError: A deprecated enum name is used in strict mode.
         :return: Integer constant value of the found enum.
         """
         if isinstance(enum_name, int):
@@ -747,10 +749,13 @@ class RegsBitField:
             if any(
                 enum_name == deprecated_name.upper() for deprecated_name in enum.deprecated_names
             ):
-                logger.warning(
+                message = (
                     f"Using deprecated enum name: {enum_name}, "
                     f"updated configuration to use: {enum.name}"
                 )
+                if SPSDK_DEPRECATED_STRICT:
+                    raise SPSDKError(message)
+                logger.warning(message)
                 return enum.get_value_int()
 
         raise SPSDKRegsErrorEnumNotFound(
@@ -1329,17 +1334,24 @@ class Register:
         :param name: The name of the bitfield (case insensitive).
         :return: Instance of the bitfield.
         :raises SPSDKRegsErrorBitfieldNotFound: The bitfield doesn't exist.
+        :raises SPSDKError: A deprecated bitfield name is used in strict mode.
         """
         for bitfield in self._bitfields:
             if name.upper() == bitfield.name.upper():
                 return bitfield
             if name.upper() == bitfield.uid.upper():
                 return bitfield
-            if name.upper() in bitfield.deprecated_names:
-                logger.warning(
+            if any(
+                name.upper() == deprecated_name.upper()
+                for deprecated_name in bitfield.deprecated_names
+            ):
+                message = (
                     f"Bitfield name is deprecated, use the new name: {bitfield.name}."
                     "Deprecated names will be removed in the next major version of SPSDK."
                 )
+                if SPSDK_DEPRECATED_STRICT:
+                    raise SPSDKError(message)
+                logger.warning(message)
                 return bitfield
         raise SPSDKRegsErrorBitfieldNotFound(
             f"The bitfield '{name}' was not found in register '{self.name}'. "
@@ -1560,6 +1572,7 @@ class _RegistersBase(Generic[RegisterClassT]):
         :param include_group_regs: Whether to include group sub-registers in the search.
         :return: Instance of the found register.
         :raises SPSDKRegsErrorRegisterNotFound: The register doesn't exist in loaded registers.
+        :raises SPSDKError: A deprecated register name is used in strict mode.
         """
         key = name.upper()
 
@@ -1567,10 +1580,13 @@ class _RegistersBase(Generic[RegisterClassT]):
         reg = self._reg_index.get(key)
         if reg is not None:
             if key not in (reg.name.upper(), reg.uid.upper()):
-                logger.warning(
+                message = (
                     f"Register name is deprecated, use the new name: {reg.name}."
                     "Deprecated names will be removed in the next major version of SPSDK."
                 )
+                if SPSDK_DEPRECATED_STRICT:
+                    raise SPSDKError(message)
+                logger.warning(message)
             return reg
 
         # Not in index: fall back to searching sub-registers if requested, then lazily cache them
@@ -1592,10 +1608,13 @@ class _RegistersBase(Generic[RegisterClassT]):
                             dn.upper() for dn in sub_reg.deprecated_names
                         ]:
                             if key not in (sub_reg_name_key, sub_reg_uid_key):
-                                logger.warning(
+                                message = (
                                     f"Register name is deprecated, use the new name: {sub_reg.name}."
                                     "Deprecated names will be removed in the next major version of SPSDK."
                                 )
+                                if SPSDK_DEPRECATED_STRICT:
+                                    raise SPSDKError(message)
+                                logger.warning(message)
                             return sub_reg  # type: ignore[return-value]
 
         raise SPSDKRegsErrorRegisterNotFound(

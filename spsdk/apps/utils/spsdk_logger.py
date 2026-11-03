@@ -35,6 +35,10 @@ colorama.just_fix_windows_console()
 
 module_logger = logging.getLogger(__name__)
 
+# Matches ANSI SGR escape sequences (e.g. the ESC[31m emitted by colorama) so they
+# can be stripped from log messages when the colored output is disabled.
+ANSI_ESCAPE_REGEX = re.compile(r"\x1b\[[0-9;]*m")
+
 try:
     logging_config_file = find_file(
         "logging.yaml", search_paths=["../../", os.path.expanduser("~/.spsdk")]
@@ -104,15 +108,14 @@ class ColoredFormatter(logging.Formatter):
         """
         fmt = self.formats.get(record.levelno)
         formatter = logging.Formatter(fmt)
+        formatted = formatter.format(record)
         if not self.colored:
-            try:
-                record.msg = re.sub(r"\\x1b\[\d{1,3}m", "", record.msg)
-            except Exception as exc:
-                # Just ignore all exceptions on this "remove color" operation
-                module_logger.debug(
-                    f"Failed to remove color escape sequences: {exc}", exc_info=True
-                )
-        return formatter.format(record)
+            # Strip the color escape sequences from the already formatted message.
+            # It must be done on the formatted string and not on 'record.msg', because
+            # the message may be any object (e.g. an exception) and the record is shared
+            # between all installed handlers, so it must not be mutated here.
+            formatted = ANSI_ESCAPE_REGEX.sub("", formatted)
+        return formatted
 
 
 class _SPSDKConsoleHandler(logging.StreamHandler):

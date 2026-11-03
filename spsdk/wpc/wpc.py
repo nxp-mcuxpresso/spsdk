@@ -15,7 +15,7 @@ used throughout the WPC implementation.
 import inspect
 import logging
 import struct
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
@@ -305,7 +305,7 @@ class WPCCertChain:
             )
 
 
-class BaseWPCClass(FeatureBaseClassComm):
+class BaseWPCClass(FeatureBaseClassComm, ABC):
     """Base abstract class for WPC (Wireless Power Consortium) Service and Target implementations.
 
     This class provides the foundation for WPC operations across NXP MCU portfolio,

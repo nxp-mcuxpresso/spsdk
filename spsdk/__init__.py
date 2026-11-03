@@ -139,7 +139,7 @@ def _ensure_spsdk_loggers_are_correct_type() -> None:
                 logger.__class__ = SPSDKLogger
 
 
-class SPSDKPlatformDirs(PlatformDirs):
+class SPSDKPlatformDirs(PlatformDirs):  # pylint: disable=abstract-method
     """SPSDK Platform Directories Manager.
 
     This class extends platformdirs.PlatformDirs to provide unified directory structure
@@ -157,14 +157,15 @@ class SPSDKPlatformDirs(PlatformDirs):
 
         On Windows platforms, returns a subdirectory 'Cache' within the user data directory.
         On non-Windows platforms, delegates to the parent class implementation.
-        The directory is automatically created if it doesn't exist.
+        The directory is created if it doesn't exist and ``ensure_exists`` is enabled.
 
         :return: Absolute path to the user cache directory.
         """
         if sys.platform != "win32":
             return super().user_cache_dir
         path = os.path.join(self.user_data_dir, "Cache")
-        self._optionally_create_directory(path)
+        if self.ensure_exists:
+            os.makedirs(path, exist_ok=True)
         return path
 
 
@@ -217,6 +218,7 @@ __all__ = [
     "SPSDK_DATA_FOLDER",
     "SPSDK_DEBUG",
     "SPSDK_DEBUG_DB",
+    "SPSDK_DEPRECATED_STRICT",
     "SPSDK_DEBUG_LOGGING_DISABLED",
     "SPSDK_DEBUG_LOG_FILE",
     "SPSDK_EXAMPLES_FOLDER",
@@ -297,6 +299,7 @@ SPSDK_DEBUG_LOGGING_DISABLED = value_to_bool(os.environ.get("SPSDK_DEBUG_LOGGING
 SPSDK_DEBUG_LOG_FILE = os.environ.get(
     "SPSDK_DEBUG_LOG_FILE", os.path.join(SPSDK_PLATFORM_DIRS.user_log_dir, "debug.log")
 )
+SPSDK_DEPRECATED_STRICT = value_to_bool(os.environ.get("SPSDK_DEPRECATED_STRICT"))
 SPSDK_SCHEMA_STRICT = value_to_bool(os.environ.get("SPSDK_SCHEMA_STRICT"))
 
 SPSDK_SECRETS_PATH = os.environ.get(

@@ -121,7 +121,9 @@ class CoreResetEntry(FeatureBaseClass):
       with the previous entry to be verified successfully (applicable only in
       OEM_PROD/IN_FIELD life cycles)
     - The core release strategy is defined by HSE_CORE_RESET_RELEASE_ATTR_ID attribute
-      ("ALL-AT-ONCE" or "ONE-BY-ONE")
+      ("ALL-AT-ONCE" or "ONE-BY-ONE"); see
+      :class:`spsdk.ele.hse_attrs.CoreResetReleaseAttributeHandler` and
+      :class:`spsdk.ele.hse_attrs.CoreReleaseStrategy`
     - For devices with SD/eMMC support, SMR with source address in SD/eMMC can be used
       only under specific conditions related to core release strategy
 

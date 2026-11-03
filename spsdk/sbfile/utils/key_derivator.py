@@ -18,7 +18,7 @@ from typing import Any
 
 from spsdk.crypto.cmac import cmac
 from spsdk.crypto.symmetric import aes_cbc_decrypt, aes_cbc_encrypt
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError
 from spsdk.utils.http_client import HTTPClientBase
 from spsdk.utils.misc import Endianness, find_file, load_hex_string
 from spsdk.utils.service_provider import ServiceProvider
@@ -81,18 +81,26 @@ class SB31KeyDerivator(ServiceProvider):
 
         :param data: Raw data to be encrypted.
         :param iv: Initialization vector for encryption.
-        :return: Encrypted data.
+        :raises SPSDKNotImplementedError: The derivator does not support AES-CBC encryption.
         """
-        raise NotImplementedError("aes_cbc_encrypt must be implemented by subclass")
+        raise SPSDKNotImplementedError(
+            f"AES-CBC encryption is not supported by the '{type(self).__name__}' key derivator. "
+            "Use a key derivator that has access to the part common key (PCK), "
+            "or contact the SPSDK team if you need this functionality."
+        )
 
     def aes_cbc_decrypt(self, data: bytes, iv: bytes) -> bytes:
         """Decrypt a data using the AES-CBC encryption method.
 
         :param data: Encrypted data to be decrypted.
         :param iv: Initialization vector for decryption.
-        :return: Decrypted data.
+        :raises SPSDKNotImplementedError: The derivator does not support AES-CBC decryption.
         """
-        raise NotImplementedError("aes_cbc_decrypt must be implemented by subclass")
+        raise SPSDKNotImplementedError(
+            f"AES-CBC decryption is not supported by the '{type(self).__name__}' key derivator. "
+            "Use a key derivator that has access to the part common key (PCK), "
+            "or contact the SPSDK team if you need this functionality."
+        )
 
     def _derive_kdk(self) -> bytes:
         """Derive the KeyDerivationKey from PCK and timestamp.

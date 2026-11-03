@@ -1284,7 +1284,7 @@ class BinaryImage:
             # whose physical start address lies beyond what bincopy already loaded.
             # This handles ELF_PATCH extra PT_LOAD entries appended beyond existing sections,
             # while correctly skipping GCC-style RAM init segments (vaddr != paddr).
-            if seg_vaddr == seg_paddr and seg_paddr >= max_addr:
+            if max_addr <= seg_paddr == seg_vaddr:
                 bin_file.add_binary(seg_data, seg_paddr)
 
     @staticmethod

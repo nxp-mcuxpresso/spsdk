@@ -33,9 +33,11 @@ class HseAttributeId(SpsdkEnum):
 
     FW_VERSION = (1, "FW_VERSION")
     CAPABILITIES = (2, "CAPABILITIES")
+    SMR_CORE_BOOT_STATUS = (3, "SMR_CORE_BOOT_STATUS")
     DEBUG_AUTH_MODE = (10, "DEBUG_AUTH_MODE")
     APP_DEBUG_KEY = (11, "APP_DEBUG_KEY")
     SECURE_LIFECYCLE = (12, "SECURE_LIFECYCLE")
+    CORE_RESET_RELEASE = (23, "CORE_RESET_RELEASE")
     ENABLE_PUBLISH_KEYSTORE_RAM_TO_FLASH = (602, "ENABLE_PUBLISH_KEYSTORE_RAM_TO_FLASH")
 
 
@@ -447,6 +449,198 @@ class CapabilitiesAttributeHandler(HseAttributeHandler):
         return {
             "attr_id": self.ATTR_ID.label,
             "settings": {"capabilities": [cap.label for cap in self.capabilities]},
+        }
+
+
+class SmrCoreBootStatusAttributeHandler(HseAttributeHandler):
+    """HSE SMR verification and Core Boot status attribute handler.
+
+    Manages the read-only HSE_SMR_CORE_BOOT_STATUS_ATTR_ID attribute which reports the
+    SMR (Secure Memory Region) installation/verification status together with the
+    per-core boot/reset status, as defined by the hseAttrSmrCoreStatus_t structure.
+
+    This attribute is useful for diagnosing dual-core (or multi-core) boot issues: it
+    allows the host to determine which SMR entry failed verification and which core(s)
+    were not released from reset, e.g. after the HSE_WA_SMR_PERIODIC_CHECK_FAILED
+    warning bit is set in GSR.
+
+    The structure contains three UINT32 bitmaps, each bit representing an SMR table
+    entry index (0-31) or a core ID (0-31):
+
+    - smr_status[0]: bit=0 -> SMR not verified, bit=1 -> SMR verified
+    - smr_status[1]: bit=0 -> SMR verification fail, bit=1 -> SMR verification pass
+    - core_boot_status[0]: bit=0 -> core not booted, bit=1 -> core booted
+    - core_boot_status[1]: bit=0 -> core booted with alternate/backup reset address,
+      bit=1 -> core booted with pass/primary reset address
+    - smr_entry_install_status: bit=0 -> SMR entry not installed, bit=1 -> SMR entry installed
+
+    :cvar FORMAT: Binary format specification for the hseAttrSmrCoreStatus_t structure.
+    :cvar ATTR_ID: HSE attribute identifier for SMR/Core boot status.
+    :cvar ATTR_TYPE: Read-only attribute type designation.
+    """
+
+    FORMAT = LITTLE_ENDIAN + UINT32 + UINT32 + UINT32 + UINT32 + UINT32
+    ATTR_ID = HseAttributeId.SMR_CORE_BOOT_STATUS
+    ATTR_TYPE = HseAttributeType.READ_ONLY
+
+    def __init__(
+        self,
+        smr_status: list[int],
+        core_boot_status: list[int],
+        smr_entry_install_status: int,
+    ) -> None:
+        """Initialize the SMR/Core boot status attribute handler.
+
+        :param smr_status: Two UINT32 bitmaps [verified/not-verified, pass/fail] over 32 SMR entries.
+        :param core_boot_status: Two UINT32 bitmaps [booted/not-booted, primary/alternate reset
+            address] over 32 core IDs.
+        :param smr_entry_install_status: UINT32 bitmap of installed/not-installed SMR entries.
+        """
+        super().__init__()
+        if len(smr_status) != 2:
+            raise SPSDKValueError(
+                f"smr_status must contain exactly 2 entries, got {len(smr_status)}"
+            )
+        if len(core_boot_status) != 2:
+            raise SPSDKValueError(
+                f"core_boot_status must contain exactly 2 entries, got {len(core_boot_status)}"
+            )
+        self.smr_status = smr_status
+        self.core_boot_status = core_boot_status
+        self.smr_entry_install_status = smr_entry_install_status
+
+    @classmethod
+    def parse(cls, data: bytes) -> Self:
+        """Parse SMR/Core boot status data into structured fields.
+
+        :param data: Raw attribute data bytes to be parsed.
+        :return: Parsed SMR/Core boot status object.
+        """
+        smr_status_0, smr_status_1, core_boot_status_0, core_boot_status_1, install_status = unpack(
+            cls.FORMAT, data
+        )
+        return cls(
+            smr_status=[smr_status_0, smr_status_1],
+            core_boot_status=[core_boot_status_0, core_boot_status_1],
+            smr_entry_install_status=install_status,
+        )
+
+    def export(self) -> bytes:
+        """Export SMR/Core boot status data into raw bytes.
+
+        :return: Packed binary data containing the SMR/Core boot status information.
+        """
+        return pack(
+            self.FORMAT,
+            self.smr_status[0],
+            self.smr_status[1],
+            self.core_boot_status[0],
+            self.core_boot_status[1],
+            self.smr_entry_install_status,
+        )
+
+    def is_smr_installed(self, smr_index: int) -> bool:
+        """Check whether the given SMR table entry index is installed.
+
+        :param smr_index: SMR table entry index (0-31).
+        :return: True if the SMR entry is installed.
+        """
+        return bool(self.smr_entry_install_status & (1 << smr_index))
+
+    def is_smr_verified(self, smr_index: int) -> bool:
+        """Check whether the given SMR table entry index has been verified.
+
+        :param smr_index: SMR table entry index (0-31).
+        :return: True if the SMR entry was verified (regardless of pass/fail).
+        """
+        return bool(self.smr_status[0] & (1 << smr_index))
+
+    def is_smr_verification_passed(self, smr_index: int) -> bool:
+        """Check whether the given SMR table entry index passed verification.
+
+        :param smr_index: SMR table entry index (0-31).
+        :return: True if the SMR entry verification passed.
+        """
+        return bool(self.smr_status[1] & (1 << smr_index))
+
+    def is_core_booted(self, core_index: int) -> bool:
+        """Check whether the given core ID has been booted.
+
+        :param core_index: Core ID index (0-31).
+        :return: True if the core has been booted (released from reset).
+        """
+        return bool(self.core_boot_status[0] & (1 << core_index))
+
+    def is_core_booted_from_primary_address(self, core_index: int) -> bool:
+        """Check whether the given core booted from its primary (pass) reset address.
+
+        :param core_index: Core ID index (0-31).
+        :return: True if the core booted from the primary/pass reset address, False if from
+            the alternate/backup reset address.
+        """
+        return bool(self.core_boot_status[1] & (1 << core_index))
+
+    def __str__(self) -> str:
+        """Format the SMR/Core boot status for display.
+
+        :return: Formatted string representation of the SMR and Core boot status.
+        """
+        ret = "SMR Verification & Core Boot Status:\n"
+        ret += "  SMR entries:\n"
+        for i in range(32):
+            if not self.is_smr_installed(i):
+                continue
+            verified = self.is_smr_verified(i)
+            passed = self.is_smr_verification_passed(i) if verified else None
+            status = "not verified" if not verified else ("pass" if passed else "fail")
+            ret += f"    SMR[{i}]: installed, verification {status}\n"
+        ret += "  Cores:\n"
+        for i in range(32):
+            if not self.is_core_booted(i):
+                continue
+            addr = "primary" if self.is_core_booted_from_primary_address(i) else "alternate"
+            ret += f"    Core[{i}]: booted ({addr} reset address)\n"
+        return ret
+
+    def __repr__(self) -> str:
+        """Return a string representation of the SMR/Core boot status attribute.
+
+        :return: String representation with the raw bitmap values.
+        """
+        return (
+            f"SmrCoreBootStatus(smr_status={self.smr_status}, "
+            f"core_boot_status={self.core_boot_status}, "
+            f"smr_entry_install_status=0x{self.smr_entry_install_status:08X})"
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the SMR/Core boot status attribute to dictionary representation.
+
+        :return: Dictionary with attribute ID and per-SMR/per-core status settings.
+        """
+        return {
+            "attr_id": self.ATTR_ID.label,
+            "settings": {
+                "smr_entries": {
+                    i: {
+                        "installed": self.is_smr_installed(i),
+                        "verified": self.is_smr_verified(i),
+                        "verification_passed": (
+                            self.is_smr_verification_passed(i) if self.is_smr_verified(i) else None
+                        ),
+                    }
+                    for i in range(32)
+                    if self.is_smr_installed(i)
+                },
+                "cores": {
+                    i: {
+                        "booted": True,
+                        "primary_reset_address": self.is_core_booted_from_primary_address(i),
+                    }
+                    for i in range(32)
+                    if self.is_core_booted(i)
+                },
+            },
         }
 
 
@@ -897,5 +1091,108 @@ class DebugAuthModeAttributeHandler(HseAttributeHandler):
             "attr_id": self.ATTR_ID.label,
             "settings": {
                 "mode": self.mode.label,
+            },
+        }
+
+
+class CoreReleaseStrategy(SpsdkEnum):
+    """HSE core reset release strategy enumeration.
+
+    Defines the strategy used by HSE to release application cores from reset while
+    parsing the Core Reset (CR) table during the pre-boot phase.
+    """
+
+    ALL_AT_ONCE = (
+        0xA5556933,
+        "ALL_AT_ONCE",
+        "HSE parses the entire CR table, verifies all associated pre-boot SMR entries, "
+        "and only then releases from reset all CPU subsystems that passed verification.",
+    )
+    ONE_BY_ONE = (
+        0xA5557555,
+        "ONE_BY_ONE",
+        "HSE releases each CPU subsystem from reset individually, right after its CR "
+        "entry and pre-boot SMR entries have been verified successfully. Cores are "
+        "released in ascending order of their index in the Core Reset table.",
+    )
+
+
+class CoreResetReleaseAttributeHandler(HseAttributeHandler):
+    """HSE Core Reset release strategy attribute handler.
+
+    Manages the HSE_CORE_RESET_RELEASE_ATTR_ID attribute (hseAttrCoreResetRelease_t) which
+    specifies the strategy HSE uses to release application cores from reset while parsing
+    the Core Reset (CR) table during the pre-boot phase:
+
+    - ALL_AT_ONCE: cores are released all at once, after the pre-boot verification phase
+      for the whole CR table is over.
+    - ONE_BY_ONE: cores are released one by one, in ascending CR table index order, right
+      after each core's respective pre-boot phase has finalized successfully.
+
+    This attribute is required to control multi-core (e.g. dual-core) boot behavior: with
+    ONE_BY_ONE, secondary cores are only released once their own CR entry and pre-boot SMR
+    entries are verified, independently of other cores in the CR table.
+
+    :cvar FORMAT: Binary format specification for UINT32 little-endian encoding.
+    :cvar ATTR_ID: HSE attribute identifier for the core reset release strategy.
+    :cvar ATTR_TYPE: NVM-RW attribute type designation.
+    """
+
+    FORMAT = LITTLE_ENDIAN + UINT32
+    ATTR_ID = HseAttributeId.CORE_RESET_RELEASE
+    ATTR_TYPE = HseAttributeType.NVM_READ_WRITE
+
+    def __init__(self, strategy: CoreReleaseStrategy) -> None:
+        """Initialize the core reset release attribute handler.
+
+        :param strategy: The core reset release strategy to set or represent.
+        """
+        super().__init__()
+        self.strategy = strategy
+
+    @classmethod
+    def parse(cls, data: bytes) -> Self:
+        """Parse core reset release strategy data from raw bytes.
+
+        :param data: Raw byte data containing the strategy value.
+        :return: New instance of the class with parsed strategy.
+        :raises SPSDKValueError: If the strategy value is not recognized.
+        """
+        (strategy_value,) = unpack(cls.FORMAT, data)
+        return cls(CoreReleaseStrategy.from_tag(strategy_value))
+
+    def export(self) -> bytes:
+        """Export the core reset release strategy value as bytes.
+
+        :return: Serialized strategy value as bytes.
+        """
+        return pack(self.FORMAT, self.strategy.tag)
+
+    def __str__(self) -> str:
+        """Format the core reset release strategy for display.
+
+        :return: Formatted string representation of the strategy.
+        """
+        ret = "HSE Core Reset Release Strategy:\n"
+        ret += f"  Strategy: {self.strategy.label} (0x{self.strategy.tag:08X})\n"
+        ret += f"  Description: {self.strategy.description}\n"
+        return ret
+
+    def __repr__(self) -> str:
+        """Return a string representation of the core reset release strategy attribute.
+
+        :return: String representation indicating the strategy.
+        """
+        return f"CoreResetRelease({self.strategy.label})"
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the core reset release attribute to dictionary representation.
+
+        :return: Dictionary with attribute ID and strategy settings.
+        """
+        return {
+            "attr_id": self.ATTR_ID.label,
+            "settings": {
+                "strategy": self.strategy.label,
             },
         }

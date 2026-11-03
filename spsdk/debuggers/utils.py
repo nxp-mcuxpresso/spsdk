@@ -17,6 +17,9 @@ import inspect
 from collections.abc import Callable, Iterator
 from types import ModuleType
 
+import colorama
+import prettytable
+
 from spsdk import SPSDK_INTERACTIVE_DISABLED, get_logger
 from spsdk.debuggers.debug_probe import (
     DebugProbe,
@@ -215,7 +218,91 @@ def test_ahb_access(
     except SPSDKError as exc:
         logger.debug(f"Test Connection: Chip has NOT enabled AHB access. {exc!s}")
 
+    # Record the AHB/system-bus gate result for the debug-access diagnostic status
+    # table (see render_debug_access_status_table() below). debug_access_status
+    # always exists on DebugProbe (base class), for every architecture.
+    probe.debug_access_status["ahb_system_bus_ok"] = ahb_enabled
+
     return ahb_enabled
+
+
+def render_debug_access_status_table(probe: DebugProbe, depth: int | None = None) -> str:
+    """Render a colour-coded table of the debug-access gating status.
+
+    Renders the gates recorded in ``probe.debug_access_status`` (see
+    :attr:`DebugProbe.DEBUG_ACCESS_STATUS_LABELS` for the ordered list of gates and
+    their human-readable labels). Each gate is shown as PASSED (green), FAILED (red),
+    NOT TESTED (grey) when the gate was never exercised during this session, or N/A
+    (grey) when the gate can never be exercised for this probe/family (see below).
+    The whole row - index, gate description, and status - is coloured consistently.
+
+    Two kinds of gates are handled specially via
+    :meth:`DebugProbe.get_not_applicable_debug_access_gates` and (on
+    ``DebugProbeCoreSightOnly``) ``get_never_tested_debug_access_gates``:
+
+    * **Not applicable** gates are architecturally impossible for this family (e.g.
+      the SDA-AP secure-debug-unlock gate versus the Debug Mailbox AP gate are
+      mutually exclusive per device database) and are omitted from the table
+      entirely, rather than shown as a misleading "NOT TESTED".
+    * **Never tested** gates could apply in principle, but a device-database
+      shortcut (e.g. a fixed MEM-AP index) means the corresponding code path is
+      never exercised for this family. These are kept in the table but rendered as
+      "N/A" instead of "NOT TESTED", to avoid implying a real test was skipped.
+
+    ``debug_access_status`` always exists on :class:`DebugProbe` (base class), for
+    every architecture including DSC, so this function never needs to guard against
+    a missing attribute.
+
+    This is purely a diagnostic helper; it does not affect probe behaviour.
+
+    :param probe: Debug probe instance whose gating status should be rendered.
+    :param depth: Limit the table to the first N gates (in evaluation order, after
+        omitting not-applicable gates). None (default) renders all gates known to
+        the probe. Useful e.g. for the ``debug_port`` test-connection destination,
+        which only exercises the first two gates (probe connection, Debug Port IDR)
+        and would otherwise show unrelated architecture-specific gates as NOT TESTED.
+    :return: Formatted, colour-coded table string.
+    """
+    not_applicable = probe.get_not_applicable_debug_access_gates()
+    never_tested = probe.get_never_tested_debug_access_gates()
+
+    labels = {
+        key: label
+        for key, label in probe.DEBUG_ACCESS_STATUS_LABELS.items()
+        if key not in not_applicable
+    }
+    if depth is not None:
+        labels = dict(list(labels.items())[:depth])
+
+    table = prettytable.PrettyTable(["#", "Gate", "Status"])
+    table.align = "l"
+    table.header = True
+    table.border = True
+    table.hrules = prettytable.HRuleStyle.HEADER
+    table.vrules = prettytable.VRuleStyle.NONE
+    for i, (key, label) in enumerate(labels.items()):
+        result = probe.debug_access_status.get(key)
+        if key in never_tested and result is None:
+            colour = colorama.Fore.LIGHTBLACK_EX
+            status_text = "N/A"
+        elif result is True:
+            colour = colorama.Fore.GREEN
+            status_text = "PASSED"
+        elif result is False:
+            colour = colorama.Fore.RED
+            status_text = "FAILED"
+        else:
+            colour = colorama.Fore.LIGHTBLACK_EX
+            status_text = "NOT TESTED"
+        reset = colorama.Style.RESET_ALL
+        table.add_row(
+            [
+                colour + str(i) + reset,
+                colour + label + reset,
+                colour + status_text + reset,
+            ]
+        )
+    return table.get_string()
 
 
 @contextlib.contextmanager
@@ -273,8 +360,20 @@ def open_debug_probe(
     selected_probe = select_probe(debug_probes, print_func=print_func, input_func=input_func)
     try:
         debug_probe = selected_probe.get_probe(debug_probe_params)
-        debug_probe.open()
     except SPSDKError as exc:
+        raise SPSDKDebugProbeError(
+            f"Cannot open selected probe: {selected_probe}. Reason: {exc}"
+        ) from exc
+    try:
+        # First gate of the diagnostic chain: PC <-> debug-probe hardware over USB
+        # (e.g. P&E Multilink, J-Link, ...). This is distinct from the *next* gate
+        # (probe_connected), which is the probe's SWD/JTAG attach to the target MCU -
+        # a probe can open fine over USB yet completely fail to attach to the board
+        # (e.g. SWD cable unplugged from the target).
+        debug_probe.open()
+        debug_probe.debug_access_status["probe_opened"] = True
+    except SPSDKError as exc:
+        debug_probe.debug_access_status["probe_opened"] = False
         raise SPSDKDebugProbeError(
             f"Cannot open selected probe: {selected_probe}. Reason: {exc}"
         ) from exc

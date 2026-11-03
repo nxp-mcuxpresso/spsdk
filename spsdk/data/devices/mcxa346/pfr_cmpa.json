@@ -7767,7 +7767,11 @@
                     "name": "ROP_STATE_DP",
                     "description": "Read Out Protection (ROP) State duplicate value. ROM reads ROP_STATE from ROP_STATE and ROP_STATE_DP on IFR0, does the compare, and if it does not match, resets the device; if match then programs it to SYSCON->ROP_STATE. Any other value then four listed means ROP3-like behavior (debug disabled/locked, ISP disabled)",
                     "offset_int": "0x00C0",
-                    "default_value_int": "0xFFFFFFFF"
+                    "default_value_int": "0xFFFFFFFF",
+                    "calculated": {
+                        "method": "duplicate",
+                        "src_register_id": "field0B0"
+                    }
                 },
                 {
                     "id": "Reserved000C4",

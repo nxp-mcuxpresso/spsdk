@@ -67,3 +67,13 @@ info:
     flashloader:
       protocol: mboot
       interfaces: [uart, spi]
+
+features:
+  # ======== AHAB section ========
+  # RT1181/RT1182 are single application-core variants (no Cortex-M7),
+  # unlike mimxrt1189 which also has a Cortex-M7 core.
+  ahab:
+    core_ids:
+      __replace__: true
+      CORTEX_M33: [1, "cortex-m33", "Cortex M33"]
+      ELE: [6, "ele", "EdgeLock Enclave"]

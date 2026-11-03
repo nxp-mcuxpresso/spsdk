@@ -1,0 +1,14 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/mcxc353_xip_misr.yaml
+user_cfg: inputs/mcxc353_xip_misr.yaml
+custom_command: "%! nxpimage mbi get-templates -f mcxc353 -o workspace/ --force"
+
+comments:
+  masterBootOutputFile: "Output file name for the generated MISR master boot image"
+  inputImageFile: "Path to the plain application image to be converted to a MISR MBI"
+  misrSeed: "MISR seed - MUST match the IMG_MISR_SEED value programmed into CMPA_PSWD"

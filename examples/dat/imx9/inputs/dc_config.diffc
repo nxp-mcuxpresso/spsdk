@@ -1,0 +1,17 @@
+# Copyright 2026 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# This is configuration file that is used for YAML diff widget for showing
+# the difference between the user configuration and the default configuration.
+template_yaml: workspace/dc_config.yaml
+user_cfg: inputs/dc_config.yaml
+custom_command: "%! nxpdebugmbox dat dc get-template -f mimx9352 -o workspace/dc_config.yaml --force"
+
+comments:
+  signer: SRK used to sign the DAR
+  rot_meta: OEM SRKs certificates
+  dck: The public key in the keypair used to sign the DC. Typically owned by the technician, or an OEM SRK during development.
+  cc_beacon: Kept as zero as it's enough for example purposes
+  cc_socu: Provides the debug domains to be enabled and the trace/debug enables. Set to 0x00FFFFF0 to enable all OEM debug domains with trace and debug. For more information consult the corresponding ELE User Guide.
+  uuid: The template file uses zeroized UUID - in this case the secure debug will be enabled for all devices in the chip family. To create a debug credential file for a specific part run the "get-uuid" command and update the UUID field with the returned UUID value.
+  flag_ca: CA Flag could be removed in case that the keys are not CA, the default value is also False.

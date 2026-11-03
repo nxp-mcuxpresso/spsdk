@@ -551,7 +551,7 @@ sb3_commands:
                 title: Reset
                 description: Resets the target
                 properties:
-                  param:
+                  params:
                     type: [string, number]
                     title: Reset parameter
                     description: |

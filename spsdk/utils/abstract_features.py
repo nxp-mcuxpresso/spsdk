@@ -230,7 +230,7 @@ class VerifyBaseClass:
         return ret
 
 
-class FeatureBaseClass(BaseClass, VerifyBaseClass, ConfigBaseClass):
+class FeatureBaseClass(BaseClass, VerifyBaseClass, ConfigBaseClass, ABC):
     """Base class for SPSDK features with configuration and verification capabilities.
 
     This class serves as the foundation for all SPSDK feature implementations,
@@ -241,7 +241,7 @@ class FeatureBaseClass(BaseClass, VerifyBaseClass, ConfigBaseClass):
     """
 
 
-class FeatureBaseClassComm(RawBaseClass, VerifyBaseClass, ConfigBaseClass):
+class FeatureBaseClassComm(RawBaseClass, VerifyBaseClass, ConfigBaseClass, ABC):
     """Base class for communication features without export/parse methods.
 
     This class combines raw data handling, verification capabilities, and configuration

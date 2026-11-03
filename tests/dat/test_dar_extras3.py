@@ -382,6 +382,39 @@ class TestEleV2GetValidationSchemasExtended:
         assert isinstance(schemas, list)
         assert len(schemas) >= 3
 
+    def test_srk_revoke_mask_is_recognized_property(self) -> None:
+        """SPSDK-6722: srk_revoke_mask must remain a known (optional) DAT config property.
+
+        The field is consumed by AHABContainerBase._load_from_config_flags and is
+        cross-checked against DAC/fuse data by _verify_srk_revoke_mask(); it must not be
+        stripped from the schema, otherwise users get a false "Unknown property" warning
+        and the field is missing from the generated config template.
+        """
+        family = FamilyRevision("mimx9596")
+        schemas = DebugAuthenticateResponseEdgelockEnclaveV2.get_validation_schemas(family)
+        smsg_schema = schemas[1]
+        assert "srk_revoke_mask" in smsg_schema["properties"]
+        # optional - not part of required fields, config check should not warn about it
+        assert "srk_revoke_mask" not in smsg_schema.get("required", [])
+
+    def test_srk_revoke_mask_no_unknown_property_warning(self, caplog) -> None:  # type: ignore[no-untyped-def]
+        """SPSDK-6722: config containing srk_revoke_mask must not trigger the warning."""
+        family = FamilyRevision("mimx9596")
+        config = Config(
+            {
+                "family": family.name,
+                "revision": family.revision,
+                "srk_revoke_mask": "0x08",
+                "srk_set": "oem",
+                "used_srk_id": 0,
+                "signer": "dummy.pem",
+                "certificate": "dummy.bin",
+                "srk_table": {"srk_array": []},
+            }
+        )
+        DebugAuthenticateResponse.get_validation_schemas_from_cfg(config)
+        assert "Unknown property found in configuration: 'srk_revoke_mask'" not in caplog.text
+
 
 # ---------------------------------------------------------------------------
 # EleV2 _verify_rot_hash (lines 668-695)

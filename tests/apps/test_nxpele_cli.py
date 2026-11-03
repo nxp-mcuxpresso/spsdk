@@ -95,6 +95,7 @@ def test_nxpele_get_families(cli_runner: CliRunner) -> None:
         "verify-image",
         "release-container",
         "forward-lifecycle-update",
+        "forward-boot-crypto",
         "signed-message",
         "get-events",
         "start-trng",
@@ -178,6 +179,7 @@ def test_hse_set_attr_help(cli_runner: CliRunner) -> None:
         "enable-publish-keystore-ram-to-flash",
         "secure-lifecycle",
         "debug-auth-mode",
+        "core-reset-release",
     ],
 )
 def test_hse_set_attr_subcommand_help(cli_runner: CliRunner, subcommand: str) -> None:

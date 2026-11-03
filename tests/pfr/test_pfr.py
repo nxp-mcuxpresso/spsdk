@@ -35,7 +35,7 @@ from spsdk.pfr.pfr import (
 )
 from spsdk.utils.config import Config
 from spsdk.utils.database import DatabaseManager
-from spsdk.utils.family import FamilyRevision
+from spsdk.utils.family import FamilyRevision, get_db
 from spsdk.utils.misc import load_configuration, load_file
 
 
@@ -858,6 +858,29 @@ def test_mcxc151_cmpa_lc_export(tmpdir: str) -> None:
     # Verify binary was created and has expected size
     assert len(binary) > 0
     assert isinstance(binary, bytes)
+
+
+def test_mcxc353_pfr_rom_layout() -> None:
+    """Test MCXC353 PFR sizes against the ROM IFR map."""
+    family = FamilyRevision("mcxc353")
+    cmpa_cfg = CMPA_CFG(family)
+    cmpa_pswd = CMPA_PSWD(family)
+    cmpa_lc = CMPA_LC(family)
+
+    cmpa_cfg.registers.find_reg("ISP_MISC_CFG").find_bitfield("QUICK_GPIO_CUST").set_enum_value(
+        "CUSTOMER_DEFINED_BY_THE_F"
+    )
+    cmpa_cfg.registers.find_reg("BOOT_IMG_CFG").find_bitfield("FAST_WAKEUP_EN").set_enum_value(
+        "BOOTLOADER_GO_LOW_POWER_W"
+    )
+
+    cfg_data = cmpa_cfg.export(add_seal=False)
+    assert len(cfg_data) == 0x74
+    assert int.from_bytes(cfg_data[0x20:0x24], "little") & (0x03 << 24) == 0x01 << 24
+    assert int.from_bytes(cfg_data[0x24:0x28], "little") & (0x03 << 8) == 0x01 << 8
+    assert len(cmpa_pswd.export(add_seal=False)) == 0x44
+    assert len(cmpa_lc.export(add_seal=False)) == 0x10
+    assert get_db(family).device.info.memory_map.get_memory("internal-flash").size == 0x2_0000
 
 
 def test_mcxc151_supported_families() -> None:

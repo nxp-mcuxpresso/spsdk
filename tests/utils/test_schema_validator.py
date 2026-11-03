@@ -584,6 +584,53 @@ def test_check_unknown_properties_strict_mode() -> None:
 
 
 @pytest.mark.parametrize(
+    "property_schema",
+    [
+        {"type": "string", "deprecated": True},
+        {"type": "string", "description": "Deprecated. Use 'current' instead."},
+    ],
+)
+def test_deprecated_schema_property_warning(
+    caplog: pytest.LogCaptureFixture, property_schema: dict[str, Any]
+) -> None:
+    """Deprecated schema properties emit warnings by default."""
+    schema = {"type": "object", "properties": {"legacy": property_schema}}
+    with caplog.at_level(logging.WARNING):
+        check_config({"legacy": "value"}, [schema])
+    assert "Deprecated property found in configuration: 'legacy'" in caplog.messages
+
+
+def test_nested_deprecated_schema_property_warning(caplog: pytest.LogCaptureFixture) -> None:
+    """Deprecated properties are detected in nested objects and arrays."""
+    schema = {
+        "type": "object",
+        "properties": {
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {"legacy": {"type": "number", "deprecated": True}},
+                },
+            }
+        },
+    }
+    with caplog.at_level(logging.WARNING):
+        check_config({"items": [{"legacy": 1}]}, [schema])
+    assert "Deprecated property found in configuration: 'items[0].legacy'" in caplog.messages
+
+
+@mock.patch("spsdk.utils.schema_validator.SPSDK_DEPRECATED_STRICT", True)
+def test_deprecated_schema_property_strict_mode() -> None:
+    """Deprecated schema properties fail validation in strict mode."""
+    schema = {
+        "type": "object",
+        "properties": {"legacy": {"type": "string", "deprecated": True}},
+    }
+    with pytest.raises(SPSDKError, match="Deprecated property.*legacy"):
+        check_config({"legacy": "value"}, [schema])
+
+
+@pytest.mark.parametrize(
     "test_input,should_pass",
     [
         ("c3df2316fd40b15586cb5ae49483aee2", True),

@@ -44,6 +44,7 @@ from spsdk.apps.utils.utils import (
     parse_hex_data,
     progress_bar,
 )
+from spsdk.dice.utils import ProveGenuinity
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.mcuboot import GenerateKeyBlobSelect, McuBoot, StatusCode, parse_property_value
 from spsdk.mboot.protocol.base import MbootProtocolBase
@@ -1884,8 +1885,19 @@ def ele_message(
 @trust_provisioning.command(name="prove_genuinity", no_args_is_help=True)
 @click.argument("address", type=INT())
 @click.argument("buffer_size", type=INT())
+@click.option(
+    "-m",
+    "--mode",
+    type=click.Choice(ProveGenuinity.Mode.labels(), case_sensitive=False),
+    callback=lambda ctx, param, value: ProveGenuinity.Mode.from_label(value),
+    default="ECDSA",
+    show_default=True,
+    help="Prove genuinity mode",
+)
 @click.pass_context
-def prove_genuinity(ctx: click.Context, address: int, buffer_size: int) -> None:
+def prove_genuinity(
+    ctx: click.Context, address: int, buffer_size: int, mode: ProveGenuinity.Mode
+) -> None:
     """Start the process of proving genuinity.
 
     \b
@@ -1893,7 +1905,12 @@ def prove_genuinity(ctx: click.Context, address: int, buffer_size: int) -> None:
     BUFFER_SIZE - Maximal size of the generated prove_genuinity response
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
-        tp_response_length = mboot.tp_prove_genuinity(address=address, buffer_size=buffer_size)
+        prove_genuinity_op = (
+            mboot.tp_prove_genuinity
+            if mode == ProveGenuinity.Mode.ECDSA
+            else mboot.tp_prove_genuinity_hybrid
+        )
+        tp_response_length = prove_genuinity_op(address=address, buffer_size=buffer_size)
         display_output(
             [tp_response_length],
             mboot.status_code,

@@ -2865,7 +2865,9 @@ class Mbi_MixinAhab(Mbi_Mixin):
         chip_config = create_chip_config(self.family, feature=self.FEATURE, base_key=["ahab"])
         self.ahab = AHABContainerV2(chip_config)
         self.ahab.load_from_config_generic(config)
-        core_id = chip_config.core_ids.from_label(config.get_str("core_id", "cortex-m33"))
+        # The first core defined in the device database is the boot core.
+        default_core_id = chip_config.core_ids.labels()[0]
+        core_id = chip_config.core_ids.from_label(config.get_str("core_id", default_core_id))
         hash_type = ImageArrayEntryV2.FLAGS_HASH_ALGORITHM_TYPE.from_label(
             config.get_str("image_hash_type", "sha384")
         )
@@ -2901,7 +2903,8 @@ class Mbi_MixinAhab(Mbi_Mixin):
         )
         self.ahab.image_array.append(data_image)
 
-        if self.trust_zone and self.tz_type == TrustZoneType.CUSTOM:
+        trust_zone = getattr(self, "trust_zone", None)
+        if trust_zone and self.tz_type == TrustZoneType.CUSTOM:
             tz_iae_flags = ImageArrayEntryV2.create_flags(
                 image_type=ImageArrayEntryV2.get_image_types(self.ahab.chip_config, core_id.tag)
                 .from_label("tz_data")
@@ -2911,7 +2914,7 @@ class Mbi_MixinAhab(Mbi_Mixin):
             )
             tz_image = ImageArrayEntryV2(
                 chip_config=self.ahab.chip_config,
-                image=self.trust_zone.export(),
+                image=trust_zone.export(),
                 image_offset=data_image.image_size,
                 load_address=0,
                 entry_point=0,
@@ -2919,6 +2922,32 @@ class Mbi_MixinAhab(Mbi_Mixin):
                 image_name="TrustZone preset data Image",
             )
             self.ahab.image_array.append(tz_image)
+
+        if getattr(self, "core1_app", None):
+            # The secondary core defaults to the second core ID declared in the database.
+            core1_labels = chip_config.core_ids.labels()
+            core1_id = chip_config.core_ids.from_label(
+                config.get_str(
+                    "core1_id", core1_labels[1] if len(core1_labels) > 1 else core1_labels[0]
+                )
+            )
+            core1_iae_flags = ImageArrayEntryV2.create_flags(
+                image_type=ImageArrayEntryV2.get_image_types(self.ahab.chip_config, core1_id.tag)
+                .from_label("executable")
+                .tag,
+                core_id=core1_id.tag,
+                hash_type=hash_type,
+            )
+            core1_image = ImageArrayEntryV2(
+                chip_config=self.ahab.chip_config,
+                image=self.core1_app,
+                image_offset=data_image.image_size,
+                load_address=config.get_int("core1LoadAddress", 0),
+                entry_point=0,
+                flags=core1_iae_flags,
+                image_name="Core1 Boot Image",
+            )
+            self.ahab.image_array.append(core1_image)
 
         if self.app_crc:
             crc_iae_flags = ImageArrayEntryV2.create_flags(
@@ -2976,7 +3005,11 @@ class Mbi_MixinAhab(Mbi_Mixin):
         :raises SPSDKError: If AHAB container parsing fails.
         :raises SPSDKValueError: If the data format is invalid or corrupted.
         """
-        ahab_offset = Mbi_MixinIvt.get_cert_block_offset_from_data(data)
+        # Use the IVT mixin of this image, so that families overriding the IVT offsets
+        # (e.g. the DSC based ones using Mbi_MixinIvt16) read the container offset from the
+        # correct place.
+        ivt_cls = self.ivt_table if hasattr(self, "ivt_table") else Mbi_MixinIvt
+        ahab_offset = ivt_cls.get_cert_block_offset_from_data(data)
         self.ahab = AHABContainerV2.parse(
             data,
             chip_config=create_chip_config(self.family, feature=self.FEATURE, base_key=["ahab"]),
@@ -2999,6 +3032,26 @@ class Mbi_MixinAhab(Mbi_Mixin):
                 .from_label("crc_check")
                 .tag,
             )
+
+        if hasattr(self, "core1_app"):
+            # The secondary core image sits in slot 1 and is an executable belonging to a
+            # different core than the boot image in slot 0.
+            self.core1_app = None
+            if len(self.ahab.image_array) > 1:
+                candidate = self.ahab.image_array[1]
+                boot_core_id = self.ahab.image_array[0].flags_core_id.tag
+                executable_tag = (
+                    ImageArrayEntryV2.get_image_types(
+                        self.ahab.chip_config, candidate.flags_core_id.tag
+                    )
+                    .from_label("executable")
+                    .tag
+                )
+                if (
+                    candidate.flags_image_type == executable_tag
+                    and candidate.flags_core_id.tag != boot_core_id
+                ):
+                    self.core1_app = candidate.image
 
     def mix_verify(self) -> Verifier:
         """Verify the AHAB container configuration.
@@ -3178,6 +3231,95 @@ class Mbi_MixinAppCrc(Mbi_Mixin):
                     value=f"CRC record size: {len(crc_record.image)} bytes (expected 4 bytes)",
                 )
 
+        return ver
+
+
+class Mbi_MixinCore1App(Mbi_Mixin):
+    """Master Boot Image mixin for a secondary (Core1) application image.
+
+    Dual core devices without TrustZone, such as the DSC based mc56f85857, place an
+    optional second application image into the AHAB image array slot that is occupied by
+    the TrustZone preset data on ARM devices. The resulting image array is therefore:
+
+    0. application image for Core0 (mandatory)
+    1. application image for Core1 (optional, this mixin)
+    2. CRC over Core0 and Core1 data (optional, :class:`Mbi_MixinAppCrc`)
+
+    :cvar VALIDATION_SCHEMAS: List of validation schemas for the Core1 application.
+    :cvar NEEDED_MEMBERS: Dictionary defining required member variables and defaults.
+    """
+
+    VALIDATION_SCHEMAS: ClassVar[list[str]] = ["ahab_sign_support_add_core1_app"]
+    NEEDED_MEMBERS: ClassVar[dict[str, Any]] = {"core1_app": None}
+
+    core1_app: bytes | None
+
+    def mix_len(self) -> int:
+        """Get length of the Core1 application image.
+
+        :return: Length of the Core1 application in bytes, zero when not used.
+        """
+        return len(self.core1_app) if self.core1_app else 0
+
+    def mix_app_len(self) -> int:
+        """Compute application data length of individual mixin.
+
+        :return: Core1 application data length in bytes, zero when not used.
+        """
+        return self.mix_len()
+
+    def mix_load_from_config(self, config: Config) -> None:
+        """Load the Core1 application image from the configuration.
+
+        :param config: Configuration object possibly containing the Core1 application file.
+        """
+        if "core1ApplicationFile" not in config:
+            self.core1_app = None
+            return
+        self.core1_app = align_block(
+            load_binary(config.get_input_file_name("core1ApplicationFile"))
+        )
+
+    def mix_get_config(self, output_folder: str) -> dict[str, Any]:
+        """Get the configuration of the mixin.
+
+        :param output_folder: Output folder to store files.
+        :return: Dictionary containing the Core1 application configuration.
+        """
+        if not self.core1_app:
+            return {}
+        file_name = "core1_application.bin"
+        write_file(self.core1_app, os.path.join(output_folder, file_name), mode="wb")
+        return {"core1ApplicationFile": file_name}
+
+    def mix_verify(self) -> Verifier:
+        """Verify the Core1 application configuration.
+
+        :return: Verifier object for validation results.
+        """
+        ver = Verifier(
+            name="Core1 application",
+            description="Validates the optional secondary core application image",
+        )
+        if not self.core1_app:
+            ver.add_record(
+                name="Core1 application presence",
+                result=VerifierResult.SUCCEEDED,
+                value="Not used",
+                important=False,
+            )
+            return ver
+
+        ver.add_record(
+            name="Core1 application presence",
+            result=VerifierResult.SUCCEEDED,
+            value=f"Present, {len(self.core1_app)} bytes",
+        )
+        ver.add_record(
+            name="Core1 application alignment",
+            result=len(self.core1_app) % 4 == 0,
+            value=f"{len(self.core1_app)} bytes must be a multiple of 4",
+        )
         return ver
 
 
@@ -5180,10 +5322,7 @@ class Mbi_ExportMixinHmacKeyStoreFinalize(Mbi_ExportMixin):
         else:
             # here must be splitted the Binary image that contains the HMAC offset address
             for subimage in image.sub_images:
-                if (
-                    subimage.offset <= self.HMAC_OFFSET
-                    and self.HMAC_OFFSET < subimage.offset + len(subimage)
-                ):
+                if subimage.offset <= self.HMAC_OFFSET < subimage.offset + len(subimage):
                     # Split this image
                     if not (subimage.binary and len(subimage.sub_images) == 0):
                         raise SPSDKError("Invalid image structure")
@@ -5542,8 +5681,10 @@ class Mbi_ExportMixinAppTzCrcAhab(Mbi_ExportMixin):
     firmware_version: int
     ahab: AHABContainerV2
     crc_check_record: ImageArrayEntryV2 | None
+    core1_app: bytes | None
     CRC_IMAGE_NAME = "CRC-32 MPEG checksum"
     AHAB_IMAGE_NAME = "AHAB Container"
+    CORE1_IMAGE_NAME = "Core1 application"
     IMAGE_ALIGNMENT = 4
 
     def collect_data(self) -> BinaryImage:
@@ -5553,6 +5694,10 @@ class Mbi_ExportMixinAppTzCrcAhab(Mbi_ExportMixin):
         TrustZone configuration, CRC records, and AHAB container. It updates the IVT table with
         proper offsets and configures the AHAB image array entries with relative offsets to the
         AHAB container.
+
+        The AHAB image array slot 1 holds either the TrustZone preset data (ARM devices) or the
+        secondary core application (dual core devices without TrustZone). The
+        optional CRC record is always the last entry.
 
         :return: Binary image containing the complete MBI structure with all components properly
             aligned and configured.
@@ -5570,26 +5715,48 @@ class Mbi_ExportMixinAppTzCrcAhab(Mbi_ExportMixin):
         # Initial offset after application
         current_offset = self.ahab.image_array[0].image_size
 
+        # The index of the next AHAB image array entry to be placed
+        next_index = 1
+
         # TrustZone section (if needed)
-        tz_offset = None
-        if self.trust_zone and self.tz_type == TrustZoneType.CUSTOM:
-            tz_offset = current_offset
+        tz_placement: tuple[int, int] | None = None
+        trust_zone = getattr(self, "trust_zone", None)
+        if trust_zone and self.tz_type == TrustZoneType.CUSTOM:
             ret.append_image(
                 BinaryImage(
                     name=Mbi_ExportMixinAppTrustZone.TRUST_ZONE_IMAGE_NAME,
-                    binary=self.trust_zone.export(),
-                    offset=tz_offset,
+                    binary=trust_zone.export(),
+                    offset=current_offset,
                 )
             )
-            current_offset += self.ahab.image_array[1].image_size
+            tz_placement = (next_index, current_offset)
+            current_offset += self.ahab.image_array[next_index].image_size
+            next_index += 1
+
+        # Secondary core application section (if needed)
+        core1_placement: tuple[int, int] | None = None
+        core1_app = getattr(self, "core1_app", None)
+        if core1_app:
+            ret.append_image(
+                BinaryImage(
+                    name=Mbi_ExportMixinAppTzCrcAhab.CORE1_IMAGE_NAME,
+                    binary=core1_app,
+                    offset=current_offset,
+                )
+            )
+            core1_placement = (next_index, current_offset)
+            current_offset += self.ahab.image_array[next_index].image_size
+            next_index += 1
 
         # CRC section (if needed)
-        crc_offset = None
+        crc_placement: tuple[int, int] | None = None
         if self.crc_check_record:
-            crc_offset = current_offset
             ret.append_image(
-                BinaryImage(Mbi_ExportMixinAppTzCrcAhab.CRC_IMAGE_NAME, size=4, offset=crc_offset)
+                BinaryImage(
+                    Mbi_ExportMixinAppTzCrcAhab.CRC_IMAGE_NAME, size=4, offset=current_offset
+                )
             )
+            crc_placement = (next_index, current_offset)
             current_offset += 4
 
         # AHAB container section
@@ -5607,20 +5774,23 @@ class Mbi_ExportMixinAppTzCrcAhab(Mbi_ExportMixin):
             crc_val_cert_offset=ahab_offset,
         )
 
-        # if hasattr(self, "firmware_version"):
-        #     self.ahab.sw_version = self.firmware_version
-
         # Now update all the AHAB image array entries with the relative offsets
         # Note: offsets are relative to AHAB container, so they'll be negative values
         self.ahab.image_array[0].image = app_image.binary
         self.ahab.image_array[0].image_offset = app_offset - ahab_offset
 
-        if tz_offset is not None:
-            self.ahab.image_array[1].image = self.trust_zone.export()
-            self.ahab.image_array[1].image_offset = tz_offset - ahab_offset
+        if tz_placement is not None and trust_zone is not None:
+            tz_index, tz_offset = tz_placement
+            self.ahab.image_array[tz_index].image = trust_zone.export()
+            self.ahab.image_array[tz_index].image_offset = tz_offset - ahab_offset
 
-        if crc_offset is not None:
-            crc_index = 1 if tz_offset is None else 2
+        if core1_placement is not None and core1_app is not None:
+            core1_index, core1_offset = core1_placement
+            self.ahab.image_array[core1_index].image = core1_app
+            self.ahab.image_array[core1_index].image_offset = core1_offset - ahab_offset
+
+        if crc_placement is not None:
+            crc_index, crc_offset = crc_placement
             self.ahab.image_array[crc_index].image_offset = crc_offset - ahab_offset
 
         for img_entry in self.ahab.image_array:
@@ -5638,7 +5808,8 @@ class Mbi_ExportMixinAppTzCrcAhab(Mbi_ExportMixin):
         :param image: Binary image data to be disassembled.
         """
         Mbi_ExportMixinApp.disassemble_image(self, self.ahab.image_array[0].image)  # type: ignore
-        Mbi_MixinTrustZoneV2.mix_parse(self, image)  # type: ignore
+        if hasattr(self, "trust_zone"):
+            Mbi_MixinTrustZoneV2.mix_parse(self, image)  # type: ignore
 
     def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
         """Sign the image with CRC calculation and AHAB signature.
@@ -5658,8 +5829,8 @@ class Mbi_ExportMixinAppTzCrcAhab(Mbi_ExportMixin):
         if self.crc_check_record:
             # ---------  Compute CRC field  -------------
             input_image = image.export()
-            # calculate CRC using MPEG2 specification over all of data (app and trustzone)
-            # except for 4 bytes at CRC_BLOCK_OFFSET
+            # calculate CRC using MPEG2 specification over all of data (app, trustzone or the
+            # secondary core application) except for 4 bytes at CRC_BLOCK_OFFSET
             crc_obj = from_crc_algorithm(CrcAlg.CRC32_MPEG)
             crc_image = image.find_sub_image(Mbi_ExportMixinAppTzCrcAhab.CRC_IMAGE_NAME)
             crc_offset = crc_image.absolute_address
@@ -5972,19 +6143,24 @@ class Mbi_ExportMixinMisrSign(Mbi_ExportMixin, Mbi_Mixin):
             raise SPSDKError("Application image not found")
 
         current_size = len(app_image.binary)
+        reserved_size = get_db(self.family).get_int(DatabaseManager.MBI, "misr_reserved_size", 0)
+        data_alignment = get_db(self.family).get_int(
+            DatabaseManager.MBI, "misr_data_alignment", self.MISR_PAGE_SIZE
+        )
+        seed_byte_order = get_db(self.family).get_str(
+            DatabaseManager.MBI, "misr_seed_byte_order", "little"
+        )
+        if reserved_size < 0 or reserved_size >= self.MISR_PAGE_SIZE or reserved_size % 16:
+            raise SPSDKError(
+                "MISR reserved size must be a non-negative multiple of 16 bytes "
+                f"smaller than {self.MISR_PAGE_SIZE} bytes"
+            )
 
-        # Check if alignment is needed
-        remainder = current_size % self.MISR_PAGE_SIZE
-
-        # Calculate padding needed
-        if remainder == 0:
+        aligned_size = align(current_size + reserved_size, self.MISR_PAGE_SIZE)
+        padding_size = aligned_size - current_size
+        if padding_size == 0:
             logger.debug(f"Image already aligned to {self.MISR_PAGE_SIZE} bytes")
-            padding_size = 0
-            aligned_size = current_size
         else:
-            padding_size = self.MISR_PAGE_SIZE - remainder
-            aligned_size = current_size + padding_size
-
             logger.debug(
                 f"Aligning MISR image from {current_size} to {aligned_size} bytes "
                 f"(padding: {padding_size} bytes with 0x{self.MISR_PADDING_VALUE:02X})"
@@ -5999,7 +6175,13 @@ class Mbi_ExportMixinMisrSign(Mbi_ExportMixin, Mbi_Mixin):
         app_image.binary = self.update_total_length(app_image.binary, total_length)
 
         # Calculate and append MISR checksum
-        checksum = calculate_misr_checksum(self.misr_seed, app_image.binary)
+        checksum_end = aligned_size - reserved_size
+        checksum = calculate_misr_checksum(
+            self.misr_seed,
+            app_image.binary[:checksum_end],
+            data_alignment=data_alignment,
+            seed_byte_order=seed_byte_order,
+        )
         app_image.binary = app_image.binary + checksum
 
         return image
